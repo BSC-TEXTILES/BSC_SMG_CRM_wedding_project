@@ -37,6 +37,17 @@ import WeddingTracking from './pages/WeddingTracking';
 import SystemAdmin from './pages/SystemAdmin';
 import BatchPlan from './pages/BatchPlan';
 import DojDesk from './pages/DojDesk';
+import CandidateEntry from './pages/CandidateEntry';
+import WeddingCrmDashboard from './pages/wedding/WeddingCrmDashboard';
+import WeddingCustomerRegister from './pages/wedding/WeddingCustomerRegister';
+import WeddingCustomerDetail from './pages/wedding/WeddingCustomerDetail';
+import WeddingCustomerCreate from './pages/wedding/WeddingCustomerCreate';
+import TelecallerDeskPage from './pages/wedding/TelecallerDeskPage';
+import WeddingCallHistory from './pages/wedding/WeddingCallHistory';
+import WeddingFollowUpCalendar from './pages/wedding/WeddingFollowUpCalendar';
+import WeddingStatusBoard from './pages/wedding/WeddingStatusBoard';
+import WeddingReports from './pages/wedding/WeddingReports';
+import WeddingImport from './pages/wedding/WeddingImport';
 import { LocationProvider } from './context/LocationContext';
 import QuickActionCenter from './components/ui/QuickActionCenter';
 import RouteGuard from './components/RouteGuard';
@@ -61,7 +72,31 @@ export default function App() {
         <Route path="/dashboard" element={<RouteGuard pageKey="dashboard"><Dashboard /></RouteGuard>} />
         <Route path="/main-crm" element={<RouteGuard pageKey="main_crm"><MainCrmDashboard /></RouteGuard>} />
         <Route path="/wedding-crm" element={<RouteGuard pageKey="wedding_crm"><WeddingCRM /></RouteGuard>} />
+        <Route path="/wedding-crm/dashboard" element={<RouteGuard pageKey="wedding_crm"><WeddingCrmDashboard /></RouteGuard>} />
+        <Route path="/wedding-crm/customers" element={<RouteGuard pageKey="wedding_crm"><WeddingCustomerRegister /></RouteGuard>} />
+        <Route path="/wedding-crm/customers/new" element={<RouteGuard pageKey="wedding_registration"><WeddingCustomerCreate /></RouteGuard>} />
+        <Route path="/wedding-crm/customers/:id" element={<RouteGuard pageKey="wedding_crm"><WeddingCustomerDetail /></RouteGuard>} />
+        <Route path="/wedding-crm/telecaller" element={<RouteGuard pageKey="wedding_crm"><TelecallerDeskPage /></RouteGuard>} />
+        <Route path="/wedding-crm/calls" element={<RouteGuard pageKey="wedding_crm"><WeddingCallHistory /></RouteGuard>} />
+        <Route path="/wedding-crm/calendar" element={<RouteGuard pageKey="wedding_crm"><WeddingFollowUpCalendar /></RouteGuard>} />
+        <Route path="/wedding-crm/pipeline" element={<RouteGuard pageKey="wedding_crm"><WeddingStatusBoard /></RouteGuard>} />
+        <Route path="/wedding-crm/status-board" element={<RouteGuard pageKey="wedding_crm"><WeddingStatusBoard /></RouteGuard>} />
+        <Route path="/wedding-crm/reports" element={<RouteGuard pageKey="wedding_crm"><WeddingReports /></RouteGuard>} />
+        <Route path="/wedding-crm/import" element={<RouteGuard pageKey="wedding_crm"><WeddingImport /></RouteGuard>} />
+        <Route path="/wedding/customer-registration" element={<RouteGuard pageKey="wedding_registration"><WeddingCustomerCreate /></RouteGuard>} />
+        <Route path="/wedding-operations" element={<RouteGuard pageKey="wedding_operations"><WeddingOperationsDesk /></RouteGuard>} />
+
+        {/* Telecaller Dedicated Routes */}
+        <Route path="/telecaller/desk" element={<RouteGuard pageKey="telecaller_desk"><TelecallerDeskPage /></RouteGuard>} />
+        <Route path="/telecaller/queue" element={<Navigate to="/telecaller/desk" replace />} />
+        <Route path="/telecaller/customer/:id" element={<RouteGuard pageKey="wedding_crm"><WeddingCustomerDetail /></RouteGuard>} />
         <Route path="/telecaller-dashboard" element={<RouteGuard pageKey="telecaller_dashboard"><TelecallerDashboard /></RouteGuard>} />
+
+        {/* Job Applicant Public Portals (Distinct from Wedding Customer Registration) */}
+        <Route path="/apply" element={<CandidateEntry />} />
+        <Route path="/applicants/register" element={<CandidateEntry />} />
+        <Route path="/candidate-registration" element={<Navigate to="/apply" replace />} />
+
         <Route path="/footfall" element={<RouteGuard pageKey="footfall"><Footfall /></RouteGuard>} />
         <Route path="/feedback-public" element={<PublicFeedback />} />
         <Route path="/feedback-qr" element={<FeedbackQR />} />

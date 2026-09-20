@@ -343,15 +343,15 @@ export default function WeddingOperationsDesk() {
                           </td>
                           <td className="py-3 px-4 text-right space-x-2 whitespace-nowrap">
                             <button 
-                              onClick={() => setDetailCustomer(c)}
-                              className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 text-slate-600 hover:bg-accent hover:text-white transition-colors"
-                              title="View Details"
+                              onClick={() => navigate(`/wedding-crm/customers/${c.id}`)}
+                              className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 text-slate-600 hover:bg-[#101C36] hover:text-[#C9A45C] transition-colors"
+                              title="View Customer Profile"
                             >
                               <Eye className="w-4 h-4" />
                             </button>
                             <button 
                               onClick={() => { setSelectedCustomer(c); setNewStatus(c.status || 'Contacted'); setStatusModalOpen(true); }}
-                              className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 text-slate-600 hover:bg-accent hover:text-white transition-colors"
+                              className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 text-slate-600 hover:bg-[#101C36] hover:text-[#C9A45C] transition-colors"
                               title="Update Status"
                             >
                               <Edit3 className="w-4 h-4" />
@@ -426,7 +426,10 @@ export default function WeddingOperationsDesk() {
 
                 <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col items-center justify-center text-center">
                    <p className="text-sm text-slate-500 mb-4">View comprehensive history, remarks, and complete activity timeline.</p>
-                   <button className="px-5 py-2.5 bg-accent hover:bg-accent/90 text-white rounded-xl text-sm font-bold shadow-sm transition-all flex items-center gap-2">
+                   <button 
+                     onClick={() => navigate(`/wedding-crm/customers/${detailCustomer.id}`)}
+                     className="px-5 py-2.5 bg-[#101C36] hover:bg-[#07101F] text-[#C9A45C] font-black rounded-xl text-xs shadow-sm transition-all flex items-center gap-2 border border-[#C9A45C]/30"
+                   >
                      <FileText className="w-4 h-4" /> View Full Profile
                    </button>
                 </div>

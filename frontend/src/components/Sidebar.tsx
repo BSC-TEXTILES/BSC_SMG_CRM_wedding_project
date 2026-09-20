@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { API, Auth, UserSession } from '../services/api';
-import { BarChart3, Users, Target, FileText, PartyPopper, LogOut, ClipboardList, Settings, DoorOpen, UserCheck, Briefcase, ChevronRight, Sparkles, Megaphone, CheckSquare, Menu, Shield, ShieldAlert, PhoneCall } from 'lucide-react';
+import { BarChart3, Users, Target, FileText, PartyPopper, LogOut, ClipboardList, Settings, DoorOpen, UserCheck, Briefcase, ChevronRight, Sparkles, Megaphone, CheckSquare, Menu, Shield, ShieldAlert, PhoneCall, Heart, Calendar, History } from 'lucide-react';
 import { 
   getSidebarCollapsed, 
   setSidebarCollapsed, 
@@ -86,21 +86,40 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
   const roleLabels: Record<string, string> = {
     'Super Admin': 'Super Administrator',
     'Admin':       'Administrator',
+    'Manager':     'Store Manager',
+    'HR':          'HR Specialist',
+    'VM':          'Visual Merchandiser',
+    'Greeter':     'Greeter Desk',
+    'CRM Executive': 'CRM Executive',
+    'CRM Manager': 'CRM Manager',
+    'Data Analyst': 'Data Analyst',
+    'Telecaller':  'Telecaller Workspace',
     'Wedding Collection Manager': 'Wedding Collection Head',
     'Team Lead':   'Team Lead / Calling Desk',
-    'Telecaller':  'Telecaller Workspace',
-    'HR':          'HR Specialist',
     'Recruiter':   'Recruiter',
     'Interviewer': 'Interviewer Panel',
-    'Manager':     'Store Manager',
     'Employee':    'Employee',
-    'Guest':       'Guest',
-    'Greeter':     'Greeter Desk'
+    'Guest':       'Guest'
   };
 
+  const isTelecallerRole = (role || '').trim().toLowerCase() === 'telecaller';
+
   const navItems = [
-    { key: 'telecaller_dashboard', href: '/telecaller-dashboard', label: 'Telecaller Dashboard', icon: PhoneCall, section: 'Telecaller', isNew: true },
-    { key: 'wedding_crm', href: '/wedding-crm', label: 'Wedding CRM', icon: Sparkles, section: 'Store Operations', isNew: true },
+    // Telecaller Workspace (Only for Telecaller role)
+    { key: 'telecaller_desk', href: '/telecaller/desk', label: 'Telecaller Desk', icon: PhoneCall, section: 'Telecaller Workspace', isNew: true },
+    { key: 'wedding_crm', href: '/wedding-crm/customers', label: 'Customer Register', icon: Users, section: 'Telecaller Workspace' },
+    { key: 'wedding_registration', href: '/wedding/customer-registration', label: 'Register Wedding Customer', icon: Heart, section: 'Telecaller Workspace' },
+
+    // Enterprise (Admin landing module at top)
+    { key: 'dashboard', href: '/dashboard', label: 'Admin Dashboard', icon: BarChart3, section: 'Enterprise' },
+    { key: 'employees', href: '/employees', label: 'Employee & Store Directory', icon: UserCheck, section: 'Enterprise' },
+    { key: 'user_management', href: '/user-management', label: 'User Management', icon: Shield, section: 'Enterprise' },
+    { key: 'attendance', href: '/attendance', label: 'Attendance & Roster', icon: UserCheck, section: 'Enterprise' },
+
+    // Store Operations
+    { key: 'wedding_crm', href: '/wedding-crm/dashboard', label: 'Wedding CRM', icon: Sparkles, section: 'Store Operations', isNew: true },
+    { key: 'wedding_registration', href: '/wedding/customer-registration', label: 'Wedding Customer Registration', icon: Heart, section: 'Store Operations' },
+    { key: 'wedding_operations', href: '/wedding-operations', label: 'Wedding Operations', icon: FileText, section: 'Store Operations' },
     { key: 'footfall', href: '/footfall', label: 'Hourly Footfall', icon: BarChart3, section: 'Store Operations' },
     { key: 'feedback_collection', href: '/feedback-collection', label: 'Feedback Collection', icon: FileText, section: 'Store Operations' },
     { key: 'feedback_list', href: '/feedback-list', label: 'Feedback Call Queue', icon: FileText, section: 'Store Operations' },
@@ -108,31 +127,28 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
     { key: 'divert', href: '/divert', label: 'Sourcing Diverts', icon: Target, section: 'Store Operations' },
     { key: 'pm_view', href: '/pm-view', label: 'Purchase Manager View', icon: Briefcase, section: 'Store Operations' },
     { key: 'vm_checklist', href: '/vm-checklist', label: 'VM Checklist', icon: ClipboardList, section: 'Store Operations' },
-    { key: 'attendance', href: '/attendance', label: 'Attendance & Roster', icon: UserCheck, section: 'Store Operations' },
-    { key: 'dashboard', href: '/dashboard', label: 'Main CRM Dashboard', icon: BarChart3, section: 'Enterprise Suite' },
-    { key: 'joining_desk', href: '/joining-desk', label: 'Joining Call Desk', icon: PhoneCall, section: 'Enterprise Suite' },
-    { key: 'doj_desk', href: '/doj-desk', label: 'DOJ & Not Joined Desk', icon: Users, section: 'Enterprise Suite' },
-    { key: 'employees', href: '/employees', label: 'Employee & Store Dir', icon: UserCheck, section: 'Enterprise Suite' },
-    { key: 'greyhr', href: '/greyhr', label: 'greyHR / Master HR', icon: Briefcase, section: 'Enterprise Suite' },
-    { key: 'batch_plan', href: '/batch-plan', label: 'Batch Plan & Weaving', icon: Settings, section: 'Enterprise Suite' },
-    { key: 'daily_mcheck', href: '/daily-mcheck', label: 'MCheck Store Audit', icon: CheckSquare, section: 'Enterprise Suite' },
-    { key: 'main_crm', href: '/main-crm', label: 'Wedding Customer CRM', icon: Sparkles, section: 'Enterprise Suite' },
-    { key: 'regional_analytics', href: '/regional-analytics', label: 'Regional Analytics', icon: BarChart3, section: 'Enterprise Suite' },
-    { key: 'settings', href: '/settings', label: 'Settings & Roles', icon: Settings, section: 'Enterprise Suite' },
-    { key: 'candidates', href: '/candidates', label: 'Candidate CRM', icon: Users, section: 'Core Workspace' },
-    { key: 'offer', href: '/offer-process', label: 'Wedding Operations', icon: FileText, section: 'Core Workspace' },
-    { key: 'openings', href: '/openings', label: 'Manpower Planning', icon: Briefcase, section: 'Core Workspace' },
+
+    // Talent
+    { key: 'candidates', href: '/candidates', label: 'Candidate CRM', icon: Users, section: 'Talent' },
+    { key: 'openings', href: '/openings', label: 'Manpower Planning', icon: Briefcase, section: 'Talent' },
+    { key: 'dept_hiring', href: '/department-hiring', label: 'Department Hiring Status', icon: Briefcase, section: 'Talent' },
+    { key: 'section_allocation', href: '/section-allocation', label: 'Section Allocation', icon: UserCheck, section: 'Talent' },
+
+    // Daily Operations
+    { key: 'daily_mcheck', href: '/daily-mcheck', label: 'MCheck Store Audit', icon: CheckSquare, section: 'Daily Operations' },
     { key: 'mcheck_reports', href: '/mcheck-reports', label: 'MCheck Reports', icon: BarChart3, section: 'Daily Operations' },
     { key: 'mcheck_history', href: '/mcheck-history', label: 'MCheck History', icon: ClipboardList, section: 'Daily Operations' },
-    { key: 'dept_hiring', href: '/department-hiring', label: 'Department Hiring Status', icon: Briefcase, section: 'Talent Management' },
-    { key: 'section_allocation', href: '/section-allocation', label: 'Section Allocation', icon: UserCheck, section: 'Talent Management' },
-    { key: 'wedding_registration', href: '/wedding-registration', label: 'Applicant Registration', icon: Sparkles, section: 'Public Portals' },
+
+    // Administration
+    { key: 'broadcast', href: '/broadcast-center', label: 'Broadcast Center', icon: Megaphone, section: 'Administration' },
+    { key: 'settings', href: '/settings', label: 'System Settings', icon: Settings, section: 'Administration' },
+    { key: 'system_admin', href: '/system-admin', label: 'System Administrator', icon: ShieldAlert, section: 'Administration' },
+
+    // Public Portals
+    { key: 'candidate_apply', href: '/apply', label: 'Job Applicant Registration', icon: UserCheck, section: 'Public Portals' },
     { key: 'feedback_public', href: '/feedback-public', label: 'Customer Feedback QR', icon: ClipboardList, section: 'Public Portals' },
     { key: 'tv', href: '/tv', label: 'Live TV Kiosk', icon: BarChart3, section: 'Public Portals' },
-    { key: 'greeter', href: '/greeter', label: 'Greeter Kiosk', icon: UserCheck, section: 'Public Portals' },
-    { key: 'broadcast', href: '/broadcast-center', label: 'Broadcast Center', icon: Megaphone, section: 'Administration' },
-    { key: 'user_management', href: '/user-management', label: 'User Management', icon: Shield, section: 'Administration' },
-    { key: 'system_admin', href: '/system-admin', label: 'System Administrator', icon: ShieldAlert, section: 'Administration' }
+    { key: 'greeter', href: '/greeter', label: 'Greeter Kiosk', icon: UserCheck, section: 'Public Portals' }
   ];
 
   useEffect(() => {
@@ -260,7 +276,10 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
 
         {/* Navigation Items */}
         <div ref={navScrollRef} className="flex-1 overflow-y-auto px-2 py-1.5 space-y-3">
-          {['Telecaller', 'Enterprise Suite', 'Store Operations', 'Core Workspace', 'Daily Operations', 'Talent Management', 'Public Portals', 'Administration'].map(section => {
+          {(isTelecallerRole 
+            ? ['Telecaller Workspace', 'Public Portals'] 
+            : ['Enterprise', 'Store Operations', 'Talent', 'Daily Operations', 'Administration', 'Public Portals']
+          ).map(section => {
             // Strict RBAC rendering: only keys resolved for THIS role
             const items = navItems.filter(item => item.section === section && allowed.includes(item.key));
             if (items.length === 0) return null;

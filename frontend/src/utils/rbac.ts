@@ -17,25 +17,82 @@ export interface SessionLike {
 // Role → allowed page keys. Mirrors the page_visibility defaults seeded in the
 // backend; the DB (page_visibility / user_permissions) can narrow these but a
 // key absent for a role here is hidden for that role.
+const ALL_ADMIN_KEYS = [
+  'wedding_crm', 'wedding_operations', 'wedding_registration', 'candidate_apply', 'footfall', 
+  'feedback_collection', 'feedback_list', 'feedback_qr', 'divert', 'pm_view', 'vm_checklist', 
+  'attendance', 'dashboard', 'candidates', 'offer', 'openings', 'daily_mcheck', 'mcheck_reports', 
+  'mcheck_history', 'employees', 'dept_hiring', 'section_allocation', 'feedback_public', 'tv', 
+  'greeter', 'broadcast', 'user_management', 'settings', 'system_admin', 'telecaller_dashboard', 
+  'telecaller_desk', 'joining_desk', 'doj_desk', 'greyhr', 'batch_plan', 'mcheck_audit', 'main_crm', 
+  'regional_analytics'
+];
+
 export const ROLE_NAV_MAP: Record<string, string[]> = {
-  'Super Admin': ['wedding_crm', 'wedding_registration', 'footfall', 'feedback_collection', 'feedback_list', 'feedback_qr', 'divert', 'pm_view', 'vm_checklist', 'attendance', 'dashboard', 'candidates', 'offer', 'openings', 'daily_mcheck', 'mcheck_reports', 'mcheck_history', 'employees', 'dept_hiring', 'section_allocation', 'feedback_public', 'tv', 'greeter', 'broadcast', 'user_management', 'settings', 'system_admin', 'telecaller_dashboard', 'joining_desk', 'doj_desk', 'greyhr', 'batch_plan', 'mcheck_audit', 'main_crm', 'regional_analytics'],
-  'Admin':       ['wedding_crm', 'wedding_registration', 'footfall', 'feedback_collection', 'feedback_list', 'feedback_qr', 'divert', 'pm_view', 'vm_checklist', 'attendance', 'dashboard', 'candidates', 'offer', 'openings', 'daily_mcheck', 'mcheck_reports', 'mcheck_history', 'employees', 'dept_hiring', 'section_allocation', 'feedback_public', 'tv', 'greeter', 'broadcast', 'user_management', 'settings', 'system_admin', 'telecaller_dashboard', 'joining_desk', 'doj_desk', 'greyhr', 'batch_plan', 'mcheck_audit', 'main_crm', 'regional_analytics'],
-  'Wedding Collection Manager': ['wedding_crm', 'dashboard', 'wedding_registration', 'footfall', 'divert', 'broadcast'],
-  'Team Lead':   ['wedding_crm', 'dashboard', 'wedding_registration', 'employees', 'section_allocation', 'broadcast'],
-  'Telecaller':  ['wedding_crm', 'dashboard', 'wedding_registration', 'telecaller_dashboard'],
-  'HR':          ['wedding_crm', 'wedding_registration', 'footfall', 'feedback_collection', 'feedback_list', 'feedback_qr', 'divert', 'pm_view', 'vm_checklist', 'attendance', 'dashboard', 'candidates', 'offer', 'openings', 'daily_mcheck', 'mcheck_reports', 'mcheck_history', 'employees', 'dept_hiring', 'section_allocation', 'broadcast', 'user_management'],
-  'Recruiter':   ['wedding_crm', 'wedding_registration', 'dashboard', 'candidates', 'broadcast'],
+  'Super Admin': ALL_ADMIN_KEYS,
+  'Admin': ALL_ADMIN_KEYS,
+  'Manager': [
+    'wedding_crm', 'wedding_operations', 'wedding_registration', 'candidate_apply', 'footfall', 
+    'feedback_collection', 'feedback_list', 'feedback_qr', 'divert', 'pm_view', 'vm_checklist', 
+    'attendance', 'dashboard', 'candidates', 'offer', 'openings', 'daily_mcheck', 'mcheck_reports', 
+    'mcheck_history', 'employees', 'dept_hiring', 'section_allocation', 'broadcast', 'user_management'
+  ],
+  'HR': [
+    'wedding_crm', 'wedding_registration', 'candidate_apply', 'footfall', 'feedback_collection', 
+    'feedback_list', 'feedback_qr', 'divert', 'pm_view', 'vm_checklist', 'attendance', 'dashboard', 
+    'candidates', 'offer', 'openings', 'daily_mcheck', 'mcheck_reports', 'mcheck_history', 'employees', 
+    'dept_hiring', 'section_allocation', 'broadcast', 'user_management'
+  ],
+  'VM': [
+    'vm_checklist', 'dashboard', 'footfall', 'broadcast'
+  ],
+  'Greeter': [
+    'footfall', 'greeter', 'wedding_registration', 'feedback_collection', 'feedback_list', 'feedback_qr', 'feedback_public', 'tv'
+  ],
+  'CRM Executive': [
+    'wedding_crm', 'wedding_registration', 'wedding_operations', 'telecaller_desk', 'telecaller_dashboard', 'dashboard', 'footfall'
+  ],
+  'CRM Manager': [
+    'wedding_crm', 'wedding_operations', 'wedding_registration', 'telecaller_desk', 'telecaller_dashboard', 'dashboard', 'footfall', 'broadcast'
+  ],
+  'Data Analyst': [
+    'wedding_crm', 'wedding_operations', 'dashboard', 'mcheck_reports', 'regional_analytics', 'main_crm'
+  ],
+  'Telecaller': [
+    'wedding_crm', 'telecaller_dashboard', 'telecaller_desk', 'wedding_registration'
+  ],
+  'Wedding Collection Manager': [
+    'wedding_crm', 'wedding_operations', 'dashboard', 'wedding_registration', 'footfall', 'divert', 'broadcast'
+  ],
+  'Team Lead': [
+    'wedding_crm', 'dashboard', 'wedding_registration', 'employees', 'section_allocation', 'broadcast'
+  ],
+  'Recruiter': ['candidates', 'dashboard', 'broadcast', 'candidate_apply'],
   'Interviewer': ['candidates'],
-  'Manager':     ['wedding_crm', 'wedding_registration', 'footfall', 'feedback_collection', 'feedback_list', 'feedback_qr', 'divert', 'pm_view', 'vm_checklist', 'attendance', 'dashboard', 'candidates', 'offer', 'openings', 'daily_mcheck', 'mcheck_reports', 'mcheck_history', 'employees', 'dept_hiring', 'section_allocation', 'broadcast', 'user_management'],
-  'Employee':    ['wedding_crm', 'wedding_registration', 'dashboard'],
-  'Guest':       ['wedding_registration'],
-  'Greeter':     ['wedding_crm', 'wedding_registration', 'footfall', 'feedback_collection', 'feedback_list', 'feedback_qr', 'divert', 'vm_checklist', 'feedback_public', 'tv', 'greeter']
+  'Employee': ['wedding_crm', 'wedding_registration', 'dashboard'],
+  'Guest': ['wedding_registration', 'candidate_apply']
 };
 
 export function getRoleNavMap(role?: string): string[] {
-  const r = (role || '').trim();
-  return ROLE_NAV_MAP[r] || ROLE_NAV_MAP['Employee'] || [];
+  const raw = (role || '').trim();
+  if (ROLE_NAV_MAP[raw]) return ROLE_NAV_MAP[raw];
+
+  // Normalized matching for role aliases (e.g. SUPER_ADMIN, super admin, etc.)
+  const norm = raw.toLowerCase().replace(/[_\s-]+/g, ' ');
+  if (norm === 'super admin' || norm === 'system administrator') return ROLE_NAV_MAP['Super Admin'];
+  if (norm === 'admin') return ROLE_NAV_MAP['Admin'];
+  if (norm === 'manager' || norm === 'store manager') return ROLE_NAV_MAP['Manager'];
+  if (norm === 'hr') return ROLE_NAV_MAP['HR'];
+  if (norm === 'vm' || norm === 'visual merchandiser') return ROLE_NAV_MAP['VM'];
+  if (norm === 'greeter') return ROLE_NAV_MAP['Greeter'];
+  if (norm === 'crm executive' || norm === 'crm exec') return ROLE_NAV_MAP['CRM Executive'];
+  if (norm === 'crm manager') return ROLE_NAV_MAP['CRM Manager'];
+  if (norm === 'data analyst' || norm === 'analyst') return ROLE_NAV_MAP['Data Analyst'];
+  if (norm === 'telecaller' || norm === 'caller') return ROLE_NAV_MAP['Telecaller'];
+  if (norm === 'wedding collection manager' || norm === 'wedding manager') return ROLE_NAV_MAP['Wedding Collection Manager'];
+
+  return ROLE_NAV_MAP['Employee'] || [];
 }
+
 
 /**
  * Resolve the effective page keys for a role, narrowed by the database-backed

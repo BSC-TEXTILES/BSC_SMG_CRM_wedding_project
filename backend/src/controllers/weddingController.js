@@ -745,7 +745,7 @@ class WeddingController {
     try {
       const customerName = (req.body.customer_name || req.body.customerName || '').trim();
       let mobileNumber = (req.body.mobile_number || req.body.phone || req.body.mobile || '').trim();
-      
+
       // Normalize phone to +91 format
       if (mobileNumber) {
         const digits = mobileNumber.replace(/\D/g, '');
@@ -754,15 +754,23 @@ class WeddingController {
         else if (digits.length === 11 && digits.startsWith('0')) mobileNumber = `+91${digits.slice(1)}`;
       }
       const email = (req.body.email || '').trim() || null;
+      const alternateMobile = (req.body.alternate_mobile || req.body.alternateMobile || '').trim() || null;
       const weddingDate = req.body.wedding_date || req.body.weddingDate || null;
       const expectedShoppingDate = req.body.expected_shopping_date || req.body.expectedShoppingDate;
       const preferredCategory = req.body.preferred_shopping_category || req.body.preferredShoppingCategory || (Array.isArray(req.body.shopping_categories) ? req.body.shopping_categories.join(', ') : req.body.shopping_categories) || 'General Wedding Shopping';
       const estimatedFamilySize = parseInt(req.body.estimated_family_size || req.body.estimatedFamilySize || 1, 10);
       let assignedTelecaller = (req.body.assigned_telecaller || req.body.assignedTelecaller || '').trim() || null;
       let assignedTelecallerId = req.body.assigned_telecaller_id ? parseInt(req.body.assigned_telecaller_id, 10) : null;
-      const followUpDate = req.body.follow_up_date || req.body.followUpDate;
+      // follow_up_date: if not provided, default to 3 days from today
+      const defaultFollowUp = new Date();
+      defaultFollowUp.setDate(defaultFollowUp.getDate() + 3);
+      const defaultFollowUpStr = defaultFollowUp.toISOString().slice(0, 10);
+      const followUpDate = req.body.follow_up_date || req.body.followUpDate || defaultFollowUpStr;
       const preferredCallTime = req.body.preferred_call_time || req.body.preferredCallTime || 'Morning (10 AM - 1 PM)';
       const customerNotes = req.body.customer_notes || req.body.customerNotes || req.body.initial_notes || null;
+      const budget = (req.body.budget || req.body.budget_range || '').trim() || null;
+      const leadSource = (req.body.lead_source || req.body.leadSource || 'In-store Walkin').trim();
+      const priority = (req.body.priority || 'Medium').trim();
       const requestedLocationId = req.body.location_id || req.body.locationId;
 
       if (!customerName) {
@@ -773,9 +781,6 @@ class WeddingController {
       }
       if (!expectedShoppingDate) {
         return errorRes(res, 'Expected shopping date is required', [], 400);
-      }
-      if (!followUpDate) {
-        return errorRes(res, 'Follow-up date is required', [], 400);
       }
 
       // Enforce location security: branch user strictly locked to their location
@@ -843,6 +848,7 @@ class WeddingController {
           location_id,
           customer_name,
           mobile_number,
+          alternate_mobile,
           email,
           wedding_date,
           expected_shopping_date,
@@ -853,16 +859,20 @@ class WeddingController {
           follow_up_date,
           preferred_call_time,
           customer_notes,
+          budget,
+          lead_source,
+          priority,
           customer_status,
           call_status,
           created_by,
           created_by_user_id
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'New', 'Pending', ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'New', 'Pending', ?, ?)
       `, [
         customerCode,
         locationId,
         customerName,
         mobileNumber,
+        alternateMobile,
         email,
         weddingDate,
         expectedShoppingDate,
@@ -873,6 +883,9 @@ class WeddingController {
         followUpDate,
         preferredCallTime,
         encryptField(customerNotes),
+        budget,
+        leadSource,
+        priority,
         req.user?.fullName || 'Staff',
         req.user?.id || null
       ]);
