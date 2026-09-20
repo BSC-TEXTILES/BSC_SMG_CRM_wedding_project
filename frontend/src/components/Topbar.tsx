@@ -6,6 +6,7 @@ import NotificationDrawer from './ui/NotificationDrawer';
 import ActivityPanel from './ui/ActivityPanel';
 import GlobalSearchModal from './ui/GlobalSearchModal';
 import ProfileDropdown from './ui/ProfileDropdown';
+import LocationSwitcher from './ui/LocationSwitcher';
 import Breadcrumbs from './ui/Breadcrumbs';
 import { useBreadcrumbs, BreadcrumbCrumb } from '../utils/breadcrumbs';
 
@@ -144,6 +145,9 @@ export default function Topbar({ title, breadcrumbs, session, onMenuClick, right
               )}
             </button>
           )}
+
+          {/* Branch Location Switcher */}
+          <LocationSwitcher />
 
           {/* Notification Drawer Trigger */}
           <button

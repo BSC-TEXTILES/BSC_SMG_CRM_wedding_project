@@ -19,6 +19,7 @@ export interface UserSession {
   locationId?: number | null;     // null = Global Admin (all locations)
   locationCode?: string | null;   // 'BEL' | 'DAV' | 'SHI'
   locationName?: string | null;   // 'Belagavi' | 'Davanagere' | 'Shivamogga'
+  allowedLocations?: number[];    // array of location IDs user can access
   isGlobalAdmin?: boolean;        // true if locationId is null
 }
 
@@ -153,8 +154,11 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
     }
   }
 
-  // Belt-and-suspenders: also send location in header (JWT is primary enforcement)
-  if (session && session.locationId) {
+  // Dynamic multi-location header injection
+  const activeLoc = typeof localStorage !== 'undefined' ? localStorage.getItem('bsc_selected_location') : null;
+  if (activeLoc && activeLoc !== 'ALL') {
+    headers['X-Location-Id'] = activeLoc;
+  } else if (session && session.locationId) {
     headers['X-Location-Id'] = String(session.locationId);
   }
 

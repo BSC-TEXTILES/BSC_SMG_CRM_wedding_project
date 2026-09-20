@@ -630,6 +630,172 @@ const createdDate = new Date(r.created_at || Date.now());
       return errorRes(res, 'Failed to bulk import employees', [err.message], 500);
     }
   }
+
+  // ── DOJ & Not Joined Desk ────────────────────────────────────
+  async getNotJoinedDesk(req, res) {
+    try {
+      const db = require('../config/db');
+      const { clause: locClause, params: locParams } = await getLocationFilter(req, 'c');
+      const { search, status, overdueOnly } = req.query;
+
+      let sql = `
+        SELECT 
+          c.app_no,
+          c.name,
+          c.phone,
+          c.designation,
+          c.department,
+          c.section,
+          c.status as candidate_status,
+          COALESCE(so.est_doj, c.offered_doj) as scheduled_doj,
+          so.status as offer_status,
+          so.notice_period,
+          so.remarks as offer_remarks,
+          c.location_id,
+          l.location_name,
+          l.location_code,
+          DATEDIFF(CURDATE(), COALESCE(so.est_doj, c.offered_doj)) as delay_days,
+          CASE 
+            WHEN COALESCE(so.est_doj, c.offered_doj) < CURDATE() THEN 'Overdue'
+            WHEN COALESCE(so.est_doj, c.offered_doj) = CURDATE() THEN 'Joining Today'
+            ELSE 'Upcoming'
+          END as doj_urgency
+        FROM candidates c
+        LEFT JOIN locations l ON l.id = c.location_id
+        LEFT JOIN selection_offers so ON c.app_no = so.app_no
+        WHERE (c.is_deleted = 0 OR c.is_deleted IS NULL)
+          AND (c.offered_doj IS NOT NULL OR so.est_doj IS NOT NULL)
+          AND COALESCE(so.status, c.status) NOT IN ('Joined', 'Offer Rejected', 'Rejected', 'Not Joined')
+          AND c.app_no NOT IN (SELECT candidate_app_no FROM users WHERE candidate_app_no IS NOT NULL AND active = 1)
+          ${locClause}
+      `;
+      const params = [...locParams];
+
+      if (status && status !== 'all') {
+        sql += ` AND (so.status = ? OR c.status = ?)`;
+        params.push(status, status);
+      }
+
+      if (overdueOnly === 'true' || overdueOnly === true) {
+        sql += ` AND COALESCE(so.est_doj, c.offered_doj) < CURDATE()`;
+      }
+
+      if (search) {
+        sql += ` AND (c.name LIKE ? OR c.app_no LIKE ? OR c.phone LIKE ? OR c.designation LIKE ?)`;
+        const s = `%${search}%`;
+        params.push(s, s, s, s);
+      }
+
+      sql += ` ORDER BY COALESCE(so.est_doj, c.offered_doj) ASC`;
+
+      const [rows] = await db.query(sql, params);
+
+      const total = rows.length;
+      const overdue = rows.filter(r => r.doj_urgency === 'Overdue').length;
+      const today = rows.filter(r => r.doj_urgency === 'Joining Today').length;
+      const upcoming = rows.filter(r => r.doj_urgency === 'Upcoming').length;
+
+      return res.json({
+        success: true,
+        stats: { total, overdue, today, upcoming },
+        candidates: rows
+      });
+    } catch (err) {
+      console.error('[getNotJoinedDesk ERROR]', err);
+      return res.status(500).json({ success: false, error: err.message });
+    }
+  }
+
+  async handleNotJoinedAction(req, res) {
+    try {
+      const db = require('../config/db');
+      const { appNo, action, new_doj, reason } = req.body;
+      if (!appNo || !action) {
+        return res.status(400).json({ success: false, message: 'appNo and action are required' });
+      }
+
+      const now = new Date();
+      const username = req.user ? req.user.username : 'HR';
+
+      if (action === 'reschedule') {
+        if (!new_doj) {
+          return res.status(400).json({ success: false, message: 'new_doj is required for reschedule' });
+        }
+        await db.query(`UPDATE candidates SET offered_doj = ?, updated_at = ? WHERE app_no = ?`, [new_doj, now, appNo]);
+        await db.query(`UPDATE selection_offers SET est_doj = ?, remarks = CONCAT(COALESCE(remarks, ''), '\nRescheduled DOJ: ', ?, ' Reason: ', ?), updated_at = ? WHERE app_no = ?`, [new_doj, new_doj, reason || 'No reason specified', now, appNo]);
+        await logAction(username, 'RESCHEDULE_DOJ', 'NOT_JOINED_DESK', { appNo, new_doj, reason });
+        return res.json({ success: true, message: 'DOJ rescheduled successfully' });
+      } else if (action === 'mark_not_joining') {
+        await db.query(`UPDATE candidates SET status = 'Not Joined', remarks = CONCAT(COALESCE(remarks, ''), '\nNot Joining: ', ?), updated_at = ? WHERE app_no = ?`, [reason || 'Not Joined', now, appNo]);
+        await db.query(`UPDATE selection_offers SET status = 'Offer Rejected', remarks = CONCAT(COALESCE(remarks, ''), '\nNot Joined: ', ?), updated_at = ? WHERE app_no = ?`, [reason || 'Not Joined', now, appNo]);
+        await logAction(username, 'MARK_NOT_JOINING', 'NOT_JOINED_DESK', { appNo, reason });
+        return res.json({ success: true, message: 'Candidate marked as Not Joining' });
+      } else if (action === 'mark_joined') {
+        const actualDoj = new_doj || now.toISOString().split('T')[0];
+        await db.query(`UPDATE candidates SET status = 'Joined', offered_doj = ?, updated_at = ? WHERE app_no = ?`, [actualDoj, now, appNo]);
+        await db.query(`UPDATE selection_offers SET status = 'Joined', actual_doj = ?, updated_at = ? WHERE app_no = ?`, [actualDoj, now, appNo]);
+        await logAction(username, 'MARK_JOINED', 'NOT_JOINED_DESK', { appNo, actualDoj });
+        return res.json({ success: true, message: 'Candidate marked as Joined' });
+      }
+
+      return res.status(400).json({ success: false, message: `Unknown action: ${action}` });
+    } catch (err) {
+      console.error('[handleNotJoinedAction ERROR]', err);
+      return res.status(500).json({ success: false, error: err.message });
+    }
+  }
+
+  async getJoinedStoreDirectory(req, res) {
+    try {
+      const db = require('../config/db');
+      const { clause: locClause, params: locParams } = await getLocationFilter(req, 'c');
+      const { search, department } = req.query;
+
+      let sql = `
+        SELECT 
+          c.app_no,
+          COALESCE(u.employee_id, c.app_no) as emp_code,
+          c.name,
+          c.phone,
+          c.email,
+          COALESCE(c.designation, u.designation) as designation,
+          COALESCE(c.department, u.department) as department,
+          COALESCE(c.section, u.section) as section,
+          COALESCE(so.actual_doj, c.offered_doj, u.created_at) as joined_date,
+          c.location_id,
+          l.location_name,
+          l.location_code,
+          'Active Staff' as staff_status
+        FROM candidates c
+        LEFT JOIN locations l ON l.id = c.location_id
+        LEFT JOIN selection_offers so ON c.app_no = so.app_no
+        LEFT JOIN users u ON u.candidate_app_no = c.app_no OR (c.phone = u.phone AND c.phone IS NOT NULL)
+        WHERE (c.is_deleted = 0 OR c.is_deleted IS NULL)
+          AND (c.status = 'Joined' OR so.status = 'Joined' OR (u.active = 1 AND u.id IS NOT NULL))
+          ${locClause}
+      `;
+      const params = [...locParams];
+
+      if (department && department !== 'all') {
+        sql += ` AND (c.department = ? OR u.department = ?)`;
+        params.push(department, department);
+      }
+
+      if (search) {
+        sql += ` AND (c.name LIKE ? OR c.app_no LIKE ? OR c.phone LIKE ? OR u.employee_id LIKE ?)`;
+        const s = `%${search}%`;
+        params.push(s, s, s, s);
+      }
+
+      sql += ` ORDER BY COALESCE(so.actual_doj, c.offered_doj, u.created_at) DESC`;
+
+      const [rows] = await db.query(sql, params);
+      return res.json({ success: true, count: rows.length, employees: rows });
+    } catch (err) {
+      console.error('[getJoinedStoreDirectory ERROR]', err);
+      return res.status(500).json({ success: false, error: err.message });
+    }
+  }
 }
 
 module.exports = new CandidateController();

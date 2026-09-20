@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { authenticate, authorize } = require('../middleware/auth');
+const { authenticate, authorize, authorizeLocationAccess } = require('../middleware/auth');
 const { autoInitializeDatabase } = require('../config/dbInitializer');
 const db = require('../config/db');
 const upload = require('../middleware/upload');
@@ -82,63 +82,66 @@ router.get('/public/migrate-db', authenticate, authorize('Admin', 'Super Admin')
 });
 
 // ── Candidate Routes ─────────────────────────────────────────
-router.get('/candidates', candidateController.getCandidates);
+router.get('/candidates', authenticate, authorizeLocationAccess(), candidateController.getCandidates);
 router.post('/candidates', candidateController.addCandidate);
 router.post('/candidates/add', candidateController.addCandidate);
-router.put('/candidates/:appNo', candidateController.updateCandidate);
-router.post('/candidates/update', candidateController.updateCandidate);
+router.put('/candidates/:appNo', authenticate, authorizeLocationAccess(), candidateController.updateCandidate);
+router.post('/candidates/update', authenticate, authorizeLocationAccess(), candidateController.updateCandidate);
 router.delete('/candidates/:appNo', authenticate, authorize('Admin', 'Super Admin'), candidateController.deleteCandidate);
 router.get('/candidates/check-duplicate', candidateController.checkDuplicate);
 router.get('/candidates/next-app-no', candidateController.getNextAppNo);
-router.get('/candidates/kpis', candidateController.getKPIs);
-router.get('/candidates/pending-actions', candidateController.getPendingActions);
-router.get('/candidates/source-breakdown', candidateController.getSourceBreakdown);
-router.get('/candidates/activity-full', candidateController.getActivityFull);
+router.get('/candidates/kpis', authenticate, authorizeLocationAccess(), candidateController.getKPIs);
+router.get('/candidates/pending-actions', authenticate, authorizeLocationAccess(), candidateController.getPendingActions);
+router.get('/candidates/source-breakdown', authenticate, authorizeLocationAccess(), candidateController.getSourceBreakdown);
+router.get('/candidates/activity-full', authenticate, authorizeLocationAccess(), candidateController.getActivityFull);
 router.post('/candidates/upload-resume', upload.single('resume'), candidateController.uploadResume);
 router.post('/candidates/upload-documents', upload.fields([{ name: 'resume' }, { name: 'photo' }, { name: 'aadhar' }]), candidateController.uploadDocuments);
-router.get('/candidates/activity', candidateController.getSystemActivity);
+router.get('/candidates/activity', authenticate, authorizeLocationAccess(), candidateController.getSystemActivity);
 router.get('/openings', candidateController.getOpenings);
 router.post('/openings/update', authenticate, authorize('Admin', 'Super Admin'), candidateController.updateOpening);
-router.get('/employees', authenticate, candidateController.getEmployees);
+router.get('/employees', authenticate, authorizeLocationAccess(), candidateController.getEmployees);
+router.get('/employees/not-joined', authenticate, authorizeLocationAccess(), candidateController.getNotJoinedDesk);
+router.post('/employees/not-joined/action', authenticate, authorizeLocationAccess(), candidateController.handleNotJoinedAction);
+router.get('/employees/joined-store', authenticate, authorizeLocationAccess(), candidateController.getJoinedStoreDirectory);
 router.post('/employees/bulk', authenticate, authorize('Admin', 'Super Admin', 'HR'), candidateController.bulkAddEmployees);
 router.put('/employees/:id', authenticate, authorize('Admin', 'Super Admin', 'HR', 'Manager'), candidateController.updateEmployee);
 router.delete('/employees/:id', authenticate, authorize('Admin', 'Super Admin', 'HR'), candidateController.deleteEmployee);
 
 // ── Interview Routes ─────────────────────────────────────────
-router.get('/interviews', interviewController.getInterviews);
-router.get('/interviews/questions', interviewController.getInterviewQuestions);
-router.post('/interviews/save-call-step', interviewController.saveCallStep);
-router.get('/interviews/call-status', interviewController.getCallStatus);
-router.post('/interviews/save-score', interviewController.saveScore);
-router.post('/interviews/generate-token', interviewController.generateInterviewToken);
-router.post('/interviews/approve-selection', interviewController.approveSelection);
-router.post('/interviews/reject-candidate', interviewController.rejectCandidate);
-router.get('/interviews/selected', interviewController.getSelectedCandidates);
-router.get('/interviews/rejected', interviewController.getRejectedCandidates);
+router.get('/interviews', authenticate, authorizeLocationAccess(), interviewController.getInterviews);
+router.get('/interviews/questions', authenticate, interviewController.getInterviewQuestions);
+router.post('/interviews/save-call-step', authenticate, authorizeLocationAccess(), interviewController.saveCallStep);
+router.get('/interviews/call-status', authenticate, authorizeLocationAccess(), interviewController.getCallStatus);
+router.post('/interviews/save-score', authenticate, authorizeLocationAccess(), interviewController.saveScore);
+router.post('/interviews/generate-token', authenticate, interviewController.generateInterviewToken);
+router.post('/interviews/approve-selection', authenticate, authorizeLocationAccess(), interviewController.approveSelection);
+router.post('/interviews/reject-candidate', authenticate, authorizeLocationAccess(), interviewController.rejectCandidate);
+router.get('/interviews/selected', authenticate, authorizeLocationAccess(), interviewController.getSelectedCandidates);
+router.get('/interviews/rejected', authenticate, authorizeLocationAccess(), interviewController.getRejectedCandidates);
 
 // ── Offer Routes ─────────────────────────────────────────────
-router.get('/offers', offerController.getOffers);
-router.post('/offers/direct', offerController.createDirectOffer);
-router.post('/offers/log-call', offerController.logOfferCall);
-router.post('/offers/update-details', offerController.updateOfferDetails);
-router.post('/offers/accept', offerController.acceptOffer);
-router.post('/offers/reject', offerController.rejectOffer);
-router.post('/offers/mark-joined', offerController.markJoined);
-router.post('/offers/update-status', offerController.updateOfferStatus);
+router.get('/offers', authenticate, authorizeLocationAccess(), offerController.getOffers);
+router.post('/offers/direct', authenticate, authorizeLocationAccess(), offerController.createDirectOffer);
+router.post('/offers/log-call', authenticate, authorizeLocationAccess(), offerController.logOfferCall);
+router.post('/offers/update-details', authenticate, authorizeLocationAccess(), offerController.updateOfferDetails);
+router.post('/offers/accept', authenticate, authorizeLocationAccess(), offerController.acceptOffer);
+router.post('/offers/reject', authenticate, authorizeLocationAccess(), offerController.rejectOffer);
+router.post('/offers/mark-joined', authenticate, authorizeLocationAccess(), offerController.markJoined);
+router.post('/offers/update-status', authenticate, authorizeLocationAccess(), offerController.updateOfferStatus);
 
 // ── Onboarding Routes ────────────────────────────────────────
-router.get('/onboarding/list', onboardingController.getOnboardingList);
-router.post('/onboarding/create', onboardingController.createOnboarding);
-router.get('/onboarding/items', onboardingController.getOnboardingItems);
-router.post('/onboarding/update-item', onboardingController.updateOnboardingItem);
-router.post('/onboarding/complete', onboardingController.completeOnboarding);
+router.get('/onboarding/list', authenticate, authorizeLocationAccess(), onboardingController.getOnboardingList);
+router.post('/onboarding/create', authenticate, authorizeLocationAccess(), onboardingController.createOnboarding);
+router.get('/onboarding/items', authenticate, authorizeLocationAccess(), onboardingController.getOnboardingItems);
+router.post('/onboarding/update-item', authenticate, authorizeLocationAccess(), onboardingController.updateOnboardingItem);
+router.post('/onboarding/complete', authenticate, authorizeLocationAccess(), onboardingController.completeOnboarding);
 
 // ── Exit Routes ──────────────────────────────────────────────
-router.get('/exit/list', exitController.getExitList);
-router.post('/exit/create', exitController.createExit);
-router.get('/exit/items', exitController.getExitItems);
-router.post('/exit/update-item', exitController.updateExitItem);
-router.post('/exit/complete', exitController.completeExit);
+router.get('/exit/list', authenticate, authorizeLocationAccess(), exitController.getExitList);
+router.post('/exit/create', authenticate, authorizeLocationAccess(), exitController.createExit);
+router.get('/exit/items', authenticate, authorizeLocationAccess(), exitController.getExitItems);
+router.post('/exit/update-item', authenticate, authorizeLocationAccess(), exitController.updateExitItem);
+router.post('/exit/complete', authenticate, authorizeLocationAccess(), exitController.completeExit);
 
 // ── Settings Routes ──────────────────────────────────────────
 router.get('/settings/users', authenticate, settingsController.getUsers);
@@ -158,71 +161,71 @@ router.post('/settings/questions/add', authenticate, authorize('Admin', 'Super A
 router.post('/settings/questions/delete', authenticate, authorize('Admin', 'Super Admin'), settingsController.deleteInterviewQuestion);
 
 // ── CRM Store Operations Routes ──────────────────────────────
-router.get('/crm/settings', crmController.getSettings);
-router.post('/crm/settings/update', crmController.updateSettings);
+router.get('/crm/settings', authenticate, crmController.getSettings);
+router.post('/crm/settings/update', authenticate, authorize('Admin', 'Super Admin'), crmController.updateSettings);
 router.post('/crm/verify-pin', crmController.verifyPin);
-router.get('/crm/sections', crmController.getSections);
+router.get('/crm/sections', authenticate, crmController.getSections);
 
-router.get('/crm/footfall', crmController.getFootfall);
-router.post('/crm/footfall/upsert', crmController.upsertFootfall);
+router.get('/crm/footfall', authenticate, authorizeLocationAccess(), crmController.getFootfall);
+router.post('/crm/footfall/upsert', authenticate, authorizeLocationAccess(), crmController.upsertFootfall);
 
-router.get('/crm/feedback-questions', crmController.getFeedbackQuestions);
-router.get('/crm/feedback-stats', crmController.getFeedbackStats);
-router.get('/crm/feedbacks', crmController.getFeedbacks);
-router.post('/crm/feedback', crmController.submitFeedback);
-router.get('/crm/call-queue', crmController.getCallQueue);
-router.post('/crm/call-queue/update', crmController.updateCallQueue);
+router.get('/crm/feedback-questions', authenticate, crmController.getFeedbackQuestions);
+router.get('/crm/feedback-stats', authenticate, authorizeLocationAccess(), crmController.getFeedbackStats);
+router.get('/crm/feedbacks', authenticate, authorizeLocationAccess(), crmController.getFeedbacks);
+router.post('/crm/feedback', authenticate, authorizeLocationAccess(), crmController.submitFeedback);
+router.get('/crm/call-queue', authenticate, authorizeLocationAccess(), crmController.getCallQueue);
+router.post('/crm/call-queue/update', authenticate, authorizeLocationAccess(), crmController.updateCallQueue);
 
-router.get('/crm/diverts', crmController.getDiverts);
-router.post('/crm/diverts/create', crmController.createDivert);
-router.post('/crm/diverts/update', crmController.updateDivert);
-router.get('/crm/diverts/updates', crmController.getDivertUpdates);
+router.get('/crm/diverts', authenticate, authorizeLocationAccess(), crmController.getDiverts);
+router.post('/crm/diverts/create', authenticate, authorizeLocationAccess(), crmController.createDivert);
+router.post('/crm/diverts/update', authenticate, authorizeLocationAccess(), crmController.updateDivert);
+router.get('/crm/diverts/updates', authenticate, authorizeLocationAccess(), crmController.getDivertUpdates);
 
-router.get('/cash', crmController.getCashSettlement);
-router.post('/cash/save', crmController.saveCashSettlement);
+router.get('/cash', authenticate, authorizeLocationAccess(), crmController.getCashSettlement);
+router.post('/cash/save', authenticate, authorizeLocationAccess(), crmController.saveCashSettlement);
 
-router.get('/vm/points', crmController.getVmPoints);
-router.get('/vm/submissions', crmController.getVmSubmissions);
-router.post('/vm/submit', crmController.submitVm);
-router.get('/vm/floors', crmController.getVmFloors);
-router.post('/vm/floors', crmController.createVmFloor);
-router.post('/vm/floors/delete', crmController.deleteVmFloor);
-router.delete('/vm/floors/:id', crmController.deleteVmFloor);
+router.get('/vm/points', authenticate, crmController.getVmPoints);
+router.get('/vm/submissions', authenticate, authorizeLocationAccess(), crmController.getVmSubmissions);
+router.post('/vm/submit', authenticate, authorizeLocationAccess(), crmController.submitVm);
+router.get('/vm/floors', authenticate, crmController.getVmFloors);
+router.post('/vm/floors', authenticate, authorize('Admin', 'Super Admin'), crmController.createVmFloor);
+router.post('/vm/floors/delete', authenticate, authorize('Admin', 'Super Admin'), crmController.deleteVmFloor);
+router.delete('/vm/floors/:id', authenticate, authorize('Admin', 'Super Admin'), crmController.deleteVmFloor);
 
 // ── Broadcast Routes ─────────────────────────────────────────
-router.get('/broadcasts', broadcastController.getBroadcasts);
-router.post('/broadcasts', broadcastController.createBroadcast);
+router.get('/broadcasts', authenticate, broadcastController.getBroadcasts);
+router.post('/broadcasts', authenticate, authorize('Admin', 'Super Admin'), broadcastController.createBroadcast);
 router.delete('/broadcasts/:id', authenticate, authorize('Admin', 'Super Admin'), broadcastController.deleteBroadcast);
 
 // ── Dept Hiring & Section Allocation Routes ───────────────
-router.get('/dept-hiring/targets', deptHiringController.getHiringTargets);
-router.post('/dept-hiring/targets', deptHiringController.saveHiringTarget);
-router.get('/section-allocations', deptHiringController.getSectionAllocations);
-router.post('/section-allocations', deptHiringController.saveSectionAllocation);
-router.post('/section-allocations/bulk', deptHiringController.bulkSaveSectionAllocation);
+router.get('/dept-hiring/targets', authenticate, authorizeLocationAccess(), deptHiringController.getHiringTargets);
+router.post('/dept-hiring/targets', authenticate, authorize('Admin', 'Super Admin', 'HR'), deptHiringController.saveHiringTarget);
+router.get('/section-allocations', authenticate, authorizeLocationAccess(), deptHiringController.getSectionAllocations);
+router.post('/section-allocations', authenticate, authorize('Admin', 'Super Admin', 'HR'), deptHiringController.saveSectionAllocation);
+router.post('/section-allocations/bulk', authenticate, authorize('Admin', 'Super Admin', 'HR'), deptHiringController.bulkSaveSectionAllocation);
 
-router.get('/dept-hiring/sections', deptHiringController.getDepartmentSections);
-router.post('/dept-hiring/sections/add', deptHiringController.addDepartmentSection);
-router.post('/dept-hiring/sections/edit', deptHiringController.editDepartmentSection);
-router.post('/dept-hiring/sections/delete', deptHiringController.deleteDepartmentSection);
+router.get('/dept-hiring/sections', authenticate, deptHiringController.getDepartmentSections);
+router.post('/dept-hiring/sections/add', authenticate, authorize('Admin', 'Super Admin'), deptHiringController.addDepartmentSection);
+router.post('/dept-hiring/sections/edit', authenticate, authorize('Admin', 'Super Admin'), deptHiringController.editDepartmentSection);
+router.post('/dept-hiring/sections/delete', authenticate, authorize('Admin', 'Super Admin'), deptHiringController.deleteDepartmentSection);
 
 // ── MCheck Daily Management Checklist Routes ─────────────────
-router.get('/mcheck/modules', mcheckController.getModules);
-router.get('/mcheck/dashboard', mcheckController.getDashboard);
-router.get('/mcheck/module/:moduleId', mcheckController.getModuleDetail);
-router.post('/mcheck/response/save', mcheckController.saveResponse);
-router.post('/mcheck/response/submit-all', mcheckController.submitAll);
-router.get('/mcheck/reports', mcheckController.getReports);
-router.get('/mcheck/history', mcheckController.getHistory);
-router.get('/mcheck/trend', mcheckController.getTrend);
-router.get('/mcheck/audit', mcheckController.getAuditLog);
-router.post('/mcheck/upload-photo', upload.single('photo'), mcheckController.uploadPhoto);
+router.get('/mcheck/modules', authenticate, authorizeLocationAccess(), mcheckController.getModules);
+router.get('/mcheck/dashboard', authenticate, authorizeLocationAccess(), mcheckController.getDashboard);
+router.get('/mcheck/module/:moduleId', authenticate, authorizeLocationAccess(), mcheckController.getModuleDetail);
+router.post('/mcheck/response/save', authenticate, authorizeLocationAccess(), mcheckController.saveResponse);
+router.post('/mcheck/response/submit-all', authenticate, authorizeLocationAccess(), mcheckController.submitAll);
+router.get('/mcheck/reports', authenticate, authorizeLocationAccess(), mcheckController.getReports);
+router.get('/mcheck/history', authenticate, authorizeLocationAccess(), mcheckController.getHistory);
+router.get('/mcheck/trend', authenticate, authorizeLocationAccess(), mcheckController.getTrend);
+router.get('/mcheck/audit', authenticate, authorizeLocationAccess(), mcheckController.getAuditLog);
+router.post('/mcheck/upload-photo', authenticate, upload.single('photo'), mcheckController.uploadPhoto);
 router.get('/mcheck/admin/structure', authenticate, authorize('Admin', 'Super Admin'), mcheckController.adminGetStructure);
 router.post('/mcheck/admin/module', authenticate, authorize('Admin', 'Super Admin'), mcheckController.adminSaveModule);
 router.post('/mcheck/admin/checkpoint', authenticate, authorize('Admin', 'Super Admin'), mcheckController.adminSaveCheckpoint);
 router.post('/mcheck/admin/reorder', authenticate, authorize('Admin', 'Super Admin'), mcheckController.adminReorderCheckpoints);
-router.get('/mcheck/export/pdf', mcheckController.exportPdf);
-router.get('/mcheck/export/excel', mcheckController.exportExcel);
+router.get('/mcheck/export/pdf', authenticate, authorizeLocationAccess(), mcheckController.exportPdf);
+router.get('/mcheck/export/excel', authenticate, authorizeLocationAccess(), mcheckController.exportExcel);
 
 // ── Wedding Customer Follow-up CRM ───────────────────────────
 const weddingRoutes = require('./weddingRoutes');
@@ -237,6 +240,10 @@ console.log('[DEBUG] Loading workflow routes...');
 const weddingRegistrationRoutes = require('./weddingRegistrationRoutes');
 router.use('/wedding-registration', weddingRegistrationRoutes);
 console.log('[DEBUG] Workflow routes mounted at /workflow');
+
+// ── Batch Plan & Weaving Module ──────────────────────────────
+const batchPlanRoutes = require('./batchPlanRoutes');
+router.use('/batch-plan', batchPlanRoutes);
 
 // ── Feedback QR Code Module ─────────────────────────────────────
 // Admin routes (require authentication)
@@ -600,11 +607,8 @@ router.post('/legacy', async (req, res) => {
     const PUBLIC_ACTIONS = new Set([
       'verifyUser',
       'addCandidate',
-      'updateCandidate',
-      'updateCandidateFull',
       'checkDuplicate',
       'getNextAppNo',
-      'getCandidates',
       'getPublicDesignations',
       'getDesignations',
       'getInterviewByToken',

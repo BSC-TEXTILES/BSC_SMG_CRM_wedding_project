@@ -100,26 +100,47 @@ async function checkPermission(user, { module = null, action = 'can_view', locat
   return { allowed: true, reason: 'Permission granted' };
 }
 
+const LOCATION_CODE_MAP = {
+  'BEL': 1,
+  'DAV': 2,
+  'SHI': 3
+};
+
 /**
  * Check if user has access to a specific location
  * @param {object} user - Decoded JWT user
- * @param {number} targetLocationId - Location to check access for
+ * @param {number|string} targetLocation - Location ID or Code to check access for
  * @returns {Promise<boolean>}
  */
-async function checkLocationAccess(user, targetLocationId) {
+async function checkLocationAccess(user, targetLocation) {
   if (!user) return false;
 
-  // Global admin (null locationId) has access to all locations
-  if (!user.locationId || user.isGlobalAdmin) {
+  // Resolve code to numeric ID if string passed (e.g. 'DAV' -> 2)
+  let targetLocationId = parseInt(targetLocation, 10);
+  if (isNaN(targetLocationId) && typeof targetLocation === 'string') {
+    targetLocationId = LOCATION_CODE_MAP[targetLocation.trim().toUpperCase()] || null;
+  }
+
+  if (!targetLocationId) return false;
+
+  // Global admin (null locationId or isGlobalAdmin) has access to all locations
+  if (!user.locationId || user.isGlobalAdmin || ['Admin', 'Super Admin'].includes(user.role)) {
     return true;
   }
 
-  // Check single location match
+  // Check token pre-loaded allowedLocations array
+  if (Array.isArray(user.allowedLocations) && user.allowedLocations.length > 0) {
+    if (user.allowedLocations.includes(targetLocationId)) {
+      return true;
+    }
+  }
+
+  // Check single primary location match
   if (user.locationId === targetLocationId) {
     return true;
   }
 
-  // Check multi-location via user_locations table
+  // Check multi-location via user_locations table in DB
   try {
     const [rows] = await pool.query(
       'SELECT location_id FROM user_locations WHERE user_id = ?',
@@ -219,20 +240,30 @@ function authorizeAction(moduleName, action = 'can_view') {
  */
 function authorizeLocationAccess(paramName = 'locationId') {
   return async (req, res, next) => {
-    const targetLocationId = parseInt(
-      req.params[paramName] || req.body[paramName] || req.query[paramName],
-      10
-    );
+    const rawVal = req.params[paramName] 
+      || req.params['location_id']
+      || req.body[paramName] 
+      || req.body['location_id']
+      || req.body['locationId']
+      || req.query[paramName]
+      || req.query['location_id']
+      || req.query['locationId']
+      || req.headers['x-location-id'];
 
-    if (!targetLocationId) {
-      return next(); // No location specified — let the controller handle filtering
+    if (rawVal === undefined || rawVal === null || rawVal === '' || rawVal === 'all') {
+      return next(); // No specific location specified — let the controller handle filtering
     }
 
-    const allowed = await checkLocationAccess(req.user, targetLocationId);
+    const allowed = await checkLocationAccess(req.user, rawVal);
     if (!allowed) {
       return res.status(403).json({
         success: false,
-        message: 'Location access denied',
+        error: {
+          code: 'LOCATION_ACCESS_DENIED',
+          message: 'Access denied: you do not have permission to access data for this location',
+          details: { requestedLocation: rawVal }
+        },
+        message: 'Access denied: you do not have permission to access data for this location',
         errors: ['You do not have permission to access data for this location']
       });
     }

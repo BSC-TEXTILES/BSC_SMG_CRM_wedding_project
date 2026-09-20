@@ -1,5 +1,6 @@
 const db = require('../config/db');
 const bcrypt = require('bcryptjs');
+const { getLocationFilter, injectLocationId } = require('../middleware/auth');
 
 // Helper to generate UUIDs
 function getUUID() {
@@ -175,7 +176,11 @@ exports.getSections = async (req, res) => {
 exports.getFootfall = async (req, res) => {
   try {
     const date = req.query.date || new Date().toISOString().split('T')[0];
-    const [rows] = await db.query('SELECT * FROM FootfallEntries WHERE entryDate = ? ORDER BY slotHour ASC', [date]);
+    const { clause: locClause, params: locParams } = await getLocationFilter(req, 'FootfallEntries');
+    const [rows] = await db.query(
+      `SELECT * FROM FootfallEntries WHERE entryDate = ? ${locClause} ORDER BY slotHour ASC`,
+      [date, ...locParams]
+    );
     return res.json({ success: true, date, entries: rows });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
@@ -185,17 +190,18 @@ exports.getFootfall = async (req, res) => {
 exports.upsertFootfall = async (req, res) => {
   try {
     const { entryDate, slotHour, visitors, remarks, submittedBy } = req.body;
+    const locationId = injectLocationId(req) || 2;
     const id = getUUID();
     await db.query(`
-      INSERT INTO FootfallEntries (id, entryDate, slotHour, visitors, remarks, submittedBy)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO FootfallEntries (id, location_id, entryDate, slotHour, visitors, remarks, submittedBy)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
       ON DUPLICATE KEY UPDATE visitors = VALUES(visitors), remarks = VALUES(remarks), submittedBy = VALUES(submittedBy), updatedAt = CURRENT_TIMESTAMP
-    `, [id, entryDate, slotHour, visitors || 0, remarks || '', submittedBy || 'Staff']);
+    `, [id, locationId, entryDate, slotHour, visitors || 0, remarks || '', submittedBy || 'Staff']);
 
     // Emit Socket.IO push event for zero-latency screen updates
     const io = req.app.get('io');
     if (io) {
-      io.emit('footfall:updated', { entryDate, slotHour, visitors: Number(visitors) || 0, remarks, submittedBy });
+      io.emit('footfall:updated', { location_id: locationId, entryDate, slotHour, visitors: Number(visitors) || 0, remarks, submittedBy });
     }
 
     return res.json({ success: true, message: 'Footfall slot updated successfully' });
@@ -385,6 +391,7 @@ exports.submitFeedback = async (req, res) => {
     ].filter(Boolean).join('\n');
 
     const isNegative = evaluateFeedbackEscalation(answers || {}, compiledVoice, q0, q1, q2, q3);
+    const locationId = injectLocationId(req) || 2;
 
     // Insert with one duplicate-ID retry (two customers can submit at once
     // and compute the same FB-xx sequence). If every attempt fails we report
@@ -394,12 +401,12 @@ exports.submitFeedback = async (req, res) => {
       try {
         await db.query(`
           INSERT INTO Feedback (
-            id, date, source, area, yourVoice, custName, custMobile, custDob,
+            id, location_id, date, source, area, yourVoice, custName, custMobile, custDob,
             q0, q1, q2, q3, q4, q5, q6, q7,
             status, entryDate, entryTime, customerName, mobile, dob, sectionId, answers, voice, isNegative
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new', ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new', ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `, [
-          id, dateFormatted, finalSource, finalArea, compiledVoice, finalCustName, finalMobile, finalDob,
+          id, locationId, dateFormatted, finalSource, finalArea, compiledVoice, finalCustName, finalMobile, finalDob,
           q0 || null, q1 || null, q2 || null, q3 || null, q4 || null, q5 || null, q6 || null, q7 || null,
           entryDate, entryTime, finalCustName, finalMobile, finalDob, sectionId || null, JSON.stringify(answers || {}), compiledVoice, isNegative ? 1 : 0
         ]);
@@ -426,6 +433,7 @@ exports.submitFeedback = async (req, res) => {
     if (io) {
       io.emit('feedback:submitted', {
         id,
+        location_id: locationId,
         entryDate,
         customerName: finalCustName,
         isNegative: !!isNegative
@@ -436,14 +444,15 @@ exports.submitFeedback = async (req, res) => {
       const cqId = `cq_${id}`;
       try {
         await db.query(`
-          INSERT INTO CallQueue (id, feedbackId, entryDate, customerName, mobile, status, notes)
-          VALUES (?, ?, ?, ?, ?, 'new', ?)
-        `, [cqId, id, entryDate, finalCustName, finalMobile, compiledVoice ? `Escalated Feedback: ${compiledVoice}` : 'Negative customer feedback auto-escalated']);
+          INSERT INTO CallQueue (id, location_id, feedbackId, entryDate, customerName, mobile, status, notes)
+          VALUES (?, ?, ?, ?, ?, ?, 'new', ?)
+        `, [cqId, locationId, id, entryDate, finalCustName, finalMobile, compiledVoice ? `Escalated Feedback: ${compiledVoice}` : 'Negative customer feedback auto-escalated']);
       } catch (cqErr) {}
 
       if (io) {
         io.emit('feedback:negative', {
           id,
+          location_id: locationId,
           customerName: finalCustName,
           mobile: finalMobile || 'No Mobile',
           message: `ALERT: Negative customer feedback logged by ${finalCustName} (${finalMobile || 'No Mobile'})`
@@ -469,9 +478,14 @@ exports.submitFeedback = async (req, res) => {
 exports.getFeedbackStats = async (req, res) => {
   try {
     let total = 0, neg = 0, pendingCallQueue = 0, totalCallQueue = 0;
+    const { clause: fbClause, params: fbParams } = await getLocationFilter(req, 'Feedback');
+    const { clause: fClause, params: fParams } = await getLocationFilter(req, 'f');
 
     try {
-      const [totalRows] = await db.query('SELECT COUNT(*) as total, SUM(CASE WHEN isNegative = 1 THEN 1 ELSE 0 END) as negCount FROM Feedback');
+      const [totalRows] = await db.query(
+        `SELECT COUNT(*) as total, SUM(CASE WHEN isNegative = 1 THEN 1 ELSE 0 END) as negCount FROM Feedback WHERE 1=1 ${fbClause}`,
+        fbParams
+      );
       if (totalRows && totalRows[0]) {
         total = Number(totalRows[0].total) || 0;
         neg = Number(totalRows[0].negCount) || 0;
@@ -483,8 +497,8 @@ exports.getFeedbackStats = async (req, res) => {
         SELECT COUNT(*) as pendingCount 
         FROM Feedback f
         LEFT JOIN CallQueue cq ON (cq.feedbackId = f.id OR cq.id = f.id)
-        WHERE (f.isNegative = 1 OR cq.id IS NOT NULL) AND (cq.status IS NULL OR cq.status = 'new')
-      `);
+        WHERE (f.isNegative = 1 OR cq.id IS NOT NULL) AND (cq.status IS NULL OR cq.status = 'new') ${fClause}
+      `, fParams);
       if (queueRows && queueRows[0]) {
         pendingCallQueue = Number(queueRows[0].pendingCount) || 0;
       }
@@ -495,8 +509,8 @@ exports.getFeedbackStats = async (req, res) => {
         SELECT COUNT(*) as totalQueueCount 
         FROM Feedback f
         LEFT JOIN CallQueue cq ON (cq.feedbackId = f.id OR cq.id = f.id)
-        WHERE f.isNegative = 1 OR cq.id IS NOT NULL
-      `);
+        WHERE (f.isNegative = 1 OR cq.id IS NOT NULL) ${fClause}
+      `, fParams);
       if (allQueueRows && allQueueRows[0]) {
         totalCallQueue = Number(allQueueRows[0].totalQueueCount) || 0;
       }
@@ -570,6 +584,7 @@ exports.getCallQueue = async (req, res) => {
     });
 
     const { date, startDate, endDate, status, search } = req.query;
+    const { clause: fLocClause, params: fLocParams } = await getLocationFilter(req, 'f');
     let sql = `
       SELECT 
         COALESCE(MAX(cq.id), CONCAT('cq_', f.id)) as id,
@@ -584,9 +599,9 @@ exports.getCallQueue = async (req, res) => {
         COALESCE(MAX(cq.createdAt), MAX(f.createdAt), MAX(f.created_at)) as createdAt
       FROM Feedback f
       LEFT JOIN CallQueue cq ON (cq.feedbackId = f.id OR cq.id = f.id)
-      WHERE (f.isNegative = 1 OR cq.id IS NOT NULL)
+      WHERE (f.isNegative = 1 OR cq.id IS NOT NULL) ${fLocClause}
     `;
-    const params = [];
+    const params = [...fLocParams];
 
     if (date) {
       sql += ' AND (COALESCE(cq.entryDate, f.entryDate, f.date) = ?)';
@@ -749,17 +764,18 @@ exports.updateCallQueue = async (req, res) => {
 
     if (!updated) {
       const newCqId = getUUID();
+      const locationId = injectLocationId(req) || 2;
       try {
         await db.query(`
-          INSERT INTO CallQueue (id, feedbackId, entryDate, customerName, mobile, status, notes, attempts)
-          VALUES (?, ?, ?, ?, ?, ?, ?, 1)
-        `, [newCqId, rawFeedbackId, eDate, cName, cMob, status, notes]);
+          INSERT INTO CallQueue (id, location_id, feedbackId, entryDate, customerName, mobile, status, notes, attempts)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
+        `, [newCqId, locationId, rawFeedbackId, eDate, cName, cMob, status, notes]);
       } catch (insErr) {
         await db.query(`
-          INSERT INTO CallQueue (id, status, notes)
-          VALUES (?, ?, ?)
+          INSERT INTO CallQueue (id, location_id, status, notes)
+          VALUES (?, ?, ?, ?)
           ON DUPLICATE KEY UPDATE status = VALUES(status), notes = VALUES(notes)
-        `, [safeId, status, notes]).catch(() => {});
+        `, [safeId, locationId, status, notes]).catch(() => {});
       }
     }
 
@@ -828,7 +844,8 @@ exports.getDiverts = async (req, res) => {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `).catch(() => {});
 
-    const [rows] = await db.query('SELECT * FROM Diverts ORDER BY createdAt DESC');
+    const { clause: locClause, params: locParams } = await getLocationFilter(req, 'Diverts');
+    const [rows] = await db.query(`SELECT * FROM Diverts WHERE 1=1 ${locClause} ORDER BY createdAt DESC`, locParams);
     return res.json({ success: true, diverts: rows || [] });
   } catch (err) {
     return res.json({ success: true, diverts: [] });
@@ -838,6 +855,7 @@ exports.getDiverts = async (req, res) => {
 exports.createDivert = async (req, res) => {
   try {
     const { sectionId, productWanted, quantity, priceRange, reasonCode, customerName, customerMobile: rawMobile, createdBy } = req.body;
+    const locationId = injectLocationId(req) || 2;
     const id = getUUID();
     const entryDate = new Date().toISOString().split('T')[0];
     
@@ -851,9 +869,9 @@ exports.createDivert = async (req, res) => {
     }
     
     await db.query(`
-      INSERT INTO Diverts (id, entryDate, sectionId, productWanted, quantity, priceRange, reasonCode, customerName, customerMobile, status, createdBy)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'open', ?)
-    `, [id, entryDate, sectionId || null, productWanted, quantity || 1, priceRange || '', reasonCode || 'OUT_OF_STOCK', customerName || '', customerMobile || '', createdBy || 'Floor Staff']);
+      INSERT INTO Diverts (id, location_id, entryDate, sectionId, productWanted, quantity, priceRange, reasonCode, customerName, customerMobile, status, createdBy)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'open', ?)
+    `, [id, locationId, entryDate, sectionId || null, productWanted, quantity || 1, priceRange || '', reasonCode || 'OUT_OF_STOCK', customerName || '', customerMobile || '', createdBy || 'Floor Staff']);
 
     const updateId = getUUID();
     await db.query(`
@@ -911,7 +929,8 @@ exports.getDivertUpdates = async (req, res) => {
 exports.getCashSettlement = async (req, res) => {
   try {
     const date = req.query.date || new Date().toISOString().split('T')[0];
-    const [header] = await db.query('SELECT * FROM CashSettlements WHERE entryDate = ?', [date]);
+    const { clause: locClause, params: locParams } = await getLocationFilter(req, 'CashSettlements');
+    const [header] = await db.query(`SELECT * FROM CashSettlements WHERE entryDate = ? ${locClause}`, [date, ...locParams]);
     if (header.length === 0) {
       return res.json({ success: true, date, settlement: null, counters: [] });
     }
@@ -925,13 +944,15 @@ exports.getCashSettlement = async (req, res) => {
 exports.saveCashSettlement = async (req, res) => {
   try {
     const { entryDate, saleAmount, billsCount, cashTotal, cardTotal, upiTotal, submittedBy, counters } = req.body;
-    const settlementId = getUUID();
+    const locationId = injectLocationId(req) || 2;
+    const [existing] = await db.query('SELECT id FROM CashSettlements WHERE entryDate = ? AND location_id = ?', [entryDate, locationId]);
+    const settlementId = existing.length > 0 ? existing[0].id : getUUID();
 
     await db.query(`
-      INSERT INTO CashSettlements (id, entryDate, saleAmount, billsCount, cashTotal, cardTotal, upiTotal, submittedBy)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO CashSettlements (id, location_id, entryDate, saleAmount, billsCount, cashTotal, cardTotal, upiTotal, submittedBy)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON DUPLICATE KEY UPDATE saleAmount = VALUES(saleAmount), billsCount = VALUES(billsCount), cashTotal = VALUES(cashTotal), cardTotal = VALUES(cardTotal), upiTotal = VALUES(upiTotal), submittedBy = VALUES(submittedBy), updatedAt = CURRENT_TIMESTAMP
-    `, [settlementId, entryDate, saleAmount || 0, billsCount || 0, cashTotal || 0, cardTotal || 0, upiTotal || 0, submittedBy || 'Cashier']);
+    `, [settlementId, locationId, entryDate, saleAmount || 0, billsCount || 0, cashTotal || 0, cardTotal || 0, upiTotal || 0, submittedBy || 'Cashier']);
 
     await db.query('DELETE FROM CashCounterReports WHERE settlementId = ?', [settlementId]);
     if (Array.isArray(counters)) {
@@ -944,7 +965,7 @@ exports.saveCashSettlement = async (req, res) => {
       }
     }
 
-    return res.json({ success: true, message: 'Cash settlement saved successfully' });
+    return res.json({ success: true, message: 'Cash settlement saved successfully', settlementId });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
   }
@@ -981,7 +1002,8 @@ exports.getVmPoints = async (req, res) => {
 
 exports.getVmSubmissions = async (req, res) => {
   try {
-    const [rows] = await db.query('SELECT * FROM VmSubmissions ORDER BY createdAt DESC LIMIT 200');
+    const { clause: locClause, params: locParams } = await getLocationFilter(req, 'VmSubmissions');
+    const [rows] = await db.query(`SELECT * FROM VmSubmissions WHERE 1=1 ${locClause} ORDER BY createdAt DESC LIMIT 200`, locParams);
     
     if (rows.length === 0) {
       return res.json({ success: true, submissions: [] });
@@ -1012,6 +1034,7 @@ exports.getVmSubmissions = async (req, res) => {
 exports.submitVm = async (req, res) => {
   try {
     const { shift, floor, section, scorePercent, submittedBy, entries } = req.body;
+    const locationId = injectLocationId(req) || 2;
     const submissionId = getUUID();
     const entryDate = new Date().toISOString().split('T')[0];
 
@@ -1022,14 +1045,14 @@ exports.submitVm = async (req, res) => {
 
     try {
       await db.query(`
-        INSERT INTO VmSubmissions (id, entryDate, shift, floor, section, scorePercent, submittedBy)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-      `, [submissionId, entryDate, shift || 'Opening', floor || 'Ground Floor', section || 'General', scorePercent || 100, submittedBy || 'VM Auditor']);
+        INSERT INTO VmSubmissions (id, location_id, entryDate, shift, floor, section, scorePercent, submittedBy)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `, [submissionId, locationId, entryDate, shift || 'Opening', floor || 'Ground Floor', section || 'General', scorePercent || 100, submittedBy || 'VM Auditor']);
     } catch (e) {
       await db.query(`
-        INSERT INTO VmSubmissions (id, entryDate, shift, floor, scorePercent, submittedBy)
-        VALUES (?, ?, ?, ?, ?, ?)
-      `, [submissionId, entryDate, shift || 'Opening', floor || 'Ground Floor', scorePercent || 100, submittedBy || 'VM Auditor']);
+        INSERT INTO VmSubmissions (id, location_id, entryDate, shift, floor, scorePercent, submittedBy)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `, [submissionId, locationId, entryDate, shift || 'Opening', floor || 'Ground Floor', scorePercent || 100, submittedBy || 'VM Auditor']);
     }
 
     if (Array.isArray(entries)) {
@@ -1201,8 +1224,9 @@ exports.getFeedbacks = async (req, res) => {
     }
 
     const { date, startDate, endDate, isNegative, search } = req.query;
-    let sql = 'SELECT * FROM Feedback WHERE 1=1';
-    const params = [];
+    const { clause: locClause, params: locParams } = await getLocationFilter(req, 'Feedback');
+    let sql = `SELECT * FROM Feedback WHERE 1=1 ${locClause}`;
+    const params = [...locParams];
 
     let altDate = date || '';
     if (date && typeof date === 'string') {
@@ -1241,7 +1265,7 @@ exports.getFeedbacks = async (req, res) => {
 
     const [rows] = await db.query(sql, params).catch(async (err) => {
       console.warn('[getFeedbacks Query Fail, fallback executing]:', err.message);
-      const [fallbackRows] = await db.query('SELECT * FROM Feedback ORDER BY id DESC');
+      const [fallbackRows] = await db.query(`SELECT * FROM Feedback WHERE 1=1 ${locClause} ORDER BY id DESC`, locParams);
       return [fallbackRows];
     });
 

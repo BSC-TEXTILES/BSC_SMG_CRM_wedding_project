@@ -13,27 +13,84 @@ const CALL_LOG_ENCRYPTED_FIELDS = ['remarks'];
  * If user is Global Admin and query.locationId / location_id is passed, filters by that location.
  * Otherwise uses standard getLocationFilter based on user's assigned branch.
  */
+const LOCATION_CODE_MAP = {
+  'BEL': 1,
+  'DAV': 2,
+  'SHI': 3
+};
+
+function parseTargetLocation(val) {
+  if (val === undefined || val === null || val === '' || val === 'all') return null;
+  let parsed = parseInt(val, 10);
+  if (isNaN(parsed) && typeof val === 'string') {
+    parsed = LOCATION_CODE_MAP[val.trim().toUpperCase()] || null;
+  }
+  return parsed;
+}
+
+/**
+ * Helper to build location filter dynamically.
+ * Supports Global Admin, multi-location users (e.g. Gagan), and branch users (e.g. Ananya).
+ * Rejects unauthorized location requests with AND 1=0.
+ */
 function resolveLocFilter(req, tableAlias = 'w') {
   const col = tableAlias ? `${tableAlias}.location_id` : 'location_id';
-  const userLoc = req.user ? req.user.locationId : null;
-  const isGlobal = !userLoc;
+  if (!req.user) {
+    return { clause: `AND 1 = 0`, params: [] };
+  }
+
+  const rawParam = req.query?.locationId 
+    || req.query?.location_id 
+    || req.headers?.['x-location-id']
+    || req.body?.locationId
+    || req.body?.location_id;
+  const requestedLocationId = parseTargetLocation(rawParam);
+
+  const isGlobal = !req.user.locationId || req.user.isGlobalAdmin || ['Admin', 'Super Admin'].includes(req.user.role);
 
   if (isGlobal) {
-    const locParam = req.query.locationId || req.query.location_id;
-    if (locParam && locParam !== 'all' && !isNaN(parseInt(locParam, 10))) {
+    if (requestedLocationId) {
       return {
         clause: `AND ${col} = ?`,
-        params: [parseInt(locParam, 10)]
+        params: [requestedLocationId]
       };
     }
     return { clause: '', params: [] };
   }
 
-  // Branch user is strictly locked to their location
-  return {
-    clause: `AND ${col} = ?`,
-    params: [userLoc]
-  };
+  // Determine user's allowed locations
+  let allowed = [];
+  if (Array.isArray(req.user.allowedLocations) && req.user.allowedLocations.length > 0) {
+    allowed = req.user.allowedLocations;
+  } else if (req.user.locationId) {
+    allowed = [req.user.locationId];
+  }
+
+  if (requestedLocationId) {
+    if (allowed.includes(requestedLocationId)) {
+      return {
+        clause: `AND ${col} = ?`,
+        params: [requestedLocationId]
+      };
+    }
+    // Unauthorized location requested by branch user
+    return { clause: `AND 1 = 0`, params: [] };
+  }
+
+  if (allowed.length > 1) {
+    const placeholders = allowed.map(() => '?').join(', ');
+    return {
+      clause: `AND ${col} IN (${placeholders})`,
+      params: allowed
+    };
+  } else if (allowed.length === 1) {
+    return {
+      clause: `AND ${col} = ?`,
+      params: [allowed[0]]
+    };
+  }
+
+  return { clause: `AND 1 = 0`, params: [] };
 }
 
 let tablesChecked = false;
@@ -1064,7 +1121,6 @@ class WeddingController {
   // ── 8. Log Call & Auto-manage Follow-up ──────────────────────────────
   async logCall(req, res) {
     try {
-      await ensureTables();
       const customerId = req.body.customerId || req.body.customer_id;
       const rawCallDate = req.body.callDate || req.body.call_date;
       const callTime = req.body.callTime || req.body.call_time;
@@ -1093,6 +1149,19 @@ class WeddingController {
 
       const nextFollowUpDate = sanitizeDate(rawNextFollowUpDate);
       const expectedShoppingDate = sanitizeDate(rawExpectedShoppingDate);
+
+      // Enforce strictness: Callback Requested mandates next_follow_up_date and next_follow_up_time
+      const callbackOutcomes = ['Call Back Requested', 'Callback Requested', 'Callback', 'Call Back Later'];
+      if (callbackOutcomes.includes(callOutcome)) {
+        if (!nextFollowUpDate) {
+          return errorRes(res, 'Next follow-up date is required when outcome is Call Back Requested', [], 400);
+        }
+        if (!nextFollowUpTime || !String(nextFollowUpTime).trim()) {
+          return errorRes(res, 'Next follow-up time is required when outcome is Call Back Requested', [], 400);
+        }
+      }
+
+      await ensureTables();
 
       // Branch users are isolated to their location, Global Admin can manage any
       const userLoc = req.user ? req.user.locationId : null;

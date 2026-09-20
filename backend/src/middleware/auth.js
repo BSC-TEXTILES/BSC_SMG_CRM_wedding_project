@@ -159,48 +159,133 @@ const authorize = (...roles) => {
  * @param {string} tableAlias — table alias prefix (e.g. 'c' → 'c.location_id')
  * @returns {Promise<{clause: string, params: Array}>}
  */
+const LOCATION_CODE_MAP = {
+  'BEL': 1,
+  'DAV': 2,
+  'SHI': 3
+};
+
+function parseTargetLocation(val) {
+  if (val === undefined || val === null || val === '' || val === 'all') return null;
+  let parsed = parseInt(val, 10);
+  if (isNaN(parsed) && typeof val === 'string') {
+    parsed = LOCATION_CODE_MAP[val.trim().toUpperCase()] || null;
+  }
+  return parsed;
+}
+
+/**
+ * getLocationFilter — returns a WHERE clause fragment and params for location isolation.
+ *
+ * Supports multi-location users via the user_locations junction table and token allowedLocations.
+ * Supports requested location filter via query param, header, or body.
+ *
+ * Usage in controllers (async):
+ *   const { clause, params } = await getLocationFilter(req, 'c');
+ *   db.query(`SELECT * FROM candidates c WHERE 1=1 ${clause}`, params);
+ *
+ * @param {object} req        — Express request with req.user populated
+ * @param {string} tableAlias — table alias prefix (e.g. 'c' → 'c.location_id')
+ * @returns {Promise<{clause: string, params: Array}>}
+ */
 const getLocationFilter = async (req, tableAlias = '') => {
   const col = tableAlias ? `${tableAlias}.location_id` : 'location_id';
-  const locationId = req.user ? req.user.locationId : null;
-  const isGlobalAdmin = !locationId;
+  if (!req.user) {
+    // Unauthenticated request should NEVER see data
+    return { clause: `AND 1 = 0`, params: [] };
+  }
+
+  const rawRequested = req.query?.location_id 
+    || req.query?.locationId 
+    || req.headers?.['x-location-id']
+    || req.body?.location_id
+    || req.body?.locationId;
+  const requestedLocationId = parseTargetLocation(rawRequested);
+
+  const isGlobalAdmin = !req.user.locationId || req.user.isGlobalAdmin || ['Admin', 'Super Admin'].includes(req.user.role);
 
   if (isGlobalAdmin) {
+    if (requestedLocationId) {
+      return { clause: `AND ${col} = ?`, params: [requestedLocationId] };
+    }
     return { clause: '', params: [] };
   }
 
-  // Try to query user_locations for multi-location support
-  try {
-    const [rows] = await pool.query(
-      'SELECT location_id FROM user_locations WHERE user_id = ?',
-      [req.user.id]
-    );
-
-    if (rows.length > 0) {
-      const locationIds = rows.map(r => r.location_id);
-      const placeholders = locationIds.map(() => '?').join(', ');
-      return {
-        clause: `AND ${col} IN (${placeholders})`,
-        params: locationIds
-      };
-    }
-  } catch (err) {
-    // user_locations table doesn't exist or query failed — fall through to single-location fallback
+  // Multi-location resolution
+  let allowedLocationIds = [];
+  if (Array.isArray(req.user.allowedLocations) && req.user.allowedLocations.length > 0) {
+    allowedLocationIds = req.user.allowedLocations;
+  } else if (req.user.id) {
+    try {
+      const [rows] = await pool.query(
+        'SELECT location_id FROM user_locations WHERE user_id = ?',
+        [req.user.id]
+      );
+      if (rows && rows.length > 0) {
+        allowedLocationIds = rows.map(r => r.location_id);
+      }
+    } catch (err) {}
   }
 
-  // Fallback: single location_id from the JWT
-  return {
-    clause: `AND ${col} = ?`,
-    params: [locationId]
-  };
+  if (allowedLocationIds.length === 0 && req.user.locationId) {
+    allowedLocationIds = [req.user.locationId];
+  }
+
+  // If a specific location was requested:
+  if (requestedLocationId) {
+    if (allowedLocationIds.includes(requestedLocationId)) {
+      return { clause: `AND ${col} = ?`, params: [requestedLocationId] };
+    }
+    // Requested an unauthorized location! Reject with empty results
+    return { clause: `AND 1 = 0`, params: [] };
+  }
+
+  // No specific location requested: filter to all allowed locations
+  if (allowedLocationIds.length > 1) {
+    const placeholders = allowedLocationIds.map(() => '?').join(', ');
+    return {
+      clause: `AND ${col} IN (${placeholders})`,
+      params: allowedLocationIds
+    };
+  } else if (allowedLocationIds.length === 1) {
+    return {
+      clause: `AND ${col} = ?`,
+      params: [allowedLocationIds[0]]
+    };
+  }
+
+  return { clause: `AND 1 = 0`, params: [] };
 };
 
 /**
  * injectLocationId — for INSERT/UPDATE operations.
- * Returns the authenticated user's locationId (throws if branch user has no location).
+ * Returns the authenticated user's locationId, respecting requested location if authorized.
  */
 const injectLocationId = (req) => {
-  if (!req.user) return 2; // fallback to Davanagere
-  return req.user.locationId || null; // null = Global Admin
+  if (!req.user) return null;
+  const rawRequested = req.body?.location_id 
+    || req.body?.locationId 
+    || req.query?.location_id 
+    || req.query?.locationId 
+    || req.headers?.['x-location-id'];
+  const requestedLocationId = parseTargetLocation(rawRequested);
+
+  const isGlobalAdmin = !req.user.locationId || req.user.isGlobalAdmin || ['Admin', 'Super Admin'].includes(req.user.role);
+
+  if (isGlobalAdmin) {
+    return requestedLocationId || 2; // default to Davanagere if not specified
+  }
+
+  let allowed = req.user.allowedLocations;
+  if (!Array.isArray(allowed) || allowed.length === 0) {
+    allowed = req.user.locationId ? [req.user.locationId] : [2];
+  }
+
+  if (requestedLocationId && allowed.includes(requestedLocationId)) {
+    return requestedLocationId;
+  }
+
+  return allowed[0] || req.user.locationId || 2;
 };
 
 /**

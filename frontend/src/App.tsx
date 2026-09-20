@@ -35,6 +35,9 @@ import WeddingCRM from './pages/WeddingCRM';
 import TelecallerDashboard from './pages/TelecallerDashboard';
 import WeddingTracking from './pages/WeddingTracking';
 import SystemAdmin from './pages/SystemAdmin';
+import BatchPlan from './pages/BatchPlan';
+import DojDesk from './pages/DojDesk';
+import { LocationProvider } from './context/LocationContext';
 import QuickActionCenter from './components/ui/QuickActionCenter';
 import RouteGuard from './components/RouteGuard';
 import UserTracker from './components/UserTracker';
@@ -47,6 +50,7 @@ import DesktopModeWarning from './components/DesktopModeWarning';
 export default function App() {
   return (
     <ErrorBoundary>
+    <LocationProvider>
     <Router>
       <ConnectivityBanner />
       <UserTracker />
@@ -86,6 +90,9 @@ export default function App() {
         <Route path="/employee-exit" element={<Navigate to="/employees" replace />} />
         <Route path="/exit" element={<Navigate to="/employees" replace />} />
         <Route path="/employees" element={<RouteGuard pageKey="employees"><Employees /></RouteGuard>} />
+        <Route path="/batch-plan" element={<RouteGuard pageKey="batch_plan"><BatchPlan /></RouteGuard>} />
+        <Route path="/doj-desk" element={<RouteGuard pageKey="doj_desk"><DojDesk /></RouteGuard>} />
+        <Route path="/joined-store" element={<Navigate to="/doj-desk" replace />} />
         <Route path="/department-hiring" element={<RouteGuard pageKey="dept_hiring"><DepartmentHiring /></RouteGuard>} />
         <Route path="/section-allocation" element={<RouteGuard pageKey="section_allocation"><SectionAllocation /></RouteGuard>} />
         <Route path="/openings" element={<RouteGuard pageKey="openings"><Openings /></RouteGuard>} />
@@ -100,6 +107,7 @@ export default function App() {
       <DevToolsGuard />
       <DesktopModeWarning />
     </Router>
+    </LocationProvider>
     </ErrorBoundary>
   );
 }

@@ -194,7 +194,7 @@ class WeddingRegistrationController {
   async getDashboardStats(req, res) {
     try {
       await ensureTables();
-      const { clause, params } = getLocationFilter(req, 'wr');
+      const { clause, params } = await getLocationFilter(req, 'wr');
 
       const [rows] = await pool.query(`
         SELECT
@@ -246,7 +246,7 @@ class WeddingRegistrationController {
         limit = 50
       } = req.query;
 
-      const { clause: locClause, params: queryParams } = getLocationFilter(req, 'wr');
+      const { clause: locClause, params: queryParams } = await getLocationFilter(req, 'wr');
       let whereClauses = ['wr.status != \'Deleted\'', `1=1 ${locClause}`];
 
       if (status && status !== 'all') {
@@ -337,7 +337,7 @@ class WeddingRegistrationController {
 
       const cleanMobile = mobile.trim().replace(/\D/g, '');
       const normalizedMobile = cleanMobile.length === 10 ? `+91${cleanMobile}` : cleanMobile;
-      const { clause: locClause, params } = getLocationFilter(req, 'wr');
+      const { clause: locClause, params } = await getLocationFilter(req, 'wr');
 
       let sql = `
         SELECT wr.id, wr.registration_id, wr.customer_name, wr.mobile, wr.status, wr.location_id, l.location_name
@@ -651,7 +651,7 @@ class WeddingRegistrationController {
         mobile,
         email: data.email?.trim() || null,
         weddingDate: data.wedding_date || null,
-        expectedShoppingDate: data.preferred_shopping_date,
+        expectedShoppingDate: data.preferred_shopping_date || data.wedding_date || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
         preferredCategory: data.shopping_requirements ? Object.keys(data.shopping_requirements).join(', ') : 'General Wedding Shopping',
         estimatedFamilySize: parsePositiveInt(data.family_size, { max: 1000 }) || 1,
         followUpDate: data.preferred_shopping_date || new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
@@ -780,7 +780,7 @@ class WeddingRegistrationController {
   async getRegistrationById(req, res) {
     try {
       const id = parseInt(req.params.id, 10);
-      const { clause: locClause, params } = getLocationFilter(req, 'wr');
+      const { clause: locClause, params } = await getLocationFilter(req, 'wr');
 
       const [rows] = await pool.query(`
         SELECT 
@@ -817,7 +817,7 @@ class WeddingRegistrationController {
   async updateRegistration(req, res) {
     try {
       const id = parseInt(req.params.id, 10);
-      const { clause: locClause, params: locParams } = getLocationFilter(req, 'wr');
+      const { clause: locClause, params: locParams } = await getLocationFilter(req, 'wr');
 
       const [existing] = await pool.query(`
         SELECT * FROM wedding_registrations wr WHERE wr.id = ? AND wr.status != 'Deleted' ${locClause}
@@ -934,7 +934,7 @@ class WeddingRegistrationController {
   async deleteRegistration(req, res) {
     try {
       const id = parseInt(req.params.id, 10);
-      const { clause: locClause, params } = getLocationFilter(req, 'wr');
+      const { clause: locClause, params } = await getLocationFilter(req, 'wr');
 
       const [existing] = await pool.query(`
         SELECT * FROM wedding_registrations wr WHERE wr.id = ? AND wr.status != 'Deleted' ${locClause}
@@ -972,7 +972,7 @@ class WeddingRegistrationController {
       await ensureTables();
       const { status, locationId, fromDate, toDate } = req.query;
 
-      const { clause: locClause, params: queryParams } = getLocationFilter(req, 'wr');
+      const { clause: locClause, params: queryParams } = await getLocationFilter(req, 'wr');
       let whereClauses = ['wr.status != \'Deleted\'', `1=1 ${locClause}`];
 
       if (status && status !== 'all') {
@@ -1177,7 +1177,7 @@ class WeddingRegistrationController {
     try {
       await ensureTables();
       const id = parseInt(req.params.id, 10);
-      const { clause: locClause, params: locParams } = getLocationFilter(req, 'wr');
+      const { clause: locClause, params: locParams } = await getLocationFilter(req, 'wr');
 
       const [rows] = await pool.query(
         `SELECT wr.*, l.location_name FROM wedding_registrations wr

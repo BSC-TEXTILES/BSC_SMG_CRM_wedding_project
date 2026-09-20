@@ -143,11 +143,51 @@ class AuthService {
       }
     }
 
-    // Resolve location info
+    // Resolve multi-location info from user_locations table
+    let allowedLocations = [];
+    if (user.id) {
+      try {
+        const [ulRows] = await pool.query(
+          `SELECT ul.location_id, l.location_code, l.location_name
+           FROM user_locations ul
+           JOIN locations l ON l.id = ul.location_id
+           WHERE ul.user_id = ? AND l.status = 'Active'
+           ORDER BY l.sort_order ASC`,
+          [user.id]
+        );
+        if (ulRows && ulRows.length > 0) {
+          allowedLocations = ulRows.map(r => ({
+            id: r.location_id,
+            code: r.location_code,
+            name: r.location_name
+          }));
+        }
+      } catch (e) {
+        console.warn('[AuthService] user_locations query failed:', e.message);
+      }
+    }
+
     const locationId   = user.locationId   || null;
     const locationCode = user.locationCode || null;
     const locationName = user.locationName || null;
     const isGlobalAdmin = locationId === null; // null location = Global Admin (all locations)
+
+    if (isGlobalAdmin) {
+      try {
+        const [allLocs] = await pool.query(
+          `SELECT id, location_code AS code, location_name AS name FROM locations WHERE status = 'Active' ORDER BY sort_order ASC`
+        );
+        allowedLocations = allLocs || [];
+      } catch (e) {}
+    } else if (allowedLocations.length === 0 && locationId) {
+      allowedLocations = [{
+        id: locationId,
+        code: locationCode || 'DAV',
+        name: locationName || 'Davanagere'
+      }];
+    }
+
+    const allowedLocationIds = allowedLocations.map(l => l.id);
 
     const token = jwt.sign(
       {
@@ -158,7 +198,8 @@ class AuthService {
         locationId,
         locationCode,
         locationName,
-        isGlobalAdmin
+        isGlobalAdmin,
+        allowedLocations: allowedLocationIds
       },
       getJwtSecret(),
       { expiresIn: SESSION_EXPIRES_IN }
@@ -183,7 +224,8 @@ class AuthService {
         locationId,
         locationCode,
         locationName,
-        isGlobalAdmin
+        isGlobalAdmin,
+        allowedLocations
       }
     };
   }

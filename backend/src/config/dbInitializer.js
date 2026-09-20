@@ -690,7 +690,74 @@ async function autoInitializeDatabase(pool) {
       `ALTER TABLE locations ADD COLUMN store_name VARCHAR(100) NULL AFTER location_name`,
       `ALTER TABLE locations ADD COLUMN address TEXT NULL`,
       `ALTER TABLE locations ADD COLUMN phone VARCHAR(50) NULL`,
-      `ALTER TABLE locations ADD COLUMN email VARCHAR(100) NULL`
+      `ALTER TABLE locations ADD COLUMN email VARCHAR(100) NULL`,
+
+      // Store Operations multi-location columns & indexes
+      `ALTER TABLE FootfallEntries ADD COLUMN location_id INT NOT NULL DEFAULT 2 AFTER id`,
+      `ALTER TABLE FootfallEntries ADD UNIQUE KEY idx_loc_date_slot (location_id, entryDate, slotHour)`,
+      `ALTER TABLE DailySummaries ADD COLUMN location_id INT NOT NULL DEFAULT 2 AFTER id`,
+      `ALTER TABLE Feedback ADD COLUMN location_id INT NOT NULL DEFAULT 2 AFTER id`,
+      `ALTER TABLE Feedback ADD INDEX idx_feedback_loc_date (location_id, entryDate)`,
+      `ALTER TABLE CallQueue ADD COLUMN location_id INT NOT NULL DEFAULT 2 AFTER id`,
+      `ALTER TABLE CallQueue ADD INDEX idx_callqueue_loc (location_id)`,
+      `ALTER TABLE Diverts ADD COLUMN location_id INT NOT NULL DEFAULT 2 AFTER id`,
+      `ALTER TABLE Diverts ADD INDEX idx_diverts_loc (location_id)`,
+      `ALTER TABLE CashSettlements ADD COLUMN location_id INT NOT NULL DEFAULT 2 AFTER id`,
+      `ALTER TABLE CashSettlements ADD INDEX idx_cash_loc_date (location_id, entryDate)`,
+      `ALTER TABLE VmSubmissions ADD COLUMN location_id INT NOT NULL DEFAULT 2 AFTER id`,
+      `ALTER TABLE VmSubmissions ADD INDEX idx_vmsub_loc (location_id)`,
+      `ALTER TABLE VmFloors ADD COLUMN location_id INT NULL DEFAULT 2 AFTER id`,
+
+      // Batch Plan module tables
+      `CREATE TABLE IF NOT EXISTS \`batches\` (
+        \`id\` INT AUTO_INCREMENT PRIMARY KEY,
+        \`batch_number\` VARCHAR(50) NOT NULL UNIQUE,
+        \`batch_name\` VARCHAR(150) NOT NULL,
+        \`location_id\` INT NOT NULL DEFAULT 2,
+        \`start_date\` DATE NOT NULL,
+        \`target_end_date\` DATE NULL,
+        \`actual_end_date\` DATE NULL,
+        \`status\` ENUM('Draft', 'Active', 'Completed', 'Cancelled') NOT NULL DEFAULT 'Draft',
+        \`department\` VARCHAR(100) NULL DEFAULT 'Weaving',
+        \`trainer_name\` VARCHAR(100) NULL,
+        \`notes\` TEXT NULL,
+        \`created_by\` VARCHAR(100) NULL,
+        \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        \`updated_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX \`idx_batches_location\` (\`location_id\`),
+        INDEX \`idx_batches_status\` (\`status\`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+
+      `CREATE TABLE IF NOT EXISTS \`batch_groups\` (
+        \`id\` INT AUTO_INCREMENT PRIMARY KEY,
+        \`batch_id\` INT NOT NULL,
+        \`group_name\` VARCHAR(100) NOT NULL,
+        \`mentor_name\` VARCHAR(100) NULL,
+        \`target_count\` INT NOT NULL DEFAULT 0,
+        \`notes\` TEXT NULL,
+        \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        \`updated_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX \`idx_batch_groups_batch\` (\`batch_id\`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+
+      `CREATE TABLE IF NOT EXISTS \`batch_group_members\` (
+        \`id\` INT AUTO_INCREMENT PRIMARY KEY,
+        \`group_id\` INT NOT NULL,
+        \`batch_id\` INT NOT NULL,
+        \`candidate_id\` INT NULL,
+        \`employee_id\` VARCHAR(50) NULL,
+        \`member_name\` VARCHAR(150) NOT NULL,
+        \`phone\` VARCHAR(20) NULL,
+        \`status\` ENUM('Assigned', 'In Progress', 'Graduated', 'Dropped') NOT NULL DEFAULT 'Assigned',
+        \`join_date\` DATE NULL,
+        \`completion_date\` DATE NULL,
+        \`remarks\` TEXT NULL,
+        \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        \`updated_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX \`idx_bgm_group\` (\`group_id\`),
+        INDEX \`idx_bgm_batch\` (\`batch_id\`),
+        INDEX \`idx_bgm_candidate\` (\`candidate_id\`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
     ];
 
     for (const sql of migrations) {
