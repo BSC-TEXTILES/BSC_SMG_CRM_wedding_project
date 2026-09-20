@@ -7,7 +7,7 @@ import {
   CheckCircle2, Circle, AlertCircle, Clock, XCircle, ChevronDown, ChevronRight,
   ChevronUp, Calendar, RefreshCw, Send, Save, Upload, X, Eye, FileText,
   ClipboardList, BarChart3, Zap, Target, AlertTriangle, Camera, Image,
-  Settings, ArrowLeft, ArrowUp, ArrowDown, Plus, Edit2, Check
+  Settings, ArrowLeft, ArrowUp, ArrowDown, Plus, Edit2, Check, CheckSquare
 } from 'lucide-react';
 
 const STATUS_COLORS: Record<string, { bg: string; text: string; border: string; icon: React.FC<any> }> = {
@@ -420,6 +420,60 @@ export default function DailyMCheck() {
                 title="Refresh"
               >
                 <RefreshCw className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* M-Check Module Navigation */}
+          <div className="bg-white p-2 rounded-2xl border border-accent-soft shadow-xs flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-1.5 overflow-x-auto whitespace-nowrap pb-1 scrollbar-hide">
+              <button
+                onClick={() => { setSelectedModule(null); setModuleData(null); }}
+                className={`px-4 py-2 rounded-xl text-xs font-black flex items-center gap-2 transition-all ${
+                  !selectedModule
+                    ? 'bg-primary text-white shadow-md'
+                    : 'text-primary hover:bg-background'
+                }`}
+              >
+                <BarChart3 className="w-4 h-4 text-accent" />
+                <span>MCheck Dashboard</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  if (dashData?.moduleStats?.[0]) {
+                    loadModule(dashData.moduleStats[0]);
+                  }
+                }}
+                className={`px-4 py-2 rounded-xl text-xs font-black flex items-center gap-2 transition-all ${
+                  selectedModule
+                    ? 'bg-primary text-white shadow-md'
+                    : 'text-primary hover:bg-background'
+                }`}
+              >
+                <CheckSquare className="w-4 h-4 text-accent" />
+                <span>Start Checklist</span>
+                {selectedModule && (
+                  <span className="text-[10px] bg-accent/20 px-2 py-0.5 rounded-full text-accent font-bold">
+                    {selectedModule.module_name}
+                  </span>
+                )}
+              </button>
+
+              <button
+                onClick={() => navigate('/mcheck-reports')}
+                className="px-4 py-2 rounded-xl text-xs font-black flex items-center gap-2 transition-all text-primary hover:bg-background"
+              >
+                <FileText className="w-4 h-4 text-accent" />
+                <span>Reports</span>
+              </button>
+
+              <button
+                onClick={() => navigate('/mcheck-history')}
+                className="px-4 py-2 rounded-xl text-xs font-black flex items-center gap-2 transition-all text-primary hover:bg-background"
+              >
+                <Clock className="w-4 h-4 text-accent" />
+                <span>History</span>
               </button>
             </div>
           </div>

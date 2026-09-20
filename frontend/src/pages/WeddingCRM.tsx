@@ -197,18 +197,18 @@ export default function WeddingCRM() {
   const [collapsed, setCollapsed] = useState<boolean>(getSidebarCollapsed());
 
   const initialTab = (searchParams.get('tab') as any) || 'calling_desk';
-  const [activeTab, setActiveTab] = useState<'calling_desk' | 'register' | 'calendar' | 'analytics' | 'pipeline'>(
-    ['calling_desk', 'register', 'calendar', 'analytics', 'pipeline'].includes(initialTab) ? initialTab : 'calling_desk'
+  const [activeTab, setActiveTab] = useState<'calling_desk' | 'register' | 'calendar' | 'analytics' | 'pipeline' | 'call_history'>(
+    ['calling_desk', 'register', 'calendar', 'analytics', 'pipeline', 'call_history'].includes(initialTab) ? initialTab : 'calling_desk'
   );
 
   useEffect(() => {
     const tabParam = searchParams.get('tab');
-    if (tabParam && ['calling_desk', 'register', 'calendar', 'analytics', 'pipeline'].includes(tabParam)) {
+    if (tabParam && ['calling_desk', 'register', 'calendar', 'analytics', 'pipeline', 'call_history'].includes(tabParam)) {
       setActiveTab(tabParam as any);
     }
   }, [searchParams]);
 
-  const switchTab = (tab: 'calling_desk' | 'register' | 'calendar' | 'analytics' | 'pipeline') => {
+  const switchTab = (tab: 'calling_desk' | 'register' | 'calendar' | 'analytics' | 'pipeline' | 'call_history') => {
     setActiveTab(tab);
     setSearchParams({ tab });
   };
@@ -576,15 +576,39 @@ export default function WeddingCRM() {
     }
   }, []);
 
+  // Call History State & Loader
+  const [callHistoryLogs, setCallHistoryLogs] = useState<any[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [historyTotal, setHistoryTotal] = useState(0);
+
+  const loadCallHistory = useCallback(async () => {
+    setLoadingHistory(true);
+    try {
+      const res = await API.getTelecallerCallHistory({
+        limit: 100,
+        location_id: selectedLocation ? Number(selectedLocation) : undefined
+      });
+      if (res?.callHistory) {
+        setCallHistoryLogs(res.callHistory);
+        setHistoryTotal(res.total || res.callHistory.length);
+      }
+    } catch (err) {
+      console.error('Failed to load call history timeline:', err);
+    } finally {
+      setLoadingHistory(false);
+    }
+  }, [selectedLocation]);
+
   // Refresh tab data when activeTab or location changes
   useEffect(() => {
     loadStats();
     if (activeTab === 'calling_desk') loadCallingDesk();
     else if (activeTab === 'register') loadCustomers();
     else if (activeTab === 'calendar') loadCalendar();
+    else if (activeTab === 'call_history') loadCallHistory();
     else if (activeTab === 'analytics') loadAnalytics();
     else if (activeTab === 'pipeline') { loadEnhancedDashboard(); loadReports('overview'); }
-  }, [activeTab, selectedLocation, loadStats, loadCallingDesk, loadCustomers, loadCalendar, loadAnalytics, loadEnhancedDashboard, loadReports]);
+  }, [activeTab, selectedLocation, loadStats, loadCallingDesk, loadCustomers, loadCalendar, loadCallHistory, loadAnalytics, loadEnhancedDashboard, loadReports]);
 
   // Duplicate Check on Phone Blur
   const handlePhoneBlur = async (phone: string) => {
@@ -1187,14 +1211,14 @@ export default function WeddingCRM() {
           )}
 
           {/* ════════════════════════════════════════════════════════════
-              8 DASHBOARD KPI CARDS (Manager Understands in < 10 Seconds)
+              8 DASHBOARD KPI CARDS (Wedding Pipeline Funnel)
              ════════════════════════════════════════════════════════════ */}
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
-            {/* 1. Total Wedding Customers */}
+            {/* 1. New Leads */}
             <div
               onClick={() => {
                 setActiveTab('register');
-                setStatusFilter('');
+                setStatusFilter('New');
                 setCallStatusFilter('');
                 setTelecallerFilter('');
                 setSearchQuery('');
@@ -1205,14 +1229,14 @@ export default function WeddingCRM() {
               className="bg-white border border-accent-soft hover:border-primary rounded-2xl p-2.5 sm:p-3.5 shadow-xs hover:shadow-md transition-all cursor-pointer group"
             >
               <div className="flex items-center justify-between text-primary mb-1">
-                <span className="text-[10px] font-black uppercase tracking-wider">Total Customers</span>
+                <span className="text-[10px] font-black uppercase tracking-wider">New Leads</span>
                 <Users className="w-4 h-4 text-primary group-hover:scale-110 transition-transform" />
               </div>
-              <div className="text-xl sm:text-2xl font-black text-primary">{stats.totalCustomers}</div>
-              <div className="text-[10px] text-primary font-medium mt-0.5">All registered</div>
+              <div className="text-xl sm:text-2xl font-black text-primary">{stats.todayNewCustomers || stats.newRequests || stats.totalCustomers}</div>
+              <div className="text-[10px] text-primary font-medium mt-0.5">Fresh Inquiries</div>
             </div>
 
-            {/* 2. Today's Follow-ups (Primary Pulse KPI - Click opens Calling Desk) */}
+            {/* 2. Today's Calls */}
             <div
               onClick={() => { setActiveTab('calling_desk'); setDeskQueueType('dueToday'); }}
               className="bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-400 rounded-2xl p-2.5 sm:p-3.5 shadow-sm hover:shadow-md transition-all cursor-pointer relative overflow-hidden group"
@@ -1228,7 +1252,7 @@ export default function WeddingCRM() {
               </div>
             </div>
 
-            {/* 3. Overdue Follow-ups */}
+            {/* 3. Overdue */}
             <div
               onClick={() => { setActiveTab('calling_desk'); setDeskQueueType('overdue'); }}
               className={`rounded-2xl p-2.5 sm:p-3.5 shadow-xs hover:shadow-md transition-all cursor-pointer group border ${
@@ -1243,30 +1267,30 @@ export default function WeddingCRM() {
               <div className="text-[10px] text-red-600 font-semibold mt-0.5">Calls missed</div>
             </div>
 
-            {/* 4. Calls Pending */}
+            {/* 4. Pending */}
             <div
               onClick={() => { setActiveTab('calling_desk'); }}
               className="bg-white border border-accent-soft hover:border-orange-300 rounded-2xl p-2.5 sm:p-3.5 shadow-xs hover:shadow-md transition-all cursor-pointer group"
             >
               <div className="flex items-center justify-between text-orange-600 mb-1">
-                <span className="text-[10px] font-black uppercase tracking-wider">Calls Pending</span>
+                <span className="text-[10px] font-black uppercase tracking-wider">Pending</span>
                 <Clock className="w-4 h-4 group-hover:scale-110 transition-transform" />
               </div>
               <div className="text-xl sm:text-2xl font-black text-orange-700">{stats.callsPending}</div>
-              <div className="text-[10px] text-orange-600 font-medium mt-0.5">To be completed</div>
+              <div className="text-[10px] text-orange-600 font-medium mt-0.5">Awaiting contact</div>
             </div>
 
-            {/* 5. Calls Completed */}
+            {/* 5. Connected */}
             <div
-              onClick={() => { setActiveTab('register'); setCallStatusFilter('Completed'); }}
+              onClick={() => { setActiveTab('register'); setCallStatusFilter('Connected'); }}
               className="bg-white border border-accent-soft hover:border-emerald-300 rounded-2xl p-2.5 sm:p-3.5 shadow-xs hover:shadow-md transition-all cursor-pointer group"
             >
               <div className="flex items-center justify-between text-emerald-600 mb-1">
-                <span className="text-[10px] font-black uppercase tracking-wider">Calls Completed</span>
+                <span className="text-[10px] font-black uppercase tracking-wider">Connected</span>
                 <CheckCircle2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
               </div>
-              <div className="text-xl sm:text-2xl font-black text-emerald-700">{stats.callsCompleted}</div>
-              <div className="text-[10px] text-emerald-600 font-medium mt-0.5">Successfully logged</div>
+              <div className="text-xl sm:text-2xl font-black text-emerald-700">{stats.connectedCalls || stats.callsCompleted}</div>
+              <div className="text-[10px] text-emerald-600 font-medium mt-0.5">Active dialogue</div>
             </div>
 
             {/* 6. Shopping Confirmed */}
@@ -1279,33 +1303,33 @@ export default function WeddingCRM() {
                 <ShoppingBag className="w-4 h-4 group-hover:scale-110 transition-transform" />
               </div>
               <div className="text-xl sm:text-2xl font-black text-blue-800">{stats.shoppingConfirmed}</div>
-              <div className="text-[10px] text-blue-600 font-semibold mt-0.5">High Intent</div>
+              <div className="text-[10px] text-blue-600 font-semibold mt-0.5">Date Locked</div>
             </div>
 
-            {/* 7. Visited / Converted */}
+            {/* 7. Visited */}
             <div
-              onClick={() => { setActiveTab('register'); setStatusFilter('Converted'); }}
-              className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-300 rounded-2xl p-2.5 sm:p-3.5 shadow-xs hover:shadow-md transition-all cursor-pointer group"
+              onClick={() => { setActiveTab('register'); setStatusFilter('Visited Store'); }}
+              className="bg-gradient-to-br from-teal-50 to-cyan-50 border border-teal-300 rounded-2xl p-2.5 sm:p-3.5 shadow-xs hover:shadow-md transition-all cursor-pointer group"
             >
               <div className="flex items-center justify-between text-teal-700 mb-1">
-                <span className="text-[10px] font-black uppercase tracking-wider">Visited / Won</span>
-                <Sparkles className="w-4 h-4 text-emerald-600 group-hover:scale-110 transition-transform" />
+                <span className="text-[10px] font-black uppercase tracking-wider">Visited</span>
+                <MapPin className="w-4 h-4 text-teal-600 group-hover:scale-110 transition-transform" />
               </div>
               <div className="text-xl sm:text-2xl font-black text-teal-900">{stats.visitedConverted}</div>
-              <div className="text-[10px] text-teal-700 font-bold mt-0.5">Conversion rate</div>
+              <div className="text-[10px] text-teal-700 font-bold mt-0.5">Store Walk-in</div>
             </div>
 
-            {/* 8. Not Interested */}
+            {/* 8. Won */}
             <div
-              onClick={() => { setActiveTab('register'); setStatusFilter('Not Interested'); }}
-              className="bg-white border border-accent-soft hover:border-gray-400 rounded-2xl p-2.5 sm:p-3.5 shadow-xs hover:shadow-md transition-all cursor-pointer group"
+              onClick={() => { setActiveTab('register'); setStatusFilter('Converted'); }}
+              className="bg-gradient-to-br from-emerald-50 to-green-50 border border-emerald-300 rounded-2xl p-2.5 sm:p-3.5 shadow-xs hover:shadow-md transition-all cursor-pointer group"
             >
-              <div className="flex items-center justify-between text-gray-500 mb-1">
-                <span className="text-[10px] font-black uppercase tracking-wider">Not Interested</span>
-                <XCircle className="w-4 h-4 group-hover:scale-110 transition-transform" />
+              <div className="flex items-center justify-between text-emerald-700 mb-1">
+                <span className="text-[10px] font-black uppercase tracking-wider">Won</span>
+                <Sparkles className="w-4 h-4 text-emerald-600 group-hover:scale-110 transition-transform" />
               </div>
-              <div className="text-xl sm:text-2xl font-black text-gray-700">{stats.notInterested}</div>
-              <div className="text-[10px] text-gray-500 font-medium mt-0.5">Closed / Opt-out</div>
+              <div className="text-xl sm:text-2xl font-black text-emerald-900">{stats.convertedCustomers || stats.visitedConverted || 0}</div>
+              <div className="text-[10px] text-emerald-700 font-bold mt-0.5">Sale Finalized</div>
             </div>
           </div>
 
@@ -1323,7 +1347,7 @@ export default function WeddingCRM() {
                 }`}
               >
                 <PhoneCall className={`w-4 h-4 ${activeTab === 'calling_desk' ? 'text-accent' : ''}`} />
-                <span>WEDDING FOLLOW-UP DESK</span>
+                <span>Telecaller Desk</span>
                 {deskSummary.remainingCalls > 0 && (
                   <span className="bg-amber-400 text-primary text-[10px] font-black px-1.5 py-[2px] rounded-full">
                     {deskSummary.remainingCalls}
@@ -1347,6 +1371,31 @@ export default function WeddingCRM() {
               </button>
 
               <button
+                onClick={() => setShowAddModal(true)}
+                className="px-4 py-2 rounded-xl text-xs font-black flex items-center gap-2 transition-all bg-[#FAF7F2] hover:bg-accent-soft text-primary border border-accent/40 shadow-2xs"
+              >
+                <Plus className="w-4 h-4 text-accent" />
+                <span>Add Customer</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('call_history')}
+                className={`px-4 py-2 rounded-xl text-xs font-black flex items-center gap-2 transition-all ${
+                  activeTab === 'call_history'
+                    ? 'bg-primary text-white shadow-md'
+                    : 'text-primary hover:bg-background hover:text-primary'
+                }`}
+              >
+                <History className={`w-4 h-4 ${activeTab === 'call_history' ? 'text-accent' : ''}`} />
+                <span>Call History</span>
+                {historyTotal > 0 && (
+                  <span className="text-[10px] bg-black/10 px-1.5 py-[2px] rounded-full font-bold">
+                    {historyTotal}
+                  </span>
+                )}
+              </button>
+
+              <button
                 onClick={() => setActiveTab('calendar')}
                 className={`px-4 py-2 rounded-xl text-xs font-black flex items-center gap-2 transition-all ${
                   activeTab === 'calendar'
@@ -1361,25 +1410,13 @@ export default function WeddingCRM() {
               <button
                 onClick={() => setActiveTab('analytics')}
                 className={`px-4 py-2 rounded-xl text-xs font-black flex items-center gap-2 transition-all ${
-                  activeTab === 'analytics'
+                  activeTab === 'analytics' || activeTab === 'pipeline'
                     ? 'bg-primary text-white shadow-md'
                     : 'text-primary hover:bg-background hover:text-primary'
                 }`}
               >
-                <BarChart3 className={`w-4 h-4 ${activeTab === 'analytics' ? 'text-accent' : ''}`} />
-                <span>Funnel & Performance</span>
-              </button>
-
-              <button
-                onClick={() => setActiveTab('pipeline')}
-                className={`px-4 py-2 rounded-xl text-xs font-black flex items-center gap-2 transition-all ${
-                  activeTab === 'pipeline'
-                    ? 'bg-primary text-white shadow-md'
-                    : 'text-primary hover:bg-background hover:text-primary'
-                }`}
-              >
-                <TrendingUp className={`w-4 h-4 ${activeTab === 'pipeline' ? 'text-accent' : ''}`} />
-                <span>Pipeline & Reports</span>
+                <BarChart3 className={`w-4 h-4 ${activeTab === 'analytics' || activeTab === 'pipeline' ? 'text-accent' : ''}`} />
+                <span>Reports & Performance</span>
               </button>
             </div>
 
@@ -1476,22 +1513,22 @@ export default function WeddingCRM() {
                 </div>
               </div>
 
-              {/* 6 Prioritized Work Queues Selector */}
+              {/* Telecaller Work Queues Selector */}
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
                 <button
-                  onClick={() => setDeskQueueType('overdue')}
+                  onClick={() => setDeskQueueType('priority')}
                   className={`p-3 rounded-2xl border text-left transition-all ${
-                    deskQueueType === 'overdue'
-                      ? 'bg-red-50 border-red-500 ring-2 ring-red-400 shadow-sm'
-                      : 'bg-white border-accent-soft hover:border-red-300'
+                    deskQueueType === 'priority'
+                      ? 'bg-rose-50 border-rose-500 ring-2 ring-rose-400 shadow-sm'
+                      : 'bg-white border-accent-soft hover:border-rose-300'
                   }`}
                 >
-                  <div className="flex items-center justify-between text-red-700">
-                    <span className="text-xs font-black uppercase">1. Overdue</span>
-                    <AlertCircle className="w-4 h-4" />
+                  <div className="flex items-center justify-between text-rose-700">
+                    <span className="text-xs font-black uppercase">1. My Calls</span>
+                    <Sparkles className="w-4 h-4" />
                   </div>
-                  <div className="text-xl font-black text-red-800 mt-1">{deskQueues.overdue.length}</div>
-                  <div className="text-[10px] text-red-600 font-medium">Missed previous calls</div>
+                  <div className="text-xl font-black text-rose-900 mt-1">{deskQueues.priorityCalls?.length || 0}</div>
+                  <div className="text-[10px] text-rose-700 font-medium">Assigned to Me / VIP</div>
                 </button>
 
                 <button
@@ -1503,11 +1540,27 @@ export default function WeddingCRM() {
                   }`}
                 >
                   <div className="flex items-center justify-between text-amber-700">
-                    <span className="text-xs font-black uppercase">2. Due Today</span>
+                    <span className="text-xs font-black uppercase">2. Today's Calls</span>
                     <PhoneCall className="w-4 h-4" />
                   </div>
                   <div className="text-xl font-black text-amber-900 mt-1">{deskQueues.dueToday.length}</div>
                   <div className="text-[10px] text-amber-700 font-medium">Scheduled for today</div>
+                </button>
+
+                <button
+                  onClick={() => setDeskQueueType('overdue')}
+                  className={`p-3 rounded-2xl border text-left transition-all ${
+                    deskQueueType === 'overdue'
+                      ? 'bg-red-50 border-red-500 ring-2 ring-red-400 shadow-sm'
+                      : 'bg-white border-accent-soft hover:border-red-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between text-red-700">
+                    <span className="text-xs font-black uppercase">3. Overdue</span>
+                    <AlertCircle className="w-4 h-4" />
+                  </div>
+                  <div className="text-xl font-black text-red-800 mt-1">{deskQueues.overdue.length}</div>
+                  <div className="text-[10px] text-red-600 font-medium">Missed follow-ups</div>
                 </button>
 
                 <button
@@ -1519,43 +1572,11 @@ export default function WeddingCRM() {
                   }`}
                 >
                   <div className="flex items-center justify-between text-purple-700">
-                    <span className="text-xs font-black uppercase">3. Callbacks</span>
+                    <span className="text-xs font-black uppercase">4. Callback</span>
                     <PhoneForwarded className="w-4 h-4" />
                   </div>
                   <div className="text-xl font-black text-purple-900 mt-1">{deskQueues.callbackRequests.length}</div>
-                  <div className="text-[10px] text-purple-700 font-medium">Requested callback</div>
-                </button>
-
-                <button
-                  onClick={() => setDeskQueueType('priority')}
-                  className={`p-3 rounded-2xl border text-left transition-all ${
-                    deskQueueType === 'priority'
-                      ? 'bg-rose-50 border-rose-500 ring-2 ring-rose-400 shadow-sm'
-                      : 'bg-white border-accent-soft hover:border-rose-300'
-                  }`}
-                >
-                  <div className="flex items-center justify-between text-rose-700">
-                    <span className="text-xs font-black uppercase">4. Priority / VIP</span>
-                    <Sparkles className="w-4 h-4" />
-                  </div>
-                  <div className="text-xl font-black text-rose-900 mt-1">{deskQueues.priorityCalls?.length || 0}</div>
-                  <div className="text-[10px] text-rose-700 font-medium">High / Urgent budget</div>
-                </button>
-
-                <button
-                  onClick={() => setDeskQueueType('newCustomers')}
-                  className={`p-3 rounded-2xl border text-left transition-all ${
-                    deskQueueType === 'newCustomers'
-                      ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-400 shadow-sm'
-                      : 'bg-white border-accent-soft hover:border-emerald-300'
-                  }`}
-                >
-                  <div className="flex items-center justify-between text-emerald-700">
-                    <span className="text-xs font-black uppercase">5. New Leads</span>
-                    <UserCheck className="w-4 h-4" />
-                  </div>
-                  <div className="text-xl font-black text-emerald-900 mt-1">{deskQueues.newCustomers?.length || 0}</div>
-                  <div className="text-[10px] text-emerald-700 font-medium">Never contacted</div>
+                  <div className="text-[10px] text-purple-700 font-medium">Customer requested</div>
                 </button>
 
                 <button
@@ -1567,11 +1588,27 @@ export default function WeddingCRM() {
                   }`}
                 >
                   <div className="flex items-center justify-between text-blue-700">
-                    <span className="text-xs font-black uppercase">6. Upcoming (7d)</span>
+                    <span className="text-xs font-black uppercase">5. Reschedule</span>
                     <Calendar className="w-4 h-4" />
                   </div>
                   <div className="text-xl font-black text-blue-900 mt-1">{deskQueues.upcoming.length}</div>
-                  <div className="text-[10px] text-blue-700 font-medium">Pipeline follow-ups</div>
+                  <div className="text-[10px] text-blue-700 font-medium">Future & Rescheduled</div>
+                </button>
+
+                <button
+                  onClick={() => setDeskQueueType('newCustomers')}
+                  className={`p-3 rounded-2xl border text-left transition-all ${
+                    deskQueueType === 'newCustomers'
+                      ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-400 shadow-sm'
+                      : 'bg-white border-accent-soft hover:border-emerald-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between text-emerald-700">
+                    <span className="text-xs font-black uppercase">6. New Leads</span>
+                    <UserCheck className="w-4 h-4" />
+                  </div>
+                  <div className="text-xl font-black text-emerald-900 mt-1">{deskQueues.newCustomers?.length || 0}</div>
+                  <div className="text-[10px] text-emerald-700 font-medium">Never contacted</div>
                 </button>
               </div>
 
@@ -2350,6 +2387,110 @@ export default function WeddingCRM() {
                       </div>
                     );
                   })()}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ════════════════════════════════════════════════════════════
+              TAB: CALL HISTORY TIMELINE
+             ════════════════════════════════════════════════════════════ */}
+          {activeTab === 'call_history' && (
+            <div className="space-y-4">
+              <div className="bg-white p-5 rounded-3xl border border-accent-soft shadow-xs flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <h3 className="text-lg font-black text-primary flex items-center gap-2">
+                    <History className="w-5 h-5 text-accent" />
+                    <span>Complete Customer Communication Timeline</span>
+                  </h3>
+                  <p className="text-xs text-primary mt-0.5">Chronological log of all customer telecalling interactions, outcomes, notes, and rescheduled follow-ups.</p>
+                </div>
+                <button 
+                  onClick={loadCallHistory}
+                  disabled={loadingHistory}
+                  className="px-3.5 py-1.5 rounded-xl border border-accent-soft text-xs font-bold text-primary hover:bg-background flex items-center gap-1.5 transition-all"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${loadingHistory ? 'animate-spin text-accent' : ''}`} />
+                  <span>Refresh Timeline</span>
+                </button>
+              </div>
+
+              {loadingHistory ? (
+                <div className="bg-white p-12 rounded-3xl border border-accent-soft text-center text-primary">
+                  <RefreshCw className="w-6 h-6 mx-auto animate-spin text-accent mb-2" />
+                  <p className="text-sm font-bold">Loading call history timeline...</p>
+                </div>
+              ) : callHistoryLogs.length === 0 ? (
+                <div className="bg-white p-12 rounded-3xl border border-accent-soft text-center text-primary">
+                  <History className="w-10 h-10 mx-auto text-accent mb-2 opacity-50" />
+                  <h4 className="text-base font-bold">No calls logged yet</h4>
+                  <p className="text-xs mt-1">Logged calls from the Telecaller Desk will appear in this timeline.</p>
+                </div>
+              ) : (
+                <div className="bg-white rounded-3xl border border-accent-soft shadow-xs overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-[#FAF7F2] text-primary font-black uppercase text-[10px] tracking-wider border-b border-accent-soft">
+                        <tr>
+                          <th className="px-4 py-3">Date & Time</th>
+                          <th className="px-4 py-3">Customer</th>
+                          <th className="px-4 py-3">Mobile</th>
+                          <th className="px-4 py-3">Branch / Location</th>
+                          <th className="px-4 py-3">Telecaller</th>
+                          <th className="px-4 py-3">Call Outcome</th>
+                          <th className="px-4 py-3">Next Follow-Up</th>
+                          <th className="px-4 py-3">Remarks & Notes</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-accent-soft/40">
+                        {callHistoryLogs.map((log: any) => (
+                          <tr key={log.id} className="hover:bg-[#FAF7F2]/50 transition-colors">
+                            <td className="px-4 py-3 font-bold text-primary whitespace-nowrap">
+                              <div>{log.call_date ? formatDate(log.call_date) : '—'}</div>
+                              <div className="text-[10px] text-gray-500 font-normal">{log.call_time || ''}</div>
+                            </td>
+                            <td className="px-4 py-3 font-black text-primary">
+                              {log.customer_name || '—'}
+                              {log.customer_code && <div className="text-[10px] text-gray-500 font-medium">#{log.customer_code}</div>}
+                            </td>
+                            <td className="px-4 py-3 font-semibold text-gray-700 whitespace-nowrap">
+                              {log.mobile_number || '—'}
+                            </td>
+                            <td className="px-4 py-3 font-medium text-gray-600">
+                              <span className="px-2 py-0.5 rounded-md bg-background text-[11px] font-bold border border-accent-soft">
+                                {log.location_name || 'BSC Exclusive'}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 font-bold text-primary">
+                              {log.telecaller_name || 'Staff'}
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              <span className={`px-2.5 py-1 rounded-full text-[10px] font-black ${
+                                log.call_outcome === 'Connected' || log.call_outcome === 'Interested'
+                                  ? 'bg-emerald-100 text-emerald-800'
+                                  : log.call_outcome === 'Appointment Requested'
+                                  ? 'bg-blue-100 text-blue-800'
+                                  : log.call_outcome === 'Call Back Requested'
+                                  ? 'bg-purple-100 text-purple-800'
+                                  : log.call_outcome === 'No Answer' || log.call_outcome === 'Busy'
+                                  ? 'bg-amber-100 text-amber-800'
+                                  : 'bg-gray-100 text-gray-700'
+                              }`}>
+                                {log.call_outcome || log.call_status || 'Called'}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 font-bold text-amber-800 whitespace-nowrap">
+                              {log.next_follow_up_date ? formatDate(log.next_follow_up_date) : '—'}
+                              {log.next_follow_up_time && <span className="text-[10px] block text-gray-500">{log.next_follow_up_time}</span>}
+                            </td>
+                            <td className="px-4 py-3 text-gray-700 max-w-xs truncate" title={log.remarks || ''}>
+                              {log.remarks || '—'}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               )}
             </div>

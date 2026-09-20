@@ -40,9 +40,7 @@ exports.getModules = async (req, res) => {
 exports.getDashboard = async (req, res) => {
   try {
     const date = req.query.date || getISTDateString();
-    const locationId = req.user ? req.user.locationId : null;
-    const locParam = locationId ? ` AND r.location_id = ?` : '';
-    const queryParams = locationId ? [date, locationId] : [date];
+    const { clause: locClause, params: locParams } = await getLocationFilter(req, 'r');
 
     // Get all active checkpoints with location-filtered responses
     const [checkpoints] = await db.query(`
@@ -52,10 +50,10 @@ exports.getDashboard = async (req, res) => {
              r.system_status, r.is_draft, r.compliance_status, r.accuracy
       FROM mcheck_checkpoints cp
       JOIN mcheck_modules m ON m.id = cp.module_id
-      LEFT JOIN mcheck_responses r ON r.checkpoint_id = cp.id AND r.response_date = ?${locParam}
+      LEFT JOIN mcheck_responses r ON r.checkpoint_id = cp.id AND r.response_date = ? ${locClause}
       WHERE cp.is_active = 1 AND m.is_active = 1
       ORDER BY m.sort_order ASC, cp.sort_order ASC
-    `, queryParams);
+    `, [date, ...locParams]);
 
     const total = checkpoints.length;
     let done = 0, notDone = 0, inProgress = 0, postponed = 0, pending = 0;
@@ -110,9 +108,7 @@ exports.getModuleDetail = async (req, res) => {
   try {
     const { moduleId } = req.params;
     const date = req.query.date || getISTDateString();
-    const locationId = req.user ? req.user.locationId : null;
-    const locParam = locationId ? ` AND r.location_id = ?` : '';
-    const cpQueryParams = locationId ? [date, moduleId, locationId] : [date, moduleId];
+    const { clause: locClause, params: locParams } = await getLocationFilter(req, 'r');
 
     const [module] = await db.query(`SELECT * FROM mcheck_modules WHERE id = ?`, [moduleId]);
     if (!module.length) return res.status(404).json({ success: false, error: 'Module not found' });
@@ -129,10 +125,10 @@ exports.getModuleDetail = async (req, res) => {
              r.is_draft, r.submitted_by, r.submitted_at, r.updated_by,
              r.created_at as response_created_at, r.updated_at as response_updated_at
       FROM mcheck_checkpoints cp
-      LEFT JOIN mcheck_responses r ON r.checkpoint_id = cp.id AND r.response_date = ?${locParam}
+      LEFT JOIN mcheck_responses r ON r.checkpoint_id = cp.id AND r.response_date = ? ${locClause}
       WHERE cp.module_id = ? AND cp.is_active = 1
       ORDER BY cp.sort_order ASC
-    `, cpQueryParams);
+    `, [date, ...locParams, moduleId]);
 
     // Aggregate module stats
     let total = checkpoints.length, done = 0, notDone = 0, inProgress = 0, postponed = 0, pending = 0;
@@ -252,12 +248,19 @@ exports.submitAll = async (req, res) => {
       return res.status(400).json({ success: false, error: 'module_id and response_date are required' });
     }
 
+    // Resolve location
+    let locationId = req.user ? (req.user.locationId || 2) : 2;
+    const isGlobalAdmin = !req.user?.locationId || req.user?.isGlobalAdmin || ['Admin', 'Super Admin'].includes(req.user?.role);
+    if (isGlobalAdmin && (req.body.location_id || req.body.locationId)) {
+      locationId = parseInt(req.body.location_id || req.body.locationId, 10);
+    }
+
     const [checkpoints] = await db.query(
       `SELECT cp.id, r.id as response_id, r.system_status, r.compliance_status, r.is_draft
        FROM mcheck_checkpoints cp
-       LEFT JOIN mcheck_responses r ON r.checkpoint_id = cp.id AND r.response_date = ?
+       LEFT JOIN mcheck_responses r ON r.checkpoint_id = cp.id AND r.response_date = ? AND r.location_id = ?
        WHERE cp.module_id = ? AND cp.is_active = 1`,
-      [response_date, module_id]
+      [response_date, locationId, module_id]
     );
 
     let submitted = 0, skipped = 0;
@@ -268,16 +271,16 @@ exports.submitAll = async (req, res) => {
       }
 
       if (!cp.response_id) {
-        // Create new submitted record
+        // Create new submitted record with location_id
         const [ins] = await db.query(`
-          INSERT INTO mcheck_responses (checkpoint_id, checklist_id, module_id, response_date, system_status, compliance_status, accuracy, is_draft, submitted_by, submitted_at, updated_by)
-          VALUES (?, 1, ?, ?, 'DONE', 'Fully Followed', 'Fully accurate', 0, ?, NOW(), ?)
-        `, [cp.id, module_id, response_date, updated_by || 'User', updated_by || 'User']);
+          INSERT INTO mcheck_responses (checkpoint_id, checklist_id, module_id, response_date, system_status, compliance_status, accuracy, is_draft, submitted_by, submitted_at, updated_by, location_id)
+          VALUES (?, 1, ?, ?, 'DONE', 'Fully Followed', 'Fully accurate', 0, ?, NOW(), ?, ?)
+        `, [cp.id, module_id, response_date, updated_by || 'User', updated_by || 'User', locationId]);
         if (ins.insertId) {
           await db.query(`
-            INSERT INTO mcheck_audit_log (response_id, checkpoint_id, response_date, changed_by, prev_status, new_status, change_type)
-            VALUES (?, ?, ?, ?, 'PENDING', 'DONE', 'submit_all')
-          `, [ins.insertId, cp.id, response_date, updated_by || 'System']);
+            INSERT INTO mcheck_audit_log (response_id, checkpoint_id, response_date, changed_by, prev_status, new_status, change_type, location_id)
+            VALUES (?, ?, ?, ?, 'PENDING', 'DONE', 'submit_all', ?)
+          `, [ins.insertId, cp.id, response_date, updated_by || 'System', locationId]).catch(() => {});
         }
         submitted++;
       } else {
@@ -288,13 +291,13 @@ exports.submitAll = async (req, res) => {
 
         await db.query(`
           UPDATE mcheck_responses SET system_status = ?, is_draft = 0, submitted_by = ?, submitted_at = NOW(), updated_by = ?
-          WHERE id = ?
-        `, [finalStatus, updated_by, updated_by, cp.response_id]);
+          WHERE id = ? AND location_id = ?
+        `, [finalStatus, updated_by, updated_by, cp.response_id, locationId]);
 
         await db.query(`
-          INSERT INTO mcheck_audit_log (response_id, checkpoint_id, response_date, changed_by, prev_status, new_status, change_type)
-          VALUES (?, ?, ?, ?, ?, ?, 'submit_all')
-        `, [cp.response_id, cp.id, response_date, updated_by || 'System', cp.system_status, finalStatus]);
+          INSERT INTO mcheck_audit_log (response_id, checkpoint_id, response_date, changed_by, prev_status, new_status, change_type, location_id)
+          VALUES (?, ?, ?, ?, ?, ?, 'submit_all', ?)
+        `, [cp.response_id, cp.id, response_date, updated_by || 'System', cp.system_status, finalStatus, locationId]).catch(() => {});
 
         submitted++;
       }
@@ -310,6 +313,7 @@ exports.submitAll = async (req, res) => {
 exports.getReports = async (req, res) => {
   try {
     const { date, fromDate, toDate, module_id, status, search } = req.query;
+    const { clause: locClause, params: locParams } = await getLocationFilter(req, 'r');
 
     let dateFilter = '';
     const params = [];
@@ -352,10 +356,10 @@ exports.getReports = async (req, res) => {
       FROM mcheck_checkpoints cp
       JOIN mcheck_modules m ON m.id = cp.module_id AND m.is_active = 1
       JOIN mcheck_checklists cl ON cl.id = cp.checklist_id
-      LEFT JOIN mcheck_responses r ON r.checkpoint_id = cp.id ${dateFilter ? dateFilter.replace('AND ', 'AND ') : ''}
+      LEFT JOIN mcheck_responses r ON r.checkpoint_id = cp.id ${dateFilter} ${locClause}
       WHERE cp.is_active = 1 ${moduleFilter} ${statusFilter} ${searchFilter}
       ORDER BY m.sort_order ASC, cp.sort_order ASC, r.response_date DESC
-    `, params);
+    `, [...params, ...locParams]);
 
     // Build summary stats
     const total = rows.length;
@@ -402,6 +406,7 @@ exports.getHistory = async (req, res) => {
   try {
     const limit = parseInt(req.query.limit || '60');
     const offset = parseInt(req.query.offset || '0');
+    const { clause: locClause, params: locParams } = await getLocationFilter(req, 'r');
 
     const [rows] = await db.query(`
       SELECT 
@@ -413,10 +418,11 @@ exports.getHistory = async (req, res) => {
         SUM(CASE WHEN r.system_status = 'POSTPONED' THEN 1 ELSE 0 END) as postponed
       FROM mcheck_responses r
       JOIN mcheck_checkpoints cp ON cp.id = r.checkpoint_id AND cp.is_active = 1
+      WHERE 1=1 ${locClause}
       GROUP BY r.response_date
       ORDER BY r.response_date DESC
       LIMIT ? OFFSET ?
-    `, [limit, offset]);
+    `, [...locParams, limit, offset]);
 
     const history = rows.map(row => {
       const done = parseInt(row.done) || 0;
@@ -428,7 +434,7 @@ exports.getHistory = async (req, res) => {
       };
     });
 
-    const [countRows] = await db.query(`SELECT COUNT(DISTINCT response_date) as cnt FROM mcheck_responses`);
+    const [countRows] = await db.query(`SELECT COUNT(DISTINCT response_date) as cnt FROM mcheck_responses r WHERE 1=1 ${locClause}`, locParams);
     return res.json({ success: true, history, total: countRows[0]?.cnt || 0 });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
@@ -439,6 +445,7 @@ exports.getHistory = async (req, res) => {
 exports.getTrend = async (req, res) => {
   try {
     const days = parseInt(req.query.days || '14');
+    const { clause: locClause, params: locParams } = await getLocationFilter(req, 'r');
 
     const [rows] = await db.query(`
       SELECT 
@@ -457,11 +464,11 @@ exports.getTrend = async (req, res) => {
       ) dates
       CROSS JOIN mcheck_checkpoints cp
       JOIN mcheck_modules m ON m.id = cp.module_id AND m.is_active = 1
-      LEFT JOIN mcheck_responses r ON r.checkpoint_id = cp.id AND DATE(r.response_date) = dates.d
+      LEFT JOIN mcheck_responses r ON r.checkpoint_id = cp.id AND DATE(r.response_date) = dates.d ${locClause}
       WHERE cp.is_active = 1
       GROUP BY dates.d
       ORDER BY dates.d ASC
-    `, [days]);
+    `, [days, ...locParams]);
 
     const trend = rows.map(row => ({
       date: row.response_date,
@@ -573,6 +580,7 @@ exports.exportPdf = async (req, res) => {
   try {
     const PDFDocument = require('pdfkit');
     const { date, fromDate, toDate, module_id, status } = req.query;
+    const { clause: locClause, params: locParams } = await getLocationFilter(req, 'r');
 
     // Fetch report data (reuse report logic)
     let dateFilter = '', params = [];
@@ -589,10 +597,10 @@ exports.exportPdf = async (req, res) => {
       FROM mcheck_checkpoints cp
       JOIN mcheck_modules m ON m.id = cp.module_id AND m.is_active = 1
       JOIN mcheck_checklists cl ON cl.id = cp.checklist_id
-      LEFT JOIN mcheck_responses r ON r.checkpoint_id = cp.id ${dateFilter}
+      LEFT JOIN mcheck_responses r ON r.checkpoint_id = cp.id ${dateFilter} ${locClause}
       WHERE cp.is_active = 1 ${module_id ? 'AND cp.module_id = ?' : ''} ${status && status !== 'ALL' ? 'AND COALESCE(r.system_status,\'PENDING\') = ?' : ''}
       ORDER BY m.sort_order ASC, cp.sort_order ASC
-    `, [...params, ...(module_id ? [module_id] : []), ...(status && status !== 'ALL' ? [status] : [])]);
+    `, [...params, ...locParams, ...(module_id ? [module_id] : []), ...(status && status !== 'ALL' ? [status] : [])]);
 
     const total = rows.length;
     let done = 0, notDone = 0, inProgress = 0, postponed = 0, pending = 0;
@@ -755,6 +763,7 @@ exports.exportExcel = async (req, res) => {
   try {
     const ExcelJS = require('exceljs');
     const { date, fromDate, toDate, module_id, status } = req.query;
+    const { clause: locClause, params: locParams } = await getLocationFilter(req, 'r');
     const reportDate = date || getISTDateString();
 
     let dateFilter = `AND r.response_date = ?`;
@@ -773,10 +782,10 @@ exports.exportExcel = async (req, res) => {
       FROM mcheck_checkpoints cp
       JOIN mcheck_modules m ON m.id = cp.module_id AND m.is_active = 1
       JOIN mcheck_checklists cl ON cl.id = cp.checklist_id
-      LEFT JOIN mcheck_responses r ON r.checkpoint_id = cp.id ${dateFilter}
+      LEFT JOIN mcheck_responses r ON r.checkpoint_id = cp.id ${dateFilter} ${locClause}
       WHERE cp.is_active = 1 ${module_id ? 'AND cp.module_id = ?' : ''} ${status && status !== 'ALL' ? 'AND COALESCE(r.system_status,\'PENDING\') = ?' : ''}
       ORDER BY m.sort_order ASC, cp.sort_order ASC
-    `, [...params, ...(module_id ? [module_id] : []), ...(status && status !== 'ALL' ? [status] : [])]);
+    `, [...params, ...locParams, ...(module_id ? [module_id] : []), ...(status && status !== 'ALL' ? [status] : [])]);
 
     const [histRows] = await db.query(`
       SELECT r.response_date, COUNT(*) as total,
@@ -786,8 +795,9 @@ exports.exportExcel = async (req, res) => {
              SUM(CASE WHEN r.system_status='POSTPONED' THEN 1 ELSE 0 END) as postponed
       FROM mcheck_responses r
       JOIN mcheck_checkpoints cp ON cp.id = r.checkpoint_id AND cp.is_active = 1
+      WHERE 1=1 ${locClause}
       GROUP BY r.response_date ORDER BY r.response_date DESC LIMIT 30
-    `);
+    `, locParams);
 
     const workbook = new ExcelJS.Workbook();
     workbook.creator = 'BSC SMG CRM';
