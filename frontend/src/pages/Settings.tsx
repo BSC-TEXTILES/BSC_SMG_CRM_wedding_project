@@ -4,6 +4,7 @@ import Sidebar from '../components/Sidebar';
 import Topbar from '../components/Topbar';
 import ToastContainer, { showToast } from '../components/Toast';
 import { API, Auth, UserSession, apiFetch } from '../services/api';
+import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../utils/sidebarState';
 import { Settings, Users, Eye, EyeOff, HelpCircle, Tag, Trash2, Shield, ShieldAlert } from 'lucide-react';
 import DevToolsMonitoringPanel from '../components/DevToolsMonitoringPanel';
 
@@ -11,7 +12,12 @@ export default function SettingsPage() {
   const navigate = useNavigate();
   const [session, setSession] = useState<UserSession | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState<boolean>(getSidebarCollapsed());
   const [activeTab, setActiveTab] = useState<'users' | 'pins' | 'security' | 'visibility' | 'questions' | 'roles'>('users');
+
+  useEffect(() => {
+    return subscribeSidebarCollapsed(setCollapsed);
+  }, []);
 
   // Store Operational PINs
   const [greeterPin, setGreeterPin] = useState('');
@@ -192,7 +198,7 @@ export default function SettingsPage() {
       <ToastContainer />
       <Sidebar session={session} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      <div className="flex-1 lg:pl-64 flex flex-col min-w-0">
+      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${collapsed ? 'lg:pl-20' : 'lg:pl-64'}`}>
         <Topbar
           title="System Settings & Governance"
           breadcrumbs={[{ label: tabs.find(t => t.key === activeTab)?.label || 'Settings' }]}

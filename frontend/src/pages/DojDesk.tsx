@@ -4,6 +4,7 @@ import Sidebar from '../components/Sidebar';
 import Topbar from '../components/Topbar';
 import ToastContainer, { showToast } from '../components/Toast';
 import { API, Auth, UserSession } from '../services/api';
+import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../utils/sidebarState';
 import { 
   CalendarClock, Users, AlertTriangle, CheckCircle, Clock, 
   Search, Phone, Calendar, ArrowRight, UserCheck, XCircle, 
@@ -49,8 +50,13 @@ export default function DojDesk() {
   const navigate = useNavigate();
   const [session, setSession] = useState<UserSession | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState<boolean>(getSidebarCollapsed());
   const [activeTab, setActiveTab] = useState<'not_joined' | 'joined_store'>('not_joined');
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    return subscribeSidebarCollapsed(setCollapsed);
+  }, []);
 
   // Not Joined Desk State
   const [candidates, setCandidates] = useState<NotJoinedCandidate[]>([]);
@@ -182,7 +188,7 @@ export default function DojDesk() {
       <ToastContainer />
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} session={session} />
 
-      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
+      <div className={`flex-1 flex flex-col min-w-0 overflow-y-auto transition-all duration-300 ${collapsed ? 'lg:pl-20' : 'lg:pl-64'}`}>
         <Topbar 
           title="DOJ Desk & Joined Store Directory" 
           session={session} 

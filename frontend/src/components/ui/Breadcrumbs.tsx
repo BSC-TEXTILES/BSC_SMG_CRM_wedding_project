@@ -35,13 +35,13 @@ export default function Breadcrumbs({ items, className = '' }: BreadcrumbsProps)
               className="flex items-center min-w-0 max-w-full"
             >
               {idx > 0 && (
-                <ChevronRight className="w-3 h-3 mx-1 text-accent/70 flex-shrink-0" aria-hidden="true" />
+                <ChevronRight className="w-3 h-3 mx-1 text-[#C9A45C] flex-shrink-0" aria-hidden="true" />
               )}
               {clickable ? (
                 <Link
                   to={crumb.href!}
                   title={crumb.label}
-                  className="text-primary/60 hover:text-accent hover:underline underline-offset-2 transition-colors truncate rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 max-w-[40vw] xs:max-w-[45vw] sm:max-w-[240px]"
+                  className="text-[#687080] hover:text-[#C9A45C] hover:underline underline-offset-2 transition-colors truncate rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A45C] max-w-[40vw] xs:max-w-[45vw] sm:max-w-[240px]"
                 >
                   {crumb.label}
                 </Link>
@@ -49,7 +49,7 @@ export default function Breadcrumbs({ items, className = '' }: BreadcrumbsProps)
                 <span
                   title={crumb.label}
                   className={`truncate max-w-[55vw] xs:max-w-[60vw] sm:max-w-[300px] ${
-                    isLast ? 'text-primary font-bold' : 'text-primary/60'
+                    isLast ? 'text-[#182033] font-bold' : 'text-[#687080]'
                   }`}
                 >
                   {crumb.label}

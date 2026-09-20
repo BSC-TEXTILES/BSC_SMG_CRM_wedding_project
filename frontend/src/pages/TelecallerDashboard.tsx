@@ -4,11 +4,12 @@ import Sidebar from '../components/Sidebar';
 import { showToast } from '../components/Toast';
 import { API, Auth, UserSession } from '../services/api';
 import { isDateInRange } from '../utils/dateUtils';
+import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../utils/sidebarState';
 import { 
   Phone, PhoneCall, Clock, Calendar, Users, Heart, CheckCircle, 
   MapPin, Edit3, Eye, Search, Filter, MessageCircle, X, Save,
   AlertCircle, PhoneOff, BookOpen, Star, RefreshCw, ChevronRight, User,
-  Plus, Bell, ChevronDown, FileText, Sparkles, Target, Check, CheckCircle2, Activity
+  Plus, Bell, ChevronDown, FileText, Sparkles, Target, Check, CheckCircle2, Activity, Menu
 } from 'lucide-react';
 
 interface WeddingCustomer {
@@ -46,6 +47,12 @@ export default function TelecallerDashboard() {
   const [searchParams] = useSearchParams();
   const [session, setSession] = useState<UserSession | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState<boolean>(getSidebarCollapsed());
+
+  useEffect(() => {
+    const unsub = subscribeSidebarCollapsed((c) => setCollapsed(c));
+    return unsub;
+  }, []);
 
   const [deskStats, setDeskStats] = useState<any>({});
   const [customers, setCustomers] = useState<WeddingCustomer[]>([]);
@@ -198,90 +205,97 @@ export default function TelecallerDashboard() {
   };
 
   return (
-    <div className="flex h-screen bg-[#FFF9F9] font-sans">
+    <div className="flex h-screen bg-[#F6F4EF] font-sans">
       <Sidebar session={session} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <header className="h-16 bg-[#FFF9F9] flex items-center justify-between px-6 shrink-0 border-b border-[#EBE5E0]">
+      <div className={`flex-1 flex flex-col min-w-0 overflow-hidden transition-all duration-300 ${collapsed ? 'lg:pl-20' : 'lg:pl-64'}`}>
+        <header className="h-16 bg-white flex items-center justify-between px-6 shrink-0 border-b border-[#DFDDD7]">
           <div className="flex items-center gap-3">
-             <div className="flex items-center gap-2 bg-[#F3EFE9] rounded-lg p-1 text-xs font-bold text-[#5B4636]">
-               <button className="px-3 py-1.5 bg-[#FDECC8] rounded-md shadow-sm">Telecaller Queue</button>
+             <button
+               onClick={() => setSidebarOpen(true)}
+               className="lg:hidden p-2 rounded-xl text-[#182033] hover:bg-[#F6F4EF] transition-colors cursor-pointer"
+               title="Open Menu"
+             >
+               <Menu className="w-5 h-5" />
+             </button>
+             <div className="flex items-center gap-2 bg-[#F6F4EF] rounded-xl p-1 text-xs font-bold text-[#182033] border border-[#DFDDD7]">
+               <button className="px-3 py-1.5 bg-[#C9A45C]/20 text-[#07101F] rounded-lg shadow-2xs font-extrabold">Telecaller Queue</button>
              </div>
              <div className="relative">
-               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#9A8F85]" />
+               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#687080]" />
                <input 
                  type="text" 
                  value={searchQuery}
                  onChange={(e) => setSearchQuery(e.target.value)}
                  placeholder="Search customers..." 
-                 className="pl-9 pr-4 py-2 bg-[#F3EFE9] border-none rounded-lg text-xs font-bold w-64 focus:ring-0 focus:outline-none text-[#5B4636]" 
+                 className="pl-9 pr-4 py-2 bg-[#F6F4EF] border border-[#DFDDD7] rounded-xl text-xs font-bold w-64 focus:ring-1 focus:ring-[#C9A45C] focus:border-[#C9A45C] focus:outline-none text-[#182033]" 
                />
              </div>
           </div>
           <div className="flex items-center gap-4">
-             <div className="flex items-center gap-2 text-xs font-bold text-[#5B4636] bg-[#F3EFE9] px-4 py-2 rounded-lg">
-               <Calendar className="w-3.5 h-3.5" /> {new Date().toLocaleDateString()}
+             <div className="flex items-center gap-2 text-xs font-bold text-[#687080] bg-[#F6F4EF] border border-[#DFDDD7] px-4 py-2 rounded-xl">
+               <Calendar className="w-3.5 h-3.5 text-[#C9A45C]" /> {new Date().toLocaleDateString()}
              </div>
-             <button onClick={() => loadData()} className="p-2 relative text-[#5B4636] hover:bg-[#F3EFE9] rounded-full transition-colors">
+             <button onClick={() => loadData()} className="p-2 relative text-[#687080] hover:bg-[#F6F4EF] rounded-full transition-colors cursor-pointer">
                <RefreshCw className="w-5 h-5" />
              </button>
-             <div className="flex items-center gap-2">
-               <div className="w-8 h-8 rounded-full bg-[#4A1E2C] text-white flex items-center justify-center font-bold text-sm">
-                 {String(session?.fullName || 'U').charAt(0)}
-               </div>
-               <div className="hidden md:block text-left leading-tight">
-                 <div className="text-[11px] font-bold text-[#2C1E16]">{session?.fullName || 'User'}</div>
-                 <div className="text-[10px] text-[#9A8F85] font-semibold">{session?.role}</div>
-               </div>
-             </div>
-          </div>
-        </header>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-[#101C36] text-white flex items-center justify-center font-bold text-sm border border-[#C9A45C]/30">
+                  {String(session?.fullName || 'U').charAt(0)}
+                </div>
+                <div className="hidden md:block text-left leading-tight">
+                  <div className="text-[11px] font-bold text-[#182033]">{session?.fullName || 'User'}</div>
+                  <div className="text-[10px] text-[#687080] font-semibold">{session?.role}</div>
+                </div>
+              </div>
+           </div>
+         </header>
 
-        <main className="flex-1 overflow-auto p-6 scroll-smooth bg-[#FFF9F9]">
+         <main className="flex-1 overflow-auto p-6 scroll-smooth bg-[#F6F4EF]">
           <div className="max-w-[1400px] mx-auto space-y-6 pb-20">
             
-            <div className="bg-white p-3 border border-[#EBE5E0] rounded-xl flex items-center gap-4 shadow-sm">
-               <div className="flex-1 grid grid-cols-4 gap-4">
-                 <div>
-                   <label className="block text-[9px] uppercase font-bold text-[#9A8F85] mb-1">Showroom Location</label>
-                   <button className="w-full text-left text-xs font-bold text-[#2C1E16] border-b border-[#EBE5E0] pb-1 flex justify-between items-center">
-                     All Locations <ChevronDown className="w-3.5 h-3.5" />
-                   </button>
-                 </div>
-                 <div>
-                   <label className="block text-[9px] uppercase font-bold text-[#9A8F85] mb-1">Follow-up Window</label>
-                   <button className="w-full text-left text-xs font-bold text-[#2C1E16] border-b border-[#EBE5E0] pb-1 flex justify-between items-center">
-                     <Calendar className="w-3 h-3 text-[#4A1E2C] mr-1 inline-block" /> All Upcoming <ChevronDown className="w-3.5 h-3.5" />
-                   </button>
-                 </div>
-                 <div>
-                   <label className="block text-[9px] uppercase font-bold text-[#9A8F85] mb-1">Call Priority</label>
-                   <button className="w-full text-left text-xs font-bold text-[#2C1E16] border-b border-[#EBE5E0] pb-1 flex justify-between items-center">
-                     All Priorities <ChevronDown className="w-3.5 h-3.5" />
-                   </button>
-                 </div>
-                 <div>
-                   <label className="block text-[9px] uppercase font-bold text-[#9A8F85] mb-1">Assigned Telecaller</label>
-                   <button className="w-full text-left text-xs font-bold text-[#2C1E16] border-b border-[#EBE5E0] pb-1 flex justify-between items-center">
-                     My Queue <ChevronDown className="w-3.5 h-3.5" />
-                   </button>
-                 </div>
-               </div>
+            <div className="bg-white p-3 border border-[#DFDDD7] rounded-xl flex items-center gap-4 shadow-sm">
+                <div className="flex-1 grid grid-cols-4 gap-4">
+                  <div>
+                    <label className="block text-[9px] uppercase font-bold text-[#687080] mb-1">Showroom Location</label>
+                    <button className="w-full text-left text-xs font-bold text-[#182033] border-b border-[#DFDDD7] pb-1 flex justify-between items-center cursor-pointer">
+                      All Locations <ChevronDown className="w-3.5 h-3.5 text-[#C9A45C]" />
+                    </button>
+                  </div>
+                  <div>
+                    <label className="block text-[9px] uppercase font-bold text-[#687080] mb-1">Follow-up Window</label>
+                    <button className="w-full text-left text-xs font-bold text-[#182033] border-b border-[#DFDDD7] pb-1 flex justify-between items-center cursor-pointer">
+                      <Calendar className="w-3 h-3 text-[#C9A45C] mr-1 inline-block" /> All Upcoming <ChevronDown className="w-3.5 h-3.5 text-[#C9A45C]" />
+                    </button>
+                  </div>
+                  <div>
+                    <label className="block text-[9px] uppercase font-bold text-[#687080] mb-1">Call Priority</label>
+                    <button className="w-full text-left text-xs font-bold text-[#182033] border-b border-[#DFDDD7] pb-1 flex justify-between items-center cursor-pointer">
+                      All Priorities <ChevronDown className="w-3.5 h-3.5 text-[#C9A45C]" />
+                    </button>
+                  </div>
+                  <div>
+                    <label className="block text-[9px] uppercase font-bold text-[#687080] mb-1">Assigned Telecaller</label>
+                    <button className="w-full text-left text-xs font-bold text-[#182033] border-b border-[#DFDDD7] pb-1 flex justify-between items-center cursor-pointer">
+                      My Queue <ChevronDown className="w-3.5 h-3.5 text-[#C9A45C]" />
+                    </button>
+                  </div>
+                </div>
             </div>
 
-            <div className="flex justify-between items-center bg-white px-5 py-3 border border-[#EBE5E0] rounded-xl shadow-sm">
-               <div className="flex items-center gap-2 text-xs font-bold text-[#2C1E16]">
-                 Showing {filtered.length} high-value wedding parties
-               </div>
-               <button className="flex items-center gap-1.5 text-[10px] font-bold text-[#5B4636] hover:bg-[#F3EFE9] px-3 py-1.5 rounded transition-colors">
-                 <FileText className="w-3.5 h-3.5" /> Export CSV
-               </button>
+            <div className="flex justify-between items-center bg-white px-5 py-3 border border-[#DFDDD7] rounded-xl shadow-sm">
+                <div className="flex items-center gap-2 text-xs font-bold text-[#182033]">
+                  Showing {filtered.length} high-value wedding parties
+                </div>
+                <button className="flex items-center gap-1.5 text-[10px] font-bold text-[#687080] hover:bg-[#F6F4EF] hover:text-[#182033] px-3 py-1.5 rounded transition-colors cursor-pointer border border-[#DFDDD7]">
+                  <FileText className="w-3.5 h-3.5 text-[#C9A45C]" /> Export CSV
+                </button>
             </div>
 
-            <div className="bg-white rounded-2xl shadow-sm border border-[#EBE5E0] overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-sm border border-[#DFDDD7] overflow-hidden">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-[#4A1E2C] text-white text-[9px] font-black tracking-widest uppercase">
+                  <tr className="bg-[#101C36] text-white text-[9px] font-black tracking-widest uppercase">
                     <th className="py-3 px-5 w-24">Registration ID</th>
                     <th className="py-3 px-5">Customer Family</th>
                     <th className="py-3 px-5">Contact Details</th>
@@ -291,52 +305,52 @@ export default function TelecallerDashboard() {
                     <th className="py-3 px-5">Dedicated Telecaller</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#EBE5E0]">
+                <tbody className="divide-y divide-[#DFDDD7]">
                   {loading ? (
-                    <tr><td colSpan={7} className="py-12 text-center text-[#9A8F85]"><RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-[#4A1E2C]" />Loading Queue...</td></tr>
+                    <tr><td colSpan={7} className="py-12 text-center text-[#687080]"><RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-[#101C36]" />Loading Queue...</td></tr>
                   ) : filtered.length === 0 ? (
-                    <tr><td colSpan={7} className="py-12 text-center text-[#9A8F85] font-bold">No customers found in this queue.</td></tr>
+                    <tr><td colSpan={7} className="py-12 text-center text-[#687080] font-bold">No customers found in this queue.</td></tr>
                   ) : (
                     filtered.map(c => (
-                      <tr key={c.id} className="hover:bg-[#FFF9F9] transition-colors group">
+                      <tr key={c.id} className="hover:bg-[#F6F4EF] transition-colors group">
                         <td className="py-4 px-5">
                           <div className="flex items-center gap-2 mb-0.5">
-                            <span className={`text-[9px] font-black tracking-wider uppercase px-1.5 py-0.5 rounded bg-[#EBE5E0] text-[#5B4636]`}>
+                            <span className={`text-[9px] font-black tracking-wider uppercase px-1.5 py-0.5 rounded bg-[#F6F4EF] text-[#182033] border border-[#DFDDD7]`}>
                               {c.registrationId || (c.id ? String(c.id) : '')}
                             </span>
                           </div>
                         </td>
                         <td className="py-4 px-5">
-                          <div className="text-sm font-extrabold text-[#2C1E16] group-hover:text-amber-700 transition-colors cursor-pointer" onClick={() => setDetailCustomer(c)}>
+                          <div className="text-sm font-extrabold text-[#182033] group-hover:text-[#C9A45C] transition-colors cursor-pointer" onClick={() => setDetailCustomer(c)}>
                             {c.customerName}
                           </div>
-                          <div className="text-[10px] text-[#9A8F85] font-semibold mt-0.5">{c.familySize ? c.familySize + ' members' : 'Family Details N/A'}</div>
+                          <div className="text-[10px] text-[#687080] font-semibold mt-0.5">{c.familySize ? c.familySize + ' members' : 'Family Details N/A'}</div>
                         </td>
                         <td className="py-4 px-5">
-                          <div className="text-[11px] font-bold text-[#2C1E16]">{c.mobile}</div>
-                          <div className="text-[10px] text-[#9A8F85] font-semibold mt-0.5">{c.locationName || 'N/A'}</div>
+                          <div className="text-[11px] font-bold text-[#182033]">{c.mobile}</div>
+                          <div className="text-[10px] text-[#687080] font-semibold mt-0.5">{c.locationName || 'N/A'}</div>
                         </td>
                         <td className="py-4 px-5">
-                          <div className="text-[11px] font-bold text-[#2C1E16] flex items-center gap-1.5">
-                            <Heart className="w-3.5 h-3.5 text-rose-500" /> {(c.weddingDate ? new Date(c.weddingDate).toLocaleDateString() : 'TBD')}
+                          <div className="text-[11px] font-bold text-[#182033] flex items-center gap-1.5">
+                            <Heart className="w-3.5 h-3.5 text-[#C9A45C]" /> {(c.weddingDate ? new Date(c.weddingDate).toLocaleDateString() : 'TBD')}
                           </div>
-                          <div className="text-[10px] text-[#9A8F85] font-bold mt-0.5 ml-5">{c.preferredTime || 'Anytime'}</div>
+                          <div className="text-[10px] text-[#687080] font-bold mt-0.5 ml-5">{c.preferredTime || 'Anytime'}</div>
                         </td>
                         <td className="py-4 px-5">
-                          <div className="text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-100 px-2 py-1.5 rounded-md inline-block max-w-[130px] leading-tight">
+                          <div className="text-[10px] font-bold text-[#101C36] bg-[#101C36]/5 border border-[#101C36]/15 px-2 py-1.5 rounded-md inline-block max-w-[130px] leading-tight">
                             {c.shoppingCategory || 'Unspecified'}
                           </div>
                         </td>
                         <td className="py-4 px-5">
-                          <div className="text-xs font-black text-[#2C1E16]">{c.totalCalls || 0} Calls</div>
-                          <div className="text-[10px] font-medium text-[#9A8F85] mt-0.5">{c.callStatus || 'Pending'}</div>
+                          <div className="text-xs font-black text-[#182033]">{c.totalCalls || 0} Calls</div>
+                          <div className="text-[10px] font-medium text-[#687080] mt-0.5">{c.callStatus || 'Pending'}</div>
                         </td>
                         <td className="py-4 px-5">
                           <div className="flex items-center gap-2">
-                            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold bg-amber-100 text-amber-800`}>
+                            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold bg-[#C9A45C]/20 text-[#07101F]`}>
                               {String(c.assignedTelecallerName || 'U').charAt(0).toUpperCase()}
                             </div>
-                            <div className="text-[11px] font-bold text-[#5B4636]">{c.assignedTelecallerName || 'Unassigned'}</div>
+                            <div className="text-[11px] font-bold text-[#182033]">{c.assignedTelecallerName || 'Unassigned'}</div>
                           </div>
                         </td>
                       </tr>
@@ -349,123 +363,123 @@ export default function TelecallerDashboard() {
         </main>
       </div>
 
-      {detailCustomer && !logCallModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#2C1E16]/80 backdrop-blur-sm">
+      {detailCustomer && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#07101F]/80 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[850px] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
             
-            <div className="px-6 py-4 bg-[#4A1E2C] flex items-center justify-between text-white">
+            <div className="px-6 py-4 bg-[#101C36] flex items-center justify-between text-white">
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 bg-amber-400 rounded flex items-center justify-center text-amber-900">
+                <div className="w-10 h-10 bg-[#C9A45C] rounded-xl flex items-center justify-center text-[#07101F] shadow-sm">
                   <PhoneCall className="w-5 h-5" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold tracking-widest text-amber-200 uppercase">{detailCustomer.registrationId || detailCustomer.id}</span>
+                    <span className="text-[10px] font-bold tracking-widest text-[#E4CB92] uppercase">{detailCustomer.registrationId || detailCustomer.id}</span>
                   </div>
-                  <h2 className="text-xl font-extrabold">{detailCustomer.customerName}</h2>
+                  <h2 className="text-xl font-extrabold text-white">{detailCustomer.customerName}</h2>
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <button onClick={() => setLogCallModalOpen(true)} className="flex items-center gap-2 bg-[#3d1824] border border-white/20 text-white px-4 py-2 rounded-lg text-[10px] font-bold hover:bg-[#2C1E16] transition-colors">
-                  <Plus className="w-3.5 h-3.5" /> Log Interaction
+                <button onClick={() => setLogCallModalOpen(true)} className="flex items-center gap-2 bg-[#07101F] border border-[#C9A45C]/40 text-white px-4 py-2 rounded-xl text-[10px] font-bold hover:bg-[#101C36] hover:border-[#C9A45C] transition-all cursor-pointer">
+                  <Plus className="w-3.5 h-3.5 text-[#C9A45C]" /> Log Interaction
                 </button>
-                <button onClick={() => setDetailCustomer(null)} className="p-2 text-white/50 hover:bg-white/10 hover:text-white rounded-full transition-colors"><X className="w-5 h-5" /></button>
+                <button onClick={() => setDetailCustomer(null)} className="p-2 text-white/70 hover:bg-white/10 hover:text-white rounded-full transition-colors cursor-pointer"><X className="w-5 h-5" /></button>
               </div>
             </div>
 
-            <div className="p-6 bg-[#FFF9F9] overflow-auto max-h-[85vh] space-y-6">
+            <div className="p-6 bg-[#F6F4EF] overflow-auto max-h-[85vh] space-y-6">
               
               <div className="grid grid-cols-4 gap-4">
                 <div>
-                  <div className="text-[9px] font-black uppercase tracking-wider text-[#9A8F85] mb-1">Customer Location</div>
-                  <div className="text-sm font-extrabold text-[#2C1E16]">{detailCustomer.locationName || 'N/A'}</div>
+                  <div className="text-[9px] font-black uppercase tracking-wider text-[#687080] mb-1">Customer Location</div>
+                  <div className="text-sm font-extrabold text-[#182033]">{detailCustomer.locationName || 'N/A'}</div>
                 </div>
                 <div>
-                  <div className="text-[9px] font-black uppercase tracking-wider text-[#9A8F85] mb-1">Wedding Date</div>
-                  <div className="text-sm font-extrabold text-[#2C1E16]">{detailCustomer.weddingDate ? new Date(detailCustomer.weddingDate).toLocaleDateString() : 'TBD'}</div>
-                  <div className="text-[10px] font-semibold text-[#5B4636] mt-0.5">{detailCustomer.preferredTime || 'Anytime'}</div>
+                  <div className="text-[9px] font-black uppercase tracking-wider text-[#687080] mb-1">Wedding Date</div>
+                  <div className="text-sm font-extrabold text-[#182033]">{detailCustomer.weddingDate ? new Date(detailCustomer.weddingDate).toLocaleDateString() : 'TBD'}</div>
+                  <div className="text-[10px] font-semibold text-[#687080] mt-0.5">{detailCustomer.preferredTime || 'Anytime'}</div>
                 </div>
                 <div>
-                  <div className="text-[9px] font-black uppercase tracking-wider text-[#9A8F85] mb-1">Total Calls</div>
-                  <div className="text-sm font-extrabold text-[#2C1E16]">{detailCustomer.totalCalls || 0}</div>
-                  <div className="text-[10px] font-semibold text-[#5B4636] mt-0.5">Status: {detailCustomer.callStatus || 'Pending'}</div>
+                  <div className="text-[9px] font-black uppercase tracking-wider text-[#687080] mb-1">Total Calls</div>
+                  <div className="text-sm font-extrabold text-[#182033]">{detailCustomer.totalCalls || 0}</div>
+                  <div className="text-[10px] font-semibold text-[#687080] mt-0.5">Status: {detailCustomer.callStatus || 'Pending'}</div>
                 </div>
                 <div>
-                  <div className="text-[9px] font-black uppercase tracking-wider text-[#9A8F85] mb-1">Preferred Ensemble</div>
-                  <div className="text-sm font-extrabold text-[#2C1E16]">{detailCustomer.shoppingCategory || 'Unspecified'}</div>
+                  <div className="text-[9px] font-black uppercase tracking-wider text-[#687080] mb-1">Preferred Ensemble</div>
+                  <div className="text-sm font-extrabold text-[#182033]">{detailCustomer.shoppingCategory || 'Unspecified'}</div>
                 </div>
               </div>
 
               <div className="grid grid-cols-3 gap-6">
                 
                 <div className="col-span-2 space-y-6">
-                  <div className="bg-white rounded-xl border border-[#EBE5E0] p-5 shadow-sm relative overflow-hidden">
+                  <div className="bg-white rounded-xl border border-[#DFDDD7] p-5 shadow-sm relative overflow-hidden">
                     <div className="flex justify-between items-center mb-6">
-                       <h3 className="text-sm font-extrabold text-[#2C1E16] flex items-center gap-2">
-                         <User className="w-4 h-4 text-accent" /> Complete Customer Profile
+                       <h3 className="text-sm font-extrabold text-[#182033] flex items-center gap-2">
+                         <User className="w-4 h-4 text-[#C9A45C]" /> Complete Customer Profile
                        </h3>
-                       <span className="bg-[#F3EFE9] text-[#5B4636] text-[10px] font-black px-2 py-0.5 rounded">Registered: {detailCustomer.registrationDate ? new Date(detailCustomer.registrationDate).toLocaleDateString() : 'N/A'}</span>
+                       <span className="bg-[#F6F4EF] text-[#687080] text-[10px] font-black px-2 py-0.5 rounded border border-[#DFDDD7]">Registered: {detailCustomer.registrationDate ? new Date(detailCustomer.registrationDate).toLocaleDateString() : 'N/A'}</span>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <div className="text-[10px] font-bold text-[#9A8F85] uppercase mb-1">Mobile Number</div>
-                        <div className="text-sm font-bold text-[#2C1E16]">{detailCustomer.mobile}</div>
+                        <div className="text-[10px] font-bold text-[#687080] uppercase mb-1">Mobile Number</div>
+                        <div className="text-sm font-bold text-[#182033]">{detailCustomer.mobile}</div>
                       </div>
                       <div>
-                        <div className="text-[10px] font-bold text-[#9A8F85] uppercase mb-1">Email Address</div>
-                        <div className="text-sm font-bold text-[#2C1E16]">{detailCustomer.email || 'N/A'}</div>
+                        <div className="text-[10px] font-bold text-[#687080] uppercase mb-1">Email Address</div>
+                        <div className="text-sm font-bold text-[#182033]">{detailCustomer.email || 'N/A'}</div>
                       </div>
                       <div>
-                        <div className="text-[10px] font-bold text-[#9A8F85] uppercase mb-1">Family Size</div>
-                        <div className="text-sm font-bold text-[#2C1E16]">{detailCustomer.familySize || 'N/A'}</div>
+                        <div className="text-[10px] font-bold text-[#687080] uppercase mb-1">Family Size</div>
+                        <div className="text-sm font-bold text-[#182033]">{detailCustomer.familySize || 'N/A'}</div>
                       </div>
                       <div>
-                        <div className="text-[10px] font-bold text-[#9A8F85] uppercase mb-1">Preferred Shopping Date</div>
-                        <div className="text-sm font-bold text-[#2C1E16]">{detailCustomer.preferredShoppingDate ? new Date(detailCustomer.preferredShoppingDate).toLocaleDateString() : 'N/A'}</div>
+                        <div className="text-[10px] font-bold text-[#687080] uppercase mb-1">Preferred Shopping Date</div>
+                        <div className="text-sm font-bold text-[#182033]">{detailCustomer.preferredShoppingDate ? new Date(detailCustomer.preferredShoppingDate).toLocaleDateString() : 'N/A'}</div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="bg-rose-50/50 rounded-xl border border-rose-100 p-4">
-                     <div className="flex justify-between items-center mb-3 text-[10px] font-bold uppercase tracking-wide text-[#9A8F85]">
+                  <div className="bg-white rounded-xl border border-[#DFDDD7] p-4 shadow-sm">
+                     <div className="flex justify-between items-center mb-3 text-[10px] font-bold uppercase tracking-wide text-[#687080]">
                        <span>Wedding Requirements & Remarks</span>
                      </div>
-                     <p className="text-xs text-[#5B4636] leading-relaxed mb-4 font-medium">
+                     <p className="text-xs text-[#182033] leading-relaxed mb-4 font-medium">
                        {detailCustomer.remarks || 'No specific remarks or requirements provided.'}
                      </p>
-                     <div className="flex gap-4 border-t border-rose-100 pt-3 text-[10px] font-bold text-[#4A1E2C]">
-                       <span className="bg-white px-2 py-1 rounded border border-rose-100">Status: {detailCustomer.status}</span>
-                       <span className="bg-white px-2 py-1 rounded border border-rose-100">Functions: {detailCustomer.functions || 'N/A'}</span>
+                     <div className="flex gap-4 border-t border-[#DFDDD7] pt-3 text-[10px] font-bold text-[#101C36]">
+                       <span className="bg-[#F6F4EF] px-2 py-1 rounded border border-[#DFDDD7]">Status: {detailCustomer.status}</span>
+                       <span className="bg-[#F6F4EF] px-2 py-1 rounded border border-[#DFDDD7]">Functions: {detailCustomer.functions || 'N/A'}</span>
                      </div>
                   </div>
                 </div>
 
                 <div className="col-span-1 space-y-4">
-                   <div className="bg-white rounded-xl border border-[#EBE5E0] p-4 shadow-sm h-full flex flex-col">
+                   <div className="bg-white rounded-xl border border-[#DFDDD7] p-4 shadow-sm h-full flex flex-col">
                      <div className="flex justify-between items-center mb-3">
-                       <h3 className="text-xs font-extrabold text-[#2C1E16] uppercase tracking-wide">Call History</h3>
+                       <h3 className="text-xs font-extrabold text-[#182033] uppercase tracking-wide">Call History</h3>
                      </div>
                      <div className="space-y-3 mb-4 flex-1">
-                        <div className="flex justify-between border-b border-[#EBE5E0] pb-2">
-                          <span className="text-[10px] font-bold text-[#9A8F85]">Assigned To</span>
-                          <span className="text-xs font-bold text-[#2C1E16]">{detailCustomer.assignedTelecallerName || 'Unassigned'}</span>
+                        <div className="flex justify-between border-b border-[#DFDDD7] pb-2">
+                          <span className="text-[10px] font-bold text-[#687080]">Assigned To</span>
+                          <span className="text-xs font-bold text-[#182033]">{detailCustomer.assignedTelecallerName || 'Unassigned'}</span>
                         </div>
-                        <div className="flex justify-between border-b border-[#EBE5E0] pb-2">
-                          <span className="text-[10px] font-bold text-[#9A8F85]">Last Call</span>
-                          <span className="text-xs font-bold text-[#2C1E16]">{detailCustomer.lastCallDate ? new Date(detailCustomer.lastCallDate).toLocaleDateString() : 'N/A'}</span>
+                        <div className="flex justify-between border-b border-[#DFDDD7] pb-2">
+                          <span className="text-[10px] font-bold text-[#687080]">Last Call</span>
+                          <span className="text-xs font-bold text-[#182033]">{detailCustomer.lastCallDate ? new Date(detailCustomer.lastCallDate).toLocaleDateString() : 'N/A'}</span>
                         </div>
-                        <div className="flex justify-between border-b border-[#EBE5E0] pb-2">
-                          <span className="text-[10px] font-bold text-[#9A8F85]">Last Result</span>
-                          <span className="text-xs font-bold text-[#2C1E16]">{detailCustomer.lastCallResult || 'N/A'}</span>
+                        <div className="flex justify-between border-b border-[#DFDDD7] pb-2">
+                          <span className="text-[10px] font-bold text-[#687080]">Last Result</span>
+                          <span className="text-xs font-bold text-[#182033]">{detailCustomer.lastCallResult || 'N/A'}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-[10px] font-bold text-[#9A8F85]">Next Follow-up</span>
-                          <span className="text-xs font-bold text-rose-600">{detailCustomer.nextFollowUp ? new Date(detailCustomer.nextFollowUp).toLocaleDateString() : 'None'}</span>
+                          <span className="text-[10px] font-bold text-[#687080]">Next Follow-up</span>
+                          <span className="text-xs font-bold text-[#C7374A]">{detailCustomer.nextFollowUp ? new Date(detailCustomer.nextFollowUp).toLocaleDateString() : 'None'}</span>
                         </div>
                      </div>
-                     <button onClick={() => setLogCallModalOpen(true)} className="w-full py-3 bg-[#4A1E2C] rounded-lg text-xs font-bold text-white hover:bg-[#3d1824] transition-colors flex justify-center items-center gap-2">
-                       <Plus className="w-4 h-4" /> Add Call Log
+                     <button onClick={() => setLogCallModalOpen(true)} className="w-full py-3 bg-[#101C36] rounded-xl text-xs font-bold text-white hover:bg-[#07101F] transition-colors flex justify-center items-center gap-2 cursor-pointer shadow-sm">
+                       <Plus className="w-4 h-4 text-[#C9A45C]" /> Add Call Log
                      </button>
                    </div>
                 </div>

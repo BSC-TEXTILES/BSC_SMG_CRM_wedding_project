@@ -4,6 +4,7 @@ import Sidebar from '../components/Sidebar';
 import Topbar from '../components/Topbar';
 import ToastContainer, { showToast } from '../components/Toast';
 import { Auth, UserSession, apiFetch } from '../services/api';
+import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../utils/sidebarState';
 import {
   Server, Database, Shield, Activity, Globe, Package, FileText,
   RefreshCw, CheckCircle2, XCircle, Clock, Cpu, HardDrive, AlertTriangle,
@@ -29,7 +30,12 @@ export default function DeveloperTools() {
   const navigate = useNavigate();
   const [session, setSession] = useState<UserSession | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState<boolean>(getSidebarCollapsed());
   const [activeTab, setActiveTab] = useState<'health' | 'database' | 'routes' | 'logs' | 'diagnostics' | 'environment' | 'dependencies'>('health');
+
+  useEffect(() => {
+    return subscribeSidebarCollapsed(setCollapsed);
+  }, []);
   const [loading, setLoading] = useState(false);
 
   // Data states
@@ -158,7 +164,7 @@ export default function DeveloperTools() {
   return (
     <div className="flex h-screen bg-background overflow-hidden">
       <Sidebar session={session} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <div className="flex-1 flex flex-col min-w-0 lg:ml-64 overflow-hidden">
+      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${collapsed ? 'lg:pl-20' : 'lg:pl-64'} overflow-hidden`}>
         <Topbar title="Developer Tools" session={session} onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
 
         <main className="flex-1 overflow-y-auto p-3 sm:p-4 lg:p-6 space-y-4">

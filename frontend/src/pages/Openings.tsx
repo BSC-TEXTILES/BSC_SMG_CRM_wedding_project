@@ -4,12 +4,18 @@ import Sidebar from '../components/Sidebar';
 import Topbar from '../components/Topbar';
 import ToastContainer, { showToast } from '../components/Toast';
 import { API, Auth, UserSession } from '../services/api';
+import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../utils/sidebarState';
 import { Users, Plus, Save, Trash2, X, Edit3 } from 'lucide-react';
 
 export default function OpeningsPage() {
   const navigate = useNavigate();
   const [session, setSession] = useState<UserSession | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState<boolean>(getSidebarCollapsed());
+
+  useEffect(() => {
+    return subscribeSidebarCollapsed(setCollapsed);
+  }, []);
   const [openings, setOpenings] = useState<any[]>([]);
   const [editMode, setEditMode] = useState<{ [key: string]: number }>({});
 
@@ -110,7 +116,7 @@ export default function OpeningsPage() {
       <ToastContainer />
       <Sidebar session={session} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      <div className="flex-1 lg:pl-64 flex flex-col min-w-0">
+      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${collapsed ? 'lg:pl-20' : 'lg:pl-64'}`}>
         <Topbar
           title="Manpower Planning"
           session={session}

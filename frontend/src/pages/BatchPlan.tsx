@@ -4,6 +4,7 @@ import Sidebar from '../components/Sidebar';
 import Topbar from '../components/Topbar';
 import ToastContainer, { showToast } from '../components/Toast';
 import { API, Auth, UserSession } from '../services/api';
+import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../utils/sidebarState';
 import { 
   Layers, Plus, Search, Calendar, User, Users, CheckCircle2, 
   Clock, AlertCircle, Trash2, Edit3, ChevronRight, ChevronDown, UserPlus, X, Award
@@ -53,7 +54,12 @@ export default function BatchPlan() {
   const navigate = useNavigate();
   const [session, setSession] = useState<UserSession | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState<boolean>(getSidebarCollapsed());
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    return subscribeSidebarCollapsed(setCollapsed);
+  }, []);
 
   const [batches, setBatches] = useState<Batch[]>([]);
   const [stats, setStats] = useState<any>({
@@ -232,7 +238,7 @@ export default function BatchPlan() {
       <ToastContainer />
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} session={session} />
 
-      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
+      <div className={`flex-1 flex flex-col min-w-0 overflow-y-auto transition-all duration-300 ${collapsed ? 'lg:pl-20' : 'lg:pl-64'}`}>
         <Topbar 
           title="Batch Plan & Weaving Operations" 
           session={session} 

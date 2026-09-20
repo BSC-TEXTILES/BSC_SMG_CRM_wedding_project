@@ -180,7 +180,7 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
         aria-label="Main navigation"
         style={{ width: collapsed ? '72px' : '256px' }}
         className={`
-          fixed top-0 left-0 bottom-0 bg-[#4A0F24] text-white z-50 flex flex-col transition-all duration-300 shadow-2xl border-r border-[#C9A45C]/20 overscroll-contain
+          fixed top-0 left-0 bottom-0 bg-[#101C36] text-white z-50 flex flex-col transition-all duration-300 shadow-2xl border-r border-[#C9A45C]/20 overscroll-contain
           ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
           ${collapsed ? 'w-[72px]' : 'w-64'}
         `}
@@ -192,7 +192,7 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
             <button
               type="button"
               onClick={handleToggle}
-              className="p-1.5 rounded-xl text-[#C9A45C] hover:text-white hover:bg-[#320817] transition-colors flex items-center justify-center cursor-pointer shadow-xs border border-[#C9A45C]/30"
+              className="p-1.5 rounded-xl text-[#C9A45C] hover:text-white hover:bg-[#07101F] transition-colors flex items-center justify-center cursor-pointer shadow-xs border border-[#C9A45C]/30"
               title="Expand navigation menu (3 lines)"
               aria-label="Expand sidebar"
             >
@@ -231,7 +231,7 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
             <button
               type="button"
               onClick={handleToggle}
-              className="p-1.5 rounded-xl text-[#C9A45C] hover:text-white hover:bg-[#320817] transition-colors flex-shrink-0 cursor-pointer border border-[#C9A45C]/30 shadow-xs"
+              className="p-1.5 rounded-xl text-[#C9A45C] hover:text-white hover:bg-[#07101F] transition-colors flex-shrink-0 cursor-pointer border border-[#C9A45C]/30 shadow-xs"
               title="Collapse sidebar to logo only (3 lines)"
               aria-label="Toggle sidebar collapse"
             >
@@ -241,11 +241,11 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
         )}
 
         {/* User Card */}
-        <div className={`mx-2 my-2 rounded-xl bg-[#320817]/60 border border-[#C9A45C]/25 flex items-center shadow-inner transition-all ${
+        <div className={`mx-2 my-2 rounded-xl bg-[#07101F]/80 border border-[#C9A45C]/25 flex items-center shadow-inner transition-all ${
           collapsed ? 'p-1 justify-center' : 'p-2.5 gap-2.5'
         }`}>
           <div 
-            className="w-8 h-8 rounded-lg bg-[#C9A45C] text-[#320817] font-black flex items-center justify-center text-xs shadow-md border border-[#E4C982] flex-shrink-0"
+            className="w-8 h-8 rounded-lg bg-[#C9A45C] text-[#07101F] font-black flex items-center justify-center text-xs shadow-md border border-[#E4CB92] flex-shrink-0"
             title={`${session?.fullName || 'User'} (${role})`}
           >
             {initials}
@@ -253,7 +253,7 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
           {!collapsed && (
             <div className="overflow-hidden flex-1">
               <div className="font-bold text-xs text-white truncate">{session?.fullName || 'HR Manager'}</div>
-              <div className="text-[10px] text-[#E4C982] font-semibold truncate">{roleLabels[role] || role}</div>
+              <div className="text-[10px] text-[#E4CB92] font-semibold truncate">{roleLabels[role] || role}</div>
             </div>
           )}
         </div>
@@ -270,7 +270,7 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
                 {collapsed ? (
                   <div className="h-px bg-[#C9A45C]/20 my-1.5 mx-1" />
                 ) : (
-                  <div className="text-[9px] font-bold uppercase tracking-widest text-[#E4C982]/80 px-2.5 mb-1">
+                  <div className="text-[9px] font-bold uppercase tracking-widest text-[#E4CB92] px-2.5 mb-1">
                     <span>{section}</span>
                   </div>
                 )}
@@ -292,13 +292,13 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
                           flex items-center rounded-xl text-xs font-bold transition-all duration-150 group relative
                           ${collapsed ? 'justify-center px-0 py-2.5' : 'px-3 py-2.5 justify-between'}
                           ${isActive 
-                            ? 'bg-[#C9A45C] text-[#320817] shadow-lg shadow-[#C9A45C]/25 font-black border-l-4 border-[#320817]' 
-                            : 'text-white/90 hover:bg-[#320817] hover:text-[#E4C982]'}
+                            ? 'bg-[#C9A45C] text-[#07101F] shadow-md shadow-[#C9A45C]/20 font-black border-l-4 border-[#07101F]' 
+                            : 'text-white/80 hover:bg-[#07101F] hover:text-[#E4CB92]'}
                         `}
                       >
                         <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-2.5 min-w-0'}`}>
                           <Icon className={`w-4 h-4 transition-transform group-hover:scale-110 flex-shrink-0 ${
-                            isActive ? 'text-[#320817]' : item.key === 'wedding_crm' ? 'text-[#C9A45C] animate-pulse' : 'text-[#C9A45C] group-hover:text-[#E4C982]'
+                            isActive ? 'text-[#07101F]' : item.key === 'wedding_crm' ? 'text-[#C9A45C]' : 'text-white/70 group-hover:text-[#E4CB92]'
                           }`} />
                           
                           {!collapsed && (
@@ -308,14 +308,14 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
                           )}
 
                           {!collapsed && item.key === 'wedding_crm' && (
-                            <span className="text-[8px] bg-[#C9A45C] text-[#320817] font-black px-1.5 py-[2px] rounded-full uppercase ml-1 flex-shrink-0 shadow-xs">
+                            <span className="text-[8px] bg-[#07101F] text-[#E4CB92] font-black px-1.5 py-[2px] rounded-full uppercase ml-1 flex-shrink-0 shadow-xs border border-[#C9A45C]/40">
                               NEW
                             </span>
                           )}
                         </div>
 
                         {!collapsed && isActive && (
-                          <ChevronRight className="w-3.5 h-3.5 text-[#320817] opacity-90 flex-shrink-0" />
+                          <ChevronRight className="w-3.5 h-3.5 text-[#07101F] opacity-90 flex-shrink-0" />
                         )}
                       </Link>
                     );
@@ -327,11 +327,11 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
         </div>
 
         {/* Footer Logout */}
-        <div className={`border-t border-[#C9A45C]/15 bg-[#320817]/80 transition-all ${collapsed ? 'p-2' : 'p-3'}`}>
+        <div className={`border-t border-[#C9A45C]/15 bg-[#07101F]/90 transition-all ${collapsed ? 'p-2' : 'p-3'}`}>
           <button
             onClick={() => Auth.logout()}
             title="Sign Out Session"
-            className={`w-full flex items-center justify-center rounded-xl text-xs font-bold bg-[#C7374A]/20 text-white border border-[#C7374A]/40 hover:bg-[#C7374A] hover:text-white transition-all shadow-sm ${
+            className={`w-full flex items-center justify-center rounded-xl text-xs font-bold bg-[#C7374A]/15 text-white border border-[#C7374A]/30 hover:bg-[#C7374A] hover:text-white transition-all shadow-sm ${
               collapsed ? 'py-2.5 px-0' : 'py-2.5 px-3 gap-2'
             }`}
           >
@@ -339,8 +339,8 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
             {!collapsed && <span>Sign Out</span>}
           </button>
           {!collapsed && (
-            <div className="text-[8.5px] text-white/70 text-center mt-2 font-medium">
-              BSC Wedding CRM · Enterprise ATS v2.6
+            <div className="text-[8.5px] text-white/60 text-center mt-2 font-medium">
+              BSC Exclusive CRM · Enterprise Suite
             </div>
           )}
         </div>

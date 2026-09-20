@@ -4,6 +4,7 @@ import Sidebar from '../components/Sidebar';
 import Topbar from '../components/Topbar';
 import ToastContainer, { showToast } from '../components/Toast';
 import { API, Auth, UserSession } from '../services/api';
+import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../utils/sidebarState';
 import MetricCard from '../components/ui/MetricCard';
 import StatusBadge from '../components/ui/StatusBadge';
 import ManageSectionsModal from '../components/ManageSectionsModal';
@@ -74,6 +75,11 @@ export default function DepartmentHiringPage() {
   const navigate = useNavigate();
   const [session, setSession] = useState<UserSession | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState<boolean>(getSidebarCollapsed());
+
+  useEffect(() => {
+    return subscribeSidebarCollapsed(setCollapsed);
+  }, []);
 
   const [loading, setLoading] = useState(true);
   const [targets, setTargets] = useState<Record<string, { required: number; target: number; remarks: string }>>({});
@@ -470,7 +476,7 @@ export default function DepartmentHiringPage() {
         onClose={() => setSidebarOpen(false)} 
       />
 
-      <div className="flex-1 lg:pl-64 flex flex-col min-w-0">
+      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${collapsed ? 'lg:pl-20' : 'lg:pl-64'}`}>
         <Topbar 
           title="Department Hiring Status" 
           session={session}

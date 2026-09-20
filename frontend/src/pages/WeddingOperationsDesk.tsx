@@ -10,6 +10,7 @@ import {
   ChevronRight, RefreshCw, X, Save, User
 } from 'lucide-react';
 import { isDateInRange } from '../utils/dateUtils';
+import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../utils/sidebarState';
 
 interface WeddingCustomer {
   id: number;
@@ -40,6 +41,11 @@ export default function WeddingOperationsDesk() {
   const [searchParams] = useSearchParams();
   const [session, setSession] = useState<UserSession | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState<boolean>(getSidebarCollapsed());
+
+  useEffect(() => {
+    return subscribeSidebarCollapsed(setCollapsed);
+  }, []);
 
   const [customers, setCustomers] = useState<WeddingCustomer[]>([]);
   const [filtered, setFiltered] = useState<WeddingCustomer[]>([]);
@@ -150,7 +156,7 @@ export default function WeddingOperationsDesk() {
   return (
     <div className="flex h-screen bg-slate-50 font-sans">
       <Sidebar session={session} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <div className={`flex-1 flex flex-col min-w-0 overflow-hidden transition-all duration-300 ${collapsed ? 'lg:pl-20' : 'lg:pl-64'}`}>
         <Topbar title="Wedding Operations Desk" session={session} onMenuClick={() => setSidebarOpen(true)} />
         <main className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
           <ToastContainer />

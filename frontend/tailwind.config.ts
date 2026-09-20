@@ -16,55 +16,62 @@ const config: Config = {
     },
     extend: {
       colors: {
-        // Literal hex values (NOT var()) so Tailwind can compile alpha utilities
+        // Literal hex values for Midnight Navy + Champagne Gold Enterprise Theme
         primary: {
-          DEFAULT: '#4A0F24', // Master Primary (Deep Burgundy)
-          dark: '#320817',    // Master Primary Dark
-          hover: '#320817',
-          light: '#631833',
-          soft: '#F5EBF0'
+          DEFAULT: '#101C36', // Master Primary (Midnight Navy)
+          dark: '#07101F',    // Master Primary Dark
+          hover: '#07101F',
+          light: '#1C2E56',
+          soft: '#EEF2F9'
         },
         gold: {
           DEFAULT: '#C9A45C', // Master Champagne Gold
-          light: '#E4C982',   // Master Gold Light
+          light: '#E4CB92',   // Master Gold Light
           hover: '#B38C45',
           dark: '#9E762E',
           soft: '#FAF5EA'
         },
         accent: {
           DEFAULT: '#C9A45C', // Master Champagne Gold
-          light: '#E4C982',   // Master Gold Light
+          light: '#E4CB92',   // Master Gold Light
           hover: '#B38C45',
           soft: '#FAF5EA',
           softHover: '#F4EBDA'
         },
         background: {
-          DEFAULT: '#F7F3ED', // Master Background (Warm Ivory)
+          DEFAULT: '#F6F4EF', // Master Background (Warm Off-white / Ivory)
           card: '#FFFFFF'
         },
         card: '#FFFFFF',
         surface: '#FFFFFF',
         border: {
-          DEFAULT: '#E5DCD2', // Master Border (Warm Linen)
-          soft: '#EFE8DF',
-          warm: '#E5DCD2'
+          DEFAULT: '#DFDDD7', // Master Border (Enterprise Subtle Border)
+          soft: '#EAE8E3',
+          warm: '#DFDDD7'
         },
-        burgundy: {
-          DEFAULT: '#4A0F24',
-          dark: '#320817',
-          light: '#631833',
-          hover: '#320817'
+        navy: {
+          DEFAULT: '#101C36',
+          dark: '#07101F',
+          light: '#1C2E56',
+          hover: '#07101F'
         },
         champagne: {
           DEFAULT: '#C9A45C',
-          dark: '#B38C45',
-          light: '#E4C982',
+          dark: '#9E762E',
+          light: '#E4CB92',
           hover: '#B38C45'
         },
+        burgundy: {
+          // Backward-compatibility alias mapped to Midnight Navy
+          DEFAULT: '#101C36',
+          dark: '#07101F',
+          light: '#1C2E56',
+          hover: '#07101F'
+        },
         ivory: {
-          DEFAULT: '#F7F3ED',
+          DEFAULT: '#F6F4EF',
           card: '#FFFFFF',
-          border: '#E5DCD2'
+          border: '#DFDDD7'
         },
         status: {
           success: '#16805B', // Master Success
@@ -75,18 +82,18 @@ const config: Config = {
       },
       textColor: {
         primary: {
-          DEFAULT: '#21151A', // Master Main Text
-          hover: '#0D080A'
+          DEFAULT: '#182033', // Master Main Text
+          hover: '#07101F'
         },
         secondary: {
-          DEFAULT: '#6F6265', // Master Secondary Text
-          hover: '#4A4143'
+          DEFAULT: '#687080', // Master Secondary / Muted Text
+          hover: '#182033'
         },
-        muted: '#6F6265',
-        burgundy: '#4A0F24',
+        muted: '#687080',
+        navy: '#101C36',
         gold: '#C9A45C',
-        'gold-light': '#E4C982',
-        'primary-hover': '#0D080A'
+        'gold-light': '#E4CB92',
+        'primary-hover': '#07101F'
       }
     },
   },

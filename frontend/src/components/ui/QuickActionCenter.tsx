@@ -1,15 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Plus, Calendar, Sparkles, Search, UserPlus, PhoneCall, QrCode } from 'lucide-react';
+import { Plus, Calendar, Sparkles, Search, UserPlus, PhoneCall, QrCode, UserCheck } from 'lucide-react';
 import { Auth } from '../../services/api';
 
 export default function QuickActionCenter() {
   const navigate = useNavigate();
   const location = useLocation();
   const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const session = Auth.get();
   const role = session?.role || 'Guest';
+
+  // Click outside to close
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+    if (open) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [open]);
 
   // Hide quick actions floating menu entirely for the login page, Greeter role,
   // and on public / kiosk pages.
@@ -30,29 +46,33 @@ export default function QuickActionCenter() {
 
   // Wedding CRM gets a wedding-focused quick action menu with relevant modules
   const isWeddingCrm = location.pathname.startsWith('/wedding-crm');
+  const canManageTalent = ['Admin', 'Super Admin', 'HR', 'HR Manager', 'Floor Manager', 'Store Manager'].includes(role);
 
   const actions = isWeddingCrm
     ? [
-        { label: 'Add Wedding Customer', icon: UserPlus, href: '/wedding-registration', color: 'bg-primary text-white' },
-        { label: "Today's Follow-ups", icon: PhoneCall, href: '/wedding-crm', color: 'bg-primary-dark text-accent-light' },
-        { label: 'Follow-up Calendar', icon: Calendar, href: '/wedding-crm', color: 'bg-accent text-primary-dark' },
-        { label: 'Tracking Search', icon: Search, href: '/track', target: '_blank', color: 'bg-status-info text-white' },
-        { label: 'Feedback QR', icon: QrCode, href: '/feedback-qr', color: 'bg-primary text-white' }
+        { label: '+ Add Wedding Customer', icon: UserPlus, href: '/wedding-registration' },
+        { label: "Today's Follow-ups", icon: PhoneCall, href: '/wedding-crm' },
+        { label: 'Follow-up Calendar', icon: Calendar, href: '/wedding-crm' },
+        { label: 'Tracking Search', icon: Search, href: '/track', target: '_blank' },
+        { label: 'Feedback QR', icon: QrCode, href: '/feedback-qr' }
       ]
     : [
-        { label: 'Wedding Registration', icon: Sparkles, href: '/wedding-registration', target: '_blank', color: 'bg-primary text-white' },
-        { label: 'Section Allocation', icon: Calendar, href: '/section-allocation', color: 'bg-accent text-primary-dark' },
-        { label: 'Feedback QR', icon: QrCode, href: '/feedback-qr', color: 'bg-primary text-white' }
+        { label: '+ Add Wedding Customer', icon: Sparkles, href: '/wedding-registration', target: '_blank' },
+        { label: '+ Section Allocation', icon: Calendar, href: '/section-allocation' },
+        { label: '+ Feedback QR', icon: QrCode, href: '/feedback-qr' },
+        ...(canManageTalent
+          ? [{ label: '+ Register Candidate', icon: UserCheck, href: '/apply', target: '_blank' }]
+          : [])
       ];
 
   return (
-    <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end">
+    <div ref={containerRef} className="fixed bottom-6 right-6 z-40 flex flex-col items-end">
       {/* Expanded Speed Dial Menu */}
       {open && (
         <div className="mb-3 space-y-2 animate-fade-in">
           {isWeddingCrm && (
             <div className="text-right">
-              <span className="text-[10px] font-black uppercase tracking-widest text-primary bg-white border border-accent-soft px-2.5 py-1 rounded-full shadow-sm">
+              <span className="text-[10px] font-black uppercase tracking-widest text-[#101C36] bg-white border border-[#DFDDD7] px-2.5 py-1 rounded-full shadow-sm">
                 Wedding Quick Actions
               </span>
             </div>
@@ -71,12 +91,12 @@ export default function QuickActionCenter() {
                     navigate(act.href);
                   }
                 }}
-                className="flex items-center gap-3 px-3.5 py-2 rounded-xl bg-white border border-border shadow-xl hover:shadow-2xl transition-all duration-150 group text-left"
+                className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-white border border-[#DFDDD7] shadow-lg hover:shadow-xl hover:border-[#C9A45C] transition-all duration-150 group text-left cursor-pointer"
               >
-                <span className="text-xs font-bold text-text-primary whitespace-nowrap group-hover:text-accent">
+                <span className="text-xs font-bold text-[#182033] whitespace-nowrap group-hover:text-[#C9A45C] transition-colors">
                   {act.label}
                 </span>
-                <div className={`p-2 rounded-lg ${act.color} shadow-xs group-hover:scale-110 transition-transform`}>
+                <div className="p-2 rounded-lg bg-[#C9A45C]/15 text-[#C9A45C] group-hover:bg-[#C9A45C] group-hover:text-[#07101F] shadow-xs group-hover:scale-105 transition-all">
                   <Icon className="w-4 h-4" />
                 </div>
               </button>
@@ -89,8 +109,8 @@ export default function QuickActionCenter() {
       <button
         onClick={() => setOpen(!open)}
         className={`
-          w-14 h-14 rounded-2xl flex items-center justify-center shadow-2xl border border-accent/20 transition-all duration-200 hover:scale-105 active:scale-95 text-white
-          ${open ? 'rotate-45 bg-status-danger hover:bg-status-danger' : 'bg-primary hover:bg-primary-dark'}
+          w-13 h-13 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center shadow-xl border border-[#DFDDD7] transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer
+          ${open ? 'rotate-45 bg-[#C7374A] text-white hover:bg-[#A32838]' : 'bg-[#101C36] hover:bg-[#07101F] text-white'}
         `}
         title="Quick Action Center"
         aria-label="Quick actions"

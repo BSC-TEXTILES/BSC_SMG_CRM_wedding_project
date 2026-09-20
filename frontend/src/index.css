@@ -7,20 +7,21 @@
 :root {
   /* ==================================================
      MASTER BRAND DESIGN TOKENS — BSC EXCLUSIVE CRM
+     MIDNIGHT NAVY + CHAMPAGNE PREMIUM ENTERPRISE THEME
      ================================================== */
-  --color-primary: #4A0F24;          /* Master Primary (Deep Burgundy) */
-  --color-primary-dark: #320817;     /* Master Primary Dark (Deep Wine) */
+  --color-primary: #101C36;          /* Master Primary (Midnight Navy) */
+  --color-primary-dark: #07101F;     /* Master Primary Dark */
   --color-gold: #C9A45C;             /* Master Champagne Gold */
-  --color-gold-light: #E4C982;       /* Master Gold Light */
-  --color-background: #F7F3ED;       /* Master Background (Warm Ivory) */
+  --color-gold-light: #E4CB92;       /* Master Gold Light */
+  --color-background: #F6F4EF;       /* Master Background (Warm Off-white / Ivory) */
   --color-card: #FFFFFF;             /* Master Cards / Surface */
-  --color-text: #21151A;             /* Master Main Text (Deep Espresso) */
-  --color-text-secondary: #6F6265;   /* Master Secondary Text (Warm Slate) */
-  --color-border: #E5DCD2;           /* Master Border (Warm Linen Sand) */
-  --color-success: #16805B;          /* Master Success (Emerald Forest) */
-  --color-warning: #C98218;          /* Master Warning (Warm Amber) */
-  --color-danger: #C7374A;           /* Master Danger (Crimson Carmine) */
-  --color-info: #3567A8;             /* Master Info (Royal Slate Blue) */
+  --color-text: #182033;             /* Master Main Text (Dark Slate Navy) */
+  --color-text-secondary: #687080;   /* Master Secondary / Muted Text */
+  --color-border: #DFDDD7;           /* Master Border (Subtle Enterprise Border) */
+  --color-success: #16805B;          /* Master Success */
+  --color-warning: #C98218;          /* Master Warning */
+  --color-danger: #C7374A;           /* Master Danger */
+  --color-info: #3567A8;             /* Master Info */
 
   /* Reusable standard aliases matching existing code */
   --bg: var(--color-background);
@@ -34,17 +35,17 @@
   --color-accent: var(--color-gold);
   --color-accent-hover: #B38C45;
   --color-accent-soft: #FAF5EA;
-  --color-accent-text: #8A6D1A;
+  --color-accent-text: #9E762E;
   --color-accent-bright: var(--color-gold-light);
   --color-primary-hover: var(--color-primary-dark);
-  --color-primary-soft: #F5EBF0;
-  --color-primary-light: #631833;
+  --color-primary-soft: #EEF2F9;
+  --color-primary-light: #1C2E56;
 
   --burgundy: var(--color-primary);
   --burgundy-dark: var(--color-primary-dark);
-  --burgundy-light: #631833;
+  --burgundy-light: #1C2E56;
   --champagne: var(--color-gold);
-  --champagne-dark: #B38C45;
+  --champagne-dark: #9E762E;
   --champagne-light: var(--color-gold-light);
   --cream: var(--color-background);
   --ivory: var(--color-background);
@@ -56,9 +57,9 @@
 
   --navy: var(--color-primary);
   --navy-dark: var(--color-primary-dark);
-  --navy-light: #631833;
+  --navy-light: #1C2E56;
   --gold: var(--color-gold);
-  --gold-dark: #B38C45;
+  --gold-dark: #9E762E;
   --muted: var(--color-text-secondary);
 }
 
@@ -96,12 +97,12 @@ html, #root, * {
 
 /* Refined Selection Highlighting */
 ::selection {
-  background-color: rgba(74, 15, 36, 0.15);
-  color: #21151A;
+  background-color: rgba(201, 164, 92, 0.25);
+  color: var(--color-text);
 }
 ::-moz-selection {
-  background-color: rgba(74, 15, 36, 0.15);
-  color: #21151A;
+  background-color: rgba(201, 164, 92, 0.25);
+  color: var(--color-text);
 }
 
 /* Refined Scrollbar */
@@ -113,7 +114,7 @@ html, #root, * {
   background: var(--color-background);
 }
 ::-webkit-scrollbar-thumb {
-  background: #D8CEBF;
+  background: var(--color-gold);
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
@@ -124,12 +125,12 @@ html, #root, * {
 .card-glass {
   background: var(--color-card);
   border: 1px solid var(--color-border);
-  box-shadow: 0 4px 16px rgba(74, 15, 36, 0.04);
-  border-radius: 16px;
+  box-shadow: 0 2px 10px rgba(16, 28, 54, 0.04);
+  border-radius: 14px;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .card-glass-hover:hover {
-  box-shadow: 0 8px 24px rgba(74, 15, 36, 0.08);
+  box-shadow: 0 6px 20px rgba(16, 28, 54, 0.08);
   border-color: var(--color-gold);
   transform: translateY(-1px);
 }
@@ -260,13 +261,13 @@ html, #root, * {
   padding: 9px 18px;
   border-radius: 10px;
   transition: all 0.15s ease;
-  box-shadow: 0 2px 8px rgba(74, 15, 36, 0.25);
+  box-shadow: 0 2px 6px rgba(16, 28, 54, 0.2);
 }
 .btn-primary:hover {
   background-color: var(--color-primary-dark);
   color: #FFFFFF;
   transform: translateY(-0.5px);
-  box-shadow: 0 4px 14px rgba(50, 8, 23, 0.35);
+  box-shadow: 0 4px 12px rgba(7, 16, 31, 0.25);
 }
 .btn-gold {
   background-color: var(--color-gold);
@@ -275,16 +276,16 @@ html, #root, * {
   padding: 9px 18px;
   border-radius: 10px;
   transition: all 0.15s ease;
-  box-shadow: 0 2px 8px rgba(201, 164, 92, 0.35);
+  box-shadow: 0 2px 6px rgba(201, 164, 92, 0.25);
 }
 .btn-gold:hover {
-  background-color: #B38C45;
+  background-color: var(--color-gold-light);
   color: var(--color-primary-dark);
   transform: translateY(-0.5px);
 }
 .btn-secondary {
   background-color: #FFFFFF;
-  color: var(--color-primary);
+  color: var(--color-text);
   border: 1px solid var(--color-border);
   font-weight: 700;
   padding: 9px 18px;
@@ -466,14 +467,13 @@ html, #root, * {
   }
 }
 
-/* --- Contrast Overrides for Deep Burgundy Theme --- */
-/* Since primary is a dark color (Burgundy), dark text on it will be invisible. */
+/* --- Contrast Overrides for Midnight Navy Theme --- */
+/* Since primary is a dark color (#101C36), dark text on it must be white for high contrast. */
 .bg-primary.text-primary,
-.bg-burgundy.text-primary,
+.bg-navy.text-primary,
 .bg-primary-hover.text-primary,
-.bg-burgundy-hover.text-primary,
 .bg-primary .text-primary,
-.bg-burgundy .text-primary,
+.bg-navy .text-primary,
 .bg-primary-light.text-primary {
   color: #FFFFFF !important;
 }

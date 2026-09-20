@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import Topbar from '../components/Topbar';
 import { API, Auth, UserSession } from '../services/api';
+import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../utils/sidebarState';
 import {
   CheckCircle2, Circle, AlertCircle, Clock, XCircle, ChevronDown, ChevronRight,
   ChevronUp, Calendar, RefreshCw, Send, Save, Upload, X, Eye, FileText,
@@ -58,7 +59,12 @@ export default function DailyMCheck() {
   const [searchParams] = useSearchParams();
   const [session, setSession] = useState<UserSession | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState<boolean>(getSidebarCollapsed());
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' | 'info' } | null>(null);
+
+  useEffect(() => {
+    return subscribeSidebarCollapsed(setCollapsed);
+  }, []);
 
   const [selectedDate, setSelectedDate] = useState(() => {
     const urlDate = searchParams.get('date');
@@ -340,7 +346,7 @@ export default function DailyMCheck() {
   return (
     <div className="min-h-screen bg-background flex">
       <Sidebar session={session} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <div className="flex-1 flex flex-col min-w-0 lg:pl-64">
+      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${collapsed ? 'lg:pl-20' : 'lg:pl-64'}`}>
         <Topbar title="Daily MCheck" session={session} onMenuClick={() => setSidebarOpen(true)} />
         {toast && <Toast msg={toast.msg} type={toast.type} />}
 

@@ -4,6 +4,7 @@ import Sidebar from '../components/Sidebar';
 import Topbar from '../components/Topbar';
 import ToastContainer, { showToast } from '../components/Toast';
 import { API, Auth, UserSession } from '../services/api';
+import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../utils/sidebarState';
 import { 
   MessageSquare, 
   Search, 
@@ -37,6 +38,11 @@ export default function FeedbackCollection() {
   const navigate = useNavigate();
   const [session, setSession] = useState<UserSession | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState<boolean>(getSidebarCollapsed());
+
+  useEffect(() => {
+    return subscribeSidebarCollapsed(setCollapsed);
+  }, []);
 
   // Feedbacks & Stats
   const [feedbacks, setFeedbacks] = useState<any[]>([]);
@@ -186,7 +192,7 @@ export default function FeedbackCollection() {
       <ToastContainer />
       <Sidebar session={session} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      <div className="flex-1 lg:pl-64 flex flex-col min-w-0">
+      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${collapsed ? 'lg:pl-20' : 'lg:pl-64'}`}>
         <Topbar
           title="Customer Feedback Collection & Analytics"
           session={session}
@@ -765,10 +771,10 @@ export default function FeedbackCollection() {
                 </div>
 
                 {/* 8. Action Buttons (Modal Footer) */}
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-accent-soft">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-[#DFDDD7]">
                   <button
                     onClick={() => setSelectedFeedback(null)}
-                    className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-white border border-[#EBE5E0] hover:bg-[#F3EFE9] text-[#2C1E16] font-extrabold text-xs transition-all shadow-sm"
+                    className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-white border border-[#DFDDD7] hover:bg-[#F6F4EF] text-[#182033] font-extrabold text-xs transition-all shadow-sm cursor-pointer"
                   >
                     Close Dashboard
                   </button>
@@ -777,7 +783,7 @@ export default function FeedbackCollection() {
                     <button
                       onClick={() => handleSaveModalResolution('called')}
                       disabled={savingResolution}
-                      className="px-4 py-2.5 rounded-xl bg-white border border-[#EBE5E0] hover:bg-[#F3EFE9] text-[#2C1E16] font-extrabold text-xs shadow-sm active:scale-95 transition-all"
+                      className="px-4 py-2.5 rounded-xl bg-white border border-[#DFDDD7] hover:bg-[#F6F4EF] text-[#182033] font-extrabold text-xs shadow-sm active:scale-95 transition-all cursor-pointer"
                     >
                       Mark In Progress
                     </button>
@@ -785,16 +791,16 @@ export default function FeedbackCollection() {
                     <button
                       onClick={() => handleSaveModalResolution('escalated_manager')}
                       disabled={savingResolution}
-                      className="px-4 py-2.5 rounded-xl bg-white border border-[#EBE5E0] hover:bg-[#F3EFE9] text-[#2C1E16] font-extrabold text-xs shadow-sm active:scale-95 transition-all flex items-center gap-1.5"
+                      className="px-4 py-2.5 rounded-xl bg-white border border-[#DFDDD7] hover:bg-[#F6F4EF] text-[#182033] font-extrabold text-xs shadow-sm active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
                     >
-                      <ShieldAlert className="w-4 h-4 text-rose-600" />
+                      <ShieldAlert className="w-4 h-4 text-[#C7374A]" />
                       <span>Escalate to Store Manager</span>
                     </button>
 
                     <button
                       onClick={() => handleSaveModalResolution('resolved')}
                       disabled={savingResolution}
-                      className="px-4 py-2.5 rounded-xl bg-white border border-[#EBE5E0] hover:bg-[#F3EFE9] text-[#2C1E16] font-extrabold text-xs shadow-sm active:scale-95 transition-all flex items-center gap-1.5"
+                      className="px-4 py-2.5 rounded-xl bg-white border border-[#DFDDD7] hover:bg-[#F6F4EF] text-[#182033] font-extrabold text-xs shadow-sm active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
                     >
                       <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                       <span>Mark Resolved</span>
@@ -803,7 +809,7 @@ export default function FeedbackCollection() {
                     <button
                       onClick={() => handleSaveModalResolution()}
                       disabled={savingResolution}
-                      className="px-6 py-2.5 rounded-xl bg-[#4A1E2C] hover:bg-[#3d1824] text-white font-extrabold text-xs shadow-md active:scale-95 transition-all flex items-center gap-1.5"
+                      className="px-6 py-2.5 rounded-xl bg-[#101C36] hover:bg-[#07101F] text-white font-extrabold text-xs shadow-md active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
                     >
                       <Send className="w-4 h-4" />
                       <span>{savingResolution ? 'Saving...' : 'Save Resolution Notes'}</span>

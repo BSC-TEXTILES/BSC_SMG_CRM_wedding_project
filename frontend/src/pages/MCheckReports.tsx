@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import Topbar from '../components/Topbar';
 import { API, Auth, UserSession } from '../services/api';
+import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../utils/sidebarState';
 import {
   BarChart3, Download, FileSpreadsheet, Filter, Search, RefreshCw,
   Calendar, CheckCircle2, XCircle, Clock, AlertCircle, Circle,
@@ -29,7 +30,12 @@ export default function MCheckReports() {
   const navigate = useNavigate();
   const [session, setSession] = useState<UserSession | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState<boolean>(getSidebarCollapsed());
   const [toast, setToast] = useState<any>(null);
+
+  useEffect(() => {
+    return subscribeSidebarCollapsed(setCollapsed);
+  }, []);
 
   const today = (() => {
     const n = new Date();
@@ -107,7 +113,7 @@ export default function MCheckReports() {
   return (
     <div className="min-h-screen bg-background flex">
       <Sidebar session={session} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <div className="flex-1 flex flex-col min-w-0 lg:pl-64">
+      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${collapsed ? 'lg:pl-20' : 'lg:pl-64'}`}>
         <Topbar title="MCheck Reports" session={session} onMenuClick={() => setSidebarOpen(true)} />
         {toast && <Toast msg={toast.msg} type={toast.type} />}
 

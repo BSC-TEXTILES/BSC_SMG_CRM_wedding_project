@@ -4,6 +4,7 @@ import Sidebar from '../components/Sidebar';
 import Topbar from '../components/Topbar';
 import ToastContainer from '../components/Toast';
 import { API, Auth, UserSession } from '../services/api';
+import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../utils/sidebarState';
 import { getDashboardTypeForRole, getDashboardLabelForRole } from '../utils/dashboardRouting';
 import MetricCard from '../components/ui/MetricCard';
 import PageHeader from '../components/ui/PageHeader';
@@ -45,7 +46,12 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const [session, setSession] = useState<UserSession | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState<boolean>(getSidebarCollapsed());
   const [selectedEmployee, setSelectedEmployee] = useState<any | null>(null);
+
+  useEffect(() => {
+    return subscribeSidebarCollapsed(setCollapsed);
+  }, []);
 
   // Employees & Operational Stats
   const [employees, setEmployees] = useState<any[]>([]);
@@ -209,7 +215,7 @@ export default function DashboardPage() {
         onClose={() => setSidebarOpen(false)} 
       />
 
-      <div className="flex-1 lg:pl-64 flex flex-col min-w-0">
+      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${collapsed ? 'lg:pl-20' : 'lg:pl-64'}`}>
         <Topbar 
           title={dashboardTitle} 
           session={session}

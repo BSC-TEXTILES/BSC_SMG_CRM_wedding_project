@@ -2,6 +2,7 @@ import React from 'react';
 import { LucideIcon } from 'lucide-react';
 
 interface PageHeaderProps {
+  section?: string;
   title: string;
   description?: string;
   icon?: LucideIcon;
@@ -9,6 +10,7 @@ interface PageHeaderProps {
 }
 
 export default function PageHeader({
+  section,
   title,
   description,
   icon: Icon,
@@ -17,12 +19,17 @@ export default function PageHeader({
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
       <div>
-        <h1 className="text-2xl font-black text-primary tracking-tight flex items-center gap-2.5">
-          {Icon && <Icon className="w-6 h-6 text-accent" />}
+        {section && (
+          <p className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-[#C9A45C] mb-1">
+            {section}
+          </p>
+        )}
+        <h1 className="text-xl sm:text-2xl font-black text-[#182033] tracking-tight flex items-center gap-2.5">
+          {Icon && <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-[#C9A45C]" />}
           <span>{title}</span>
         </h1>
         {description && (
-          <p className="text-xs sm:text-sm text-primary font-medium mt-1">
+          <p className="text-xs sm:text-sm text-[#687080] font-medium mt-1">
             {description}
           </p>
         )}

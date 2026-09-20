@@ -4,6 +4,7 @@ import Sidebar from '../components/Sidebar';
 import Topbar from '../components/Topbar';
 import ToastContainer, { showToast } from '../components/Toast';
 import { Auth, UserSession } from '../services/api';
+import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../utils/sidebarState';
 import { NotificationService, SystemNotification } from '../services/notificationService';
 import MetricCard from '../components/ui/MetricCard';
 import { Send, Megaphone, Users, Calendar, AlertTriangle, Trash2, CheckCircle2, Shield, Plus, Clock, Filter, Eye, CheckCheck, FileText, Lock, MessageSquare } from 'lucide-react';
@@ -12,7 +13,12 @@ export default function BroadcastCenterPage() {
   const navigate = useNavigate();
   const [session, setSession] = useState<UserSession | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState<boolean>(getSidebarCollapsed());
   const [activeTab, setActiveTab] = useState<'dashboard' | 'create' | 'history'>('dashboard');
+
+  useEffect(() => {
+    return subscribeSidebarCollapsed(setCollapsed);
+  }, []);
 
   // Form State
   const [title, setTitle] = useState('');
@@ -121,7 +127,7 @@ export default function BroadcastCenterPage() {
       <ToastContainer />
       <Sidebar session={session} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      <div className="flex-1 lg:pl-64 flex flex-col min-w-0">
+      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${collapsed ? 'lg:pl-20' : 'lg:pl-64'}`}>
         <Topbar
           title="Broadcast Center"
           breadcrumbs={[{ label: activeTab === 'dashboard' ? 'Analytics Dashboard' : activeTab === 'create' ? 'Create Broadcast' : 'Broadcast History' }]}
