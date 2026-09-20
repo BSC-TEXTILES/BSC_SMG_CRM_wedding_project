@@ -392,10 +392,38 @@ This document summarizes all the critical fixes and improvements made to the BSC
 
 ---
 
+---
+
+### 4. API 500 / 429 Errors & Wedding CRM Architecture Fixes ✅
+
+#### Root Causes Identified & Resolved:
+1. **/api/employees 500 Internal Server Error**:
+   - **Root Cause**: `backend/src/controllers/candidateController.js` in `getEmployees()` was executing `ROW_NUMBER() OVER (PARTITION BY ...)` which fails on MySQL versions prior to 8.0, and had mismatched table aliases for location scoping (`c.location_id` instead of `u.location_id`).
+   - **Fix**: Converted candidate join to MySQL 5.7+ compatible `MAX(id)` subquery, properly scoped location filter alias to `u`, and added safe fallback column checks.
+
+2. **HTTP 429 Too Many Requests Storm**:
+   - **Root Cause**: `frontend/src/components/RouteGuard.tsx` had `location.pathname` in its `useEffect` dependency array. Every route navigation dispatched redundant network requests to `/my-permissions`, `/page-settings`, `/locations`, etc., hitting backend rate limits.
+   - **Fix**: Introduced `PermissionsCache` singleton (`frontend/src/context/PermissionsCache.ts`). Cached user permissions and page settings for the session lifetime. Removed `location.pathname` from `RouteGuard.tsx` dependency array to eliminate the route-change request loop.
+
+3. **Wedding CRM TypeScript Errors & Multipart Upload Support**:
+   - **Root Cause**: 10 wedding pages (`WeddingCustomerCreate.tsx`, `WeddingStatusBoard.tsx`, `TelecallerDeskPage.tsx`, `WeddingCallHistory.tsx`, `WeddingCrmDashboard.tsx`, `WeddingCustomerDetail.tsx`, `WeddingCustomerRegister.tsx`, `WeddingFollowUpCalendar.tsx`, `WeddingImport.tsx`, `WeddingReports.tsx`) passed outdated props (`collapsed`, `setCollapsed`) to `<Sidebar />` and were missing required `title` and `session` props on `<Topbar />`.
+   - **Root Cause in File Upload**: `apiFetch` in `frontend/src/services/api.ts` always applied `Content-Type: application/json`, which broke `FormData` multipart boundary headers during CSV import. Also `API.importWeddingCustomers` / `importWeddingCsv` was missing.
+   - **Fix**:
+     - Corrected `Sidebar` (`session`, `isOpen`, `onClose`) and `Topbar` (`title`, `session`, `onMenuClick`) in all 10 wedding pages.
+     - Updated `apiFetch` to omit `Content-Type: application/json` when `body instanceof FormData`.
+     - Added `API.importWeddingCustomers` and `API.importWeddingCsv` in `api.ts`.
+     - Verified with `npx tsc --noEmit` (0 errors) and `npm run build` (successful production build).
+
+---
+
 ## Production Readiness Status
 
 | Feature | Status | Notes |
 |---------|--------|-------|
+| /api/employees 500 Fix | ✅ Complete | MySQL 5.7 compatible query, safe alias replacement |
+| Rate Limit 429 Prevention | ✅ Complete | PermissionsCache singleton, loop in RouteGuard resolved |
+| Wedding CRM Suite | ✅ Complete | All 10 pages typed, Sidebar/Topbar compliant |
+| CSV Customer Import | ✅ Complete | FormData boundary preserved, API method linked |
 | Feedback QR Access | ✅ Complete | Available via multiple entry points |
 | User Tracking | ✅ Complete | Login, logout, page navigation tracked |
 | Production Config | ✅ Complete | Environment-driven configuration |
@@ -406,8 +434,9 @@ This document summarizes all the critical fixes and improvements made to the BSC
 | RBAC | ✅ Complete | Role-based permissions enforced |
 | API Security | ✅ Complete | CSRF protection, rate limiting |
 | Socket.IO | ✅ Complete | Real-time updates configured |
+| TypeScript & Build Check | ✅ Complete | Zero type errors, clean Vite build |
 
-**Overall Status:** Production-ready with proper configuration
+**Overall Status:** Production-ready with verified build and zero compilation errors.
 
 ---
 

@@ -256,16 +256,15 @@ class CandidateController {
   async getEmployees(req, res) {
     try {
       const db = require('../config/db');
-      const { clause: locClause, params: locParams } = await getLocationFilter(req, 'c');
-      
-      // ROW_NUMBER() derived table: one best candidate per user, ordered by
-      // explicit candidate_app_no match first, then latest updated_at.
-      // This eliminates the GROUP BY + non-aggregated columns violation.
+      // Build location filter scoped to the users table alias 'u'
+      const { clause: locClause, params: locParams } = await getLocationFilter(req, 'u');
 
-let rows;
+      // MySQL 5.7-compatible: use MAX(id) subquery to pick one candidate per phone/app_no
+      // (ROW_NUMBER() OVER PARTITION requires MySQL 8+ and crashes on 5.7)
+      let rows;
       try {
         [rows] = await db.query(
-          `SELECT 
+          `SELECT
               u.id as user_id, u.username as username, u.employee_id as emp_no,
               u.full_name as name, u.email, u.phone,
               COALESCE(c.app_no, u.employee_id, u.username) as app_no,
@@ -285,8 +284,7 @@ let rows;
               COALESCE(c.father_details, u.father_details) as father_details,
               COALESCE(c.mother_details, u.mother_details) as mother_details,
               COALESCE(c.religion_caste, CONCAT_WS('/', c.religion, c.caste)) as religion_caste,
-              c.religion as religion,
-              c.caste as caste,
+              c.religion as religion, c.caste as caste,
               COALESCE(c.languages_known, u.languages_known) as languages_known,
               COALESCE(c.city_state, u.city_state) as city_state,
               COALESCE(c.address, u.address) as address,
@@ -305,60 +303,50 @@ let rows;
               COALESCE(c.source, u.source) as source,
               COALESCE(c.referrer, u.referrer) as referrer,
               COALESCE(c.referrer_emp_no, u.referrer_emp_no) as referrer_emp_no,
-              COALESCE(so.notice_period, u.notice_period) as offer_notice_pd,
+              so.notice_period as offer_notice_pd,
               COALESCE(so.est_doj, u.offered_doj) as offer_est_doj,
               COALESCE(so.actual_doj, u.actual_doj) as offer_actual_doj,
-              so.status as offer_status,
-              so.remarks as offer_remarks,
+              so.status as offer_status, so.remarks as offer_remarks,
               so.updated_at as offer_updated_at,
               COALESCE(l.location_name, u.branch) as branch,
               u.joining_date, u.actual_doj, u.salary, u.expected_salary, u.experience,
               u.retail_experience, u.qualification, u.previous_company, u.previous_designation,
               u.previous_salary, u.current_salary, u.branch, u.reporting_manager,
               u.dob, u.gender, u.blood_group, u.aadhaar_number, u.father_details,
-              u.mother_details, NULL as religion, NULL as caste, u.languages_known, u.city_state,
-              u.address, u.photo_url, u.aadhaar_url, u.resume_url, u.remarks,
+              u.mother_details, u.languages_known, u.city_state, u.address,
+              u.photo_url, u.aadhaar_url, u.resume_url, u.remarks,
               u.source, u.referrer, u.referrer_emp_no, u.notice_period
            FROM users u
            LEFT JOIN locations l ON l.id = u.location_id
-           LEFT JOIN (
-             SELECT app_no, section, reporting_manager, offered_doj, updated_at,
-                    dob, gender, blood_group, aadhaar_number, father_details, mother_details,
-                    religion_caste, religion, caste, languages_known,
-                    city_state, address, qualification, experience, retail_experience,
-                    previous_company, previous_designation, salary, current_salary, expected_salary,
-                    photo_url, aadhaar_url, resume_url, remarks, source, referrer, referrer_emp_no,
-                    location_id, phone,
-                    ROW_NUMBER() OVER (
-                      PARTITION BY COALESCE(app_no, phone)
-                      ORDER BY
-                        CASE WHEN app_no IS NOT NULL THEN 0 ELSE 1 END,
-                        COALESCE(updated_at, created_at) DESC,
-                        id DESC
-                    ) AS rn
-                 FROM candidates
-                 WHERE (is_deleted = 0 OR is_deleted IS NULL)
-             ) c ON c.app_no = u.candidate_app_no OR (u.candidate_app_no IS NULL AND c.phone = u.phone AND c.phone IS NOT NULL AND c.rn = 1)
+           LEFT JOIN candidates c ON (
+             -- Match by phone (most reliable — both tables always have it)
+             (u.phone IS NOT NULL AND c.phone = u.phone AND c.id = (
+               SELECT MAX(c2.id) FROM candidates c2
+               WHERE c2.phone = u.phone AND (c2.is_deleted = 0 OR c2.is_deleted IS NULL)
+             ))
+           ) AND (c.is_deleted = 0 OR c.is_deleted IS NULL)
            LEFT JOIN selection_offers so ON c.app_no = so.app_no
            WHERE u.active = 1
-           ${locClause.replace('c.', 'u.')}
+           ${locClause}
            ORDER BY LOWER(u.full_name) ASC`,
           locParams
         );
       } catch (sqlErr) {
         console.warn('[getEmployees] Full query failed, trying simplified fallback:', sqlErr.message);
-        const fallbackLocClause = locClause.replace('c.', 'u.');
+        // Absolute minimal fallback — users table only, no candidate join
         [rows] = await db.query(
-          `SELECT 
+          `SELECT
               u.id as user_id, u.username as username, u.employee_id as emp_no,
               u.full_name as name, u.email, u.phone,
               COALESCE(u.employee_id, u.username) as app_no,
               NULL as candidate_app_no,
-              u.section, u.reporting_manager, u.offered_doj, u.updated_at as candidate_updated_at,
+              u.section, u.reporting_manager, u.offered_doj,
+              u.updated_at as candidate_updated_at,
               u.updated_at as user_updated_at, u.last_login_at,
-              u.department, u.designation, u.role, u.active, u.created_at, u.location_id, u.location_code,
+              u.department, u.designation, u.role, u.active, u.created_at,
+              u.location_id, u.location_code,
               u.dob, u.gender, u.blood_group, u.aadhaar_number, u.father_details, u.mother_details,
-              CONCAT_WS('/', NULL, NULL) as religion_caste, NULL as religion, NULL as caste, u.languages_known,
+              '' as religion_caste, NULL as religion, NULL as caste, u.languages_known,
               u.city_state, u.address, u.qualification, u.experience, u.retail_experience,
               u.previous_company, u.previous_designation, u.previous_salary, u.current_salary, u.expected_salary,
               u.photo_url, u.aadhaar_url, u.resume_url, u.remarks, u.source, u.referrer, u.referrer_emp_no,
@@ -369,13 +357,13 @@ let rows;
               u.retail_experience, u.qualification, u.previous_company, u.previous_designation,
               u.previous_salary, u.current_salary, u.branch, u.reporting_manager,
               u.dob, u.gender, u.blood_group, u.aadhaar_number, u.father_details,
-              u.mother_details, NULL as religion, NULL as caste, u.languages_known, u.city_state,
-              u.address, u.photo_url, u.aadhaar_url, u.resume_url, u.remarks,
+              u.mother_details, u.languages_known, u.city_state, u.address,
+              u.photo_url, u.aadhaar_url, u.resume_url, u.remarks,
               u.source, u.referrer, u.referrer_emp_no, u.notice_period
            FROM users u
            LEFT JOIN locations l ON l.id = u.location_id
            WHERE u.active = 1
-           ${fallbackLocClause}
+           ${locClause}
            ORDER BY LOWER(u.full_name) ASC`,
           locParams
         );

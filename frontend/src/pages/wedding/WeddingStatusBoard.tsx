@@ -76,7 +76,7 @@ const COLUMNS = [
 
 export default function WeddingStatusBoard() {
   const navigate = useNavigate();
-  const [session, setSession] = useState<UserSession | null>(null);
+  const [session, setSession] = useState<UserSession | null>(() => Auth.get());
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [collapsed, setCollapsed] = useState<boolean>(getSidebarCollapsed());
 
@@ -153,18 +153,21 @@ export default function WeddingStatusBoard() {
   return (
     <div className="min-h-screen bg-[#F6F4EF] flex text-[#182033]">
       <Sidebar
+        session={session}
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
-        collapsed={collapsed}
-        setCollapsed={setCollapsed}
       />
 
       <div
         className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${
-          collapsed ? 'lg:pl-[72px]' : 'lg:pl-64'
+          collapsed ? 'lg:pl-20' : 'lg:pl-64'
         }`}
       >
-        <Topbar onMenuClick={() => setSidebarOpen(true)} />
+        <Topbar
+          title="Wedding Status Pipeline"
+          session={session}
+          onMenuClick={() => setSidebarOpen(true)}
+        />
 
         <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-[1800px] w-full mx-auto space-y-6 overflow-x-auto">
           <ToastContainer />

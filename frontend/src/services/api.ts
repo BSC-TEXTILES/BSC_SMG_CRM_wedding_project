@@ -136,8 +136,9 @@ function cleanQueryParams(obj: Record<string, any>): Record<string, string> {
 
 export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
   const session = Auth.get();
+  const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...(options.headers as Record<string, string>)
   };
 
@@ -813,6 +814,16 @@ export const API = {
     const q = params ? new URLSearchParams(cleanQueryParams(params)).toString() : '';
     const res = await apiFetch(`/wedding-crm/export${q ? `?${q}` : ''}`);
     return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
+  },
+  async importWeddingCustomers(formData: FormData) {
+    const res = await apiFetch('/wedding-crm/import-csv', {
+      method: 'POST',
+      body: formData
+    });
+    return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
+  },
+  async importWeddingCsv(formData: FormData) {
+    return this.importWeddingCustomers(formData);
   },
 
   // ── Wedding CRM: Enhanced Dashboard ──────────────────────────

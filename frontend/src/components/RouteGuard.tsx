@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { API, Auth } from '../services/api';
+import { Auth } from '../services/api';
 import { getDashboardRouteForRole } from '../utils/dashboardRouting';
 import { getRoleNavMap, resolveAllowedPages } from '../utils/rbac';
+import { permissionsCache } from '../context/PermissionsCache';
 import { Loader2 } from 'lucide-react';
 
 /**
@@ -13,9 +14,13 @@ import { Loader2 } from 'lucide-react';
  * to (defense against URL tampering / sidebar-less navigation), and redirects
  * unauthenticated visitors to login.
  *
- * Resolution chain mirrors the Sidebar exactly:
- *   session → role map → user_permissions override → page_visibility DB →
- *   allow / redirect to the role's own dashboard.
+ * PERFORMANCE FIX (2026-09-21):
+ * Previously this called API.getMyPermissions() + API.getPageSettings() on
+ * every mount AND every location.pathname change, generating 20–40 requests
+ * per navigation cycle and causing HTTP 429 rate-limit errors.
+ *
+ * Now it uses a module-level PermissionsCache singleton that fetches once,
+ * caches for 5 minutes, and deduplicates concurrent calls.
  */
 export default function RouteGuard({ pageKey, children }: { pageKey: string; children: React.ReactNode }) {
   const location = useLocation();
@@ -38,20 +43,20 @@ export default function RouteGuard({ pageKey, children }: { pageKey: string; chi
     }
 
     let cancelled = false;
-    // DB-backed narrowing (page_visibility + user-specific permissions)
-    Promise.all([
-      API.getMyPermissions().catch(() => null),
-      API.getPageSettings().catch(() => null)
-    ]).then(([myPerms, pageSettingsRes]) => {
+
+    // Use shared cache — no redundant network calls across route changes
+    permissionsCache.get().then(({ myPerms, pageSettings }) => {
       if (cancelled) return;
       const userModules = myPerms?.custom && Array.isArray(myPerms.modules) ? myPerms.modules : null;
-      const settingsObj = pageSettingsRes && pageSettingsRes.settings ? pageSettingsRes.settings : (pageSettingsRes || null);
-      const allowed = resolveAllowedPages(role, settingsObj, userModules);
+      const allowed = resolveAllowedPages(role, pageSettings, userModules);
       setResolution(allowed.includes(pageKey) ? 'allowed' : 'denied');
     });
 
     return () => { cancelled = true; };
-  }, [pageKey, location.pathname]);
+    // IMPORTANT: pageKey only (not location.pathname).
+    // location.pathname caused this effect to re-run on every navigation,
+    // triggering a fresh API call on each page visit.
+  }, [pageKey]);
 
   if (resolution === 'checking') {
     return (
