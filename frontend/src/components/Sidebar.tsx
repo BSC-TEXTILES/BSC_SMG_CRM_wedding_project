@@ -260,7 +260,7 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
 
         {/* Navigation Items */}
         <div ref={navScrollRef} className="flex-1 overflow-y-auto px-2 py-1.5 space-y-3">
-          {['Enterprise Suite', 'Store Operations', 'Core Workspace', 'Daily Operations', 'Talent Management', 'Public Portals', 'Administration'].map(section => {
+          {['Telecaller', 'Enterprise Suite', 'Store Operations', 'Core Workspace', 'Daily Operations', 'Talent Management', 'Public Portals', 'Administration'].map(section => {
             // Strict RBAC rendering: only keys resolved for THIS role
             const items = navItems.filter(item => item.section === section && allowed.includes(item.key));
             if (items.length === 0) return null;

@@ -87,14 +87,14 @@ const authenticate = async (req, res, next) => {
     if (!status) {
       try {
         const [rows] = await pool.query(
-          'SELECT active, locked_until FROM users WHERE id = ? LIMIT 1',
+          "SELECT `status`, `lockedUntil` FROM `User` WHERE `id` = ? LIMIT 1",
           [userId]
         );
         if (rows && rows.length > 0) {
           status = {
             exists: true,
-            active: !!rows[0].active,
-            locked: !!(rows[0].locked_until && new Date(rows[0].locked_until) > new Date())
+            active: rows[0].status === 'Active',
+            locked: !!(rows[0].lockedUntil && new Date(rows[0].lockedUntil) > new Date())
           };
         } else {
           status = { exists: false };

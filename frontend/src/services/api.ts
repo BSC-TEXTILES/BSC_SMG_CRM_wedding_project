@@ -222,7 +222,11 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
 export const API = {
   fileUrl(url: string | null | undefined): string | null {
     if (!url) return null;
-    return url.startsWith('http') ? url : `http://localhost:5000${url.startsWith('/') ? '' : '/'}${url}`;
+    // Use absolute URLs as-is; convert relative paths to root-relative so the
+    // browser resolves them against the actual production host (Hostinger).
+    // NEVER hardcode localhost — it breaks on every deployment environment.
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    return url.startsWith('/') ? url : `/${url}`;
   },
   // Generic HTTP helpers for REST endpoints
   async get(endpoint: string) {

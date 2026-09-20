@@ -89,6 +89,10 @@ export default function App() {
         <Route path="/onboarding" element={<Navigate to="/employees" replace />} />
         <Route path="/employee-exit" element={<Navigate to="/employees" replace />} />
         <Route path="/exit" element={<Navigate to="/employees" replace />} />
+        {/* Dead sidebar links — redirect to nearest relevant live page */}
+        <Route path="/joining-desk" element={<Navigate to="/doj-desk" replace />} />
+        <Route path="/greyhr" element={<Navigate to="/employees" replace />} />
+        <Route path="/regional-analytics" element={<Navigate to="/main-crm" replace />} />
         <Route path="/employees" element={<RouteGuard pageKey="employees"><Employees /></RouteGuard>} />
         <Route path="/batch-plan" element={<RouteGuard pageKey="batch_plan"><BatchPlan /></RouteGuard>} />
         <Route path="/doj-desk" element={<RouteGuard pageKey="doj_desk"><DojDesk /></RouteGuard>} />

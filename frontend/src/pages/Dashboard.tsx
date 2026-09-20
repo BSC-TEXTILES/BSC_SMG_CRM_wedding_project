@@ -21,7 +21,6 @@ import {
   BarChart3,
   Sparkles,
   TrendingUp,
-  Percent,
   CalendarCheck,
   Building2,
   FileCheck,
@@ -471,12 +470,12 @@ export default function DashboardPage() {
                   onClick={() => navigate('/footfall')}
                 />
                 <MetricCard
-                  title="Sales Conversion Rate"
-                  value={footfallToday > 0 ? `${Math.min(100, Math.round((openDivertsCount > 0 ? 0.32 : 0.28) * 100))}%` : '—'}
-                  subtext="Store footfall to bill conversion"
-                  icon={Percent}
+                  title="Total Call Queue"
+                  value={feedbackStats.totalCallQueue}
+                  subtext={`Pending: ${feedbackStats.pendingCallQueue} callbacks`}
+                  icon={PhoneCall}
                   color="gold"
-                  onClick={() => navigate('/footfall')}
+                  onClick={() => navigate('/feedback-list')}
                 />
                 <MetricCard
                   title="Sourcing Diverts"
@@ -641,7 +640,9 @@ export default function DashboardPage() {
                       <UserCheck className="w-5 h-5 text-accent" />
                       <span>Active Store Staff Directory</span>
                     </h3>
-                    <p className="text-xs text-primary font-medium mt-0.5">Showing registered employees working at BSC EXCLUSIVE DAVANAGERE.</p>
+                    <p className="text-xs text-primary font-medium mt-0.5">
+                      Showing registered employees — {session?.isGlobalAdmin ? 'All Locations' : `BSC EXCLUSIVE ${(session?.locationName || 'DAVANAGERE').toUpperCase()}`}.
+                    </p>
                   </div>
 
                   <div className="flex items-center gap-3 w-full sm:w-auto">
