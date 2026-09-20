@@ -5,55 +5,61 @@
 @tailwind utilities;
 
 :root {
-  /* BSC Brand Theme — Deep Maroon + Blush + Gold */
-  
-  /* Primary Brand Color — Dusty Rose */
-  --color-primary: #A45A52;
-  --color-primary-hover: #8C4B44;
-  --color-primary-light: #CD857E;
-  --color-primary-soft: #F4E3E1;
-  --color-primary-soft-hover: #E8D0CD;
-  
-  /* Accent Color — Warm Cream/Gold */
-  --color-accent: #F5D58A;
-  --color-accent-hover: #E4C47A;
-  --color-accent-soft: #FEF8F8;
-  --color-accent-soft-hover: #FDF0F0;
+  /* ==================================================
+     MASTER BRAND DESIGN TOKENS — BSC EXCLUSIVE CRM
+     ================================================== */
+  --color-primary: #4A0F24;          /* Master Primary (Deep Burgundy) */
+  --color-primary-dark: #320817;     /* Master Primary Dark (Deep Wine) */
+  --color-gold: #C9A45C;             /* Master Champagne Gold */
+  --color-gold-light: #E4C982;       /* Master Gold Light */
+  --color-background: #F7F3ED;       /* Master Background (Warm Ivory) */
+  --color-card: #FFFFFF;             /* Master Cards / Surface */
+  --color-text: #21151A;             /* Master Main Text (Deep Espresso) */
+  --color-text-secondary: #6F6265;   /* Master Secondary Text (Warm Slate) */
+  --color-border: #E5DCD2;           /* Master Border (Warm Linen Sand) */
+  --color-success: #16805B;          /* Master Success (Emerald Forest) */
+  --color-warning: #C98218;          /* Master Warning (Warm Amber) */
+  --color-danger: #C7374A;           /* Master Danger (Crimson Carmine) */
+  --color-info: #3567A8;             /* Master Info (Royal Slate Blue) */
 
-  /* Neutral Background — Soft Blush/Pink */
-  --color-background: #FEF8F8;
-  
-  /* Standardized Status Indicators */
-  --green: #2D8659;
-  --amber: #B8860B;
-  --red: #C0392B;
-
-  /* Legacy variable mappings for backward compatibility */
-  --burgundy: var(--color-primary);
-  --burgundy-dark: var(--color-primary-hover);
-  --burgundy-light: var(--color-primary-light);
-  --champagne: var(--color-accent);
-  --champagne-dark: var(--color-accent-hover);
-  --champagne-light: var(--color-accent-soft);
-  --cream: var(--color-background);
+  /* Reusable standard aliases matching existing code */
   --bg: var(--color-background);
-  --surface: #FFFFFF;
-  --text-main: #2C1A1D;
-  --text-muted: #5A493C;
-  --border: #E8D5D8;
-  --border-warm: #D8C0C5;
+  --surface: var(--color-card);
+  --text-main: var(--color-text);
+  --text-muted: var(--color-text-secondary);
+  --text-soft: var(--color-text-secondary);
+  --border: var(--color-border);
+  --border-warm: var(--color-border);
 
-  /* Readability system tokens */
-  --text-soft: #4A3A30;                 /* secondary body text — AA on ivory & white */
-  --color-accent-text: #8A6D1A;         /* dark gold for text/icons on light surfaces */
-  --color-accent-bright: #F5D58A;       /* bright gold for text/icons on maroon/dark surfaces */
+  --color-accent: var(--color-gold);
+  --color-accent-hover: #B38C45;
+  --color-accent-soft: #FAF5EA;
+  --color-accent-text: #8A6D1A;
+  --color-accent-bright: var(--color-gold-light);
+  --color-primary-hover: var(--color-primary-dark);
+  --color-primary-soft: #F5EBF0;
+  --color-primary-light: #631833;
+
+  --burgundy: var(--color-primary);
+  --burgundy-dark: var(--color-primary-dark);
+  --burgundy-light: #631833;
+  --champagne: var(--color-gold);
+  --champagne-dark: #B38C45;
+  --champagne-light: var(--color-gold-light);
+  --cream: var(--color-background);
+  --ivory: var(--color-background);
+
+  --green: var(--color-success);
+  --amber: var(--color-warning);
+  --red: var(--color-danger);
+  --blue: var(--color-info);
 
   --navy: var(--color-primary);
-  --navy-dark: var(--color-primary-hover);
-  --navy-light: var(--color-primary-light);
-  --gold: var(--color-accent);
-  --gold-dark: var(--color-accent-hover);
-  --muted: #5A493C;
+  --navy-dark: var(--color-primary-dark);
+  --navy-light: #631833;
+  --gold: var(--color-gold);
+  --gold-dark: #B38C45;
+  --muted: var(--color-text-secondary);
 }
 
 body {
@@ -72,13 +78,13 @@ body {
 
 /* Sidebar color classes */
 .sidebar-bg { background-color: var(--color-primary); }
-.sidebar-border { border-color: rgba(255,255,255,0.15); }
+.sidebar-border { border-color: rgba(201, 164, 92, 0.2); }
 .sidebar-text { color: #FFFFFF; }
-.sidebar-text-muted { color: rgba(255,255,255,0.8); }
-.sidebar-accent { color: var(--color-accent); }
-.sidebar-hover-bg { background-color: var(--color-primary-hover); }
-.sidebar-active-bg { background-color: var(--color-accent); }
-.sidebar-active-text { color: var(--color-primary); }
+.sidebar-text-muted { color: rgba(255, 255, 255, 0.85); }
+.sidebar-accent { color: var(--color-gold); }
+.sidebar-hover-bg { background-color: var(--color-primary-dark); }
+.sidebar-active-bg { background-color: var(--color-gold); }
+.sidebar-active-text { color: var(--color-primary-dark); }
 
 /* Enable full project text selection & copying everywhere */
 html, #root, * {
@@ -90,15 +96,15 @@ html, #root, * {
 
 /* Refined Selection Highlighting */
 ::selection {
-  background-color: rgba(63, 14, 29, 0.2);
-  color: #2C1A1D;
+  background-color: rgba(74, 15, 36, 0.15);
+  color: #21151A;
 }
 ::-moz-selection {
-  background-color: rgba(63, 14, 29, 0.2);
-  color: #2C1A1D;
+  background-color: rgba(74, 15, 36, 0.15);
+  color: #21151A;
 }
 
-/* Refined Cool Scrollbar */
+/* Refined Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -107,24 +113,24 @@ html, #root, * {
   background: var(--color-background);
 }
 ::-webkit-scrollbar-thumb {
-  background: #D4B8BC;
+  background: #D8CEBF;
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-primary);
 }
 
-/* Enterprise Cards & Glassmorphism */
+/* Enterprise Cards */
 .card-glass {
-  background: #FFFFFF;
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--border);
-  box-shadow: 0 4px 16px rgba(63, 14, 29, 0.08);
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 4px 16px rgba(74, 15, 36, 0.04);
   border-radius: 16px;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .card-glass-hover:hover {
-  box-shadow: 0 8px 24px rgba(63, 14, 29, 0.12);
+  box-shadow: 0 8px 24px rgba(74, 15, 36, 0.08);
+  border-color: var(--color-gold);
   transform: translateY(-1px);
 }
 
@@ -141,15 +147,15 @@ html, #root, * {
   letter-spacing: 0.01em;
   box-shadow: 0 1px 2px rgba(0,0,0,0.02);
 }
-.b-new { background: var(--color-primary-soft); color: var(--color-primary); border: 1px solid var(--border); }
-.b-short { background: var(--color-accent-soft); color: var(--color-accent-text); border: 1px solid var(--color-accent-soft-hover); }
-.b-int { background: var(--color-primary-soft); color: var(--color-primary); border: 1px solid var(--border); }
-.b-sel { background: #E6F4EC; color: #2D8659; border: 1px solid #B2DFCC; }
-.b-offer { background: var(--color-accent-soft); color: var(--color-accent-text); border: 1px solid var(--color-accent-soft-hover); }
-.b-hold { background: #FFF8E1; color: #B8860B; border: 1px solid #F5E6A3; }
-.b-rej { background: #FDE8E8; color: #C0392B; border: 1px solid #F5B7B7; }
-.b-board { background: var(--color-primary-soft); color: var(--color-primary); border: 1px solid var(--border); }
-.b-info { background: var(--color-primary-soft); color: var(--color-primary); border: 1px solid var(--border); }
+.b-new { background: var(--color-primary-soft); color: var(--color-primary); border: 1px solid var(--color-border); }
+.b-short { background: #FAF5EA; color: #8A6D1A; border: 1px solid #E5DCD2; }
+.b-int { background: #EAF0F8; color: var(--color-info); border: 1px solid #B0CBEB; }
+.b-sel { background: #E6F4EE; color: var(--color-success); border: 1px solid #A3D8C3; }
+.b-offer { background: #FAF5EA; color: #8A6D1A; border: 1px solid #E4C982; }
+.b-hold { background: #FCF3E5; color: var(--color-warning); border: 1px solid #F2D5A6; }
+.b-rej { background: #FCECEE; color: var(--color-danger); border: 1px solid #F4B3BC; }
+.b-board { background: #E6F4EE; color: var(--color-success); border: 1px solid #A3D8C3; }
+.b-info { background: #EAF0F8; color: var(--color-info); border: 1px solid #B0CBEB; }
 
 /* Status Chips */
 .sc-chip {
@@ -160,9 +166,9 @@ html, #root, * {
   font-size: 10.5px;
   font-weight: 700;
 }
-.sc-done { background: #E6F4EC; color: #2D8659; }
-.sc-fail { background: #FDE8E8; color: #C0392B; }
-.sc-pending { background: #FFF8E1; color: #B8860B; }
+.sc-done { background: #E6F4EE; color: var(--color-success); border: 1px solid #A3D8C3; }
+.sc-fail { background: #FCECEE; color: var(--color-danger); border: 1px solid #F4B3BC; }
+.sc-pending { background: #FCF3E5; color: var(--color-warning); border: 1px solid #F2D5A6; }
 
 /* Days in Pipeline Chip */
 .days-chip {
@@ -171,9 +177,9 @@ html, #root, * {
   font-size: 10px;
   font-weight: 700;
 }
-.dc-ok { background: #E6F4EC; color: #2D8659; }
-.dc-warn { background: #FFF8E1; color: #B8860B; }
-.dc-danger { background: #FDE8E8; color: #C0392B; }
+.dc-ok { background: #E6F4EE; color: var(--color-success); }
+.dc-warn { background: #FCF3E5; color: var(--color-warning); }
+.dc-danger { background: #FCECEE; color: var(--color-danger); }
 
 /* Funnel Rows */
 .funnel-row {
@@ -218,7 +224,7 @@ html, #root, * {
 .f-drop {
   width: 54px;
   font-size: 10px;
-  color: var(--red);
+  color: var(--color-danger);
   font-weight: 700;
   text-align: right;
   flex-shrink: 0;
@@ -229,21 +235,24 @@ html, #root, * {
   width: 100%;
   padding: 10px 14px;
   border-radius: 10px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--color-border);
   background-color: #FFFFFF;
-  color: var(--text-main);
+  color: var(--color-text);
   font-weight: 600;
   font-size: 13px;
   transition: all 0.15s ease-in-out;
 }
 .input-modern:focus, .select-modern:focus, .textarea-modern:focus {
   outline: none;
-  border-color: var(--color-primary);
+  border-color: var(--color-gold);
   background-color: #FFFFFF;
-  box-shadow: 0 0 0 3px rgba(63, 14, 29, 0.15);
+  box-shadow: 0 0 0 3px rgba(201, 164, 92, 0.2);
+}
+.input-modern::placeholder, .textarea-modern::placeholder {
+  color: var(--color-text-secondary);
 }
 
-/* Modern Buttons — Primary & Accent */
+/* Modern Buttons — Master Color System */
 .btn-primary {
   background-color: var(--color-primary);
   color: #FFFFFF;
@@ -251,27 +260,62 @@ html, #root, * {
   padding: 9px 18px;
   border-radius: 10px;
   transition: all 0.15s ease;
-  box-shadow: 0 2px 8px rgba(63, 14, 29, 0.3);
+  box-shadow: 0 2px 8px rgba(74, 15, 36, 0.25);
 }
 .btn-primary:hover {
-  background-color: var(--color-primary-hover);
+  background-color: var(--color-primary-dark);
   color: #FFFFFF;
   transform: translateY(-0.5px);
-  box-shadow: 0 4px 14px rgba(63, 14, 29, 0.4);
+  box-shadow: 0 4px 14px rgba(50, 8, 23, 0.35);
 }
 .btn-gold {
-  background-color: var(--color-accent);
-  color: #2C1A1D;
+  background-color: var(--color-gold);
+  color: var(--color-primary-dark);
   font-weight: 800;
   padding: 9px 18px;
   border-radius: 10px;
   transition: all 0.15s ease;
-  box-shadow: 0 2px 8px rgba(245, 213, 138, 0.4);
+  box-shadow: 0 2px 8px rgba(201, 164, 92, 0.35);
 }
 .btn-gold:hover {
-  background-color: var(--color-accent-hover);
-  color: #2C1A1D;
+  background-color: #B38C45;
+  color: var(--color-primary-dark);
   transform: translateY(-0.5px);
+}
+.btn-secondary {
+  background-color: #FFFFFF;
+  color: var(--color-primary);
+  border: 1px solid var(--color-border);
+  font-weight: 700;
+  padding: 9px 18px;
+  border-radius: 10px;
+  transition: all 0.15s ease;
+}
+.btn-secondary:hover {
+  background-color: var(--color-background);
+  border-color: var(--color-gold);
+}
+.btn-danger {
+  background-color: var(--color-danger);
+  color: #FFFFFF;
+  font-weight: 700;
+  padding: 9px 18px;
+  border-radius: 10px;
+  transition: all 0.15s ease;
+}
+.btn-danger:hover {
+  background-color: #A82839;
+}
+.btn-success {
+  background-color: var(--color-success);
+  color: #FFFFFF;
+  font-weight: 700;
+  padding: 9px 18px;
+  border-radius: 10px;
+  transition: all 0.15s ease;
+}
+.btn-success:hover {
+  background-color: #106648;
 }
 
 /* Animations */
@@ -422,18 +466,20 @@ html, #root, * {
   }
 }
 
-/* --- Contrast Overrides for Maroon Theme --- */
-/* Since primary is now a dark color (Maroon), any dark text on it will be invisible. */
-/* We override text-primary and text-primary/X utilities when combined with bg-primary */
+/* --- Contrast Overrides for Deep Burgundy Theme --- */
+/* Since primary is a dark color (Burgundy), dark text on it will be invisible. */
 .bg-primary.text-primary,
 .bg-burgundy.text-primary,
 .bg-primary-hover.text-primary,
 .bg-burgundy-hover.text-primary,
 .bg-primary .text-primary,
 .bg-burgundy .text-primary,
-.bg-primary-light.text-primary,
-.bg-primary-soft.text-primary {
+.bg-primary-light.text-primary {
   color: #FFFFFF !important;
+}
+.bg-primary-soft .text-primary,
+.bg-primary-soft.text-primary {
+  color: var(--color-primary) !important;
 }
 
 /* Ensure white text on primary backgrounds */

@@ -33,16 +33,16 @@ export default function QuickActionCenter() {
 
   const actions = isWeddingCrm
     ? [
-        { label: 'Add Wedding Customer', icon: UserPlus, href: '/wedding-registration', color: 'bg-primary' },
-        { label: "Today's Follow-ups", icon: PhoneCall, href: '/wedding-crm', color: 'bg-black' },
-        { label: 'Follow-up Calendar', icon: Calendar, href: '/wedding-crm', color: 'bg-indigo-600' },
-        { label: 'Tracking Search', icon: Search, href: '/track', target: '_blank', color: 'bg-teal-600' },
-        { label: 'Feedback QR', icon: QrCode, href: '/feedback-qr', color: 'bg-purple-600' }
+        { label: 'Add Wedding Customer', icon: UserPlus, href: '/wedding-registration', color: 'bg-primary text-white' },
+        { label: "Today's Follow-ups", icon: PhoneCall, href: '/wedding-crm', color: 'bg-primary-dark text-accent-light' },
+        { label: 'Follow-up Calendar', icon: Calendar, href: '/wedding-crm', color: 'bg-accent text-primary-dark' },
+        { label: 'Tracking Search', icon: Search, href: '/track', target: '_blank', color: 'bg-status-info text-white' },
+        { label: 'Feedback QR', icon: QrCode, href: '/feedback-qr', color: 'bg-primary text-white' }
       ]
     : [
-        { label: 'Wedding Registration', icon: Sparkles, href: '/wedding-registration', target: '_blank', color: 'bg-primary' },
-        { label: 'Section Allocation', icon: Calendar, href: '/section-allocation', color: 'bg-indigo-600' },
-        { label: 'Feedback QR', icon: QrCode, href: '/feedback-qr', color: 'bg-purple-600' }
+        { label: 'Wedding Registration', icon: Sparkles, href: '/wedding-registration', target: '_blank', color: 'bg-primary text-white' },
+        { label: 'Section Allocation', icon: Calendar, href: '/section-allocation', color: 'bg-accent text-primary-dark' },
+        { label: 'Feedback QR', icon: QrCode, href: '/feedback-qr', color: 'bg-primary text-white' }
       ];
 
   return (
@@ -71,12 +71,12 @@ export default function QuickActionCenter() {
                     navigate(act.href);
                   }
                 }}
-                className="flex items-center gap-3 px-3.5 py-2 rounded-xl bg-white border border-accent-soft shadow-xl hover:shadow-2xl transition-all duration-150 group text-left"
+                className="flex items-center gap-3 px-3.5 py-2 rounded-xl bg-white border border-border shadow-xl hover:shadow-2xl transition-all duration-150 group text-left"
               >
-                <span className="text-xs font-bold text-primary whitespace-nowrap group-hover:text-accent">
+                <span className="text-xs font-bold text-text-primary whitespace-nowrap group-hover:text-accent">
                   {act.label}
                 </span>
-                <div className={`p-2 rounded-lg text-black ${act.color} shadow-xs group-hover:scale-110 transition-transform`}>
+                <div className={`p-2 rounded-lg ${act.color} shadow-xs group-hover:scale-110 transition-transform`}>
                   <Icon className="w-4 h-4" />
                 </div>
               </button>
@@ -89,8 +89,8 @@ export default function QuickActionCenter() {
       <button
         onClick={() => setOpen(!open)}
         className={`
-          w-14 h-14 rounded-2xl bg-primary text-white flex items-center justify-center shadow-2xl border border-black/20 transition-all duration-200 hover:scale-105 active:scale-95
-          ${open ? 'rotate-45 bg-rose-600' : 'bg-primary'}
+          w-14 h-14 rounded-2xl flex items-center justify-center shadow-2xl border border-accent/20 transition-all duration-200 hover:scale-105 active:scale-95 text-white
+          ${open ? 'rotate-45 bg-status-danger hover:bg-status-danger' : 'bg-primary hover:bg-primary-dark'}
         `}
         title="Quick Action Center"
         aria-label="Quick actions"

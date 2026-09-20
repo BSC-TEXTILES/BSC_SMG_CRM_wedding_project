@@ -44,10 +44,10 @@ export default function ToastContainer() {
     <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 w-full max-w-sm px-4 pointer-events-none">
       {toasts.map(t => {
         const bgMap = {
-          success: 'bg-[#2D8659] text-black border-[#1B6B45]',
-          error: 'bg-[#C0392B] text-black border-[#A93226]',
-          warn: 'bg-[#B8860B] text-black border-[#996515]',
-          info: 'bg-primary text-white border-primary'
+          success: 'bg-status-success text-white border-status-success shadow-lg',
+          error: 'bg-status-danger text-white border-status-danger shadow-lg',
+          warn: 'bg-status-warning text-white border-status-warning shadow-lg',
+          info: 'bg-primary text-white border-accent/30 shadow-lg'
         };
 
         const Icon = t.type === 'success' ? CheckCircle2 : t.type === 'error' ? AlertCircle : Info;

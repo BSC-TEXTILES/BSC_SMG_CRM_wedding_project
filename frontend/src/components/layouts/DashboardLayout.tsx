@@ -86,7 +86,7 @@ export default function DashboardLayout({
               onClick={() => { setSpeedDialOpen(false); navigate('/divert'); }}
               className="px-4 py-2.5 rounded-2xl bg-primary text-white text-xs font-black shadow-xl border border-accent/20 flex items-center gap-2"
             >
-              <Target className="w-4 h-4 text-[#B8860B]" />
+              <Target className="w-4 h-4 text-accent" />
               <span>Sourcing Diverts</span>
             </button>
 
@@ -94,7 +94,7 @@ export default function DashboardLayout({
               onClick={() => { setSpeedDialOpen(false); navigate('/feedback-list'); }}
               className="px-4 py-2.5 rounded-2xl bg-primary text-white text-xs font-black shadow-xl border border-accent/20 flex items-center gap-2"
             >
-              <PhoneCall className="w-4 h-4 text-[#2D8659]" />
+              <PhoneCall className="w-4 h-4 text-status-success" />
               <span>Feedback Call Queue</span>
             </button>
 
@@ -102,7 +102,7 @@ export default function DashboardLayout({
               onClick={() => { setSpeedDialOpen(false); navigate('/feedback-qr'); }}
               className="px-4 py-2.5 rounded-2xl bg-primary text-white text-xs font-black shadow-xl border border-accent/20 flex items-center gap-2"
             >
-              <QrCode className="w-4 h-4 text-purple-400" />
+              <QrCode className="w-4 h-4 text-accent-light" />
               <span>Feedback QR Code</span>
             </button>
           </div>
@@ -110,8 +110,8 @@ export default function DashboardLayout({
 
         <button
           onClick={() => setSpeedDialOpen(!speedDialOpen)}
-          className={`w-14 h-14 rounded-full bg-gradient-to-r from-primary to-primary text-accent shadow-2xl flex items-center justify-center border-2 border-accent/50 transition-transform active:scale-95 ${
-            speedDialOpen ? 'rotate-45' : ''
+          className={`w-14 h-14 rounded-full bg-primary text-accent shadow-2xl flex items-center justify-center border-2 border-accent/50 transition-transform active:scale-95 ${
+            speedDialOpen ? 'rotate-45 bg-status-danger text-white' : ''
           }`}
           title="Quick Store Action Speed Dial"
         >

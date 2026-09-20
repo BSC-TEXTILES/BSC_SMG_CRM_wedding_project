@@ -255,8 +255,8 @@ export default function BatchPlan() {
             </div>
 
             <div className="p-4 rounded-2xl bg-white border border-accent-soft shadow-xs flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#2D8659]/10 flex items-center justify-center text-[#2D8659]">
-                <Users className="w-5 h-5 text-[#2D8659]" />
+              <div className="w-10 h-10 rounded-xl bg-status-success/10 flex items-center justify-center text-status-success">
+                <Users className="w-5 h-5 text-status-success" />
               </div>
               <div>
                 <p className="text-xs font-semibold text-primary/60">Active Trainees</p>
@@ -266,7 +266,7 @@ export default function BatchPlan() {
             </div>
 
             <div className="p-4 rounded-2xl bg-white border border-accent-soft shadow-xs flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#C0392B]/10 flex items-center justify-center text-[#C0392B]">
+              <div className="w-10 h-10 rounded-xl bg-accent/15 flex items-center justify-center text-accent-dark">
                 <Award className="w-5 h-5 text-accent" />
               </div>
               <div>

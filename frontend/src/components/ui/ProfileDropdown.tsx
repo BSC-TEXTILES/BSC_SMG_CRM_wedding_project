@@ -54,71 +54,71 @@ export default function ProfileDropdown({
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-2xl border border-accent-soft z-50 p-2 text-xs font-bold animate-fade-in space-y-1">
-            <div className="p-3 rounded-xl bg-background border border-accent-soft mb-1">
-              <div className="font-black text-primary">{session?.fullName || 'User Session'}</div>
-              <div className="text-[10px] text-primary font-mono mt-0.5">{session?.username}</div>
+          <div className="absolute right-0 mt-2 w-56 bg-card rounded-2xl shadow-2xl border border-border z-50 p-2 text-xs font-bold animate-fade-in space-y-1">
+            <div className="p-3 rounded-xl bg-background border border-border mb-1">
+              <div className="font-black text-text-primary">{session?.fullName || 'User Session'}</div>
+              <div className="text-[10px] text-accent-dark font-mono mt-0.5">{session?.username}</div>
             </div>
 
             <button
               onClick={() => { setOpen(false); onOpenNotifications(); }}
-              className="w-full flex items-center justify-between p-2 rounded-xl text-primary hover:bg-background"
+              className="w-full flex items-center justify-between p-2 rounded-xl text-text-primary hover:bg-background transition-colors"
             >
               <div className="flex items-center gap-2">
                 <Bell className="w-4 h-4 text-accent" />
                 <span>Notifications</span>
               </div>
-              <span className="px-2 py-0.5 rounded-full bg-[#FDE8E8] text-[#C0392B] text-[10px] font-black border border-[#F5B7B7]">
+              <span className="px-2 py-0.5 rounded-full bg-status-danger/10 text-status-danger text-[10px] font-black border border-status-danger/20">
                 {NotificationService.getUnreadCount()}
               </span>
             </button>
 
             <button
               onClick={() => { setOpen(false); onOpenActivity(); }}
-              className="w-full flex items-center justify-between p-2 rounded-xl text-primary hover:bg-background"
+              className="w-full flex items-center justify-between p-2 rounded-xl text-text-primary hover:bg-background transition-colors"
             >
               <div className="flex items-center gap-2">
-                <Activity className="w-4 h-4 text-[#2D8659]" />
+                <Activity className="w-4 h-4 text-status-success" />
                 <span>Live Activity</span>
               </div>
             </button>
 
             <button
               onClick={() => { setOpen(false); onOpenSearch(); }}
-              className="w-full flex items-center justify-between p-2 rounded-xl text-primary hover:bg-background"
+              className="w-full flex items-center justify-between p-2 rounded-xl text-text-primary hover:bg-background transition-colors"
             >
               <div className="flex items-center gap-2">
-                <Command className="w-4 h-4 text-primary" />
+                <Command className="w-4 h-4 text-accent" />
                 <span>Global Search</span>
               </div>
-              <span className="font-mono text-[9px] text-primary bg-white border border-accent-soft px-1.5 py-0.5 rounded">Ctrl+K</span>
+              <span className="font-mono text-[9px] text-text-secondary bg-background border border-border px-1.5 py-0.5 rounded">Ctrl+K</span>
             </button>
 
             <button
               onClick={handleToggleSound}
-              className="w-full flex items-center justify-between p-2 rounded-xl text-primary hover:bg-background"
+              className="w-full flex items-center justify-between p-2 rounded-xl text-text-primary hover:bg-background transition-colors"
             >
               <div className="flex items-center gap-2">
-                {soundEnabled ? <Volume2 className="w-4 h-4 text-[#2D8659]" /> : <VolumeX className="w-4 h-4 text-primary" />}
+                {soundEnabled ? <Volume2 className="w-4 h-4 text-status-success" /> : <VolumeX className="w-4 h-4 text-text-muted" />}
                 <span>Audio Alerts</span>
               </div>
-              <span className="text-[10px] text-primary">{soundEnabled ? 'ON' : 'OFF'}</span>
+              <span className="text-[10px] text-text-secondary">{soundEnabled ? 'ON' : 'OFF'}</span>
             </button>
 
             {session?.role === 'Admin' || session?.role === 'Super Admin' ? (
               <button
                 onClick={() => { setOpen(false); navigate('/system-admin'); }}
-                className="w-full flex items-center gap-2 p-2 rounded-xl text-primary hover:bg-background"
+                className="w-full flex items-center gap-2 p-2 rounded-xl text-text-primary hover:bg-background transition-colors"
               >
-                <Settings className="w-4 h-4 text-[#B8860B]" />
+                <Settings className="w-4 h-4 text-accent" />
                 <span>System Administrator</span>
               </button>
             ) : null}
 
-            <div className="pt-1 border-t border-accent-soft">
+            <div className="pt-1 border-t border-border">
               <button
                 onClick={() => Auth.logout()}
-                className="w-full flex items-center gap-2 p-2 rounded-xl text-[#C0392B] hover:bg-[#FDE8E8] font-black"
+                className="w-full flex items-center gap-2 p-2 rounded-xl text-status-danger hover:bg-status-danger/10 font-black transition-colors"
               >
                 <LogOut className="w-4 h-4" />
                 <span>Sign Out</span>

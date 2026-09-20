@@ -16,48 +16,77 @@ const config: Config = {
     },
     extend: {
       colors: {
-        // Literal hex values (NOT var()) so Tailwind can correctly compile
-        // alpha utilities such as bg-accent/10, text-white/80, border-accent/25.
-        // (var() strings made Tailwind emit `rgb(var(--x) / a)` which is invalid
-        // CSS and was silently dropped, killing those styles entirely.)
+        // Literal hex values (NOT var()) so Tailwind can compile alpha utilities
         primary: {
-          DEFAULT: '#A45A52',
-          hover: '#8C4B44',
-          light: '#CD857E',
-          soft: '#F4E3E1'
+          DEFAULT: '#4A0F24', // Master Primary (Deep Burgundy)
+          dark: '#320817',    // Master Primary Dark
+          hover: '#320817',
+          light: '#631833',
+          soft: '#F5EBF0'
+        },
+        gold: {
+          DEFAULT: '#C9A45C', // Master Champagne Gold
+          light: '#E4C982',   // Master Gold Light
+          hover: '#B38C45',
+          dark: '#9E762E',
+          soft: '#FAF5EA'
         },
         accent: {
-          DEFAULT: '#C9A227',
-          hover: '#A8881F',
-          soft: '#FBF5E1',
-          softHover: '#F5EBCC'
+          DEFAULT: '#C9A45C', // Master Champagne Gold
+          light: '#E4C982',   // Master Gold Light
+          hover: '#B38C45',
+          soft: '#FAF5EA',
+          softHover: '#F4EBDA'
         },
-        background: '#F7F3EF',
-        // Keeping legacy names mapped to new colors to avoid breaking standard tailwind classes currently used
+        background: {
+          DEFAULT: '#F7F3ED', // Master Background (Warm Ivory)
+          card: '#FFFFFF'
+        },
+        card: '#FFFFFF',
+        surface: '#FFFFFF',
+        border: {
+          DEFAULT: '#E5DCD2', // Master Border (Warm Linen)
+          soft: '#EFE8DF',
+          warm: '#E5DCD2'
+        },
         burgundy: {
-          DEFAULT: '#F2D2BD',
-          dark: '#E8BCA0',
-          light: '#F8DFCD',
-          hover: '#E8BCA0'
+          DEFAULT: '#4A0F24',
+          dark: '#320817',
+          light: '#631833',
+          hover: '#320817'
         },
         champagne: {
-          DEFAULT: '#C9A227',
-          dark: '#A8881F',
-          light: '#FBF5E1',
-          hover: '#A8881F'
+          DEFAULT: '#C9A45C',
+          dark: '#B38C45',
+          light: '#E4C982',
+          hover: '#B38C45'
         },
         ivory: {
-          DEFAULT: '#F7F3EF',
+          DEFAULT: '#F7F3ED',
           card: '#FFFFFF',
-          border: '#F5ECEC'
+          border: '#E5DCD2'
         },
+        status: {
+          success: '#16805B', // Master Success
+          warning: '#C98218', // Master Warning
+          danger: '#C7374A',  // Master Danger
+          info: '#3567A8'     // Master Info
+        }
       },
       textColor: {
         primary: {
-          DEFAULT: '#2C1A1D',
-          hover: '#1A0F11'
+          DEFAULT: '#21151A', // Master Main Text
+          hover: '#0D080A'
         },
-        'primary-hover': '#1A0F11'
+        secondary: {
+          DEFAULT: '#6F6265', // Master Secondary Text
+          hover: '#4A4143'
+        },
+        muted: '#6F6265',
+        burgundy: '#4A0F24',
+        gold: '#C9A45C',
+        'gold-light': '#E4C982',
+        'primary-hover': '#0D080A'
       }
     },
   },

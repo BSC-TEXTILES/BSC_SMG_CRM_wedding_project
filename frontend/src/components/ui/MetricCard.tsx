@@ -24,12 +24,12 @@ export default function MetricCard({
 }: MetricCardProps) {
   const colorStyles = {
     navy: { iconBg: 'bg-primary/10 text-primary', border: 'border-l-4 border-l-primary' },
-    gold: { iconBg: 'bg-accent/15 text-accent', border: 'border-l-4 border-l-accent' },
-    emerald: { iconBg: 'bg-[#2D8659]/10 text-[#2D8659]', border: 'border-l-4 border-l-[#2D8659]' },
-    teal: { iconBg: 'bg-[#2D8659]/10 text-[#2D8659]', border: 'border-l-4 border-l-[#2D8659]' },
-    amber: { iconBg: 'bg-[#B8860B]/10 text-[#B8860B]', border: 'border-l-4 border-l-[#B8860B]' },
-    indigo: { iconBg: 'bg-primary/10 text-primary', border: 'border-l-4 border-l-primary' },
-    rose: { iconBg: 'bg-[#C0392B]/10 text-[#C0392B]', border: 'border-l-4 border-l-[#C0392B]' }
+    gold: { iconBg: 'bg-accent/15 text-accent-dark', border: 'border-l-4 border-l-accent' },
+    emerald: { iconBg: 'bg-status-success/10 text-status-success', border: 'border-l-4 border-l-status-success' },
+    teal: { iconBg: 'bg-status-success/10 text-status-success', border: 'border-l-4 border-l-status-success' },
+    amber: { iconBg: 'bg-status-warning/10 text-status-warning', border: 'border-l-4 border-l-status-warning' },
+    indigo: { iconBg: 'bg-status-info/10 text-status-info', border: 'border-l-4 border-l-status-info' },
+    rose: { iconBg: 'bg-status-danger/10 text-status-danger', border: 'border-l-4 border-l-status-danger' }
   };
 
   const style = colorStyles[color] || colorStyles.navy;
@@ -38,16 +38,16 @@ export default function MetricCard({
     <div
       onClick={onClick}
       className={`
-        card-glass card-glass-hover p-5 flex flex-col justify-between transition-all duration-200 border border-accent-soft bg-white
+        card-glass card-glass-hover p-5 flex flex-col justify-between transition-all duration-200 border border-border bg-card rounded-2xl
         ${style.border} ${onClick ? 'cursor-pointer' : ''}
       `}
     >
       <div className="flex items-center justify-between gap-3">
         <div>
-          <span className="text-[11px] font-extrabold uppercase tracking-wider text-primary block mb-1">
+          <span className="text-[11px] font-extrabold uppercase tracking-wider text-text-secondary block mb-1">
             {title}
           </span>
-          <div className="text-2xl lg:text-3xl font-black text-primary tracking-tight">
+          <div className="text-2xl lg:text-3xl font-black text-text-primary tracking-tight">
             {value}
           </div>
         </div>
@@ -58,10 +58,10 @@ export default function MetricCard({
       </div>
 
       {(subtext || trend) && (
-        <div className="mt-4 pt-3 border-t border-accent-soft/80 flex items-center justify-between text-xs">
-          {subtext && <span className="text-primary font-medium">{subtext}</span>}
+        <div className="mt-4 pt-3 border-t border-border/80 flex items-center justify-between text-xs">
+          {subtext && <span className="text-text-secondary font-medium">{subtext}</span>}
           {trend && (
-            <span className={`font-bold flex items-center gap-0.5 ${trendUp ? 'text-[#2D8659]' : 'text-[#B8860B]'}`}>
+            <span className={`font-bold flex items-center gap-0.5 ${trendUp ? 'text-status-success' : 'text-status-warning'}`}>
               {trend}
             </span>
           )}

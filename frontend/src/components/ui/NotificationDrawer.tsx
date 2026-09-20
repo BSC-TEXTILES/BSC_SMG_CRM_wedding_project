@@ -44,62 +44,62 @@ export default function NotificationDrawer({ isOpen, onClose }: NotificationDraw
 
   const getPriorityBadge = (priority: string) => {
     switch (priority) {
-      case 'critical': return <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-rose-100 text-rose-900 border border-rose-300 animate-pulse">CRITICAL</span>;
-      case 'high': return <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-black text-amber-100 border border-amber-300">HIGH</span>;
-      case 'low': return <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-slate-100 text-slate-700 border border-slate-200">LOW</span>;
-      default: return <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-sky-100 text-sky-800 border border-sky-200">NORMAL</span>;
+      case 'critical': return <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-status-danger/15 text-status-danger border border-status-danger/30 animate-pulse">CRITICAL</span>;
+      case 'high': return <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-status-warning/15 text-status-warning border border-status-warning/30">HIGH</span>;
+      case 'low': return <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-background text-text-secondary border border-border">LOW</span>;
+      default: return <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-status-info/15 text-status-info border border-status-info/30">NORMAL</span>;
     }
   };
 
   return (
     <>
       <div className="fixed inset-0 z-50 flex justify-end">
-        <div className="fixed inset-0 bg-primary/50 backdrop-blur-xs transition-opacity" onClick={onClose} />
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs transition-opacity" onClick={onClose} />
 
-        <aside className="relative w-full max-w-md bg-white h-full shadow-2xl flex flex-col z-10 animate-fade-in border-l border-accent-soft">
+        <aside className="relative w-full max-w-md bg-card h-full shadow-2xl flex flex-col z-10 animate-fade-in border-l border-border">
           {/* Header */}
-          <div className="p-4 sm:p-5 border-b border-accent-soft bg-primary text-white flex items-center justify-between">
+          <div className="p-4 sm:p-5 border-b border-accent/20 bg-primary text-white flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-black/10 text-accent border border-black/10">
+              <div className="p-2 rounded-xl bg-primary-dark/80 text-accent-light border border-accent/20">
                 <Bell className="w-5 h-5" />
               </div>
               <div>
-                <h2 className="font-extrabold text-base tracking-tight leading-tight">Notification Center</h2>
-                <p className="text-[10.5px] text-black font-semibold mt-0.5">Real-time alerts &amp; announcements</p>
+                <h2 className="font-extrabold text-base tracking-tight leading-tight text-white">Notification Center</h2>
+                <p className="text-[10.5px] text-accent-light font-semibold mt-0.5">Real-time alerts &amp; announcements</p>
               </div>
             </div>
 
             <div className="flex items-center gap-1.5">
               <button
                 onClick={() => setDmOpen(true)}
-                className="p-2 rounded-xl text-black hover:text-black hover:bg-black/10 transition-colors"
+                className="p-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition-colors"
                 title="Direct Text Messaging"
               >
-                <MessageSquare className="w-4 h-4 text-accent" />
+                <MessageSquare className="w-4 h-4 text-accent-light" />
               </button>
               <button
                 onClick={() => setPrefsOpen(true)}
-                className="p-2 rounded-xl text-black hover:text-black hover:bg-black/10 transition-colors"
+                className="p-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition-colors"
                 title="Audio & Notification Preferences"
               >
-                <Sliders className="w-4 h-4 text-emerald-400" />
+                <Sliders className="w-4 h-4 text-accent-light" />
               </button>
-              <button onClick={onClose} className="p-2 rounded-xl text-black hover:text-black hover:bg-black/10 transition-colors">
+              <button onClick={onClose} className="p-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>
           </div>
 
           {/* Search & Tabs */}
-          <div className="p-3 bg-background border-b border-accent-soft space-y-2">
+          <div className="p-3 bg-background border-b border-border space-y-2">
             <div className="relative">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-primary" />
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-accent" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search alerts & broadcasts..."
-                className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-accent-soft bg-white text-xs text-primary font-semibold focus:outline-none focus:border-primary"
+                className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-border bg-card text-xs text-text-primary font-semibold focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent"
               />
             </div>
 
@@ -117,7 +117,7 @@ export default function NotificationDrawer({ isOpen, onClose }: NotificationDraw
                     onClick={() => setActiveTab(t.key as any)}
                     className={`
                       px-2.5 py-1 rounded-lg text-[10.5px] transition-all whitespace-nowrap
-                      ${activeTab === t.key ? 'bg-primary text-white font-extrabold' : 'text-primary hover:bg-accent-soft/50'}
+                      ${activeTab === t.key ? 'bg-primary text-white font-extrabold' : 'text-text-secondary hover:bg-border/50'}
                     `}
                   >
                     {t.label}
@@ -145,33 +145,33 @@ export default function NotificationDrawer({ isOpen, onClose }: NotificationDraw
                     key={n.id}
                     className={`
                       p-3.5 rounded-2xl border transition-all duration-150 relative space-y-2 group
-                      ${!n.read ? 'bg-sky-50/60 border-sky-200 shadow-xs' : 'bg-white border-accent-soft'}
+                      ${!n.read ? 'bg-accent/10 border-accent/30 shadow-xs' : 'bg-card border-border'}
                     `}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-2">
-                        {!n.read && <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse flex-shrink-0" />}
-                        <h3 className="font-extrabold text-xs text-primary leading-tight">{n.title}</h3>
+                        {!n.read && <span className="w-2 h-2 rounded-full bg-accent animate-pulse flex-shrink-0" />}
+                        <h3 className="font-extrabold text-xs text-text-primary leading-tight">{n.title}</h3>
                       </div>
                       <div className="flex items-center gap-1">
                         {getPriorityBadge(n.priority)}
                         <button
                           onClick={() => NotificationService.togglePin(n.id)}
-                          className={`p-1 rounded hover:bg-black/5 ${n.pinned ? 'text-accent' : 'text-[#9A8D82]'}`}
+                          className={`p-1 rounded hover:bg-black/5 ${n.pinned ? 'text-accent' : 'text-text-muted'}`}
                           title="Pin message"
                         >
                           <Pin className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => NotificationService.toggleArchive(n.id)}
-                          className={`p-1 rounded hover:bg-black/5 ${n.archived ? 'text-indigo-600' : 'text-[#9A8D82]'}`}
+                          className={`p-1 rounded hover:bg-black/5 ${n.archived ? 'text-status-info' : 'text-text-muted'}`}
                           title="Archive message"
                         >
                           <Archive className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => NotificationService.deleteNotification(n.id)}
-                          className="p-1 rounded text-[#9A8D82] hover:text-rose-600 hover:bg-rose-50"
+                          className="p-1 rounded text-text-muted hover:text-status-danger hover:bg-status-danger/10"
                           title="Delete notification"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -179,36 +179,36 @@ export default function NotificationDrawer({ isOpen, onClose }: NotificationDraw
                       </div>
                     </div>
 
-                    <p className="text-xs text-[#5D4E42] font-medium leading-relaxed">{n.message}</p>
+                    <p className="text-xs text-text-secondary font-medium leading-relaxed">{n.message}</p>
 
                     {/* Read Acknowledgement Button */}
                     {n.requireAcknowledgement && (
-                      <div className="pt-2 border-t border-accent-soft/40 flex items-center justify-between">
+                      <div className="pt-2 border-t border-border flex items-center justify-between">
                         {isAcked ? (
-                          <span className="text-[10px] font-black text-emerald-700 flex items-center gap-1">
+                          <span className="text-[10px] font-black text-status-success flex items-center gap-1">
                             <CheckCircle2 className="w-3.5 h-3.5" />
                             <span>Acknowledgement Confirmed</span>
                           </span>
                         ) : (
                           <button
                             onClick={() => NotificationService.acknowledgeRead(n.id, username)}
-                            className="px-3 py-1.5 rounded-xl bg-primary text-white text-[10.5px] font-extrabold shadow-xs hover:bg-primary"
+                            className="btn-primary px-3 py-1.5 rounded-xl text-[10.5px] font-extrabold shadow-xs"
                           >
                             I Have Read &amp; Acknowledge
                           </button>
                         )}
-                        <span className="text-[9.5px] text-primary font-semibold">
+                        <span className="text-[9.5px] text-text-secondary font-semibold">
                           {(n.acknowledgedBy?.length || 0)} Acknowledgements
                         </span>
                       </div>
                     )}
 
-                    <div className="flex items-center justify-between text-[10px] text-[#6B5D50] font-semibold pt-1">
+                    <div className="flex items-center justify-between text-[10px] text-text-secondary font-semibold pt-1">
                       <span className="font-mono">{new Date(n.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                       {!n.read && (
                         <button
                           onClick={() => NotificationService.markAsRead(n.id)}
-                          className="text-primary font-extrabold hover:underline"
+                          className="text-accent font-extrabold hover:underline"
                         >
                           Mark Read
                         </button>
@@ -219,11 +219,11 @@ export default function NotificationDrawer({ isOpen, onClose }: NotificationDraw
               })
             ) : (
               <div className="text-center py-12 space-y-2">
-                <div className="w-12 h-12 rounded-full bg-background border border-accent-soft flex items-center justify-center mx-auto text-primary">
+                <div className="w-12 h-12 rounded-full bg-background border border-border flex items-center justify-center mx-auto text-primary">
                   <Bell className="w-6 h-6 stroke-[1.5]" />
                 </div>
-                <div className="text-xs font-extrabold text-primary">No Notifications</div>
-                <p className="text-[11px] text-[#6B5D50] max-w-xs mx-auto">You're all caught up! Broadcasts and alerts will appear here.</p>
+                <div className="text-xs font-extrabold text-text-primary">No Notifications</div>
+                <p className="text-[11px] text-text-secondary max-w-xs mx-auto">You're all caught up! Broadcasts and alerts will appear here.</p>
               </div>
             )}
           </div>

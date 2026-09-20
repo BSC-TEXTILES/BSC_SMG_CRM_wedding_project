@@ -227,13 +227,13 @@ export default function DojDesk() {
             </div>
 
             <div className="p-4 rounded-2xl bg-white border border-accent-soft shadow-xs flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#2D8659]/10 flex items-center justify-center text-[#2D8659]">
-                <Store className="w-5 h-5 text-[#2D8659]" />
+              <div className="w-10 h-10 rounded-xl bg-status-success/10 flex items-center justify-center text-status-success">
+                <Store className="w-5 h-5 text-status-success" />
               </div>
               <div>
                 <p className="text-xs font-semibold text-primary/60">Active Store Staff</p>
                 <p className="text-xl sm:text-2xl font-black text-primary">{joinedCount || '—'}</p>
-                <p className="text-[10px] text-green-600 font-bold mt-0.5">Joined Store Directory</p>
+                <p className="text-[10px] text-status-success font-bold mt-0.5">Joined Store Directory</p>
               </div>
             </div>
           </div>
@@ -384,7 +384,7 @@ export default function DojDesk() {
                               <button
                                 type="button"
                                 onClick={() => handleMarkJoined(cand.app_no, cand.name)}
-                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#2D8659] text-white hover:bg-green-700 font-bold text-[11px] shadow-2xs"
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-status-success text-white hover:opacity-90 font-bold text-[11px] shadow-2xs"
                                 title="Candidate has arrived and joined the store"
                               >
                                 <UserCheck className="w-3.5 h-3.5" /> Mark Joined

@@ -87,10 +87,10 @@ export default function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModal
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-24 p-4 bg-black/40 backdrop-blur-xs">
-      <div className="w-full max-w-xl bg-white rounded-3xl overflow-hidden shadow-2xl border border-accent-soft animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-24 p-4 bg-black/50 backdrop-blur-xs">
+      <div className="w-full max-w-xl bg-card rounded-3xl overflow-hidden shadow-2xl border border-border animate-fade-in">
         {/* Search Bar Input */}
-        <div className="p-4 border-b border-accent-soft flex items-center gap-3 bg-background">
+        <div className="p-4 border-b border-border flex items-center gap-3 bg-background">
           <Search className="w-5 h-5 text-accent" />
           <input
             type="text"
@@ -98,9 +98,9 @@ export default function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModal
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Type to search candidates, employees, openings, modules... (ESC to exit)"
-            className="w-full text-sm font-semibold bg-transparent text-primary focus:outline-none placeholder-[#6B5D50]"
+            className="w-full text-sm font-semibold bg-transparent text-text-primary focus:outline-none placeholder:text-text-muted"
           />
-          <button onClick={onClose} className="p-1 rounded-lg text-[#6B5D50] hover:text-primary">
+          <button onClick={onClose} className="p-1 rounded-lg text-text-muted hover:text-text-primary">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -108,7 +108,7 @@ export default function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModal
         {/* Results List */}
         <div className="max-h-96 overflow-y-auto p-3 space-y-1 text-xs">
           {loading && (
-            <div className="p-6 text-center text-primary font-semibold flex items-center justify-center gap-2">
+            <div className="p-6 text-center text-text-secondary font-semibold flex items-center justify-center gap-2">
               <span className="spinner" />
               <span>Searching enterprise directory...</span>
             </div>
@@ -122,36 +122,36 @@ export default function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModal
                   onClose();
                   navigate(r.href);
                 }}
-                className="w-full p-3 rounded-2xl flex items-center justify-between gap-3 hover:bg-background text-left transition-colors font-medium border border-transparent hover:border-accent-soft"
+                className="w-full p-3 rounded-2xl flex items-center justify-between gap-3 hover:bg-background text-left transition-colors font-medium border border-transparent hover:border-border"
               >
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-primary/10 text-primary">
+                    <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-primary/10 text-primary border border-primary/20">
                       {r.type}
                     </span>
-                    <span className="font-extrabold text-primary">{r.title}</span>
+                    <span className="font-extrabold text-text-primary">{r.title}</span>
                   </div>
-                  <div className="text-[11px] text-primary mt-0.5">{r.subtitle}</div>
+                  <div className="text-[11px] text-text-secondary mt-0.5">{r.subtitle}</div>
                 </div>
-                <ArrowRight className="w-4 h-4 text-[#6B5D50]" />
+                <ArrowRight className="w-4 h-4 text-text-muted" />
               </button>
             ))
           )}
 
           {!loading && query.trim() && results.length === 0 && (
-            <div className="p-8 text-center text-primary font-semibold">
+            <div className="p-8 text-center text-text-secondary font-semibold">
               No matching candidate or system records found for "{query}".
             </div>
           )}
 
           {!query.trim() && (
-            <div className="p-6 text-center text-primary font-semibold text-xs space-y-2">
-              <div>Quick Search Shortcuts</div>
+            <div className="p-6 text-center text-text-secondary font-semibold text-xs space-y-2">
+              <div className="text-text-primary font-bold">Quick Search Shortcuts</div>
               <div className="flex flex-wrap justify-center gap-2">
-                <span className="px-2.5 py-1 rounded-xl bg-background border font-mono">Ctrl + K</span>
-                <span className="px-2.5 py-1 rounded-xl bg-background border font-mono">Candidate Names</span>
-                <span className="px-2.5 py-1 rounded-xl bg-background border font-mono">Application Numbers</span>
-                <span className="px-2.5 py-1 rounded-xl bg-background border font-mono">Phone Numbers</span>
+                <span className="px-2.5 py-1 rounded-xl bg-background border border-border font-mono text-text-secondary">Ctrl + K</span>
+                <span className="px-2.5 py-1 rounded-xl bg-background border border-border font-mono text-text-secondary">Candidate Names</span>
+                <span className="px-2.5 py-1 rounded-xl bg-background border border-border font-mono text-text-secondary">Application Numbers</span>
+                <span className="px-2.5 py-1 rounded-xl bg-background border border-border font-mono text-text-secondary">Phone Numbers</span>
               </div>
             </div>
           )}

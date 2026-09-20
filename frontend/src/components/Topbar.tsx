@@ -67,7 +67,7 @@ export default function Topbar({ title, breadcrumbs, session, onMenuClick, right
 
   return (
     <>
-      <header className="w-full max-w-full bg-white/95 backdrop-blur-md border-b border-accent-soft sticky top-0 z-30 shadow-xs flex-shrink-0">
+      <header className="w-full max-w-full bg-white border-b border-[#E5DCD2] sticky top-0 z-30 shadow-2xs flex-shrink-0">
         {/* ── Row 1: Hamburger, Title, Search, Tools ────────────────────── */}
         <div className="h-14 sm:h-16 px-2 sm:px-3 lg:px-5 flex items-center justify-between gap-2">
         {/* ── Left Area: Hamburger + Title ──────────────────────────────── */}
@@ -76,14 +76,14 @@ export default function Topbar({ title, breadcrumbs, session, onMenuClick, right
           <button
             type="button"
             onClick={onMenuClick}
-            className="lg:hidden flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-primary text-white hover:bg-primary-hover active:scale-95 transition-all shadow-md border border-primary/80 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-1 cursor-pointer flex-shrink-0"
+            className="lg:hidden flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#4A0F24] text-white hover:bg-[#320817] active:scale-95 transition-all shadow-sm border border-[#4A0F24] focus:outline-none focus:ring-2 focus:ring-[#C9A45C] focus:ring-offset-1 cursor-pointer flex-shrink-0"
             aria-label="Open navigation menu"
             title="Open navigation menu"
           >
-            <Menu className="w-5 h-5" />
+            <Menu className="w-5 h-5 text-white" />
           </button>
           <div className="min-w-0">
-            <h1 className="text-xs sm:text-sm md:text-base font-black text-primary tracking-tight leading-none truncate max-w-[80px] sm:max-w-[160px] md:max-w-[200px] lg:max-w-none">
+            <h1 className="text-xs sm:text-sm md:text-base font-black text-[#4A0F24] tracking-tight leading-none truncate max-w-[80px] sm:max-w-[160px] md:max-w-[200px] lg:max-w-none">
               {title}
             </h1>
           </div>
@@ -94,16 +94,16 @@ export default function Topbar({ title, breadcrumbs, session, onMenuClick, right
           <button
             type="button"
             onClick={() => setSearchOpen(true)}
-            className="w-full max-w-[130px] sm:max-w-xs md:max-w-sm lg:max-w-md flex items-center justify-between gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-xl border border-accent-soft bg-background/80 hover:bg-background text-[10px] sm:text-xs font-semibold text-primary hover:text-primary hover:border-accent transition-all shadow-2xs group cursor-pointer"
+            className="w-full max-w-[130px] sm:max-w-xs md:max-w-sm lg:max-w-md flex items-center justify-between gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-xl border border-[#E5DCD2] bg-[#F7F3ED] hover:bg-white text-[10px] sm:text-xs font-semibold text-[#21151A] hover:border-[#C9A45C] transition-all shadow-2xs group cursor-pointer"
             title="Search directory (Ctrl+K)"
             aria-label="Search directory (Ctrl+K)"
           >
             <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 truncate">
-              <Search className="w-3.5 h-3.5 text-accent flex-shrink-0 group-hover:scale-110 transition-transform" />
-              <span className="truncate">Search directory...</span>
+              <Search className="w-3.5 h-3.5 text-[#C9A45C] flex-shrink-0 group-hover:scale-110 transition-transform" />
+              <span className="truncate text-[#6F6265] group-hover:text-[#21151A]">Search directory...</span>
             </div>
-            <kbd className="hidden lg:inline-flex items-center gap-0.5 font-mono text-[9px] bg-white border border-accent-soft px-1.5 py-0.5 rounded text-primary font-bold shadow-2xs flex-shrink-0 select-none">
-              <Command className="w-2.5 h-2.5" />
+            <kbd className="hidden lg:inline-flex items-center gap-0.5 font-mono text-[9px] bg-white border border-[#E5DCD2] px-1.5 py-0.5 rounded text-[#4A0F24] font-bold shadow-2xs flex-shrink-0 select-none">
+              <Command className="w-2.5 h-2.5 text-[#C9A45C]" />
               <span>K</span>
             </kbd>
           </button>
@@ -112,18 +112,18 @@ export default function Topbar({ title, breadcrumbs, session, onMenuClick, right
         {/* ── Right Area: Tools, Notifications, Profile & Custom Actions ─── */}
         <div className="flex items-center gap-0.5 sm:gap-1 lg:gap-1.5 flex-shrink-0 min-w-0">
           {/* Clock - only on large screens */}
-          <div className="hidden 2xl:flex items-center gap-1.5 text-[10px] sm:text-xs text-primary bg-background px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl border border-accent-soft font-mono shadow-xs">
-            <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-accent" />
+          <div className="hidden 2xl:flex items-center gap-1.5 text-[10px] sm:text-xs text-[#21151A] bg-[#F7F3ED] px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl border border-[#E5DCD2] font-mono shadow-2xs">
+            <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#C9A45C]" />
             <span className="font-semibold whitespace-nowrap">{clock}</span>
           </div>
 
           {/* Activity Panel Trigger */}
           <button
             onClick={() => setActivityOpen(true)}
-            className="hidden sm:flex p-1.5 sm:p-2 rounded-xl text-primary hover:bg-primary/5 border border-transparent hover:border-accent-soft transition-all"
+            className="hidden sm:flex p-1.5 sm:p-2 rounded-xl text-[#4A0F24] hover:bg-[#F7F3ED] border border-transparent hover:border-[#E5DCD2] transition-all"
             title="Live Activity Intelligence"
           >
-            <Activity className="w-4 h-4 text-[#2D8659]" />
+            <Activity className="w-4 h-4 text-[#16805B]" />
           </button>
 
           {/* DevTools Bypass Toggle (Admin roles with global scope only) */}
@@ -135,13 +135,13 @@ export default function Topbar({ title, breadcrumbs, session, onMenuClick, right
                 localStorage.setItem('bsc_shield_bypass', newState ? 'true' : 'false');
                 window.dispatchEvent(new Event('dev_tools_bypass_changed'));
               }}
-              className="hidden sm:flex p-1.5 sm:p-2 rounded-xl text-primary hover:bg-primary/5 border border-transparent hover:border-accent-soft transition-all"
+              className="hidden sm:flex p-1.5 sm:p-2 rounded-xl text-[#4A0F24] hover:bg-[#F7F3ED] border border-transparent hover:border-[#E5DCD2] transition-all"
               title={bypassDevTools ? "DevTools Protection Bypassed" : "DevTools Protection Active"}
             >
               {bypassDevTools ? (
-                <ShieldOff className="w-4 h-4 text-orange-500" />
+                <ShieldOff className="w-4 h-4 text-[#C98218]" />
               ) : (
-                <ShieldAlert className="w-4 h-4 text-primary" />
+                <ShieldAlert className="w-4 h-4 text-[#4A0F24]" />
               )}
             </button>
           )}
@@ -152,12 +152,12 @@ export default function Topbar({ title, breadcrumbs, session, onMenuClick, right
           {/* Notification Drawer Trigger */}
           <button
             onClick={() => setNotifOpen(true)}
-            className="relative p-1.5 sm:p-2 rounded-xl text-primary hover:bg-primary/5 border border-transparent hover:border-accent-soft transition-all"
+            className="relative p-1.5 sm:p-2 rounded-xl text-[#4A0F24] hover:bg-[#F7F3ED] border border-transparent hover:border-[#E5DCD2] transition-all"
             title="Notification Center"
           >
-            <Bell className="w-4 h-4 text-primary" />
+            <Bell className="w-4 h-4 text-[#4A0F24]" />
             {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-[#C0392B] text-white font-black text-[8px] sm:text-[9px] flex items-center justify-center border-2 border-white shadow-xs">
+              <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-[#C7374A] text-white font-black text-[8px] sm:text-[9px] flex items-center justify-center border-2 border-white shadow-xs">
                 {unreadCount}
               </span>
             )}
@@ -177,7 +177,7 @@ export default function Topbar({ title, breadcrumbs, session, onMenuClick, right
 
         {/* ── Row 2: Route-derived breadcrumb trail (own row → can never
                overlap top navigation, search, notifications or profile) ── */}
-        <div className="px-2 sm:px-3 lg:px-5 pb-1.5 bg-background/60">
+        <div className="px-2 sm:px-3 lg:px-5 pb-1.5 bg-[#F7F3ED]/70 border-t border-[#E5DCD2]/40">
           <Breadcrumbs items={crumbs} />
         </div>
       </header>
