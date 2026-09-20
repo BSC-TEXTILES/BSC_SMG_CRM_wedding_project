@@ -32,4 +32,8 @@ async function safeMigrate() {
   }
 }
 
-safeMigrate();
+if (require.main === module) {
+  safeMigrate();
+}
+
+module.exports = { safeMigrate };

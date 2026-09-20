@@ -95,10 +95,14 @@ async function main() {
   }
 }
 
-main().then(() => {
-  console.log('[DB Check] Ready for application startup.');
-  process.exit(0);
-}).catch(err => {
-  console.error('[DB Check Error]', err.message);
-  process.exit(1);
-});
+if (require.main === module) {
+  main().then(() => {
+    console.log('[DB Check] Ready for application startup.');
+    process.exit(0);
+  }).catch(err => {
+    console.error('[DB Check Error]', err.message);
+    process.exit(1);
+  });
+}
+
+module.exports = { main };
