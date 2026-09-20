@@ -224,6 +224,29 @@ export const API = {
     if (!url) return null;
     return url.startsWith('http') ? url : `http://localhost:5000${url.startsWith('/') ? '' : '/'}${url}`;
   },
+  // Generic HTTP helpers for REST endpoints
+  async get(endpoint: string) {
+    return apiFetch(endpoint, { method: 'GET' });
+  },
+  async post(endpoint: string, body?: any) {
+    return apiFetch(endpoint, {
+      method: 'POST',
+      body: body !== undefined ? JSON.stringify(body) : undefined
+    });
+  },
+  async put(endpoint: string, body?: any) {
+    return apiFetch(endpoint, {
+      method: 'PUT',
+      body: body !== undefined ? JSON.stringify(body) : undefined
+    });
+  },
+  async delete(endpoint: string, body?: any) {
+    return apiFetch(endpoint, {
+      method: 'DELETE',
+      body: body !== undefined ? JSON.stringify(body) : undefined
+    });
+  },
+
   async call(action: string, params: any = {}) {
     try {
       const res = await apiFetch('/legacy', {
