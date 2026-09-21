@@ -1,3 +1,8 @@
+const multer = require('multer');
+
+// In-memory cache for calling desk to reduce DB hits (30 seconds TTL)
+const deskCache = new Map();
+const DESK_CACHE_TTL_MS = 30000;
 const pool = require('../config/db');
 const { successRes, errorRes } = require('../utils/response');
 const { getLocationFilter, injectLocationId } = require('../middleware/auth');
@@ -1369,6 +1374,12 @@ class WeddingController {
         params.push(req.user.id, req.user.fullName || req.user.username || '');
       }
 
+      const cacheKey = `desk_${req.user ? req.user.id : 'anon'}_${JSON.stringify(locParams)}`;
+      const cached = deskCache.get(cacheKey);
+      if (cached && (Date.now() - cached.timestamp < DESK_CACHE_TTL_MS)) {
+        return res.json(cached.data);
+      }
+
       // Overall desk counters
       const [counterRows] = await pool.query(`
         SELECT 
@@ -1475,7 +1486,7 @@ class WeddingController {
         decryptRows(q, ENCRYPTED_FIELDS);
       }
 
-      return successRes(res, {
+      const payload = {
         summary: {
           assignedCalls: Number(sum.assignedCalls) || 0,
           pendingCalls: Number(sum.pendingCalls) || 0,
@@ -1515,7 +1526,11 @@ class WeddingController {
           newCustomers: newCustomers || [],
           todayAppointments: todayAppointments || []
         }
-      }, 'Calling desk queue loaded successfully');
+      };
+
+      deskCache.set(cacheKey, { timestamp: Date.now(), data: { success: true, message: 'Calling desk queue loaded successfully', data: payload } });
+
+      return successRes(res, payload, 'Calling desk queue loaded successfully');
     } catch (err) {
       console.error('[WeddingController.getCallingDesk Error]', err);
       return errorRes(res, 'Failed to fetch calling desk', [err.message], 500);

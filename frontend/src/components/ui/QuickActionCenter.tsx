@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Plus, Calendar, Sparkles, Search, UserPlus, PhoneCall, QrCode, UserCheck } from 'lucide-react';
+import { Plus, Calendar, Sparkles, Search, UserPlus, PhoneCall, QrCode, UserCheck, Shield } from 'lucide-react';
 import { Auth } from '../../services/api';
 
 export default function QuickActionCenter() {
@@ -62,6 +62,9 @@ export default function QuickActionCenter() {
         { label: '+ Feedback QR', icon: QrCode, href: '/feedback-qr' },
         ...(canManageTalent
           ? [{ label: '+ Register Candidate', icon: UserCheck, href: '/apply', target: '_blank' }]
+          : []),
+        ...(['Admin', 'Super Admin'].includes(role)
+          ? [{ label: '+ User Management', icon: Shield, href: '/user-management' }]
           : [])
       ];
 

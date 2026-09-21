@@ -23,6 +23,7 @@ process.env.PORT = String(PORT);
 
 let serverProcess;
 let adminToken = null;
+let csrfToken = null;
 
 // Fetch a fresh captcha from the server and read the 4 digits out of the SVG
 // (the digits are real, deliberately distorted SVG <text> nodes).
@@ -41,6 +42,25 @@ async function login(username, password) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, password, ...captcha })
+  });
+}
+
+// Non-safe /api methods are CSRF-protected (double-submit: cookie + header).
+// Grab the token the server sets on every response and replay it like a
+// browser would. Auth and landing endpoints are exempt, so login is unaffected.
+async function apiPost(urlPath, body, extraHeaders = {}) {
+  const res = await fetch(`${BASE}/health`);
+  const setCookie = res.headers.get('set-cookie') || '';
+  csrfToken = (setCookie.match(/_csrf=([^;]+)/) || [])[1] || csrfToken;
+  return fetch(BASE + urlPath, {
+    method: 'POST',
+    headers: {
+      ...(body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
+      Cookie: `_csrf=${csrfToken}`,
+      'x-csrf-token': csrfToken,
+      ...extraHeaders
+    },
+    body: body instanceof FormData ? body : JSON.stringify(body)
   });
 }
 
@@ -71,12 +91,15 @@ test.before(startServer);
 test.after(stopServer);
 
 // ── Liveness & SPA ─────────────────────────────────────────────
-test('GET /health answers UP with the assigned port', async () => {
+test('GET /health answers with the server/database status contract', async () => {
   const res = await fetch(`${BASE}/health`);
   assert.equal(res.status, 200);
   const body = await res.json();
-  assert.equal(body.status, 'UP');
-  assert.equal(body.port, PORT);
+  // The health endpoint reports DB connectivity too: 'healthy' when the pool
+  // answers SELECT 1, 'degraded' when the server is up but the DB is not.
+  assert.ok(['healthy', 'degraded'].includes(body.status), `unexpected status ${body.status}`);
+  assert.equal(body.server, 'operational');
+  assert.ok(body.timestamp, 'timestamp present');
 });
 
 test('GET / serves the single-page application shell', async () => {
@@ -160,7 +183,7 @@ test('captcha is one-time use: replaying it fails', async () => {
   assert.match(body.message, /captcha/i);
 });
 
-test('master recovery login (admin@bsctextiles.com / admin@2026) works even without DB', async () => {
+test('recovery account login (admin@bsctextiles.com / admin@2026) works via the boot force-reset seed', async () => {
   const res = await login('admin@bsctextiles.com', 'admin@2026');
   assert.equal(res.status, 200);
   const body = await res.json();
@@ -191,11 +214,7 @@ test('destructive wipe requires explicit confirmation even with a valid admin to
 });
 
 test('legacy dispatcher: unknown action → 400 envelope', async () => {
-  const res = await fetch(`${BASE}/api/legacy`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'noSuchAction' })
-  });
+  const res = await apiPost('/api/legacy', { action: 'noSuchAction' });
   assert.equal(res.status, 400);
   const body = await res.json();
   assert.equal(body.success, false);
@@ -203,66 +222,51 @@ test('legacy dispatcher: unknown action → 400 envelope', async () => {
 });
 
 test('legacy dispatcher: privileged action without token → 401', async () => {
-  const res = await fetch(`${BASE}/api/legacy`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'addUser' })
-  });
+  const res = await apiPost('/api/legacy', { action: 'addUser' });
   assert.equal(res.status, 401);
 });
 
 test('legacy dispatcher: privileged action with admin token passes the guard (not 401/403)', async () => {
-  const res = await fetch(`${BASE}/api/legacy`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${adminToken}`,
-      'x-auth-token': adminToken
-    },
-    body: JSON.stringify({ action: 'addUser' })
+  // 'updateUser' is an ADMIN_ONLY action, and its handler rejects an empty
+  // payload with 400 BEFORE touching the database — a side-effect-free proof
+  // that the auth + role guard let the request through.
+  const res = await apiPost('/api/legacy', { action: 'updateUser' }, {
+    Authorization: `Bearer ${adminToken}`,
+    'x-auth-token': adminToken
   });
   assert.ok(res.status !== 401 && res.status !== 403, `guard passed (got ${res.status})`);
+  assert.equal(res.status, 400);
 });
 
-test('security shield status is readable and defaults to disabled', async () => {
+test('security shield status is readable and returns a boolean flag', async () => {
   const res = await fetch(`${BASE}/api/security/shield-status`);
   assert.equal(res.status, 200);
   const body = await res.json();
   assert.equal(body.success, true);
-  assert.equal(body.enabled, false, 'shield is OFF until an admin enables it');
+  // The flag persists in the Setting table and is admin-toggleable, so its
+  // value is environment state — only the contract is asserted here.
+  assert.equal(typeof body.enabled, 'boolean');
 });
 
 test('shield toggle rejects unauthenticated callers', async () => {
-  const res = await fetch(`${BASE}/api/security/shield-toggle`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ enabled: true })
-  });
+  const res = await apiPost('/api/security/shield-toggle', { enabled: true });
   assert.equal(res.status, 401);
 });
 
 test('security log-event rejects unknown event types', async () => {
-  const res = await fetch(`${BASE}/api/security/log-event`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${adminToken}`
-    },
-    body: JSON.stringify({ event: 'HACK_THE_PLANET' })
+  const res = await apiPost('/api/security/log-event', { event: 'HACK_THE_PLANET' }, {
+    Authorization: `Bearer ${adminToken}`
   });
   assert.equal(res.status, 400);
 });
 
 test('security log-event accepts GPS_PING from an authenticated user', async () => {
-  const res = await fetch(`${BASE}/api/security/log-event`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
+  const res = await apiPost('/api/security/log-event',
+    { event: 'GPS_PING', details: { lat: 15.4589, lng: 75.0078, accuracyM: 20 } },
+    {
       Authorization: `Bearer ${adminToken}`,
       'x-auth-token': adminToken
-    },
-    body: JSON.stringify({ event: 'GPS_PING', details: { lat: 15.4589, lng: 75.0078, accuracyM: 20 } })
-  });
+    });
   assert.equal(res.status, 200);
   const body = await res.json();
   assert.equal(body.success, true);

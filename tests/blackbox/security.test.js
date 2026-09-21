@@ -60,7 +60,24 @@ async function login(username, password) {
   return { res, body };
 }
 
-test('admin master login succeeds (recovery path, DB-less)', async () => {
+// Non-safe /api methods are CSRF-protected (double-submit cookie + header).
+// Perform the same handshake a browser client does.
+async function apiPost(urlPath, body, extraHeaders = {}) {
+  const bootstrap = await fetch(`${BASE}/health`);
+  const csrf = ((bootstrap.headers.get('set-cookie') || '').match(/_csrf=([^;]+)/) || [])[1];
+  return fetch(BASE + urlPath, {
+    method: 'POST',
+    headers: {
+      ...(body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
+      Cookie: `_csrf=${csrf}`,
+      'x-csrf-token': csrf,
+      ...extraHeaders
+    },
+    body: body instanceof FormData ? body : JSON.stringify(body)
+  });
+}
+
+test('admin recovery account login succeeds (boot force-reset seed)', async () => {
   const { res, body } = await login('admin@bsctextiles.com', 'admin@2026');
   assert.equal(res.status, 200);
   assert.ok(body.data.token);
@@ -88,44 +105,43 @@ test('login-activity returns the dashboard summary contract', async () => {
 
 // ── Shield toggle ─────────────────────────────────────────────
 test('shield toggle is admin-gated (guard fires before any handler logic)', async () => {
-  const res = await fetch(`${BASE}/api/security/shield-toggle`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ enabled: true })
-  });
+  const res = await apiPost('/api/security/shield-toggle', { enabled: true });
   assert.equal(res.status, 401);
 });
 
-test('shield toggle passes the admin guard (not 401/403)', async () => {
-  const res = await fetch(`${BASE}/api/security/shield-toggle`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${adminToken}`
-    },
-    body: JSON.stringify({ enabled: true })
-  });
-  assert.ok(res.status !== 401 && res.status !== 403, `guard passed (got ${res.status})`);
+test('shield toggle flips the persistent flag for an admin — and restores it', async () => {
+  const headers = { Authorization: `Bearer ${adminToken}` };
+  // Capture current state so the test never leaves the shared DB mutated.
+  const before = await (await fetch(`${BASE}/api/security/shield-status`)).json();
+
+  const on = await apiPost('/api/security/shield-toggle', { enabled: true }, headers);
+  assert.equal(on.status, 200);
+  assert.equal((await on.json()).enabled, true);
+  const afterOn = await (await fetch(`${BASE}/api/security/shield-status`)).json();
+  assert.equal(afterOn.enabled, true);
+
+  const off = await apiPost('/api/security/shield-toggle', { enabled: false }, headers);
+  assert.equal(off.status, 200);
+  assert.equal((await off.json()).enabled, false);
+  const afterOff = await (await fetch(`${BASE}/api/security/shield-status`)).json();
+  assert.equal(afterOff.enabled, false);
+  assert.equal(afterOff.enabled, before.enabled, 'state restored to what the test found');
 });
 
 // ── Wedding CSV import endpoint ───────────────────────────────
 test('CSV import rejects unauthenticated callers', async () => {
   const fd = new FormData();
   fd.append('file', new Blob(['name,mobile\nx,9876543210'], { type: 'text/csv' }), 'leads.csv');
-  const res = await fetch(`${BASE}/api/wedding-crm/import-csv`, { method: 'POST', body: fd });
+  const res = await apiPost('/api/wedding-crm/import-csv', fd);
   assert.equal(res.status, 401);
 });
 
 test('CSV import accepts only .csv files (clean 400 from multer filter)', async () => {
   const fd = new FormData();
   fd.append('file', new Blob(['not really a csv'], { type: 'text/plain' }), 'payload.txt');
-  const res = await fetch(`${BASE}/api/wedding-crm/import-csv`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${adminToken}`,
-      'x-auth-token': adminToken
-    },
-    body: fd
+  const res = await apiPost('/api/wedding-crm/import-csv', fd, {
+    Authorization: `Bearer ${adminToken}`,
+    'x-auth-token': adminToken
   });
   assert.equal(res.status, 400);
   const body = await res.json();

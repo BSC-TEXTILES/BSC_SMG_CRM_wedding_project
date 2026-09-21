@@ -3,6 +3,8 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import Sidebar from '../../components/Sidebar';
 import Topbar from '../../components/Topbar';
 import ToastContainer, { showToast } from '../../components/Toast';
+import { toastManager } from '../../utils/toastManager';
+import { useTelecallerQueue } from '../../hooks/useTelecallerQueue';
 import { API, Auth, UserSession } from '../../services/api';
 import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../../utils/sidebarState';
 import WeddingNav from './WeddingNav';
@@ -45,8 +47,6 @@ export default function TelecallerDeskPage() {
   useEffect(() => {
     return subscribeSidebarCollapsed(setCollapsed);
   }, []);
-
-  const [loading, setLoading] = useState(true);
   const [activeQueue, setActiveQueue] = useState<'dueToday' | 'overdue' | 'callbacks' | 'upcoming' | 'priority' | 'newLeads' | 'myQueue'>(
     (searchParams.get('queue') as any) || 'dueToday'
   );
@@ -55,35 +55,7 @@ export default function TelecallerDeskPage() {
   const [locationFilter, setLocationFilter] = useState<number | ''>('');
   const [locations, setLocations] = useState<any[]>([]);
 
-  // Daily target and KPI metrics
-  const [deskSummary, setDeskSummary] = useState({
-    assignedCalls: 0,
-    pendingCalls: 0,
-    completedToday: 0,
-    connectedCalls: 0,
-    callbackCount: 0,
-    remainingCalls: 0,
-    dailyTarget: 40
-  });
-
-  // Queues data
-  const [queueRecords, setQueueRecords] = useState<{
-    dueToday: WeddingCustomer[];
-    overdue: WeddingCustomer[];
-    callbacks: WeddingCustomer[];
-    upcoming: WeddingCustomer[];
-    priority: WeddingCustomer[];
-    newLeads: WeddingCustomer[];
-    myQueue: WeddingCustomer[];
-  }>({
-    dueToday: [],
-    overdue: [],
-    callbacks: [],
-    upcoming: [],
-    priority: [],
-    newLeads: [],
-    myQueue: []
-  });
+  const { loading, deskSummary, queueRecords, refreshQueue } = useTelecallerQueue(locationFilter);
 
   // Call Logging Modal
   const [activeCustomer, setActiveCustomer] = useState<WeddingCustomer | null>(null);
@@ -100,62 +72,6 @@ export default function TelecallerDeskPage() {
   });
   const [savingCall, setSavingCall] = useState(false);
 
-  const loadDesk = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [deskRes, locsRes] = await Promise.all([
-        API.getWeddingCallingDesk({
-          location_id: locationFilter !== '' ? locationFilter : undefined
-        }),
-        API.getLocations().catch(() => ({ locations: [] }))
-      ]);
-
-      if (locsRes?.locations) setLocations(locsRes.locations);
-
-      if (deskRes?.data) {
-        const d = deskRes.data;
-        const dueToday = Array.isArray(d.dueToday) ? d.dueToday : [];
-        const overdue = Array.isArray(d.overdue) ? d.overdue : [];
-        const callbacks = Array.isArray(d.callbackRequests) ? d.callbackRequests : (Array.isArray(d.callbacks) ? d.callbacks : []);
-        const upcoming = Array.isArray(d.upcoming) ? d.upcoming : [];
-        const priority = Array.isArray(d.priorityCalls) ? d.priorityCalls : [];
-        const newLeads = Array.isArray(d.newCustomers) ? d.newCustomers : [];
-
-        // Telecaller's personal queue
-        const currentUserName = session?.fullName || session?.username || '';
-        const myQueue = [...dueToday, ...overdue, ...callbacks].filter(
-          (c) => c.assigned_telecaller && c.assigned_telecaller.toLowerCase().includes(currentUserName.toLowerCase())
-        );
-
-        setQueueRecords({
-          dueToday,
-          overdue,
-          callbacks,
-          upcoming,
-          priority,
-          newLeads,
-          myQueue: myQueue.length > 0 ? myQueue : dueToday
-        });
-
-        const completed = d.completedToday || d.connectedCalls || 0;
-        const target = 40;
-        setDeskSummary({
-          assignedCalls: d.assignedCalls || dueToday.length + overdue.length,
-          pendingCalls: d.pendingCalls || dueToday.length + overdue.length,
-          completedToday: completed,
-          connectedCalls: d.connectedCalls || 0,
-          callbackCount: callbacks.length,
-          remainingCalls: Math.max(0, target - completed),
-          dailyTarget: target
-        });
-      }
-    } catch (err: any) {
-      showToast('Error loading telecaller queue: ' + err.message, 'error');
-    } finally {
-      setLoading(false);
-    }
-  }, [locationFilter, session]);
-
   useEffect(() => {
     if (!Auth.check()) {
       navigate('/login', { replace: true });
@@ -166,8 +82,10 @@ export default function TelecallerDeskPage() {
     if (sess?.locationId && !sess.isGlobalAdmin) {
       setLocationFilter(sess.locationId);
     }
-    loadDesk();
-  }, [loadDesk, navigate]);
+    API.getLocations().then(res => {
+      if (res?.locations) setLocations(res.locations);
+    }).catch(() => {});
+  }, [navigate]);
 
   // Open Log Call Modal for a customer
   const handleOpenCallModal = (cust: WeddingCustomer) => {
@@ -208,12 +126,12 @@ export default function TelecallerDeskPage() {
         await API.changeWeddingCustomerStatus(activeCustomer.id, callForm.new_customer_status, `Telecaller call outcome: ${callForm.call_outcome}`);
       }
 
-      showToast(`Call logged for ${activeCustomer.customer_name}`, 'success');
+      toastManager.success(`Call logged for ${activeCustomer.customer_name}`);
       setCallModalOpen(false);
       setActiveCustomer(null);
-      loadDesk();
+      refreshQueue();
     } catch (err: any) {
-      showToast('Error saving call: ' + err.message, 'error');
+      toastManager.error('call-log', 'Error saving call: ' + err.message);
     } finally {
       setSavingCall(false);
     }
@@ -223,10 +141,10 @@ export default function TelecallerDeskPage() {
   const handleQuickStatus = async (cust: WeddingCustomer, targetStatus: string) => {
     try {
       await API.changeWeddingCustomerStatus(cust.id, targetStatus, `Telecaller desk quick action`);
-      showToast(`Updated ${cust.customer_name} status to ${targetStatus}`, 'success');
-      loadDesk();
+      toastManager.success(`Updated ${cust.customer_name} status to ${targetStatus}`);
+      refreshQueue();
     } catch (err: any) {
-      showToast('Error updating status: ' + err.message, 'error');
+      toastManager.error('status-update', 'Error updating status: ' + err.message);
     }
   };
 
@@ -282,7 +200,7 @@ export default function TelecallerDeskPage() {
                   </select>
                 )}
                 <button
-                  onClick={loadDesk}
+                  onClick={refreshQueue}
                   disabled={loading}
                   className="px-3.5 py-2 bg-white hover:bg-[#F6F4EF] border border-[#DFDDD7] rounded-xl text-xs font-bold text-[#182033] flex items-center gap-1.5 transition-colors"
                 >

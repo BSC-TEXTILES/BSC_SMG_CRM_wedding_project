@@ -30,22 +30,28 @@ test('Mobile Number Validation (Indian Format)', (t) => {
 });
 
 test('Password Policy Validation', (t) => {
-  // Valid passwords
+  // Policy was deliberately relaxed to a 6-character minimum
+  // (commit "Relax password and phone validation rules") so existing
+  // deployment accounts like 'bsc@123' can be managed without lockout.
   assert.strictEqual(validatePasswordPolicy('StrongPass123!'), null);
   assert.strictEqual(validatePasswordPolicy('A1b2C3d4E5'), null);
-  
+  assert.strictEqual(validatePasswordPolicy('bsc@123'), null);   // 7 chars — valid
+
   // Invalid passwords
-  assert.ok(validatePasswordPolicy('short1A'), 'Should fail length < 8');
-  assert.ok(validatePasswordPolicy('nouppercase123'), 'Should fail missing uppercase');
-  assert.ok(validatePasswordPolicy('NOLOWERCASE123'), 'Should fail missing lowercase');
-  assert.ok(validatePasswordPolicy('NoDigitsHere!'), 'Should fail missing digit');
+  assert.ok(validatePasswordPolicy('short'), 'Should fail length < 6');
+  assert.ok(validatePasswordPolicy(''), 'Should fail empty');
+  assert.ok(validatePasswordPolicy(null), 'Should fail missing');
+  assert.ok(validatePasswordPolicy(123456), 'Should fail non-string');
 });
 
 test('Username Format Validation', (t) => {
   assert.strictEqual(isValidUsername('admin.user'), true);
   assert.strictEqual(isValidUsername('hr_manager'), true);
   assert.strictEqual(isValidUsername('user@domain.com'), true);
-  
-  assert.strictEqual(isValidUsername('ab'), false); // Too short
-  assert.strictEqual(isValidUsername('user with spaces'), false);
+  assert.strictEqual(isValidUsername('Full Name User'), true); // names as usernames are allowed
+
+  assert.strictEqual(isValidUsername('ab'), false); // Too short (< 3)
+  assert.strictEqual(isValidUsername('a'.repeat(101)), false); // Too long (> 100)
+  assert.strictEqual(isValidUsername('user!invalid'), false); // Illegal character
+  assert.strictEqual(isValidUsername(''), false);
 });

@@ -22,7 +22,8 @@ router.use(authenticate);
 router.get('/stats', weddingController.getDashboardStats);
 
 // ── Calling Desk ──────────────────────────────────────────────
-router.get('/calling-desk', weddingController.getCallingDesk);
+const { telecallerQueueLimiter } = require('../middleware/smartRateLimiter');
+router.get('/calling-desk', telecallerQueueLimiter, weddingController.getCallingDesk);
 
 // ── Follow-up Calendar ────────────────────────────────────────
 router.get('/calendar', weddingController.getCalendar);

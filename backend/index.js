@@ -214,7 +214,7 @@ const authLimiter = rateLimit({
 
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 500, // Limit each IP to 500 requests per window
+  max: 5000, // Increased to 5000: avoid blocking shared office NATs
   standardHeaders: true,
   legacyHeaders: false,
   validate: false,

@@ -17,8 +17,10 @@ class AuthService {
    * Security model:
    *   - Passwords are stored as bcrypt hashes. Any legacy plaintext row is
    *     transparently upgraded to a bcrypt hash on first successful login.
-   *   - The master recovery password (admin@2026) only unlocks the four
-   *     built-in deployment accounts below — never arbitrary DB accounts.
+   *   - There is NO hardcoded master-password bypass in this service (it was
+   *     removed as a backdoor — see vulnerabilities.md). Deployment recovery
+   *     works via the seeded built-in accounts, whose passwords dbInitializer
+   *     force-resets on boot (e.g. admin@bsctextiles.com).
    *   - Successful and failed logins are written to audit_logs.
    */
   async login(username, password, ipAddress, userAgent) {

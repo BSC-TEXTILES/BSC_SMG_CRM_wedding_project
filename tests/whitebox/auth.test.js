@@ -7,7 +7,7 @@
  *   - bcrypt verification and JWT claims
  *   - transparent plaintext→bcrypt password upgrade
  *   - removal of the old "any account + master password" bypass
- *   - master recovery only for the built-in admin identity
+ *   - removal of the built-in master-recovery backdoor (DB-less logins fail)
  *   - audit logging of successes and failures
  */
 const test = require('node:test');
@@ -106,7 +106,12 @@ test('unknown user gets a generic error (no user enumeration)', async () => {
   );
 });
 
-test('master recovery: admin@2026 opens built-in identities without a DB record — and nothing else', async () => {
+test('hardened auth: master recovery password never unlocks DB-less accounts', async () => {
+  // The "admin@2026 unlocks built-in identities" backdoor was deliberately
+  // REMOVED from authService (see vulnerabilities.md, Break 1). Deployment
+  // recovery now works by force-resetting the seeded DB accounts at boot
+  // (dbInitializer), not by a hardcoded in-code password. With no user row,
+  // every identity — built-in or otherwise — must be refused.
   const realUser = dbUser;
   dbUser = null;
   pool.query = async (sql) => {
@@ -114,15 +119,16 @@ test('master recovery: admin@2026 opens built-in identities without a DB record 
     if (/INSERT INTO audit_logs/i.test(sql)) { auditRows.push(sql); return [{ insertId: 1 }]; }
     return [[]];
   };
-  const result = await authService.login('admin@bsctextiles.com', 'admin@2026', '127.0.0.1', 'whitebox');
-  assert.equal(result.user.role, 'Admin');
-  assert.equal(result.user.isGlobalAdmin, true);
-  // Built-in deployment accounts remain reachable (documented recovery path)…
-  const mgr = await authService.login('manager', 'admin@2026', '127.0.0.1', 'whitebox');
-  assert.equal(mgr.user.role, 'Manager');
-  // …but an arbitrary non-built-in account can never use the recovery password
   await assert.rejects(
-    () => authService.login('some.random.staff', 'admin@2026', '127.0.0.1', 'whitebox'),
+    () => authService.login('admin@bsctextiles.com', 'admin@2026', '127.0.0.1', 'whitebox'),
+    /Incorrect username or password/
+  );
+  await assert.rejects(
+    () => authService.login('manager', 'admin@2026', '127.0.0.1', 'whitebox'),
+    /Incorrect username or password/
+  );
+  await assert.rejects(
+    () => authService.login('some.random.staff', 'anything', '127.0.0.1', 'whitebox'),
     /Incorrect username or password/
   );
   dbUser = realUser;

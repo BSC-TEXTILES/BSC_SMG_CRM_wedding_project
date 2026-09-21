@@ -86,19 +86,40 @@ const authenticate = async (req, res, next) => {
 
     if (!status) {
       try {
-        const [rows] = await pool.query(
-          "SELECT `status`, `lockedUntil` FROM `User` WHERE `id` = ? LIMIT 1",
-          [userId]
-        );
-        if (rows && rows.length > 0) {
-          status = {
-            exists: true,
-            active: rows[0].status === 'Active',
-            locked: !!(rows[0].lockedUntil && new Date(rows[0].lockedUntil) > new Date())
-          };
-        } else {
-          status = { exists: false };
+        let dbStatus = null;
+        try {
+          const [uRows] = await pool.query(
+            "SELECT `active` FROM `users` WHERE `id` = ? LIMIT 1",
+            [userId]
+          );
+          if (uRows && uRows.length > 0) {
+            dbStatus = {
+              exists: true,
+              active: uRows[0].active === 1 || uRows[0].active === true,
+              locked: false
+            };
+          }
+        } catch (err) {
+          // ignore error, try fallback
         }
+
+        if (!dbStatus) {
+          const [rows] = await pool.query(
+            "SELECT `status`, `lockedUntil` FROM `User` WHERE `id` = ? LIMIT 1",
+            [userId]
+          );
+          if (rows && rows.length > 0) {
+            dbStatus = {
+              exists: true,
+              active: rows[0].status === 'Active',
+              locked: !!(rows[0].lockedUntil && new Date(rows[0].lockedUntil) > new Date())
+            };
+          } else {
+            dbStatus = { exists: false };
+          }
+        }
+        
+        status = dbStatus;
         cacheUserStatus(userId, status);
       } catch (dbErr) {
         // Database unreachable — fail open so kiosks/health checks keep working

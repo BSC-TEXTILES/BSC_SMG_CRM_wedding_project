@@ -2,9 +2,10 @@ const express = require('express');
 const router = express.Router();
 const telecallerDashboardController = require('../controllers/telecallerDashboardController');
 const { authenticate } = require('../middleware/auth');
+const { dashboardLimiter } = require('../middleware/smartRateLimiter');
 
-// All telecaller dashboard routes require authentication
-router.use(authenticate);
+// All telecaller dashboard routes require authentication and rate limiting
+router.use(authenticate, dashboardLimiter);
 
 // ── Dashboard Stats ────────────────────────────────────────────
 router.get('/stats', telecallerDashboardController.getDashboardStats);
