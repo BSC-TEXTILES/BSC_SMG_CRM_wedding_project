@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate, useSearchParams } from 'react-router-dom';
 import WeddingCrmDashboard from './wedding/WeddingCrmDashboard';
+import { Auth } from '../services/api';
 
 /**
  * WeddingCRM Entrypoint & Route Delegator
@@ -10,6 +11,13 @@ import WeddingCrmDashboard from './wedding/WeddingCrmDashboard';
 export default function WeddingCRM() {
   const [searchParams] = useSearchParams();
   const tab = searchParams.get('tab');
+  const user = Auth.get();
+  const roleNorm = (user?.role || '').trim().toLowerCase().replace(/[_\s-]+/g, ' ');
+  const isTelecaller = ['telecaller', 'caller', 'tele-caller', 'tele caller', 'vm extension telecaller', 'vm telecaller'].includes(roleNorm);
+
+  if (!tab && isTelecaller) {
+    return <Navigate to="/telecaller/desk" replace />;
+  }
 
   if (tab === 'calling_desk') {
     return <Navigate to="/telecaller/desk" replace />;

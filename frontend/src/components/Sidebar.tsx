@@ -105,6 +105,8 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
     'CRM Manager': 'CRM Manager',
     'Data Analyst': 'Data Analyst',
     'Telecaller':  'Telecaller Workspace',
+    'VM Extension Telecaller': 'VM Telecaller Workspace',
+    'Floor Manager': 'Floor Manager',
     'Wedding Collection Manager': 'Wedding Collection Head',
     'Team Lead':   'Team Lead / Calling Desk',
     'Recruiter':   'Recruiter',
@@ -113,7 +115,10 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
     'Guest':       'Guest'
   };
 
-  const isTelecallerRole = (role || '').trim().toLowerCase() === 'telecaller';
+  const isTelecallerRole = [
+    'telecaller', 'caller', 'tele-caller', 'tele caller',
+    'vm extension telecaller', 'vm telecaller'
+  ].includes((role || '').trim().toLowerCase().replace(/[_\s-]+/g, ' '));
 
   const navItems = [
     // Telecaller Workspace (Only for Telecaller role)

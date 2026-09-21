@@ -60,6 +60,15 @@ export const ROLE_NAV_MAP: Record<string, string[]> = {
   'Telecaller': [
     'wedding_crm', 'telecaller_dashboard', 'telecaller_desk', 'wedding_registration'
   ],
+  'VM Extension Telecaller': [
+    'wedding_crm', 'telecaller_dashboard', 'telecaller_desk', 'wedding_registration'
+  ],
+  'Floor Manager': [
+    'wedding_crm', 'wedding_operations', 'wedding_registration', 'telecaller_desk', 'telecaller_dashboard', 'candidate_apply', 'footfall', 
+    'feedback_collection', 'feedback_list', 'feedback_qr', 'divert', 'pm_view', 'vm_checklist', 
+    'attendance', 'dashboard', 'candidates', 'offer', 'openings', 'daily_mcheck', 'mcheck_reports', 
+    'mcheck_history', 'employees', 'dept_hiring', 'section_allocation', 'broadcast', 'user_management'
+  ],
   'Wedding Collection Manager': [
     'wedding_crm', 'wedding_operations', 'dashboard', 'wedding_registration', 'footfall', 'divert', 'broadcast'
   ],
@@ -80,14 +89,14 @@ export function getRoleNavMap(role?: string): string[] {
   const norm = raw.toLowerCase().replace(/[_\s-]+/g, ' ');
   if (norm === 'super admin' || norm === 'system administrator') return ROLE_NAV_MAP['Super Admin'];
   if (norm === 'admin') return ROLE_NAV_MAP['Admin'];
-  if (norm === 'manager' || norm === 'store manager') return ROLE_NAV_MAP['Manager'];
-  if (norm === 'hr') return ROLE_NAV_MAP['HR'];
+  if (norm === 'manager' || norm === 'store manager' || norm === 'floor manager' || norm === 'department manager') return ROLE_NAV_MAP['Manager'];
+  if (norm === 'hr' || norm === 'hr manager') return ROLE_NAV_MAP['HR'];
   if (norm === 'vm' || norm === 'visual merchandiser') return ROLE_NAV_MAP['VM'];
   if (norm === 'greeter') return ROLE_NAV_MAP['Greeter'];
   if (norm === 'crm executive' || norm === 'crm exec') return ROLE_NAV_MAP['CRM Executive'];
   if (norm === 'crm manager') return ROLE_NAV_MAP['CRM Manager'];
   if (norm === 'data analyst' || norm === 'analyst') return ROLE_NAV_MAP['Data Analyst'];
-  if (norm === 'telecaller' || norm === 'caller') return ROLE_NAV_MAP['Telecaller'];
+  if (norm === 'telecaller' || norm === 'caller' || norm === 'tele caller' || norm === 'tele-caller' || norm === 'vm extension telecaller' || norm === 'vm telecaller') return ROLE_NAV_MAP['Telecaller'];
   if (norm === 'wedding collection manager' || norm === 'wedding manager') return ROLE_NAV_MAP['Wedding Collection Manager'];
 
   return ROLE_NAV_MAP['Employee'] || [];

@@ -837,13 +837,35 @@ router.post('/security/validate-route', authenticate, async (req, res) => {
 
     // Normalize role name (handle aliases)
     const roleAliasMap = {
-      'super admin': 'Super Admin', 'admin': 'Admin', 'hr manager': 'HR',
-      'store manager': 'Manager', 'system administrator': 'Super Admin',
-      'visual merchandiser': 'VM', 'vm': 'VM', 'crm exec': 'CRM Executive',
-      'crm manager': 'CRM Manager', 'telecaller': 'Telecaller',
-      'greeter': 'Greeter', 'employee': 'Employee',
+      'super admin': 'Super Admin',
+      'admin': 'Admin',
+      'system administrator': 'Super Admin',
+      'hr manager': 'HR',
+      'hr': 'HR',
+      'manager': 'Manager',
+      'store manager': 'Manager',
+      'floor manager': 'Manager',
+      'department manager': 'Manager',
+      'visual merchandiser': 'VM',
+      'vm': 'VM',
+      'crm exec': 'CRM Executive',
+      'crm executive': 'CRM Executive',
+      'crm manager': 'CRM Manager',
+      'telecaller': 'Telecaller',
+      'caller': 'Telecaller',
+      'tele-caller': 'Telecaller',
+      'tele caller': 'Telecaller',
+      'vm extension telecaller': 'Telecaller',
+      'vm telecaller': 'Telecaller',
+      'wedding collection manager': 'Wedding Collection Manager',
+      'wedding manager': 'Wedding Collection Manager',
+      'data analyst': 'Data Analyst',
+      'analyst': 'Data Analyst',
+      'greeter': 'Greeter',
+      'employee': 'Employee',
     };
-    const normalizedRole = roleAliasMap[role.toLowerCase()] || role;
+    const cleanRole = (role || '').trim().toLowerCase().replace(/[_\s-]+/g, ' ');
+    const normalizedRole = roleAliasMap[cleanRole] || roleAliasMap[role.toLowerCase()] || role;
 
     // Check allowed_routes table
     const [rows] = await pool.query(

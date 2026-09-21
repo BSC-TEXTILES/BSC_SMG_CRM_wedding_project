@@ -1497,10 +1497,25 @@ class WeddingController {
       let clause = locClause;
       let params = [...locParams];
 
-      // Telecaller scoping: telecallers only access their assigned queue
-      if (req.user && req.user.role === 'Telecaller') {
-        clause += ` AND (w.assigned_telecaller_id = ? OR w.assigned_telecaller = ?)`;
-        params.push(req.user.id, req.user.fullName || req.user.username || '');
+      // Telecaller scoping: telecallers access their assigned queue + unassigned store pool
+      const userRoleNorm = String(req.user?.role || '').trim().toLowerCase().replace(/[_\s-]+/g, ' ');
+      const isTelecallerScoped = [
+        'telecaller', 'caller', 'tele-caller', 'tele caller',
+        'vm extension telecaller', 'vm telecaller'
+      ].includes(userRoleNorm);
+
+      if (isTelecallerScoped && req.user) {
+        const userFullName = String(req.user.fullName || req.user.username || '').trim();
+        const userName = String(req.user.username || '').trim();
+        clause += ` AND (
+          w.assigned_telecaller_id = ? 
+          OR (w.assigned_telecaller IS NOT NULL AND LOWER(TRIM(w.assigned_telecaller)) = LOWER(?))
+          OR (w.assigned_telecaller IS NOT NULL AND LOWER(TRIM(w.assigned_telecaller)) = LOWER(?))
+          OR w.assigned_telecaller IS NULL 
+          OR w.assigned_telecaller = ''
+          OR w.assigned_telecaller = 'Auto-Assigned'
+        )`;
+        params.push(req.user.id, userFullName, userName);
       }
 
       const cacheKey = `desk_${req.user ? req.user.id : 'anon'}_${JSON.stringify(locParams)}`;

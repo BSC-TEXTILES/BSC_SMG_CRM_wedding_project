@@ -19,13 +19,24 @@ import { Auth } from '../services/api';
 const ROLE_ROUTE_MAP: Record<string, RegExp[]> = {
   'Telecaller': [
     /^\/telecaller(\/|$)/,
+    /^\/telecaller-dashboard$/,
     /^\/wedding-crm(\/|$)/,
-    /^\/wedding\//,
+    /^\/wedding(\/|$)/,
+    /^\/wedding-registration$/,
+  ],
+  'VM Extension Telecaller': [
+    /^\/telecaller(\/|$)/,
+    /^\/telecaller-dashboard$/,
+    /^\/wedding-crm(\/|$)/,
+    /^\/wedding(\/|$)/,
+    /^\/wedding-registration$/,
   ],
   'CRM Executive': [
     /^\/telecaller(\/|$)/,
+    /^\/telecaller-dashboard$/,
     /^\/wedding-crm(\/|$)/,
-    /^\/wedding\//,
+    /^\/wedding(\/|$)/,
+    /^\/wedding-registration$/,
     /^\/dashboard/,
     /^\/footfall$/,
   ],
@@ -188,14 +199,14 @@ class SecurityManagerService {
     const norm = r.toLowerCase().replace(/[_\s-]+/g, ' ');
     if (norm === 'super admin' || norm === 'system administrator') return 'Super Admin';
     if (norm === 'admin') return 'Admin';
-    if (norm === 'manager' || norm === 'store manager') return 'Manager';
-    if (norm === 'hr' || norm === 'recruiter' || norm === 'interviewer') return 'HR';
+    if (norm === 'manager' || norm === 'store manager' || norm === 'floor manager' || norm === 'department manager') return 'Manager';
+    if (norm === 'hr' || norm === 'hr manager' || norm === 'recruiter' || norm === 'interviewer') return 'HR';
     if (norm === 'vm' || norm === 'visual merchandiser') return 'VM';
     if (norm === 'greeter') return 'Greeter';
     if (norm === 'crm executive' || norm === 'crm exec') return 'CRM Executive';
     if (norm === 'crm manager') return 'CRM Manager';
     if (norm === 'data analyst' || norm === 'analyst') return 'Data Analyst';
-    if (norm === 'telecaller' || norm === 'caller') return 'Telecaller';
+    if (norm === 'telecaller' || norm === 'caller' || norm === 'tele-caller' || norm === 'tele caller' || norm === 'vm extension telecaller' || norm === 'vm telecaller') return 'Telecaller';
     if (norm === 'wedding collection manager' || norm === 'wedding manager') return 'Wedding Collection Manager';
     if (norm === 'team lead') return 'Team Lead';
 

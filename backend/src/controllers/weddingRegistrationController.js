@@ -698,7 +698,6 @@ class WeddingRegistrationController {
         customer_id: registrationId,
         registration_id: registrationId,
         tracking_id: trackingId,
-        workflow_started: workflowStarted,
         registration: {
           id: newId,
           registration_id: registrationId,
@@ -707,8 +706,14 @@ class WeddingRegistrationController {
           mobile,
           location_id: locationId,
           location_name: location.location_name,
+          store_name: location.store_name,
+          location_code: location.location_code,
           wedding_date: data.wedding_date,
-          status: 'New'
+          preferred_shopping_date: data.preferred_shopping_date,
+          preferred_contact_method: data.preferred_contact_method,
+          preferred_followup_time: data.preferred_followup_time,
+          status: 'New',
+          submitted_at: new Date().toISOString()
         }
       }, 'Your request was saved successfully!', 201);
     } catch (err) {

@@ -98,6 +98,7 @@ export default function WeddingRegistrationPage() {
   const [loadingText, setLoadingText] = useState('Submitting Registration...');
   const [successRegId, setSuccessRegId] = useState('');
   const [successTrackId, setSuccessTrackId] = useState('');
+  const [registrationData, setRegistrationData] = useState<any>(null);
   const [dupWarn, setDupWarn] = useState('');
   const [locations, setLocations] = useState<Array<{
     id: number;
@@ -257,7 +258,7 @@ export default function WeddingRegistrationPage() {
     }
 
     setLoading(true);
-    setLoadingText('Saving your request...');
+    setLoadingText('Submitting Registration...');
 
     try {
       const payload = {
@@ -275,22 +276,38 @@ export default function WeddingRegistrationPage() {
       const res = await API.createWeddingRegistration({ data: payload });
 
       if (res && res.success) {
-        const regId = res.registration_id || res.customer_id || res.registration?.registration_id || '';
-        const trackId = res.tracking_id || res.registration?.tracking_id || regId;
+        const reg = res.data?.registration || res.registration || {};
+        const regId = reg.registration_id || res.data?.registration_id || res.registration_id || res.data?.customer_id || res.customer_id || '';
+        const trackId = reg.tracking_id || res.data?.tracking_id || res.tracking_id || regId;
         setSuccessRegId(regId);
         setSuccessTrackId(trackId);
+        setRegistrationData({
+          registration_id: regId,
+          tracking_id: trackId,
+          customer_name: reg.customer_name || form.customer_name,
+          mobile: reg.mobile || `+91${form.mobile}`,
+          location_name: reg.location_name || getSelectedStore()?.location_name || '',
+          location_code: reg.location_code || getSelectedStore()?.location_code || '',
+          store_name: reg.store_name || getSelectedStore()?.store_name || '',
+          wedding_date: reg.wedding_date || form.wedding_date,
+          preferred_shopping_date: reg.preferred_shopping_date || form.preferred_shopping_date,
+          preferred_contact_method: reg.preferred_contact_method || form.preferred_contact_method,
+          preferred_followup_time: reg.preferred_followup_time || form.preferred_followup_time,
+          status: reg.status || 'New',
+          submitted_at: reg.submitted_at || new Date().toISOString()
+        });
         setStep(8);
         window.scrollTo(0, 0);
 
         setTimeout(() => {
           setStep(9);
-          showToast('Your request was saved successfully! Confirmation email sent.', 'success');
         }, 1500);
       } else {
         const errMsg = res?.message || res?.error || 'Failed to submit registration';
         showToast(errMsg, 'error');
       }
     } catch (err: any) {
+      console.error('[WeddingRegistration Submit Error]', err);
       const status = err?.status || err?.statusCode;
       const fieldErrors = err?.errors;
       if (status === 409) {
@@ -312,6 +329,7 @@ export default function WeddingRegistrationPage() {
     setStep(1);
     setSuccessRegId('');
     setSuccessTrackId('');
+    setRegistrationData(null);
     setDupWarn('');
     window.scrollTo(0, 0);
   };

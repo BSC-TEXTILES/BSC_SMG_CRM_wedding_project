@@ -1079,18 +1079,23 @@ async function autoInitializeDatabase(pool) {
         // HR
         { role: 'HR', pattern: '^/$', desc: 'Home' },
         { role: 'HR', pattern: '^/(dashboard|employees|candidates|attendance|reports|recruitment|onboarding|training|leave|candidate-entry|manpower|doj-desk|employee-corner|candidate-details|help-desk|shortlist-offers|offer-letter|interview-schedule)(\\/.*)?$', desc: 'HR access' },
-        // Manager
+        // Manager & Floor Manager
         { role: 'Manager', pattern: '^/$', desc: 'Home' },
         { role: 'Manager', pattern: '^/(dashboard|employees|candidates|attendance|reports|training|leave|employee-corner|help-desk)(\\/.*)?$', desc: 'Manager access' },
+        { role: 'Floor Manager', pattern: '^/$', desc: 'Home' },
+        { role: 'Floor Manager', pattern: '^/(dashboard|employees|candidates|attendance|reports|training|leave|employee-corner|help-desk)(\\/.*)?$', desc: 'Floor Manager access' },
         // Telecaller
         { role: 'Telecaller', pattern: '^/$', desc: 'Home' },
-        { role: 'Telecaller', pattern: '^/(telecaller|wedding-crm|wedding-tracking|wedding-customer-register|wedding-operations-desk|crm-dashboard|help-desk)(\\/.*)?$', desc: 'Telecaller access' },
+        { role: 'Telecaller', pattern: '^/(telecaller|telecaller-dashboard|wedding-crm|wedding|wedding-tracking|wedding-customer-register|wedding-operations-desk|crm-dashboard|help-desk)(\\/.*)?$', desc: 'Telecaller access' },
+        // VM Extension Telecaller
+        { role: 'VM Extension Telecaller', pattern: '^/$', desc: 'Home' },
+        { role: 'VM Extension Telecaller', pattern: '^/(telecaller|telecaller-dashboard|wedding-crm|wedding|wedding-tracking|wedding-customer-register|wedding-operations-desk|crm-dashboard|vm-.*|help-desk)(\\/.*)?$', desc: 'VM Extension Telecaller access' },
         // CRM Executive
         { role: 'CRM Executive', pattern: '^/$', desc: 'Home' },
-        { role: 'CRM Executive', pattern: '^/(crm-dashboard|crm-executive|wedding-crm|wedding-tracking|wedding-customer-register|wedding-operations-desk|help-desk)(\\/.*)?$', desc: 'CRM Executive access' },
+        { role: 'CRM Executive', pattern: '^/(telecaller|telecaller-dashboard|crm-dashboard|crm-executive|wedding-crm|wedding|wedding-tracking|wedding-customer-register|wedding-operations-desk|dashboard|footfall|help-desk)(\\/.*)?$', desc: 'CRM Executive access' },
         // CRM Manager
         { role: 'CRM Manager', pattern: '^/$', desc: 'Home' },
-        { role: 'CRM Manager', pattern: '^/(crm-dashboard|crm-manager|crm-executive|wedding-crm|wedding-tracking|wedding-customer-register|wedding-operations-desk|reports|help-desk)(\\/.*)?$', desc: 'CRM Manager access' },
+        { role: 'CRM Manager', pattern: '^/(telecaller|telecaller-dashboard|crm-dashboard|crm-manager|crm-executive|wedding-crm|wedding|wedding-tracking|wedding-customer-register|wedding-operations-desk|reports|dashboard|footfall|help-desk)(\\/.*)?$', desc: 'CRM Manager access' },
         // VM
         { role: 'VM', pattern: '^/$', desc: 'Home' },
         { role: 'VM', pattern: '^/(vm-checklist|vm-dashboard|vm-extension-telecaller|help-desk)(\\/.*)?$', desc: 'VM access' },
@@ -1104,12 +1109,14 @@ async function autoInitializeDatabase(pool) {
       for (const r of routeSeeds) {
         try {
           await connection.query(
-            `INSERT IGNORE INTO allowed_routes (role, route_pattern, description) VALUES (?, ?, ?)`,
+            `INSERT INTO allowed_routes (role, route_pattern, description) 
+             VALUES (?, ?, ?) 
+             ON DUPLICATE KEY UPDATE route_pattern = VALUES(route_pattern), description = VALUES(description)`,
             [r.role, r.pattern, r.desc]
           );
         } catch (e) {}
       }
-      logDebug(`[Auto DB Initializer] allowed_routes seeded`);
+      logDebug(`[Auto DB Initializer] allowed_routes seeded and synchronized`);
     } catch(e) {
       logDebug(`[Auto DB Initializer] allowed_routes seed warning:`, e.message);
     }
