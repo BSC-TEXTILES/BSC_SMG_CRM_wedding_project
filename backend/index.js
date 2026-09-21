@@ -262,6 +262,7 @@ app.get(['/health', '/api/health'], async (req, res) => {
     server: 'operational',
     database: dbStatus,
     redis: isReady() ? 'connected' : 'degraded',
+    version: '3.0.1',
     timestamp: new Date().toISOString()
   });
 });
