@@ -305,7 +305,11 @@ export const API = {
 
   // Developer Tools Detection Security Shield
   async getShieldStatus() {
-    return apiFetch('/security/shield-status');
+    try {
+      return await apiFetch('/security/shield-status');
+    } catch {
+      return { success: false, enabled: false };
+    }
   },
   async toggleShield(enabled: boolean) {
     return apiFetch('/security/shield-toggle', {

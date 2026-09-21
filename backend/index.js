@@ -218,6 +218,10 @@ const globalLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   validate: false,
+  skip: (req) => {
+    const url = req.originalUrl || req.url || '';
+    return url.includes('/security/shield-status') || url.includes('/health') || url.includes('/db-status');
+  },
   message: { success: false, message: 'Too many requests from this IP, please try again later.', errors: [] }
 });
 
@@ -562,6 +566,8 @@ autoInitializeDatabase(pool)
 // Passenger sets PORT via its preload-timestamp.js script before this file runs.
 // The listen() call is what signals to Passenger that the app is ready.
 const server = http.createServer(app);
+server.keepAliveTimeout = 65000;
+server.headersTimeout = 66000;
 
 if (Server) {
   try {
@@ -604,6 +610,8 @@ if (isSocketPort) {
   if (Number(PORT) !== 3000) {
     try {
       const fallback3000 = http.createServer(app);
+      fallback3000.keepAliveTimeout = 65000;
+      fallback3000.headersTimeout = 66000;
       fallback3000.listen(3000, '0.0.0.0', () => {
         console.log(`  [Proxy Sync] Secondary listener active on port 3000`);
       });
@@ -615,6 +623,8 @@ if (isSocketPort) {
   } else if (Number(PORT) !== 5000) {
     try {
       const fallback5000 = http.createServer(app);
+      fallback5000.keepAliveTimeout = 65000;
+      fallback5000.headersTimeout = 66000;
       fallback5000.listen(5000, '0.0.0.0', () => {
         console.log(`  [Proxy Sync] Secondary listener active on port 5000`);
       });

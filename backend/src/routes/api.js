@@ -297,7 +297,13 @@ async function getShieldEnabled() {
 // Public read: the guard must know the flag before login (it protects the
 // login page too). Returns only a boolean — no sensitive data.
 router.get('/security/shield-status', async (req, res) => {
-  return res.json({ success: true, enabled: await getShieldEnabled() });
+  try {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    const enabled = await getShieldEnabled();
+    return res.json({ success: true, enabled: !!enabled });
+  } catch (err) {
+    return res.json({ success: true, enabled: false });
+  }
 });
 
 router.post('/security/shield-toggle', authenticate, authorize('Admin', 'Super Admin'), async (req, res) => {

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ShieldAlert, XOctagon } from 'lucide-react';
-import { Auth } from '../services/api';
+import { Auth, API } from '../services/api';
 import { NotificationService } from '../services/notificationService';
 import { DevToolsDetector } from '../services/devToolsDetector';
 
@@ -38,15 +38,14 @@ export default function DevToolsGuard() {
     };
   }, []);
 
-  // Synchronize shield armed state from server (on mount, interval, and Socket.IO push)
+  // Synchronize shield armed state from server (on mount, window focus, interval, and Socket.IO push)
   useEffect(() => {
     let disposed = false;
 
     const fetchStatus = async () => {
       try {
-        const res = await fetch('/api/security/shield-status');
-        const json = await res.json();
-        const enabled = json && json.enabled === true;
+        const res = await API.getShieldStatus();
+        const enabled = res && res.enabled === true;
         try {
           localStorage.setItem(SHIELD_FLAG_KEY, enabled ? 'true' : 'false');
         } catch {}
@@ -59,8 +58,17 @@ export default function DevToolsGuard() {
       }
     };
 
-    fetchStatus();
-    const intervalId = window.setInterval(fetchStatus, 15_000);
+    // Stagger initial check slightly so it doesn't collide with socket connection
+    const initialTimer = window.setTimeout(fetchStatus, 500);
+
+    // Fallback sync every 60s (Socket.IO handles instant updates)
+    const intervalId = window.setInterval(fetchStatus, 60_000);
+
+    // Recheck on window focus
+    const onFocus = () => {
+      fetchStatus();
+    };
+    window.addEventListener('focus', onFocus);
 
     const unsubscribe = NotificationService.onShieldChanged((enabled) => {
       if (!disposed) {
@@ -74,7 +82,9 @@ export default function DevToolsGuard() {
 
     return () => {
       disposed = true;
+      window.clearTimeout(initialTimer);
       window.clearInterval(intervalId);
+      window.removeEventListener('focus', onFocus);
       unsubscribe();
     };
   }, []);
