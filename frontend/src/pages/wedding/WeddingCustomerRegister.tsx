@@ -37,7 +37,8 @@ import {
   Edit,
   X,
   CircleCheck,
-  CircleAlert
+  CircleAlert,
+  Trash2
 } from 'lucide-react';
 
 export default function WeddingCustomerRegister() {
@@ -105,6 +106,25 @@ export default function WeddingCustomerRegister() {
   const [assignCustomer, setAssignCustomer] = useState<WeddingCustomer | null>(null);
   const [targetTelecaller, setTargetTelecaller] = useState('');
   const [savingAssign, setSavingAssign] = useState(false);
+
+  // Delete Modal
+  const [customerToDelete, setCustomerToDelete] = useState<WeddingCustomer | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDeleteCustomer = async () => {
+    if (!customerToDelete) return;
+    setDeleting(true);
+    try {
+      await API.deleteWeddingCustomer(customerToDelete.id);
+      showToast(`Customer "${customerToDelete.customer_name}" deleted successfully.`, 'success');
+      setCustomerToDelete(null);
+      loadData();
+    } catch (err: any) {
+      showToast('Error deleting customer: ' + (err.message || 'Server error'), 'error');
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -587,6 +607,15 @@ export default function WeddingCustomerRegister() {
                               >
                                 <UserCheck className="w-3.5 h-3.5" />
                               </button>
+
+                              {/* Delete Customer */}
+                              <button
+                                onClick={() => setCustomerToDelete(cust)}
+                                className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 transition-colors border border-rose-200"
+                                title="Delete Customer"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
                             </div>
                           </td>
                         </tr>
@@ -833,6 +862,71 @@ export default function WeddingCustomerRegister() {
                     </button>
                   </div>
                 </form>
+              </div>
+            </div>
+          )}
+
+          {/* Delete Confirmation Modal */}
+          {customerToDelete && (
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
+              <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-[#DFDDD7] space-y-4 animate-scale-in">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-rose-100 text-rose-700 flex items-center justify-center flex-shrink-0">
+                    <Trash2 className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-black text-[#182033]">Delete Wedding Customer</h3>
+                    <p className="text-xs text-muted">This action will archive the customer record.</p>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-[#F6F4EF] rounded-2xl border border-[#DFDDD7] space-y-2 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-muted">Customer Name:</span>
+                    <strong className="text-[#182033]">{customerToDelete.customer_name}</strong>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted">Registration ID:</span>
+                    <strong className="text-primary font-mono">{customerToDelete.customer_code}</strong>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted">Mobile Number:</span>
+                    <span className="font-semibold text-[#182033]">{customerToDelete.mobile_number}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted">Store Location:</span>
+                    <span className="font-semibold text-[#182033]">{customerToDelete.location_name || 'Store'}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#DFDDD7]">
+                  <button
+                    type="button"
+                    disabled={deleting}
+                    onClick={() => setCustomerToDelete(null)}
+                    className="px-4 py-2 rounded-xl bg-[#F6F4EF] hover:bg-[#DFDDD7] font-bold text-[#182033] text-xs"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    disabled={deleting}
+                    onClick={handleDeleteCustomer}
+                    className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs shadow-md flex items-center gap-1.5 disabled:opacity-50"
+                  >
+                    {deleting ? (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        <span>Deleting...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Confirm Delete</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           )}

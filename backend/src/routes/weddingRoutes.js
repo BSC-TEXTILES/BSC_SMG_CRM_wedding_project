@@ -76,7 +76,7 @@ router.post('/customers', weddingController.createCustomer);
 router.get('/customers/:id', weddingController.getCustomerById);
 router.get('/customers/:id/full-profile', weddingController.getFullCustomerProfile);
 router.put('/customers/:id', weddingController.updateCustomer);
-router.delete('/customers/:id', authorize('Admin', 'Super Admin'), weddingController.deleteCustomer);
+router.delete('/customers/:id', authorize('Admin', 'Super Admin', 'HR', 'Manager'), weddingController.deleteCustomer);
 
 // ── Status Management ──────────────────────────────────────────
 router.get('/customers/:id/status-history', weddingController.getStatusHistory);
