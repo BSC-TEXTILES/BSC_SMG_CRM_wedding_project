@@ -226,7 +226,7 @@ export default function WeddingRegistrationPage() {
     try {
       const res = await API.checkWeddingRegistrationDuplicate(form.mobile);
       if (res && res.exists) {
-        setDupWarn(`⚠️ This mobile number was already registered by ${res.existingRegistration?.customer_name || 'another customer'} (${res.existingRegistration?.registration_id || 'existing registration'}).`);
+        setDupWarn(`ℹ️ We found an existing wedding registration for this number (${res.existingRegistration?.customer_name || 'Customer'} — ${res.existingRegistration?.registration_id}). Submitting will register this new wedding under your account.`);
       } else {
         setDupWarn('');
       }
@@ -270,7 +270,9 @@ export default function WeddingRegistrationPage() {
         family_size: form.family_size ? parseInt(form.family_size, 10) : null,
         bride_age: form.bride_age ? parseInt(form.bride_age, 10) : null,
         groom_age: form.groom_age ? parseInt(form.groom_age, 10) : null,
-        expected_visitors: form.expected_visitors ? parseInt(form.expected_visitors, 10) : null
+        expected_visitors: form.expected_visitors ? parseInt(form.expected_visitors, 10) : null,
+        force_create_new_registration: true,
+        allow_duplicate: true
       };
 
       const res = await API.createWeddingRegistration({ data: payload });
@@ -1088,10 +1090,10 @@ export default function WeddingRegistrationPage() {
           </div>
         )}
 
-        {/* STEP 9: ANIMATED SUCCESS POPUP */}
+        {/* STEP 9: SUCCESS CONFIRMATION */}
         {step === 9 && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-primary/70 backdrop-blur-md animate-modal-backdrop overflow-y-auto">
-            {/* Elegant confetti particles (lightweight, decorative) */}
+            {/* Elegant confetti particles */}
             {(() => {
               const colors = ['#D4A58A', '#3D2B1F', '#E8DDD4', '#f59e0b', '#10b981', '#3b82f6'];
               return Array.from({ length: 22 }).map((_, i) => {
@@ -1116,65 +1118,113 @@ export default function WeddingRegistrationPage() {
               });
             })()}
 
-            <div className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl border border-accent/30 overflow-hidden animate-pop-in">
-              <div className="bg-gradient-to-r from-primary to-primary px-6 py-5 text-center">
-                <div className="w-16 h-16 rounded-full bg-emerald-100 border-4 border-emerald-300 text-emerald-600 flex items-center justify-center mx-auto shadow-lg animate-check-pop">
-                  <CircleCheck className="w-9 h-9" />
+            <div className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-accent/30 overflow-hidden animate-pop-in">
+              {/* Header */}
+              <div className="bg-gradient-to-r from-primary to-primary px-6 py-6 text-center">
+                <div className="w-18 h-18 rounded-full bg-emerald-100 border-4 border-emerald-300 text-emerald-600 flex items-center justify-center mx-auto shadow-lg animate-check-pop" style={{ width: '72px', height: '72px' }}>
+                  <CircleCheck className="w-10 h-10" />
                 </div>
                 <h2 className="text-xl font-black text-accent tracking-tight mt-3 animate-fade-up-step" style={{ animationDelay: '0.35s' }}>
-                  Your request was saved successfully!
+                  Wedding Registration Submitted Successfully
                 </h2>
-                <p className="text-xs text-white/80 font-medium mt-1 animate-fade-up-step" style={{ animationDelay: '0.5s' }}>
-                  Thank you for choosing BSC Textiles. Our team will contact you shortly. An email has been sent with your reference number.
+                <p className="text-xs text-white/80 font-medium mt-2 animate-fade-up-step" style={{ animationDelay: '0.5s' }}>
+                  Thank you! Your wedding shopping request has been registered with BSC Textiles.
                 </p>
               </div>
 
               <div className="p-6 space-y-5">
-                {/* Tracking ID */}
+                {/* Registration ID */}
                 <div className="rounded-2xl border-2 border-accent/40 bg-amber-50/60 p-4 text-center animate-tracking-highlight">
-                  <span className="text-[10px] uppercase font-black text-primary block">Your Tracking ID</span>
+                  <span className="text-[10px] uppercase font-black text-primary block">Registration ID</span>
                   <span className="text-xl font-mono font-black text-primary tracking-wider break-all mt-1 block">
-                    {successTrackId || successRegId}
+                    {registrationData?.registration_id || successRegId}
                   </span>
                   <span className="text-[11px] text-primary/60 font-medium block mt-1.5">
-                    Keep this Tracking ID to check your request status.
+                    Keep this ID to track your registration status
                   </span>
                 </div>
 
-                {/* Customer ID */}
-                <div className="rounded-xl bg-background border border-accent-soft p-3 text-center animate-fade-up-step" style={{ animationDelay: '0.7s' }}>
-                  <span className="text-[10px] uppercase font-black text-primary block">Customer ID</span>
-                  <span className="text-sm font-mono font-black text-primary tracking-wider break-all">{successRegId}</span>
+                {/* Registration Details */}
+                <div className="rounded-xl bg-background border border-accent-soft p-4 space-y-3 animate-fade-up-step" style={{ animationDelay: '0.7s' }}>
+                  <h4 className="font-bold text-sm text-primary flex items-center gap-2">
+                    <CircleCheck className="w-4 h-4 text-accent" />
+                    Registration Details
+                  </h4>
+                  <div className="text-xs text-primary space-y-2.5">
+                    <div className="flex justify-between items-center py-1.5 border-b border-accent-soft/50">
+                      <span className="text-primary/60 font-medium">Status</span>
+                      <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-black text-[10px] border border-emerald-200">
+                        {registrationData?.status || 'New'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center py-1.5 border-b border-accent-soft/50">
+                      <span className="text-primary/60 font-medium">Customer</span>
+                      <strong className="text-primary">{registrationData?.customer_name || form.customer_name}</strong>
+                    </div>
+                    <div className="flex justify-between items-center py-1.5 border-b border-accent-soft/50">
+                      <span className="text-primary/60 font-medium">Store</span>
+                      <strong className="text-primary">{registrationData?.location_name || getSelectedStore()?.location_name || '—'}{registrationData?.location_code ? ` (${registrationData.location_code})` : ''}</strong>
+                    </div>
+                    <div className="flex justify-between items-center py-1.5 border-b border-accent-soft/50">
+                      <span className="text-primary/60 font-medium">Wedding Date</span>
+                      <strong className="text-primary">{registrationData?.wedding_date ? new Date(registrationData.wedding_date).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—'}</strong>
+                    </div>
+                    <div className="flex justify-between items-center py-1.5 border-b border-accent-soft/50">
+                      <span className="text-primary/60 font-medium">Preferred Shopping Date</span>
+                      <strong className="text-primary">{registrationData?.preferred_shopping_date ? new Date(registrationData.preferred_shopping_date).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—'}</strong>
+                    </div>
+                    <div className="flex justify-between items-center py-1.5 border-b border-accent-soft/50">
+                      <span className="text-primary/60 font-medium">Preferred Contact</span>
+                      <strong className="text-primary">{registrationData?.preferred_contact_method || '—'}</strong>
+                    </div>
+                    <div className="flex justify-between items-center py-1.5">
+                      <span className="text-primary/60 font-medium">Submitted On</span>
+                      <strong className="text-primary">{registrationData?.submitted_at ? new Date(registrationData.submitted_at).toLocaleString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) : '—'}</strong>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Summary */}
-                <div className="rounded-xl bg-background border border-accent-soft p-3.5 text-xs text-primary space-y-1 animate-fade-up-step" style={{ animationDelay: '0.8s' }}>
-                  <p className="flex justify-between"><span className="text-primary/60">Store</span><strong>{getSelectedStore()?.location_name || '—'}</strong></p>
-                  <p className="flex justify-between"><span className="text-primary/60">Customer</span><strong>{form.customer_name}</strong></p>
-                  <p className="flex justify-between"><span className="text-primary/60">Mobile</span><strong>+91 {form.mobile}</strong></p>
-                  <p className="flex justify-between"><span className="text-primary/60">Wedding Date</span><strong>{form.wedding_date ? new Date(form.wedding_date).toLocaleDateString('en-IN') : '—'}</strong></p>
+                {/* Message */}
+                <div className="rounded-xl bg-blue-50 border border-blue-200 p-4 text-center animate-fade-up-step" style={{ animationDelay: '0.8s' }}>
+                  <p className="text-xs text-blue-900 font-bold">
+                    Our BSC Textiles team will contact you regarding your wedding shopping requirements.
+                  </p>
                 </div>
 
-                {/* CTA Buttons */}
-                <div className="flex flex-col sm:flex-row gap-2.5 animate-fade-up-step" style={{ animationDelay: '0.9s' }}>
+                {/* Action Buttons */}
+                <div className="flex flex-col gap-2.5 animate-fade-up-step" style={{ animationDelay: '0.9s' }}>
                   <button
-                    onClick={() => { navigator.clipboard.writeText(successTrackId || successRegId); showToast('Tracking ID copied to clipboard!', 'success'); }}
-                    className="flex-1 py-2.5 rounded-xl bg-primary text-white text-xs font-black flex items-center justify-center gap-1.5 shadow-sm hover:bg-primary-hover transition-colors"
+                    onClick={() => { navigator.clipboard.writeText(registrationData?.registration_id || successRegId); showToast('Registration ID copied to clipboard!', 'success'); }}
+                    className="w-full py-2.5 rounded-xl bg-primary text-white text-xs font-black flex items-center justify-center gap-1.5 shadow-sm hover:bg-primary-hover transition-colors"
                   >
-                    Copy Tracking ID
+                    Copy Registration ID
                   </button>
-                  <button
-                    onClick={() => window.print()}
-                    className="flex-1 py-2.5 rounded-xl border border-accent-soft bg-white text-primary text-xs font-black flex items-center justify-center gap-1.5 hover:bg-gray-50 transition-colors"
-                  >
-                    Print
-                  </button>
-                  <button
-                    onClick={resetForm}
-                    className="flex-1 py-2.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-800 text-xs font-black flex items-center justify-center gap-1.5 hover:bg-amber-100 transition-colors"
-                  >
-                    Register Another
-                  </button>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    <button
+                      onClick={() => {
+                        const regId = registrationData?.registration_id || successRegId;
+                        window.open(`/wedding-crm/registration/${regId}`, '_blank');
+                      }}
+                      className="py-2.5 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-black flex items-center justify-center gap-1.5 hover:bg-emerald-100 transition-colors"
+                    >
+                      <Search className="w-3.5 h-3.5" />
+                      View Registration
+                    </button>
+                    <button
+                      onClick={() => window.location.href = '/wedding-crm'}
+                      className="py-2.5 rounded-xl bg-background border border-accent-soft text-primary text-xs font-black flex items-center justify-center gap-1.5 hover:bg-white transition-colors"
+                    >
+                      <Building2 className="w-3.5 h-3.5" />
+                      Back to Wedding CRM
+                    </button>
+                    <button
+                      onClick={resetForm}
+                      className="py-2.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-800 text-xs font-black flex items-center justify-center gap-1.5 hover:bg-amber-100 transition-colors"
+                    >
+                      <span className="text-base">+</span>
+                      New Registration
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

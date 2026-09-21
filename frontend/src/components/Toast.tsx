@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CircleCheck, CircleAlert, Info, X } from 'lucide-react';
+import { CircleCheck, CircleAlert, Info, AlertTriangle, X } from 'lucide-react';
 
 export interface ToastMessage {
   id: string;
@@ -25,9 +25,14 @@ export default function ToastContainer() {
   useEffect(() => {
     toastListener = (newToast) => {
       setToasts(prev => [...prev, newToast]);
+      // Duration: success 4.5s, error 6s, warn 5s, info 4s
+      const duration = newToast.type === 'error' ? 6000
+        : newToast.type === 'warn' ? 5000
+        : newToast.type === 'success' ? 4500
+        : 4000;
       setTimeout(() => {
         setToasts(prev => prev.filter(t => t.id !== newToast.id));
-      }, 3500);
+      }, duration);
     };
     return () => {
       toastListener = null;
@@ -41,38 +46,54 @@ export default function ToastContainer() {
   if (toasts.length === 0) return null;
 
   return (
-    <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 w-full max-w-sm px-4 pointer-events-none">
+    <div className="fixed top-4 right-4 z-[9999] flex flex-col gap-2.5 pointer-events-none" style={{ maxWidth: '420px', width: '100%' }}>
       {toasts.map(t => {
-        const bgMap = {
-          success: 'bg-status-success text-white border-status-success shadow-lg',
-          error: 'bg-status-danger text-white border-status-danger shadow-lg',
-          warn: 'bg-status-warning text-white border-status-warning shadow-lg',
-          info: 'bg-primary text-white border-accent/30 shadow-lg'
+        const bgMap: Record<string, string> = {
+          success: 'bg-emerald-800 text-white border-emerald-600',
+          error: 'bg-red-800 text-white border-red-600',
+          warn: 'bg-amber-700 text-white border-amber-500',
+          info: 'bg-slate-800 text-white border-slate-600'
         };
 
-        const Icon = t.type === 'success' ? CircleCheck : t.type === 'error' ? CircleAlert : Info;
+        const iconMap: Record<string, any> = {
+          success: CircleCheck,
+          error: CircleAlert,
+          warn: AlertTriangle,
+          info: Info
+        };
+
+        const Icon = iconMap[t.type] || Info;
 
         return (
           <div
             key={t.id}
-            className={`
-              pointer-events-auto flex items-center justify-between p-3 rounded-xl border shadow-xl text-xs font-semibold
-              animate-fade-in ${bgMap[t.type]}
-            `}
+            className={`pointer-events-auto flex items-start justify-between p-3.5 rounded-xl border shadow-2xl ${bgMap[t.type] || bgMap.info}`}
+            style={{
+              animation: 'toastSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
+              fontSize: '13px',
+              lineHeight: '1.4',
+            }}
           >
-            <div className="flex items-center gap-2.5">
-              <Icon className="w-4 h-4 flex-shrink-0" />
-              <span>{t.message}</span>
+            <div className="flex items-start gap-2.5">
+              <Icon className="w-[18px] h-[18px] flex-shrink-0 mt-0.5" />
+              <span className="font-semibold">{t.message}</span>
             </div>
             <button
               onClick={() => removeToast(t.id)}
-              className="p-1 hover:opacity-75 transition-opacity"
+              className="p-1 hover:opacity-75 transition-opacity flex-shrink-0 ml-2"
             >
-              <X className="w-3.5 h-3.5" />
+              <X className="w-4 h-4" />
             </button>
           </div>
         );
       })}
+      <style>{`
+        @keyframes toastSlideIn {
+          from { opacity: 0; transform: translateX(100px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+      `}</style>
     </div>
   );
 }
+

@@ -216,20 +216,35 @@ export default function WeddingCustomerRegister() {
   // Submit Telecaller Assignment
   const handleSaveAssign = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!assignCustomer) return;
+    if (!assignCustomer || savingAssign) return;
     setSavingAssign(true);
     try {
-      const callerObj = telecallers.find((t) => t.name === targetTelecaller || String(t.id) === targetTelecaller);
+      // Match by ID (number) for reliability
+      const callerObj = telecallers.find((t: any) => String(t.id) === String(targetTelecaller));
+      if (!callerObj) {
+        showToast('Please select a valid telecaller.', 'error');
+        setSavingAssign(false);
+        return;
+      }
       await API.updateWeddingCustomer(assignCustomer.id, {
-        assigned_telecaller: callerObj ? callerObj.name : targetTelecaller,
-        assigned_telecaller_id: callerObj ? callerObj.id : undefined
+        assigned_telecaller: callerObj.full_name || callerObj.name,
+        assigned_telecaller_id: callerObj.id
       });
 
-      showToast('Telecaller assigned successfully', 'success');
+      const isReassign = assignCustomer.assigned_telecaller && 
+        assignCustomer.assigned_telecaller !== 'Auto-Assigned' &&
+        assignCustomer.assigned_telecaller !== 'Staff';
+      showToast(
+        isReassign 
+          ? `Telecaller reassigned to ${callerObj.full_name || callerObj.name} successfully.`
+          : `Telecaller assigned to ${callerObj.full_name || callerObj.name} successfully.`,
+        'success'
+      );
       setAssignCustomer(null);
+      setTargetTelecaller('');
       loadData();
     } catch (err: any) {
-      showToast('Error assigning telecaller: ' + err.message, 'error');
+      showToast('Unable to assign telecaller. Please try again.', 'error');
     } finally {
       setSavingAssign(false);
     }
@@ -475,13 +490,28 @@ export default function WeddingCustomerRegister() {
                             )}
                           </td>
                           <td className="py-3 px-4">
-                            {cust.assigned_telecaller ? (
-                              <span className="font-semibold text-primary">
-                                👤 {cust.assigned_telecaller}
-                              </span>
+                            {cust.assigned_telecaller && cust.assigned_telecaller !== 'Auto-Assigned' ? (
+                              <div>
+                                <span className="font-semibold text-primary text-xs">
+                                  {cust.assigned_telecaller}
+                                </span>
+                                <button
+                                  onClick={() => {
+                                    setAssignCustomer(cust);
+                                    setTargetTelecaller('');
+                                  }}
+                                  className="ml-2 text-[9px] font-bold text-[#C98218] hover:underline"
+                                  title="Reassign Telecaller"
+                                >
+                                  Reassign
+                                </button>
+                              </div>
                             ) : (
                               <button
-                                onClick={() => setAssignCustomer(cust)}
+                                onClick={() => {
+                                  setAssignCustomer(cust);
+                                  setTargetTelecaller('');
+                                }}
                                 className="text-[10px] font-bold text-[#C98218] hover:underline"
                               >
                                 + Assign
@@ -692,17 +722,28 @@ export default function WeddingCustomerRegister() {
             </div>
           )}
 
-          {/* Quick Assign Modal */}
+          {/* Quick Assign / Reassign Telecaller Modal */}
           {assignCustomer && (
             <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-              <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-[#DFDDD7] space-y-4 animate-scale-in">
+              <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-[#DFDDD7] space-y-4 animate-scale-in">
                 <div className="flex items-center justify-between pb-3 border-b border-[#DFDDD7]">
                   <div>
-                    <h3 className="text-base font-black text-[#182033]">Assign Telecaller</h3>
-                    <div className="text-xs text-muted">{assignCustomer.customer_name}</div>
+                    <h3 className="text-base font-black text-[#182033]">
+                      {assignCustomer.assigned_telecaller && assignCustomer.assigned_telecaller !== 'Auto-Assigned'
+                        ? 'Reassign Telecaller'
+                        : 'Assign Telecaller'}
+                    </h3>
+                    <div className="text-xs text-muted mt-0.5">
+                      Customer: <strong>{assignCustomer.customer_name}</strong> &middot; {assignCustomer.customer_code}
+                    </div>
+                    {assignCustomer.assigned_telecaller && assignCustomer.assigned_telecaller !== 'Auto-Assigned' && (
+                      <div className="text-xs text-muted mt-1">
+                        Currently assigned to: <strong className="text-[#182033]">{assignCustomer.assigned_telecaller}</strong>
+                      </div>
+                    )}
                   </div>
                   <button
-                    onClick={() => setAssignCustomer(null)}
+                    onClick={() => { setAssignCustomer(null); setTargetTelecaller(''); }}
                     className="p-1 rounded-lg hover:bg-[#F6F4EF] text-muted"
                   >
                     <X className="w-5 h-5" />
@@ -711,27 +752,65 @@ export default function WeddingCustomerRegister() {
 
                 <form onSubmit={handleSaveAssign} className="space-y-4 text-xs">
                   <div>
-                    <label className="block text-[10px] font-bold uppercase text-muted mb-1">
+                    <label className="block text-[10px] font-bold uppercase text-muted mb-2">
                       Select Telecaller
                     </label>
-                    <select
-                      value={targetTelecaller}
-                      onChange={(e) => setTargetTelecaller(e.target.value)}
-                      className="w-full px-3 py-2 bg-[#F6F4EF] border border-[#DFDDD7] rounded-xl font-bold"
-                    >
-                      <option value="">-- Choose Caller --</option>
-                      {telecallers.map((t) => (
-                        <option key={t.id} value={t.name}>
-                          👤 {t.name}
-                        </option>
-                      ))}
-                    </select>
+                    {telecallers.length === 0 ? (
+                      <div className="text-center py-6 text-muted">
+                        <CircleAlert className="w-6 h-6 mx-auto mb-2 text-amber-400" />
+                        <p className="font-semibold">No telecallers available.</p>
+                        <p className="text-[10px] mt-1">Please ensure active telecaller accounts exist in User Management.</p>
+                      </div>
+                    ) : (
+                      <div className="max-h-60 overflow-y-auto space-y-1.5 border border-[#DFDDD7] rounded-xl p-2 bg-[#F6F4EF]">
+                        {telecallers.map((t: any) => {
+                          const isSelected = String(t.id) === String(targetTelecaller);
+                          return (
+                            <button
+                              key={t.id}
+                              type="button"
+                              onClick={() => setTargetTelecaller(String(t.id))}
+                              className={`w-full text-left px-3 py-2.5 rounded-lg border transition-all ${
+                                isSelected
+                                  ? 'bg-[#101C36] text-white border-[#C9A45C] shadow-md'
+                                  : 'bg-white border-[#DFDDD7] hover:border-[#C9A45C]/50 hover:bg-amber-50/30'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <div className={`text-xs font-bold ${isSelected ? 'text-white' : 'text-[#182033]'}`}>
+                                    {t.full_name || t.name || t.username}
+                                  </div>
+                                  <div className={`text-[10px] mt-0.5 font-mono ${isSelected ? 'text-[#C9A45C]' : 'text-muted'}`}>
+                                    {t.employee_id || `EMP-${t.id}`}
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <div className={`text-[9px] font-bold uppercase ${isSelected ? 'text-[#C9A45C]' : 'text-muted'}`}>
+                                    {t.role}
+                                  </div>
+                                  <div className={`text-[9px] ${isSelected ? 'text-slate-300' : 'text-muted'}`}>
+                                    {t.location_name || 'All Locations'}
+                                  </div>
+                                </div>
+                              </div>
+                              {isSelected && (
+                                <div className="mt-1 flex items-center gap-1">
+                                  <CircleCheck className="w-3 h-3 text-[#C9A45C]" />
+                                  <span className="text-[9px] text-[#C9A45C] font-bold">Selected</span>
+                                </div>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#DFDDD7]">
                     <button
                       type="button"
-                      onClick={() => setAssignCustomer(null)}
+                      onClick={() => { setAssignCustomer(null); setTargetTelecaller(''); }}
                       className="px-4 py-2 rounded-xl bg-[#F6F4EF] hover:bg-[#DFDDD7] font-bold text-[#182033]"
                     >
                       Cancel
@@ -739,9 +818,18 @@ export default function WeddingCustomerRegister() {
                     <button
                       type="submit"
                       disabled={savingAssign || !targetTelecaller}
-                      className="px-5 py-2 rounded-xl bg-[#101C36] hover:bg-[#07101F] text-[#C9A45C] font-black shadow-md border border-[#C9A45C]/30 disabled:opacity-40"
+                      className="px-5 py-2 rounded-xl bg-[#101C36] hover:bg-[#07101F] text-[#C9A45C] font-black shadow-md border border-[#C9A45C]/30 disabled:opacity-40 flex items-center gap-2"
                     >
-                      {savingAssign ? 'Assigning...' : 'Assign'}
+                      {savingAssign ? (
+                        <>
+                          <div className="w-3.5 h-3.5 border-2 border-[#C9A45C]/30 border-t-[#C9A45C] rounded-full animate-spin" />
+                          Assigning...
+                        </>
+                      ) : (
+                        assignCustomer.assigned_telecaller && assignCustomer.assigned_telecaller !== 'Auto-Assigned'
+                          ? 'Reassign Telecaller'
+                          : 'Assign Telecaller'
+                      )}
                     </button>
                   </div>
                 </form>

@@ -904,6 +904,30 @@ export const API = {
     const res = await apiFetch(`/wedding-crm/telecallers${locationId ? `?location_id=${locationId}` : ''}`);
     return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
   },
+  async assignWeddingTelecaller(customerId: number | string, telecallerId: number | string, telecallerName?: string) {
+    const res = await apiFetch(`/wedding-crm/customers/${customerId}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        assigned_telecaller_id: telecallerId,
+        assigned_telecaller: telecallerName
+      })
+    });
+    return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
+  },
+  async checkWeddingCustomerDuplicate(payload: { mobile: string; customerId?: number | string }) {
+    const res = await apiFetch('/wedding-crm/check-duplicate', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+    return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
+  },
+  async getWeddingRegistrationsByMobile(mobile: string) {
+    const res = await apiFetch('/wedding-crm/check-duplicate', {
+      method: 'POST',
+      body: JSON.stringify({ mobile })
+    });
+    return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
+  },
   async getWeddingExportData(params?: any) {
     const q = params ? new URLSearchParams(cleanQueryParams(params)).toString() : '';
     const res = await apiFetch(`/wedding-crm/export${q ? `?${q}` : ''}`);

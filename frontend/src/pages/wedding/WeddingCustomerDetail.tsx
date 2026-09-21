@@ -33,7 +33,9 @@ import {
   X,
   CircleAlert,
   RefreshCw,
-  Award
+  Award,
+  Users,
+  ExternalLink
 } from 'lucide-react';
 
 export default function WeddingCustomerDetail() {
@@ -51,10 +53,18 @@ export default function WeddingCustomerDetail() {
   const [callLogs, setCallLogs] = useState<CallLog[]>([]);
   const [notes, setNotes] = useState<any[]>([]);
   const [statusHistory, setStatusHistory] = useState<any[]>([]);
+  const [associatedRegistrations, setAssociatedRegistrations] = useState<any[]>([]);
+  const [associatedCustomers, setAssociatedCustomers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Active Profile Section Tab
-  const [activeTab, setActiveTab] = useState<'overview' | 'calls' | 'notes' | 'status_history'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'calls' | 'notes' | 'status_history' | 'associated_weddings'>('overview');
+
+  // Reassign Telecaller Modal
+  const [reassignModalOpen, setReassignModalOpen] = useState(false);
+  const [telecallers, setTelecallers] = useState<any[]>([]);
+  const [selectedTelecallerId, setSelectedTelecallerId] = useState('');
+  const [savingReassign, setSavingReassign] = useState(false);
 
   // New Call Log Modal
   const [callModalOpen, setCallModalOpen] = useState(false);
@@ -98,6 +108,8 @@ export default function WeddingCustomerDetail() {
         if (Array.isArray(fullRes.data.callLogs)) setCallLogs(fullRes.data.callLogs);
         if (Array.isArray(fullRes.data.notes)) setNotes(fullRes.data.notes);
         if (Array.isArray(fullRes.data.statusHistory)) setStatusHistory(fullRes.data.statusHistory);
+        if (Array.isArray(fullRes.data.associatedRegistrations)) setAssociatedRegistrations(fullRes.data.associatedRegistrations);
+        if (Array.isArray(fullRes.data.associatedCustomers)) setAssociatedCustomers(fullRes.data.associatedCustomers);
       } else if (custRes?.call_logs) {
         setCallLogs(custRes.call_logs);
       }
@@ -107,6 +119,41 @@ export default function WeddingCustomerDetail() {
       setLoading(false);
     }
   }, [id]);
+
+  const handleOpenReassign = async () => {
+    try {
+      const res = await API.getWeddingTelecallers(customer?.location_id || session?.locationId || undefined);
+      const list = res.telecallers || res.data || [];
+      setTelecallers(list);
+      if (customer?.assigned_telecaller_id) {
+        setSelectedTelecallerId(String(customer.assigned_telecaller_id));
+      } else {
+        const match = list.find((t: any) => t.full_name === customer?.assigned_telecaller);
+        if (match) setSelectedTelecallerId(String(match.id));
+      }
+      setReassignModalOpen(true);
+    } catch (err: any) {
+      showToast('Failed to load telecallers list: ' + err.message, 'error');
+    }
+  };
+
+  const handleSaveReassign = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!customer || !selectedTelecallerId) return;
+    setSavingReassign(true);
+    try {
+      const callerObj = telecallers.find((t: any) => String(t.id) === String(selectedTelecallerId));
+      const callerName = callerObj ? (callerObj.full_name || callerObj.username) : 'Assigned Staff';
+      await API.assignWeddingTelecaller(customer.id, selectedTelecallerId, callerName);
+      showToast('Telecaller reassigned successfully.', 'success');
+      setReassignModalOpen(false);
+      loadCustomer();
+    } catch (err: any) {
+      showToast('Error reassigning telecaller: ' + err.message, 'error');
+    } finally {
+      setSavingReassign(false);
+    }
+  };
 
   useEffect(() => {
     if (!Auth.check()) {
@@ -281,6 +328,14 @@ export default function WeddingCustomerDetail() {
                 </a>
 
                 <button
+                  onClick={handleOpenReassign}
+                  className="px-3.5 py-2 bg-indigo-700 hover:bg-indigo-800 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-xs transition-colors"
+                >
+                  <Users className="w-3.5 h-3.5" />
+                  <span>Reassign Telecaller</span>
+                </button>
+
+                <button
                   onClick={() => {
                     setNewStatus(customer.customer_status);
                     setStatusReason('');
@@ -389,6 +444,17 @@ export default function WeddingCustomerDetail() {
             >
               <History className="w-3.5 h-3.5" />
               <span>Status Audit History</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('associated_weddings')}
+              className={`px-4 py-2 rounded-xl transition-all flex items-center gap-1.5 ${
+                activeTab === 'associated_weddings'
+                  ? 'bg-[#101C36] text-[#C9A45C] shadow-md'
+                  : 'bg-white text-muted hover:text-primary border border-[#DFDDD7]'
+              }`}
+            >
+              <Heart className="w-3.5 h-3.5" />
+              <span>All Registrations ({associatedRegistrations.length + associatedCustomers.length})</span>
             </button>
           </div>
 
@@ -637,6 +703,110 @@ export default function WeddingCustomerDetail() {
             </div>
           )}
 
+          {/* TAB 5: ASSOCIATED WEDDINGS & REGISTRATIONS */}
+          {activeTab === 'associated_weddings' && (
+            <div className="bg-white rounded-3xl border border-[#DFDDD7] shadow-xs p-5 space-y-6">
+              <div>
+                <h3 className="text-sm font-black text-[#182033] uppercase tracking-wider">
+                  Associated Wedding Registrations for Mobile: {customer.mobile_number}
+                </h3>
+                <p className="text-xs text-muted mt-1">
+                  Families often plan multiple weddings (e.g. son, daughter, sibling). All wedding registrations registered under this mobile number are tracked here independently.
+                </p>
+              </div>
+
+              {associatedRegistrations.length === 0 && associatedCustomers.length === 0 ? (
+                <div className="text-center py-10 bg-[#F6F4EF] rounded-2xl border border-[#DFDDD7] text-muted text-xs">
+                  This customer currently has one active wedding registration ({customer.customer_code}). Future wedding registrations with this mobile number will appear here automatically.
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* Active Primary Record Banner */}
+                  <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-black text-[#101C36] text-sm">{customer.customer_name}</span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-[#101C36] text-[#C9A45C]">Current Active Record</span>
+                      </div>
+                      <div className="text-muted text-[11px] mt-1">
+                        Reg ID: <strong className="text-[#101C36]">{customer.customer_code}</strong> · Wedding Date: <strong>{customer.wedding_date ? new Date(customer.wedding_date).toLocaleDateString() : 'TBD'}</strong> · Telecaller: <strong>{customer.assigned_telecaller || 'Unassigned'}</strong>
+                      </div>
+                    </div>
+                    <span className="text-xs font-bold text-amber-900 bg-amber-100 px-3 py-1 rounded-xl">
+                      Status: {customer.customer_status}
+                    </span>
+                  </div>
+
+                  {/* List of other registrations */}
+                  {associatedRegistrations.map((reg) => (
+                    <div
+                      key={reg.id}
+                      className="p-4 rounded-2xl bg-[#F6F4EF] border border-[#DFDDD7] hover:border-primary/40 transition-all text-xs flex flex-col md:flex-row md:items-center justify-between gap-3"
+                    >
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-[#182033] text-sm">{reg.customer_name}</span>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-blue-100 text-blue-800 border border-blue-200">
+                            Reg ID: {reg.registration_id}
+                          </span>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-200 text-gray-800">
+                            {reg.status || 'New'}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-muted text-[11px]">
+                          {reg.wedding_date && (
+                            <span>Wedding Date: <strong className="text-pink-700">{new Date(reg.wedding_date).toLocaleDateString()}</strong></span>
+                          )}
+                          {reg.bride_name && <span>Bride: <strong>{reg.bride_name}</strong></span>}
+                          {reg.groom_name && <span>Groom: <strong>{reg.groom_name}</strong></span>}
+                          {reg.wedding_venue && <span>Venue: <strong>{reg.wedding_venue}</strong></span>}
+                          {reg.location_name && <span>Store: <strong>{reg.location_name}</strong></span>}
+                        </div>
+                      </div>
+                      <div className="text-[11px] text-muted text-right">
+                        Registered: {new Date(reg.created_at).toLocaleDateString()}
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Other CRM Customer records if any */}
+                  {associatedCustomers.map((cust) => (
+                    <div
+                      key={cust.id}
+                      className="p-4 rounded-2xl bg-[#F6F4EF] border border-[#DFDDD7] hover:border-primary/40 transition-all text-xs flex flex-col md:flex-row md:items-center justify-between gap-3"
+                    >
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-[#182033] text-sm">{cust.customer_name}</span>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-200">
+                            CRM Code: {cust.customer_code}
+                          </span>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-200 text-gray-800">
+                            {cust.customer_status}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-muted text-[11px]">
+                          {cust.wedding_date && (
+                            <span>Wedding Date: <strong className="text-pink-700">{new Date(cust.wedding_date).toLocaleDateString()}</strong></span>
+                          )}
+                          {cust.location_name && <span>Store: <strong>{cust.location_name}</strong></span>}
+                          <span>Telecaller: <strong>{cust.assigned_telecaller || 'Unassigned'}</strong></span>
+                        </div>
+                      </div>
+                      <Link
+                        to={`/wedding-crm/customers/${cust.id}`}
+                        className="px-3 py-1.5 rounded-xl bg-white hover:bg-gray-100 border border-[#DFDDD7] text-xs font-bold text-[#182033] flex items-center gap-1"
+                      >
+                        <span>View Customer</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </Link>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Log Call Modal */}
           {callModalOpen && (
             <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
@@ -677,26 +847,41 @@ export default function WeddingCustomerDetail() {
                         type="date"
                         value={callForm.next_follow_up_date}
                         onChange={(e) => setCallForm({ ...callForm, next_follow_up_date: e.target.value })}
+                        className="w-full px-3 py-2 bg-[#F6F4EF] border border-[#DFDDD7] rounded-xl font-bold"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase text-muted mb-1">
+                        Preferred Call Time
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. 11 AM"
+                        value={callForm.next_follow_up_time}
+                        onChange={(e) => setCallForm({ ...callForm, next_follow_up_time: e.target.value })}
                         className="w-full px-3 py-2 bg-[#F6F4EF] border border-[#DFDDD7] rounded-xl font-medium"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase text-muted mb-1">
+                        Expected Shopping Date
+                      </label>
+                      <input
+                        type="date"
+                        value={callForm.expected_shopping_date}
+                        onChange={(e) => setCallForm({ ...callForm, expected_shopping_date: e.target.value })}
+                        className="w-full px-3 py-2 bg-[#F6F4EF] border border-[#DFDDD7] rounded-xl font-bold"
                       />
                     </div>
                   </div>
 
                   <div>
                     <label className="block text-[10px] font-bold uppercase text-muted mb-1">
-                      Expected Shopping Date (Updated)
-                    </label>
-                    <input
-                      type="date"
-                      value={callForm.expected_shopping_date}
-                      onChange={(e) => setCallForm({ ...callForm, expected_shopping_date: e.target.value })}
-                      className="w-full px-3 py-2 bg-[#F6F4EF] border border-[#DFDDD7] rounded-xl font-medium"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-bold uppercase text-muted mb-1">
-                      Customer Feedback / Remarks
+                      Call Notes & Customer Response
                     </label>
                     <textarea
                       rows={3}
@@ -784,6 +969,77 @@ export default function WeddingCustomerDetail() {
                       className="px-5 py-2 rounded-xl bg-[#101C36] hover:bg-[#07101F] text-[#C9A45C] font-black shadow-md border border-[#C9A45C]/30 disabled:opacity-40"
                     >
                       {savingStatus ? 'Updating...' : 'Update Status'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Reassign Telecaller Modal */}
+          {reassignModalOpen && (
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
+              <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-[#DFDDD7] space-y-4 animate-scale-in">
+                <div className="flex items-center justify-between pb-3 border-b border-[#DFDDD7]">
+                  <div>
+                    <h3 className="text-base font-black text-[#182033]">Reassign Telecaller</h3>
+                    <p className="text-xs text-muted">Customer: {customer.customer_name} ({customer.customer_code})</p>
+                  </div>
+                  <button onClick={() => setReassignModalOpen(false)} className="p-1 text-muted hover:bg-[#F6F4EF] rounded-lg">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <form onSubmit={handleSaveReassign} className="space-y-4 text-xs">
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase text-muted mb-1">
+                      Currently Assigned
+                    </label>
+                    <div className="p-2.5 bg-[#F6F4EF] rounded-xl border border-[#DFDDD7] font-bold text-[#182033]">
+                      {customer.assigned_telecaller || 'Unassigned'}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase text-muted mb-1">
+                      Select New Telecaller / CRM Staff *
+                    </label>
+                    <select
+                      value={selectedTelecallerId}
+                      onChange={(e) => setSelectedTelecallerId(e.target.value)}
+                      className="w-full px-3 py-2.5 bg-[#F6F4EF] border border-[#DFDDD7] rounded-xl font-bold text-sm text-[#182033]"
+                      required
+                    >
+                      <option value="">-- Choose Staff Member --</option>
+                      {telecallers.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.full_name || t.username} — {t.employee_id || `EMP-${t.id}`} ({t.role || 'Telecaller'}{t.location_name ? ` · ${t.location_name}` : ''})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#DFDDD7]">
+                    <button
+                      type="button"
+                      onClick={() => setReassignModalOpen(false)}
+                      className="px-4 py-2 rounded-xl bg-[#F6F4EF] hover:bg-[#DFDDD7] font-bold text-[#182033]"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={savingReassign || !selectedTelecallerId}
+                      className="px-5 py-2 rounded-xl bg-[#101C36] hover:bg-[#07101F] text-[#C9A45C] font-black shadow-md border border-[#C9A45C]/30 disabled:opacity-40 flex items-center gap-1.5"
+                    >
+                      {savingReassign ? (
+                        <>
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          <span>Reassigning...</span>
+                        </>
+                      ) : (
+                        'Confirm Assignment'
+                      )}
                     </button>
                   </div>
                 </form>

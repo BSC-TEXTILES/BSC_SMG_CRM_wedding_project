@@ -10,7 +10,7 @@ const { encryptField, decryptRows, decryptRow } = require('../utils/crypto');
 const { parseCsv, rowsToObjects } = require('../utils/csv');
 const { 
   getCache, setCache, delCache, delCachePattern, 
-  acquireLock, releaseLock, bfExists, isReady 
+  acquireLock, releaseLock, bfAdd, bfExists, isReady 
 } = require('../config/redisClient');
 
 // Free-text PII fields stored encrypted at rest (AES-256-GCM, see utils/crypto.js)
@@ -715,39 +715,52 @@ class WeddingController {
       const customerId = req.body.customerId || req.body.customer_id;
 
       if (!mobile || !mobile.trim()) {
-        return errorRes(res, 'Mobile number is required', [], 400);
+        return errorRes(res, 'Mobile number is required.', [], 400);
       }
 
-      const cleanMobile = mobile.trim();
+      // Normalize to +91 format for consistent matching
+      let cleanMobile = mobile.trim();
+      const digits = cleanMobile.replace(/\D/g, '');
+      if (digits.length === 10) cleanMobile = `+91${digits}`;
+      else if (digits.length === 12 && digits.startsWith('91')) cleanMobile = `+${digits}`;
+      else if (digits.length === 11 && digits.startsWith('0')) cleanMobile = `+91${digits.slice(1)}`;
+
       const { clause: locClause, params } = resolveLocFilter(req, 'w');
 
       let sql = `
-        SELECT w.id, w.customer_code, w.customer_name, w.mobile_number, w.customer_status, w.assigned_telecaller, l.location_name
+        SELECT w.id, w.customer_code, w.customer_name, w.mobile_number, w.customer_status,
+               w.assigned_telecaller, w.email, w.wedding_date, w.expected_shopping_date,
+               w.follow_up_date, w.created_at, l.location_name, l.location_code
         FROM wedding_customers w
         LEFT JOIN locations l ON l.id = w.location_id
-        WHERE w.mobile_number = ? AND w.is_deleted = 0 ${locClause}
+        WHERE (w.mobile_number = ? OR w.mobile_number = ?) AND w.is_deleted = 0 ${locClause}
       `;
-      const queryParams = [cleanMobile, ...params];
+      // Search both normalized and raw forms
+      const queryParams = [cleanMobile, digits.length === 10 ? digits : cleanMobile, ...params];
 
       if (customerId) {
         sql += ` AND w.id != ?`;
         queryParams.push(parseInt(customerId, 10));
       }
 
+      sql += ` ORDER BY w.created_at DESC`;
+
       const [rows] = await pool.query(sql, queryParams);
 
       if (rows && rows.length > 0) {
         return successRes(res, {
           exists: true,
+          count: rows.length,
           customer: rows[0],
-          existingCustomer: rows[0]
-        }, 'Duplicate customer found with this mobile number');
+          existingCustomer: rows[0],
+          allRecords: rows
+        }, 'Existing customer found with this mobile number.');
       }
 
-      return successRes(res, { exists: false }, 'Mobile number is unique');
+      return successRes(res, { exists: false }, 'Mobile number is available.');
     } catch (err) {
       console.error('[WeddingController.checkDuplicate Error]', err);
-      return errorRes(res, 'Failed to check duplicate', [err.message], 500);
+      return errorRes(res, 'Unable to verify mobile number. Please try again.', [err.message], 500);
     }
   }
 
@@ -805,14 +818,19 @@ class WeddingController {
       const [locRows] = await pool.query(`SELECT location_code FROM locations WHERE id = ?`, [locationId]);
       const locCode = locRows[0]?.location_code || 'BSC';
 
-      // Duplicate mobile check per location
+      // Duplicate mobile check per location — return existing info instead of hard-blocking
       const [dup] = await pool.query(`
-        SELECT id, customer_code, customer_name FROM wedding_customers 
+        SELECT id, customer_code, customer_name, customer_status, assigned_telecaller,
+               wedding_date, follow_up_date, created_at
+        FROM wedding_customers 
         WHERE mobile_number = ? AND location_id = ? AND is_deleted = 0
       `, [mobileNumber, locationId]);
 
-      if (dup && dup.length > 0) {
-        return errorRes(res, `Customer with mobile ${mobileNumber} already exists (${dup[0].customer_name} - ${dup[0].customer_code})`, [], 409);
+      // If caller explicitly wants to link to existing customer, skip duplicate block
+      const forceNew = req.body.force_create_new_registration === true || req.body.link_to_existing === true;
+
+      if (dup && dup.length > 0 && !forceNew) {
+        return errorRes(res, `A customer with mobile ${mobileNumber} already exists (${dup[0].customer_name} — ${dup[0].customer_code}). To create a new wedding registration for this customer, please use the "Link New Wedding Request" option.`, [{ existingCustomer: dup[0] }], 409);
       }
 
       // If assigned_telecaller_id provided without name, find name
@@ -825,22 +843,31 @@ class WeddingController {
         assignedTelecallerId = req.user?.id || null;
       }
 
-      // Generate sequence code: WED-[LOC]-[YEAR]-[SEQ]
+      // Generate standardized code: BSC-WED-{LOC}-{YEAR}-{NNNNNN}
+      // 6-digit sequence matching the wedding_registrations format.
       // Collision-proof: derive the next sequence from the highest existing
-      // suffix (COUNT(*)+1 collides once any customer is deleted, since the
-      // column is UNIQUE). A short retry loop absorbs concurrent inserts.
+      // suffix. A short retry loop absorbs concurrent inserts.
       const year = new Date().getFullYear();
-      const codePrefix = `WED-${locCode}-${year}-`;
+      const codePrefix = `BSC-WED-${locCode}-${year}-`;
       let customerCode = null;
-      for (let attempt = 0; attempt < 5 && !customerCode; attempt++) {
-        const [lastRows] = await pool.query(
+      for (let attempt = 0; attempt < 6 && !customerCode; attempt++) {
+        // Check both old format (WED-*) and new format (BSC-WED-*) for sequence
+        const [lastRowsNew] = await pool.query(
           `SELECT customer_code FROM wedding_customers WHERE customer_code LIKE ? ORDER BY id DESC LIMIT 1`,
           [`${codePrefix}%`]
         );
-        const lastSeq = lastRows && lastRows[0]
-          ? parseInt(String(lastRows[0].customer_code).slice(-4), 10) || 0
+        const [lastRowsOld] = await pool.query(
+          `SELECT customer_code FROM wedding_customers WHERE customer_code LIKE ? ORDER BY id DESC LIMIT 1`,
+          [`WED-${locCode}-${year}-%`]
+        );
+        const lastSeqNew = lastRowsNew && lastRowsNew[0]
+          ? parseInt(String(lastRowsNew[0].customer_code).slice(-6), 10) || 0
           : 0;
-        const candidate = `${codePrefix}${String(lastSeq + 1).padStart(4, '0')}`;
+        const lastSeqOld = lastRowsOld && lastRowsOld[0]
+          ? parseInt(String(lastRowsOld[0].customer_code).slice(-4), 10) || 0
+          : 0;
+        const nextSeq = Math.max(lastSeqNew, lastSeqOld) + 1;
+        const candidate = `${codePrefix}${String(nextSeq).padStart(6, '0')}`;
         const [exists] = await pool.query(
           `SELECT id FROM wedding_customers WHERE customer_code = ?`,
           [candidate]
@@ -850,7 +877,7 @@ class WeddingController {
         }
       }
       if (!customerCode) {
-        return errorRes(res, 'Could not allocate a unique customer code, please retry', [], 500);
+        return errorRes(res, 'Unable to allocate a unique registration ID. Please try again.', [], 500);
       }
 
       const [insertResult] = await pool.query(`
@@ -927,7 +954,7 @@ class WeddingController {
           mobile_number: mobileNumber,
           location_id: locationId
         }
-      }, 'Wedding customer added successfully', 201);
+      }, 'Customer created successfully.', 201);
     } catch (err) {
       console.error('[WeddingController.createCustomer Error]', err);
       return errorRes(res, 'Failed to add wedding customer', [err.message], 500);
@@ -1119,27 +1146,50 @@ class WeddingController {
         id
       ]);
 
-      // Audit log
+      // Audit log — separate telecaller assignment tracking
       const changes = [];
       if (customerStatus && customerStatus !== prev.customer_status) changes.push(`Status: ${prev.customer_status} → ${customerStatus}`);
       if (followUpDate && followUpDate !== prev.follow_up_date) changes.push(`Follow-up: ${prev.follow_up_date} → ${followUpDate}`);
-      if (assignedTelecaller && assignedTelecaller !== prev.assigned_telecaller) changes.push(`Telecaller: ${prev.assigned_telecaller} → ${assignedTelecaller}`);
       if (expectedShoppingDate && expectedShoppingDate !== prev.expected_shopping_date) changes.push(`Shopping Date: ${prev.expected_shopping_date} → ${expectedShoppingDate}`);
 
-      await pool.query(`
-        INSERT INTO wedding_audit_logs (customer_id, location_id, user_name, action, details)
-        VALUES (?, ?, ?, 'Customer Edited', ?)
-      `, [
-        id,
-        prev.location_id,
-        req.user?.fullName || 'Staff',
-        changes.length > 0 ? changes.join(', ') : 'Updated customer profile details'
-      ]);
+      // Track telecaller assignment/reassignment as a distinct audit action
+      const telecallerChanged = assignedTelecaller && assignedTelecaller !== prev.assigned_telecaller;
+      if (telecallerChanged) {
+        const isReassign = prev.assigned_telecaller && prev.assigned_telecaller !== 'Auto-Assigned' && prev.assigned_telecaller !== 'Staff';
+        const auditAction = isReassign ? 'Telecaller Reassigned' : 'Telecaller Assigned';
+        const auditDetail = isReassign
+          ? `Telecaller reassigned from ${prev.assigned_telecaller} to ${assignedTelecaller}`
+          : `Telecaller assigned: ${assignedTelecaller}`;
+        await pool.query(`
+          INSERT INTO wedding_audit_logs (customer_id, location_id, user_name, action, details)
+          VALUES (?, ?, ?, ?, ?)
+        `, [id, prev.location_id, req.user?.fullName || 'Staff', auditAction, auditDetail]);
+      }
+
+      // General edit audit log
+      if (changes.length > 0 || !telecallerChanged) {
+        await pool.query(`
+          INSERT INTO wedding_audit_logs (customer_id, location_id, user_name, action, details)
+          VALUES (?, ?, ?, 'Customer Edited', ?)
+        `, [
+          id,
+          prev.location_id,
+          req.user?.fullName || 'Staff',
+          changes.length > 0 ? changes.join(', ') : 'Updated customer profile details'
+        ]);
+      }
 
       await delCachePattern(`app:prod:wedding:customer:${id}:*`);
       await delCachePattern('app:prod:wedding:dashboard:*');
 
-      return successRes(res, { id }, 'Customer updated successfully');
+      // Professional success message based on what was changed
+      let successMsg = 'Customer details updated successfully.';
+      if (telecallerChanged && changes.length === 0) {
+        const isReassign = prev.assigned_telecaller && prev.assigned_telecaller !== 'Auto-Assigned' && prev.assigned_telecaller !== 'Staff';
+        successMsg = isReassign ? 'Telecaller reassigned successfully.' : 'Telecaller assigned successfully.';
+      }
+
+      return successRes(res, { id }, successMsg);
     } catch (err) {
       console.error('[WeddingController.updateCustomer Error]', err);
       return errorRes(res, 'Failed to update customer', [err.message], 500);
@@ -1179,7 +1229,7 @@ class WeddingController {
       await delCachePattern(`app:prod:wedding:customer:${id}:*`);
       await delCachePattern('app:prod:wedding:dashboard:*');
 
-      return successRes(res, { id }, 'Customer archived successfully');
+      return successRes(res, { id }, 'Customer record deleted successfully.');
     } catch (err) {
       console.error('[WeddingController.deleteCustomer Error]', err);
       return errorRes(res, 'Failed to delete customer', [err.message], 500);
@@ -1403,7 +1453,7 @@ class WeddingController {
         outcome: callOutcome,
         customerStatus: newCustomerStatus,
         nextFollowUpDate
-      }, 'Call logged and follow-up updated successfully');
+      }, 'Call activity saved successfully.');
     } catch (err) {
       console.error('[WeddingController.logCall Error]', err);
       return errorRes(res, 'Failed to log call', [err.message], 500);
@@ -1843,26 +1893,45 @@ class WeddingController {
         locFilter = userLoc;
       }
 
+      // Include Telecaller and related CRM roles for the assignment dropdown
       let sql = `
-        SELECT id, username, full_name, role, location_id
-        FROM users
-        WHERE active = TRUE AND role = 'Telecaller'
+        SELECT u.id, u.username, u.full_name, u.employee_id, u.role, u.location_id, u.active,
+               l.location_name, l.location_code
+        FROM users u
+        LEFT JOIN locations l ON l.id = u.location_id
+        WHERE u.active = TRUE
+          AND u.role IN ('Telecaller', 'CRM Executive', 'VM Extension Telecaller', 'VM Telecaller', 'Team Lead')
       `;
       const params = [];
 
       if (locFilter) {
         // Branch context: own-branch telecallers plus global (location-less) telecaller accounts
-        sql += ` AND (location_id = ? OR location_id IS NULL)`;
+        sql += ` AND (u.location_id = ? OR u.location_id IS NULL)`;
         params.push(locFilter);
       }
 
-      sql += ` ORDER BY full_name ASC`;
+      sql += ` ORDER BY u.full_name ASC`;
 
       const [users] = await pool.query(sql, params);
-      return successRes(res, { telecallers: users || [] }, 'Telecallers fetched successfully');
+
+      // Map to consistent response shape with name alias for backward compatibility
+      const telecallers = (users || []).map(u => ({
+        id: u.id,
+        username: u.username,
+        full_name: u.full_name || u.username,
+        name: u.full_name || u.username,  // backward compat alias
+        employee_id: u.employee_id || `EMP-${u.id}`,
+        role: u.role,
+        location_id: u.location_id,
+        location_name: u.location_name || 'All Locations',
+        location_code: u.location_code || '',
+        active: u.active
+      }));
+
+      return successRes(res, { telecallers }, 'Telecallers fetched successfully.');
     } catch (err) {
       console.error('[WeddingController.getTelecallers Error]', err);
-      return errorRes(res, 'Failed to fetch telecallers', [err.message], 500);
+      return errorRes(res, 'Unable to load telecaller list. Please try again.', [err.message], 500);
     }
   }
 
@@ -2987,6 +3056,31 @@ class WeddingController {
 
       const [auditLogs] = await pool.query(`SELECT * FROM wedding_audit_logs WHERE customer_id = ? ORDER BY created_at DESC LIMIT 50`, [id]);
 
+      // Associated wedding registrations & records for this customer / mobile number
+      const cleanMob = customer.mobile_number ? String(customer.mobile_number).replace(/\D/g, '') : '';
+      const normMob = cleanMob.length === 10 ? `+91${cleanMob}` : (customer.mobile_number || '');
+      const [associatedRegistrations] = await pool.query(`
+        SELECT wr.id, wr.registration_id, wr.customer_name, wr.mobile, wr.wedding_date,
+               wr.wedding_venue, wr.bride_name, wr.groom_name, wr.budget_range, wr.status,
+               wr.location_code, wr.created_at, l.location_name
+        FROM wedding_registrations wr
+        LEFT JOIN locations l ON l.id = wr.location_id
+        WHERE (wr.mobile = ? OR wr.mobile = ? OR wr.customer_id = ? OR wr.registration_id = ?)
+          AND wr.status != 'Deleted'
+        ORDER BY wr.created_at DESC
+      `, [normMob, cleanMob, customer.customer_code || '', customer.customer_code || '']);
+
+      const [associatedCustomers] = await pool.query(`
+        SELECT wc.id, wc.customer_code, wc.customer_name, wc.mobile_number, wc.wedding_date,
+               wc.customer_status, wc.assigned_telecaller, wc.expected_shopping_date, wc.created_at,
+               l.location_name, l.location_code
+        FROM wedding_customers wc
+        LEFT JOIN locations l ON l.id = wc.location_id
+        WHERE (wc.mobile_number = ? OR wc.mobile_number = ?)
+          AND wc.id != ? AND wc.is_deleted = 0
+        ORDER BY wc.created_at DESC
+      `, [normMob, cleanMob, id]);
+
       return successRes(res, {
         customer,
         callLogs: callLogs || [],
@@ -2998,8 +3092,10 @@ class WeddingController {
         statusHistory: statusHistory || [],
         communications: communications || [],
         documents: documents || [],
-        auditLogs: auditLogs || []
-      }, 'Full profile fetched');
+        auditLogs: auditLogs || [],
+        associatedRegistrations: associatedRegistrations || [],
+        associatedCustomers: associatedCustomers || []
+      }, 'Full customer profile fetched successfully.');
     } catch (err) {
       console.error('[WeddingController.getFullCustomerProfile Error]', err);
       return errorRes(res, 'Failed to fetch full profile', [err.message], 500);

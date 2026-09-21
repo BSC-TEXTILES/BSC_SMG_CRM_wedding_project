@@ -92,7 +92,7 @@ async function ensureTables() {
         INDEX \`idx_wed_reg_status\` (\`status\`),
         INDEX \`idx_wed_reg_wedding_date\` (\`wedding_date\`),
         INDEX \`idx_wed_reg_created\` (\`created_at\`),
-        UNIQUE INDEX \`idx_wed_reg_customer_id\` (\`customer_id\`),
+        INDEX \`idx_wed_reg_customer_id\` (\`customer_id\`),
         UNIQUE INDEX \`idx_wed_reg_tracking_id\` (\`tracking_id\`)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
@@ -108,7 +108,7 @@ async function ensureTables() {
       `ALTER TABLE wedding_registrations ADD COLUMN tracking_id VARCHAR(50) NULL AFTER customer_id`,
       `ALTER TABLE wedding_registrations ADD COLUMN email_status VARCHAR(20) DEFAULT 'EMAIL_PENDING'`,
       `ALTER TABLE wedding_registrations ADD COLUMN email_sent_at DATETIME NULL`,
-      `ALTER TABLE wedding_registrations ADD UNIQUE INDEX idx_wed_reg_customer_id (customer_id)`,
+      `ALTER TABLE wedding_registrations ADD INDEX idx_wed_reg_customer_id (customer_id)`,
       `ALTER TABLE wedding_registrations ADD UNIQUE INDEX idx_wed_reg_tracking_id (tracking_id)`,
       `ALTER TABLE wedding_customers ADD COLUMN tracking_id VARCHAR(50) NULL`,
       `ALTER TABLE wedding_customers ADD INDEX idx_wc_tracking_id (tracking_id)`
@@ -340,29 +340,34 @@ class WeddingRegistrationController {
       const { clause: locClause, params } = await getLocationFilter(req, 'wr');
 
       let sql = `
-        SELECT wr.id, wr.registration_id, wr.customer_name, wr.mobile, wr.status, wr.location_id, l.location_name
+        SELECT wr.id, wr.registration_id, wr.customer_name, wr.mobile, wr.status, wr.location_id,
+               wr.wedding_date, wr.wedding_venue, wr.bride_name, wr.groom_name, wr.created_at, l.location_name
         FROM wedding_registrations wr
         LEFT JOIN locations l ON l.id = wr.location_id
-        WHERE wr.mobile = ? AND wr.status != 'Deleted' ${locClause}
+        WHERE (wr.mobile = ? OR wr.mobile = ?) AND wr.status != 'Deleted' ${locClause}
       `;
-      const queryParams = [normalizedMobile, ...params];
+      const queryParams = [normalizedMobile, cleanMobile, ...params];
 
       if (registrationId) {
         sql += ` AND wr.id != ?`;
         queryParams.push(parseInt(registrationId, 10));
       }
 
+      sql += ` ORDER BY wr.created_at DESC`;
+
       const [rows] = await pool.query(sql, queryParams);
 
       if (rows && rows.length > 0) {
         return successRes(res, {
           exists: true,
+          count: rows.length,
           registration: rows[0],
-          existingRegistration: rows[0]
-        }, 'Duplicate registration found with this mobile number');
+          existingRegistration: rows[0],
+          allRecords: rows
+        }, 'Existing wedding registration found with this mobile number.');
       }
 
-      return successRes(res, { exists: false }, 'Mobile number is unique');
+      return successRes(res, { exists: false, allRecords: [] }, 'Mobile number is available.');
     } catch (err) {
       console.error('[WeddingRegistrationController.checkDuplicate Error]', err);
       return errorRes(res, 'Failed to check duplicate', [err.message], 500);
@@ -512,14 +517,21 @@ class WeddingRegistrationController {
         email: rawLoc.email || null
       };
 
-      // ── 4. Duplicate submission protection (same mobile + store) ──
+      // ── 4. Duplicate check / multiple registrations handling ──────
       const [dup] = await pool.query(`
-        SELECT id, registration_id, customer_name FROM wedding_registrations 
-        WHERE mobile = ? AND location_id = ? AND status != 'Deleted'
-      `, [mobile, locationId]);
+        SELECT id, registration_id, customer_name, wedding_date, status FROM wedding_registrations 
+        WHERE (mobile = ? OR mobile = ?) AND location_id = ? AND status != 'Deleted'
+        ORDER BY created_at DESC
+      `, [mobile, mobile.replace(/\D/g, ''), locationId]);
 
-      if (dup && dup.length > 0) {
-        return errorRes(res, `A wedding registration with this mobile number already exists (${dup[0].customer_name} - ${dup[0].registration_id}). Please contact the selected BSC store if you need to update the existing registration.`, [], 409);
+      // Allow creating a new registration for the same mobile when explicitly confirmed
+      const forceNew = data.force_create_new_registration === true 
+        || data.allow_duplicate === true 
+        || data.link_to_existing === true
+        || Boolean(data.existing_customer_id);
+
+      if (dup && dup.length > 0 && !forceNew) {
+        return errorRes(res, `A wedding registration with this mobile number already exists (${dup[0].customer_name} — ${dup[0].registration_id}). You can register a new wedding under this customer or view the existing record.`, [{ existingRegistration: dup[0], allRegistrations: dup }], 409);
       }
 
       // ── 5. Allocate unique IDs server-side (DB is the source of truth) ──
@@ -535,6 +547,9 @@ class WeddingRegistrationController {
       // ── 6. Transaction: registration + CRM record + audit are atomic ──
       connection = await pool.getConnection();
       await connection.beginTransaction();
+
+      // If linking to existing customer, use that customer's code/ID as customer_id
+      const linkedCustomerId = data.existing_customer_id || data.customer_id || registrationId;
 
       const [insertResult] = await connection.query(`
         INSERT INTO wedding_registrations (
@@ -591,7 +606,7 @@ class WeddingRegistrationController {
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'New', 'Walk-in', 'EMAIL_PENDING', NOW())
       `, [
         registrationId,
-        registrationId,
+        linkedCustomerId,
         trackingId,
         locationId,
         location.location_code,
@@ -715,7 +730,7 @@ class WeddingRegistrationController {
           status: 'New',
           submitted_at: new Date().toISOString()
         }
-      }, 'Your request was saved successfully!', 201);
+      }, 'Wedding registration created successfully.', 201);
     } catch (err) {
       if (connection) {
         try { await connection.rollback(); } catch (rollbackErr) { console.warn('[createRegistration rollback]', rollbackErr.message); }
@@ -929,7 +944,7 @@ class WeddingRegistrationController {
         'Updated wedding registration details'
       ]);
 
-      return successRes(res, { id }, 'Registration updated successfully');
+      return successRes(res, { id }, 'Wedding registration updated successfully.');
     } catch (err) {
       console.error('[WeddingRegistrationController.updateRegistration Error]', err);
       return errorRes(res, 'Failed to update registration', [err.message], 500);

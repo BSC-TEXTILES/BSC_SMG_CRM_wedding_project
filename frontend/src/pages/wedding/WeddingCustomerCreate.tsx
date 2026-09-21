@@ -26,7 +26,8 @@ import {
   UserCheck,
   FileText,
   CircleAlert,
-  Save
+  Save,
+  Info
 } from 'lucide-react';
 
 export default function WeddingCustomerCreate() {
@@ -42,6 +43,9 @@ export default function WeddingCustomerCreate() {
   const [locations, setLocations] = useState<any[]>([]);
   const [telecallers, setTelecallers] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
+  const [checkingDuplicate, setCheckingDuplicate] = useState(false);
+  const [existingCustomerInfo, setExistingCustomerInfo] = useState<any | null>(null);
+  const [allowMultipleRegistration, setAllowMultipleRegistration] = useState(false);
 
   // Form State
   const [form, setForm] = useState({
@@ -105,6 +109,35 @@ export default function WeddingCustomerCreate() {
 
   const handleChange = (field: string, value: any) => {
     setForm((prev) => ({ ...prev, [field]: value }));
+    if (field === 'mobile_number') {
+      const clean = String(value).replace(/\D/g, '');
+      if (clean.length === 10) {
+        checkDuplicateMobile(value);
+      } else {
+        setExistingCustomerInfo(null);
+        setAllowMultipleRegistration(false);
+      }
+    }
+  };
+
+  const checkDuplicateMobile = async (mobile: string) => {
+    const clean = mobile.replace(/\D/g, '');
+    if (clean.length < 10) return;
+    setCheckingDuplicate(true);
+    try {
+      const res = await API.checkWeddingCustomerDuplicate({ mobile });
+      if (res?.exists) {
+        const cust = res.customer || res.existingCustomer;
+        setExistingCustomerInfo(cust);
+      } else {
+        setExistingCustomerInfo(null);
+        setAllowMultipleRegistration(false);
+      }
+    } catch {
+      // Ignore background check errors
+    } finally {
+      setCheckingDuplicate(false);
+    }
   };
 
   const handleSubmit = async (redirectTarget: 'register' | 'desk' | 'detail') => {
@@ -123,8 +156,9 @@ export default function WeddingCustomerCreate() {
 
     setSaving(true);
     try {
+      // Match telecaller by ID for reliability
       const callerObj = telecallers.find(
-        (t) => t.name === form.assigned_telecaller || String(t.id) === form.assigned_telecaller
+        (t: any) => String(t.id) === String(form.assigned_telecaller)
       );
 
       // Default follow_up_date: 7 days from today if user left it blank
@@ -158,15 +192,18 @@ export default function WeddingCustomerCreate() {
           .join(' | ') || undefined,
         follow_up_date: resolvedFollowUp,
         preferred_call_time: form.preferred_call_time,
-        assigned_telecaller: callerObj ? callerObj.name : form.assigned_telecaller || undefined,
-        assigned_telecaller_id: callerObj ? callerObj.id : undefined
+        assigned_telecaller: callerObj ? (callerObj.full_name || callerObj.name) : undefined,
+        assigned_telecaller_id: callerObj ? callerObj.id : undefined,
+        force_create_new_registration: allowMultipleRegistration,
+        link_to_existing: allowMultipleRegistration,
+        existing_customer_id: allowMultipleRegistration && existingCustomerInfo ? existingCustomerInfo.customer_code : undefined
       };
 
       const res = await API.createWeddingCustomer(payload);
       // Backend successRes wraps data → spread via apiFetch, so 'customer' lives at top level
       const newCust = res?.customer || res?.data?.customer || res;
 
-      showToast(`Wedding Customer "${form.customer_name}" registered successfully!`, 'success');
+      showToast(`Customer "${form.customer_name}" created successfully.`, 'success');
 
       if (redirectTarget === 'detail' && (newCust?.id || res?.id)) {
         navigate(`/wedding-crm/customers/${newCust?.id || res?.id}`);
@@ -176,7 +213,7 @@ export default function WeddingCustomerCreate() {
         navigate('/wedding-crm/customers');
       }
     } catch (err: any) {
-      showToast('Error registering customer: ' + err.message, 'error');
+      showToast('Unable to register customer. ' + (err.message || 'Please try again.'), 'error');
     } finally {
       setSaving(false);
     }
@@ -257,18 +294,69 @@ export default function WeddingCustomerCreate() {
                 </div>
 
                 <div>
-                  <label className="block font-bold text-muted mb-1">
-                    Mobile Number *
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block font-bold text-muted">
+                      Mobile Number *
+                    </label>
+                    {checkingDuplicate && (
+                      <span className="text-[10px] text-amber-700 font-bold animate-pulse">
+                        Checking existing records...
+                      </span>
+                    )}
+                  </div>
                   <input
                     type="tel"
                     required
                     placeholder="10-digit number"
                     value={form.mobile_number}
+                    onBlur={() => checkDuplicateMobile(form.mobile_number)}
                     onChange={(e) => handleChange('mobile_number', e.target.value)}
                     className="w-full px-3.5 py-2.5 bg-[#F6F4EF] border border-[#DFDDD7] rounded-xl font-bold text-[#182033] focus:outline-none focus:border-[#C9A45C]"
                   />
                 </div>
+
+                {existingCustomerInfo && (
+                  <div className="col-span-full p-3.5 bg-amber-50 border border-amber-300 rounded-2xl text-xs space-y-2 text-amber-950 animate-fade-in">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 font-black">
+                        <Info className="w-4 h-4 text-amber-700 flex-shrink-0" />
+                        <span>Existing customer found with this mobile number!</span>
+                      </div>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-200 text-amber-900 border border-amber-300">
+                        {existingCustomerInfo.customer_code}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-amber-900">
+                      <strong>{existingCustomerInfo.customer_name}</strong> was registered at <strong>{existingCustomerInfo.location_name || 'Store'}</strong> on {new Date(existingCustomerInfo.created_at).toLocaleDateString()}. (Status: {existingCustomerInfo.customer_status})
+                    </p>
+                    <div className="flex flex-wrap items-center gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAllowMultipleRegistration(!allowMultipleRegistration);
+                          if (!allowMultipleRegistration) {
+                            showToast('New wedding will be linked to this customer account.', 'info');
+                          }
+                        }}
+                        className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all ${
+                          allowMultipleRegistration
+                            ? 'bg-amber-800 text-white'
+                            : 'bg-white border border-amber-300 hover:bg-amber-100 text-amber-900'
+                        }`}
+                      >
+                        <CircleCheck className="w-3.5 h-3.5" />
+                        <span>{allowMultipleRegistration ? 'Linked to Existing Customer ✓' : 'Link New Wedding Request to This Customer'}</span>
+                      </button>
+                      <Link
+                        to={`/wedding-crm/customers/${existingCustomerInfo.id}`}
+                        target="_blank"
+                        className="px-3 py-1.5 rounded-xl bg-white border border-amber-300 hover:bg-amber-100 text-amber-900 font-bold text-xs flex items-center gap-1"
+                      >
+                        <span>View Existing Customer</span>
+                      </Link>
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <label className="block font-bold text-muted mb-1">
@@ -542,10 +630,10 @@ export default function WeddingCustomerCreate() {
                     onChange={(e) => handleChange('assigned_telecaller', e.target.value)}
                     className="w-full px-3.5 py-2.5 bg-[#F6F4EF] border border-[#DFDDD7] rounded-xl font-bold text-[#182033]"
                   >
-                    <option value="">-- Assign Telecaller --</option>
-                    {telecallers.map((t) => (
-                      <option key={t.id} value={t.name}>
-                        👤 {t.name}
+                    <option value="">-- Select Telecaller --</option>
+                    {telecallers.map((t: any) => (
+                      <option key={t.id} value={String(t.id)}>
+                        {t.full_name || t.name || t.username} — {t.employee_id || `EMP-${t.id}`} ({t.role})
                       </option>
                     ))}
                   </select>
@@ -583,28 +671,34 @@ export default function WeddingCustomerCreate() {
                   type="button"
                   disabled={saving}
                   onClick={() => handleSubmit('register')}
-                  className="px-5 py-2.5 rounded-xl bg-white hover:bg-[#F6F4EF] border border-[#DFDDD7] font-bold text-xs text-[#182033] transition-all"
+                  className="px-5 py-2.5 rounded-xl bg-white hover:bg-[#F6F4EF] border border-[#DFDDD7] font-bold text-xs text-[#182033] transition-all disabled:opacity-50 flex items-center gap-2"
                 >
-                  Save to Register
+                  {saving && <div className="w-3.5 h-3.5 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin" />}
+                  {saving ? 'Saving...' : 'Save to Register'}
                 </button>
 
                 <button
                   type="button"
                   disabled={saving}
                   onClick={() => handleSubmit('desk')}
-                  className="px-5 py-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-300 font-bold text-xs text-amber-900 transition-all"
+                  className="px-5 py-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-300 font-bold text-xs text-amber-900 transition-all disabled:opacity-50 flex items-center gap-2"
                 >
-                  Save & Assign to Desk
+                  {saving && <div className="w-3.5 h-3.5 border-2 border-amber-300 border-t-amber-700 rounded-full animate-spin" />}
+                  {saving ? 'Saving...' : 'Save & Assign to Desk'}
                 </button>
 
                 <button
                   type="button"
                   disabled={saving}
                   onClick={() => handleSubmit('detail')}
-                  className="px-6 py-2.5 rounded-xl bg-[#101C36] hover:bg-[#07101F] text-[#C9A45C] font-black text-xs shadow-md border border-[#C9A45C]/30 flex items-center gap-2 transition-all"
+                  className="px-6 py-2.5 rounded-xl bg-[#101C36] hover:bg-[#07101F] text-[#C9A45C] font-black text-xs shadow-md border border-[#C9A45C]/30 flex items-center gap-2 transition-all disabled:opacity-50"
                 >
-                  <Save className="w-4 h-4" />
-                  <span>{saving ? 'Registering...' : 'Save & Open Profile'}</span>
+                  {saving ? (
+                    <div className="w-4 h-4 border-2 border-[#C9A45C]/30 border-t-[#C9A45C] rounded-full animate-spin" />
+                  ) : (
+                    <Save className="w-4 h-4" />
+                  )}
+                  <span>{saving ? 'Registering Customer...' : 'Save & Open Profile'}</span>
                 </button>
               </div>
             </div>
