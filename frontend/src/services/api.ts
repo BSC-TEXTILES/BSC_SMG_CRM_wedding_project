@@ -194,7 +194,7 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
             break;
           case 500:
           case 503:
-            errorMessage = 'Server error. Please try again or contact your administrator.';
+            errorMessage = res.data?.error || res.data?.message || 'Server error. Please try again or contact your administrator.';
             break;
           default:
             errorMessage = `Request failed. Please try again. (Error: ${res.status})`;

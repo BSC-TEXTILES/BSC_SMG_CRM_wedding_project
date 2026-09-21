@@ -664,7 +664,7 @@ class WeddingController {
 
       // Pagination (guard against non-numeric input — LIMIT ? must bind an integer)
       const pageNum = Math.max(1, parseInt(page, 10) || 1);
-      const limitNum = Math.min(500, Math.max(1, parseInt(limit, 10) || 50));
+      const limitNum = Math.min(5000, Math.max(1, parseInt(limit, 10) || 50));
       const offset = (pageNum - 1) * limitNum;
 
       const [customers] = await pool.query(`

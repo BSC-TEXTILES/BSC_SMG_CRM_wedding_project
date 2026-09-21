@@ -7,33 +7,114 @@ import { API, Auth, UserSession } from '../services/api';
 import {
   Search, FileText, Phone, Calendar,
   MapPin, Clock, Edit3, Heart, ShoppingBag, Eye,
-  ChevronRight, RefreshCw, X, Save, User
+  RefreshCw, X, Save, User
 } from 'lucide-react';
-import { isDateInRange } from '../utils/dateUtils';
 import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../utils/sidebarState';
+
+// ── Status mapping: backend DB values ↔ frontend display values ──
+const DB_TO_DISPLAY: Record<string, string> = {
+  'New': 'New Registration',
+  'Contacted': 'Contacted',
+  'Interested': 'Contacted',
+  'Follow-up Pending': 'Follow-up Scheduled',
+  'Shopping Date Confirmed': 'Shopping Confirmed',
+  'Visited Store': 'Visited',
+  'Converted': 'Completed',
+  'Not Interested': 'Not Interested',
+  'Cancelled': 'Cancelled',
+  'Closed': 'Completed',
+  'No Response': 'Contact Pending',
+};
+
+const DISPLAY_TO_DB: Record<string, string> = {
+  'New Registration': 'New',
+  'Contact Pending': 'No Response',
+  'Contacted': 'Contacted',
+  'Follow-up Scheduled': 'Follow-up Pending',
+  'Visit Planned': 'Follow-up Pending',
+  'Visited': 'Visited Store',
+  'Shopping In Progress': 'Interested',
+  'Shopping Confirmed': 'Shopping Date Confirmed',
+  'Completed': 'Converted',
+  'Not Interested': 'Not Interested',
+  'Cancelled': 'Cancelled',
+};
+
+const STATUS_TABS = [
+  'All Customers', 'New Registration', 'Contact Pending', 'Contacted',
+  'Follow-up Scheduled', 'Visit Planned', 'Visited',
+  'Shopping In Progress', 'Shopping Confirmed', 'Completed', 'Not Interested'
+];
 
 interface WeddingCustomer {
   id: number;
-  registrationId?: string;
-  customerName: string;
-  mobile: string;
+  customer_code: string;
+  customer_name: string;
+  mobile_number: string;
+  alternate_mobile?: string;
   email?: string;
-  locationId?: number;
-  locationName?: string;
-  weddingDate?: string;
-  dateFlexibility?: string;
-  functions?: string;
-  shoppingCategory?: string;
-  preferredShoppingDate?: string;
-  preferredTime?: string;
-  contactMethod?: string;
-  status: string;
-  callStatus?: string;
-  visitStatus?: string;
-  shoppingStatus?: string;
-  nextFollowUp?: string;
-  assignedTelecallerName?: string;
-  registrationDate?: string;
+  location_id?: number;
+  location_name?: string;
+  location_code?: string;
+  wedding_date?: string;
+  wedding_date_flexibility?: string;
+  wedding_functions?: string;
+  preferred_shopping_category?: string;
+  preferred_shopping_date?: string;
+  preferred_call_time?: string;
+  preferred_contact_method?: string;
+  customer_status: string;
+  call_status?: string;
+  follow_up_date?: string;
+  assigned_telecaller?: string;
+  assigned_telecaller_id?: number;
+  created_at?: string;
+  total_calls_count?: number;
+  last_call_date?: string;
+  last_call_outcome?: string;
+  customer_notes?: string;
+  bride_name?: string;
+  groom_name?: string;
+  budget_range?: string;
+  lead_source?: string;
+  priority?: string;
+  overdue_days?: number;
+}
+
+// Map backend row to frontend display shape
+function mapCustomer(row: WeddingCustomer) {
+  const displayStatus = DB_TO_DISPLAY[row.customer_status] || row.customer_status || '';
+  return {
+    ...row,
+    registrationId: row.customer_code,
+    customerName: row.customer_name,
+    mobile: row.mobile_number,
+    locationName: row.location_name,
+    locationCode: row.location_code,
+    weddingDate: row.wedding_date,
+    dateFlexibility: row.wedding_date_flexibility,
+    functions: row.wedding_functions,
+    shoppingCategory: row.preferred_shopping_category,
+    preferredShoppingDate: row.preferred_shopping_date,
+    preferredTime: row.preferred_call_time,
+    contactMethod: row.preferred_contact_method,
+    status: displayStatus,
+    rawStatus: row.customer_status,
+    callStatus: row.call_status,
+    nextFollowUp: row.follow_up_date,
+    assignedTelecallerName: row.assigned_telecaller,
+    registrationDate: row.created_at,
+    totalCalls: row.total_calls_count || 0,
+    lastCallDate: row.last_call_date,
+    lastCallOutcome: row.last_call_outcome,
+    alternateMobile: row.alternate_mobile,
+    brideName: row.bride_name,
+    groomName: row.groom_name,
+    budgetRange: row.budget_range,
+    leadSource: row.lead_source,
+    priority: row.priority,
+    overdueDays: row.overdue_days || 0,
+  };
 }
 
 export default function WeddingOperationsDesk() {
@@ -47,12 +128,13 @@ export default function WeddingOperationsDesk() {
     return subscribeSidebarCollapsed(setCollapsed);
   }, []);
 
-  const [customers, setCustomers] = useState<WeddingCustomer[]>([]);
-  const [filtered, setFiltered] = useState<WeddingCustomer[]>([]);
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [filtered, setFiltered] = useState<any[]>([]);
   const [activeFilter, setActiveFilter] = useState(() => searchParams.get('filter') || 'All Customers');
   const [searchQuery, setSearchQuery] = useState('');
 
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [stats, setStats] = useState<any>({});
 
@@ -62,27 +144,49 @@ export default function WeddingOperationsDesk() {
   const [toDate, setToDate] = useState('');
 
   // View/Edit Modals
-  const [detailCustomer, setDetailCustomer] = useState<WeddingCustomer | null>(null);
+  const [detailCustomer, setDetailCustomer] = useState<any | null>(null);
   const [statusModalOpen, setStatusModalOpen] = useState(false);
-  const [selectedCustomer, setSelectedCustomer] = useState<WeddingCustomer | null>(null);
+  const [selectedCustomer, setSelectedCustomer] = useState<any | null>(null);
   const [newStatus, setNewStatus] = useState('');
 
   const loadData = useCallback(async () => {
     setLoading(true);
+    setError('');
     try {
-      // Fetch both customers and stats concurrently
       const [customersRes, statsRes] = await Promise.all([
         API.getWeddingCustomers({ limit: 5000 }),
         API.getWeddingEnhancedDashboard()
       ]);
 
-      if (customersRes?.customers) {
-        setCustomers(customersRes.customers);
-      }
-      if (statsRes?.data) {
-        setStats(statsRes.data);
-      }
+      // Map snake_case backend rows to camelCase frontend fields
+      const rawCustomers = customersRes?.customers || customersRes?.data?.customers || [];
+      setCustomers(rawCustomers.map(mapCustomer));
+
+      // Extract stats: API layer spreads res.data, so stats may be at statsRes.stats or statsRes.data.stats
+      const rawStats = statsRes?.stats || statsRes?.data?.stats || {};
+      const rawLocationCards = statsRes?.locationCards || statsRes?.data?.locationCards || [];
+      
+      // Compute pending follow-ups (customers with follow_up_date >= today and not in terminal states)
+      const today = new Date().toISOString().slice(0, 10);
+      const allCustomers = rawCustomers;
+      const pendingFollowups = allCustomers.filter((c: any) =>
+        c.follow_up_date && c.follow_up_date >= today &&
+        !['Converted', 'Visited Store', 'Not Interested', 'Cancelled', 'Closed'].includes(c.customer_status)
+      ).length;
+
+      setStats({
+        totalCustomers: rawStats.totalCustomers || 0,
+        newRegistrations: rawStats.todayRegistrations || 0,
+        pendingFollowups,
+        overdueFollowups: rawStats.overdueFollowUps || 0,
+        upcomingWeddings: rawStats.upcomingWeddings30 || 0,
+        shoppingConfirmed: rawStats.shoppingConfirmed || 0,
+        visitsScheduled: (rawStats.todayVisits || 0) + (rawStats.todayAppointments || 0),
+        todayFollowups: rawStats.todayFollowUps || 0,
+        locationCards: rawLocationCards,
+      });
     } catch (err: any) {
+      setError(err.message || 'Failed to load wedding operations data');
       showToast('Could not load wedding operations data: ' + err.message, 'error');
     } finally {
       setLoading(false);
@@ -101,25 +205,62 @@ export default function WeddingOperationsDesk() {
   useEffect(() => {
     let list = [...customers];
 
+    // Date Range Filter — filter by created_at (registration date) or follow_up_date
     if (activeRange && activeRange !== 'all') {
+      const now = new Date();
+      const todayStr = now.toISOString().slice(0, 10);
+      const yesterdayDate = new Date(now);
+      yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+      const yesterdayStr = yesterdayDate.toISOString().slice(0, 10);
+
+      const startOfWeek = new Date(now);
+      startOfWeek.setDate(now.getDate() - now.getDay());
+      const startOfWeekStr = startOfWeek.toISOString().slice(0, 10);
+
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const startOfMonthStr = startOfMonth.toISOString().slice(0, 10);
+
+      const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+      const startOfLastMonthStr = startOfLastMonth.toISOString().slice(0, 10);
+      const endOfLastMonthStr = endOfLastMonth.toISOString().slice(0, 10);
+
       list = list.filter(c => {
-        // Use registrationDate as primary filter date if available, fallback to created_at logic
-        const d = c.registrationDate || c.weddingDate || new Date().toISOString();
-        return isDateInRange(new Date(d), activeRange, fromDate, toDate);
+        const dateStr = c.registrationDate || c.created_at || c.follow_up_date || '';
+        if (!dateStr) return false;
+        const d = dateStr.slice(0, 10);
+
+        switch (activeRange) {
+          case 'today': return d === todayStr;
+          case 'yesterday': return d === yesterdayStr;
+          case 'week': return d >= startOfWeekStr && d <= todayStr;
+          case 'month': return d >= startOfMonthStr && d <= todayStr;
+          case 'last_month': return d >= startOfLastMonthStr && d <= endOfLastMonthStr;
+          case 'custom': {
+            if (!fromDate || !toDate) return true;
+            return d >= fromDate && d <= toDate;
+          }
+          default: return true;
+        }
       });
     }
 
+    // Status Filter — match against display status
     if (activeFilter !== 'All Customers') {
       list = list.filter(c => c.status === activeFilter);
     }
 
+    // Search Filter
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       list = list.filter(c =>
         (c.customerName && c.customerName.toLowerCase().includes(q)) ||
         (c.mobile && c.mobile.toLowerCase().includes(q)) ||
         (c.registrationId && c.registrationId.toLowerCase().includes(q)) ||
-        (c.locationName && c.locationName.toLowerCase().includes(q))
+        (c.locationName && c.locationName.toLowerCase().includes(q)) ||
+        (c.email && c.email.toLowerCase().includes(q)) ||
+        (c.assignedTelecallerName && c.assignedTelecallerName.toLowerCase().includes(q)) ||
+        (c.alternateMobile && c.alternateMobile.toLowerCase().includes(q))
       );
     }
     setFiltered(list);
@@ -129,7 +270,8 @@ export default function WeddingOperationsDesk() {
     if (!selectedCustomer || saving) return;
     setSaving(true);
     try {
-      await API.updateWeddingCustomer(selectedCustomer.id, { status: newStatus });
+      const dbStatus = DISPLAY_TO_DB[newStatus] || newStatus;
+      await API.changeWeddingCustomerStatus(selectedCustomer.id, dbStatus);
       showToast(`Status updated to ${newStatus}`, 'success');
       setStatusModalOpen(false);
       loadData();
@@ -144,13 +286,19 @@ export default function WeddingOperationsDesk() {
     if (!status) return <span className="text-slate-400">-</span>;
     const s = status.toLowerCase();
     let cls = 'bg-slate-100 text-slate-700';
-    if (s.includes('new') || s.includes('pending')) cls = 'bg-blue-50 text-blue-700 border-blue-200';
-    if (s.includes('contacted') || s.includes('scheduled')) cls = 'bg-indigo-50 text-indigo-700 border-indigo-200';
-    if (s.includes('visit') || s.includes('progress')) cls = 'bg-amber-50 text-amber-700 border-amber-200';
-    if (s.includes('confirm') || s.includes('completed')) cls = 'bg-emerald-50 text-emerald-700 border-emerald-200';
-    if (s.includes('not interested') || s.includes('cancel')) cls = 'bg-rose-50 text-rose-700 border-rose-200';
+    if (s.includes('new')) cls = 'bg-blue-50 text-blue-700 border-blue-200';
+    if (s.includes('contact pending')) cls = 'bg-orange-50 text-orange-700 border-orange-200';
+    if (s.includes('contacted')) cls = 'bg-indigo-50 text-indigo-700 border-indigo-200';
+    if (s.includes('follow-up') || s.includes('scheduled')) cls = 'bg-violet-50 text-violet-700 border-violet-200';
+    if (s.includes('visit planned')) cls = 'bg-cyan-50 text-cyan-700 border-cyan-200';
+    if (s === 'visited') cls = 'bg-amber-50 text-amber-700 border-amber-200';
+    if (s.includes('shopping in progress')) cls = 'bg-yellow-50 text-yellow-700 border-yellow-200';
+    if (s.includes('shopping confirmed')) cls = 'bg-teal-50 text-teal-700 border-teal-200';
+    if (s.includes('completed')) cls = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+    if (s.includes('not interested')) cls = 'bg-rose-50 text-rose-700 border-rose-200';
+    if (s.includes('cancel')) cls = 'bg-red-50 text-red-700 border-red-200';
 
-    return <span className={`inline-flex px-2 py-1 rounded-full text-[11px] font-bold border ${cls}`}>{status}</span>;
+    return <span className={`inline-flex px-2.5 py-1 rounded-full text-[11px] font-bold border ${cls}`}>{status}</span>;
   };
 
   return (
@@ -161,8 +309,8 @@ export default function WeddingOperationsDesk() {
         <main className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
           <ToastContainer />
 
-          {/* Header */}
           <div className="max-w-7xl mx-auto space-y-6">
+            {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
                 <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Wedding Operations Desk</h1>
@@ -181,8 +329,7 @@ export default function WeddingOperationsDesk() {
                 <button
                   key={range}
                   onClick={() => setActiveRange(range)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${activeRange === range ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'
-                    }`}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${activeRange === range ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'}`}
                 >
                   {range === 'all' ? 'All Time' :
                     range === 'today' ? 'Today' :
@@ -202,7 +349,7 @@ export default function WeddingOperationsDesk() {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden group">
                 <div className="absolute top-0 right-0 p-4 opacity-10 transform translate-x-2 -translate-y-2 group-hover:scale-110 transition-transform"><Heart className="w-16 h-16" /></div>
                 <div className="text-sm font-semibold text-slate-500 mb-1 relative z-10">Total Wedding Customers</div>
@@ -248,7 +395,7 @@ export default function WeddingOperationsDesk() {
             {/* Pipeline Tabs */}
             <div className="bg-white rounded-xl shadow-sm border border-slate-200">
               <div className="flex overflow-x-auto hide-scrollbar border-b border-slate-200 p-2">
-                {['All Customers', 'New Registration', 'Contact Pending', 'Contacted', 'Follow-up Scheduled', 'Visit Planned', 'Visited', 'Shopping In Progress', 'Shopping Confirmed', 'Completed', 'Not Interested'].map(tab => (
+                {STATUS_TABS.map(tab => (
                   <button
                     key={tab}
                     onClick={() => setActiveFilter(tab)}
@@ -266,7 +413,7 @@ export default function WeddingOperationsDesk() {
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <input
                     type="text"
-                    placeholder="Search by ID, name, mobile, location..."
+                    placeholder="Search by ID, name, mobile, email, telecaller, location..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full pl-9 pr-4 py-2 bg-white border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-shadow"
@@ -300,6 +447,18 @@ export default function WeddingOperationsDesk() {
                           </div>
                         </td>
                       </tr>
+                    ) : error ? (
+                      <tr>
+                        <td colSpan={7} className="py-12 text-center text-slate-500">
+                          <div className="flex flex-col items-center justify-center space-y-2">
+                            <Phone className="w-10 h-10 text-rose-300" />
+                            <p className="text-sm font-medium text-rose-600">{error}</p>
+                            <button onClick={loadData} className="text-accent hover:underline text-xs mt-2 font-semibold">
+                              Retry
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
                     ) : filtered.length === 0 ? (
                       <tr>
                         <td colSpan={7} className="py-12 text-center text-slate-500">
@@ -321,22 +480,43 @@ export default function WeddingOperationsDesk() {
                               {c.customerName}
                             </div>
                             <div className="text-xs text-slate-500 font-mono mt-0.5">{c.registrationId || `CUST-${c.id}`}</div>
+                            {c.priority && c.priority !== 'Medium' && (
+                              <span className={`inline-block mt-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${c.priority === 'High' ? 'bg-rose-100 text-rose-700' : 'bg-blue-100 text-blue-700'}`}>
+                                {c.priority}
+                              </span>
+                            )}
                           </td>
                           <td className="py-3 px-4">
                             <div className="text-sm font-medium text-slate-700">{c.mobile}</div>
-                            <div className="text-xs text-slate-500 mt-0.5">{c.locationName || 'N/A'}</div>
+                            {c.alternateMobile && <div className="text-xs text-slate-400">Alt: {c.alternateMobile}</div>}
+                            <div className="text-xs text-slate-500 mt-0.5">{c.locationName || 'N/A'} {c.locationCode ? `(${c.locationCode})` : ''}</div>
                           </td>
                           <td className="py-3 px-4">
-                            <div className="text-sm font-medium text-slate-700">{c.weddingDate ? new Date(c.weddingDate).toLocaleDateString() : 'TBD'}</div>
+                            <div className="text-sm font-medium text-slate-700">{c.weddingDate ? new Date(c.weddingDate).toLocaleDateString('en-IN') : 'TBD'}</div>
                             <div className="text-xs text-slate-500 mt-0.5">{c.shoppingCategory || 'Not specified'}</div>
+                            {(c.brideName || c.groomName) && (
+                              <div className="text-xs text-slate-400 mt-0.5">
+                                {c.brideName && `Bride: ${c.brideName}`}
+                                {c.brideName && c.groomName && ' · '}
+                                {c.groomName && `Groom: ${c.groomName}`}
+                              </div>
+                            )}
                           </td>
                           <td className="py-3 px-4">
                             <div className="text-sm font-medium text-slate-700">{c.assignedTelecallerName || 'Unassigned'}</div>
-                            <div className="text-xs text-slate-500 mt-0.5">{c.nextFollowUp ? new Date(c.nextFollowUp).toLocaleDateString() : 'No follow-up'}</div>
+                            <div className="text-xs text-slate-500 mt-0.5">{c.nextFollowUp ? new Date(c.nextFollowUp).toLocaleDateString('en-IN') : 'No follow-up'}</div>
+                            {c.overdueDays > 0 && (
+                              <span className="inline-block mt-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-100 text-rose-700">
+                                {c.overdueDays}d overdue
+                              </span>
+                            )}
                           </td>
                           <td className="py-3 px-4">
                             <div className="flex flex-col gap-1.5 items-start">
                               {renderStatus(c.status)}
+                              {c.callStatus && (
+                                <span className="text-[10px] text-slate-400 font-medium">Call: {c.callStatus}</span>
+                              )}
                             </div>
                           </td>
                           <td className="py-3 px-4 text-right space-x-2 whitespace-nowrap">
@@ -369,7 +549,7 @@ export default function WeddingOperationsDesk() {
       {/* Customer Details Modal */}
       {detailCustomer && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-full flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
               <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                 <Heart className="w-5 h-5 text-accent" />
@@ -382,17 +562,19 @@ export default function WeddingOperationsDesk() {
 
             <div className="flex-1 overflow-auto p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
                 {/* Basic Details */}
                 <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
                   <h3 className="text-sm font-bold text-slate-900 mb-4 border-b border-slate-100 pb-2 flex items-center gap-2">
                     <User className="w-4 h-4 text-slate-500" /> Basic Details
                   </h3>
                   <div className="space-y-3 text-sm">
-                    <div className="flex justify-between border-b border-slate-50 pb-2"><span className="text-slate-500">ID</span><span className="font-semibold text-slate-800 font-mono">{detailCustomer.registrationId || detailCustomer.id}</span></div>
+                    <div className="flex justify-between border-b border-slate-50 pb-2"><span className="text-slate-500">Customer ID</span><span className="font-semibold text-slate-800 font-mono">{detailCustomer.registrationId || detailCustomer.id}</span></div>
+                    <div className="flex justify-between border-b border-slate-50 pb-2"><span className="text-slate-500">Name</span><span className="font-medium text-slate-800">{detailCustomer.customerName}</span></div>
                     <div className="flex justify-between border-b border-slate-50 pb-2"><span className="text-slate-500">Mobile</span><span className="font-medium text-slate-800">{detailCustomer.mobile}</span></div>
+                    {detailCustomer.alternateMobile && <div className="flex justify-between border-b border-slate-50 pb-2"><span className="text-slate-500">Alt Mobile</span><span className="font-medium text-slate-800">{detailCustomer.alternateMobile}</span></div>}
                     <div className="flex justify-between border-b border-slate-50 pb-2"><span className="text-slate-500">Email</span><span className="font-medium text-slate-800">{detailCustomer.email || 'N/A'}</span></div>
-                    <div className="flex justify-between"><span className="text-slate-500">Location</span><span className="font-medium text-slate-800">{detailCustomer.locationName || 'N/A'}</span></div>
+                    <div className="flex justify-between border-b border-slate-50 pb-2"><span className="text-slate-500">Location</span><span className="font-medium text-slate-800">{detailCustomer.locationName || 'N/A'} {detailCustomer.locationCode ? `(${detailCustomer.locationCode})` : ''}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-500">Registered</span><span className="font-medium text-slate-800">{detailCustomer.registrationDate ? new Date(detailCustomer.registrationDate).toLocaleDateString('en-IN') : 'N/A'}</span></div>
                   </div>
                 </div>
 
@@ -402,10 +584,12 @@ export default function WeddingOperationsDesk() {
                     <Heart className="w-4 h-4 text-slate-500" /> Wedding & Shopping
                   </h3>
                   <div className="space-y-3 text-sm">
-                    <div className="flex justify-between border-b border-slate-50 pb-2"><span className="text-slate-500">Wedding Date</span><span className="font-medium text-slate-800">{detailCustomer.weddingDate ? new Date(detailCustomer.weddingDate).toLocaleDateString() : 'N/A'}</span></div>
+                    <div className="flex justify-between border-b border-slate-50 pb-2"><span className="text-slate-500">Wedding Date</span><span className="font-medium text-slate-800">{detailCustomer.weddingDate ? new Date(detailCustomer.weddingDate).toLocaleDateString('en-IN') : 'TBD'}</span></div>
                     <div className="flex justify-between border-b border-slate-50 pb-2"><span className="text-slate-500">Date Flexibility</span><span className="font-medium text-slate-800">{detailCustomer.dateFlexibility || 'N/A'}</span></div>
                     <div className="flex justify-between border-b border-slate-50 pb-2"><span className="text-slate-500">Shopping Category</span><span className="font-medium text-slate-800">{detailCustomer.shoppingCategory || 'N/A'}</span></div>
-                    <div className="flex justify-between"><span className="text-slate-500">Functions</span><span className="font-medium text-slate-800">{detailCustomer.functions || 'N/A'}</span></div>
+                    <div className="flex justify-between border-b border-slate-50 pb-2"><span className="text-slate-500">Bride</span><span className="font-medium text-slate-800">{detailCustomer.brideName || 'N/A'}</span></div>
+                    <div className="flex justify-between border-b border-slate-50 pb-2"><span className="text-slate-500">Groom</span><span className="font-medium text-slate-800">{detailCustomer.groomName || 'N/A'}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-500">Budget</span><span className="font-medium text-slate-800">{detailCustomer.budgetRange || 'N/A'}</span></div>
                   </div>
                 </div>
 
@@ -416,8 +600,10 @@ export default function WeddingOperationsDesk() {
                   </h3>
                   <div className="space-y-3 text-sm">
                     <div className="flex justify-between border-b border-slate-50 pb-2"><span className="text-slate-500">Assigned Telecaller</span><span className="font-medium text-slate-800">{detailCustomer.assignedTelecallerName || 'N/A'}</span></div>
-                    <div className="flex justify-between border-b border-slate-50 pb-2"><span className="text-slate-500">Next Follow-up</span><span className="font-medium text-slate-800">{detailCustomer.nextFollowUp ? new Date(detailCustomer.nextFollowUp).toLocaleDateString() : 'N/A'}</span></div>
-                    <div className="flex justify-between border-b border-slate-50 pb-2"><span className="text-slate-500">Preferred Visit Date</span><span className="font-medium text-slate-800">{detailCustomer.preferredShoppingDate ? new Date(detailCustomer.preferredShoppingDate).toLocaleDateString() : 'N/A'}</span></div>
+                    <div className="flex justify-between border-b border-slate-50 pb-2"><span className="text-slate-500">Next Follow-up</span><span className="font-medium text-slate-800">{detailCustomer.nextFollowUp ? new Date(detailCustomer.nextFollowUp).toLocaleDateString('en-IN') : 'N/A'}</span></div>
+                    <div className="flex justify-between border-b border-slate-50 pb-2"><span className="text-slate-500">Preferred Time</span><span className="font-medium text-slate-800">{detailCustomer.preferredTime || 'N/A'}</span></div>
+                    <div className="flex justify-between border-b border-slate-50 pb-2"><span className="text-slate-500">Total Calls</span><span className="font-medium text-slate-800">{detailCustomer.totalCalls || 0}</span></div>
+                    <div className="flex justify-between border-b border-slate-50 pb-2"><span className="text-slate-500">Last Call</span><span className="font-medium text-slate-800">{detailCustomer.lastCallDate ? new Date(detailCustomer.lastCallDate).toLocaleDateString('en-IN') : 'N/A'}</span></div>
                     <div className="flex justify-between"><span className="text-slate-500">Customer Status</span><span>{renderStatus(detailCustomer.status)}</span></div>
                   </div>
                 </div>
