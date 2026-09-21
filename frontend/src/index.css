@@ -467,24 +467,6 @@ html, #root, * {
   }
 }
 
-/* --- Contrast Overrides for Midnight Navy Theme --- */
-/* Since primary is a dark color (#101C36), dark text on it must be white for high contrast. */
-.bg-primary.text-primary,
-.bg-navy.text-primary,
-.bg-primary-hover.text-primary,
-.bg-primary .text-primary,
-.bg-navy .text-primary,
-.bg-primary-light.text-primary {
-  color: #FFFFFF !important;
-}
-.bg-primary-soft .text-primary,
-.bg-primary-soft.text-primary {
-  color: var(--color-primary) !important;
-}
-
-/* Ensure white text on primary backgrounds */
-.bg-primary *:not(.bg-emerald-600):not(.bg-teal-700):not(.bg-red-600):not(.bg-green-600):not(.bg-amber-600) {
-  color: inherit;
-}
+/* Removed dangerous global contrast overrides that override child elements */
 
 

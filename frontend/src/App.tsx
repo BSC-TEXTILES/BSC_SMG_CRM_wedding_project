@@ -51,6 +51,7 @@ import WeddingReports from './pages/wedding/WeddingReports';
 import WeddingImport from './pages/wedding/WeddingImport';
 import { LocationProvider } from './context/LocationContext';
 import QuickActionCenter from './components/ui/QuickActionCenter';
+import ChatWidget from './components/ui/ChatWidget';
 import RouteGuard from './components/RouteGuard';
 import UserTracker from './components/UserTracker';
 import DevToolsGuard from './components/DevToolsGuard';
@@ -59,11 +60,20 @@ import ErrorBoundary from './components/ErrorBoundary';
 import SessionTimeoutGuard from './components/SessionTimeoutGuard';
 import DesktopModeWarning from './components/DesktopModeWarning';
 import { useUrlGuard } from './hooks/useUrlGuard';
+import { Auth } from './services/api';
 
 /** Monitors every URL change for unauthorized access — triggers force-logout on violation. */
 function UrlGuardMonitor() {
   useUrlGuard();
   return null;
+}
+
+/** Renders ChatWidget only for authenticated users on non-public pages */
+function AuthChatWidget() {
+  const publicPaths = ['/', '/login', '/forgot-password', '/apply', '/applicants/register', '/wedding-registration', '/track', '/feedback-public', '/feedback-qr', '/greeter', '/tv'];
+  const isPublic = publicPaths.includes(window.location.pathname);
+  if (isPublic || !Auth.check()) return null;
+  return <ChatWidget />;
 }
 
 export default function App() {
@@ -152,6 +162,7 @@ export default function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <QuickActionCenter />
+      <AuthChatWidget />
       <SessionTimeoutGuard />
       <DevToolsGuard />
       <DesktopModeWarning />

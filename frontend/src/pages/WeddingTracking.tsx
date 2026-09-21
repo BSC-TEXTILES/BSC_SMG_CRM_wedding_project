@@ -82,12 +82,12 @@ export default function WeddingTracking() {
       <ToastContainer />
 
       {/* Header */}
-      <header className="bg-[#3D2B1F] p-4 sm:p-5 text-black shadow-lg border-b border-[#D4A58A]/30">
+      <header className="bg-[#3D2B1F] p-4 sm:p-5 shadow-lg border-b border-[#D4A58A]/30">
         <div className="max-w-3xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img src="/logo.png" alt="BSC Logo" className="w-11 h-11 object-contain rounded-xl bg-white p-1 shadow-md" />
             <div>
-              <h1 className="font-extrabold text-base sm:text-lg leading-tight">BSC Wedding Tracking</h1>
+              <h1 className="font-extrabold text-base sm:text-lg text-white leading-tight">BSC Wedding Tracking</h1>
               <div className="text-[10px] text-[#D4A58A] font-bold uppercase tracking-widest mt-0.5">
                 Track your wedding shopping request
               </div>
@@ -139,10 +139,10 @@ export default function WeddingTracking() {
             <button
               onClick={handleTrack}
               disabled={loading}
-              className="w-full py-3 bg-[#3D2B1F] hover:bg-[#5D4E42] text-black font-bold rounded-xl shadow-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full py-3 bg-[#3D2B1F] hover:bg-[#5D4E42] text-white font-bold rounded-xl shadow-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {loading ? (
-                <span>Checking your request...</span>
+                <span className="text-white">Checking your request...</span>
               ) : (
                 <>
                   <Search className="w-4 h-4" />
@@ -179,7 +179,7 @@ export default function WeddingTracking() {
         {result && (
           <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-[#E8DDD4]">
             {/* Status Banner */}
-            <div className="bg-gradient-to-r from-[#3D2B1F] to-[#5D4E42] p-6 text-black text-center">
+            <div className="bg-gradient-to-r from-[#3D2B1F] to-[#5D4E42] p-6 text-center">
               <Sparkles className="w-8 h-8 text-[#D4A58A] mx-auto mb-2" />
               <h3 className="text-xs font-bold uppercase tracking-widest text-[#D4A58A] mb-1">Wedding Request</h3>
               <p className="text-xl font-mono font-black tracking-wider">{result.registration_id}</p>
@@ -253,7 +253,7 @@ export default function WeddingTracking() {
                       const isCurrent = idx === result.status_timeline.length - 1;
                       return (
                         <div key={status} className={`flex items-center gap-3 p-2 rounded-lg ${isCurrent ? 'bg-[#3D2B1F]/5 border border-[#3D2B1F]/10' : ''}`}>
-                          <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${isCurrent ? 'bg-[#3D2B1F] text-black' : 'bg-[#E8DDD4] text-[#9A8D82]'}`}>
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${isCurrent ? 'bg-[#3D2B1F] text-white' : 'bg-[#E8DDD4] text-[#9A8D82]'}`}>
                             {isCurrent ? <CircleCheck className="w-3.5 h-3.5" /> : <span className="text-[10px] font-bold">{idx + 1}</span>}
                           </div>
                           <span className={`text-xs font-bold ${isCurrent ? 'text-[#3D2B1F]' : 'text-[#9A8D82]'}`}>{status}</span>

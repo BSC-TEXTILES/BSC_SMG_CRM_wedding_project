@@ -176,7 +176,7 @@ export default function EmployeeProfileModal({ employee, onClose, onUpdated }: E
       <div className="relative w-full max-w-4xl max-h-[92vh] bg-background rounded-3xl shadow-2xl flex flex-col z-10 overflow-hidden border-2 border-accent/50">
         
         {/* Top Header Banner */}
-        <div className="bg-gradient-to-r from-primary via-primary to-[#3D2B1F] text-black p-5 sm:p-6 border-b-2 border-accent/40 relative">
+        <div className="bg-gradient-to-r from-primary via-primary to-[#3D2B1F] text-white p-5 sm:p-6 border-b-2 border-accent/40 relative">
           {/* Action Buttons Header Top Right */}
           <div className="absolute top-4 right-4 flex items-center gap-2">
             {!isEditing ? (
@@ -191,7 +191,7 @@ export default function EmployeeProfileModal({ employee, onClose, onUpdated }: E
             ) : (
               <button
                 onClick={() => setIsEditing(false)}
-                className="px-3.5 py-1.5 text-xs font-black rounded-xl bg-black/20 hover:bg-black/30 text-black transition-all flex items-center gap-1.5"
+                className="px-3.5 py-1.5 text-xs font-black rounded-xl bg-white/20 hover:bg-white/30 text-white transition-all flex items-center gap-1.5"
               >
                 <RotateCcw className="w-4 h-4" />
                 <span>Cancel Edit</span>
@@ -200,7 +200,7 @@ export default function EmployeeProfileModal({ employee, onClose, onUpdated }: E
 
             <button
               onClick={onClose}
-              className="p-2 rounded-2xl bg-black/10 text-black hover:bg-black/20 transition-all border border-black/20 shadow-md"
+              className="p-2 rounded-2xl bg-white/10 text-white hover:bg-white/20 transition-all border border-white/20 shadow-md"
               title="Close Profile"
             >
               <X className="w-5 h-5" />
@@ -218,7 +218,7 @@ export default function EmployeeProfileModal({ employee, onClose, onUpdated }: E
                   onError={(e) => { e.currentTarget.style.display = 'none'; }}
                 />
               ) : (
-                <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-3xl bg-gradient-to-br from-primary to-primary-hover text-black font-black text-3xl sm:text-4xl flex items-center justify-center border-4 border-accent shadow-2xl">
+                <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-3xl bg-gradient-to-br from-primary to-primary-hover text-white font-black text-3xl sm:text-4xl flex items-center justify-center border-4 border-accent shadow-2xl">
                   {currentEmp.initials || empName.slice(0, 2).toUpperCase()}
                 </div>
               )}
@@ -230,32 +230,32 @@ export default function EmployeeProfileModal({ employee, onClose, onUpdated }: E
             {/* Header Text Details */}
             <div className="text-center sm:text-left space-y-1.5 min-w-0 pr-24">
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                <h2 className="font-black text-black text-xl sm:text-2xl tracking-tight">{empName}</h2>
+                <h2 className="font-black text-white text-xl sm:text-2xl tracking-tight">{empName}</h2>
                 <StatusBadge status={currentEmp.status || 'Joined'} size="sm" />
               </div>
 
-              <div className="text-xs text-accent font-extrabold font-mono flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                <span className="px-2.5 py-0.5 rounded-lg bg-black/10 border border-black/15 text-amber-300">{empCode}</span>
-                <span>•</span>
-                <span className="text-black font-bold">{desig}</span>
-                <span>•</span>
-                <span className="text-black font-normal">Department: {dept}</span>
+              <div className="text-xs text-amber-400 font-extrabold font-mono flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                <span className="px-2.5 py-0.5 rounded-lg bg-white/10 border border-white/20 text-amber-300">{empCode}</span>
+                <span className="text-white/50">•</span>
+                <span className="text-white font-bold">{desig}</span>
+                <span className="text-white/50">•</span>
+                <span className="text-white font-normal">Department: {dept}</span>
               </div>
 
-              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 pt-1 text-xs text-black">
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 pt-1 text-xs text-white/90">
                 {currentEmp.phone && (
-                  <a href={`tel:${currentEmp.phone}`} className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-black/10 hover:bg-black/20 transition-all text-amber-300 font-bold border border-black/10">
+                  <a href={`tel:${currentEmp.phone}`} className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white/10 hover:bg-white/20 transition-all text-amber-300 font-bold border border-white/10">
                     <Phone className="w-3.5 h-3.5" />
                     <span>{currentEmp.phone}</span>
                   </a>
                 )}
                 {currentEmp.email && (
-                  <a href={`mailto:${currentEmp.email}`} className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-black/10 hover:bg-black/20 transition-all text-black/90 font-semibold border border-black/10">
-                    <Mail className="w-3.5 h-3.5 text-accent" />
+                  <a href={`mailto:${currentEmp.email}`} className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white/10 hover:bg-white/20 transition-all text-white/90 font-semibold border border-white/10">
+                    <Mail className="w-3.5 h-3.5 text-amber-400" />
                     <span>{currentEmp.email}</span>
                   </a>
                 )}
-                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-xl bg-black/10 border border-black/10 text-emerald-300 font-bold">
+                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-xl bg-white/10 border border-white/10 text-emerald-300 font-bold">
                   <Layers className="w-3.5 h-3.5" /> Section: {section}
                 </span>
               </div>
@@ -276,7 +276,7 @@ export default function EmployeeProfileModal({ employee, onClose, onUpdated }: E
               onClick={() => setActiveTab(t.id as any)}
               className={`px-4 py-2 rounded-xl whitespace-nowrap transition-all text-xs font-black ${
                 activeTab === t.id
-                  ? 'bg-primary text-accent shadow-md ring-1 ring-accent/30'
+                  ? 'bg-primary text-white shadow-md ring-1 ring-accent/50'
                   : 'text-[#5D4E42] hover:bg-background hover:text-primary'
               }`}
             >
@@ -309,14 +309,14 @@ export default function EmployeeProfileModal({ employee, onClose, onUpdated }: E
                     </div>
                     <div className="p-4 rounded-2xl bg-white border border-accent-soft shadow-xs space-y-1">
                       <span className="text-[10px] uppercase font-black text-primary">Assigned Section</span>
-                      <div className="text-base font-extrabold text-accent">{section}</div>
+                      <div className="text-base font-extrabold text-amber-700">{section}</div>
                     </div>
                   </div>
 
                   {/* Compensation Breakdown */}
                   <div className="p-5 rounded-2xl bg-white border border-accent-soft shadow-xs space-y-3">
                     <h4 className="font-black text-primary uppercase text-xs tracking-wider border-b border-accent-soft pb-2 flex items-center gap-2">
-                      <DollarSign className="w-4 h-4 text-accent" />
+                      <DollarSign className="w-4 h-4 text-amber-600" />
                       <span>Compensation & Package Breakdown</span>
                     </h4>
                     <div className="grid grid-cols-3 gap-3 text-center">
@@ -328,9 +328,9 @@ export default function EmployeeProfileModal({ employee, onClose, onUpdated }: E
                         <div className="text-[9px] uppercase font-black text-emerald-800 mb-0.5">Monthly Incentive</div>
                         <div className="text-base font-bold text-emerald-700 font-mono">{sal.incentive > 0 ? `+₹${sal.incentive.toLocaleString('en-IN')}` : 'Included'}</div>
                       </div>
-                      <div className="bg-black p-3 rounded-xl border border-amber-200 shadow-2xs">
-                        <div className="text-[9px] uppercase font-black text-amber-900 mb-0.5">Total Package</div>
-                        <div className="text-base font-black text-slate-900 font-mono">₹{sal.total.toLocaleString('en-IN')}</div>
+                      <div className="bg-primary p-3 rounded-xl border border-amber-400 shadow-2xs">
+                        <div className="text-[9px] uppercase font-black text-amber-400 mb-0.5">Total Package</div>
+                        <div className="text-base font-black text-white font-mono">₹{sal.total.toLocaleString('en-IN')}</div>
                       </div>
                     </div>
                   </div>
@@ -338,12 +338,12 @@ export default function EmployeeProfileModal({ employee, onClose, onUpdated }: E
                   {/* Organization Placement */}
                   <div className="p-5 rounded-2xl bg-white border border-accent-soft shadow-xs space-y-3">
                     <h4 className="font-black text-primary uppercase text-xs tracking-wider border-b border-accent-soft pb-2 flex items-center gap-2">
-                      <Building className="w-4 h-4 text-accent" />
+                      <Building className="w-4 h-4 text-amber-600" />
                       <span>Store Floor & Department Assignment</span>
                     </h4>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                       <div><span className="text-primary block text-[10.5px] font-bold">Department</span><span className="font-extrabold text-primary text-sm">{dept}</span></div>
-                      <div><span className="text-primary block text-[10.5px] font-bold">Floor Section</span><span className="font-extrabold text-accent text-sm">{section}</span></div>
+                      <div><span className="text-primary block text-[10.5px] font-bold">Floor Section</span><span className="font-extrabold text-amber-700 text-sm">{section}</span></div>
                       <div><span className="text-primary block text-[10.5px] font-bold">Designation Role</span><span className="font-extrabold text-primary">{desig}</span></div>
                       <div><span className="text-primary block text-[10.5px] font-bold">Reporting Manager</span><span className="font-extrabold text-primary">{currentEmp.reportingManager || currentEmp.reporting_manager || 'Store Manager'}</span></div>
                       <div><span className="text-primary block text-[10.5px] font-bold">Store Branch</span><span className="font-extrabold text-primary">{currentEmp.branch || 'BSC EXCLUSIVE DAVANAGERE'}</span></div>
@@ -358,7 +358,7 @@ export default function EmployeeProfileModal({ employee, onClose, onUpdated }: E
                 <div className="space-y-4 animate-fade-in">
                   <div className="p-5 rounded-2xl bg-white border border-accent-soft shadow-xs space-y-4">
                     <h4 className="font-black text-primary uppercase text-xs tracking-wider border-b border-accent-soft pb-2 flex items-center gap-2">
-                      <User className="w-4 h-4 text-accent" />
+                      <User className="w-4 h-4 text-amber-600" />
                       <span>Personal Profile & Identification</span>
                     </h4>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -373,7 +373,7 @@ export default function EmployeeProfileModal({ employee, onClose, onUpdated }: E
 
                   <div className="p-5 rounded-2xl bg-white border border-accent-soft shadow-xs space-y-4">
                     <h4 className="font-black text-primary uppercase text-xs tracking-wider border-b border-accent-soft pb-2 flex items-center gap-2">
-                      <MapPin className="w-4 h-4 text-accent" />
+                      <MapPin className="w-4 h-4 text-amber-600" />
                       <span>Contact Address & Family Background</span>
                     </h4>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -392,7 +392,7 @@ export default function EmployeeProfileModal({ employee, onClose, onUpdated }: E
                 <div className="space-y-4 animate-fade-in">
                   <div className="p-5 rounded-2xl bg-white border border-accent-soft shadow-xs space-y-4">
                     <h4 className="font-black text-primary uppercase text-xs tracking-wider border-b border-accent-soft pb-2 flex items-center gap-2">
-                      <Briefcase className="w-4 h-4 text-accent" />
+                      <Briefcase className="w-4 h-4 text-amber-600" />
                       <span>Work Experience & Prior Employment</span>
                     </h4>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -418,7 +418,7 @@ export default function EmployeeProfileModal({ employee, onClose, onUpdated }: E
                 <div className="space-y-4 animate-fade-in">
                   <div className="p-5 rounded-2xl bg-white border border-accent-soft shadow-xs space-y-4">
                     <h4 className="font-black text-primary uppercase text-xs tracking-wider border-b border-accent-soft pb-2 flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-accent" />
+                      <FileText className="w-4 h-4 text-amber-600" />
                       <span>Onboarded Documents & Verification Links</span>
                     </h4>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -430,7 +430,7 @@ export default function EmployeeProfileModal({ employee, onClose, onUpdated }: E
                           className="p-3 rounded-xl border border-accent-soft bg-background hover:bg-primary hover:text-white transition-all flex items-center justify-between font-bold group"
                         >
                           <span>📷 Staff Profile Photo</span>
-                          <ExternalLink className="w-4 h-4 text-accent group-hover:text-black" />
+                          <ExternalLink className="w-4 h-4 text-amber-600 group-hover:text-black" />
                         </a>
                       )}
                       {fileUrl(currentEmp.aadhaarUrl || currentEmp.aadharUrl || currentEmp.aadhaar_url || currentEmp.aadhar_url) && (
@@ -441,7 +441,7 @@ export default function EmployeeProfileModal({ employee, onClose, onUpdated }: E
                           className="p-3 rounded-xl border border-accent-soft bg-background hover:bg-primary hover:text-white transition-all flex items-center justify-between font-bold group"
                         >
                           <span>📄 Aadhaar Card Document</span>
-                          <ExternalLink className="w-4 h-4 text-accent group-hover:text-black" />
+                          <ExternalLink className="w-4 h-4 text-amber-600 group-hover:text-black" />
                         </a>
                       )}
                       {fileUrl(currentEmp.resumeUrl) && (
@@ -452,7 +452,7 @@ export default function EmployeeProfileModal({ employee, onClose, onUpdated }: E
                           className="p-3 rounded-xl border border-accent-soft bg-background hover:bg-primary hover:text-white transition-all flex items-center justify-between font-bold group"
                         >
                           <span>📑 Employee Resume / CV</span>
-                          <ExternalLink className="w-4 h-4 text-accent group-hover:text-black" />
+                          <ExternalLink className="w-4 h-4 text-amber-600 group-hover:text-black" />
                         </a>
                       )}
                     </div>
@@ -469,7 +469,7 @@ export default function EmployeeProfileModal({ employee, onClose, onUpdated }: E
             /* EDIT FORM MODE */
             <div className="space-y-4 animate-fade-in bg-white p-5 rounded-2xl border border-accent/40 shadow-md">
               <h3 className="font-black text-primary text-sm uppercase tracking-wider border-b border-accent-soft pb-2 flex items-center gap-2">
-                <Edit3 className="w-4 h-4 text-accent" />
+                <Edit3 className="w-4 h-4 text-amber-600" />
                 <span>Edit Complete Employee Record</span>
               </h3>
 
@@ -510,7 +510,7 @@ export default function EmployeeProfileModal({ employee, onClose, onUpdated }: E
                     type="text"
                     value={editForm.section}
                     onChange={(e) => setEditForm({ ...editForm, section: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-accent-soft text-xs font-black text-accent outline-none focus:ring-2 focus:ring-accent/40"
+                    className="w-full px-3 py-2 rounded-xl border border-accent-soft text-xs font-black text-amber-700 outline-none focus:ring-2 focus:ring-accent/40"
                   />
                 </div>
 
