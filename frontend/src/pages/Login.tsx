@@ -230,11 +230,11 @@ export default function LoginPage() {
 
       <div className="w-full max-w-md bg-white rounded-3xl overflow-hidden shadow-2xl border border-accent-soft animate-fade-in">
         {/* Card Header */}
-        <div className="bg-primary p-6 flex items-center gap-4 border-b border-accent/30">
-          <img src="/logo.png" alt="BSC Logo" className="w-12 h-12 object-contain rounded-2xl bg-white p-1.5 shadow-md border border-accent/30" />
+        <div className="bg-[#101C36] p-6 flex items-center gap-4 border-b border-[#C9A45C]/30 shadow-sm">
+          <img src="/logo.png" alt="BSC Logo" className="w-12 h-12 object-contain rounded-2xl bg-white p-1.5 shadow-md border border-[#C9A45C]/30" />
           <div>
-            <h2 className="text-lg font-black text-primary leading-tight tracking-tight">Enterprise Operations Portal</h2>
-            <div className="text-[10px] text-accent font-bold uppercase tracking-widest mt-0.5">
+            <h2 className="text-lg font-black text-white leading-tight tracking-tight">Enterprise Operations Portal</h2>
+            <div className="text-[11px] text-[#E5C378] font-extrabold uppercase tracking-wider mt-0.5">
               BSC EXCLUSIVE · MULTI-LOCATION SYSTEM
             </div>
           </div>
@@ -243,8 +243,8 @@ export default function LoginPage() {
         {/* Card Body */}
         <form onSubmit={handleLogin} className="p-7 space-y-5">
           <div>
-            <h3 className="text-xl font-black text-primary tracking-tight">Welcome Back</h3>
-            <p className="text-xs text-primary font-medium mt-1">Sign in with your authorized system credentials. Your location will be loaded automatically.</p>
+            <h3 className="text-xl font-black text-slate-900 tracking-tight">Welcome Back</h3>
+            <p className="text-xs text-slate-600 font-medium mt-1">Sign in with your authorized system credentials. Your location will be loaded automatically.</p>
           </div>
 
           {/* Security Violation Alert */}
@@ -291,11 +291,11 @@ export default function LoginPage() {
           )}
 
           <div className="space-y-1.5">
-            <label className="block text-[10.5px] font-black uppercase tracking-wider text-primary">
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-800">
               Username / Email
             </label>
             <div className="relative">
-              <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-primary" />
+              <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
               <input
                 type="text"
                 name="username"
@@ -305,18 +305,18 @@ export default function LoginPage() {
                 onChange={(e) => setUsername(e.target.value)}
                 onBlur={() => { if (username.trim()) checkServerLock(username.trim()); }}
                 placeholder="admin@bsctextiles.com"
-                className="w-full text-xs font-semibold pl-10 pr-4 py-3 rounded-xl border border-accent-soft bg-white text-primary placeholder-primary/60 focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all shadow-xs disabled:bg-gray-100 disabled:cursor-not-allowed"
+                className="w-full text-xs font-semibold pl-10 pr-4 py-3 rounded-xl border border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#101C36] focus:ring-2 focus:ring-[#101C36]/20 transition-all shadow-xs disabled:bg-gray-100 disabled:cursor-not-allowed"
                 required
               />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <label className="block text-[10.5px] font-black uppercase tracking-wider text-primary">
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-800">
               Password
             </label>
             <div className="relative">
-              <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-primary" />
+              <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
               <input
                 type={showPassword ? "text" : "password"}
                 name="password"
@@ -325,13 +325,13 @@ export default function LoginPage() {
                 disabled={isLocked && lockRemainingSeconds > 0}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••••"
-                className="w-full text-xs font-semibold pl-10 pr-10 py-3 rounded-xl border border-accent-soft bg-white text-primary placeholder-primary/60 focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all shadow-xs disabled:bg-gray-100 disabled:cursor-not-allowed"
+                className="w-full text-xs font-semibold pl-10 pr-10 py-3 rounded-xl border border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#101C36] focus:ring-2 focus:ring-[#101C36]/20 transition-all shadow-xs disabled:bg-gray-100 disabled:cursor-not-allowed"
                 required
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-primary/60 hover:text-primary transition-colors focus:outline-none"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-800 transition-colors focus:outline-none"
                 aria-label={showPassword ? "Hide password" : "Show password"}
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -340,12 +340,12 @@ export default function LoginPage() {
           </div>
 
           <div className="space-y-1.5">
-            <label className="block text-[10.5px] font-black uppercase tracking-wider text-primary">
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-800">
               Security Code
             </label>
             <div className="flex items-center gap-2.5">
               <div className="relative flex-1">
-                <Hash className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-primary" />
+                <Hash className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
                 <input
                   type="text"
                   name="captcha"
@@ -359,7 +359,7 @@ export default function LoginPage() {
                   }}
                   placeholder={`Enter ${codeLength} digits`}
                   inputMode="numeric"
-                  className="w-full text-xs font-semibold pl-10 pr-3 py-3 rounded-xl border border-accent-soft bg-white text-primary placeholder-primary/60 focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all shadow-xs tracking-widest disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className="w-full text-xs font-bold pl-10 pr-3 py-3 rounded-xl border border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#101C36] focus:ring-2 focus:ring-[#101C36]/20 transition-all shadow-xs tracking-widest disabled:bg-gray-100 disabled:cursor-not-allowed"
                   required
                 />
               </div>
@@ -377,7 +377,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => { loadCaptcha(true); setCountdown(30); }}
-                  className="p-2 rounded-lg border border-accent-soft text-primary hover:bg-background transition-colors"
+                  className="p-2 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100 transition-colors"
                   title="Load a new security code"
                   aria-label="Refresh captcha"
                 >
@@ -385,7 +385,7 @@ export default function LoginPage() {
                 </button>
               </div>
             </div>
-            <p className="text-[10px] text-primary font-medium">Refreshes automatically in {countdown}s for your security.</p>
+            <p className="text-[11px] text-slate-600 font-medium">Refreshes automatically in {countdown}s for your security.</p>
           </div>
 
           <div className="flex justify-between items-center">
@@ -393,15 +393,15 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => setShowPrivacyPolicy(true)}
-                className="text-xs text-accent font-bold hover:underline"
+                className="text-xs text-slate-700 hover:text-slate-900 font-bold hover:underline"
               >
                 Privacy Policy
               </button>
-              <span className="text-xs text-primary/40">•</span>
+              <span className="text-xs text-slate-400">•</span>
               <button
                 type="button"
                 onClick={() => setShowTermsModal(true)}
-                className="text-xs text-accent font-bold hover:underline"
+                className="text-xs text-slate-700 hover:text-slate-900 font-bold hover:underline"
               >
                 Terms
               </button>
@@ -409,7 +409,7 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => navigate('/forgot-password')}
-              className="text-xs text-accent font-bold hover:underline"
+              className="text-xs text-slate-700 hover:text-slate-900 font-bold hover:underline"
             >
               Forgot password?
             </button>
@@ -418,7 +418,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading || (isLocked && lockRemainingSeconds > 0)}
-            className="w-full py-3.5 px-4 rounded-xl bg-primary text-white font-extrabold text-xs tracking-wide hover:bg-primary-hover active:scale-[0.99] transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-3.5 px-4 rounded-xl bg-[#101C36] text-white font-extrabold text-xs tracking-wide hover:bg-[#07101F] active:scale-[0.99] transition-all shadow-lg shadow-[#101C36]/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? (
               <>
@@ -438,39 +438,39 @@ export default function LoginPage() {
             )}
           </button>
 
-          <div className="pt-2 border-t border-accent-soft space-y-2">
+          <div className="pt-2 border-t border-slate-200 space-y-2">
             <button
               type="button"
               onClick={() => navigate('/wedding-registration')}
-              className="w-full py-3 px-4 rounded-xl border-2 border-primary text-primary bg-white font-extrabold text-xs tracking-wide hover:bg-background active:scale-[0.99] transition-all shadow-xs flex items-center justify-center gap-2"
+              className="w-full py-3 px-4 rounded-xl border border-slate-300 text-slate-800 bg-white font-bold text-xs tracking-wide hover:bg-slate-50 active:scale-[0.99] transition-all shadow-xs flex items-center justify-center gap-2"
             >
               <span>Register for Wedding Shopping</span>
-              <Sparkles className="w-4 h-4" />
+              <Sparkles className="w-4 h-4 text-amber-600" />
             </button>
             <button
               type="button"
               onClick={() => navigate('/track')}
-              className="w-full py-2.5 px-4 rounded-xl border border-[#D4A58A] text-[#3D2B1F] bg-[#FBF8F5] font-bold text-xs tracking-wide hover:bg-[#F5F0EB] active:scale-[0.99] transition-all flex items-center justify-center gap-2"
+              className="w-full py-2.5 px-4 rounded-xl border border-slate-300 text-slate-800 bg-white font-bold text-xs tracking-wide hover:bg-slate-50 active:scale-[0.99] transition-all shadow-xs flex items-center justify-center gap-2"
             >
-              <Search className="w-3.5 h-3.5" />
+              <Search className="w-3.5 h-3.5 text-slate-600" />
               <span>Track Wedding Request</span>
             </button>
           </div>
         </form>
 
         {/* Card Footer */}
-        <div className="bg-background px-7 py-3.5 border-t border-accent-soft flex items-center justify-between text-[10px] text-primary font-semibold">
-          <span className="flex items-center gap-1">
-            <ShieldCheck className="w-3.5 h-3.5 text-accent" />
+        <div className="bg-slate-50 px-7 py-3.5 border-t border-slate-200 flex items-center justify-between text-xs text-slate-700 font-semibold">
+          <span className="flex items-center gap-1.5">
+            <ShieldCheck className="w-4 h-4 text-emerald-600" />
             <span>Authorized access only · Location auto-assigned</span>
           </span>
-          <span className="font-black text-primary">BSC v3.0</span>
+          <span className="font-bold text-slate-800">BSC v3.0</span>
         </div>
       </div>
 
       {/* Location Info Note */}
-      <div className="mt-4 flex items-center gap-1.5 text-[10px] text-primary font-medium">
-        <MapPin className="w-3 h-3 text-accent" />
+      <div className="mt-4 flex items-center gap-1.5 text-xs text-slate-700 font-medium">
+        <MapPin className="w-3.5 h-3.5 text-slate-500" />
         <span>Your location (Belagavi / Davanagere / Shivamogga) is assigned by the System Admin</span>
       </div>
 

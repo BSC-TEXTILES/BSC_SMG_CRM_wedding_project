@@ -87,11 +87,11 @@ export default function ForgotPasswordPage() {
 
       <div className="w-full max-w-md bg-white rounded-3xl overflow-hidden shadow-2xl border border-accent-soft animate-fade-in">
         {/* Card Header */}
-        <div className="bg-primary p-6 flex items-center gap-4 border-b border-accent/30">
-          <img src="/logo.png" alt="BSC Logo" className="w-12 h-12 object-contain rounded-2xl bg-white p-1.5 shadow-md border border-accent/30" />
+        <div className="bg-[#101C36] p-6 flex items-center gap-4 border-b border-[#C9A45C]/30 shadow-sm">
+          <img src="/logo.png" alt="BSC Logo" className="w-12 h-12 object-contain rounded-2xl bg-white p-1.5 shadow-md border border-[#C9A45C]/30" />
           <div>
-            <h2 className="text-lg font-black text-primary leading-tight tracking-tight">Password Reset</h2>
-            <div className="text-[10px] text-accent font-bold uppercase tracking-widest mt-0.5">
+            <h2 className="text-lg font-black text-white leading-tight tracking-tight">Password Reset</h2>
+            <div className="text-[11px] text-[#E5C378] font-extrabold uppercase tracking-wider mt-0.5">
               BSC EXCLUSIVE · MULTI-LOCATION SYSTEM
             </div>
           </div>
