@@ -348,8 +348,30 @@ const authorizeModule = (moduleName, action = 'can_view') => {
   };
 };
 
+/**
+ * optionalAuthenticate — verifies JWT if present, otherwise creates a mock user from x-device-id header.
+ * Used for public endpoints like the AI chatbot.
+ */
+const optionalAuthenticate = async (req, res, next) => {
+  const token = req.headers.authorization?.split(' ')[1] || req.headers['x-auth-token'];
+  if (!token) {
+    req.user = { id: req.headers['x-device-id'] || 'anonymous', role: 'Guest' };
+    return next();
+  }
+
+  try {
+    const decoded = jwt.verify(token, getJwtSecret());
+    req.user = decoded;
+    return next();
+  } catch (err) {
+    req.user = { id: req.headers['x-device-id'] || 'anonymous', role: 'Guest' };
+    return next();
+  }
+};
+
 module.exports = {
   authenticate,
+  optionalAuthenticate,
   authorize,
   authorizeModule,
   authorizeLocationAccess,

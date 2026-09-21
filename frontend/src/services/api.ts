@@ -155,6 +155,12 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
     }
   }
 
+  // Device ID for anonymous tracking
+  const deviceId = typeof localStorage !== 'undefined' ? localStorage.getItem('bsc_chat_device_id') : null;
+  if (deviceId) {
+    headers['x-device-id'] = deviceId;
+  }
+
   // Dynamic multi-location header injection
   const activeLoc = typeof localStorage !== 'undefined' ? localStorage.getItem('bsc_selected_location') : null;
   if (activeLoc && activeLoc !== 'ALL') {

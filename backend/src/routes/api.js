@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { authenticate, authorize, authorizeLocationAccess } = require('../middleware/auth');
+const { authenticate, authorize, authorizeLocationAccess, optionalAuthenticate } = require('../middleware/auth');
 const { autoInitializeDatabase } = require('../config/dbInitializer');
 const db = require('../config/db');
 const upload = require('../middleware/upload');
@@ -198,9 +198,9 @@ router.post('/broadcasts', authenticate, authorize('Admin', 'Super Admin'), broa
 router.delete('/broadcasts/:id', authenticate, authorize('Admin', 'Super Admin'), broadcastController.deleteBroadcast);
 
 // ── Chat Routes ─────────────────────────────────────────
-router.get('/chat/messages', authenticate, crmController.getChatMessages);
-router.post('/chat/send', authenticate, crmController.sendChatMessage);
-router.delete('/chat/messages', authenticate, crmController.clearChatMessages);
+router.get('/chat/messages', optionalAuthenticate, crmController.getChatMessages);
+router.post('/chat/send', optionalAuthenticate, crmController.sendChatMessage);
+router.delete('/chat/messages', optionalAuthenticate, crmController.clearChatMessages);
 
 // ── Dept Hiring & Section Allocation Routes ───────────────
 router.get('/dept-hiring/targets', authenticate, authorizeLocationAccess(), deptHiringController.getHiringTargets);

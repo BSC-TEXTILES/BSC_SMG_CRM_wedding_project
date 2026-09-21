@@ -68,11 +68,8 @@ function UrlGuardMonitor() {
   return null;
 }
 
-/** Renders ChatWidget only for authenticated users on non-public pages */
+/** Renders ChatWidget for all users */
 function AuthChatWidget() {
-  const publicPaths = ['/', '/login', '/forgot-password', '/apply', '/applicants/register', '/wedding-registration', '/track', '/feedback-public', '/feedback-qr', '/greeter', '/tv'];
-  const isPublic = publicPaths.includes(window.location.pathname);
-  if (isPublic || !Auth.check()) return null;
   return <ChatWidget />;
 }
 

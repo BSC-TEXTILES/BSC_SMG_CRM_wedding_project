@@ -1359,10 +1359,10 @@ exports.getFeedbacks = async (req, res) => {
 };
 
 // ── Chat System (Gemini AI) ─────────────────────────────────────────────────
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
-const GEMINI_MODEL = 'gemini-2.0-flash';
-const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+const GEMINI_MODEL = 'gemini-2.0-flash'; // using gemini-2.0-flash as it was previously defined
 
 const SYSTEM_PROMPT = `You are BSC Enterprise AI Assistant — a helpful internal assistant for BSC Textiles staff.
 You help with: employee info, attendance, candidates, wedding CRM, feedback, reports, store operations.
@@ -1459,56 +1459,36 @@ exports.clearChatMessages = async (req, res) => {
 
 async function callGemini(userMessage, contextMessages) {
   try {
-    // Build conversation history for Gemini
-    const contents = [];
+    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
 
-    // Add system instruction as user message
-    contents.push({ role: 'user', parts: [{ text: SYSTEM_PROMPT }] });
-    contents.push({ role: 'model', parts: [{ text: 'Understood. I am the BSC Enterprise AI Assistant. I will help staff with their queries about employees, attendance, candidates, wedding CRM, feedback, reports, and store operations. How can I assist you?' }] });
+    // Build conversation history for Gemini
+    const history = [];
+
+    // System instruction is supplied as the first user message
+    history.push({ role: 'user', parts: [{ text: SYSTEM_PROMPT }] });
+    history.push({ role: 'model', parts: [{ text: 'Understood. I am the BSC Enterprise AI Assistant. I will help staff with their queries about employees, attendance, candidates, wedding CRM, feedback, reports, and store operations. How can I assist you?' }] });
 
     // Add recent conversation context
     for (const msg of contextMessages) {
       if (msg.sender === 'user') {
-        contents.push({ role: 'user', parts: [{ text: msg.message_text }] });
+        history.push({ role: 'user', parts: [{ text: msg.message_text }] });
       } else {
-        contents.push({ role: 'model', parts: [{ text: msg.message_text }] });
+        history.push({ role: 'model', parts: [{ text: msg.message_text }] });
       }
     }
 
-    // Add current message (avoid duplicate if last context message is same)
-    const lastCtx = contextMessages.length > 0 ? contextMessages[contextMessages.length - 1] : null;
-    if (!lastCtx || lastCtx.message_text !== userMessage || lastCtx.sender !== 'user') {
-      contents.push({ role: 'user', parts: [{ text: userMessage }] });
-    }
-
-    const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents,
-        generationConfig: {
-          temperature: 0.7,
-          topK: 40,
-          topP: 0.95,
-          maxOutputTokens: 1024,
-        },
-        safetySettings: [
-          { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
-          { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
-          { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
-          { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' }
-        ]
-      })
+    const chat = model.startChat({
+      history,
+      generationConfig: {
+        maxOutputTokens: 1024,
+      },
     });
 
-    if (!response.ok) {
-      const errBody = await response.text();
-      console.error('[Gemini API Error]', response.status, errBody);
-      return 'I apologize, but I am temporarily unable to process your request. Please try again in a moment.';
-    }
-
-    const data = await response.json();
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    const result = await chat.sendMessage(userMessage);
+    const response = await result.response;
+    const text = response.text();
+    
     if (text) {
       return text.trim();
     }

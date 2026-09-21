@@ -21,6 +21,13 @@ export default function ChatWidget() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [unreadCount, setUnreadCount] = useState(0);
 
+  // Generate or retrieve an anonymous device ID for unauthenticated users
+  useEffect(() => {
+    if (!localStorage.getItem('bsc_chat_device_id')) {
+      localStorage.setItem('bsc_chat_device_id', 'anon_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9));
+    }
+  }, []);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -134,7 +141,7 @@ export default function ChatWidget() {
       {/* Floating Chat Toggle Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 border-2 ${
+        className={`fixed bottom-6 right-24 z-50 w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 border-2 ${
           isOpen
             ? 'bg-slate-800 text-white border-slate-700 rotate-0'
             : 'bg-accent text-white border-accent/50 hover:scale-110 hover:shadow-accent/30'
@@ -166,7 +173,7 @@ export default function ChatWidget() {
               </div>
               <div>
                 <h3 className="text-sm font-bold">AI Assistant</h3>
-                <p className="text-[10px] text-slate-400">Powered by Gemini</p>
+                <p className="text-[10px] text-slate-500">Powered by Gemini</p>
               </div>
             </div>
             <div className="flex items-center gap-1">
@@ -207,18 +214,18 @@ export default function ChatWidget() {
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-3 space-y-3 min-h-0 bg-slate-50">
             {isInitialLoading ? (
-              <div className="h-full flex flex-col items-center justify-center text-slate-400 space-y-2">
+              <div className="h-full flex flex-col items-center justify-center text-slate-500 space-y-2">
                 <RefreshCw className="w-6 h-6 animate-spin text-slate-300" />
                 <p className="text-xs font-medium">Loading...</p>
               </div>
             ) : messages.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-slate-400 space-y-3 px-4">
+              <div className="h-full flex flex-col items-center justify-center text-slate-500 space-y-3 px-4">
                 <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center">
                   <MessageSquare className="w-6 h-6 text-accent" />
                 </div>
                 <div className="text-center">
                   <p className="text-xs font-semibold text-slate-600">AI Chat Assistant</p>
-                  <p className="text-[10px] text-slate-400 mt-0.5">Ask me anything about BSC Enterprise</p>
+                  <p className="text-[10px] text-slate-500 mt-0.5">Ask me anything about BSC Enterprise</p>
                 </div>
               </div>
             ) : (
@@ -231,7 +238,7 @@ export default function ChatWidget() {
                   }`}>
                     <p className="whitespace-pre-wrap break-words">{msg.text}</p>
                     <div className={`flex items-center gap-1 mt-1 text-[9px] font-medium ${
-                      msg.sender === 'user' ? 'text-slate-400' : 'text-slate-400'
+                      msg.sender === 'user' ? 'text-slate-500' : 'text-slate-500'
                     }`}>
                       <span>{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                       {msg.sender === 'user' && msg.status === 'sending' && (
@@ -274,7 +281,7 @@ export default function ChatWidget() {
                 )}
               </button>
             </div>
-            <p className="text-[9px] text-slate-400 text-center mt-1.5">Press Enter to send</p>
+            <p className="text-[9px] text-slate-500 text-center mt-1.5">Press Enter to send</p>
           </form>
         </div>
       )}
