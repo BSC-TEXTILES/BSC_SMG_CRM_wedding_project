@@ -7,6 +7,7 @@ import ToastContainer, { showToast } from '../../components/Toast';
 import { API, Auth, UserSession } from '../../services/api';
 import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../../utils/sidebarState';
 import WeddingNav from './WeddingNav';
+import LocationFilterSelect from '../../components/ui/LocationFilterSelect';
 import {
   BarChart3,
   TrendingUp,
@@ -32,8 +33,22 @@ export default function WeddingReports() {
 
   const [loading, setLoading] = useState(true);
   const [reportType, setReportType] = useState('conversion');
-  const [locationFilter, setLocationFilter] = useState<number | ''>('');
+  const [locationFilter, setLocationFilter] = useState<number | ''>(() => {
+    const saved = typeof localStorage !== 'undefined' ? localStorage.getItem('bsc_selected_location') : null;
+    return saved && saved !== 'ALL' ? Number(saved) : '';
+  });
   const [locations, setLocations] = useState<any[]>([]);
+
+  // Listen to global location changes (e.g. from Topbar)
+  useEffect(() => {
+    const handleLocChange = (e: any) => {
+      const locId = e?.detail?.locationId;
+      const parsed = locId && locId !== 'ALL' ? Number(locId) : '';
+      setLocationFilter(parsed);
+    };
+    window.addEventListener('bsc_location_changed', handleLocChange);
+    return () => window.removeEventListener('bsc_location_changed', handleLocChange);
+  }, []);
 
   const [reportData, setReportData] = useState<any>(null);
   const [telecallerPerf, setTelecallerPerf] = useState<any[]>([]);
@@ -118,21 +133,11 @@ export default function WeddingReports() {
           <WeddingNav
             currentPageTitle="Wedding CRM Reports & Analytics"
             actions={
-              <div className="flex items-center gap-2">
-                {session?.isGlobalAdmin && (
-                  <select
-                    value={locationFilter}
-                    onChange={(e) => setLocationFilter(e.target.value ? Number(e.target.value) : '')}
-                    className="px-3 py-2 bg-white border border-[#DFDDD7] rounded-xl text-xs font-bold text-[#182033]"
-                  >
-                    <option value="">🌐 All Locations</option>
-                    {locations.map((loc) => (
-                      <option key={loc.id} value={loc.id}>
-                        📍 {loc.name}
-                      </option>
-                    ))}
-                  </select>
-                )}
+              <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                <LocationFilterSelect
+                  value={locationFilter}
+                  onChange={(val) => setLocationFilter(val)}
+                />
                 <button
                   onClick={handleExport}
                   className="px-3.5 py-2 bg-white hover:bg-[#F6F4EF] border border-[#DFDDD7] rounded-xl text-xs font-bold text-[#182033] flex items-center gap-1.5 shadow-xs transition-colors"

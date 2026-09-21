@@ -5,22 +5,22 @@ import Topbar from '../components/Topbar';
 import ToastContainer, { showToast } from '../components/Toast';
 import { API, Auth, UserSession } from '../services/api';
 import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../utils/sidebarState';
-import { 
-  MessageSquare, 
-  Search, 
-  Filter, 
-  Download, 
-  RefreshCw, 
-  ThumbsUp, 
-  ThumbsDown, 
-  Star, 
-  Calendar, 
-  TrendingUp, 
-  Phone, 
-  User, 
-  X, 
-  Eye, 
-  AlertCircle, 
+import {
+  MessageSquare,
+  Search,
+  Filter,
+  Download,
+  RefreshCw,
+  ThumbsUp,
+  ThumbsDown,
+  Star,
+  Calendar,
+  TrendingUp,
+  Phone,
+  User,
+  X,
+  Eye,
+  AlertCircle,
   CheckCircle,
   Sparkles,
   ArrowUpRight,
@@ -327,7 +327,7 @@ export default function FeedbackCollection() {
                 <option value="week">This Week</option>
                 <option value="month">This Month</option>
                 <option value="last_month">Last Month</option>
-                <option value="custom">Custom Range</option>
+                <option value="custom">Custom date</option>
               </select>
 
               {datePreset === 'custom' && (
@@ -473,7 +473,7 @@ export default function FeedbackCollection() {
           {selectedFeedback && (
             <div className="fixed inset-0 bg-primary/70 backdrop-blur-md z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto animate-fade-in">
               <div className="card-glass max-w-5xl w-full p-6 sm:p-8 space-y-6 animate-scale-in max-h-[92vh] overflow-y-auto shadow-2xl rounded-3xl border border-black/40 bg-white/95 text-primary">
-                
+
                 {/* 1. Header Redesign */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-accent-soft pb-5">
                   <div className="space-y-1">
@@ -624,11 +624,10 @@ export default function FeedbackCollection() {
                           <span className="text-xs font-bold text-primary uppercase tracking-wider">
                             {qItem.label}
                           </span>
-                          <span className={`px-3 py-1 rounded-xl text-xs font-extrabold shadow-2xs ${
-                            isNegVal 
-                              ? 'bg-rose-100 text-rose-800 border border-rose-300/40' 
+                          <span className={`px-3 py-1 rounded-xl text-xs font-extrabold shadow-2xs ${isNegVal
+                              ? 'bg-rose-100 text-rose-800 border border-rose-300/40'
                               : 'bg-emerald-100 text-emerald-800 border border-emerald-300/40'
-                          }`}>
+                            }`}>
                             {valStr}
                           </span>
                         </div>
@@ -651,8 +650,8 @@ export default function FeedbackCollection() {
                         <span>Liked Most</span>
                       </div>
                       <p className="text-xs font-semibold text-emerald-950 whitespace-pre-line">
-                        {selectedFeedback.voice?.includes('Liked Most:') 
-                          ? selectedFeedback.voice.split('Liked Most:')[1]?.split('\n')[0] 
+                        {selectedFeedback.voice?.includes('Liked Most:')
+                          ? selectedFeedback.voice.split('Liked Most:')[1]?.split('\n')[0]
                           : 'Satisfied with overall experience.'}
                       </p>
                     </div>
@@ -663,8 +662,8 @@ export default function FeedbackCollection() {
                         <span>Can Improve</span>
                       </div>
                       <p className="text-xs font-semibold text-black whitespace-pre-line">
-                        {selectedFeedback.voice?.includes('Can Improve:') 
-                          ? selectedFeedback.voice.split('Can Improve:')[1]?.split('\n')[0] 
+                        {selectedFeedback.voice?.includes('Can Improve:')
+                          ? selectedFeedback.voice.split('Can Improve:')[1]?.split('\n')[0]
                           : 'No specific improvements noted.'}
                       </p>
                     </div>
@@ -702,9 +701,8 @@ export default function FeedbackCollection() {
                     </div>
 
                     <div className="p-3 rounded-2xl bg-background border border-accent-soft text-center">
-                      <div className={`w-6 h-6 rounded-full font-bold text-xs flex items-center justify-center mx-auto mb-1 ${
-                        selectedFeedback.isNegative ? 'bg-rose-500 text-white' : 'bg-emerald-500 text-white'
-                      }`}>3</div>
+                      <div className={`w-6 h-6 rounded-full font-bold text-xs flex items-center justify-center mx-auto mb-1 ${selectedFeedback.isNegative ? 'bg-rose-500 text-white' : 'bg-emerald-500 text-white'
+                        }`}>3</div>
                       <div className="text-[11px] font-extrabold text-primary">{selectedFeedback.isNegative ? 'Call Queue Added' : 'Survey Completed'}</div>
                       <div className="text-[9.5px] text-gray-500 mt-0.5">{selectedFeedback.isNegative ? 'Telecaller Pending' : 'CSAT Verified'}</div>
                     </div>

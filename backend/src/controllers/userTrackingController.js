@@ -290,7 +290,7 @@ async function getUserActivity(req, res) {
     return successRes(res, { 
       activity: rows.map(r => ({
         ...r,
-        details: r.details ? JSON.parse(r.details) : null
+        details: (() => { try { return r.details ? JSON.parse(r.details) : null; } catch { return null; } })()
       })),
       total,
       limit: safeLimit,

@@ -15,6 +15,7 @@ import {
   CALL_TIME_OPTIONS,
   getStatusBadge
 } from './weddingTypes';
+import LocationFilterSelect from '../../components/ui/LocationFilterSelect';
 import {
   PhoneCall,
   PhoneForwarded,
@@ -47,13 +48,28 @@ export default function TelecallerDeskPage() {
   useEffect(() => {
     return subscribeSidebarCollapsed(setCollapsed);
   }, []);
+
   const [activeQueue, setActiveQueue] = useState<'dueToday' | 'overdue' | 'callbacks' | 'upcoming' | 'priority' | 'newLeads' | 'myQueue'>(
     (searchParams.get('queue') as any) || 'dueToday'
   );
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [locationFilter, setLocationFilter] = useState<number | ''>('');
+  const [locationFilter, setLocationFilter] = useState<number | ''>(() => {
+    const saved = typeof localStorage !== 'undefined' ? localStorage.getItem('bsc_selected_location') : null;
+    return saved && saved !== 'ALL' ? Number(saved) : '';
+  });
   const [locations, setLocations] = useState<any[]>([]);
+
+  // Listen to global location changes (e.g. from Topbar)
+  useEffect(() => {
+    const handleLocChange = (e: any) => {
+      const locId = e?.detail?.locationId;
+      const parsed = locId && locId !== 'ALL' ? Number(locId) : '';
+      setLocationFilter(parsed);
+    };
+    window.addEventListener('bsc_location_changed', handleLocChange);
+    return () => window.removeEventListener('bsc_location_changed', handleLocChange);
+  }, []);
 
   const { loading, deskSummary, queueRecords, refreshQueue } = useTelecallerQueue(locationFilter);
 
@@ -191,21 +207,11 @@ export default function TelecallerDeskPage() {
           <WeddingNav
             currentPageTitle="Telecaller Desk & Queues"
             actions={
-              <div className="flex items-center gap-2">
-                {isGlobalOrAdmin && (
-                  <select
-                    value={locationFilter}
-                    onChange={(e) => setLocationFilter(e.target.value ? Number(e.target.value) : '')}
-                    className="px-3 py-2 bg-white border border-[#DFDDD7] rounded-xl text-xs font-bold text-[#182033]"
-                  >
-                    <option value="">🌐 All Locations</option>
-                    {locations.map((loc) => (
-                      <option key={loc.id} value={loc.id}>
-                        📍 {loc.name}
-                      </option>
-                    ))}
-                  </select>
-                )}
+              <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                <LocationFilterSelect
+                  value={locationFilter}
+                  onChange={(val) => setLocationFilter(val)}
+                />
                 <button
                   onClick={refreshQueue}
                   disabled={loading}

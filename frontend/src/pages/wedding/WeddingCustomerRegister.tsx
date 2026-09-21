@@ -13,26 +13,28 @@ import {
   CALL_OUTCOMES,
   getStatusBadge
 } from './weddingTypes';
+import LocationFilterSelect from '../../components/ui/LocationFilterSelect';
 import {
+  Users,
   Search,
   Filter,
-  Download,
-  UserPlus,
-  RefreshCw,
-  Eye,
+  Plus,
   PhoneCall,
-  MessageCircle,
-  Edit2,
   UserCheck,
+  Building2,
   Calendar,
-  MapPin,
+  Clock,
+  Sparkles,
+  Download,
+  Upload,
+  RefreshCw,
   ChevronLeft,
   ChevronRight,
-  Sparkles,
+  Eye,
+  Edit,
   X,
   CheckCircle2,
-  Clock,
-  ArrowUpDown
+  AlertCircle
 } from 'lucide-react';
 
 export default function WeddingCustomerRegister() {
@@ -45,18 +47,33 @@ export default function WeddingCustomerRegister() {
     return subscribeSidebarCollapsed(setCollapsed);
   }, []);
 
-  const [customers, setCustomers] = useState<WeddingCustomer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [customers, setCustomers] = useState<WeddingCustomer[]>([]);
   const [totalCount, setTotalCount] = useState(0);
 
-  // Filters
+  // Filters - initialized from persistent selection
   const [searchQuery, setSearchQuery] = useState('');
-  const [locationFilter, setLocationFilter] = useState<number | ''>('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [locationFilter, setLocationFilter] = useState<number | ''>(() => {
+    const saved = typeof localStorage !== 'undefined' ? localStorage.getItem('bsc_selected_location') : null;
+    return saved && saved !== 'ALL' ? Number(saved) : '';
+  });
   const [telecallerFilter, setTelecallerFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('all');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
+
+  // Listen to global location changes (e.g. from Topbar)
+  useEffect(() => {
+    const handleLocChange = (e: any) => {
+      const locId = e?.detail?.locationId;
+      const parsed = locId && locId !== 'ALL' ? Number(locId) : '';
+      setLocationFilter(parsed);
+      setCurrentPage(1);
+    };
+    window.addEventListener('bsc_location_changed', handleLocChange);
+    return () => window.removeEventListener('bsc_location_changed', handleLocChange);
+  }, []);
 
   // Pagination & Sorting
   const [currentPage, setCurrentPage] = useState(1);
@@ -279,22 +296,14 @@ export default function WeddingCustomerRegister() {
 
               {/* Location Filter */}
               <div>
-                <select
+                <LocationFilterSelect
                   value={locationFilter}
-                  disabled={!session?.isGlobalAdmin}
-                  onChange={(e) => {
-                    setLocationFilter(e.target.value ? Number(e.target.value) : '');
+                  className="w-full"
+                  onChange={(val) => {
+                    setLocationFilter(val);
                     setCurrentPage(1);
                   }}
-                  className="w-full px-3 py-2 bg-[#F6F4EF] border border-[#DFDDD7] rounded-xl text-xs font-semibold text-[#182033] focus:outline-none focus:border-[#C9A45C]"
-                >
-                  <option value="">🌐 All Locations</option>
-                  {locations.map((l) => (
-                    <option key={l.id} value={l.id}>
-                      📍 {l.name}
-                    </option>
-                  ))}
-                </select>
+                />
               </div>
 
               {/* Status Filter */}

@@ -98,8 +98,8 @@ const getOffers = async (req, res) => {
         remarks: r.remarks || '',
         section: r.cand_section || r.section || '',
         department: r.cand_department || r.department || '',
-        hrScore: r.hr_score_json ? JSON.parse(r.hr_score_json) : null,
-        assignedScore: r.assigned_score_json ? JSON.parse(r.assigned_score_json) : null,
+        hrScore: (() => { try { return r.hr_score_json ? JSON.parse(r.hr_score_json) : null; } catch { return null; } })(),
+        assignedScore: (() => { try { return r.assigned_score_json ? JSON.parse(r.assigned_score_json) : null; } catch { return null; } })(),
         createdAt: r.created_at || null,
         rawDate,
         date: fmt(r.created_at)

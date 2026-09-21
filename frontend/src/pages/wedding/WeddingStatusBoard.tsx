@@ -6,6 +6,7 @@ import ToastContainer, { showToast } from '../../components/Toast';
 import { API, Auth, UserSession } from '../../services/api';
 import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../../utils/sidebarState';
 import WeddingNav from './WeddingNav';
+import LocationFilterSelect from '../../components/ui/LocationFilterSelect';
 import {
   MapPin,
   Heart,
@@ -86,8 +87,22 @@ export default function WeddingStatusBoard() {
 
   const [loading, setLoading] = useState(true);
   const [columnData, setColumnData] = useState<Record<string, any[]>>({});
-  const [locationFilter, setLocationFilter] = useState<number | ''>('');
+  const [locationFilter, setLocationFilter] = useState<number | ''>(() => {
+    const saved = typeof localStorage !== 'undefined' ? localStorage.getItem('bsc_selected_location') : null;
+    return saved && saved !== 'ALL' ? Number(saved) : '';
+  });
   const [locations, setLocations] = useState<any[]>([]);
+
+  // Listen to global location changes (e.g. from Topbar)
+  useEffect(() => {
+    const handleLocChange = (e: any) => {
+      const locId = e?.detail?.locationId;
+      const parsed = locId && locId !== 'ALL' ? Number(locId) : '';
+      setLocationFilter(parsed);
+    };
+    window.addEventListener('bsc_location_changed', handleLocChange);
+    return () => window.removeEventListener('bsc_location_changed', handleLocChange);
+  }, []);
 
   const loadBoard = useCallback(async () => {
     setLoading(true);
@@ -176,22 +191,10 @@ export default function WeddingStatusBoard() {
             currentPageTitle="Wedding Status Pipeline"
             actions={
               <div className="flex items-center gap-2 flex-wrap">
-                {session?.isGlobalAdmin && (
-                  <select
-                    value={locationFilter}
-                    onChange={(e) =>
-                      setLocationFilter(e.target.value ? Number(e.target.value) : '')
-                    }
-                    className="px-3 py-2 bg-white border border-[#DFDDD7] rounded-xl text-xs font-bold text-[#182033]"
-                  >
-                    <option value="">🌐 All Locations</option>
-                    {locations.map((loc) => (
-                      <option key={loc.id} value={loc.id}>
-                        📍 {loc.name}
-                      </option>
-                    ))}
-                  </select>
-                )}
+                <LocationFilterSelect
+                  value={locationFilter}
+                  onChange={(val) => setLocationFilter(val)}
+                />
                 <button
                   onClick={loadBoard}
                   disabled={loading}

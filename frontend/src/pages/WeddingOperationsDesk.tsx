@@ -5,7 +5,7 @@ import Topbar from '../components/Topbar';
 import ToastContainer, { showToast } from '../components/Toast';
 import { API, Auth, UserSession } from '../services/api';
 import {
-  Search, FileText, Phone, Calendar, 
+  Search, FileText, Phone, Calendar,
   MapPin, Clock, Edit3, Heart, ShoppingBag, Eye,
   ChevronRight, RefreshCw, X, Save, User
 } from 'lucide-react';
@@ -51,7 +51,7 @@ export default function WeddingOperationsDesk() {
   const [filtered, setFiltered] = useState<WeddingCustomer[]>([]);
   const [activeFilter, setActiveFilter] = useState(() => searchParams.get('filter') || 'All Customers');
   const [searchQuery, setSearchQuery] = useState('');
-  
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [stats, setStats] = useState<any>({});
@@ -75,7 +75,7 @@ export default function WeddingOperationsDesk() {
         API.getWeddingCustomers({ limit: 5000 }),
         API.getWeddingEnhancedDashboard()
       ]);
-      
+
       if (customersRes?.customers) {
         setCustomers(customersRes.customers);
       }
@@ -112,12 +112,12 @@ export default function WeddingOperationsDesk() {
     if (activeFilter !== 'All Customers') {
       list = list.filter(c => c.status === activeFilter);
     }
-    
+
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      list = list.filter(c => 
-        (c.customerName && c.customerName.toLowerCase().includes(q)) || 
-        (c.mobile && c.mobile.toLowerCase().includes(q)) || 
+      list = list.filter(c =>
+        (c.customerName && c.customerName.toLowerCase().includes(q)) ||
+        (c.mobile && c.mobile.toLowerCase().includes(q)) ||
         (c.registrationId && c.registrationId.toLowerCase().includes(q)) ||
         (c.locationName && c.locationName.toLowerCase().includes(q))
       );
@@ -149,7 +149,7 @@ export default function WeddingOperationsDesk() {
     if (s.includes('visit') || s.includes('progress')) cls = 'bg-amber-50 text-amber-700 border-amber-200';
     if (s.includes('confirm') || s.includes('completed')) cls = 'bg-emerald-50 text-emerald-700 border-emerald-200';
     if (s.includes('not interested') || s.includes('cancel')) cls = 'bg-rose-50 text-rose-700 border-rose-200';
-    
+
     return <span className={`inline-flex px-2 py-1 rounded-full text-[11px] font-bold border ${cls}`}>{status}</span>;
   };
 
@@ -160,7 +160,7 @@ export default function WeddingOperationsDesk() {
         <Topbar title="Wedding Operations Desk" session={session} onMenuClick={() => setSidebarOpen(true)} />
         <main className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
           <ToastContainer />
-          
+
           {/* Header */}
           <div className="max-w-7xl mx-auto space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -181,16 +181,15 @@ export default function WeddingOperationsDesk() {
                 <button
                   key={range}
                   onClick={() => setActiveRange(range)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                    activeRange === range ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'
-                  }`}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${activeRange === range ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'
+                    }`}
                 >
                   {range === 'all' ? 'All Time' :
-                   range === 'today' ? 'Today' :
-                   range === 'yesterday' ? 'Yesterday' :
-                   range === 'week' ? 'This Week' :
-                   range === 'month' ? 'This Month' :
-                   range === 'last_month' ? 'Last Month' : 'Custom Range'}
+                    range === 'today' ? 'Today' :
+                      range === 'yesterday' ? 'Yesterday' :
+                        range === 'week' ? 'This Week' :
+                          range === 'month' ? 'This Month' :
+                            range === 'last_month' ? 'Last Month' : 'Custom date'}
                 </button>
               ))}
               {activeRange === 'custom' && (
@@ -253,11 +252,10 @@ export default function WeddingOperationsDesk() {
                   <button
                     key={tab}
                     onClick={() => setActiveFilter(tab)}
-                    className={`shrink-0 whitespace-nowrap px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-                      activeFilter === tab 
-                        ? 'bg-accent/10 text-accent shadow-sm' 
+                    className={`shrink-0 whitespace-nowrap px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeFilter === tab
+                        ? 'bg-accent/10 text-accent shadow-sm'
                         : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
-                    }`}
+                      }`}
                   >
                     {tab}
                   </button>
@@ -266,9 +264,9 @@ export default function WeddingOperationsDesk() {
               <div className="p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-50/50">
                 <div className="relative max-w-sm w-full">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <input 
-                    type="text" 
-                    placeholder="Search by ID, name, mobile, location..." 
+                  <input
+                    type="text"
+                    placeholder="Search by ID, name, mobile, location..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full pl-9 pr-4 py-2 bg-white border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-shadow"
@@ -342,14 +340,14 @@ export default function WeddingOperationsDesk() {
                             </div>
                           </td>
                           <td className="py-3 px-4 text-right space-x-2 whitespace-nowrap">
-                            <button 
+                            <button
                               onClick={() => navigate(`/wedding-crm/customers/${c.id}`)}
                               className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 text-slate-600 hover:bg-[#101C36] hover:text-[#C9A45C] transition-colors"
                               title="View Customer Profile"
                             >
                               <Eye className="w-4 h-4" />
                             </button>
-                            <button 
+                            <button
                               onClick={() => { setSelectedCustomer(c); setNewStatus(c.status || 'Contacted'); setStatusModalOpen(true); }}
                               className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 text-slate-600 hover:bg-[#101C36] hover:text-[#C9A45C] transition-colors"
                               title="Update Status"
@@ -381,10 +379,10 @@ export default function WeddingOperationsDesk() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             <div className="flex-1 overflow-auto p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                
+
                 {/* Basic Details */}
                 <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
                   <h3 className="text-sm font-bold text-slate-900 mb-4 border-b border-slate-100 pb-2 flex items-center gap-2">
@@ -425,13 +423,13 @@ export default function WeddingOperationsDesk() {
                 </div>
 
                 <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col items-center justify-center text-center">
-                   <p className="text-sm text-slate-500 mb-4">View comprehensive history, remarks, and complete activity timeline.</p>
-                   <button 
-                     onClick={() => navigate(`/wedding-crm/customers/${detailCustomer.id}`)}
-                     className="px-5 py-2.5 bg-[#101C36] hover:bg-[#07101F] text-[#C9A45C] font-black rounded-xl text-xs shadow-sm transition-all flex items-center gap-2 border border-[#C9A45C]/30"
-                   >
-                     <FileText className="w-4 h-4" /> View Full Profile
-                   </button>
+                  <p className="text-sm text-slate-500 mb-4">View comprehensive history, remarks, and complete activity timeline.</p>
+                  <button
+                    onClick={() => navigate(`/wedding-crm/customers/${detailCustomer.id}`)}
+                    className="px-5 py-2.5 bg-[#101C36] hover:bg-[#07101F] text-[#C9A45C] font-black rounded-xl text-xs shadow-sm transition-all flex items-center gap-2 border border-[#C9A45C]/30"
+                  >
+                    <FileText className="w-4 h-4" /> View Full Profile
+                  </button>
                 </div>
               </div>
             </div>

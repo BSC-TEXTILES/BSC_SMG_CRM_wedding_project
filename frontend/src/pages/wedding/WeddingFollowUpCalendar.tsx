@@ -7,6 +7,7 @@ import { API, Auth, UserSession } from '../../services/api';
 import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../../utils/sidebarState';
 import WeddingNav from './WeddingNav';
 import { WeddingCustomer, getStatusBadge } from './weddingTypes';
+import LocationFilterSelect from '../../components/ui/LocationFilterSelect';
 import {
   Calendar as CalendarIcon,
   ChevronLeft,
@@ -40,9 +41,22 @@ export default function WeddingFollowUpCalendar() {
   const [selectedDayEvents, setSelectedDayEvents] = useState<any[]>([]);
   const [selectedDateStr, setSelectedDateStr] = useState<string | null>(null);
 
-  // Filters
-  const [locationFilter, setLocationFilter] = useState<number | ''>('');
-  const [locations, setLocations] = useState<any[]>([]);
+  // Filters - initialized from persistent selection
+  const [locationFilter, setLocationFilter] = useState<number | ''>(() => {
+    const saved = typeof localStorage !== 'undefined' ? localStorage.getItem('bsc_selected_location') : null;
+    return saved && saved !== 'ALL' ? Number(saved) : '';
+  });
+
+  // Listen to global location changes (e.g. from Topbar)
+  useEffect(() => {
+    const handleLocationChange = (e: any) => {
+      const newLoc = e?.detail?.locationId;
+      const parsed = newLoc && newLoc !== 'ALL' ? Number(newLoc) : '';
+      setLocationFilter(parsed);
+    };
+    window.addEventListener('bsc_location_changed', handleLocationChange);
+    return () => window.removeEventListener('bsc_location_changed', handleLocationChange);
+  }, []);
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -51,37 +65,57 @@ export default function WeddingFollowUpCalendar() {
     setLoading(true);
     try {
       const monthStr = `${year}-${String(month + 1).padStart(2, '0')}`;
-      const [calRes, locsRes] = await Promise.all([
-        API.getWeddingCalendar({
-          month: monthStr,
-          location_id: locationFilter !== '' ? locationFilter : undefined
-        }),
-        API.getLocations().catch(() => ({ locations: [] }))
-      ]);
+      const calRes = await API.getWeddingCalendar({
+        month: monthStr,
+        location_id: locationFilter !== '' ? locationFilter : undefined
+      });
 
-      if (locsRes?.locations) setLocations(locsRes.locations);
-
-      const days = Array.isArray(calRes?.calendarDays)
+      const rawDays = Array.isArray(calRes?.calendarDays)
         ? calRes.calendarDays
         : Array.isArray(calRes?.days)
         ? calRes.days
         : [];
 
+      const allCusts = Array.isArray(calRes?.customers) ? calRes.customers : [];
+      const custMap: Record<string, any[]> = {};
+      allCusts.forEach((c: any) => {
+        const d = c.follow_up_date ? String(c.follow_up_date).slice(0, 10) : null;
+        if (d) {
+          if (!custMap[d]) custMap[d] = [];
+          custMap[d].push(c);
+        }
+      });
+
+      const days = rawDays.map((d: any) => {
+        const dStr = d.date ? String(d.date).slice(0, 10) : '';
+        const dayCusts = d.customers && d.customers.length > 0 ? d.customers : (custMap[dStr] || []);
+        return {
+          ...d,
+          date: dStr,
+          count: Number(d.count || d.total || dayCusts.length || 0),
+          customers: dayCusts
+        };
+      });
+
       setCalendarEvents(days);
 
-      // Default select today
+      // Default select today or keep selected date
       const todayStr = new Date().toISOString().slice(0, 10);
-      const todayEvts = days.find((d: any) => d.date === todayStr);
-      if (todayEvts && Array.isArray(todayEvts.customers)) {
-        setSelectedDateStr(todayStr);
-        setSelectedDayEvents(todayEvts.customers);
+      const activeDate = selectedDateStr || todayStr;
+      const targetDay = days.find((d: any) => d.date === activeDate);
+      if (targetDay) {
+        setSelectedDateStr(activeDate);
+        setSelectedDayEvents(targetDay.customers || []);
+      } else if (days.length > 0) {
+        setSelectedDateStr(days[0].date);
+        setSelectedDayEvents(days[0].customers || []);
       }
     } catch (err: any) {
       showToast('Error loading follow-up calendar: ' + err.message, 'error');
     } finally {
       setLoading(false);
     }
-  }, [year, month, locationFilter]);
+  }, [year, month, locationFilter, selectedDateStr]);
 
   useEffect(() => {
     if (!Auth.check()) {
@@ -146,22 +180,12 @@ export default function WeddingFollowUpCalendar() {
           <WeddingNav
             currentPageTitle="Follow-up Calendar"
             actions={
-              <div className="flex items-center gap-2">
-                {session?.isGlobalAdmin && (
-                  <select
-                    value={locationFilter}
-                    onChange={(e) => setLocationFilter(e.target.value ? Number(e.target.value) : '')}
-                    className="px-3 py-2 bg-white border border-[#DFDDD7] rounded-xl text-xs font-bold text-[#182033]"
-                  >
-                    <option value="">🌐 All Locations</option>
-                    {locations.map((loc) => (
-                      <option key={loc.id} value={loc.id}>
-                        📍 {loc.name}
-                      </option>
-                    ))}
-                  </select>
-                )}
-                <div className="flex items-center bg-white rounded-xl border border-[#DFDDD7] p-1 text-xs font-bold">
+              <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                <LocationFilterSelect
+                  value={locationFilter}
+                  onChange={(val) => setLocationFilter(val)}
+                />
+                <div className="flex items-center bg-white rounded-xl border border-[#DFDDD7] p-1 text-xs font-bold shadow-2xs">
                   <button
                     onClick={() => setViewMode('month')}
                     className={`px-3 py-1 rounded-lg transition-all ${

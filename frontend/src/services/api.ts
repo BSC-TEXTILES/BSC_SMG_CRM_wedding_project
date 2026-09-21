@@ -219,6 +219,33 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
   }
 };
 
+function normalizeLocationList(rawList: any[]): any[] {
+  const defaults = [
+    { id: 1, code: 'BEL', name: 'Belagavi', storeName: 'BSC Textiles Belagavi' },
+    { id: 2, code: 'DAV', name: 'Davanagere', storeName: 'BSC Textiles Davanagere' },
+    { id: 3, code: 'SHI', name: 'Shivamogga', storeName: 'BSC Textiles Shivamogga' }
+  ];
+  const list = Array.isArray(rawList) && rawList.length > 0 ? rawList : defaults;
+  return list.map((loc: any) => {
+    const id = Number(loc.id) || 0;
+    const code = String(loc.location_code || loc.code || loc.locationCode || (id === 1 ? 'BEL' : id === 2 ? 'DAV' : id === 3 ? 'SHI' : 'LOC')).trim().toUpperCase();
+    const name = String(loc.location_name || loc.name || loc.locationName || (code === 'BEL' || id === 1 ? 'Belagavi' : code === 'DAV' || id === 2 ? 'Davanagere' : code === 'SHI' || id === 3 ? 'Shivamogga' : `Store ${id}`)).trim();
+    const storeName = loc.store_name || loc.storeName || `BSC Textiles ${name}`;
+    return {
+      ...loc,
+      id,
+      name,
+      location_name: name,
+      locationName: name,
+      code,
+      location_code: code,
+      locationCode: code,
+      store_name: storeName,
+      storeName
+    };
+  });
+}
+
 // Legacy Apps Script API Action Dispatcher Wrapper for 100% compatibility
 export const API = {
   fileUrl(url: string | null | undefined): string | null {
@@ -702,30 +729,38 @@ export const API = {
 
     try {
       const res = await apiFetch('/landing/locations');
-      const list = extractList(res);
+      const list = normalizeLocationList(extractList(res));
       if (list.length > 0) {
         return { success: true, locations: list, data: list };
       }
       // Fallback if empty
       const fb = await apiFetch('/locations');
-      const fbList = extractList(fb);
+      const fbList = normalizeLocationList(extractList(fb));
       return { success: true, locations: fbList, data: fbList };
     } catch (err) {
       console.warn('[API.getPublicLocations] /landing/locations failed, trying /locations:', err);
       try {
         const fb = await apiFetch('/locations');
-        const fbList = extractList(fb);
+        const fbList = normalizeLocationList(extractList(fb));
         return { success: true, locations: fbList, data: fbList };
       } catch (e2) {
-        throw err;
+        const fallback = normalizeLocationList([]);
+        return { success: true, locations: fallback, data: fallback };
       }
     }
   },
   // Authenticated endpoint for admin/staff pages
   async getLocations() {
-    const res = await apiFetch('/locations');
-    const list = Array.isArray(res) ? res : (Array.isArray(res?.locations) ? res.locations : (Array.isArray(res?.data) ? res.data : []));
-    return { success: true, locations: list, data: list };
+    try {
+      const res = await apiFetch('/locations');
+      const list = Array.isArray(res) ? res : (Array.isArray(res?.locations) ? res.locations : (Array.isArray(res?.data) ? res.data : []));
+      const normalized = normalizeLocationList(list);
+      return { success: true, locations: normalized, data: normalized };
+    } catch (err) {
+      console.warn('[API.getLocations] Failed, using standard location fallback:', err);
+      const fallback = normalizeLocationList([]);
+      return { success: true, locations: fallback, data: fallback };
+    }
   },
   async getLocation(id: number | string) {
     const res = await apiFetch(`/locations/${id}`);

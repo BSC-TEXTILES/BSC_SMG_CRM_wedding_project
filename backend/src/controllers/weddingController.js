@@ -1543,14 +1543,22 @@ class WeddingController {
   async getCalendar(req, res) {
     try {
       const { year, month, date } = req.query;
-      const targetYear = parseInt(year, 10) || new Date().getFullYear();
-      const targetMonth = parseInt(month, 10) || (new Date().getMonth() + 1);
+      let targetYear = parseInt(year, 10);
+      let targetMonth = parseInt(month, 10);
+
+      if (typeof month === 'string' && month.includes('-')) {
+        const parts = month.split('-');
+        targetYear = parseInt(parts[0], 10);
+        targetMonth = parseInt(parts[1], 10);
+      }
+      if (!targetYear || isNaN(targetYear)) targetYear = new Date().getFullYear();
+      if (!targetMonth || isNaN(targetMonth)) targetMonth = new Date().getMonth() + 1;
 
       const { clause: locClause, params } = resolveLocFilter(req, 'w');
 
       const [rows] = await pool.query(`
         SELECT 
-          w.follow_up_date AS date,
+          DATE_FORMAT(w.follow_up_date, '%Y-%m-%d') AS date,
           COUNT(*) AS total,
           SUM(CASE WHEN w.follow_up_date < CURDATE() AND w.customer_status NOT IN ('Converted', 'Visited Store', 'Not Interested', 'Cancelled', 'Closed') THEN 1 ELSE 0 END) AS overdue_count,
           SUM(CASE WHEN w.follow_up_date = CURDATE() THEN 1 ELSE 0 END) AS today_count,
@@ -1561,8 +1569,8 @@ class WeddingController {
           AND YEAR(w.follow_up_date) = ? 
           AND MONTH(w.follow_up_date) = ?
           ${locClause}
-        GROUP BY w.follow_up_date
-        ORDER BY w.follow_up_date ASC
+        GROUP BY DATE_FORMAT(w.follow_up_date, '%Y-%m-%d')
+        ORDER BY date ASC
       `, [targetYear, targetMonth, ...params]);
 
       // All customers in that month for instant client-side date inspection
@@ -1570,6 +1578,7 @@ class WeddingController {
         SELECT 
           w.*,
           l.location_name,
+          l.location_code,
           CASE 
             WHEN w.follow_up_date < CURDATE() AND w.customer_status NOT IN ('Converted', 'Visited Store', 'Not Interested', 'Cancelled', 'Closed')
             THEN DATEDIFF(CURDATE(), w.follow_up_date)
@@ -1586,10 +1595,31 @@ class WeddingController {
 
       decryptRows(allCustomersInMonth, ENCRYPTED_FIELDS);
 
+      // Group customers by follow_up_date for day detail clicks
+      const custsByDate = {};
+      (allCustomersInMonth || []).forEach(c => {
+        const dStr = c.follow_up_date ? String(c.follow_up_date).slice(0, 10) : null;
+        if (dStr) {
+          if (!custsByDate[dStr]) custsByDate[dStr] = [];
+          custsByDate[dStr].push(c);
+        }
+      });
+
+      const formattedDays = (rows || []).map(r => {
+        const dStr = r.date ? String(r.date).slice(0, 10) : null;
+        return {
+          ...r,
+          date: dStr,
+          count: Number(r.total) || 0,
+          customers: dStr && custsByDate[dStr] ? custsByDate[dStr] : []
+        };
+      });
+
       return successRes(res, {
         year: targetYear,
         month: targetMonth,
-        days: rows || [],
+        days: formattedDays,
+        calendarDays: formattedDays,
         customers: allCustomersInMonth || []
       }, 'Calendar follow-up data fetched successfully');
     } catch (err) {
@@ -2952,8 +2982,17 @@ class WeddingController {
   async getExtendedCalendar(req, res) {
     try {
       const { year, month } = req.query;
-      const targetYear = parseInt(year, 10) || new Date().getFullYear();
-      const targetMonth = parseInt(month, 10) || (new Date().getMonth() + 1);
+      let targetYear = parseInt(year, 10);
+      let targetMonth = parseInt(month, 10);
+
+      if (typeof month === 'string' && month.includes('-')) {
+        const parts = month.split('-');
+        targetYear = parseInt(parts[0], 10);
+        targetMonth = parseInt(parts[1], 10);
+      }
+      if (!targetYear || isNaN(targetYear)) targetYear = new Date().getFullYear();
+      if (!targetMonth || isNaN(targetMonth)) targetMonth = new Date().getMonth() + 1;
+
       const { clause: locClause, params } = resolveLocFilter(req, 'w');
 
       const start = `${targetYear}-${String(targetMonth).padStart(2,'0')}-01`;

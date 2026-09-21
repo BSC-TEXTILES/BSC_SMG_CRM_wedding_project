@@ -7,25 +7,25 @@ import { API, Auth, UserSession } from '../../services/api';
 import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../../utils/sidebarState';
 import WeddingNav from './WeddingNav';
 import { WeddingStats, getStatusBadge } from './weddingTypes';
+import LocationFilterSelect from '../../components/ui/LocationFilterSelect';
 import {
   Users,
   UserPlus,
   PhoneCall,
-  Clock,
-  AlertTriangle,
   Calendar,
-  CheckCircle2,
+  Sparkles,
   TrendingUp,
   MapPin,
-  ChevronRight,
-  ArrowRight,
+  Clock,
   PhoneForwarded,
-  Sparkles,
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
   ShoppingBag,
-  Award,
+  Store,
   RefreshCw,
   Eye,
-  Filter
+  Plus
 } from 'lucide-react';
 
 export default function WeddingCrmDashboard() {
@@ -39,14 +39,23 @@ export default function WeddingCrmDashboard() {
   }, []);
 
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState<WeddingStats>({
+  const [stats, setStats] = useState({
     totalCustomers: 0,
+    todayNewCustomers: 0,
+    newRequests: 0,
+    activeLeads: 0,
+    interestedCustomers: 0,
     todayFollowUps: 0,
     overdueFollowUps: 0,
     callsPending: 0,
     callsCompleted: 0,
+    connectedCalls: 0,
+    missedCalls: 0,
+    callbackRequests: 0,
     shoppingConfirmed: 0,
     visitedConverted: 0,
+    convertedCustomers: 0,
+    lostCustomers: 0,
     notInterested: 0
   });
 
@@ -56,7 +65,22 @@ export default function WeddingCrmDashboard() {
   const [upcomingWeddings, setUpcomingWeddings] = useState<any[]>([]);
   const [telecallerPerformance, setTelecallerPerformance] = useState<any[]>([]);
   const [locations, setLocations] = useState<any[]>([]);
-  const [selectedLocation, setSelectedLocation] = useState<number | ''>('');
+  const [selectedLocation, setSelectedLocation] = useState<number | ''>(() => {
+    const saved = typeof localStorage !== 'undefined' ? localStorage.getItem('bsc_selected_location') : null;
+    return saved && saved !== 'ALL' ? Number(saved) : '';
+  });
+
+  // Listen to global location changes (e.g. from Topbar)
+  useEffect(() => {
+    const handleLocChange = (e: any) => {
+      const locId = e?.detail?.locationId;
+      const parsed = locId && locId !== 'ALL' ? Number(locId) : '';
+      setSelectedLocation(parsed);
+      loadData(parsed);
+    };
+    window.addEventListener('bsc_location_changed', handleLocChange);
+    return () => window.removeEventListener('bsc_location_changed', handleLocChange);
+  }, []);
 
   const loadData = useCallback(async (locId?: number | '') => {
     setLoading(true);
@@ -134,21 +158,14 @@ export default function WeddingCrmDashboard() {
           <WeddingNav
             currentPageTitle="Wedding CRM Dashboard"
             actions={
-              <div className="flex items-center gap-2">
-                {session?.isGlobalAdmin && (
-                  <select
-                    value={selectedLocation}
-                    onChange={(e) => handleLocationChange(e.target.value ? Number(e.target.value) : '')}
-                    className="px-3 py-2 bg-white border border-[#DFDDD7] rounded-xl text-xs font-bold text-[#182033] focus:outline-none focus:border-[#C9A45C]"
-                  >
-                    <option value="">🌐 All Authorized Locations</option>
-                    {locations.map((loc) => (
-                      <option key={loc.id} value={loc.id}>
-                        📍 {loc.name}
-                      </option>
-                    ))}
-                  </select>
-                )}
+              <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                <LocationFilterSelect
+                  value={selectedLocation}
+                  onChange={(val) => {
+                    setSelectedLocation(val);
+                    loadData(val);
+                  }}
+                />
                 <button
                   onClick={() => loadData(selectedLocation)}
                   disabled={loading}

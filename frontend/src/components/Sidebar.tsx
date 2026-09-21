@@ -9,6 +9,7 @@ import {
 } from '../utils/sidebarState';
 import { getDashboardLabelForRole } from '../utils/dashboardRouting';
 import { getRoleNavMap, resolveAllowedPages } from '../utils/rbac';
+import { useLocationContext } from '../context/LocationContext';
 
 interface SidebarProps {
   session: UserSession | null;
@@ -21,6 +22,16 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
   const role = session?.role || 'HR';
   const [collapsed, setCollapsed] = useState<boolean>(getSidebarCollapsed());
   const navScrollRef = useRef<HTMLDivElement>(null);
+
+  let activeLocationLabel = '';
+  try {
+    const locCtx = useLocationContext();
+    if (locCtx) {
+      activeLocationLabel = locCtx.currentLocation === 'ALL'
+        ? '🌐 ALL LOCATIONS'
+        : `📍 ${locCtx.currentLocationLabel.toUpperCase()}`;
+    }
+  } catch (e) {}
 
   useEffect(() => {
     const unsub = subscribeSidebarCollapsed((c) => {
@@ -235,7 +246,11 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
               <div className="min-w-0">
                 <div className="font-extrabold text-sm text-white tracking-wide leading-tight truncate">BSC EXCLUSIVE</div>
                 <div className="text-[9px] font-bold uppercase tracking-widest mt-0.5 flex items-center gap-1 truncate text-[#E4C982]">
-                  {session?.isGlobalAdmin ? (
+                  {activeLocationLabel ? (
+                    <span className={activeLocationLabel.includes('ALL') ? 'text-[#16805B] font-extrabold truncate' : 'truncate text-[#E4C982]'}>
+                      {activeLocationLabel}
+                    </span>
+                  ) : session?.isGlobalAdmin ? (
                     <span className="text-[#16805B] font-extrabold truncate">🌐 ALL LOCATIONS</span>
                   ) : (
                     <span className="truncate text-[#E4C982]">📍 {session?.locationName?.toUpperCase() || 'DAVANAGERE'}</span>

@@ -115,8 +115,8 @@ const getInterviews = async (req, res) => {
     const scoreMap = {};
     evalRows.forEach((r) => {
       scoreMap[r.app_no] = {
-        hrScore: r.hr_score_json ? JSON.parse(r.hr_score_json) : null,
-        assignedScore: r.assigned_score_json ? JSON.parse(r.assigned_score_json) : null,
+        hrScore: (() => { try { return r.hr_score_json ? JSON.parse(r.hr_score_json) : null; } catch { return null; } })(),
+        assignedScore: (() => { try { return r.assigned_score_json ? JSON.parse(r.assigned_score_json) : null; } catch { return null; } })(),
         isNewRole: !!r.is_new_role,
         suggestedDesig: r.suggested_designation || null,
         suggestionReason: r.suggestion_reason || null

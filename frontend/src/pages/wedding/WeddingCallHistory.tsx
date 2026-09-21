@@ -7,6 +7,7 @@ import ToastContainer, { showToast } from '../../components/Toast';
 import { API, Auth, UserSession } from '../../services/api';
 import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../../utils/sidebarState';
 import WeddingNav from './WeddingNav';
+import LocationFilterSelect from '../../components/ui/LocationFilterSelect';
 import { CallLog, CALL_OUTCOMES } from './weddingTypes';
 import {
   History,
@@ -21,7 +22,12 @@ import {
   ChevronLeft,
   ChevronRight,
   User,
-  Clock
+  Clock,
+  Sparkles,
+  CheckCircle2,
+  XCircle,
+  PhoneOff,
+  PhoneMissed
 } from 'lucide-react';
 
 export default function WeddingCallHistory() {
@@ -34,19 +40,34 @@ export default function WeddingCallHistory() {
     return subscribeSidebarCollapsed(setCollapsed);
   }, []);
 
-  const [callLogs, setCallLogs] = useState<CallLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [callLogs, setCallLogs] = useState<any[]>([]);
   const [totalCount, setTotalCount] = useState(0);
 
-  // Filters
+  // Filters - initialized from persistent selection
   const [searchQuery, setSearchQuery] = useState('');
   const [outcomeFilter, setOutcomeFilter] = useState('');
-  const [locationFilter, setLocationFilter] = useState<number | ''>('');
+  const [locationFilter, setLocationFilter] = useState<number | ''>(() => {
+    const saved = typeof localStorage !== 'undefined' ? localStorage.getItem('bsc_selected_location') : null;
+    return saved && saved !== 'ALL' ? Number(saved) : '';
+  });
   const [locations, setLocations] = useState<any[]>([]);
   const [telecallerFilter, setTelecallerFilter] = useState('');
   const [telecallers, setTelecallers] = useState<any[]>([]);
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
+
+  // Listen to global location changes (e.g. from Topbar)
+  useEffect(() => {
+    const handleLocChange = (e: any) => {
+      const locId = e?.detail?.locationId;
+      const parsed = locId && locId !== 'ALL' ? Number(locId) : '';
+      setLocationFilter(parsed);
+      setCurrentPage(1);
+    };
+    window.addEventListener('bsc_location_changed', handleLocChange);
+    return () => window.removeEventListener('bsc_location_changed', handleLocChange);
+  }, []);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -244,22 +265,14 @@ export default function WeddingCallHistory() {
 
               {/* Location Filter */}
               <div>
-                <select
+                <LocationFilterSelect
                   value={locationFilter}
-                  disabled={!session?.isGlobalAdmin}
-                  onChange={(e) => {
-                    setLocationFilter(e.target.value ? Number(e.target.value) : '');
+                  className="w-full"
+                  onChange={(val) => {
+                    setLocationFilter(val);
                     setCurrentPage(1);
                   }}
-                  className="w-full px-3 py-2 bg-[#F6F4EF] border border-[#DFDDD7] rounded-xl font-bold focus:outline-none focus:border-[#C9A45C]"
-                >
-                  <option value="">🌐 All Locations</option>
-                  {locations.map((loc) => (
-                    <option key={loc.id} value={loc.id}>
-                      📍 {loc.name}
-                    </option>
-                  ))}
-                </select>
+                />
               </div>
             </div>
 

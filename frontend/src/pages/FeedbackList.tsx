@@ -1,23 +1,23 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '../components/layouts/DashboardLayout';
-import { 
-  PhoneCall, 
-  AlertTriangle, 
-  CheckCircle2, 
-  Clock, 
-  Filter, 
-  MessageSquare, 
-  Search, 
-  Calendar, 
-  RefreshCw, 
-  ShieldAlert, 
-  User, 
-  Phone, 
-  History, 
-  FileText, 
-  Tag, 
-  X, 
-  Send 
+import {
+  PhoneCall,
+  AlertTriangle,
+  CheckCircle2,
+  Clock,
+  Filter,
+  MessageSquare,
+  Search,
+  Calendar,
+  RefreshCw,
+  ShieldAlert,
+  User,
+  Phone,
+  History,
+  FileText,
+  Tag,
+  X,
+  Send
 } from 'lucide-react';
 import { API } from '../services/api';
 import { io } from 'socket.io-client';
@@ -25,7 +25,7 @@ import { io } from 'socket.io-client';
 export default function FeedbackList() {
   const [callQueue, setCallQueue] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  
+
   // Selected Call Ticket Modal
   const [selectedItem, setSelectedItem] = useState<any | null>(null);
   const [callOutcome, setCallOutcome] = useState<string>('Connected');
@@ -156,7 +156,7 @@ export default function FeedbackList() {
     if (!createdDateStr) return { label: '< 2h Normal', color: 'bg-emerald-100 text-emerald-800' };
     const createdTime = new Date(createdDateStr).getTime();
     const hoursElapsed = (Date.now() - createdTime) / (1000 * 60 * 60);
-    
+
     if (hoursElapsed > 24) {
       return { label: '🚨 SLA Critical (>24h)', color: 'bg-rose-600 text-black font-black animate-pulse' };
     } else if (hoursElapsed > 2) {
@@ -173,7 +173,7 @@ export default function FeedbackList() {
   return (
     <DashboardLayout title="Feedback Call Queue Desk" subtitle="Telecaller Resolution Workspace & Customer Issue Lifecycle Management">
       <div className="space-y-6">
-        
+
         {/* KPI Analytics Metric Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="card-glass p-5 flex items-center justify-between border-l-4 border-l-rose-500">
@@ -268,7 +268,7 @@ export default function FeedbackList() {
               <option value="week">This Week</option>
               <option value="month">This Month</option>
               <option value="last_month">Last Month</option>
-              <option value="custom">Custom Range</option>
+              <option value="custom">Custom date</option>
             </select>
 
             {datePreset === 'custom' && (
@@ -332,7 +332,7 @@ export default function FeedbackList() {
                 <tbody className="divide-y divide-gray-100">
                   {callQueue.map((item) => {
                     const sla = getSLAStatus(item.createdAt);
-                    
+
                     return (
                       <tr key={item.id} className="hover:bg-black/5 transition-colors">
                         <td className="p-4">
@@ -414,7 +414,7 @@ export default function FeedbackList() {
         {selectedItem && (
           <div className="fixed inset-0 bg-primary/70 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-fade-in">
             <div className="card-glass p-6 sm:p-8 max-w-lg w-full space-y-5 animate-scale-in shadow-2xl rounded-3xl border border-white/40 bg-white text-primary max-h-[90vh] overflow-y-auto">
-              
+
               <div className="flex items-center justify-between border-b border-accent-soft pb-3">
                 <h3 className="text-lg font-black text-primary flex items-center gap-2">
                   <PhoneCall className="w-5 h-5 text-accent" />
@@ -441,7 +441,7 @@ export default function FeedbackList() {
               </div>
 
               <div className="space-y-4">
-                
+
                 {/* Call Outcome Select */}
                 <div>
                   <label className="block text-xs font-extrabold text-primary mb-1.5">Call Outcome *</label>

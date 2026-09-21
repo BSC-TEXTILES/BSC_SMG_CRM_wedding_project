@@ -571,6 +571,7 @@ async function autoInitializeDatabase(pool) {
 
       // Enhanced users columns
       "ALTER TABLE users ADD COLUMN employee_id VARCHAR(50) NULL",
+      "ALTER TABLE users ADD COLUMN candidate_app_no VARCHAR(50) NULL AFTER employee_id",
       "ALTER TABLE users ADD COLUMN mobile VARCHAR(20) NULL",
       "ALTER TABLE users ADD COLUMN notes TEXT NULL",
       "ALTER TABLE users ADD COLUMN account_expiry DATE NULL",
@@ -1731,8 +1732,6 @@ async function autoInitializeDatabase(pool) {
       `ALTER TABLE audit_logs ADD INDEX idx_audit_activity (module, action, created_at)`,
       `ALTER TABLE audit_logs ADD INDEX idx_audit_username (username)`,
       `ALTER TABLE wedding_call_logs ADD INDEX idx_call_customer_date (customer_id, call_date)`,
-      `ALTER TABLE users ADD COLUMN employee_id VARCHAR(50) NULL AFTER full_name`,
-      `ALTER TABLE users ADD COLUMN candidate_app_no VARCHAR(50) NULL AFTER employee_id`,
       `ALTER TABLE users ADD UNIQUE INDEX idx_users_emp_id (employee_id)`,
       `ALTER TABLE users ADD UNIQUE INDEX idx_users_cand_app (candidate_app_no)`,
       `ALTER TABLE users ADD INDEX idx_users_location_active (location_id, active)`,

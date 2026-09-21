@@ -335,8 +335,8 @@ class CandidateController {
           `SELECT
               u.id as user_id, u.username as username, u.employee_id as emp_no,
               u.full_name as name, u.email, u.phone,
-              COALESCE(u.candidate_app_no, u.employee_id, u.username) as app_no,
-              u.candidate_app_no,
+              COALESCE(u.employee_id, u.username) as app_no,
+              NULL as candidate_app_no,
               COALESCE(u.section, '') as section,
               NULL as reporting_manager,
               u.joining_date as offered_doj,
@@ -455,7 +455,14 @@ const createdDate = new Date(r.created_at || Date.now());
           religionCaste: r.religion_caste || '',
           religion: r.religion || '',
           caste: r.caste || '',
-          languagesKnown: r.languages_known ? (typeof r.languages_known === 'string' ? (r.languages_known.startsWith('[') ? JSON.parse(r.languages_known) : [r.languages_known]) : r.languages_known) : [],
+          languagesKnown: (() => {
+            try {
+              if (!r.languages_known) return [];
+              if (typeof r.languages_known !== 'string') return r.languages_known;
+              if (r.languages_known.startsWith('[')) return JSON.parse(r.languages_known);
+              return [r.languages_known];
+            } catch { return [r.languages_known]; }
+          })(),
           photoUrl: r.photo_url || '',
           aadhaarUrl: r.aadhaar_url || '',
           aadharUrl: r.aadhaar_url || '',
