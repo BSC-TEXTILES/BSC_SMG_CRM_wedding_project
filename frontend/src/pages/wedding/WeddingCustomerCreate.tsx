@@ -108,16 +108,21 @@ export default function WeddingCustomerCreate() {
   }, [navigate]);
 
   const handleChange = (field: string, value: any) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
-    if (field === 'mobile_number') {
-      const clean = String(value).replace(/\D/g, '');
-      if (clean.length === 10) {
-        checkDuplicateMobile(value);
-      } else {
-        setExistingCustomerInfo(null);
-        setAllowMultipleRegistration(false);
+    // For mobile fields, allow only digits and cap at 10
+    if (field === 'mobile_number' || field === 'alternate_mobile') {
+      const clean = String(value).replace(/\D/g, '').slice(0, 10);
+      setForm((prev) => ({ ...prev, [field]: clean }));
+      if (field === 'mobile_number') {
+        if (clean.length === 10) {
+          checkDuplicateMobile(clean);
+        } else {
+          setExistingCustomerInfo(null);
+          setAllowMultipleRegistration(false);
+        }
       }
+      return;
     }
+    setForm((prev) => ({ ...prev, [field]: value }));
   };
 
   const checkDuplicateMobile = async (mobile: string) => {
@@ -307,6 +312,9 @@ export default function WeddingCustomerCreate() {
                   <input
                     type="tel"
                     required
+                    maxLength={10}
+                    pattern="[0-9]{10}"
+                    inputMode="numeric"
                     placeholder="10-digit number"
                     value={form.mobile_number}
                     onBlur={() => checkDuplicateMobile(form.mobile_number)}
@@ -364,6 +372,9 @@ export default function WeddingCustomerCreate() {
                   </label>
                   <input
                     type="tel"
+                    maxLength={10}
+                    pattern="[0-9]{10}"
+                    inputMode="numeric"
                     placeholder="Parent / Spouse phone"
                     value={form.alternate_mobile}
                     onChange={(e) => handleChange('alternate_mobile', e.target.value)}
