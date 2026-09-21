@@ -259,72 +259,69 @@ class CandidateController {
       // Build location filter scoped to the users table alias 'u'
       const { clause: locClause, params: locParams } = await getLocationFilter(req, 'u');
 
-      // MySQL 5.7-compatible: use MAX(id) subquery to pick one candidate per phone/app_no
-      // (ROW_NUMBER() OVER PARTITION requires MySQL 8+ and crashes on 5.7)
+      // MySQL 5.7-compatible: match candidate by app_no or phone
       let rows;
       try {
         [rows] = await db.query(
           `SELECT
               u.id as user_id, u.username as username, u.employee_id as emp_no,
               u.full_name as name, u.email, u.phone,
-              COALESCE(c.app_no, u.employee_id, u.username) as app_no,
+              COALESCE(c.app_no, u.candidate_app_no, u.employee_id, u.username) as app_no,
               c.app_no as candidate_app_no,
-              COALESCE(c.section, u.section) as section,
-              COALESCE(c.reporting_manager, u.reporting_manager) as reporting_manager,
-              COALESCE(c.offered_doj, u.offered_doj) as offered_doj,
-              COALESCE(c.updated_at, u.updated_at) as candidate_updated_at,
+              COALESCE(u.section, c.section, '') as section,
+              c.reporting_manager as reporting_manager,
+              COALESCE(c.offered_doj, u.joining_date) as offered_doj,
+              c.updated_at as candidate_updated_at,
               u.updated_at as user_updated_at, u.last_login_at,
-              COALESCE(c.department, u.department) as department,
-              COALESCE(c.designation, u.designation) as designation,
+              COALESCE(u.department, c.department) as department,
+              COALESCE(u.designation, c.designation) as designation,
               u.role, u.active, u.created_at, u.location_id, u.location_code,
-              COALESCE(c.dob, u.dob) as dob,
-              COALESCE(c.gender, u.gender) as gender,
-              COALESCE(c.blood_group, u.blood_group) as blood_group,
-              COALESCE(c.aadhaar_number, u.aadhaar_number) as aadhaar_number,
-              COALESCE(c.father_details, u.father_details) as father_details,
-              COALESCE(c.mother_details, u.mother_details) as mother_details,
+              c.dob,
+              c.gender,
+              c.blood_group,
+              c.aadhaar_number,
+              c.father_details,
+              c.mother_details,
               COALESCE(c.religion_caste, CONCAT_WS('/', c.religion, c.caste)) as religion_caste,
-              c.religion as religion, c.caste as caste,
-              COALESCE(c.languages_known, u.languages_known) as languages_known,
-              COALESCE(c.city_state, u.city_state) as city_state,
-              COALESCE(c.address, u.address) as address,
-              COALESCE(c.qualification, u.qualification) as qualification,
-              COALESCE(c.experience, u.experience) as experience,
-              COALESCE(c.retail_experience, u.retail_experience) as retail_experience,
-              COALESCE(c.previous_company, u.previous_company) as previous_company,
-              COALESCE(c.previous_designation, u.previous_designation) as previous_designation,
-              COALESCE(c.salary, u.salary, u.previous_salary) as previous_salary,
-              COALESCE(c.current_salary, u.current_salary) as current_salary,
-              COALESCE(c.expected_salary, u.expected_salary) as expected_salary,
-              COALESCE(c.photo_url, u.photo_url) as photo_url,
-              COALESCE(c.aadhaar_url, u.aadhaar_url) as aadhaar_url,
-              COALESCE(c.resume_url, u.resume_url) as resume_url,
-              COALESCE(c.remarks, u.remarks) as remarks,
-              COALESCE(c.source, u.source) as source,
-              COALESCE(c.referrer, u.referrer) as referrer,
-              COALESCE(c.referrer_emp_no, u.referrer_emp_no) as referrer_emp_no,
+              c.religion,
+              c.caste,
+              c.languages_known,
+              c.city_state,
+              c.address,
+              c.qualification,
+              c.experience,
+              c.retail_experience,
+              c.previous_company,
+              c.previous_designation,
+              c.salary,
+              c.current_salary,
+              c.expected_salary,
+              c.photo_url,
+              c.aadhaar_url,
+              c.resume_url,
+              c.remarks,
+              c.source,
+              c.referrer,
+              c.referrer_emp_no,
+              c.notice_period,
+              c.source_detail,
+              c.q1, c.q2, c.q3, c.q4,
               so.notice_period as offer_notice_pd,
-              COALESCE(so.est_doj, u.offered_doj) as offer_est_doj,
-              COALESCE(so.actual_doj, u.actual_doj) as offer_actual_doj,
-              so.status as offer_status, so.remarks as offer_remarks,
+              COALESCE(so.est_doj, c.offered_doj, u.joining_date) as offer_est_doj,
+              COALESCE(so.actual_doj, u.joining_date) as offer_actual_doj,
+              so.status as offer_status,
+              so.remarks as offer_remarks,
               so.updated_at as offer_updated_at,
-              COALESCE(l.location_name, u.branch) as branch,
-              u.joining_date, u.actual_doj, u.salary, u.expected_salary, u.experience,
-              u.retail_experience, u.qualification, u.previous_company, u.previous_designation,
-              u.previous_salary, u.current_salary, u.branch, u.reporting_manager,
-              u.dob, u.gender, u.blood_group, u.aadhaar_number, u.father_details,
-              u.mother_details, u.languages_known, u.city_state, u.address,
-              u.photo_url, u.aadhaar_url, u.resume_url, u.remarks,
-              u.source, u.referrer, u.referrer_emp_no, u.notice_period
+              l.location_name as branch,
+              u.joining_date,
+              COALESCE(c.offered_doj, u.joining_date) as actual_doj
            FROM users u
            LEFT JOIN locations l ON l.id = u.location_id
            LEFT JOIN candidates c ON (
-             -- Match by phone (most reliable — both tables always have it)
-             (u.phone IS NOT NULL AND c.phone = u.phone AND c.id = (
-               SELECT MAX(c2.id) FROM candidates c2
-               WHERE c2.phone = u.phone AND (c2.is_deleted = 0 OR c2.is_deleted IS NULL)
-             ))
-           ) AND (c.is_deleted = 0 OR c.is_deleted IS NULL)
+             (u.candidate_app_no IS NOT NULL AND u.candidate_app_no != '' AND c.app_no = u.candidate_app_no)
+             OR (u.employee_id IS NOT NULL AND u.employee_id != '' AND c.app_no = u.employee_id)
+             OR (u.phone IS NOT NULL AND u.phone != '' AND c.phone = u.phone)
+           )
            LEFT JOIN selection_offers so ON c.app_no = so.app_no
            WHERE u.active = 1
            ${locClause}
@@ -333,33 +330,30 @@ class CandidateController {
         );
       } catch (sqlErr) {
         console.warn('[getEmployees] Full query failed, trying simplified fallback:', sqlErr.message);
-        // Absolute minimal fallback — users table only, no candidate join
+        // Clean fallback: only existing columns on `users` table
         [rows] = await db.query(
           `SELECT
               u.id as user_id, u.username as username, u.employee_id as emp_no,
               u.full_name as name, u.email, u.phone,
-              COALESCE(u.employee_id, u.username) as app_no,
-              NULL as candidate_app_no,
-              u.section, u.reporting_manager, u.offered_doj,
+              COALESCE(u.candidate_app_no, u.employee_id, u.username) as app_no,
+              u.candidate_app_no,
+              COALESCE(u.section, '') as section,
+              NULL as reporting_manager,
+              u.joining_date as offered_doj,
               u.updated_at as candidate_updated_at,
               u.updated_at as user_updated_at, u.last_login_at,
               u.department, u.designation, u.role, u.active, u.created_at,
               u.location_id, u.location_code,
-              u.dob, u.gender, u.blood_group, u.aadhaar_number, u.father_details, u.mother_details,
-              '' as religion_caste, NULL as religion, NULL as caste, u.languages_known,
-              u.city_state, u.address, u.qualification, u.experience, u.retail_experience,
-              u.previous_company, u.previous_designation, u.previous_salary, u.current_salary, u.expected_salary,
-              u.photo_url, u.aadhaar_url, u.resume_url, u.remarks, u.source, u.referrer, u.referrer_emp_no,
-              u.notice_period as offer_notice_pd, u.offered_doj as offer_est_doj, u.actual_doj as offer_actual_doj,
-              NULL as offer_status, u.remarks as offer_remarks, u.updated_at as offer_updated_at,
-              COALESCE(l.location_name, u.branch) as branch,
-              u.joining_date, u.actual_doj, u.salary, u.expected_salary, u.experience,
-              u.retail_experience, u.qualification, u.previous_company, u.previous_designation,
-              u.previous_salary, u.current_salary, u.branch, u.reporting_manager,
-              u.dob, u.gender, u.blood_group, u.aadhaar_number, u.father_details,
-              u.mother_details, u.languages_known, u.city_state, u.address,
-              u.photo_url, u.aadhaar_url, u.resume_url, u.remarks,
-              u.source, u.referrer, u.referrer_emp_no, u.notice_period
+              NULL as dob, NULL as gender, NULL as blood_group, NULL as aadhaar_number, NULL as father_details, NULL as mother_details,
+              '' as religion_caste, NULL as religion, NULL as caste, NULL as languages_known,
+              NULL as city_state, NULL as address, NULL as qualification, NULL as experience, NULL as retail_experience,
+              NULL as previous_company, NULL as previous_designation, NULL as salary, NULL as current_salary, NULL as expected_salary,
+              NULL as photo_url, NULL as aadhaar_url, NULL as resume_url, NULL as remarks, NULL as source, NULL as referrer, NULL as referrer_emp_no,
+              NULL as notice_period, NULL as source_detail, NULL as q1, NULL as q2, NULL as q3, NULL as q4,
+              NULL as offer_notice_pd, u.joining_date as offer_est_doj, u.joining_date as offer_actual_doj,
+              NULL as offer_status, NULL as offer_remarks, NULL as offer_updated_at,
+              COALESCE(l.location_name, '') as branch,
+              u.joining_date, u.joining_date as actual_doj
            FROM users u
            LEFT JOIN locations l ON l.id = u.location_id
            WHERE u.active = 1
@@ -487,7 +481,7 @@ const createdDate = new Date(r.created_at || Date.now());
       return res.json({ success: true, employees, total: employees.length });
     } catch (err) {
       console.error('[candidateController.getEmployees Error]', err);
-      return errorRes(res, 'Unable to load employees right now. Please try again.', [], 500);
+      return errorRes(res, 'Unable to load employees: ' + err.message, [err.message], 500);
     }
   }
 

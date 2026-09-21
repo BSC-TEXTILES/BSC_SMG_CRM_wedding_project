@@ -115,7 +115,13 @@ export default function EmployeesPage() {
           });
         }
 
-        const merged = empData.employees.map((e: any) => {
+        const rawList = Array.isArray(empData) 
+          ? empData 
+          : (Array.isArray(empData?.employees) 
+              ? empData.employees 
+              : (Array.isArray(empData?.data) ? empData.data : []));
+
+        const merged = rawList.map((e: any) => {
           const key = e.appNo || e.empNo;
           const assignedSec = e.section || (key && allocMap[key]) || '';
           return {
