@@ -33,6 +33,7 @@ export default function BroadcastCenterPage() {
   const [pinNotification, setPinNotification] = useState(false);
   const [requireAck, setRequireAck] = useState(false);
   const [allowReplies, setAllowReplies] = useState(true);
+  const [dispatching, setDispatching] = useState(false);
 
   // Data List
   const [broadcasts, setBroadcasts] = useState<SystemNotification[]>([]);
@@ -45,7 +46,6 @@ export default function BroadcastCenterPage() {
     const sess = Auth.get();
     setSession(sess);
 
-    setBroadcasts(NotificationService.getNotifications());
     const unsub = NotificationService.subscribe((list) => {
       setBroadcasts(list);
     });
@@ -63,43 +63,54 @@ export default function BroadcastCenterPage() {
     });
   };
 
-  const handleDispatch = (isDraft = false) => {
+  const handleDispatch = async (isDraft = false) => {
     if (!title.trim() || !message.trim()) {
       showToast('Broadcast title and message are required', 'error');
       return;
     }
 
-    NotificationService.addNotification({
-      title,
-      subject,
-      message,
-      priority,
-      category,
-      targetRole: targetRoles.join(', '),
-      senderName: session?.fullName || 'HR Manager',
-      status: isDraft ? 'Draft' : (scheduledAt ? 'Scheduled' : 'Sent'),
-      requireAcknowledgement: requireAck,
-      pinned: pinNotification,
-      expiryDate,
-      scheduledAt,
-      allowReplies,
-      acknowledgedBy: []
-    });
+    setDispatching(true);
+    try {
+      await NotificationService.addNotification({
+        title,
+        subject,
+        message,
+        priority,
+        category,
+        targetRole: targetRoles.join(', '),
+        senderName: session?.fullName || 'HR Manager',
+        status: isDraft ? 'Draft' : (scheduledAt ? 'Scheduled' : 'Sent'),
+        requireAcknowledgement: requireAck,
+        pinned: pinNotification,
+        expiryDate,
+        scheduledAt,
+        allowReplies,
+        acknowledgedBy: []
+      });
 
-    showToast(isDraft ? 'Broadcast saved to Drafts!' : 'Real-time Broadcast Dispatched! 📢', 'success');
-    setTitle('');
-    setSubject('');
-    setMessage('');
-    setScheduledAt('');
-    setStartDate('');
-    setExpiryDate('');
-    setActiveTab('dashboard');
+      showToast(isDraft ? 'Broadcast draft saved successfully.' : 'Broadcast announcement dispatched successfully.', 'success');
+      setTitle('');
+      setSubject('');
+      setMessage('');
+      setScheduledAt('');
+      setStartDate('');
+      setExpiryDate('');
+      setActiveTab('dashboard');
+    } catch (err: any) {
+      showToast('Unable to dispatch broadcast. Please try again.', 'error');
+    } finally {
+      setDispatching(false);
+    }
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (!window.confirm('Are you sure you want to delete this broadcast notification?')) return;
-    NotificationService.deleteNotification(id);
-    showToast('Broadcast removed from system', 'success');
+    try {
+      await NotificationService.deleteNotification(id);
+      showToast('Broadcast removed successfully.', 'success');
+    } catch (err: any) {
+      showToast('Unable to delete broadcast: ' + (err.message || 'Server error'), 'error');
+    }
   };
 
   // Metrics Calculation
@@ -386,18 +397,29 @@ export default function BroadcastCenterPage() {
                 <div className="flex items-center justify-end gap-3 pt-3 border-t border-accent-soft">
                   <button
                     type="button"
+                    disabled={dispatching}
                     onClick={() => handleDispatch(true)}
-                    className="px-4 py-2.5 rounded-xl border border-accent-soft font-bold text-xs bg-white hover:bg-background"
+                    className="px-4 py-2.5 rounded-xl border border-accent-soft font-bold text-xs bg-white hover:bg-background disabled:opacity-50 cursor-pointer"
                   >
                     Save Draft
                   </button>
                   <button
                     type="button"
+                    disabled={dispatching}
                     onClick={() => handleDispatch(false)}
-                    className="btn-gold text-xs shadow-md flex items-center gap-2"
+                    className="btn-gold text-xs shadow-md flex items-center gap-2 disabled:opacity-50 cursor-pointer"
                   >
-                    <Send className="w-4 h-4" />
-                    <span>Dispatch Real-Time Broadcast</span>
+                    {dispatching ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        <span>Dispatching...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-4 h-4" />
+                        <span>Dispatch Real-Time Broadcast</span>
+                      </>
+                    )}
                   </button>
                 </div>
               </div>

@@ -283,6 +283,7 @@ export default function WeddingRegistrationPage() {
         const trackId = reg.tracking_id || res.data?.tracking_id || res.tracking_id || regId;
         setSuccessRegId(regId);
         setSuccessTrackId(trackId);
+        showToast('Wedding registration submitted successfully.', 'success');
         setRegistrationData({
           registration_id: regId,
           tracking_id: trackId,

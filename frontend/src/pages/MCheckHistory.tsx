@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import Topbar from '../components/Topbar';
 import { API, Auth, UserSession } from '../services/api';
+import { showToast } from '../components/Toast';
 import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../utils/sidebarState';
 import {
   History, Calendar, ChevronRight, CircleCheck, CircleX, Clock,
@@ -10,17 +11,14 @@ import {
   FileSpreadsheet, Download, Search, BarChart3, Eye
 } from 'lucide-react';
 
-function Toast({ msg, type }: { msg: string; type: string }) {
-  const bg = type === 'success' ? 'bg-emerald-600' : type === 'error' ? 'bg-red-600' : 'bg-primary';
-  return <div className={`fixed bottom-6 right-6 z-[200] px-5 py-3 rounded-xl text-white text-sm font-semibold shadow-xl animate-slide-up ${bg}`}>{msg}</div>;
-}
+
 
 export default function MCheckHistory() {
   const navigate = useNavigate();
   const [session, setSession] = useState<UserSession | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [collapsed, setCollapsed] = useState<boolean>(getSidebarCollapsed());
-  const [toast, setToast] = useState<any>(null);
+
 
   useEffect(() => {
     return subscribeSidebarCollapsed(setCollapsed);
@@ -33,7 +31,7 @@ export default function MCheckHistory() {
   const [dayReportLoading, setDayReportLoading] = useState(false);
   const [searchDate, setSearchDate] = useState('');
 
-  const showToast = (msg: string, type = 'success') => { setToast({ msg, type }); setTimeout(() => setToast(null), 3000); };
+
 
   const loadHistory = useCallback(async () => {
     setLoading(true);
@@ -139,7 +137,7 @@ export default function MCheckHistory() {
       <Sidebar session={session} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${collapsed ? 'lg:pl-20' : 'lg:pl-64'}`}>
         <Topbar title="MCheck History" session={session} onMenuClick={() => setSidebarOpen(true)} />
-        {toast && <Toast msg={toast.msg} type={toast.type} />}
+
 
         <div className="flex-1 overflow-y-auto px-4 lg:px-6 py-6 space-y-6">
           {/* Header */}

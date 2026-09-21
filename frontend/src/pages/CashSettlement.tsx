@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import DashboardLayout from '../components/layouts/DashboardLayout';
 import { DollarSign, CreditCard, Calendar, Save, CircleCheck, Lock, KeyRound } from 'lucide-react';
 import { API } from '../services/api';
+import { showToast } from '../components/Toast';
 
 export default function CashSettlement() {
   const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
@@ -84,11 +85,12 @@ export default function CashSettlement() {
         submittedBy,
         counters
       });
+      showToast('Cash settlement saved successfully.', 'success');
       setSavedMsg('Cash settlement saved successfully!');
       setTimeout(() => setSavedMsg(null), 3000);
     } catch (err) {
       console.error(err);
-      alert('Failed to save cash settlement.');
+      showToast('Unable to save cash settlement. Please try again.', 'error');
     } finally {
       setSaving(false);
     }

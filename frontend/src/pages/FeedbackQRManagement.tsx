@@ -213,6 +213,7 @@ import {
   GitGraph,
 } from 'lucide-react';
 import { API, Auth } from '../services/api';
+import { showToast } from '../components/Toast';
 import { format } from 'date-fns';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -437,12 +438,14 @@ export default function FeedbackQRManagement() {
   const [sections, setSections] = useState<Section[]>([]);
   const [feedbackForms, setFeedbackForms] = useState<FeedbackForm[]>([]);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [locationsLoading, setLocationsLoading] = useState(false);
 
   // View mode
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
 
   const loadData = useCallback(async () => {
     setLoading(true);
+    setLocationsLoading(true);
     try {
       const params = {
         page: currentPage,
@@ -473,6 +476,7 @@ export default function FeedbackQRManagement() {
       console.error('Load data error:', err);
     } finally {
       setLoading(false);
+      setLocationsLoading(false);
     }
   }, [currentPage, pageSize, search, statusFilter, locationFilter, sortBy, sortOrder]);
 
@@ -581,8 +585,10 @@ export default function FeedbackQRManagement() {
     try {
       if (editingQrCode) {
         await API.updateQrCode(editingQrCode.id, formData);
+        showToast('QR code updated successfully.', 'success');
       } else {
         await API.createQrCode(formData);
+        showToast('QR code generated successfully.', 'success');
       }
       setShowCreateModal(false);
       resetForm();
@@ -590,6 +596,7 @@ export default function FeedbackQRManagement() {
     } catch (err: any) {
       console.error('Submit error:', err);
       setFormErrors({ submit: err.message || 'Failed to save QR code' });
+      showToast('Unable to save QR code. ' + (err.message || 'Please try again.'), 'error');
     } finally {
       setSaving(false);
     }
@@ -599,20 +606,22 @@ export default function FeedbackQRManagement() {
     if (!window.confirm(`Delete QR Code "${qr.name}" (${qr.qrCodeId})? This action cannot be undone.`)) return;
     try {
       await API.deleteQrCode(qr.id);
+      showToast('QR code deleted successfully.', 'success');
       loadData();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Delete error:', err);
-      alert('Failed to delete QR code');
+      showToast('Unable to delete QR code: ' + (err.message || 'Server error'), 'error');
     }
   };
 
   const handleToggleStatus = async (qr: QRCode) => {
     try {
       await API.toggleQrCodeStatus(qr.id);
+      showToast(`QR code status updated successfully.`, 'success');
       loadData();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Toggle status error:', err);
-      alert('Failed to toggle status');
+      showToast('Unable to update QR code status: ' + (err.message || 'Server error'), 'error');
     }
   };
 
@@ -620,18 +629,19 @@ export default function FeedbackQRManagement() {
     try {
       const res = await API.regenerateQrCode(qr.id);
       if (res?.success) {
+        showToast('QR code regenerated successfully.', 'success');
         loadData();
         setPreviewQrCode({ ...qr, qrCodeDataUrl: res.data.qrCodeDataUrl, qrCodeSvg: res.data.qrCodeSvg });
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Regenerate error:', err);
-      alert('Failed to regenerate QR code');
+      showToast('Unable to regenerate QR code: ' + (err.message || 'Server error'), 'error');
     }
   };
 
   const handleCopyUrl = (url: string) => {
     navigator.clipboard.writeText(url);
-    // Could add toast here
+    showToast('QR code link copied to clipboard.', 'info');
   };
 
   const handleDownloadPng = (qr: QRCode) => {
@@ -708,10 +718,11 @@ export default function FeedbackQRManagement() {
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
+        showToast('Feedback QR codes exported successfully.', 'success');
       }
     } catch (err) {
       console.error('Export error:', err);
-      alert('Failed to export');
+      showToast('Unable to export QR codes. Please try again.', 'error');
     } finally {
       setExporting(false);
     }
@@ -1133,14 +1144,20 @@ export default function FeedbackQRManagement() {
                           setFormData(prev => ({ ...prev, locationCode: loc.locationCode, locationName: loc.locationName }));
                         }
                       }}
+                      disabled={locationsLoading}
                       className={`select-modern text-xs font-bold py-2 ${formErrors.locationId ? 'border-rose-400' : ''}`}
                     >
-                      <option value="">Select Location</option>
-                      {locations.map(loc => (
+                      <option value="">
+                        {locationsLoading ? 'Loading locations...' : locations.length === 0 ? 'No active locations found' : 'Select Location'}
+                      </option>
+                      {!locationsLoading && locations.length > 0 && locations.map(loc => (
                         <option key={loc.id} value={String(loc.id)}>{loc.locationName} ({loc.locationCode})</option>
                       ))}
                     </select>
                     {formErrors.locationId && <p className="text-[10px] text-rose-600 font-medium">{formErrors.locationId}</p>}
+                    {!locationsLoading && locations.length === 0 && (
+                      <p className="text-[10px] text-amber-600 font-medium">No active locations available. Please contact administrator.</p>
+                    )}
                   </div>
 
                   <div className="space-y-1.5">

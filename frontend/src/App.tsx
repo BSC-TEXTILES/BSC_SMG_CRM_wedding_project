@@ -49,6 +49,7 @@ import WeddingFollowUpCalendar from './pages/wedding/WeddingFollowUpCalendar';
 import WeddingStatusBoard from './pages/wedding/WeddingStatusBoard';
 import WeddingReports from './pages/wedding/WeddingReports';
 import WeddingImport from './pages/wedding/WeddingImport';
+import ToastContainer from './components/Toast';
 import { LocationProvider } from './context/LocationContext';
 import QuickActionCenter from './components/ui/QuickActionCenter';
 import ChatWidget from './components/ui/ChatWidget';
@@ -79,6 +80,7 @@ export default function App() {
     <ErrorBoundary>
     <LocationProvider>
     <Router>
+      <ToastContainer />
       <ConnectivityBanner />
       <UserTracker />
       <UrlGuardMonitor />

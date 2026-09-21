@@ -26,6 +26,7 @@ import {
   Lock
 } from 'lucide-react';
 import { API } from '../services/api';
+import { showToast } from '../components/Toast';
 
 const defaultQuestions = [
   { id: 'q1', question: 'How satisfied are you with your overall shopping experience today?', category: 'Shopping Experience', options: ['Very satisfied', 'Satisfied', 'Neutral', 'Dissatisfied', 'Very dissatisfied'] },
@@ -96,10 +97,11 @@ export default function PublicFeedback() {
         qrCodeId: qrCodeId || undefined
       });
       setRefNo(res?.id || res?.refNo || `FB-${Math.random().toString(36).substring(2, 8).toUpperCase()}`);
+      showToast('Feedback submitted successfully.', 'success');
       setSubmitted(true);
     } catch (err) {
       console.error(err);
-      alert('Failed to submit feedback. Please try again.');
+      showToast('Unable to submit feedback. Please try again.', 'error');
     } finally {
       setSubmitting(false);
     }

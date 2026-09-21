@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { API } from '../services/api';
 import { io } from 'socket.io-client';
+import { showToast } from '../components/Toast';
 
 export default function FeedbackList() {
   const [callQueue, setCallQueue] = useState<any[]>([]);
@@ -143,9 +144,10 @@ export default function FeedbackList() {
 
       setSelectedItem(null);
       fetchCallQueue();
-    } catch (err) {
+      showToast('Call activity saved successfully.', 'success');
+    } catch (err: any) {
       console.error(err);
-      alert('Failed to update call record.');
+      showToast('Unable to save call activity. Please try again.', 'error');
     } finally {
       setUpdating(false);
     }

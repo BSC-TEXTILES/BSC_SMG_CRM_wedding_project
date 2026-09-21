@@ -829,7 +829,7 @@ exports.getLocationsForQr = async (req, res) => {
     const isGlobalAdmin = session && (session.role === 'Super Admin' || session.isGlobalAdmin);
     const userLocationId = session?.locationId;
 
-    let sql = 'SELECT id, location_code as locationCode, location_name as locationName FROM locations WHERE status = "Active"';
+    let sql = 'SELECT id, location_code as locationCode, location_name as locationName FROM locations WHERE status = \'Active\'';
     const params = [];
 
     if (!isGlobalAdmin && userLocationId) {

@@ -329,7 +329,7 @@ export default function EmployeesPage() {
 
       await API.updateCandidate(editModal.emp.appNo, updatedData);
 
-      showToast('Complete employee information saved successfully!', 'success');
+      showToast('Employee details saved successfully.', 'success');
       setEditModal({ open: false, emp: null });
       
       // Update drawer payload if currently viewing the same employee
@@ -352,7 +352,7 @@ export default function EmployeesPage() {
     if (!window.confirm(`Are you sure you want to permanently delete employee ${empName} (${appNo})?`)) return;
     try {
       await API.deleteCandidate(appNo);
-      showToast('Employee record deleted', 'success');
+      showToast('Employee record deleted successfully.', 'success');
       setDrawerEmp(null);
       loadEmployees();
     } catch (err: any) {

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import DashboardLayout from '../components/layouts/DashboardLayout';
 import { Briefcase, CheckCircle, Clock, Save, RefreshCw } from 'lucide-react';
 import { API } from '../services/api';
+import { showToast } from '../components/Toast';
 
 export default function PMView() {
   const [diverts, setDiverts] = useState<any[]>([]);
@@ -40,11 +41,12 @@ export default function PMView() {
         actorRole: 'Purchase Manager',
         actorId: 'PM_1'
       });
+      showToast('Sourcing divert status updated successfully.', 'success');
       setSelectedDivert(null);
       fetchDiverts();
     } catch (err) {
       console.error(err);
-      alert('Failed to update divert status.');
+      showToast('Unable to update divert status. Please try again.', 'error');
     } finally {
       setUpdating(false);
     }

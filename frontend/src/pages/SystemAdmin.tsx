@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import Topbar from '../components/Topbar';
-import ToastContainer from '../components/Toast';
+import ToastContainer, { showToast } from '../components/Toast';
 import { Auth, UserSession, apiFetch } from '../services/api';
 import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../utils/sidebarState';
 import { NotificationService } from '../services/notificationService';
@@ -329,7 +329,10 @@ export default function SystemAdminPage() {
       await apiFetch('/security/clear-events', { method: 'POST' });
       setSecurityEvents([]);
       loadDashStats();
-    } catch {}
+      showToast('Security detection history cleared successfully.', 'success');
+    } catch (err: any) {
+      showToast(err.message || 'Failed to clear security events.', 'error');
+    }
   };
 
   // ── Tab Config ──────────────────────────────────────────────────────────

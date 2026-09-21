@@ -22,6 +22,7 @@ import {
   X
 } from 'lucide-react';
 import { API, Auth } from '../services/api';
+import { showToast } from '../components/Toast';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell,
   PieChart, Pie, Legend, LineChart, Line
@@ -332,13 +333,14 @@ export default function VmChecklist() {
         submittedBy: auditorName,
         entries
       });
+      showToast('Visual Merchandising Checklist submitted successfully.', 'success');
       setSubmittedMsg(
-        `Visual Merchandising Checklist submitted successfully for ${selectedFloor} — ${selectedSection}! Score: ${scorePercent.toFixed(0)}%`
+        `Visual Merchandising Checklist submitted successfully for ${selectedFloor} —  ${selectedSection}! Score: ${scorePercent.toFixed(0)}%`
       );
       loadData();
     } catch (err: any) {
       console.error(err);
-      alert('Failed to submit VM checklist: ' + (err.message || 'Server error'));
+      showToast('Unable to submit VM checklist: ' + (err.message || 'Server error'), 'error');
     } finally {
       setSubmitting(false);
     }

@@ -100,7 +100,7 @@ export default function CandidateProfileModal({ candidate, isOpen, onClose, onUp
 
       await API.updateCandidate(appNoKey, payload);
 
-      showToast('Candidate details & status updated successfully! 🎉', 'success');
+      showToast('Candidate details updated successfully.', 'success');
 
       setCurrentCand({
         ...currentCand,

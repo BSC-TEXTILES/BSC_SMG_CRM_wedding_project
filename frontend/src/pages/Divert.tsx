@@ -6,6 +6,7 @@ import {
   ArrowRight, ShieldCheck, UserCheck, Phone, Calendar, Building2, TrendingUp, Sparkles, CircleX
 } from 'lucide-react';
 import { API } from '../services/api';
+import { showToast } from '../components/Toast';
 import MetricCard from '../components/ui/MetricCard';
 import * as XLSX from 'xlsx';
 
@@ -68,6 +69,7 @@ export default function Divert() {
         customerMobile: customerMobile.length === 10 ? `+91${customerMobile}` : customerMobile,
         createdBy: 'Floor Staff'
       });
+      showToast('Sourcing divert request raised successfully.', 'success');
       setShowRaiseModal(false);
       setProductWanted('');
       setCustomerName('');
@@ -76,7 +78,7 @@ export default function Divert() {
       fetchData();
     } catch (err) {
       console.error(err);
-      alert('Failed to raise sourcing divert.');
+      showToast('Unable to raise sourcing divert request. Please try again.', 'error');
     } finally {
       setCreating(false);
     }

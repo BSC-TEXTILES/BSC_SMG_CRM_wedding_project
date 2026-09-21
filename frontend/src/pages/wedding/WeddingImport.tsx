@@ -85,9 +85,9 @@ export default function WeddingImport() {
 
       const res = await API.importWeddingCustomers(formData);
       setImportResult(res);
-      showToast(res.message || 'CSV file imported successfully!', 'success');
+      showToast('Wedding customers imported and saved successfully.', 'success');
     } catch (err: any) {
-      showToast('Import failed: ' + err.message, 'error');
+      showToast('Unable to import customers: ' + (err.message || 'Please verify the CSV format and try again.'), 'error');
     } finally {
       setUploading(false);
     }

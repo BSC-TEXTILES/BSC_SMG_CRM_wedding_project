@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import DashboardLayout from '../components/layouts/DashboardLayout';
 import { BarChart3, Clock, Users, Calendar, Save, CircleCheck, CircleAlert, Sparkles, Check, Hourglass, Activity, FileText, Download, TrendingUp, Zap } from 'lucide-react';
 import { API } from '../services/api';
+import { showToast } from '../components/Toast';
 import MetricCard from '../components/ui/MetricCard';
 import * as XLSX from 'xlsx';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
@@ -12,7 +13,6 @@ export default function Footfall() {
   const [slots, setSlots] = useState<Record<number, { visitors: number; remarks: string }>>({});
   const [loading, setLoading] = useState<boolean>(true);
   const [savingSlot, setSavingSlot] = useState<number | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
   const localOverridesRef = useRef<Record<number, { visitors: number; remarks: string }>>({});
 
   const slotHours = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21];
@@ -89,7 +89,6 @@ export default function Footfall() {
 
   const handleSaveSlot = async (hour: number) => {
     setSavingSlot(hour);
-    setMessage(null);
     try {
       const slotData = slots[hour] || { visitors: 0, remarks: '' };
       await API.upsertFootfall({
@@ -102,11 +101,10 @@ export default function Footfall() {
       // Clear local override after successful save
       delete localOverridesRef.current[hour];
       const formatHour = hour > 12 ? `${hour - 12}:00 PM` : hour === 12 ? '12:00 PM' : `${hour}:00 AM`;
-      setMessage(`Footfall slot for ${formatHour} updated and synchronized live!`);
-      setTimeout(() => setMessage(null), 3000);
-    } catch (err) {
+      showToast(`Footfall slot for ${formatHour} saved successfully.`, 'success');
+    } catch (err: any) {
       console.error(err);
-      setMessage('Failed to save slot entry.');
+      showToast(err.message || 'Failed to save footfall slot entry.', 'error');
     } finally {
       setSavingSlot(null);
     }
@@ -307,13 +305,7 @@ export default function Footfall() {
           </div>
         </div>
 
-        {/* Feedback Alert Toast */}
-        {message && (
-          <div className="p-4 rounded-2xl bg-emerald-50/90 border border-emerald-200 text-emerald-800 text-xs font-black flex items-center gap-3 shadow-md animate-fade-in">
-            <CircleCheck className="w-5 h-5 text-emerald-600 shrink-0" />
-            <span>{message}</span>
-          </div>
-        )}
+
 
         {/* Section Header */}
         <div className="flex items-center justify-between border-b border-accent-soft pb-3">

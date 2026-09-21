@@ -142,7 +142,7 @@ export default function TelecallerDeskPage() {
         await API.changeWeddingCustomerStatus(activeCustomer.id, callForm.new_customer_status, `Telecaller call outcome: ${callForm.call_outcome}`);
       }
 
-      toastManager.success(`Call logged for ${activeCustomer.customer_name}`);
+      toastManager.success('Call activity saved successfully.');
       setCallModalOpen(false);
       setActiveCustomer(null);
       refreshQueue();
@@ -157,7 +157,7 @@ export default function TelecallerDeskPage() {
   const handleQuickStatus = async (cust: WeddingCustomer, targetStatus: string) => {
     try {
       await API.changeWeddingCustomerStatus(cust.id, targetStatus, `Telecaller desk quick action`);
-      toastManager.success(`Updated ${cust.customer_name} status to ${targetStatus}`);
+      toastManager.success(`Customer status updated successfully to "${targetStatus}".`);
       refreshQueue();
     } catch (err: any) {
       toastManager.error('status-update', 'Error updating status: ' + err.message);

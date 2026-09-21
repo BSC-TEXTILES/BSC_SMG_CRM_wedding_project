@@ -56,7 +56,7 @@ export default function OpeningsPage() {
 
     try {
       await API.call('updateOpening', { designation, required_count: count });
-      showToast(`Updated requirement for ${designation}`, 'success');
+      showToast(`Role requirement updated successfully for ${designation}.`, 'success');
       
       const newEdit = { ...editMode };
       delete newEdit[designation];
@@ -85,7 +85,7 @@ export default function OpeningsPage() {
         required_count: newRoleRequired || 0 
       });
 
-      showToast(`New role "${newRoleName.trim()}" added successfully across system!`, 'success');
+      showToast(`Role "${newRoleName.trim()}" created successfully.`, 'success');
       setAddModalOpen(false);
       setNewRoleName('');
       setNewRoleRequired(1);
@@ -102,7 +102,7 @@ export default function OpeningsPage() {
 
     try {
       await API.deleteDesignation(designation);
-      showToast(`Deleted designation ${designation}`, 'success');
+      showToast(`Role "${designation}" deleted successfully.`, 'success');
       loadOpenings();
     } catch (err: any) {
       showToast('Error deleting role: ' + err.message, 'error');

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { UserCheck, Plus, Minus, KeyRound, Clock, Sparkles, RefreshCw, ShieldCheck, Activity, Users, Store, Zap } from 'lucide-react';
 import { API } from '../services/api';
+import { showToast } from '../components/Toast';
 import { io } from 'socket.io-client';
 
 export default function Greeter() {
@@ -121,11 +122,11 @@ export default function Greeter() {
         remarks: 'Greeter Entrance Kiosk',
         submittedBy: 'Greeter'
       });
-    } catch (err) {
-      console.error('Failed to auto-save footfall entry:', err);
+    } catch (err: any) {
       // Revert if API fails
       setCurrentSlotCount(prevCount);
       setLoggedMsg('Failed to sync entry to database');
+      showToast(err.message || 'Failed to save visitor count to database.', 'error');
     } finally {
       setIsSyncing(false);
     }

@@ -229,12 +229,12 @@ export default function CandidateEntryPage() {
         if (!res || res.success === false) {
           throw new Error(res?.message || 'Update failed. Please try again.');
         }
-        showToast('Registration details updated successfully!', 'success');
+        showToast('Registration details updated successfully.', 'success');
         setSuccessAppNo(targetAppNo);
       } else {
         const res = await API.addCandidate({ appNo: targetAppNo, ...payload });
         setSuccessAppNo(res.appNo || targetAppNo);
-        showToast(`Registration Successful! App No: ${res.appNo || targetAppNo}`, 'success');
+        showToast(`Candidate application submitted successfully. Application No: ${res.appNo || targetAppNo}`, 'success');
       }
 
       setStep(3);

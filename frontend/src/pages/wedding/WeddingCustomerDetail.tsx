@@ -183,7 +183,7 @@ export default function WeddingCustomerDetail() {
         expected_shopping_date_updated: callForm.expected_shopping_date || undefined
       });
 
-      showToast('Call logged and recorded successfully', 'success');
+      showToast('Call activity saved successfully.', 'success');
       setCallModalOpen(false);
       loadCustomer();
     } catch (err: any) {
@@ -200,7 +200,7 @@ export default function WeddingCustomerDetail() {
     setSavingStatus(true);
     try {
       await API.changeWeddingCustomerStatus(customer.id, newStatus, statusReason);
-      showToast(`Status updated to "${newStatus}"`, 'success');
+      showToast('Customer status updated successfully.', 'success');
       setStatusModalOpen(false);
       loadCustomer();
     } catch (err: any) {
@@ -217,7 +217,7 @@ export default function WeddingCustomerDetail() {
     setSavingNote(true);
     try {
       await API.createWeddingNote(customer.id, { note: noteText.trim() });
-      showToast('Note added successfully', 'success');
+      showToast('Customer note added successfully.', 'success');
       setNoteText('');
       loadCustomer();
     } catch (err: any) {

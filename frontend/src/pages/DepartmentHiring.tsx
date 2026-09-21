@@ -114,6 +114,7 @@ export default function DepartmentHiringPage() {
     required: 10,
     remarks: ''
   });
+  const [savingTarget, setSavingTarget] = useState(false);
 
   const loadData = useCallback(async () => {
     try {

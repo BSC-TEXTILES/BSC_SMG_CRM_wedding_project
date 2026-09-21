@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import Topbar from '../components/Topbar';
 import { API, Auth, UserSession } from '../services/api';
+import { showToast } from '../components/Toast';
 import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../utils/sidebarState';
 import {
   BarChart3, Download, FileSpreadsheet, Filter, Search, RefreshCw,
@@ -21,17 +22,14 @@ const STATUS_COLORS: Record<string, { bg: string; text: string; border: string; 
 
 const MODULE_BARS = ['bg-primary', 'bg-accent', 'bg-emerald-600', 'bg-purple-600', 'bg-rose-600', 'bg-teal-600'];
 
-function Toast({ msg, type }: { msg: string; type: string }) {
-  const bg = type === 'success' ? 'bg-emerald-600' : type === 'error' ? 'bg-red-600' : 'bg-primary';
-  return <div className={`fixed bottom-6 right-6 z-[200] px-5 py-3 rounded-xl text-white text-sm font-semibold shadow-xl animate-slide-up ${bg}`}>{msg}</div>;
-}
+
 
 export default function MCheckReports() {
   const navigate = useNavigate();
   const [session, setSession] = useState<UserSession | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [collapsed, setCollapsed] = useState<boolean>(getSidebarCollapsed());
-  const [toast, setToast] = useState<any>(null);
+
 
   useEffect(() => {
     return subscribeSidebarCollapsed(setCollapsed);
@@ -57,7 +55,7 @@ export default function MCheckReports() {
   const [loading, setLoading] = useState(true);
   const [expandedCheckpoint, setExpandedCheckpoint] = useState<number | null>(null);
 
-  const showToast = (msg: string, type = 'success') => { setToast({ msg, type }); setTimeout(() => setToast(null), 3000); };
+
 
   const loadReport = useCallback(async () => {
     setLoading(true);
@@ -115,7 +113,7 @@ export default function MCheckReports() {
       <Sidebar session={session} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${collapsed ? 'lg:pl-20' : 'lg:pl-64'}`}>
         <Topbar title="MCheck Reports" session={session} onMenuClick={() => setSidebarOpen(true)} />
-        {toast && <Toast msg={toast.msg} type={toast.type} />}
+
 
         <div className="flex-1 overflow-y-auto px-4 lg:px-6 py-6 space-y-6">
           {/* Header */}

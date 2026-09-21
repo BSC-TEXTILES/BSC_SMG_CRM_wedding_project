@@ -4,6 +4,7 @@ import Sidebar from '../components/Sidebar';
 import Topbar from '../components/Topbar';
 import { API, Auth, UserSession } from '../services/api';
 import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../utils/sidebarState';
+import { showToast } from '../components/Toast';
 import {
   CircleCheck, Circle, CircleAlert, Clock, CircleX, ChevronDown, ChevronRight,
   ChevronUp, Calendar, RefreshCw, Send, Save, Upload, X, Eye, FileText,
@@ -45,22 +46,12 @@ const ACCURACY_OPTIONS = [
 
 const STATUS_OPTIONS = ['PENDING', 'IN_PROGRESS', 'DONE', 'NOT_DONE', 'POSTPONED'];
 
-function Toast({ msg, type }: { msg: string; type: 'success' | 'error' | 'info' }) {
-  const bg = type === 'success' ? 'bg-emerald-600' : type === 'error' ? 'bg-red-600' : 'bg-primary';
-  return (
-    <div className={`fixed bottom-6 right-6 z-[200] px-5 py-3 rounded-xl text-white text-sm font-semibold shadow-xl animate-slide-up ${bg}`}>
-      {msg}
-    </div>
-  );
-}
-
 export default function DailyMCheck() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [session, setSession] = useState<UserSession | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [collapsed, setCollapsed] = useState<boolean>(getSidebarCollapsed());
-  const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' | 'info' } | null>(null);
 
   useEffect(() => {
     return subscribeSidebarCollapsed(setCollapsed);
@@ -104,11 +95,6 @@ export default function DailyMCheck() {
     scheduled_time: '',
     is_active: 1
   });
-
-  const showToast = (msg: string, type: 'success' | 'error' | 'info' = 'success') => {
-    setToast({ msg, type });
-    setTimeout(() => setToast(null), 3000);
-  };
 
   // Load Dashboard
   const loadDashboard = useCallback(async () => {
@@ -190,16 +176,16 @@ export default function DailyMCheck() {
         updated_by: session?.fullName || session?.username || 'User'
       });
       if (res.success) {
-        showToast(isSubmit ? '✓ Checkpoint submitted' : '✓ Draft saved');
+        showToast(isSubmit ? 'Checkpoint submitted successfully.' : 'Checkpoint draft saved successfully.', 'success');
         setResponses(prev => ({ ...prev, [cpId]: { ...prev[cpId], system_status: res.system_status } }));
         if (selectedModule) await loadModule(selectedModule);
         await loadDashboard();
         if (isSubmit) setExpandedCheckpoint(null);
       } else {
-        showToast(res.error || 'Save failed', 'error');
+        showToast(res.error || 'Unable to save checkpoint. Please try again.', 'error');
       }
     } catch (e: any) {
-      showToast(e.message || 'Save failed', 'error');
+      showToast(e.message || 'Unable to save checkpoint. Please try again.', 'error');
     } finally {
       setSaving(prev => ({ ...prev, [cpId]: false }));
     }
@@ -212,10 +198,10 @@ export default function DailyMCheck() {
       const res = await API.uploadMCheckPhoto(fd);
       if (res.success) {
         setResponses(prev => ({ ...prev, [cpId]: { ...prev[cpId], photo_url: res.photoUrl } }));
-        showToast('Photo evidence uploaded');
+        showToast('Photo evidence uploaded successfully.', 'success');
       }
     } catch (e) {
-      showToast('Photo upload failed', 'error');
+      showToast('Photo upload failed. Please try again.', 'error');
     }
   };
 
@@ -230,14 +216,14 @@ export default function DailyMCheck() {
         updated_by: session?.fullName || 'User'
       });
       if (res.success) {
-        showToast(`✓ ${res.submitted} checkpoint(s) submitted`);
+        showToast(`${res.submitted} checkpoint(s) submitted successfully.`, 'success');
         await loadModule(selectedModule);
         await loadDashboard();
       } else {
-        showToast(res.error || 'Submit failed', 'error');
+        showToast(res.error || 'Submit failed. Please try again.', 'error');
       }
     } catch (e: any) {
-      showToast(e.message || 'Submit failed', 'error');
+      showToast(e.message || 'Submit failed. Please try again.', 'error');
     } finally {
       setSubmitAllLoading(false);
     }
@@ -277,17 +263,17 @@ export default function DailyMCheck() {
       };
       const res = await API.saveMCheckAdminCheckpoint(payload);
       if (res.success) {
-        showToast('✓ Checkpoint saved');
+        showToast('Checkpoint configuration saved successfully.', 'success');
         setIsAddingCheckpoint(false);
         setEditingCheckpoint(null);
         await loadAdminStructure();
         await loadDashboard();
         if (selectedModule) await loadModule(selectedModule);
       } else {
-        showToast(res.error || 'Failed to save', 'error');
+        showToast(res.error || 'Unable to save checkpoint configuration. Please try again.', 'error');
       }
     } catch (err: any) {
-      showToast(err.message || 'Error saving checkpoint', 'error');
+      showToast(err.message || 'Unable to save checkpoint configuration. Please try again.', 'error');
     }
   };
 
@@ -348,7 +334,6 @@ export default function DailyMCheck() {
       <Sidebar session={session} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${collapsed ? 'lg:pl-20' : 'lg:pl-64'}`}>
         <Topbar title="Daily MCheck" session={session} onMenuClick={() => setSidebarOpen(true)} />
-        {toast && <Toast msg={toast.msg} type={toast.type} />}
 
         <div className="flex-1 overflow-y-auto px-4 lg:px-6 py-6 space-y-6">
 

@@ -245,7 +245,7 @@ export default function CandidatesPage() {
       } else {
         await API.updateCandidate(candidate.appNo, { status: targetStatus, remarks: `Status updated to ${targetStatus}` });
       }
-      showToast(`${candidate.name} status updated to ${targetStatus} 🎉`, 'success');
+      showToast(`${candidate.name} status updated successfully to ${targetStatus}.`, 'success');
       loadCandidates();
     } catch (err: any) {
       showToast('Failed to update status: ' + err.message, 'error');
@@ -266,7 +266,7 @@ export default function CandidatesPage() {
       } else {
         await API.updateCandidate(c.appNo, { status: targetStatus, remarks: `Status updated to ${targetStatus}` });
       }
-      showToast(`${c.name} updated to ${targetStatus} 🎉`, 'success');
+      showToast(`${c.name} status updated successfully to ${targetStatus}.`, 'success');
       setHighlightAppNo(c.appNo);
       setTimeout(() => setHighlightAppNo(null), 2500);
       setConfirmStatusModal({ open: false, candidate: null, newStatus: '' });
@@ -282,7 +282,7 @@ export default function CandidatesPage() {
     if (!window.confirm('Are you sure you want to permanently delete this candidate?')) return;
     try {
       await API.deleteCandidate(appNo);
-      showToast('Candidate deleted successfully', 'success');
+      showToast('Candidate record deleted successfully.', 'success');
       setDrawerCandidate(null);
       loadCandidates();
     } catch (err) {
@@ -315,7 +315,7 @@ export default function CandidatesPage() {
           return;
         }
         await API.rejectCandidate({ appNo: candidate.appNo, remarks: 'Rejected from Shortlisting phase', candName: candidate.name });
-        showToast(`${candidate.name} rejected`, 'warn');
+        showToast(`${candidate.name} marked as rejected successfully.`, 'info');
       } else {
         const statusMap: Record<string, string> = {
           shortlist: 'Shortlisted',
@@ -323,7 +323,7 @@ export default function CandidatesPage() {
           reactivate: 'New'
         };
         await API.updateCandidate(candidate.appNo, { status: statusMap[action] || action, remarks: '' });
-        showToast(`${candidate.name} updated to ${statusMap[action] || action}`, 'success');
+        showToast(`${candidate.name} status updated successfully to ${statusMap[action] || action}.`, 'success');
       }
 
       setDrawerCandidate(null);
@@ -369,7 +369,7 @@ export default function CandidatesPage() {
         remarks: offerForm.remarks
       });
 
-      showToast(`${directOfferModal.candidate.name} shortlisted & moved to Wedding Operations 🎉`, 'success');
+      showToast(`${directOfferModal.candidate.name} shortlisted and offer details saved successfully.`, 'success');
       setDirectOfferModal({ open: false, candidate: null });
       setDrawerCandidate(null);
       loadCandidates();
