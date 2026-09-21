@@ -58,12 +58,16 @@ export function useTelecallerQueue(locationFilter: number | '' = '') {
 
       if (res?.data) {
         const d = res.data;
-        const dueToday = Array.isArray(d.dueToday) ? d.dueToday : (Array.isArray(d.due_today) ? d.due_today : []);
-        const overdue = Array.isArray(d.overdue) ? d.overdue : [];
-        const callbacks = Array.isArray(d.callbackRequests) ? d.callbackRequests : (Array.isArray(d.callbacks) ? d.callbacks : []);
-        const upcoming = Array.isArray(d.upcoming) ? d.upcoming : [];
-        const priority = Array.isArray(d.priorityCalls) ? d.priorityCalls : (Array.isArray(d.priority) ? d.priority : []);
-        const newLeads = Array.isArray(d.newCustomers) ? d.newCustomers : (Array.isArray(d.new_customers) ? d.new_customers : []);
+        // Backend returns nested structure: { summary, counts, queues }
+        const q = d.queues || d;
+        const s = d.summary || d.counts || d;
+
+        const dueToday = Array.isArray(q.dueToday) ? q.dueToday : (Array.isArray(q.due_today) ? q.due_today : []);
+        const overdue = Array.isArray(q.overdue) ? q.overdue : [];
+        const callbacks = Array.isArray(q.callbackRequests) ? q.callbackRequests : (Array.isArray(q.callbacks) ? q.callbacks : []);
+        const upcoming = Array.isArray(q.upcoming) ? q.upcoming : [];
+        const priority = Array.isArray(q.priorityCalls) ? q.priorityCalls : (Array.isArray(q.priority) ? q.priority : []);
+        const newLeads = Array.isArray(q.newCustomers) ? q.newCustomers : (Array.isArray(q.new_customers) ? q.new_customers : []);
 
         const currentUserName = session?.fullName || session?.username || '';
         const myQueue = [...dueToday, ...overdue, ...callbacks].filter(
@@ -80,14 +84,14 @@ export function useTelecallerQueue(locationFilter: number | '' = '') {
           myQueue: myQueue.length > 0 ? myQueue : dueToday
         });
 
-        const completed = d.completedToday || d.completed || 0;
+        const completed = Number(s.completedToday) || Number(s.completed) || 0;
         const target = 40;
         setDeskSummary({
-          assignedCalls: d.assignedCalls || dueToday.length + overdue.length,
-          pendingCalls: d.pendingCalls || d.pending || dueToday.length + overdue.length,
+          assignedCalls: Number(s.assignedCalls) || dueToday.length + overdue.length,
+          pendingCalls: Number(s.pendingCalls) || Number(s.pending) || dueToday.length + overdue.length,
           completedToday: completed,
-          connectedCalls: d.connectedCalls || 0,
-          callbackCount: callbacks.length,
+          connectedCalls: Number(s.connectedCalls) || 0,
+          callbackCount: Number(s.callbackCount) || callbacks.length,
           remainingCalls: Math.max(0, target - completed),
           dailyTarget: target
         });

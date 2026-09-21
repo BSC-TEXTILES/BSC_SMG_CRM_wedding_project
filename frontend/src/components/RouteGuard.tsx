@@ -4,6 +4,7 @@ import { Auth } from '../services/api';
 import { getDashboardRouteForRole } from '../utils/dashboardRouting';
 import { getRoleNavMap, resolveAllowedPages } from '../utils/rbac';
 import { permissionsCache } from '../context/PermissionsCache';
+import { securityManager } from '../utils/securityManager';
 import { Loader2 } from 'lucide-react';
 
 /**
@@ -13,6 +14,14 @@ import { Loader2 } from 'lucide-react';
  * guard only prevents a user from OPENING a page their role is not assigned
  * to (defense against URL tampering / sidebar-less navigation), and redirects
  * unauthenticated visitors to login.
+ *
+ * SECURITY UPDATE (2026-09-21):
+ * When a user is DENIED access (URL manipulation detected), the guard now
+ * triggers a full force-logout via SecurityManager instead of silently
+ * redirecting to the user's dashboard. This:
+ *   1. Logs the violation attempt to audit_logs
+ *   2. Clears ALL client state (localStorage, sessionStorage, cookies)
+ *   3. Redirects to /login?security=unauthorized
  *
  * PERFORMANCE FIX (2026-09-21):
  * Previously this called API.getMyPermissions() + API.getPageSettings() on
@@ -38,7 +47,11 @@ export default function RouteGuard({ pageKey, children }: { pageKey: string; chi
 
     // Role map is the immediate baseline (no flash of blocked content)
     if (!roleKeys.includes(pageKey)) {
-      setResolution('denied');
+      // ── SECURITY: URL Manipulation detected → force logout ──
+      securityManager.forceLogout(
+        `Role "${role}" denied page key "${pageKey}" at "${location.pathname}"`,
+        location.pathname
+      );
       return;
     }
 
@@ -49,7 +62,15 @@ export default function RouteGuard({ pageKey, children }: { pageKey: string; chi
       if (cancelled) return;
       const userModules = myPerms?.custom && Array.isArray(myPerms.modules) ? myPerms.modules : null;
       const allowed = resolveAllowedPages(role, pageSettings, userModules);
-      setResolution(allowed.includes(pageKey) ? 'allowed' : 'denied');
+      if (allowed.includes(pageKey)) {
+        setResolution('allowed');
+      } else {
+        // ── SECURITY: DB-level permission denied → force logout ──
+        securityManager.forceLogout(
+          `Role "${role}" denied page key "${pageKey}" by DB permissions at "${location.pathname}"`,
+          location.pathname
+        );
+      }
     });
 
     return () => { cancelled = true; };
@@ -74,9 +95,11 @@ export default function RouteGuard({ pageKey, children }: { pageKey: string; chi
   }
 
   if (resolution === 'denied') {
-    // Never show another role's page — bounce to THIS role's own dashboard
+    // This state should not normally be reached because forceLogout()
+    // redirects via window.location.replace(). Fallback just in case.
     return <Navigate to={getDashboardRouteForRole(Auth.get()?.role)} replace />;
   }
 
   return <>{children}</>;
 }
+

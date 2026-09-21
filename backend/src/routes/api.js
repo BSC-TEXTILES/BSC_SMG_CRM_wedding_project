@@ -274,7 +274,8 @@ const SECURITY_EVENT_TYPES = new Set([
   'DEVTOOLS_DETECTED',
   'DEVTOOLS_CLOSED',
   'GPS_PING',
-  'SESSION_EXPIRED'
+  'SESSION_EXPIRED',
+  'URL_MANIPULATION'
 ]);
 
 let inMemoryShieldState = false;

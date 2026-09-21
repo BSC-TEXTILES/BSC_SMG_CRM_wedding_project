@@ -57,6 +57,13 @@ import ConnectivityBanner from './components/ConnectivityBanner';
 import ErrorBoundary from './components/ErrorBoundary';
 import SessionTimeoutGuard from './components/SessionTimeoutGuard';
 import DesktopModeWarning from './components/DesktopModeWarning';
+import { useUrlGuard } from './hooks/useUrlGuard';
+
+/** Monitors every URL change for unauthorized access — triggers force-logout on violation. */
+function UrlGuardMonitor() {
+  useUrlGuard();
+  return null;
+}
 
 export default function App() {
   return (
@@ -65,6 +72,7 @@ export default function App() {
     <Router>
       <ConnectivityBanner />
       <UserTracker />
+      <UrlGuardMonitor />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />

@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { API, Auth } from '../services/api';
 import ToastContainer, { showToast } from '../components/Toast';
-import { ShieldCheck, Lock, User, ArrowRight, MapPin, RefreshCw, Hash, Eye, EyeOff, Sparkles, Search } from 'lucide-react';
+import { ShieldCheck, ShieldAlert, Lock, User, ArrowRight, MapPin, RefreshCw, Hash, Eye, EyeOff, Sparkles, Search } from 'lucide-react';
 import { getDashboardRouteForRole } from '../utils/dashboardRouting';
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const securityViolation = searchParams.get('security') === 'unauthorized';
+  const violationPath = searchParams.get('path') || '';
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -239,6 +242,24 @@ export default function LoginPage() {
             <h3 className="text-xl font-black text-primary tracking-tight">Welcome Back</h3>
             <p className="text-xs text-primary font-medium mt-1">Sign in with your authorized system credentials. Your location will be loaded automatically.</p>
           </div>
+
+          {/* Security Violation Alert */}
+          {securityViolation && (
+            <div className="p-4 rounded-2xl bg-[#FDE8E8] border-2 border-[#E74C3C] text-[#C0392B] space-y-2 animate-scale-in">
+              <div className="flex items-center gap-2 font-black text-xs uppercase tracking-wider">
+                <ShieldAlert className="w-4 h-4 text-[#E74C3C]" />
+                <span>Unauthorized Access Detected</span>
+              </div>
+              <p className="text-xs font-semibold leading-relaxed">
+                You have been logged out for attempting to access a restricted area
+                {violationPath ? ` (${violationPath})` : ''}. This incident has been recorded in the security audit log.
+              </p>
+              <div className="flex items-center gap-1.5 pt-1.5 border-t border-[#F5B7B7]/60 text-[10px] font-bold text-[#C0392B]/80">
+                <Lock className="w-3 h-3" />
+                <span>Please sign in again with authorized credentials. Repeated violations may result in account suspension.</span>
+              </div>
+            </div>
+          )}
 
           {/* 10-Minute Lockout Countdown Alert */}
           {isLocked && lockRemainingSeconds > 0 && (
