@@ -158,6 +158,10 @@ export default function WeddingCustomerCreate() {
       showToast('Store Location is required', 'error');
       return;
     }
+    if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+      showToast('Please enter a valid email address (e.g. name@example.com)', 'error');
+      return;
+    }
 
     setSaving(true);
     try {
