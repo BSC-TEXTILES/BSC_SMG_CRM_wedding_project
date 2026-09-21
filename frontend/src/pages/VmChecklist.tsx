@@ -17,6 +17,8 @@ import {
   FolderPlus,
   Tag,
   MapPin,
+  Trash2,
+  AlertTriangle,
   X
 } from 'lucide-react';
 import { API, Auth } from '../services/api';
@@ -116,6 +118,12 @@ export default function VmChecklist() {
   const [newSectionsList, setNewSectionsList] = useState<string[]>([]);
   const [creatingFloor, setCreatingFloor] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+
+  // Admin Floor Delete State
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [floorToDelete, setFloorToDelete] = useState<{ key: string; info: FloorItem } | null>(null);
+  const [deletingFloor, setDeletingFloor] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -226,6 +234,36 @@ export default function VmChecklist() {
       setCreateError(err.message || 'Server error creating floor');
     } finally {
       setCreatingFloor(false);
+    }
+  };
+
+  const handleDeleteFloor = async () => {
+    if (!floorToDelete || deletingFloor) return;
+    setDeleteError(null);
+    setDeletingFloor(true);
+    try {
+      const payload = floorToDelete.info.id ? { id: floorToDelete.info.id } : { name: floorToDelete.key };
+      const res = await API.deleteVmFloor(payload);
+      if (res && res.success !== false) {
+        setFloorsData((prev) => {
+          const next = { ...prev };
+          delete next[floorToDelete.key];
+          return next;
+        });
+        if (selectedFloor === floorToDelete.key) {
+          resetAllSelections();
+        }
+        setIsDeleteModalOpen(false);
+        setFloorToDelete(null);
+        setSubmittedMsg(`Floor '${floorToDelete.key}' deleted successfully.`);
+      } else {
+        setDeleteError(res?.message || 'Failed to delete floor');
+      }
+    } catch (err: any) {
+      console.error(err);
+      setDeleteError(err.message || 'Server error deleting floor');
+    } finally {
+      setDeletingFloor(false);
     }
   };
 
@@ -549,9 +587,26 @@ export default function VmChecklist() {
                     </div>
                   </div>
 
-                  <div className="pt-3 border-t border-accent-soft/60 flex items-center justify-between text-xs font-black text-accent">
-                    <span>View Sections</span>
-                    <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  <div className="pt-3 border-t border-accent-soft/60 flex items-center justify-between text-xs font-black">
+                    <span className="text-accent flex items-center gap-1">
+                      View Sections
+                      <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    </span>
+                    {isAdmin && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setFloorToDelete({ key: floorKey, info: floorInfo });
+                          setDeleteError(null);
+                          setIsDeleteModalOpen(true);
+                        }}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                        title={`Delete ${floorInfo.label}`}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
@@ -1458,6 +1513,64 @@ export default function VmChecklist() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Floor Confirmation Modal */}
+      {isDeleteModalOpen && floorToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-primary/60 backdrop-blur-md animate-fade-in">
+          <div className="bg-white rounded-3xl shadow-2xl border border-accent-soft w-full max-w-md overflow-hidden animate-scale-in">
+            <div className="p-6 text-center space-y-4">
+              <div className="w-14 h-14 rounded-2xl bg-red-50 border border-red-200 flex items-center justify-center mx-auto">
+                <AlertTriangle className="w-7 h-7 text-red-500" />
+              </div>
+              <div>
+                <h3 className="text-lg font-black text-primary tracking-tight">Delete Store Floor</h3>
+                <p className="text-sm text-primary font-medium mt-1">
+                  Are you sure you want to delete <span className="font-black text-red-600">{floorToDelete.key}</span>?
+                </p>
+              </div>
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-left">
+                <p className="text-[11px] font-semibold text-amber-800 leading-relaxed">
+                  <span className="font-black">Warning:</span> Deleting this floor will remove its configuration including all linked sections.
+                  Historical inspection records that reference this floor will be preserved for audit purposes, but the floor will no longer appear in the directory, floor filters, or new inspection creation.
+                </p>
+              </div>
+              {deleteError && (
+                <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-left">
+                  <p className="text-[11px] font-semibold text-red-700">{deleteError}</p>
+                </div>
+              )}
+            </div>
+            <div className="px-6 py-4 bg-background border-t border-accent-soft flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => { setIsDeleteModalOpen(false); setFloorToDelete(null); setDeleteError(null); }}
+                disabled={deletingFloor}
+                className="px-4 py-2.5 rounded-xl border border-accent/30 text-primary text-xs font-bold hover:bg-gray-100 transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteFloor}
+                disabled={deletingFloor}
+                className="px-5 py-2.5 rounded-xl bg-red-600 text-white text-xs font-black shadow-lg shadow-red-600/20 hover:bg-red-700 active:scale-95 transition-all disabled:opacity-50 flex items-center gap-2"
+              >
+                {deletingFloor ? (
+                  <>
+                    <span className="spinner" />
+                    <span>Deleting…</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    <span>Delete Floor</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}
