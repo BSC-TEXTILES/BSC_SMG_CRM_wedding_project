@@ -43,18 +43,27 @@ try {
 }
 
 // ── Preserve Passenger/Cloud Assigned Port ────────────────────────────────────
-// Passenger sets process.env.PORT before booting the app.
-// If .env contains PORT=5000, dotenv might override or pollute PORT if not careful.
-const passengerPort = process.env.PORT;
+// Passenger sets process.env.PORT or typeof PhusionPassenger before booting the app.
+// If .env contains PORT=5000, dotenv must NOT override Passenger's socket/port.
+const initialPort = process.env.PORT;
+const isPassenger = typeof(PhusionPassenger) !== 'undefined' || 
+                    process.env.PASSENGER_APP_ENV !== undefined || 
+                    String(initialPort).toLowerCase() === 'passenger';
+
+if (typeof(PhusionPassenger) !== 'undefined') {
+  try { PhusionPassenger.configure({ autoInstall: false }); } catch (e) {}
+}
 
 // ── Load .env as FALLBACK only ────────────────────────────────────────────────
 dotenv.config({ path: path.join(APP_ROOT, '..', '.env') });
 dotenv.config({ path: path.join(APP_ROOT, '.env') });
 dotenv.config({ path: path.join(SERVER_DIR, '.env') });
 
-// If Passenger had already set a PORT (number or unix domain socket), restore it!
-if (passengerPort) {
-  process.env.PORT = passengerPort;
+// If running under Passenger or if host already set a PORT, preserve it!
+if (isPassenger) {
+  process.env.PORT = 'passenger';
+} else if (initialPort) {
+  process.env.PORT = initialPort;
 }
 
 // ── Load modules ──────────────────────────────────────────────────────────────
@@ -71,12 +80,15 @@ const feedbackQrController = require('./src/controllers/feedbackQrController');
 // ── Express App ───────────────────────────────────────────────────────────────
 const app = express();
 
-// Resilient PORT parsing: strictly respects deployment platform's PORT (integers or Passenger domain sockets)
+// Resilient PORT parsing: strictly respects deployment platform's PORT (integers, sockets, or passenger)
 let rawPort = process.env.PORT;
-let PORT = 3000;
+let PORT = 5000;
 let isSocketPort = false;
 
-if (rawPort !== undefined && rawPort !== null && String(rawPort).trim().length > 0) {
+if (isPassenger || String(rawPort).toLowerCase() === 'passenger') {
+  PORT = 'passenger';
+  isSocketPort = true;
+} else if (rawPort !== undefined && rawPort !== null && String(rawPort).trim().length > 0) {
   const trimmed = String(rawPort).trim();
   if (/^\d+$/.test(trimmed)) {
     PORT = parseInt(trimmed, 10);
@@ -84,9 +96,11 @@ if (rawPort !== undefined && rawPort !== null && String(rawPort).trim().length >
     PORT = trimmed;
     isSocketPort = true;
   }
+} else if (process.env.NODE_ENV === 'production') {
+  PORT = 3000;
 }
 
-console.log(`[Boot] PORT=${PORT} (${isSocketPort ? 'socket' : 'network'}) | DB=${process.env.DB_NAME} | ENV=${process.env.NODE_ENV}`);
+console.log(`[Boot] PORT=${PORT} (${isSocketPort ? 'socket/passenger' : 'network'}) | DB=${process.env.DB_NAME} | ENV=${process.env.NODE_ENV}`);
 
 app.set('trust proxy', 1);
 const isProduction = process.env.NODE_ENV === 'production';
@@ -602,56 +616,51 @@ if (Server) {
   }
 }
 
-if (isSocketPort) {
+if (PORT === 'passenger' || typeof(PhusionPassenger) !== 'undefined') {
+  server.listen('passenger', () => {
+    console.log(`====================================================`);
+    console.log(`  BSC HRMS running under Phusion Passenger`);
+    console.log(`====================================================`);
+  });
+} else if (isSocketPort) {
   server.listen(PORT, () => {
     console.log(`====================================================`);
     console.log(`  BSC HRMS running on domain socket: ${PORT}`);
     console.log(`====================================================`);
   });
 } else {
-  // Listen on platform port with dual-stack IPv4/IPv6 support for reverse proxies
   server.listen(PORT, '0.0.0.0', () => {
     console.log(`====================================================`);
     console.log(`  BSC HRMS running on port ${PORT}`);
     console.log(`  Health: http://0.0.0.0:${PORT}/health`);
     console.log(`====================================================`);
   });
-
-  // Secondary/Fallback listener: only if explicitly enabled in development
-  if (process.env.ENABLE_SECONDARY_PORTS === 'true') {
-    if (Number(PORT) !== 3000) {
-      try {
-        const fallback3000 = http.createServer(app);
-        fallback3000.keepAliveTimeout = 65000;
-        fallback3000.headersTimeout = 66000;
-        fallback3000.listen(3000, '0.0.0.0', () => {
-          console.log(`  [Proxy Sync] Secondary listener active on port 3000`);
-        });
-        fallback3000.on('error', (e) => {
-          console.log(`  [Proxy Sync] Secondary port 3000 skipped (${e.code})`);
-        });
-      } catch (e) {}
-    }
-  }
 }
 
+let listenErrorRecovered = false;
 server.on('error', (err) => {
   const msg = `[Server listen error] ${new Date().toISOString()} ${err.code} ${err.message}\n`;
   console.error(msg);
   try { fs.appendFileSync(path.join(APP_ROOT, 'crash.log'), msg); } catch(e) {}
 
-  // If primary port had EADDRINUSE on 5000, attempt automatic fallback to 3000
-  if (err.code === 'EADDRINUSE' && !isSocketPort && Number(PORT) === 5000) {
-    console.warn(`[Server Recovery] Port 5000 in use. Attempting recovery on port 3000...`);
-    PORT = 3000;
-    try {
-      server.listen(3000, '0.0.0.0', () => {
-        console.log(`[Server Recovery] BSC HRMS recovered and running on port 3000`);
-      });
-      return;
-    } catch (recErr) {
-      console.error(`[Server Recovery] Fallback failed:`, recErr.message);
-    }
+  // Prevent recursive error events if recovery also encounters an error
+  if (!listenErrorRecovered && err.code === 'EADDRINUSE' && !isSocketPort && typeof PORT === 'number') {
+    listenErrorRecovered = true;
+    const fallbackPort = PORT === 5000 ? 5001 : 5002;
+    console.warn(`[Server Recovery] Port ${PORT} in use. Attempting recovery on port ${fallbackPort}...`);
+    try { server.close(); } catch (e) {}
+
+    setTimeout(() => {
+      try {
+        server.listen(fallbackPort, '0.0.0.0', () => {
+          console.log(`[Server Recovery] BSC HRMS recovered and running on port ${fallbackPort}`);
+        });
+      } catch (recErr) {
+        console.error(`[Server Recovery] Fallback to ${fallbackPort} failed:`, recErr.message);
+        process.exit(1);
+      }
+    }, 500);
+    return;
   }
 
   process.exit(1);
