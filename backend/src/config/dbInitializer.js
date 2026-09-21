@@ -892,9 +892,9 @@ async function autoInitializeDatabase(pool) {
     // Seeding is INSERT-only for staff accounts so password changes made in the
     // Settings module survive restarts. Passwords read from environment variables.
     try {
-      const defaultAdminPass = process.env.ADMIN_PASSWORD || 'changeme';
-      const defaultUserPass = process.env.DEFAULT_USER_PASSWORD || 'changeme';
-      const defaultGreeterPass = process.env.GREETER_PASSWORD || 'changeme';
+      const defaultAdminPass = process.env.ADMIN_PASSWORD || 'admin@2026';
+      const defaultUserPass = process.env.DEFAULT_USER_PASSWORD || 'bsc@2026';
+      const defaultGreeterPass = process.env.GREETER_PASSWORD || 'bsc@123';
       const hashedPassAdmin = await bcrypt.hash(defaultAdminPass, 10);
       const hashedPassDefault = await bcrypt.hash(defaultUserPass, 10);
       const hashedPassGreeter = await bcrypt.hash(defaultGreeterPass, 10);
