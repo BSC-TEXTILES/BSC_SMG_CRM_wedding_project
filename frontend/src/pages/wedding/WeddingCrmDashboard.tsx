@@ -18,9 +18,13 @@ import {
   MapPin,
   Clock,
   PhoneForwarded,
-  CheckCircle2,
-  XCircle,
-  AlertCircle,
+  CircleCheck,
+  CircleX,
+  CircleAlert,
+  TriangleAlert,
+  Award,
+  ArrowRight,
+  ChevronRight,
   ShoppingBag,
   Store,
   RefreshCw,
@@ -56,7 +60,8 @@ export default function WeddingCrmDashboard() {
     visitedConverted: 0,
     convertedCustomers: 0,
     lostCustomers: 0,
-    notInterested: 0
+    notInterested: 0,
+    todayAppointments: 0
   });
 
   const [enhancedStats, setEnhancedStats] = useState<any>(null);
@@ -221,7 +226,7 @@ export default function WeddingCrmDashboard() {
             <div className="bg-white p-4 rounded-2xl border border-[#DFDDD7] shadow-xs relative overflow-hidden group hover:border-red-400 transition-all">
               <div className="flex items-center justify-between text-[#687080] mb-2">
                 <span className="text-[10px] font-extrabold uppercase tracking-wider">Overdue Calls</span>
-                <AlertTriangle className="w-4 h-4 text-[#C7374A]" />
+                <TriangleAlert className="w-4 h-4 text-[#C7374A]" />
               </div>
               <div className="text-2xl font-black text-[#C7374A]">{stats.overdueFollowUps || 0}</div>
               <div className="text-[10px] text-[#C7374A] font-bold mt-1">Requires immediate call</div>
@@ -241,7 +246,7 @@ export default function WeddingCrmDashboard() {
             <div className="bg-white p-4 rounded-2xl border border-[#DFDDD7] shadow-xs relative overflow-hidden group hover:border-emerald-400 transition-all">
               <div className="flex items-center justify-between text-[#687080] mb-2">
                 <span className="text-[10px] font-extrabold uppercase tracking-wider">Connected</span>
-                <CheckCircle2 className="w-4 h-4 text-[#16805B]" />
+                <CircleCheck className="w-4 h-4 text-[#16805B]" />
               </div>
               <div className="text-2xl font-black text-[#16805B]">{stats.connectedCalls || stats.callsCompleted || 0}</div>
               <div className="text-[10px] text-[#16805B] font-bold mt-1">Successful contact</div>

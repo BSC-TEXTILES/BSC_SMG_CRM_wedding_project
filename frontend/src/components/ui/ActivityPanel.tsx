@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Activity, X, Calendar, Clock, CheckCircle2, AlertTriangle, ShieldCheck, Sparkles, User, LogIn, LogOut } from 'lucide-react';
+import { Activity, X, Calendar, Clock, CircleCheck, TriangleAlert, ShieldCheck, Sparkles, User, LogIn, LogOut } from 'lucide-react';
 import { API, Auth } from '../../services/api';
 
 interface ActivityPanelProps {

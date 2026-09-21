@@ -6,8 +6,8 @@ import { API, Auth, UserSession } from '../services/api';
 import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../utils/sidebarState';
 import {
   BarChart3, Download, FileSpreadsheet, Filter, Search, RefreshCw,
-  Calendar, CheckCircle2, XCircle, Clock, AlertCircle, Circle,
-  ChevronDown, AlertTriangle, TrendingUp, TrendingDown, Minus,
+  Calendar, CircleCheck, CircleX, Clock, CircleAlert, Circle,
+  ChevronDown, TriangleAlert, TrendingUp, TrendingDown, Minus,
   ClipboardList, Target, Eye, ChevronRight, UserCheck, ArrowRight
 } from 'lucide-react';
 
@@ -249,11 +249,11 @@ export default function MCheckReports() {
                 <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
                   {[
                     { label: 'Total Checkpoints', value: kpi?.total ?? 0, bg: 'bg-primary', icon: Target },
-                    { label: 'Completed', value: kpi?.done ?? 0, bg: 'bg-emerald-600', icon: CheckCircle2 },
+                    { label: 'Completed', value: kpi?.done ?? 0, bg: 'bg-emerald-600', icon: CircleCheck },
                     { label: 'Pending', value: kpi?.pending ?? 0, bg: 'bg-gray-400', icon: Circle },
-                    { label: 'Not Done', value: kpi?.notDone ?? 0, bg: 'bg-red-500', icon: XCircle },
+                    { label: 'Not Done', value: kpi?.notDone ?? 0, bg: 'bg-red-500', icon: CircleX },
                     { label: 'In Progress', value: kpi?.inProgress ?? 0, bg: 'bg-black', icon: Clock },
-                    { label: 'Postponed', value: kpi?.postponed ?? 0, bg: 'bg-purple-600', icon: AlertCircle },
+                    { label: 'Postponed', value: kpi?.postponed ?? 0, bg: 'bg-purple-600', icon: CircleAlert },
                     { label: 'Overall Completion', value: `${kpi?.completionPct ?? 0}%`, bg: 'bg-accent', icon: BarChart3 },
                   ].map((item, i) => {
                     const Icon = item.icon;
@@ -299,7 +299,7 @@ export default function MCheckReports() {
                             <span className={`text-sm font-black ${m.completion_pct === 100 ? 'text-emerald-600' : m.completion_pct >= 50 ? 'text-primary' : 'text-red-500'}`}>
                               {m.completion_pct}%
                             </span>
-                            {m.completion_pct < 50 && m.total > 0 && <AlertTriangle className="w-3.5 h-3.5 text-red-500" />}
+                            {m.completion_pct < 50 && m.total > 0 && <TriangleAlert className="w-3.5 h-3.5 text-red-500" />}
                           </div>
                         </div>
 
@@ -363,7 +363,7 @@ export default function MCheckReports() {
                 <div className="bg-white rounded-2xl overflow-hidden border border-red-200 shadow-sm">
                   <div className="bg-red-50 px-5 py-3.5 flex items-center justify-between border-b border-red-200">
                     <div className="flex items-center gap-2">
-                      <AlertTriangle className="w-5 h-5 text-red-600" />
+                      <TriangleAlert className="w-5 h-5 text-red-600" />
                       <h2 className="text-sm font-black text-red-700 uppercase tracking-wide">
                         ATTENTION REQUIRED ({attentionItems.length})
                       </h2>

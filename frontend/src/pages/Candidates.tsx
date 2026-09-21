@@ -12,7 +12,7 @@ import PageHeader from '../components/ui/PageHeader';
 import EmptyState from '../components/ui/EmptyState';
 import {
   Users, Search, Filter, Phone, Mail, Calendar, MapPin, Briefcase,
-  FileText, CheckCircle, XCircle, Plus, Clock, ExternalLink, MessageSquare, ChevronRight, X, Trash2, Edit3, ShieldAlert, FileCheck, Image as ImageIcon, UserCheck, DollarSign, TrendingUp
+  FileText, CheckCircle, CircleX, Plus, Clock, ExternalLink, MessageSquare, ChevronRight, X, Trash2, Edit3, ShieldAlert, FileCheck, Image as ImageIcon, UserCheck, DollarSign, TrendingUp
 } from 'lucide-react';
 import ShortlistModal from '../components/ui/ShortlistModal';
 import CandidateProfileModal from '../components/ui/CandidateProfileModal';
@@ -726,7 +726,7 @@ export default function CandidatesPage() {
                 onClick={() => handleViewSelRej('rejected')}
                 className="px-3.5 py-1.5 rounded-xl border border-rose-600 text-rose-700 font-bold hover:bg-rose-50 text-xs flex items-center gap-1.5 transition-colors shadow-xs"
               >
-                <XCircle className="w-4 h-4" />
+                <CircleX className="w-4 h-4" />
                 <span>View Rejected Candidates</span>
               </button>
             </div>

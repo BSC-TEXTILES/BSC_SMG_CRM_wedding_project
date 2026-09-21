@@ -19,9 +19,9 @@ import {
   Search,
   Filter,
   Trash2,
-  CheckCircle2,
-  XCircle,
-  AlertTriangle,
+  CircleCheck,
+  CircleX,
+  TriangleAlert,
   Laptop,
   LogIn,
   LogOut,
@@ -343,10 +343,10 @@ export default function SystemAdminPage() {
           {/* Connection Error Banner */}
           {connectionError && (
             <div className="p-3 rounded-xl bg-red-50 border border-red-200 flex items-center gap-3 text-xs font-bold text-red-700">
-              <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+              <TriangleAlert className="w-4 h-4 flex-shrink-0" />
               <span>{connectionError}</span>
               <button onClick={() => setConnectionError(null)} className="ml-auto text-red-500 hover:text-red-700">
-                <XCircle className="w-4 h-4" />
+                <CircleX className="w-4 h-4" />
               </button>
             </div>
           )}
@@ -458,7 +458,7 @@ export default function SystemAdminPage() {
                             <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${
                               ev.action === 'DEVTOOLS_DETECTED' ? 'bg-red-100 text-red-800 border border-red-200' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                             }`}>
-                              {ev.action === 'DEVTOOLS_DETECTED' ? <XCircle className="w-3 h-3" /> : <CheckCircle2 className="w-3 h-3" />}
+                              {ev.action === 'DEVTOOLS_DETECTED' ? <CircleX className="w-3 h-3" /> : <CircleCheck className="w-3 h-3" />}
                               {ev.action === 'DEVTOOLS_DETECTED' ? 'DevTools Opened' : 'DevTools Closed'}
                             </span>
                           </td>
@@ -780,7 +780,7 @@ export default function SystemAdminPage() {
                               <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${
                                 isOpened ? 'bg-red-100 text-red-800 border border-red-200' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                               }`}>
-                                {isOpened ? <XCircle className="w-3 h-3" /> : <CheckCircle2 className="w-3 h-3" />}
+                                {isOpened ? <CircleX className="w-3 h-3" /> : <CircleCheck className="w-3 h-3" />}
                                 {isOpened ? 'DevTools Opened' : 'DevTools Closed'}
                               </span>
                             </td>

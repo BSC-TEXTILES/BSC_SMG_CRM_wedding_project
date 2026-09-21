@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Bell, Pin, CheckCheck, Trash2, Search, Volume2, VolumeX, MessageSquare, Sliders, CheckCircle2, Archive, AlertTriangle } from 'lucide-react';
+import { X, Bell, Pin, CheckCheck, Trash2, Search, Volume2, VolumeX, MessageSquare, Sliders, CircleCheck, Archive, TriangleAlert } from 'lucide-react';
 import { NotificationService, SystemNotification } from '../../services/notificationService';
 import NotificationPreferencesModal from './NotificationPreferencesModal';
 import DirectMessagingModal from './DirectMessagingModal';
@@ -186,7 +186,7 @@ export default function NotificationDrawer({ isOpen, onClose }: NotificationDraw
                       <div className="pt-2 border-t border-border flex items-center justify-between">
                         {isAcked ? (
                           <span className="text-[10px] font-black text-status-success flex items-center gap-1">
-                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <CircleCheck className="w-3.5 h-3.5" />
                             <span>Acknowledgement Confirmed</span>
                           </span>
                         ) : (

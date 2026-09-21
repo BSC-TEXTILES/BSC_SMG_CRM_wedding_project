@@ -4,7 +4,7 @@ import Sidebar from '../components/Sidebar';
 import { API, Auth, UserSession } from '../services/api';
 import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../utils/sidebarState';
 import { 
-  Users, CheckCircle2, AlertCircle, Building2, TrendingUp, Sparkles, PhoneCall,
+  Users, CircleCheck, CircleAlert, Building2, TrendingUp, Sparkles, PhoneCall,
   Search, Bell, Plus, Calendar, MapPin, ChevronDown, Check, Activity, Target,
   X, Filter, FileText, Settings, Heart, Star, RefreshCw, Menu
 } from 'lucide-react';
@@ -246,7 +246,7 @@ export default function MainCrmDashboard() {
                     <tr key={c.id} className="hover:bg-[#F6F4EF] cursor-pointer transition-colors" onClick={() => { setSelectedCustomer(c); setDetailModalOpen(true); }}>
                       <td className="py-4 px-5">
                         <div className="text-[11px] font-black text-[#182033] leading-tight flex items-start gap-1">
-                          {c.isAlert && <AlertCircle className="w-3.5 h-3.5 text-[#C7374A] shrink-0" />}
+                          {c.isAlert && <CircleAlert className="w-3.5 h-3.5 text-[#C7374A] shrink-0" />}
                           {!c.isAlert && c.isVip && <Star className="w-3.5 h-3.5 text-[#C9A45C] shrink-0" />}
                           {!c.isAlert && !c.isVip && <div className="w-3.5 h-3.5 shrink-0" />}
                           {c.id.split('-').join('-\n')}
@@ -465,7 +465,7 @@ export default function MainCrmDashboard() {
                     <div className="p-4 space-y-3">
                       <div className="flex justify-between items-center pb-2 border-b border-[#DFDDD7]">
                         <div className="flex items-center gap-2">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-[#16805B]" />
+                          <CircleCheck className="w-3.5 h-3.5 text-[#16805B]" />
                           <div>
                             <div className="text-[11px] font-bold text-[#182033]">Muhurtham Bridal Saree (Lakshmi)</div>
                           </div>
@@ -474,7 +474,7 @@ export default function MainCrmDashboard() {
                       </div>
                       <div className="flex justify-between items-center pb-2 border-b border-[#DFDDD7]">
                         <div className="flex items-center gap-2">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-[#16805B]" />
+                          <CircleCheck className="w-3.5 h-3.5 text-[#16805B]" />
                           <div>
                             <div className="text-[11px] font-bold text-[#182033]">Reception Outfit (Bride)</div>
                             <div className="text-[9px] text-[#687080] font-medium">Handloom Banarasi Katan Silk with Meenakari</div>

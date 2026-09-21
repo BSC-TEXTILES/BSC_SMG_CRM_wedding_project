@@ -2,12 +2,12 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   Sparkles,
-  CheckCircle2,
+  CircleCheck,
   Send,
   MessageSquare,
   Heart,
   TrendingUp,
-  HelpCircle,
+  CircleHelp,
   User,
   Phone,
   ThumbsUp,
@@ -123,7 +123,7 @@ export default function PublicFeedback() {
 
         <div className="bg-black/10 backdrop-blur-2xl p-8 sm:p-10 max-w-lg w-full text-center space-y-6 animate-scale-in border border-black/20 rounded-3xl shadow-2xl relative z-10">
           <div className="w-20 h-20 bg-gradient-to-br from-emerald-400 to-emerald-600 text-black rounded-3xl flex items-center justify-center mx-auto shadow-2xl border border-black/30 animate-bounce">
-            <CheckCircle2 className="w-10 h-10 stroke-[2.5]" />
+            <CircleCheck className="w-10 h-10 stroke-[2.5]" />
           </div>
 
           <div className="space-y-2">
@@ -427,7 +427,7 @@ export default function PublicFeedback() {
 
               <div className="p-4 rounded-2xl bg-blue-500/5 border border-blue-300/60 space-y-2">
                 <label className="block text-xs font-extrabold text-blue-900 flex items-center gap-2">
-                  <HelpCircle className="w-4 h-4 text-blue-600" />
+                  <CircleHelp className="w-4 h-4 text-blue-600" />
                   <span>Any additional comments or suggestions?</span>
                 </label>
                 <textarea

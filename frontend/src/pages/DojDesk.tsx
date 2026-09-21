@@ -6,8 +6,8 @@ import ToastContainer, { showToast } from '../components/Toast';
 import { API, Auth, UserSession } from '../services/api';
 import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../utils/sidebarState';
 import { 
-  CalendarClock, Users, AlertTriangle, CheckCircle, Clock, 
-  Search, Phone, Calendar, ArrowRight, UserCheck, XCircle, 
+  CalendarClock, Users, TriangleAlert, CheckCircle, Clock, 
+  Search, Phone, Calendar, ArrowRight, UserCheck, CircleX, 
   Store, Building, RefreshCw, X, ShieldAlert
 } from 'lucide-react';
 
@@ -212,7 +212,7 @@ export default function DojDesk() {
 
             <div className="p-4 rounded-2xl bg-white border border-accent-soft shadow-xs flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-[#C0392B]/10 flex items-center justify-center text-[#C0392B]">
-                <AlertTriangle className="w-5 h-5 text-[#C0392B]" />
+                <TriangleAlert className="w-5 h-5 text-[#C0392B]" />
               </div>
               <div>
                 <p className="text-xs font-semibold text-primary/60">Overdue DOJ</p>
@@ -255,7 +255,7 @@ export default function DojDesk() {
                     : 'bg-background hover:bg-primary/5 text-primary border border-accent-soft'
                 }`}
               >
-                <AlertTriangle className="w-4 h-4 text-accent" />
+                <TriangleAlert className="w-4 h-4 text-accent" />
                 <span>Not Joined Desk ({stats.total})</span>
               </button>
 
@@ -419,7 +419,7 @@ export default function DojDesk() {
                                 className="p-1 rounded-lg hover:bg-red-50 text-red-600"
                                 title="Candidate rejected or not joining"
                               >
-                                <XCircle className="w-4 h-4" />
+                                <CircleX className="w-4 h-4" />
                               </button>
                             </div>
                           </td>
@@ -558,7 +558,7 @@ export default function DojDesk() {
           <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-accent-soft space-y-4">
             <div className="flex items-center justify-between border-b border-accent-soft pb-3">
               <h3 className="text-sm font-extrabold text-[#C0392B] flex items-center gap-1.5">
-                <AlertTriangle className="w-4 h-4" /> Mark Candidate Not Joining
+                <TriangleAlert className="w-4 h-4" /> Mark Candidate Not Joining
               </h3>
               <button onClick={() => setDropModal({ open: false, appNo: '', name: '' })} className="text-primary/60 hover:text-primary">
                 <X className="w-5 h-5" />

@@ -157,7 +157,7 @@ exports.getQrCodes = async (req, res) => {
         u.fullName as creatorName,
         (SELECT COUNT(*) FROM Feedback WHERE qrCodeId = fqc.qrCodeId) as feedbackCount
       FROM FeedbackQrCode fqc
-      LEFT JOIN User u ON fqc.createdBy = u.id
+      LEFT JOIN users u ON fqc.createdBy = u.id
       WHERE fqc.deletedAt IS NULL
     `;
     const params = [];
@@ -232,7 +232,7 @@ exports.getQrCodeById = async (req, res) => {
         (SELECT COUNT(*) FROM FeedbackQrScan WHERE qrCodeRefId = fqc.qrCodeId) as totalScans,
         (SELECT COUNT(*) FROM FeedbackQrScan WHERE qrCodeRefId = fqc.qrCodeId AND isFeedbackSubmitted = 1) as scansWithFeedback
       FROM FeedbackQrCode fqc
-      LEFT JOIN User u ON fqc.createdBy = u.id
+      LEFT JOIN users u ON fqc.createdBy = u.id
       WHERE fqc.deletedAt IS NULL AND fqc.id = ?
     `;
     const params = [id];
@@ -895,7 +895,7 @@ exports.exportQrCodes = async (req, res) => {
         fqc.createdAt,
         u.fullName as createdByName
       FROM FeedbackQrCode fqc
-      LEFT JOIN User u ON fqc.createdBy = u.id
+      LEFT JOIN users u ON fqc.createdBy = u.id
       WHERE fqc.deletedAt IS NULL
     `;
     const params = [];

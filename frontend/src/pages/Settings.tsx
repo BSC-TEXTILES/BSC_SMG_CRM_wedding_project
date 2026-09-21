@@ -5,7 +5,7 @@ import Topbar from '../components/Topbar';
 import ToastContainer, { showToast } from '../components/Toast';
 import { API, Auth, UserSession, apiFetch } from '../services/api';
 import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../utils/sidebarState';
-import { Settings, Users, Eye, EyeOff, HelpCircle, Tag, Trash2, Shield, ShieldAlert } from 'lucide-react';
+import { Settings, Users, Eye, EyeOff, CircleHelp, Tag, Trash2, Shield, ShieldAlert } from 'lucide-react';
 import DevToolsMonitoringPanel from '../components/DevToolsMonitoringPanel';
 
 export default function SettingsPage() {
@@ -189,7 +189,7 @@ export default function SettingsPage() {
     { key: 'pins', label: 'Store Kiosk & Cash PINs', icon: Shield },
     { key: 'security', label: 'Security & DevTools Shield', icon: ShieldAlert },
     { key: 'visibility', label: 'Page Visibility Matrix', icon: Eye },
-    { key: 'questions', label: 'Interview Question Bank', icon: HelpCircle },
+    { key: 'questions', label: 'Interview Question Bank', icon: CircleHelp },
     { key: 'roles', label: 'Designations Master', icon: Tag }
   ];
 

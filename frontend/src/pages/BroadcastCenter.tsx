@@ -7,7 +7,7 @@ import { Auth, UserSession } from '../services/api';
 import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../utils/sidebarState';
 import { NotificationService, SystemNotification } from '../services/notificationService';
 import MetricCard from '../components/ui/MetricCard';
-import { Send, Megaphone, Users, Calendar, AlertTriangle, Trash2, CheckCircle2, Shield, Plus, Clock, Filter, Eye, CheckCheck, FileText, Lock, MessageSquare } from 'lucide-react';
+import { Send, Megaphone, Users, Calendar, TriangleAlert, Trash2, CircleCheck, Shield, Plus, Clock, Filter, Eye, CheckCheck, FileText, Lock, MessageSquare } from 'lucide-react';
 
 export default function BroadcastCenterPage() {
   const navigate = useNavigate();
@@ -172,7 +172,7 @@ export default function BroadcastCenterPage() {
               {/* Analytics Metric Cards */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <MetricCard title="Total Broadcasts" value={total} trend={`${activeCount} Active`} color="navy" icon={Megaphone} />
-                <MetricCard title="Active & Sent" value={activeCount} trend="Real-Time Active" color="emerald" icon={CheckCircle2} />
+                <MetricCard title="Active & Sent" value={activeCount} trend="Real-Time Active" color="emerald" icon={CircleCheck} />
                 <MetricCard title="Scheduled" value={scheduledCount} trend="Pending Auto-Dispatch" color="gold" icon={Clock} />
                 <MetricCard title="Read Engagement" value={`${readPercent}%`} trend={`${readCount} Read`} color="teal" icon={Eye} />
               </div>

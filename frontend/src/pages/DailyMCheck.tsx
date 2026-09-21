@@ -5,17 +5,17 @@ import Topbar from '../components/Topbar';
 import { API, Auth, UserSession } from '../services/api';
 import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../utils/sidebarState';
 import {
-  CheckCircle2, Circle, AlertCircle, Clock, XCircle, ChevronDown, ChevronRight,
+  CircleCheck, Circle, CircleAlert, Clock, CircleX, ChevronDown, ChevronRight,
   ChevronUp, Calendar, RefreshCw, Send, Save, Upload, X, Eye, FileText,
-  ClipboardList, BarChart3, Zap, Target, AlertTriangle, Camera, Image,
-  Settings, ArrowLeft, ArrowUp, ArrowDown, Plus, Edit2, Check, CheckSquare
+  ClipboardList, BarChart3, Zap, Target, TriangleAlert, Camera, Image,
+  Settings, ArrowLeft, ArrowUp, ArrowDown, Plus, Edit2, Check, SquareCheck
 } from 'lucide-react';
 
 const STATUS_COLORS: Record<string, { bg: string; text: string; border: string; icon: React.FC<any> }> = {
-  DONE:        { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-300', icon: CheckCircle2 },
-  NOT_DONE:    { bg: 'bg-red-50',     text: 'text-red-700',     border: 'border-red-300',     icon: XCircle },
+  DONE:        { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-300', icon: CircleCheck },
+  NOT_DONE:    { bg: 'bg-red-50',     text: 'text-red-700',     border: 'border-red-300',     icon: CircleX },
   IN_PROGRESS: { bg: 'bg-amber-50',   text: 'text-amber-700',   border: 'border-amber-300',   icon: Clock },
-  POSTPONED:   { bg: 'bg-purple-50',  text: 'text-purple-700',  border: 'border-purple-300',  icon: AlertCircle },
+  POSTPONED:   { bg: 'bg-purple-50',  text: 'text-purple-700',  border: 'border-purple-300',  icon: CircleAlert },
   PENDING:     { bg: 'bg-gray-50',    text: 'text-gray-600',    border: 'border-gray-200',    icon: Circle },
 };
 
@@ -457,7 +457,7 @@ export default function DailyMCheck() {
                     : 'text-primary hover:bg-background'
                 }`}
               >
-                <CheckSquare className="w-4 h-4 text-accent" />
+                <SquareCheck className="w-4 h-4 text-accent" />
                 <span>Start Checklist</span>
                 {selectedModule && (
                   <span className="text-[10px] bg-accent/20 px-2 py-0.5 rounded-full text-accent font-bold">
@@ -525,11 +525,11 @@ export default function DailyMCheck() {
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
                   <KpiCard label="Total" value={kpi?.total ?? 0} color="bg-primary" icon={Target} />
-                  <KpiCard label="Completed" value={kpi?.done ?? 0} color="bg-emerald-600" icon={CheckCircle2} />
+                  <KpiCard label="Completed" value={kpi?.done ?? 0} color="bg-emerald-600" icon={CircleCheck} />
                   <KpiCard label="Pending" value={kpi?.pending ?? 0} color="bg-gray-400" icon={Circle} />
-                  <KpiCard label="Not Done" value={kpi?.notDone ?? 0} color="bg-red-500" icon={XCircle} />
+                  <KpiCard label="Not Done" value={kpi?.notDone ?? 0} color="bg-red-500" icon={CircleX} />
                   <KpiCard label="In Progress" value={kpi?.inProgress ?? 0} color="bg-black" icon={Clock} />
-                  <KpiCard label="Postponed" value={kpi?.postponed ?? 0} color="bg-purple-600" icon={AlertCircle} />
+                  <KpiCard label="Postponed" value={kpi?.postponed ?? 0} color="bg-purple-600" icon={CircleAlert} />
                   <KpiCard label="Completion" value={`${kpi?.completionPct ?? 0}%`} color="bg-accent" icon={Zap} />
                 </div>
               )}
@@ -885,7 +885,7 @@ export default function DailyMCheck() {
                                   {saving[cp.id] ? (
                             <div className="w-3.5 h-3.5 border-2 border-black border-t-transparent rounded-full animate-spin" />
                                   ) : (
-                                    <CheckCircle2 className="w-3.5 h-3.5 text-accent" />
+                                    <CircleCheck className="w-3.5 h-3.5 text-accent" />
                                   )}
                                   <span>Submit Verification</span>
                                 </button>

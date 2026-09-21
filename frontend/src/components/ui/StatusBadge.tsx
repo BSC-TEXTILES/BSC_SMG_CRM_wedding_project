@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
-  Sparkles, Clock, Calendar, CheckCircle2, 
-  Send, AlertCircle, XCircle, UserCheck, Shield 
+  Sparkles, Clock, Calendar, CircleCheck, 
+  Send, CircleAlert, CircleX, UserCheck, Shield 
 } from 'lucide-react';
 
 interface StatusBadgeProps {
@@ -27,16 +27,16 @@ export default function StatusBadge({ status, size = 'md' }: StatusBadgeProps) {
     Icon = Calendar;
   } else if (norm.includes('already selected') || norm === 'selected' || norm === 'hired') {
     badgeClass = 'b-sel';
-    Icon = CheckCircle2;
+    Icon = CircleCheck;
   } else if (norm.includes('offer') || norm === 'accepted') {
     badgeClass = 'b-offer';
     Icon = Send;
   } else if (norm.includes('hold') || norm.includes('pending accept')) {
     badgeClass = 'b-hold';
-    Icon = AlertCircle;
+    Icon = CircleAlert;
   } else if (norm === 'rejected' || norm === 'declined') {
     badgeClass = 'b-rej';
-    Icon = XCircle;
+    Icon = CircleX;
   } else if (norm === 'joined' || norm === 'onboarded') {
     badgeClass = 'b-board';
     Icon = UserCheck;

@@ -6,8 +6,8 @@ import ToastContainer, { showToast } from '../components/Toast';
 import { API, Auth, UserSession } from '../services/api';
 import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../utils/sidebarState';
 import { 
-  Layers, Plus, Search, Calendar, User, Users, CheckCircle2, 
-  Clock, AlertCircle, Trash2, Edit3, ChevronRight, ChevronDown, UserPlus, X, Award
+  Layers, Plus, Search, Calendar, User, Users, CircleCheck, 
+  Clock, CircleAlert, Trash2, Edit3, ChevronRight, ChevronDown, UserPlus, X, Award
 } from 'lucide-react';
 
 interface BatchMember {
@@ -286,7 +286,7 @@ export default function BatchPlan() {
 
             <div className="p-4 rounded-2xl bg-white border border-accent-soft shadow-xs flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-600">
-                <AlertCircle className="w-5 h-5 text-orange-600" />
+                <CircleAlert className="w-5 h-5 text-orange-600" />
               </div>
               <div>
                 <p className="text-xs font-semibold text-primary/60">Dropout Count</p>

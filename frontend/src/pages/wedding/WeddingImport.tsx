@@ -10,8 +10,8 @@ import {
   FileSpreadsheet,
   Upload,
   Download,
-  AlertCircle,
-  CheckCircle2,
+  CircleAlert,
+  CircleCheck,
   ArrowLeft,
   FileText,
   MapPin,
@@ -192,7 +192,7 @@ export default function WeddingImport() {
             {importResult && (
               <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs space-y-1">
                 <div className="flex items-center gap-2 font-bold text-sm text-emerald-800">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  <CircleCheck className="w-4 h-4 text-emerald-600" />
                   <span>Import Completed</span>
                 </div>
                 <div>Inserted: {importResult.importedCount || importResult.imported || 0} customers</div>

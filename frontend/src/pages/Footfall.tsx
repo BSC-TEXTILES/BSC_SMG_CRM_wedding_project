@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import DashboardLayout from '../components/layouts/DashboardLayout';
-import { BarChart3, Clock, Users, Calendar, Save, CheckCircle2, AlertCircle, Sparkles, Check, Hourglass, Activity, FileText, Download, TrendingUp, Zap } from 'lucide-react';
+import { BarChart3, Clock, Users, Calendar, Save, CircleCheck, CircleAlert, Sparkles, Check, Hourglass, Activity, FileText, Download, TrendingUp, Zap } from 'lucide-react';
 import { API } from '../services/api';
 import MetricCard from '../components/ui/MetricCard';
 import * as XLSX from 'xlsx';
@@ -251,7 +251,7 @@ export default function Footfall() {
               title="Completed Slots"
               value={`${completedSlotsCount} / 12`}
               subtext="Hours with recorded visitor counts"
-              icon={CheckCircle2}
+              icon={CircleCheck}
               color="emerald"
             />
             <MetricCard
@@ -310,7 +310,7 @@ export default function Footfall() {
         {/* Feedback Alert Toast */}
         {message && (
           <div className="p-4 rounded-2xl bg-emerald-50/90 border border-emerald-200 text-emerald-800 text-xs font-black flex items-center gap-3 shadow-md animate-fade-in">
-            <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+            <CircleCheck className="w-5 h-5 text-emerald-600 shrink-0" />
             <span>{message}</span>
           </div>
         )}

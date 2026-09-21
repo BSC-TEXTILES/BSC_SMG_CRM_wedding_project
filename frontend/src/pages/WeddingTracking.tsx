@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { API } from '../services/api';
 import ToastContainer, { showToast } from '../components/Toast';
 import {
-  Search, MapPin, Calendar, Clock, CheckCircle2,
-  AlertCircle, ArrowRight, Heart, Sparkles, Phone
+  Search, MapPin, Calendar, Clock, CircleCheck,
+  CircleAlert, ArrowRight, Heart, Sparkles, Phone
 } from 'lucide-react';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -157,7 +157,7 @@ export default function WeddingTracking() {
         {serverError && (
           <div className="bg-white rounded-2xl shadow-xl p-6 border border-amber-200 text-center space-y-3">
             <div className="w-14 h-14 rounded-full bg-amber-50 text-amber-500 flex items-center justify-center mx-auto">
-              <AlertCircle className="w-7 h-7" />
+              <CircleAlert className="w-7 h-7" />
             </div>
             <h3 className="font-bold text-[#3D2B1F]">Something Went Wrong</h3>
             <p className="text-sm text-[#6B5D50]">{serverError}</p>
@@ -168,7 +168,7 @@ export default function WeddingTracking() {
         {notFound && (
           <div className="bg-white rounded-2xl shadow-xl p-6 border border-red-200 text-center space-y-3">
             <div className="w-14 h-14 rounded-full bg-red-50 text-red-500 flex items-center justify-center mx-auto">
-              <AlertCircle className="w-7 h-7" />
+              <CircleAlert className="w-7 h-7" />
             </div>
             <h3 className="font-bold text-[#3D2B1F]">Registration Not Found</h3>
             <p className="text-sm text-[#6B5D50]">No registration was found for the Wedding Request ID and mobile number provided. Please verify both details and try again.</p>
@@ -196,7 +196,7 @@ export default function WeddingTracking() {
               {/* Details Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="flex items-start gap-3 p-3 rounded-xl bg-[#FBF8F5]">
-                  <CheckCircle2 className="w-5 h-5 text-[#3D2B1F] mt-0.5 flex-shrink-0" />
+                  <CircleCheck className="w-5 h-5 text-[#3D2B1F] mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="text-[10px] font-bold text-[#9A8D82] uppercase">Customer Name</p>
                     <p className="text-sm font-bold text-[#3D2B1F]">{result.customer_name}</p>
@@ -254,7 +254,7 @@ export default function WeddingTracking() {
                       return (
                         <div key={status} className={`flex items-center gap-3 p-2 rounded-lg ${isCurrent ? 'bg-[#3D2B1F]/5 border border-[#3D2B1F]/10' : ''}`}>
                           <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${isCurrent ? 'bg-[#3D2B1F] text-black' : 'bg-[#E8DDD4] text-[#9A8D82]'}`}>
-                            {isCurrent ? <CheckCircle2 className="w-3.5 h-3.5" /> : <span className="text-[10px] font-bold">{idx + 1}</span>}
+                            {isCurrent ? <CircleCheck className="w-3.5 h-3.5" /> : <span className="text-[10px] font-bold">{idx + 1}</span>}
                           </div>
                           <span className={`text-xs font-bold ${isCurrent ? 'text-[#3D2B1F]' : 'text-[#9A8D82]'}`}>{status}</span>
                         </div>

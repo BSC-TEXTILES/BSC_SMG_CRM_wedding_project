@@ -16,15 +16,18 @@ import {
 import LocationFilterSelect from '../../components/ui/LocationFilterSelect';
 import {
   Users,
+  UserPlus,
   Search,
   Filter,
   Plus,
   PhoneCall,
   UserCheck,
   Building2,
+  MapPin,
   Calendar,
   Clock,
   Sparkles,
+  MessageCircle,
   Download,
   Upload,
   RefreshCw,
@@ -33,8 +36,8 @@ import {
   Eye,
   Edit,
   X,
-  CheckCircle2,
-  AlertCircle
+  CircleCheck,
+  CircleAlert
 } from 'lucide-react';
 
 export default function WeddingCustomerRegister() {

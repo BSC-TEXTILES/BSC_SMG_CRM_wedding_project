@@ -5,8 +5,8 @@ import Topbar from '../components/Topbar';
 import { API, Auth, UserSession } from '../services/api';
 import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../utils/sidebarState';
 import {
-  History, Calendar, ChevronRight, CheckCircle2, XCircle, Clock,
-  AlertCircle, Circle, TrendingUp, TrendingDown, Minus, RefreshCw,
+  History, Calendar, ChevronRight, CircleCheck, CircleX, Clock,
+  CircleAlert, Circle, TrendingUp, TrendingDown, Minus, RefreshCw,
   FileSpreadsheet, Download, Search, BarChart3, Eye
 } from 'lucide-react';
 

@@ -3,10 +3,10 @@ import { API } from '../services/api';
 import ToastContainer, { showToast } from '../components/Toast';
 import {
   User, Phone, Mail, MapPin, Calendar, Heart,
-  ShoppingBag, Building2, CheckCircle2,
+  ShoppingBag, Building2, CircleCheck,
   ArrowRight, ArrowLeft, Star, Clock, DollarSign,
   CreditCard, Sparkles, Building, Home, Package,
-  Search, X, ChevronDown, Check, AlertCircle, Loader2
+  Search, X, ChevronDown, Check, CircleAlert, Loader2
 } from 'lucide-react';
 
 const GENDERS = ['Male', 'Female', 'Other', 'Prefer not to say'];
@@ -401,7 +401,7 @@ export default function WeddingRegistrationPage() {
                 </div>
               ) : locationsError ? (
                 <div className="p-6 rounded-2xl bg-red-50 border border-red-200 text-center space-y-3">
-                  <AlertCircle className="w-8 h-8 text-red-600 mx-auto" />
+                  <CircleAlert className="w-8 h-8 text-red-600 mx-auto" />
                   <p className="text-sm font-bold text-red-900">{locationsError}</p>
                   <button
                     type="button"
@@ -413,7 +413,7 @@ export default function WeddingRegistrationPage() {
                 </div>
               ) : locations.length === 0 ? (
                 <div className="p-6 rounded-2xl bg-amber-50 border border-amber-200 text-center space-y-2">
-                  <AlertCircle className="w-8 h-8 text-amber-600 mx-auto" />
+                  <CircleAlert className="w-8 h-8 text-amber-600 mx-auto" />
                   <p className="text-sm font-bold text-amber-900">No active BSC store locations are currently available.</p>
                   <p className="text-xs text-amber-700">Please check back later or contact customer support.</p>
                 </div>
@@ -493,7 +493,7 @@ export default function WeddingRegistrationPage() {
 
               {errors.location_id && (
                 <div className="p-3 rounded-xl bg-red-50 border border-red-300 text-red-900 text-xs font-bold flex items-center gap-2 animate-fade-in">
-                  <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+                  <CircleAlert className="w-4 h-4 text-red-600 flex-shrink-0" />
                   <span>{errors.location_id}</span>
                 </div>
               )}
@@ -699,7 +699,7 @@ export default function WeddingRegistrationPage() {
 
               {errors.shopping_requirements && (
                 <div className="p-3 rounded-xl bg-red-50 border border-red-300 text-red-900 text-xs font-bold flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4" />
+                  <CircleAlert className="w-4 h-4" />
                   {errors.shopping_requirements}
                 </div>
               )}
@@ -865,7 +865,7 @@ export default function WeddingRegistrationPage() {
         {step === 7 && (
           <div className="card-glass p-6 sm:p-8 space-y-6 animate-fade-in shadow-xl">
             <div className="border-b border-accent-soft pb-3 flex items-center gap-2">
-              <CheckCircle2 className="w-5 h-5 text-accent" />
+              <CircleCheck className="w-5 h-5 text-accent" />
               <h2 className="text-sm font-extrabold uppercase text-primary tracking-wider">Step 8: Review & Submit</h2>
             </div>
 
@@ -991,7 +991,7 @@ export default function WeddingRegistrationPage() {
               {form.additional_notes && (
                 <div className="p-4 rounded-xl bg-background border border-accent-soft">
                   <h4 className="font-bold text-sm text-primary mb-2 flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4" />
+                    <CircleAlert className="w-4 h-4" />
                     Additional Notes
                   </h4>
                   <p className="text-xs text-primary whitespace-pre-wrap">{form.additional_notes}</p>
@@ -1035,7 +1035,7 @@ export default function WeddingRegistrationPage() {
                 ) : (
                   <>
                     <span>Submit Wedding Registration</span>
-                    <CheckCircle2 className="w-4 h-4" />
+                    <CircleCheck className="w-4 h-4" />
                   </>
                 )}
               </button>
@@ -1101,7 +1101,7 @@ export default function WeddingRegistrationPage() {
             <div className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl border border-accent/30 overflow-hidden animate-pop-in">
               <div className="bg-gradient-to-r from-primary to-primary px-6 py-5 text-center">
                 <div className="w-16 h-16 rounded-full bg-emerald-100 border-4 border-emerald-300 text-emerald-600 flex items-center justify-center mx-auto shadow-lg animate-check-pop">
-                  <CheckCircle2 className="w-9 h-9" />
+                  <CircleCheck className="w-9 h-9" />
                 </div>
                 <h2 className="text-xl font-black text-accent tracking-tight mt-3 animate-fade-up-step" style={{ animationDelay: '0.35s' }}>
                   Your request was saved successfully!

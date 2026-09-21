@@ -21,9 +21,9 @@ import {
   PhoneForwarded,
   Clock,
   Calendar,
-  AlertTriangle,
+  TriangleAlert,
   Users,
-  CheckCircle2,
+  CircleCheck,
   Sparkles,
   MapPin,
   Search,
@@ -350,7 +350,7 @@ export default function TelecallerDeskPage() {
                   ) : currentList.length === 0 ? (
                     <tr>
                       <td colSpan={10} className="text-center py-12 text-muted">
-                        <CheckCircle2 className="w-10 h-10 text-[#16805B] mx-auto mb-2" />
+                        <CircleCheck className="w-10 h-10 text-[#16805B] mx-auto mb-2" />
                         <div className="font-bold text-sm text-[#182033]">Queue is currently clear!</div>
                         <div className="text-xs text-muted mt-0.5">All calls in this queue have been handled.</div>
                       </td>

@@ -1,7 +1,7 @@
 -- Default Data Seed Script for BSC Enterprise HRMS
 USE `u101820758_bsc_smg_crm`;
 
--- Seed Users (Default Password: bsc@2026)
+-- Seed Users (Default passwords are set via environment variables in production)
 INSERT INTO `users` (`username`, `password`, `role`, `full_name`, `active`) VALUES
 ('hr@bsctextiles.com', '$2b$10$aJTX5LNvHOQjpp3ljG6mo.RMJFeIs0NwH9XKTfjV2CKmTCJ/jcHte', 'HR', 'HR Admin', TRUE),
 ('manager@bsctextiles.com', '$2b$10$aJTX5LNvHOQjpp3ljG6mo.RMJFeIs0NwH9XKTfjV2CKmTCJ/jcHte', 'Manager', 'Store Manager', TRUE),

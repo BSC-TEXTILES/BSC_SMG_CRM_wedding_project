@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle2, AlertCircle, Info, X } from 'lucide-react';
+import { CircleCheck, CircleAlert, Info, X } from 'lucide-react';
 
 export interface ToastMessage {
   id: string;
@@ -50,7 +50,7 @@ export default function ToastContainer() {
           info: 'bg-primary text-white border-accent/30 shadow-lg'
         };
 
-        const Icon = t.type === 'success' ? CheckCircle2 : t.type === 'error' ? AlertCircle : Info;
+        const Icon = t.type === 'success' ? CircleCheck : t.type === 'error' ? CircleAlert : Info;
 
         return (
           <div

@@ -21,11 +21,11 @@ import {
   ShoppingBag,
   Sparkles,
   ArrowLeft,
-  CheckCircle2,
+  CircleCheck,
   Clock,
   UserCheck,
   FileText,
-  AlertCircle,
+  CircleAlert,
   Save
 } from 'lucide-react';
 

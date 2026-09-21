@@ -13,7 +13,7 @@ import {
   RefreshCw,
   Plus,
   Eye,
-  AlertCircle,
+  CircleAlert,
   Star
 } from 'lucide-react';
 
@@ -340,7 +340,7 @@ export default function WeddingStatusBoard() {
                                     : 'text-muted'
                                 }`}
                               >
-                                {overdue && <AlertCircle className="w-2.5 h-2.5" />}
+                                {overdue && <CircleAlert className="w-2.5 h-2.5" />}
                                 <span>
                                   {overdue
                                     ? 'Overdue: '

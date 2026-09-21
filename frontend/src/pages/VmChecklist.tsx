@@ -3,8 +3,8 @@ import DashboardLayout from '../components/layouts/DashboardLayout';
 import {
   ClipboardList,
   CheckCircle,
-  XCircle,
-  MinusCircle,
+  CircleX,
+  CircleMinus,
   Save,
   ArrowLeft,
   Store,
@@ -18,7 +18,7 @@ import {
   Tag,
   MapPin,
   Trash2,
-  AlertTriangle,
+  TriangleAlert,
   X
 } from 'lucide-react';
 import { API, Auth } from '../services/api';
@@ -847,7 +847,7 @@ export default function VmChecklist() {
                   <div className="text-xl font-black text-rose-700 font-mono mt-0.5">{failCount} / 11</div>
                 </div>
                 <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-700 font-black flex items-center justify-center">
-                  <XCircle className="w-5 h-5" />
+                  <CircleX className="w-5 h-5" />
                 </div>
               </div>
 
@@ -857,7 +857,7 @@ export default function VmChecklist() {
                   <div className="text-xl font-black text-gray-700 font-mono mt-0.5">{naCount} / 11</div>
                 </div>
                 <div className="w-10 h-10 rounded-xl bg-gray-100 text-gray-700 font-black flex items-center justify-center">
-                  <MinusCircle className="w-5 h-5" />
+                  <CircleMinus className="w-5 h-5" />
                 </div>
               </div>
             </div>
@@ -975,7 +975,7 @@ export default function VmChecklist() {
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-lg font-black text-rose-700 tracking-tight flex items-center gap-2">
-                <MinusCircle className="w-5 h-5" />
+                <CircleMinus className="w-5 h-5" />
                 Areas Requiring Attention
               </h3>
               <p className="text-xs text-primary font-medium">Sections and questions that consistently score low.</p>
@@ -1383,7 +1383,7 @@ export default function VmChecklist() {
             <form onSubmit={handleCreateFloorSubmit} className="p-6 space-y-4">
               {createError && (
                 <div className="p-3 rounded-xl bg-rose-50 border border-rose-300 text-rose-800 text-xs font-bold flex items-center gap-2">
-                  <XCircle className="w-4 h-4 shrink-0" />
+                  <CircleX className="w-4 h-4 shrink-0" />
                   <span>{createError}</span>
                 </div>
               )}
@@ -1523,7 +1523,7 @@ export default function VmChecklist() {
           <div className="bg-white rounded-3xl shadow-2xl border border-accent-soft w-full max-w-md overflow-hidden animate-scale-in">
             <div className="p-6 text-center space-y-4">
               <div className="w-14 h-14 rounded-2xl bg-red-50 border border-red-200 flex items-center justify-center mx-auto">
-                <AlertTriangle className="w-7 h-7 text-red-500" />
+                <TriangleAlert className="w-7 h-7 text-red-500" />
               </div>
               <div>
                 <h3 className="text-lg font-black text-primary tracking-tight">Delete Store Floor</h3>

@@ -213,13 +213,10 @@ class AuthController {
         token: resetToken.substring(0, 8) + '...' // Log only partial token for security
       });
 
-      // In production, you would send an email here.
-      // For this implementation, we return the token to the frontend
-      // so it can be used to construct a reset link.
-      // The frontend should handle showing this to the user or navigating them.
+      // In production, the reset token would be emailed to the user.
+      // Never return the raw token in the API response.
       return successRes(res, {
         message: 'Password reset link has been generated. Check your email for instructions.',
-        resetToken, // In real implementation, this would be emailed, not returned
         userId: user.id,
         email: user.email
       }, 'Password reset requested');

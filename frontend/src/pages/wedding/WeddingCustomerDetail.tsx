@@ -28,10 +28,10 @@ import {
   Sparkles,
   ArrowLeft,
   Edit2,
-  CheckCircle2,
+  CircleCheck,
   Plus,
   X,
-  AlertCircle,
+  CircleAlert,
   RefreshCw,
   Award
 } from 'lucide-react';
@@ -195,7 +195,7 @@ export default function WeddingCustomerDetail() {
     return (
       <div className="min-h-screen bg-[#F6F4EF] flex items-center justify-center p-4">
         <div className="bg-white p-8 rounded-3xl border border-[#DFDDD7] text-center max-w-md space-y-4">
-          <AlertCircle className="w-10 h-10 text-[#C7374A] mx-auto" />
+          <CircleAlert className="w-10 h-10 text-[#C7374A] mx-auto" />
           <h2 className="text-lg font-black text-[#182033]">Customer Not Found</h2>
           <p className="text-xs text-muted">
             The requested customer profile does not exist or you do not have permission to view it.

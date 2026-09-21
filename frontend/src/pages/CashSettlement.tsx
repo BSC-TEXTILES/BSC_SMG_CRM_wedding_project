@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '../components/layouts/DashboardLayout';
-import { DollarSign, CreditCard, Calendar, Save, CheckCircle2, Lock, KeyRound } from 'lucide-react';
+import { DollarSign, CreditCard, Calendar, Save, CircleCheck, Lock, KeyRound } from 'lucide-react';
 import { API } from '../services/api';
 
 export default function CashSettlement() {
@@ -171,7 +171,7 @@ export default function CashSettlement() {
 
         {savedMsg && (
           <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-bold flex items-center gap-2 animate-fade-in">
-            <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+            <CircleCheck className="w-5 h-5 text-emerald-600" />
             <span>{savedMsg}</span>
           </div>
         )}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertOctagon, RefreshCw } from 'lucide-react';
+import { OctagonAlert, RefreshCw } from 'lucide-react';
 
 /**
  * ErrorBoundary
@@ -52,7 +52,7 @@ export default class ErrorBoundary extends React.Component<{ children: React.Rea
         <div className="min-h-screen bg-background flex items-center justify-center p-4">
           <div className="max-w-md w-full bg-white rounded-3xl shadow-2xl border border-accent-soft p-8 text-center animate-fade-in">
             <div className="mx-auto w-16 h-16 rounded-2xl bg-red-50 border border-red-200 flex items-center justify-center mb-5">
-              <AlertOctagon className="w-8 h-8 text-[#C0392B]" strokeWidth={1.75} />
+              <OctagonAlert className="w-8 h-8 text-[#C0392B]" strokeWidth={1.75} />
             </div>
             <h2 className="text-xl font-black text-primary tracking-tight mb-2">Something went wrong</h2>
             <p className="text-xs text-primary font-medium leading-relaxed mb-6">

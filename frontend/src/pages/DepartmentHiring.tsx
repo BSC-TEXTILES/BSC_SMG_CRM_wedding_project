@@ -20,9 +20,9 @@ import {
   PieChart as PieIcon, 
   TrendingUp, 
   Users, 
-  CheckCircle2, 
+  CircleCheck, 
   Clock, 
-  AlertTriangle,
+  TriangleAlert,
   ChevronDown,
   ChevronRight,
   Folder,
@@ -889,7 +889,7 @@ export default function DepartmentHiringPage() {
                 {/* Needing Recruitment */}
                 <div className="p-3.5 rounded-2xl bg-white border border-accent-soft space-y-2.5">
                   <h4 className="font-black text-xs text-rose-800 uppercase tracking-wider flex items-center gap-1.5 border-b border-rose-100 pb-1.5">
-                    <AlertTriangle className="w-4 h-4 text-rose-600" />
+                    <TriangleAlert className="w-4 h-4 text-rose-600" />
                     <span>Needing Recruitment</span>
                   </h4>
                   <div className="space-y-2 text-xs">

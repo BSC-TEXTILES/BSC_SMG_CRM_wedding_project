@@ -399,7 +399,7 @@ async function autoInitializeDatabase(pool) {
     }
 
     // --- MIGRATIONS ---
-    const migrations = [
+    const migrations = [CREATE TABLE IF NOT EXISTS `FeedbackQrCode` (`id` VARCHAR(64) PRIMARY KEY, `qrCodeId` VARCHAR(64) NOT NULL UNIQUE, `name` VARCHAR(255) NOT NULL, `description` TEXT NULL, `locationId` INT NOT NULL, `locationCode` VARCHAR(10) NOT NULL, `locationName` VARCHAR(100) NOT NULL, `sectionId` VARCHAR(64) NULL, `sectionName` VARCHAR(150) NULL, `feedbackFormId` VARCHAR(64) NULL, `targetUrl` TEXT NOT NULL, `qrCodeDataUrl` LONGTEXT NULL, `qrCodeSvg` LONGTEXT NULL, `status` ENUM('active', 'inactive', 'archived') NOT NULL DEFAULT 'active', `scanCount` INT NOT NULL DEFAULT 0, `lastScannedAt` TIMESTAMP NULL, `createdBy` INT NOT NULL, `createdByName` VARCHAR(150) NOT NULL, `createdAt` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updatedAt` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, `deletedAt` TIMESTAMP NULL, FOREIGN KEY (`locationId`) REFERENCES `locations`(`id`) ON DELETE RESTRICT, FOREIGN KEY (`createdBy`) REFERENCES `users`(`id`) ON DELETE RESTRICT, INDEX `idx_qr_code_id` (`qrCodeId`), INDEX `idx_location_id` (`locationId`), INDEX `idx_status` (`status`), INDEX `idx_created_by` (`createdBy`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;, CREATE TABLE IF NOT EXISTS `FeedbackQrScan` (`id` VARCHAR(64) PRIMARY KEY, `qrCodeId` VARCHAR(64) NOT NULL, `qrCodeRefId` VARCHAR(64) NOT NULL, `scannedAt` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `ipAddress` VARCHAR(45) NULL, `userAgent` TEXT NULL, `deviceType` VARCHAR(50) NULL, `browser` VARCHAR(100) NULL, `os` VARCHAR(100) NULL, `referrer` TEXT NULL, `country` VARCHAR(100) NULL, `city` VARCHAR(100) NULL, `isFeedbackSubmitted` TINYINT(1) DEFAULT 0, `feedbackId` VARCHAR(64) NULL, `createdAt` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (`qrCodeRefId`) REFERENCES `FeedbackQrCode`(`qrCodeId`) ON DELETE CASCADE, INDEX `idx_qr_code_ref_id` (`qrCodeRefId`), INDEX `idx_scanned_at` (`scannedAt`), INDEX `idx_feedback_submitted` (`isFeedbackSubmitted`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;, CREATE TABLE IF NOT EXISTS `FeedbackForm` (`id` VARCHAR(64) PRIMARY KEY, `formId` VARCHAR(64) NOT NULL UNIQUE, `name` VARCHAR(255) NOT NULL, `description` TEXT NULL, `questionsJson` JSON NOT NULL, `isDefault` TINYINT(1) DEFAULT 0, `status` ENUM('active', 'inactive') NOT NULL DEFAULT 'active', `createdBy` INT NOT NULL, `createdByName` VARCHAR(150) NOT NULL, `createdAt` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updatedAt` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, `deletedAt` TIMESTAMP NULL, FOREIGN KEY (`createdBy`) REFERENCES `users`(`id`) ON DELETE RESTRICT, INDEX `idx_form_id` (`formId`), INDEX `idx_status` (`status`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;, ALTER TABLE Feedback ADD COLUMN qrCodeId VARCHAR(64) NULL, ALTER TABLE Feedback ADD INDEX idx_qr_code_id (qrCodeId),
       "ALTER TABLE candidates ADD COLUMN is_duplicate_phone VARCHAR(10) DEFAULT 'No'",
       "ALTER TABLE candidates ADD COLUMN resume_url TEXT NULL",
       "ALTER TABLE candidates ADD COLUMN blood_group VARCHAR(20) NULL",
@@ -771,16 +771,43 @@ async function autoInitializeDatabase(pool) {
         }
       }
     }
+
+    try {
+      await connection.query(`
+        INSERT INTO \`FeedbackForm\` (\`id\`, \`formId\`, \`name\`, \`description\`, \`questionsJson\`, \`isDefault\`, \`status\`, \`createdBy\`, \`createdByName\`)
+        SELECT 
+          'form_default_001',
+          'FORM-001',
+          'Standard Customer Experience Survey',
+          'Default 5-question customer satisfaction survey for all locations',
+          '[
+            {"id": "q1", "question": "How satisfied are you with your overall shopping experience today?", "category": "Shopping Experience", "options": ["Very satisfied", "Satisfied", "Neutral", "Dissatisfied", "Very dissatisfied"], "required": true, "position": 1},
+            {"id": "q2", "question": "Did you find the product you were looking for?", "category": "Product Availability", "options": ["Yes, exactly what I wanted", "Yes, with assistance", "Partially", "No"], "required": true, "position": 2},
+            {"id": "q3", "question": "How would you rate the quality & variety of our collection?", "category": "Collection Quality", "options": ["Excellent", "Good", "Average", "Poor"], "required": true, "position": 3},
+            {"id": "q4", "question": "How would you rate the behavior and helpfulness of our staff?", "category": "Staff Courtesy", "options": ["Extremely helpful", "Helpful", "Average", "Poor"], "required": true, "position": 4},
+            {"id": "q5", "question": "How likely are you to recommend BSC Exclusive to your friends and family?", "category": "Store Recommendation", "options": ["Definitely recommend", "Probably recommend", "Neutral", "Not recommend"], "required": true, "position": 5}
+          ]',
+          1,
+          'active',
+          1,
+          'System Admin'
+        WHERE NOT EXISTS (SELECT 1 FROM \`FeedbackForm\` WHERE \`formId\` = 'FORM-001');
+      `);
+    } catch(e) {
+      logDebug('[Migration Warning on FeedbackForm Insert]:', e.message);
+    }
     // ------------------
 
-    // Seed default admin users including admin@bsctextiles.com / admin@2026 & greeter@bsctextiles.com / bsc@123
+    // Seed default admin users
     // Seeding is INSERT-only for staff accounts so password changes made in the
-    // Settings module survive restarts. The master admin account is force-reset
-    // because it is the documented recovery credential for this deployment.
+    // Settings module survive restarts. Passwords read from environment variables.
     try {
-      const hashedPassAdmin2026 = await bcrypt.hash('admin@2026', 10);
-      const hashedPassAdmin = await bcrypt.hash('admin123', 10);
-      const hashedPassGreeter = await bcrypt.hash('bsc@123', 10);
+      const defaultAdminPass = process.env.ADMIN_PASSWORD || 'changeme';
+      const defaultUserPass = process.env.DEFAULT_USER_PASSWORD || 'changeme';
+      const defaultGreeterPass = process.env.GREETER_PASSWORD || 'changeme';
+      const hashedPassAdmin = await bcrypt.hash(defaultAdminPass, 10);
+      const hashedPassDefault = await bcrypt.hash(defaultUserPass, 10);
+      const hashedPassGreeter = await bcrypt.hash(defaultGreeterPass, 10);
 
       // Seed in `users` table (insert-only: existing passwords are never overwritten)
       await connection.query(
@@ -792,7 +819,7 @@ async function autoInitializeDatabase(pool) {
          ('greeter@bsctextiles.com', 'greeter@bsctextiles.com', ?, 'Greeter Staff', 'Greeter', TRUE),
          ('greeter', 'greeter@bsctextiles.com', ?, 'Greeter Staff', 'Greeter', TRUE)
          ON DUPLICATE KEY UPDATE full_name = VALUES(full_name), active = TRUE`,
-        [hashedPassAdmin2026, hashedPassAdmin2026, hashedPassAdmin, hashedPassAdmin, hashedPassGreeter, hashedPassGreeter]
+        [hashedPassAdmin, hashedPassAdmin, hashedPassDefault, hashedPassDefault, hashedPassGreeter, hashedPassGreeter]
       );
 
       // Seed in `User` table (if User table exists)
@@ -801,7 +828,7 @@ async function autoInitializeDatabase(pool) {
           `INSERT INTO User (roleId, username, email, password, fullName, role, status) VALUES
            (2, 'admin@bsctextiles.com', 'admin@bsctextiles.com', ?, 'System Administrator', 'Admin', 'Active')
            ON DUPLICATE KEY UPDATE status = 'Active'`,
-          [hashedPassAdmin2026]
+          [hashedPassAdmin]
         );
       } catch (e) {}
 
@@ -819,7 +846,7 @@ async function autoInitializeDatabase(pool) {
         await connection.query(
           `UPDATE users SET password = ?, active = TRUE 
            WHERE LOWER(username) IN ('admin@bsctextiles.com', 'admin') OR LOWER(email) = 'admin@bsctextiles.com'`,
-          [hashedPassAdmin2026]
+          [hashedPassAdmin]
         );
       } catch (e) {}
 
@@ -827,11 +854,11 @@ async function autoInitializeDatabase(pool) {
         await connection.query(
           `UPDATE User SET password = ?, status = 'Active' 
            WHERE LOWER(username) IN ('admin@bsctextiles.com', 'admin') OR LOWER(email) = 'admin@bsctextiles.com'`,
-          [hashedPassAdmin2026]
+          [hashedPassAdmin]
         );
       } catch (e) {}
 
-      logDebug(`[Auto DB Initializer] Admin user seeded (admin@bsctextiles.com - Password: admin@2026)`);
+      logDebug(`[Auto DB Initializer] Admin user seeded successfully`);
     } catch (err) {
       logDebug(`[Auto DB Initializer User Seed Warning]:`, err.message);
     }

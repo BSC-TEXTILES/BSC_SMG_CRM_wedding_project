@@ -17,7 +17,7 @@ import {
   Filter, 
   Save, 
   X, 
-  CheckSquare, 
+  SquareCheck, 
   Square, 
   UserCheck, 
   Building2, 
@@ -31,7 +31,7 @@ import {
   ChevronRight,
   ShieldCheck,
   CheckCircle,
-  AlertCircle,
+  CircleAlert,
   ArrowRight,
   Sparkles,
   Plus
@@ -402,7 +402,7 @@ export default function SectionAllocationPage() {
               title="Not Allocated"
               value={summary.notAllocated}
               subtext="Pending section placement"
-              icon={AlertCircle}
+              icon={CircleAlert}
               color="rose"
             />
             <MetricCard
@@ -534,7 +534,7 @@ export default function SectionAllocationPage() {
                       <th className="py-3.5 px-3 text-center w-10">
                         <button onClick={toggleSelectAll} className="focus:outline-none">
                           {selectedEmpIds.length === filteredEmployees.length && filteredEmployees.length > 0 ? (
-                            <CheckSquare className="w-4 h-4 text-primary" />
+                            <SquareCheck className="w-4 h-4 text-primary" />
                           ) : (
                             <Square className="w-4 h-4 text-[#6B5D50]" />
                           )}
@@ -566,7 +566,7 @@ export default function SectionAllocationPage() {
                             <td className="py-3.5 px-3 text-center">
                               <button onClick={() => toggleSelectEmp(emp.empId)} className="focus:outline-none">
                                 {isSelected ? (
-                                  <CheckSquare className="w-4 h-4 text-primary" />
+                                  <SquareCheck className="w-4 h-4 text-primary" />
                                 ) : (
                                   <Square className="w-4 h-4 text-[#6B5D50]" />
                                 )}

@@ -38,6 +38,7 @@ import SystemAdmin from './pages/SystemAdmin';
 import BatchPlan from './pages/BatchPlan';
 import DojDesk from './pages/DojDesk';
 import CandidateEntry from './pages/CandidateEntry';
+import ChatDashboard from './pages/ChatDashboard';
 import WeddingCrmDashboard from './pages/wedding/WeddingCrmDashboard';
 import WeddingCustomerRegister from './pages/wedding/WeddingCustomerRegister';
 import WeddingCustomerDetail from './pages/wedding/WeddingCustomerDetail';
@@ -147,6 +148,7 @@ export default function App() {
         <Route path="/user-management" element={<RouteGuard pageKey="user_management"><UserManagement /></RouteGuard>} />
         <Route path="/settings" element={<RouteGuard pageKey="settings"><Settings /></RouteGuard>} />
         <Route path="/system-admin" element={<RouteGuard pageKey="system_admin"><SystemAdmin /></RouteGuard>} />
+        <Route path="/chat-dashboard" element={<RouteGuard pageKey="dashboard"><ChatDashboard /></RouteGuard>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <QuickActionCenter />

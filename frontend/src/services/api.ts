@@ -194,7 +194,7 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
             break;
           case 500:
           case 503:
-            errorMessage = res.data?.error || res.data?.message || 'Server error. Please try again or contact your administrator.';
+            errorMessage = errorData?.error || errorData?.message || 'Server error. Please try again or contact your administrator.';
             break;
           default:
             errorMessage = `Request failed. Please try again. (Error: ${res.status})`;
@@ -675,6 +675,11 @@ export const API = {
   async getVmFloors() { return apiFetch('/vm/floors'); },
   async createVmFloor(payload: any) { return apiFetch('/vm/floors', { method: 'POST', body: JSON.stringify(payload) }); },
   async deleteVmFloor(payload: any) { return apiFetch('/vm/floors/delete', { method: 'POST', body: JSON.stringify(typeof payload === 'object' ? payload : { id: payload }) }); },
+
+  // Chat
+  async getChatMessages() { return apiFetch('/chat/messages'); },
+  async sendChatMessage(message: string) { return apiFetch('/chat/send', { method: 'POST', body: JSON.stringify({ message }) }); },
+  async clearChatMessages() { return apiFetch('/chat/messages', { method: 'DELETE' }); },
 
   // MCheck — Daily Management Checklist
   async getMCheckModules() { return apiFetch('/mcheck/modules'); },

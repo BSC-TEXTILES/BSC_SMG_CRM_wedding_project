@@ -18,7 +18,7 @@ import {
   Award,
   RefreshCw,
   PhoneCall,
-  CheckCircle2
+  CircleCheck
 } from 'lucide-react';
 
 export default function WeddingReports() {

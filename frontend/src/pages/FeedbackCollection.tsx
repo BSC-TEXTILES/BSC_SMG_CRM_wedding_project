@@ -20,12 +20,12 @@ import {
   User,
   X,
   Eye,
-  AlertCircle,
+  CircleAlert,
   CheckCircle,
   Sparkles,
   ArrowUpRight,
-  AlertTriangle,
-  CheckCircle2,
+  TriangleAlert,
+  CircleCheck,
   Clock,
   Hash,
   ShieldAlert,
@@ -278,7 +278,7 @@ export default function FeedbackCollection() {
                 <div className="text-[10.5px] font-black uppercase tracking-wider text-primary">Needs Follow-up</div>
                 <div className="text-2xl font-black text-rose-600 mt-1">{stats.negative || 0}</div>
                 <div className="text-[11px] text-rose-600 font-bold mt-0.5 flex items-center gap-1">
-                  <AlertCircle className="w-3 h-3" /> Auto-Escalated to Queue
+                  <CircleAlert className="w-3 h-3" /> Auto-Escalated to Queue
                 </div>
               </div>
               <div className="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center">
@@ -429,7 +429,7 @@ export default function FeedbackCollection() {
                           <td className="py-3.5 px-4">
                             {f.status === 'resolved' || f.status === 'closed' ? (
                               <span className="px-2.5 py-1 rounded-full text-xs font-extrabold bg-emerald-100 text-emerald-800 flex items-center gap-1 w-max shadow-xs">
-                                <CheckCircle2 className="w-3.5 h-3.5" /> Resolved &amp; Closed
+                                <CircleCheck className="w-3.5 h-3.5" /> Resolved &amp; Closed
                               </span>
                             ) : f.status === 'escalated_manager' ? (
                               <span className="px-2.5 py-1 rounded-full text-xs font-extrabold bg-purple-100 text-purple-900 border border-purple-300 flex items-center gap-1 w-max shadow-xs">
@@ -480,11 +480,11 @@ export default function FeedbackCollection() {
                     <div className="flex flex-wrap items-center gap-2 mb-1.5">
                       {selectedFeedback.isNegative ? (
                         <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-rose-500/10 text-rose-700 border border-rose-300/50 text-[10px] font-black uppercase tracking-widest">
-                          <AlertTriangle className="w-3 h-3 text-rose-600" /> Escalated Feedback
+                          <TriangleAlert className="w-3 h-3 text-rose-600" /> Escalated Feedback
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-700 border border-emerald-300/50 text-[10px] font-black uppercase tracking-widest">
-                          <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Satisfied Customer Survey
+                          <CircleCheck className="w-3 h-3 text-emerald-600" /> Satisfied Customer Survey
                         </span>
                       )}
                       <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-primary text-accent text-[10px] font-black uppercase tracking-widest">
@@ -519,7 +519,7 @@ export default function FeedbackCollection() {
                       </span>
                     ) : (
                       <span className="px-3.5 py-1.5 rounded-xl bg-emerald-600 text-white font-extrabold text-xs shadow-sm flex items-center gap-1.5">
-                        <CheckCircle2 className="w-4 h-4" /> Normal Priority
+                        <CircleCheck className="w-4 h-4" /> Normal Priority
                       </span>
                     )}
 
@@ -538,7 +538,7 @@ export default function FeedbackCollection() {
                   <div className="card-glass p-4 rounded-2xl border-l-4 border-l-rose-500 bg-rose-500/10 border border-rose-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
                     <div className="flex items-center gap-3">
                       <div className="p-2.5 rounded-xl bg-rose-600 text-black shadow-sm shrink-0">
-                        <AlertTriangle className="w-5 h-5" />
+                        <TriangleAlert className="w-5 h-5" />
                       </div>
                       <div>
                         <div className="text-xs font-black uppercase text-rose-900 tracking-wider">Escalated to Telecaller Call Queue</div>
@@ -800,7 +800,7 @@ export default function FeedbackCollection() {
                       disabled={savingResolution}
                       className="px-4 py-2.5 rounded-xl bg-white border border-[#DFDDD7] hover:bg-[#F6F4EF] text-[#182033] font-extrabold text-xs shadow-sm active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
                     >
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      <CircleCheck className="w-4 h-4 text-emerald-600" />
                       <span>Mark Resolved</span>
                     </button>
 

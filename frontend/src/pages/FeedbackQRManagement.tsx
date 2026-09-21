@@ -11,8 +11,8 @@ import {
   Trash2,
   Eye,
   Copy,
-  CheckCircle2,
-  XCircle,
+  CircleCheck,
+  CircleX,
   ArrowUpRight,
   Image,
   Printer,
@@ -26,7 +26,7 @@ import {
   ScanLine,
   Zap,
   Shield,
-  AlertCircle,
+  CircleAlert,
   CheckCircle,
   X,
   Loader2,
@@ -70,7 +70,7 @@ import {
   ArrowLeft,
   ArrowRight,
   Minus,
-  PlusCircle,
+  CirclePlus,
   Menu,
   Bell,
   BellOff,
@@ -279,8 +279,8 @@ interface FeedbackForm {
 
 const StatusBadge = ({ status }: { status: string }) => {
   const config = {
-    active: { className: 'bg-emerald-100 text-emerald-800 border-emerald-200', icon: <CheckCircle2 className="w-3 h-3" />, label: 'Active' },
-    inactive: { className: 'bg-gray-100 text-gray-800 border-gray-200', icon: <XCircle className="w-3 h-3" />, label: 'Inactive' },
+    active: { className: 'bg-emerald-100 text-emerald-800 border-emerald-200', icon: <CircleCheck className="w-3 h-3" />, label: 'Active' },
+    inactive: { className: 'bg-gray-100 text-gray-800 border-gray-200', icon: <CircleX className="w-3 h-3" />, label: 'Inactive' },
     archived: { className: 'bg-rose-100 text-rose-800 border-rose-200', icon: <Archive className="w-3 h-3" />, label: 'Archived' }
   };
   const c = config[status as keyof typeof config] || config.inactive;
@@ -793,7 +793,7 @@ export default function FeedbackQRManagement() {
         {/* Stats Dashboard */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard title="Total QR Codes" value={stats?.totalQrCodes || 0} icon={QrCode} color="primary" />
-          <StatCard title="Active QR Codes" value={stats?.activeQrCodes || 0} subtitle={`${stats?.inactiveQrCodes || 0} inactive`} icon={CheckCircle2} color="emerald" />
+          <StatCard title="Active QR Codes" value={stats?.activeQrCodes || 0} subtitle={`${stats?.inactiveQrCodes || 0} inactive`} icon={CircleCheck} color="emerald" />
           <StatCard title="Total Scans" value={stats?.totalScans || 0} icon={ScanLine} color="blue" />
           <StatCard title="Total Feedback" value={stats?.totalFeedback || 0} subtitle={`Today: ${stats?.todayFeedback || 0} • Avg Rating: ${stats?.averageRating || '0.0'}/5`} icon={MessageSquare} color="purple" />
         </div>
@@ -976,7 +976,7 @@ export default function FeedbackQRManagement() {
                               <ActionButton onClick={() => handlePrint(qr)} variant="ghost" size="xs" icon={<Printer className="w-3 h-3" />} title="Print QR" />
                               <ActionButton onClick={() => openScanHistory(qr)} variant="ghost" size="xs" icon={<History className="w-3 h-3" />} title="Scan History" />
                               <ActionButton onClick={() => handleRegenerate(qr)} variant="ghost" size="xs" icon={<RotateCcw className="w-3 h-3" />} title="Regenerate QR" />
-                              <ActionButton onClick={() => handleToggleStatus(qr)} variant="ghost" size="xs" icon={qr.status === 'active' ? <XCircle className="w-3 h-3" /> : <CheckCircle2 className="w-3 h-3" />} title={qr.status === 'active' ? 'Deactivate' : 'Activate'} />
+                              <ActionButton onClick={() => handleToggleStatus(qr)} variant="ghost" size="xs" icon={qr.status === 'active' ? <CircleX className="w-3 h-3" /> : <CircleCheck className="w-3 h-3" />} title={qr.status === 'active' ? 'Deactivate' : 'Activate'} />
                               <ActionButton onClick={() => openEditModal(qr)} variant="ghost" size="xs" icon={<Edit className="w-3 h-3" />} title="Edit" />
                               <ActionButton onClick={() => handleDelete(qr)} variant="danger" size="xs" icon={<Trash2 className="w-3 h-3" />} title="Delete" />
                             </div>
@@ -1046,7 +1046,7 @@ export default function FeedbackQRManagement() {
                       <ActionButton onClick={() => handleDownloadPng(qr)} variant="ghost" size="xs" icon={<Image className="w-3 h-3" />} className="flex-1 min-w-0" title="PNG" />
                       <ActionButton onClick={() => handleDownloadSvg(qr)} variant="ghost" size="xs" icon={<FileTextIcon className="w-3 h-3" />} className="flex-1 min-w-0" title="SVG" />
                       <ActionButton onClick={() => openEditModal(qr)} variant="ghost" size="xs" icon={<Edit className="w-3 h-3" />} className="flex-1 min-w-0" title="Edit" />
-                      <ActionButton onClick={() => handleToggleStatus(qr)} variant="ghost" size="xs" icon={qr.status === 'active' ? <XCircle className="w-3 h-3" /> : <CheckCircle2 className="w-3 h-3" />} className="flex-1 min-w-0" title={qr.status === 'active' ? 'Deactivate' : 'Activate'} />
+                      <ActionButton onClick={() => handleToggleStatus(qr)} variant="ghost" size="xs" icon={qr.status === 'active' ? <CircleX className="w-3 h-3" /> : <CircleCheck className="w-3 h-3" />} className="flex-1 min-w-0" title={qr.status === 'active' ? 'Deactivate' : 'Activate'} />
                       <ActionButton onClick={() => handleDelete(qr)} variant="danger" size="xs" icon={<Trash2 className="w-3 h-3" />} className="flex-1 min-w-0" title="Delete" />
                     </div>
                   </div>

@@ -2,8 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '../components/layouts/DashboardLayout';
 import {
   PhoneCall,
-  AlertTriangle,
-  CheckCircle2,
+  TriangleAlert,
+  CircleCheck,
   Clock,
   Filter,
   MessageSquare,
@@ -181,7 +181,7 @@ export default function FeedbackList() {
               <div className="text-[10.5px] font-black uppercase text-primary tracking-wider">Pending Calls</div>
               <div className="text-2xl font-black text-rose-600 mt-1">{pendingCount}</div>
               <div className="text-[11px] text-rose-700 font-bold mt-0.5 flex items-center gap-1">
-                <AlertTriangle className="w-3 h-3" /> Auto-Escalated Tickets
+                <TriangleAlert className="w-3 h-3" /> Auto-Escalated Tickets
               </div>
             </div>
             <div className="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center font-black">
@@ -207,11 +207,11 @@ export default function FeedbackList() {
               <div className="text-[10.5px] font-black uppercase text-primary tracking-wider">Resolved Today</div>
               <div className="text-2xl font-black text-emerald-600 mt-1">{resolvedCount}</div>
               <div className="text-[11px] text-emerald-700 font-bold mt-0.5 flex items-center gap-1">
-                <CheckCircle2 className="w-3 h-3" /> Issue Closed
+                <CircleCheck className="w-3 h-3" /> Issue Closed
               </div>
             </div>
             <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center font-black">
-              <CheckCircle2 className="w-6 h-6 text-emerald-600" />
+              <CircleCheck className="w-6 h-6 text-emerald-600" />
             </div>
           </div>
 
@@ -311,7 +311,7 @@ export default function FeedbackList() {
             </div>
           ) : callQueue.length === 0 ? (
             <div className="py-12 text-center text-gray-500 font-bold text-xs space-y-2">
-              <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto" />
+              <CircleCheck className="w-10 h-10 text-emerald-400 mx-auto" />
               <div className="text-sm text-primary font-black">No Pending Follow-up Calls</div>
               <p className="text-gray-400 font-medium">All escalated customer feedbacks have been handled or resolved.</p>
             </div>
@@ -371,7 +371,7 @@ export default function FeedbackList() {
                         <td className="p-4">
                           {item.status === 'resolved' || item.status === 'closed' ? (
                             <span className="px-2.5 py-1 rounded-full text-xs font-extrabold bg-emerald-100 text-emerald-800 flex items-center gap-1 w-max">
-                              <CheckCircle2 className="w-3.5 h-3.5" /> Resolved
+                              <CircleCheck className="w-3.5 h-3.5" /> Resolved
                             </span>
                           ) : item.status === 'escalated_manager' ? (
                             <span className="px-2.5 py-1 rounded-full text-xs font-extrabold bg-purple-100 text-purple-900 border border-purple-300 flex items-center gap-1 w-max">
@@ -383,7 +383,7 @@ export default function FeedbackList() {
                             </span>
                           ) : (
                             <span className="px-2.5 py-1 rounded-full text-xs font-extrabold bg-rose-100 text-rose-800 flex items-center gap-1 w-max">
-                              <AlertTriangle className="w-3.5 h-3.5" /> Pending Call
+                              <TriangleAlert className="w-3.5 h-3.5" /> Pending Call
                             </span>
                           )}
                         </td>
@@ -547,7 +547,7 @@ export default function FeedbackList() {
                       disabled={updating}
                       className="px-3.5 py-2 rounded-xl bg-emerald-600 text-white font-extrabold text-xs shadow-xs flex items-center gap-1"
                     >
-                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <CircleCheck className="w-3.5 h-3.5" />
                       <span>Mark Resolved</span>
                     </button>
 

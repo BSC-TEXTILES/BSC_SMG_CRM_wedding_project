@@ -24,8 +24,8 @@ import {
   User,
   Clock,
   Sparkles,
-  CheckCircle2,
-  XCircle,
+  CircleCheck,
+  CircleX,
   PhoneOff,
   PhoneMissed
 } from 'lucide-react';

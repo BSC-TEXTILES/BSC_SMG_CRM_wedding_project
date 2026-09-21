@@ -5,9 +5,9 @@ async function seed() {
   console.log('Seeding BSC HRMS Database...');
 
   try {
-    const adminPassword = await bcrypt.hash('admin@2026', 10);
-    const defaultPassword = await bcrypt.hash('bsc@2026', 10);
-    const greeterPassword = await bcrypt.hash('bsc@123', 10);
+    const adminPassword = await bcrypt.hash(process.env.ADMIN_PASSWORD || 'changeme', 10);
+    const defaultPassword = await bcrypt.hash(process.env.DEFAULT_USER_PASSWORD || 'changeme', 10);
+    const greeterPassword = await bcrypt.hash(process.env.GREETER_PASSWORD || 'changeme', 10);
 
     // 1. Seed Users
     const users = [

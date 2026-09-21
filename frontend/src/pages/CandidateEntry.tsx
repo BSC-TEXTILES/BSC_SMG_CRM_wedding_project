@@ -4,7 +4,7 @@ import ToastContainer, { showToast } from '../components/Toast';
 import { optimizeFile } from '../utils/fileOptimizer';
 import { 
   User, Phone, Mail, MapPin, Calendar, Briefcase, Award, 
-  FileText, ShieldCheck, CheckCircle2, Upload, Sparkles, ArrowRight, ArrowLeft, Image as ImageIcon, FileCheck
+  FileText, ShieldCheck, CircleCheck, Upload, Sparkles, ArrowRight, ArrowLeft, Image as ImageIcon, FileCheck
 } from 'lucide-react';
 
 export default function CandidateEntryPage() {
@@ -706,7 +706,7 @@ export default function CandidateEntryPage() {
                 ) : (
                   <>
                     <span>Complete Candidate Registration</span>
-                    <CheckCircle2 className="w-4 h-4" />
+                    <CircleCheck className="w-4 h-4" />
                   </>
                 )}
               </button>
@@ -718,7 +718,7 @@ export default function CandidateEntryPage() {
         {step === 3 && (
           <div className="card-glass p-8 sm:p-12 text-center space-y-5 animate-fade-in shadow-2xl my-8">
             <div className="w-20 h-20 rounded-full bg-emerald-50 border-4 border-emerald-200 text-emerald-600 flex items-center justify-center mx-auto shadow-md">
-              <CheckCircle2 className="w-10 h-10" />
+              <CircleCheck className="w-10 h-10" />
             </div>
 
             <div>

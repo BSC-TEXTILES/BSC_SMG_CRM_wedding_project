@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import DashboardLayout from '../components/layouts/DashboardLayout';
-import { UserCheck, Calendar, Clock, CheckCircle2, Search, Filter, Users, UserX, UserMinus, ShieldCheck, Activity, Award, Download } from 'lucide-react';
+import { UserCheck, Calendar, Clock, CircleCheck, Search, Filter, Users, UserX, UserMinus, ShieldCheck, Activity, Award, Download } from 'lucide-react';
 import { API } from '../services/api';
 import MetricCard from '../components/ui/MetricCard';
 import * as XLSX from 'xlsx';
@@ -218,7 +218,7 @@ export default function Attendance() {
                       <td className="p-4 text-[#5D4E42]">General Shift (10 AM - 9 PM)</td>
                       <td className="p-4">
                         <span className="px-3 py-1 rounded-full text-xs font-black bg-emerald-100/90 text-emerald-800 border border-emerald-300/50 shadow-2xs inline-flex items-center gap-1.5">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                          <CircleCheck className="w-3.5 h-3.5 text-emerald-600" />
                           <span>PRESENT</span>
                         </span>
                       </td>

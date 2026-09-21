@@ -1357,3 +1357,164 @@ exports.getFeedbacks = async (req, res) => {
     });
   }
 };
+
+// ── Chat System (Gemini AI) ─────────────────────────────────────────────────
+
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
+const GEMINI_MODEL = 'gemini-2.0-flash';
+const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+
+const SYSTEM_PROMPT = `You are BSC Enterprise AI Assistant — a helpful internal assistant for BSC Textiles staff.
+You help with: employee info, attendance, candidates, wedding CRM, feedback, reports, store operations.
+Be concise, professional, and friendly. Keep responses under 200 words unless more detail is needed.
+If you don't know something specific about the company data, say so honestly and suggest the user check the relevant module.`;
+
+exports.getChatMessages = async (req, res) => {
+  try {
+    const userId = req.user?.id || req.user?.userId || 'unknown';
+    const [rows] = await db.query(
+      'SELECT id, message_text, sender, created_at FROM chat_messages WHERE user_id = ? ORDER BY created_at ASC LIMIT 200',
+      [userId]
+    );
+    return res.json({ success: true, messages: rows || [] });
+  } catch (err) {
+    return res.json({ success: true, messages: [] });
+  }
+};
+
+exports.sendChatMessage = async (req, res) => {
+  try {
+    const userId = req.user?.id || req.user?.userId || 'unknown';
+    const { message } = req.body;
+    if (!message || !message.trim()) {
+      return res.status(400).json({ success: false, message: 'Message is required' });
+    }
+
+    const crypto = require('crypto');
+    const msgId = crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(16).toString('hex');
+
+    // Ensure table exists
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS chat_messages (
+        id VARCHAR(64) PRIMARY KEY,
+        user_id VARCHAR(64) NOT NULL,
+        message_text TEXT NOT NULL,
+        sender ENUM('user', 'system') DEFAULT 'user',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_chat_user (user_id),
+        INDEX idx_chat_time (created_at)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `).catch(() => {});
+
+    // Save user message
+    await db.query(
+      'INSERT INTO chat_messages (id, user_id, message_text, sender) VALUES (?, ?, ?, ?)',
+      [msgId, userId, message.trim(), 'user']
+    );
+
+    // Get recent conversation context (last 10 messages)
+    let contextMessages = [];
+    try {
+      const [recent] = await db.query(
+        'SELECT message_text, sender FROM chat_messages WHERE user_id = ? ORDER BY created_at DESC LIMIT 10',
+        [userId]
+      );
+      contextMessages = (recent || []).reverse();
+    } catch (e) {}
+
+    // Call Gemini AI
+    let systemResponse;
+    if (GEMINI_API_KEY) {
+      systemResponse = await callGemini(message.trim(), contextMessages);
+    } else {
+      systemResponse = 'Gemini API key is not configured. Please contact the administrator to set up the AI assistant.';
+    }
+
+    const sysMsgId = crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(16).toString('hex');
+    await db.query(
+      'INSERT INTO chat_messages (id, user_id, message_text, sender) VALUES (?, ?, ?, ?)',
+      [sysMsgId, userId, systemResponse, 'system']
+    );
+
+    return res.json({
+      success: true,
+      userMessage: { id: msgId, message_text: message.trim(), sender: 'user', created_at: new Date().toISOString() },
+      systemMessage: { id: sysMsgId, message_text: systemResponse, sender: 'system', created_at: new Date().toISOString() }
+    });
+  } catch (err) {
+    console.error('[sendChatMessage Error]', err);
+    return res.status(500).json({ success: false, message: 'Failed to send message' });
+  }
+};
+
+exports.clearChatMessages = async (req, res) => {
+  try {
+    const userId = req.user?.id || req.user?.userId || 'unknown';
+    await db.query('DELETE FROM chat_messages WHERE user_id = ?', [userId]);
+    return res.json({ success: true, message: 'Chat history cleared' });
+  } catch (err) {
+    return res.json({ success: true, message: 'Chat history cleared' });
+  }
+};
+
+async function callGemini(userMessage, contextMessages) {
+  try {
+    // Build conversation history for Gemini
+    const contents = [];
+
+    // Add system instruction as user message
+    contents.push({ role: 'user', parts: [{ text: SYSTEM_PROMPT }] });
+    contents.push({ role: 'model', parts: [{ text: 'Understood. I am the BSC Enterprise AI Assistant. I will help staff with their queries about employees, attendance, candidates, wedding CRM, feedback, reports, and store operations. How can I assist you?' }] });
+
+    // Add recent conversation context
+    for (const msg of contextMessages) {
+      if (msg.sender === 'user') {
+        contents.push({ role: 'user', parts: [{ text: msg.message_text }] });
+      } else {
+        contents.push({ role: 'model', parts: [{ text: msg.message_text }] });
+      }
+    }
+
+    // Add current message (avoid duplicate if last context message is same)
+    const lastCtx = contextMessages.length > 0 ? contextMessages[contextMessages.length - 1] : null;
+    if (!lastCtx || lastCtx.message_text !== userMessage || lastCtx.sender !== 'user') {
+      contents.push({ role: 'user', parts: [{ text: userMessage }] });
+    }
+
+    const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents,
+        generationConfig: {
+          temperature: 0.7,
+          topK: 40,
+          topP: 0.95,
+          maxOutputTokens: 1024,
+        },
+        safetySettings: [
+          { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
+          { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
+          { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
+          { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' }
+        ]
+      })
+    });
+
+    if (!response.ok) {
+      const errBody = await response.text();
+      console.error('[Gemini API Error]', response.status, errBody);
+      return 'I apologize, but I am temporarily unable to process your request. Please try again in a moment.';
+    }
+
+    const data = await response.json();
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (text) {
+      return text.trim();
+    }
+    return 'I received your message but could not generate a response. Please try again.';
+  } catch (err) {
+    console.error('[Gemini Call Error]', err.message);
+    return 'I apologize, but there was an error connecting to the AI service. Please try again later.';
+  }
+}

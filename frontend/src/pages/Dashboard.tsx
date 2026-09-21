@@ -15,7 +15,7 @@ import {
   UserPlus,
   Clock,
   Calendar,
-  AlertTriangle,
+  TriangleAlert,
   ArrowRight,
   Search,
   Filter,
@@ -36,7 +36,7 @@ import {
   ShieldCheck,
   ShieldAlert,
   FileText,
-  CheckSquare,
+  SquareCheck,
   Settings
 } from 'lucide-react';
 import EmployeeProfileModal from '../components/ui/EmployeeProfileModal';
@@ -364,7 +364,7 @@ export default function DashboardPage() {
                     onClick={() => navigate('/daily-mcheck')} 
                     className="btn-gold text-xs px-4 py-2 flex items-center gap-1.5 shadow-sm font-extrabold"
                   >
-                    <CheckSquare className="w-4 h-4" />
+                    <SquareCheck className="w-4 h-4" />
                     <span>Daily MCheck</span>
                   </button>
                   <button 

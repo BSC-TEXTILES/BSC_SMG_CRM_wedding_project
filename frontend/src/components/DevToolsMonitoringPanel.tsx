@@ -7,9 +7,9 @@ import {
   Search,
   Filter,
   Trash2,
-  CheckCircle2,
-  XCircle,
-  AlertTriangle,
+  CircleCheck,
+  CircleX,
+  TriangleAlert,
   Clock,
   Laptop,
   Eye,
@@ -263,7 +263,7 @@ export default function DevToolsMonitoringPanel({ session, className = '' }: Dev
               </span>
             ) : (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-black bg-emerald-50 text-emerald-700 border border-emerald-200">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                <CircleCheck className="w-3.5 h-3.5 text-emerald-600" />
                 <span>Developer Tools: CLOSED</span>
               </span>
             )}
@@ -445,7 +445,7 @@ export default function DevToolsMonitoringPanel({ session, className = '' }: Dev
                               isOpened ? 'bg-red-100 text-red-800 border border-red-200' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                             }`}
                           >
-                            {isOpened ? <XCircle className="w-3 h-3 text-red-600" /> : <CheckCircle2 className="w-3 h-3 text-emerald-600" />}
+                            {isOpened ? <CircleX className="w-3 h-3 text-red-600" /> : <CircleCheck className="w-3 h-3 text-emerald-600" />}
                             <span>{isOpened ? 'DevTools Opened' : 'DevTools Closed'}</span>
                           </span>
                         </td>

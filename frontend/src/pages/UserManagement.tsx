@@ -22,13 +22,13 @@ import {
   RefreshCw,
   Eye,
   EyeOff,
-  CheckSquare,
+  SquareCheck,
   Square,
   Building2,
   Mail,
   Phone,
   Clock,
-  AlertTriangle,
+  TriangleAlert,
   ChevronDown,
   Sparkles,
   SlidersHorizontal,
@@ -1107,7 +1107,7 @@ export default function UserManagementPage() {
                             ) : (
                               <div className="inline-flex flex-col items-center">
                                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-black bg-primary/10 text-primary">
-                                  <CheckSquare className="w-3.5 h-3.5 text-accent" />
+                                  <SquareCheck className="w-3.5 h-3.5 text-accent" />
                                   <span>{user.modules_assigned || 0} Modules</span>
                                 </span>
                                 {user.max_modules && (
@@ -1830,7 +1830,7 @@ export default function UserManagementPage() {
               </div>
 
               <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-[11px] text-amber-800 flex items-start gap-2">
-                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <TriangleAlert className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                 <div>
                   This action is recorded in the security audit log. The user will be required to log in with this new credential.
                 </div>
@@ -2182,7 +2182,7 @@ export default function UserManagementPage() {
           <div className="card-glass bg-white rounded-2xl w-full max-w-sm shadow-2xl border border-red-300 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="p-5 bg-red-600 text-black flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-black/20 flex items-center justify-center font-black">
-                <AlertTriangle className="w-6 h-6 text-black" />
+                <TriangleAlert className="w-6 h-6 text-black" />
               </div>
               <div>
                 <h3 className="text-base font-extrabold text-black">Delete User Account</h3>

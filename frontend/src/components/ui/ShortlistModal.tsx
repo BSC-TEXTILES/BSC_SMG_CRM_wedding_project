@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, CheckCircle, Award, Briefcase, DollarSign, Calendar, Sparkles, UserCheck, Layers, Building, HelpCircle, Star, ShieldCheck } from 'lucide-react';
+import { X, CheckCircle, Award, Briefcase, DollarSign, Calendar, Sparkles, UserCheck, Layers, Building, CircleHelp, Star, ShieldCheck } from 'lucide-react';
 import { API } from '../../services/api';
 import { showToast } from '../Toast';
 import { BSC_DEPARTMENTS, getSectionsForDepartment } from '../../utils/bscDepartments';

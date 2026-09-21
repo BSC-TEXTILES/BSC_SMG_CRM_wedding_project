@@ -197,6 +197,11 @@ router.get('/broadcasts', authenticate, broadcastController.getBroadcasts);
 router.post('/broadcasts', authenticate, authorize('Admin', 'Super Admin'), broadcastController.createBroadcast);
 router.delete('/broadcasts/:id', authenticate, authorize('Admin', 'Super Admin'), broadcastController.deleteBroadcast);
 
+// ── Chat Routes ─────────────────────────────────────────
+router.get('/chat/messages', authenticate, crmController.getChatMessages);
+router.post('/chat/send', authenticate, crmController.sendChatMessage);
+router.delete('/chat/messages', authenticate, crmController.clearChatMessages);
+
 // ── Dept Hiring & Section Allocation Routes ───────────────
 router.get('/dept-hiring/targets', authenticate, authorizeLocationAccess(), deptHiringController.getHiringTargets);
 router.post('/dept-hiring/targets', authenticate, authorize('Admin', 'Super Admin', 'HR'), deptHiringController.saveHiringTarget);
