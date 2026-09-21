@@ -14,21 +14,28 @@ console.log('[Build] Starting BSC Enterprise production build...');
 // 1. Build frontend
 let buildSuccessful = false;
 if (fs.existsSync(frontendDir)) {
-  console.log('[Build] Building frontend client in:', frontendDir);
-  try {
-    const frontendNodeModules = path.join(frontendDir, 'node_modules');
-    const installCmd = fs.existsSync(frontendNodeModules)
-      ? 'npm run build'
-      : 'npm install --legacy-peer-deps && npm run build';
-    execSync(installCmd, { cwd: frontendDir, stdio: 'inherit' });
+  const frontendNodeModules = path.join(frontendDir, 'node_modules');
+  const hasPrebuilt = fs.existsSync(srcDist) || fs.existsSync(backendDist) || fs.existsSync(rootDist);
+
+  if (!fs.existsSync(frontendNodeModules) && hasPrebuilt) {
+    console.log('[Build] Server environment detected without frontend node_modules. Using existing verified production build.');
     buildSuccessful = true;
-  } catch (err) {
-    console.warn('[Build] Warning: Frontend build skipped or failed in server environment:', err.message);
-    if (fs.existsSync(srcDist) || fs.existsSync(backendDist) || fs.existsSync(rootDist)) {
-      console.log('[Build] Pre-built dist folder exists. Proceeding with existing production build.');
-    } else {
-      console.error('[Build] Error: No pre-built dist folder found and build failed.');
-      process.exit(1);
+  } else {
+    console.log('[Build] Building frontend client in:', frontendDir);
+    try {
+      const installCmd = fs.existsSync(frontendNodeModules)
+        ? 'npm run build'
+        : 'npm install --legacy-peer-deps && npm run build';
+      execSync(installCmd, { cwd: frontendDir, stdio: 'inherit' });
+      buildSuccessful = true;
+    } catch (err) {
+      console.warn('[Build] Warning: Frontend build skipped or failed in server environment:', err.message);
+      if (hasPrebuilt) {
+        console.log('[Build] Pre-built dist folder exists. Proceeding with existing production build.');
+      } else {
+        console.error('[Build] Error: No pre-built dist folder found and build failed.');
+        process.exit(1);
+      }
     }
   }
 } else {

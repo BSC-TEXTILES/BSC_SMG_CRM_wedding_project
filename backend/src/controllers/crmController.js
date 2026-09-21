@@ -1366,7 +1366,13 @@ exports.getFeedbacks = async (req, res) => {
 };
 
 // ── Chat System (Gemini AI) ─────────────────────────────────────────────────
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+let GoogleGenerativeAI = null;
+try {
+  const genAiPkg = require('@google/generative-ai');
+  GoogleGenerativeAI = genAiPkg.GoogleGenerativeAI || genAiPkg.default || genAiPkg;
+} catch (e) {
+  console.log('[Chat] Optional module @google/generative-ai not found. AI Chatbot running in fallback mode.');
+}
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 const GEMINI_MODEL = 'gemini-2.0-flash'; // using gemini-2.0-flash as it was previously defined
@@ -1465,6 +1471,9 @@ exports.clearChatMessages = async (req, res) => {
 };
 
 async function callGemini(userMessage, contextMessages) {
+  if (!GoogleGenerativeAI) {
+    return 'The AI Assistant module is temporarily initializing. Please try again in a few moments.';
+  }
   try {
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });

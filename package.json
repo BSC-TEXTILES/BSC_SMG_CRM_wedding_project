@@ -13,6 +13,7 @@
     "seed": "node backend/src/scripts/seed.js"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@types/node": "^20.16.1",
     "@types/react": "^18.3.4",
     "@types/react-dom": "^18.3.0",
@@ -28,6 +29,7 @@
     "express-rate-limit": "^7.3.1",
     "express-validator": "^7.3.2",
     "helmet": "^7.1.0",
+    "ioredis": "^6.0.0",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.436.0",
     "multer": "^2.3.0",
@@ -36,6 +38,7 @@
     "pdfkit": "^0.15.0",
     "postcss": "^8.4.41",
     "qrcode": "^1.5.4",
+    "rate-limit-redis": "^6.0.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "recharts": "^2.12.7",
