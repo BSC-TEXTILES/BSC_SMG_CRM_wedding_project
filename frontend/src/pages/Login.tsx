@@ -4,6 +4,7 @@ import { API, Auth } from '../services/api';
 import ToastContainer, { showToast } from '../components/Toast';
 import { ShieldCheck, ShieldAlert, Lock, User, ArrowRight, MapPin, RefreshCw, Hash, Eye, EyeOff, Sparkles, Search } from 'lucide-react';
 import PrivacyPolicyModal from '../components/ui/PrivacyPolicyModal';
+import TermsAndConditionsModal from '../components/ui/TermsAndConditionsModal';
 import { getDashboardRouteForRole } from '../utils/dashboardRouting';
 
 export default function LoginPage() {
@@ -25,6 +26,7 @@ export default function LoginPage() {
   const [countdown, setCountdown] = useState(30);
   const [showPassword, setShowPassword] = useState(false);
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
 
   // Rate limit & 10-minute temporary lockout state
   const [isLocked, setIsLocked] = useState(false);
@@ -387,13 +389,23 @@ export default function LoginPage() {
           </div>
 
           <div className="flex justify-between items-center">
-            <button
-              type="button"
-              onClick={() => setShowPrivacyPolicy(true)}
-              className="text-xs text-accent font-bold hover:underline"
-            >
-              Privacy Policy
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setShowPrivacyPolicy(true)}
+                className="text-xs text-accent font-bold hover:underline"
+              >
+                Privacy Policy
+              </button>
+              <span className="text-xs text-primary/40">•</span>
+              <button
+                type="button"
+                onClick={() => setShowTermsModal(true)}
+                className="text-xs text-accent font-bold hover:underline"
+              >
+                Terms
+              </button>
+            </div>
             <button
               type="button"
               onClick={() => navigate('/forgot-password')}
@@ -466,6 +478,12 @@ export default function LoginPage() {
         isOpen={showPrivacyPolicy}
         onClose={() => setShowPrivacyPolicy(false)}
         onAccept={() => setShowPrivacyPolicy(false)}
+      />
+
+      <TermsAndConditionsModal
+        isOpen={showTermsModal}
+        onClose={() => setShowTermsModal(false)}
+        onAccept={() => setShowTermsModal(false)}
       />
     </div>
   );
