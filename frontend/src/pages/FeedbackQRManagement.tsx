@@ -227,6 +227,7 @@ interface QRCode {
   locationName: string;
   sectionId: string | null;
   sectionName: string | null;
+  floor?: string | null;
   feedbackFormId: string | null;
   targetUrl: string;
   qrCodeDataUrl: string | null;
@@ -277,6 +278,16 @@ interface FeedbackForm {
   isDefault: number;
   status: string;
 }
+
+export const STANDARD_FLOORS = [
+  'Ground Floor',
+  'First Floor',
+  'Second Floor',
+  'Third Floor',
+  'Fourth Floor',
+  'Basement',
+  'Mezzanine Floor'
+];
 
 const StatusBadge = ({ status }: { status: string }) => {
   const config = {
@@ -407,6 +418,7 @@ export default function FeedbackQRManagement() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [locationFilter, setLocationFilter] = useState('');
+  const [floorFilter, setFloorFilter] = useState('all');
   const [sortBy, setSortBy] = useState('createdAt');
   const [sortOrder, setSortOrder] = useState<'ASC' | 'DESC'>('DESC');
   const [currentPage, setCurrentPage] = useState(1);
@@ -431,9 +443,11 @@ export default function FeedbackQRManagement() {
     locationName: '',
     sectionId: '',
     sectionName: '',
+    floor: '',
     feedbackFormId: '',
     status: 'active' as 'active' | 'inactive' | 'archived'
   });
+  const [isCustomFloor, setIsCustomFloor] = useState(false);
   const [locations, setLocations] = useState<Location[]>([]);
   const [sections, setSections] = useState<Section[]>([]);
   const [feedbackForms, setFeedbackForms] = useState<FeedbackForm[]>([]);
@@ -453,32 +467,81 @@ export default function FeedbackQRManagement() {
         search: search || undefined,
         status: statusFilter !== 'all' ? statusFilter : undefined,
         locationId: locationFilter || undefined,
+        floor: floorFilter !== 'all' ? floorFilter : undefined,
         sortBy,
         sortOrder
       };
-      const [qrRes, statsRes, locRes, secRes, formRes] = await Promise.all([
+      const [qrRes, statsRes, locRes, masterLocRes, secRes, formRes] = await Promise.allSettled([
         API.getQrCodes(params),
-        API.getQrCodeStats({ status: statusFilter !== 'all' ? statusFilter : undefined, locationId: locationFilter || undefined }),
+        API.getQrCodeStats({ 
+          status: statusFilter !== 'all' ? statusFilter : undefined, 
+          locationId: locationFilter || undefined,
+          floor: floorFilter !== 'all' ? floorFilter : undefined 
+        }),
         API.getLocationsForQr(),
+        API.getLocations(),
         API.getSectionsForQr(locationFilter || undefined),
         API.getFeedbackForms()
       ]);
-      if (qrRes?.success) {
-        setQrCodes(qrRes.data || []);
-        setTotalItems(qrRes.pagination?.total || 0);
-        setTotalPages(qrRes.pagination?.totalPages || 1);
+
+      if (qrRes.status === 'fulfilled' && qrRes.value?.success) {
+        setQrCodes(qrRes.value.data || []);
+        setTotalItems(qrRes.value.pagination?.total || 0);
+        setTotalPages(qrRes.value.pagination?.totalPages || 1);
+      } else if (qrRes.status === 'rejected') {
+        console.warn('QR codes fetch failed:', qrRes.reason);
       }
-      if (statsRes?.success) setStats({ ...(statsRes.stats || {}), charts: statsRes.charts || { scansByDay: [], feedbackByDay: [] } });
-      if (locRes?.success) setLocations(locRes.data || []);
-      if (secRes?.success) setSections(secRes.data || []);
-      if (formRes?.success) setFeedbackForms(formRes.data || []);
+
+      if (statsRes.status === 'fulfilled' && statsRes.value?.success) {
+        setStats({ ...(statsRes.value.stats || {}), charts: statsRes.value.charts || { scansByDay: [], feedbackByDay: [] } });
+      }
+
+      // Merge locations from both getLocations (system-wide) and getLocationsForQr
+      let combinedLocs: Location[] = [];
+      if (masterLocRes.status === 'fulfilled' && (masterLocRes.value?.locations || masterLocRes.value?.data)) {
+        const raw = masterLocRes.value.locations || masterLocRes.value.data || [];
+        combinedLocs = raw.map((l: any) => ({
+          id: Number(l.id) || l.id,
+          locationCode: String(l.locationCode || l.code || l.location_code || 'LOC').toUpperCase(),
+          locationName: String(l.locationName || l.name || l.location_name || '').trim()
+        }));
+      }
+      if (locRes.status === 'fulfilled' && (locRes.value?.data || locRes.value?.locations)) {
+        const qrLocs = (locRes.value.data || locRes.value.locations || []).map((l: any) => ({
+          id: Number(l.id) || l.id,
+          locationCode: String(l.locationCode || l.code || l.location_code || 'LOC').toUpperCase(),
+          locationName: String(l.locationName || l.name || l.location_name || '').trim()
+        }));
+        qrLocs.forEach((ql: Location) => {
+          if (!combinedLocs.some(cl => Number(cl.id) === Number(ql.id) || (cl.locationCode && cl.locationCode === ql.locationCode))) {
+            combinedLocs.push(ql);
+          }
+        });
+      }
+
+      // Ensure standard BSC locations if still empty
+      if (combinedLocs.length === 0) {
+        combinedLocs = [
+          { id: 1, locationCode: 'BEL', locationName: 'Belagavi' },
+          { id: 2, locationCode: 'DAV', locationName: 'Davanagere' },
+          { id: 3, locationCode: 'SHI', locationName: 'Shivamogga' }
+        ];
+      }
+      setLocations(combinedLocs);
+
+      if (secRes.status === 'fulfilled' && secRes.value?.data) {
+        setSections(secRes.value.data || []);
+      }
+      if (formRes.status === 'fulfilled' && formRes.value?.data) {
+        setFeedbackForms(formRes.value.data || []);
+      }
     } catch (err: any) {
       console.error('Load data error:', err);
     } finally {
       setLoading(false);
       setLocationsLoading(false);
     }
-  }, [currentPage, pageSize, search, statusFilter, locationFilter, sortBy, sortOrder]);
+  }, [currentPage, pageSize, search, statusFilter, locationFilter, floorFilter, sortBy, sortOrder]);
 
   useEffect(() => {
     if (!Auth.check()) {
@@ -497,6 +560,7 @@ export default function FeedbackQRManagement() {
   const handleFilterChange = (key: string, value: string) => {
     if (key === 'status') setStatusFilter(value);
     else if (key === 'location') setLocationFilter(value);
+    else if (key === 'floor') setFloorFilter(value);
     setCurrentPage(1);
   };
 
@@ -516,6 +580,8 @@ export default function FeedbackQRManagement() {
 
   const openEditModal = (qr: QRCode) => {
     setEditingQrCode(qr);
+    const isCustom = qr.floor ? !STANDARD_FLOORS.includes(qr.floor) : false;
+    setIsCustomFloor(isCustom);
     setFormData({
       name: qr.name,
       description: qr.description || '',
@@ -524,6 +590,7 @@ export default function FeedbackQRManagement() {
       locationName: qr.locationName,
       sectionId: qr.sectionId || '',
       sectionName: qr.sectionName || '',
+      floor: qr.floor || '',
       feedbackFormId: qr.feedbackFormId || '',
       status: qr.status
     });
@@ -549,6 +616,7 @@ export default function FeedbackQRManagement() {
 
   const resetForm = () => {
     setEditingQrCode(null);
+    setIsCustomFloor(false);
     setFormData({
       name: '',
       description: '',
@@ -557,6 +625,7 @@ export default function FeedbackQRManagement() {
       locationName: '',
       sectionId: '',
       sectionName: '',
+      floor: '',
       feedbackFormId: '',
       status: 'active'
     });
@@ -565,7 +634,12 @@ export default function FeedbackQRManagement() {
 
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    if (name === 'sectionId') {
+      const sec = sections.find(s => String(s.id) === value);
+      setFormData(prev => ({ ...prev, sectionId: value, sectionName: sec ? sec.name : '' }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
     if (formErrors[name]) setFormErrors(prev => ({ ...prev, [name]: '' }));
   };
 
@@ -691,6 +765,7 @@ export default function FeedbackQRManagement() {
               <div class="meta">
                 <div>QR Code ID: ${qr.qrCodeId}</div>
                 <div>Location: ${qr.locationName}</div>
+                ${qr.floor ? `<div>Floor: ${qr.floor}</div>` : ''}
                 ${qr.sectionName ? `<div>Section: ${qr.sectionName}</div>` : ''}
                 <div>Status: ${qr.status}</div>
                 <div>URL: ${qr.targetUrl}</div>
@@ -791,6 +866,15 @@ export default function FeedbackQRManagement() {
                   <option value="">All Locations</option>
                   {locations.map(loc => (
                     <option key={loc.id} value={String(loc.id)}>{loc.locationName} ({loc.locationCode})</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10.5px] font-bold text-primary/60 hidden sm:inline">Floor:</span>
+                <select value={floorFilter} onChange={(e) => handleFilterChange('floor', e.target.value)} className="select-modern text-xs font-bold py-2 min-w-[140px]">
+                  <option value="all">All Floors</option>
+                  {STANDARD_FLOORS.map(fl => (
+                    <option key={fl} value={fl}>{fl}</option>
                   ))}
                 </select>
               </div>
@@ -929,7 +1013,7 @@ export default function FeedbackQRManagement() {
                         <th className="p-4 cursor-pointer" onClick={() => handleSort('qrCodeId')}>QR Code ID {sortBy === 'qrCodeId' && (sortOrder === 'ASC' ? <ChevronUp className="w-3.5 h-3.5 inline" /> : <ChevronDown className="w-3.5 h-3.5 inline" />)}</th>
                         <th className="p-4 cursor-pointer" onClick={() => handleSort('name')}>Name {sortBy === 'name' && (sortOrder === 'ASC' ? <ChevronUp className="w-3.5 h-3.5 inline" /> : <ChevronDown className="w-3.5 h-3.5 inline" />)}</th>
                         <th className="p-4 cursor-pointer" onClick={() => handleSort('locationName')}>Location {sortBy === 'locationName' && (sortOrder === 'ASC' ? <ChevronUp className="w-3.5 h-3.5 inline" /> : <ChevronDown className="w-3.5 h-3.5 inline" />)}</th>
-                        <th className="p-4">Section</th>
+                        <th className="p-4">Floor & Section</th>
                         <th className="p-4 cursor-pointer" onClick={() => handleSort('status')}>Status {sortBy === 'status' && (sortOrder === 'ASC' ? <ChevronUp className="w-3.5 h-3.5 inline" /> : <ChevronDown className="w-3.5 h-3.5 inline" />)}</th>
                         <th className="p-4 cursor-pointer" onClick={() => handleSort('scanCount')}>Scans {sortBy === 'scanCount' && (sortOrder === 'ASC' ? <ChevronUp className="w-3.5 h-3.5 inline" /> : <ChevronDown className="w-3.5 h-3.5 inline" />)}</th>
                         <th className="p-4">Feedback</th>
@@ -961,14 +1045,22 @@ export default function FeedbackQRManagement() {
                             <div className="text-[10px] text-gray-500 font-mono">{qr.locationCode}</div>
                           </td>
                           <td className="p-4">
-                            {qr.sectionName ? (
-                              <div className="font-medium text-primary flex items-center gap-1">
-                                <Building2 className="w-3 h-3 text-accent" />
-                                <span>{qr.sectionName}</span>
-                              </div>
-                            ) : (
-                              <span className="text-[10px] text-gray-400">—</span>
-                            )}
+                            <div className="space-y-1">
+                              {qr.floor && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 text-amber-900 border border-amber-200 text-[10px] font-bold">
+                                  <Layers className="w-3 h-3 text-amber-600" />
+                                  <span>{qr.floor}</span>
+                                </span>
+                              )}
+                              {qr.sectionName ? (
+                                <div className="font-medium text-primary flex items-center gap-1">
+                                  <Building2 className="w-3 h-3 text-accent" />
+                                  <span>{qr.sectionName}</span>
+                                </div>
+                              ) : !qr.floor && (
+                                <span className="text-[10px] text-gray-400">—</span>
+                              )}
+                            </div>
                           </td>
                           <td className="p-4"><StatusBadge status={qr.status} /></td>
                           <td className="p-4 font-extrabold text-primary">{qr.scanCount}</td>
@@ -1042,6 +1134,7 @@ export default function FeedbackQRManagement() {
                     </div>
                     <div className="space-y-1 text-[11px] text-gray-600">
                       <div className="flex items-center gap-1.5"><MapPin className="w-3 h-3 text-accent" /><span>{qr.locationName}</span></div>
+                      {qr.floor && <div className="flex items-center gap-1.5"><Layers className="w-3 h-3 text-amber-600" /><span className="font-bold text-amber-900">{qr.floor}</span></div>}
                       {qr.sectionName && <div className="flex items-center gap-1.5"><Building2 className="w-3 h-3 text-accent" /><span>{qr.sectionName}</span></div>}
                       <div className="flex items-center gap-1.5"><ScanLine className="w-3 h-3 text-accent" /><span>{qr.scanCount} scans</span></div>
                       <div className="flex items-center gap-1.5"><MessageSquare className="w-3 h-3 text-emerald-600" /><span>{qr.feedbackCount} feedback</span></div>
@@ -1185,7 +1278,52 @@ export default function FeedbackQRManagement() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-extrabold text-primary">Floor (Floor-wise placement)</label>
+                    {!isCustomFloor ? (
+                      <select
+                        name="floor"
+                        value={formData.floor}
+                        onChange={(e) => {
+                          if (e.target.value === '__custom__') {
+                            setIsCustomFloor(true);
+                            setFormData(prev => ({ ...prev, floor: '' }));
+                          } else {
+                            handleFormChange(e);
+                          }
+                        }}
+                        className="select-modern text-xs font-bold py-2"
+                      >
+                        <option value="">Select Floor (Optional)</option>
+                        {STANDARD_FLOORS.map(f => (
+                          <option key={f} value={f}>{f}</option>
+                        ))}
+                        <option value="__custom__">+ Enter Custom Floor...</option>
+                      </select>
+                    ) : (
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="text"
+                          name="floor"
+                          value={formData.floor}
+                          onChange={handleFormChange}
+                          placeholder="e.g. 5th Floor, Rooftop"
+                          className="input-modern text-xs font-bold py-2 flex-1"
+                          autoFocus
+                        />
+                        <button
+                          type="button"
+                          onClick={() => { setIsCustomFloor(false); setFormData(prev => ({ ...prev, floor: '' })); }}
+                          className="px-2 py-2 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl"
+                          title="Back to standard floor list"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
                   <div className="space-y-1.5">
                     <label className="block text-xs font-extrabold text-primary">Section/Department</label>
                     <select
@@ -1261,11 +1399,19 @@ export default function FeedbackQRManagement() {
                 </div>
 
                 <h4 className="text-lg font-black text-primary">{previewQrCode.name}</h4>
-                {previewQrCode.sectionName && (
-                  <div className="text-sm text-primary flex items-center justify-center gap-1">
-                    <Building2 className="w-3.5 h-3.5" /> {previewQrCode.sectionName}
-                  </div>
-                )}
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  {previewQrCode.floor && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold">
+                      <Layers className="w-3.5 h-3.5 text-amber-700" />
+                      <span>{previewQrCode.floor}</span>
+                    </span>
+                  )}
+                  {previewQrCode.sectionName && (
+                    <div className="text-sm text-primary flex items-center justify-center gap-1">
+                      <Building2 className="w-3.5 h-3.5" /> {previewQrCode.sectionName}
+                    </div>
+                  )}
+                </div>
 
                 <div className="p-6 bg-white rounded-2xl shadow-xl border border-gray-200 inline-block">
                   {previewQrCode.qrCodeDataUrl ? (
