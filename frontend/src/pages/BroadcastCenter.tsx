@@ -7,7 +7,7 @@ import { Auth, UserSession } from '../services/api';
 import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../utils/sidebarState';
 import { NotificationService, SystemNotification } from '../services/notificationService';
 import MetricCard from '../components/ui/MetricCard';
-import { Send, Megaphone, Users, Calendar, TriangleAlert, Trash2, CircleCheck, Shield, Plus, Clock, Filter, Eye, CheckCheck, FileText, Lock, MessageSquare } from 'lucide-react';
+import { Send, Megaphone, Users, Calendar, TriangleAlert, Trash2, CircleCheck, Shield, Plus, Clock, Filter, Eye, CheckCheck, FileText, Lock, MessageSquare, RefreshCw } from 'lucide-react';
 
 export default function BroadcastCenterPage() {
   const navigate = useNavigate();
