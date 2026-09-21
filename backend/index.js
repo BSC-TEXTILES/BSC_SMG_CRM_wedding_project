@@ -650,6 +650,7 @@ server.on('error', (err) => {
   // If primary port had EADDRINUSE on 5000, attempt automatic fallback to 3000
   if (err.code === 'EADDRINUSE' && !isSocketPort && Number(PORT) === 5000) {
     console.warn(`[Server Recovery] Port 5000 in use. Attempting recovery on port 3000...`);
+    PORT = 3000; // Prevent infinite loop if port 3000 is also in use
     try {
       server.listen(3000, '0.0.0.0', () => {
         console.log(`[Server Recovery] BSC HRMS recovered and running on port 3000`);
