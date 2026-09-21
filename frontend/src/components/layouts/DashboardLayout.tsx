@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Sidebar from '../Sidebar';
 import Topbar from '../Topbar';
 import ToastContainer from '../Toast';
+import ChatWidget from '../ui/ChatWidget';
 import { Auth, UserSession } from "../../services/api";
 import { Plus, X, UserCheck, BarChart3, Target, PhoneCall, Zap, QrCode } from 'lucide-react';
 
