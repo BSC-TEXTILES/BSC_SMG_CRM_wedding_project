@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { API, Auth } from '../services/api';
 import ToastContainer, { showToast } from '../components/Toast';
 import { ShieldCheck, ShieldAlert, Lock, User, ArrowRight, MapPin, RefreshCw, Hash, Eye, EyeOff, Sparkles, Search } from 'lucide-react';
+import PrivacyPolicyModal from '../components/ui/PrivacyPolicyModal';
 import { getDashboardRouteForRole } from '../utils/dashboardRouting';
 
 export default function LoginPage() {
@@ -23,6 +24,7 @@ export default function LoginPage() {
   const [captchaLoading, setCaptchaLoading] = useState(false);
   const [countdown, setCountdown] = useState(30);
   const [showPassword, setShowPassword] = useState(false);
+  const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
 
   // Rate limit & 10-minute temporary lockout state
   const [isLocked, setIsLocked] = useState(false);
@@ -384,7 +386,14 @@ export default function LoginPage() {
             <p className="text-[10px] text-primary font-medium">Refreshes automatically in {countdown}s for your security.</p>
           </div>
 
-          <div className="flex justify-end">
+          <div className="flex justify-between items-center">
+            <button
+              type="button"
+              onClick={() => setShowPrivacyPolicy(true)}
+              className="text-xs text-accent font-bold hover:underline"
+            >
+              Privacy Policy
+            </button>
             <button
               type="button"
               onClick={() => navigate('/forgot-password')}
@@ -452,6 +461,12 @@ export default function LoginPage() {
         <MapPin className="w-3 h-3 text-accent" />
         <span>Your location (Belagavi / Davanagere / Shivamogga) is assigned by the System Admin</span>
       </div>
+
+      <PrivacyPolicyModal
+        isOpen={showPrivacyPolicy}
+        onClose={() => setShowPrivacyPolicy(false)}
+        onAccept={() => setShowPrivacyPolicy(false)}
+      />
     </div>
   );
 }

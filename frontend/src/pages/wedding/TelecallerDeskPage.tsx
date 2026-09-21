@@ -148,6 +148,12 @@ export default function TelecallerDeskPage() {
     }
   };
 
+  const isGlobalOrAdmin = Boolean(
+    session?.isGlobalAdmin ||
+    ['Admin', 'Super Admin', 'System Administrator'].includes(session?.role || '') ||
+    !session?.locationId
+  );
+
   // Filter current active queue records
   const currentList = (queueRecords[activeQueue] || []).filter((c) => {
     if (!searchQuery.trim()) return true;
@@ -155,7 +161,8 @@ export default function TelecallerDeskPage() {
     return (
       c.customer_name.toLowerCase().includes(q) ||
       c.mobile_number.includes(q) ||
-      (c.customer_code && c.customer_code.toLowerCase().includes(q))
+      (c.customer_code && c.customer_code.toLowerCase().includes(q)) ||
+      (c.assigned_telecaller && c.assigned_telecaller.toLowerCase().includes(q))
     );
   });
 
@@ -185,7 +192,7 @@ export default function TelecallerDeskPage() {
             currentPageTitle="Telecaller Desk & Queues"
             actions={
               <div className="flex items-center gap-2">
-                {session?.isGlobalAdmin && (
+                {isGlobalOrAdmin && (
                   <select
                     value={locationFilter}
                     onChange={(e) => setLocationFilter(e.target.value ? Number(e.target.value) : '')}
@@ -223,7 +230,7 @@ export default function TelecallerDeskPage() {
                     Telecaller Daily Calling Target & Performance
                   </h2>
                   <div className="text-[11px] text-[#E4CB92] font-semibold">
-                    {session?.fullName || 'Telecaller Desk'} · Live Telephony Queue
+                    {isGlobalOrAdmin ? 'Admin Supervised Calling Desk · All Telecaller Queues' : `${session?.fullName || 'Telecaller Desk'} · Live Telephony Queue`}
                   </div>
                 </div>
               </div>
@@ -317,6 +324,7 @@ export default function TelecallerDeskPage() {
                     <th className="py-3 px-4 font-black">Reg ID</th>
                     <th className="py-3 px-4 font-black">Customer</th>
                     <th className="py-3 px-4 font-black">Mobile</th>
+                    <th className="py-3 px-4 font-black">Telecaller</th>
                     <th className="py-3 px-4 font-black">Location</th>
                     <th className="py-3 px-4 font-black">Wedding Date</th>
                     <th className="py-3 px-4 font-black">Expected Shopping</th>
@@ -328,14 +336,14 @@ export default function TelecallerDeskPage() {
                 <tbody className="divide-y divide-[#DFDDD7]">
                   {loading ? (
                     <tr>
-                      <td colSpan={9} className="text-center py-12 text-muted">
+                      <td colSpan={10} className="text-center py-12 text-muted">
                         <RefreshCw className="w-5 h-5 animate-spin text-[#C9A45C] mx-auto mb-2" />
                         <span>Loading telecaller queue...</span>
                       </td>
                     </tr>
                   ) : currentList.length === 0 ? (
                     <tr>
-                      <td colSpan={9} className="text-center py-12 text-muted">
+                      <td colSpan={10} className="text-center py-12 text-muted">
                         <CheckCircle2 className="w-10 h-10 text-[#16805B] mx-auto mb-2" />
                         <div className="font-bold text-sm text-[#182033]">Queue is currently clear!</div>
                         <div className="text-xs text-muted mt-0.5">All calls in this queue have been handled.</div>
@@ -371,6 +379,15 @@ export default function TelecallerDeskPage() {
                           </td>
                           <td className="py-3 px-4 font-semibold text-[#182033]">
                             {cust.mobile_number}
+                          </td>
+                          <td className="py-3 px-4 font-semibold text-gray-700">
+                            {cust.assigned_telecaller ? (
+                              <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-800 px-2 py-0.5 rounded text-[11px] font-bold">
+                                👤 {cust.assigned_telecaller}
+                              </span>
+                            ) : (
+                              <span className="text-muted italic text-[11px]">Unassigned</span>
+                            )}
                           </td>
                           <td className="py-3 px-4 font-medium text-muted">
                             📍 {cust.location_name || 'Store'}

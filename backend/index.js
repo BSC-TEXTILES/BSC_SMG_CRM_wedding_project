@@ -431,7 +431,13 @@ app.get('/api/fix-db-schema', authenticate, authorize('Admin', 'Super Admin'), a
       ['HR_wedding_crm','HR','wedding_crm',true],
       ['Manager_wedding_crm','Manager','wedding_crm',true],
       ['Admin_wedding_crm','Admin','wedding_crm',true],
-      ['Super Admin_wedding_crm','Super Admin','wedding_crm',true]
+      ['Super Admin_wedding_crm','Super Admin','wedding_crm',true],
+      ['Admin_telecaller_desk','Admin','telecaller_desk',true],
+      ['Super Admin_telecaller_desk','Super Admin','telecaller_desk',true],
+      ['Manager_telecaller_desk','Manager','telecaller_desk',true],
+      ['Telecaller_telecaller_desk','Telecaller','telecaller_desk',true],
+      ['CRM Executive_telecaller_desk','CRM Executive','telecaller_desk',true],
+      ['CRM Manager_telecaller_desk','CRM Manager','telecaller_desk',true]
     ];
     for (const [key, role, page, allowed] of defaultVisibility) {
       try {

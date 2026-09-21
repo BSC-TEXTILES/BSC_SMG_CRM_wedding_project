@@ -31,7 +31,7 @@ export const ROLE_NAV_MAP: Record<string, string[]> = {
   'Super Admin': ALL_ADMIN_KEYS,
   'Admin': ALL_ADMIN_KEYS,
   'Manager': [
-    'wedding_crm', 'wedding_operations', 'wedding_registration', 'candidate_apply', 'footfall', 
+    'wedding_crm', 'wedding_operations', 'wedding_registration', 'telecaller_desk', 'telecaller_dashboard', 'candidate_apply', 'footfall', 
     'feedback_collection', 'feedback_list', 'feedback_qr', 'divert', 'pm_view', 'vm_checklist', 
     'attendance', 'dashboard', 'candidates', 'offer', 'openings', 'daily_mcheck', 'mcheck_reports', 
     'mcheck_history', 'employees', 'dept_hiring', 'section_allocation', 'broadcast', 'user_management'
@@ -107,6 +107,12 @@ export function resolveAllowedPages(
 ): string[] {
   const roleKeys = getRoleNavMap(role);
   const r = (role || '').trim();
+  const norm = r.toLowerCase().replace(/[_\s-]+/g, ' ');
+
+  // Admin & Super Admin have full access to all system admin pages and cannot be restricted by module lists
+  if (norm === 'admin' || norm === 'super admin' || norm === 'system administrator') {
+    return roleKeys;
+  }
 
   // User-specific permission overrides (exact module list)
   if (userModules && Array.isArray(userModules) && userModules.length > 0) {

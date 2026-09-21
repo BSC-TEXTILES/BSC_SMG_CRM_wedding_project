@@ -70,6 +70,9 @@ export function useTelecallerQueue(locationFilter: number | '' = '') {
         const newLeads = Array.isArray(q.newCustomers) ? q.newCustomers : (Array.isArray(q.new_customers) ? q.new_customers : []);
 
         const currentUserName = session?.fullName || session?.username || '';
+        const userRole = (session?.role || '').toLowerCase();
+        const isAdminOrManager = userRole.includes('admin') || userRole.includes('manager') || session?.isGlobalAdmin;
+
         const myQueue = [...dueToday, ...overdue, ...callbacks].filter(
           (c: any) => c.assigned_telecaller && c.assigned_telecaller.toLowerCase().includes(currentUserName.toLowerCase())
         );
@@ -81,7 +84,7 @@ export function useTelecallerQueue(locationFilter: number | '' = '') {
           upcoming,
           priority,
           newLeads,
-          myQueue: myQueue.length > 0 ? myQueue : dueToday
+          myQueue: myQueue.length > 0 ? myQueue : (isAdminOrManager ? [...dueToday, ...overdue] : dueToday)
         });
 
         const completed = Number(s.completedToday) || Number(s.completed) || 0;

@@ -25,7 +25,9 @@ const LOCATION_CODE_MAP = {
 };
 
 function parseTargetLocation(val) {
-  if (val === undefined || val === null || val === '' || val === 'all') return null;
+  if (val === undefined || val === null || val === '') return null;
+  const s = String(val).trim().toLowerCase();
+  if (s === 'all' || s === 'all locations' || s === 'all_locations') return null;
   let parsed = parseInt(val, 10);
   if (isNaN(parsed) && typeof val === 'string') {
     parsed = LOCATION_CODE_MAP[val.trim().toUpperCase()] || null;
@@ -1853,7 +1855,71 @@ class WeddingController {
   // ── 13. Export Data Engine ──────────────────────────────────────────
   async exportData(req, res) {
     try {
+      await ensureTables();
+      const exportType = req.query.type || 'customers';
       const { clause: locClause, params } = resolveLocFilter(req, 'w');
+
+      if (exportType === 'call_logs') {
+        let callParams = [...params];
+        let extraClause = '';
+        if (req.query.from_date) {
+          extraClause += ' AND c.call_date >= ?';
+          callParams.push(req.query.from_date);
+        }
+        if (req.query.to_date) {
+          extraClause += ' AND c.call_date <= ?';
+          callParams.push(req.query.to_date);
+        }
+        if (req.query.outcome) {
+          extraClause += ' AND c.call_outcome = ?';
+          callParams.push(req.query.outcome);
+        }
+        if (req.query.telecaller) {
+          extraClause += ' AND (c.telecaller_name LIKE ? OR c.telecaller_id = ?)';
+          callParams.push(`%${req.query.telecaller}%`, req.query.telecaller);
+        }
+
+        const [rows] = await pool.query(`
+          SELECT 
+            c.id,
+            c.customer_id,
+            c.call_date,
+            c.call_time,
+            c.telecaller_name,
+            c.telecaller_id,
+            c.call_status,
+            c.call_outcome,
+            c.remarks,
+            c.next_follow_up_date,
+            c.next_follow_up_time,
+            c.expected_shopping_date_updated,
+            c.call_duration,
+            c.customer_response,
+            c.created_at,
+            w.customer_code,
+            w.customer_name,
+            w.mobile_number,
+            w.customer_status,
+            w.location_id,
+            l.location_name,
+            l.location_code
+          FROM wedding_call_logs c
+          JOIN wedding_customers w ON c.customer_id = w.id
+          LEFT JOIN locations l ON l.id = w.location_id
+          WHERE w.is_deleted = 0 ${locClause} ${extraClause}
+          ORDER BY c.call_date DESC, c.call_time DESC, c.id DESC
+        `, callParams);
+
+        decryptRows(rows, ENCRYPTED_FIELDS);
+
+        return successRes(res, {
+          data: rows || [],
+          logs: rows || [],
+          records: rows || [],
+          total: rows.length,
+          exportedAt: new Date().toISOString()
+        }, 'Call logs exported successfully');
+      }
 
       const [rows] = await pool.query(`
         SELECT 
@@ -1885,6 +1951,7 @@ class WeddingController {
       decryptRows(rows, ENCRYPTED_FIELDS);
 
       return successRes(res, {
+        data: rows || [],
         records: rows || [],
         customers: rows || [],
         total: rows.length,

@@ -69,9 +69,15 @@ export default function WeddingCallHistory() {
       if (locsRes?.locations) setLocations(locsRes.locations);
       if (callersRes?.telecallers) setTelecallers(callersRes.telecallers);
 
-      const logs = Array.isArray(exportRes?.data) ? exportRes.data : (Array.isArray(exportRes?.logs) ? exportRes.logs : []);
-      setCallLogs(logs);
-      setTotalCount(logs.length);
+      const rawLogs = Array.isArray(exportRes) 
+        ? exportRes 
+        : (Array.isArray(exportRes?.data) 
+            ? exportRes.data 
+            : (Array.isArray(exportRes?.logs) 
+                ? exportRes.logs 
+                : (Array.isArray(exportRes?.records) ? exportRes.records : [])));
+      setCallLogs(rawLogs);
+      setTotalCount(rawLogs.length);
     } catch (err: any) {
       showToast('Error loading call history: ' + err.message, 'error');
     } finally {

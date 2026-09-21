@@ -34,6 +34,7 @@ function _parseLocationPairs(pairs, row = {}) {
 const MODULE_REGISTRY = [
   { key: 'dashboard', label: 'Dashboard', section: 'Core Workspace' },
   { key: 'wedding_crm', label: 'Wedding Follow-up CRM', section: 'Store Operations' },
+  { key: 'telecaller_desk', label: 'Telecaller Calling Desk', section: 'Store Operations' },
   { key: 'telecaller_dashboard', label: 'Telecaller Dashboard', section: 'Telecaller' },
   { key: 'footfall', label: 'Hourly Footfall', section: 'Store Operations' },
   { key: 'feedback_collection', label: 'Feedback Collection', section: 'Store Operations' },
@@ -59,7 +60,8 @@ const MODULE_REGISTRY = [
   { key: 'tv', label: 'Live TV Kiosk', section: 'Public Portals' },
   { key: 'feedback_public', label: 'Customer Feedback QR', section: 'Public Portals' },
   { key: 'system_admin', label: 'System Administrator', section: 'Administration' },
-  { key: 'wedding_registration', label: 'Applicant Registration', section: 'Public Portals' }
+  { key: 'wedding_registration', label: 'Applicant Registration', section: 'Public Portals' },
+  { key: 'wedding_operations', label: 'Wedding Operations', section: 'Store Operations' }
 ];
 
 // ── List all users with their permission counts ───────────────────
