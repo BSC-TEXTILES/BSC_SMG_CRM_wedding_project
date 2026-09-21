@@ -42,28 +42,19 @@ try {
   console.warn('[Boot] socket.io module not found or failed to load. Real-time updates disabled:', e.message);
 }
 
-// ── Preserve Passenger/Cloud Assigned Port ────────────────────────────────────
-// Passenger sets process.env.PORT or typeof PhusionPassenger before booting the app.
-// If .env contains PORT=5000, dotenv must NOT override Passenger's socket/port.
-const initialPort = process.env.PORT;
-const isPassenger = typeof(PhusionPassenger) !== 'undefined' || 
-                    process.env.PASSENGER_APP_ENV !== undefined || 
-                    String(initialPort).toLowerCase() === 'passenger';
-
-if (typeof(PhusionPassenger) !== 'undefined') {
-  try { PhusionPassenger.configure({ autoInstall: false }); } catch (e) {}
-}
+// ── Preserve Hostinger / CloudLinux / Passenger Assigned Port ─────────────────
+// Hostinger/CloudLinux sets process.env.PORT (e.g. numeric port or socket path).
+// We MUST preserve it and never overwrite it with 'passenger' if a port is given.
+const hostPort = process.env.PORT;
 
 // ── Load .env as FALLBACK only ────────────────────────────────────────────────
 dotenv.config({ path: path.join(APP_ROOT, '..', '.env') });
 dotenv.config({ path: path.join(APP_ROOT, '.env') });
 dotenv.config({ path: path.join(SERVER_DIR, '.env') });
 
-// If running under Passenger or if host already set a PORT, preserve it!
-if (isPassenger) {
-  process.env.PORT = 'passenger';
-} else if (initialPort) {
-  process.env.PORT = initialPort;
+// If Hostinger or platform already set a PORT in the environment, restore it!
+if (hostPort !== undefined && hostPort !== null && String(hostPort).trim().length > 0) {
+  process.env.PORT = hostPort;
 }
 
 // ── Load modules ──────────────────────────────────────────────────────────────
@@ -80,18 +71,28 @@ const feedbackQrController = require('./src/controllers/feedbackQrController');
 // ── Express App ───────────────────────────────────────────────────────────────
 const app = express();
 
-// Resilient PORT parsing: strictly respects deployment platform's PORT (integers, sockets, or passenger)
+// Resilient PORT parsing:
+// 1. If typeof(PhusionPassenger) !== 'undefined' and no PORT is given -> 'passenger'
+// 2. If rawPort is explicitly 'passenger' -> 'passenger'
+// 3. If rawPort is a number -> numeric port
+// 4. If rawPort is a socket path -> domain socket
+// 5. Fallback -> 5000 (or 3000 if production without PORT)
 let rawPort = process.env.PORT;
 let PORT = 5000;
 let isSocketPort = false;
 
-if (isPassenger || String(rawPort).toLowerCase() === 'passenger') {
+if (typeof(PhusionPassenger) !== 'undefined' && (!rawPort || String(rawPort).toLowerCase() === 'passenger')) {
+  try { PhusionPassenger.configure({ autoInstall: false }); } catch (e) {}
   PORT = 'passenger';
   isSocketPort = true;
 } else if (rawPort !== undefined && rawPort !== null && String(rawPort).trim().length > 0) {
   const trimmed = String(rawPort).trim();
-  if (/^\d+$/.test(trimmed)) {
+  if (trimmed.toLowerCase() === 'passenger') {
+    PORT = 'passenger';
+    isSocketPort = true;
+  } else if (/^\d+$/.test(trimmed)) {
     PORT = parseInt(trimmed, 10);
+    isSocketPort = false;
   } else {
     PORT = trimmed;
     isSocketPort = true;
@@ -616,7 +617,7 @@ if (Server) {
   }
 }
 
-if (PORT === 'passenger' || typeof(PhusionPassenger) !== 'undefined') {
+if (PORT === 'passenger') {
   server.listen('passenger', () => {
     console.log(`====================================================`);
     console.log(`  BSC HRMS running under Phusion Passenger`);
@@ -629,10 +630,10 @@ if (PORT === 'passenger' || typeof(PhusionPassenger) !== 'undefined') {
     console.log(`====================================================`);
   });
 } else {
-  server.listen(PORT, '0.0.0.0', () => {
+  server.listen(PORT, () => {
     console.log(`====================================================`);
     console.log(`  BSC HRMS running on port ${PORT}`);
-    console.log(`  Health: http://0.0.0.0:${PORT}/health`);
+    console.log(`  Health: http://localhost:${PORT}/health`);
     console.log(`====================================================`);
   });
 }
