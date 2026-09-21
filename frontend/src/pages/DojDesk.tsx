@@ -458,7 +458,7 @@ export default function DojDesk() {
                         <tr key={emp.app_no || emp.emp_code} className="hover:bg-background/40 transition-colors">
                           <td className="py-3.5 px-4">
                             <p className="font-extrabold text-primary">{emp.name}</p>
-                            <p className="font-mono text-[10px] text-accent font-bold mt-0.5">{emp.emp_code || emp.app_no}</p>
+                            <p className="font-mono text-[10px] text-primary font-bold mt-0.5">{emp.emp_code || emp.app_no}</p>
                             <p className="text-[11px] text-primary/60 flex items-center gap-1 mt-0.5">
                               <Phone className="w-3 h-3 text-primary/40" /> {emp.phone}
                             </p>

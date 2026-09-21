@@ -434,7 +434,7 @@ export default function MainCrmDashboard() {
                       <h3 className="text-xs font-extrabold text-[#182033] flex items-center gap-2">
                         <PhoneCall className="w-3.5 h-3.5 text-[#C9A45C]" /> Consultation & Call Logs
                       </h3>
-                      <button className="text-[10px] font-bold text-[#C9A45C] hover:underline flex items-center gap-1 cursor-pointer"><Plus className="w-3 h-3"/> Add Call Log</button>
+                      <button className="text-[10px] font-bold text-[#9E762E] hover:underline flex items-center gap-1 cursor-pointer"><Plus className="w-3 h-3"/> Add Call Log</button>
                     </div>
                     <div className="p-4 space-y-4">
                       <div className="pb-3 border-b border-[#DFDDD7] last:border-0 last:pb-0">

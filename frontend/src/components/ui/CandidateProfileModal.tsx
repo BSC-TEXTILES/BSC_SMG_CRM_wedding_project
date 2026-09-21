@@ -124,7 +124,7 @@ export default function CandidateProfileModal({ candidate, isOpen, onClose, onUp
       <div className="relative w-full max-w-4xl max-h-[92vh] bg-background rounded-3xl shadow-2xl flex flex-col z-10 overflow-hidden border-2 border-accent/50">
         
         {/* Top Header Banner */}
-        <div className="bg-gradient-to-r from-primary via-primary to-[#3D2B1F] text-black p-5 sm:p-6 border-b-2 border-accent/40 relative">
+        <div className="bg-gradient-to-r from-primary via-primary to-[#3D2B1F] text-white p-5 sm:p-6 border-b-2 border-accent/40 relative">
           <div className="absolute top-4 right-4 flex items-center gap-2">
             {!isEditing ? (
               <button
@@ -138,7 +138,7 @@ export default function CandidateProfileModal({ candidate, isOpen, onClose, onUp
             ) : (
               <button
                 onClick={() => setIsEditing(false)}
-                className="px-3.5 py-1.5 text-xs font-black rounded-xl bg-black/20 hover:bg-black/30 text-black transition-all flex items-center gap-1.5"
+                className="px-3.5 py-1.5 text-xs font-black rounded-xl bg-white/20 hover:bg-white/30 text-white transition-all flex items-center gap-1.5"
               >
                 <RotateCcw className="w-4 h-4" />
                 <span>Cancel Edit</span>
@@ -147,7 +147,7 @@ export default function CandidateProfileModal({ candidate, isOpen, onClose, onUp
 
             <button
               onClick={onClose}
-              className="p-2 rounded-2xl bg-black/10 text-black hover:bg-black/20 transition-all border border-black/20 shadow-md"
+              className="p-2 rounded-2xl bg-white/10 text-white hover:bg-white/20 transition-all border border-white/20 shadow-md"
               title="Close"
             >
               <X className="w-5 h-5" />
@@ -165,7 +165,7 @@ export default function CandidateProfileModal({ candidate, isOpen, onClose, onUp
                   onError={(e) => { e.currentTarget.style.display = 'none'; }}
                 />
               ) : (
-                <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-3xl bg-gradient-to-br from-primary to-primary-hover text-black font-black text-3xl sm:text-4xl flex items-center justify-center border-4 border-accent shadow-2xl">
+                <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-3xl bg-gradient-to-br from-primary to-primary-hover text-accent font-black text-3xl sm:text-4xl flex items-center justify-center border-4 border-accent shadow-2xl">
                   {currentCand.initials || name.slice(0, 2).toUpperCase()}
                 </div>
               )}
@@ -174,32 +174,32 @@ export default function CandidateProfileModal({ candidate, isOpen, onClose, onUp
             {/* Header Details */}
             <div className="text-center sm:text-left space-y-1.5 min-w-0 pr-24">
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                <h2 className="font-black text-black text-xl sm:text-2xl tracking-tight">{name}</h2>
+                <h2 className="font-black text-white text-xl sm:text-2xl tracking-tight">{name}</h2>
                 <StatusBadge status={currentCand.status || currentCand.offerStatus || 'New'} size="sm" />
               </div>
 
               <div className="text-xs text-accent font-extrabold font-mono flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                <span className="px-2.5 py-0.5 rounded-lg bg-black/10 border border-black/15 text-amber-300">{appNo}</span>
-                <span>•</span>
-                <span className="text-black font-bold">{desig}</span>
-                <span>•</span>
-                <span className="text-black/80 font-normal">Department: {dept}</span>
+                <span className="px-2.5 py-0.5 rounded-lg bg-white/10 border border-white/15 text-amber-300">{appNo}</span>
+                <span className="text-white/50">•</span>
+                <span className="text-white font-bold">{desig}</span>
+                <span className="text-white/50">•</span>
+                <span className="text-white/80 font-normal">Department: {dept}</span>
               </div>
 
-              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 pt-1 text-xs text-black/80">
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 pt-1 text-xs text-white/90">
                 {currentCand.phone && (
-                  <a href={`tel:${currentCand.phone}`} className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-black/10 hover:bg-black/20 transition-all text-amber-300 font-bold border border-black/10">
+                  <a href={`tel:${currentCand.phone}`} className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white/10 hover:bg-white/20 transition-all text-amber-300 font-bold border border-white/10">
                     <Phone className="w-3.5 h-3.5" />
                     <span>{currentCand.phone}</span>
                   </a>
                 )}
                 {currentCand.email && (
-                  <a href={`mailto:${currentCand.email}`} className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-black/10 hover:bg-black/20 transition-all text-black/90 font-semibold border border-black/10">
+                  <a href={`mailto:${currentCand.email}`} className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white/10 hover:bg-white/20 transition-all text-white/90 font-semibold border border-white/10">
                     <Mail className="w-3.5 h-3.5 text-accent" />
                     <span>{currentCand.email}</span>
                   </a>
                 )}
-                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-xl bg-black/10 border border-black/10 text-emerald-300 font-bold">
+                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-xl bg-white/10 border border-white/10 text-emerald-300 font-bold">
                   Section: {section}
                 </span>
               </div>
@@ -421,7 +421,7 @@ export default function CandidateProfileModal({ candidate, isOpen, onClose, onUp
                         >
                           <span className="text-2xl">📷</span>
                           <span>Staff Profile Photo</span>
-                          <span className="text-[10px] text-accent group-hover:text-black underline">View Document ↗</span>
+                          <span className="text-[10px] text-[#9E762E] group-hover:text-primary underline">View Document ↗</span>
                         </a>
                       ) : <div className="p-4 text-center text-[#6B5D50] border rounded-2xl bg-background font-bold">No Photo Uploaded</div>}
 
@@ -434,7 +434,7 @@ export default function CandidateProfileModal({ candidate, isOpen, onClose, onUp
                         >
                           <span className="text-2xl">📄</span>
                           <span>Aadhaar Card Document</span>
-                          <span className="text-[10px] text-accent group-hover:text-black underline">View Document ↗</span>
+                          <span className="text-[10px] text-[#9E762E] group-hover:text-primary underline">View Document ↗</span>
                         </a>
                       ) : <div className="p-4 text-center text-[#6B5D50] border rounded-2xl bg-background font-bold">No Aadhaar Uploaded</div>}
 
@@ -447,7 +447,7 @@ export default function CandidateProfileModal({ candidate, isOpen, onClose, onUp
                         >
                           <span className="text-2xl">📑</span>
                           <span>Candidate Resume / CV</span>
-                          <span className="text-[10px] text-accent group-hover:text-black underline">View Document ↗</span>
+                          <span className="text-[10px] text-[#9E762E] group-hover:text-primary underline">View Document ↗</span>
                         </a>
                       ) : <div className="p-4 text-center text-[#6B5D50] border rounded-2xl bg-background font-bold">No Resume Uploaded</div>}
                     </div>

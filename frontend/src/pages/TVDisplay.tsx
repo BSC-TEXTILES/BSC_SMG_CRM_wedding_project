@@ -158,13 +158,13 @@ export default function TVDisplay() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#3D2B1F] via-primary to-primary text-black p-6 sm:p-8 flex flex-col justify-between overflow-hidden select-text">
+    <div className="min-h-screen bg-gradient-to-br from-[#3D2B1F] via-primary to-primary text-white p-6 sm:p-8 flex flex-col justify-between overflow-hidden select-text">
       {/* Top Monitor Header */}
       <div className="flex items-center justify-between border-b border-black/15 pb-6">
         <div className="flex items-center gap-4">
           <img src="/logo.png" alt="Logo" className="w-14 h-14 bg-white p-1.5 rounded-2xl shadow-lg border border-black/20" />
           <div>
-            <h1 className="text-3xl font-black tracking-tight text-black drop-shadow-md">BSC EXCLUSIVE DAVANAGERE</h1>
+            <h1 className="text-3xl font-black tracking-tight text-white drop-shadow-md">BSC EXCLUSIVE DAVANAGERE</h1>
             <div className="text-xs font-extrabold text-accent uppercase tracking-widest mt-0.5 flex items-center gap-2">
               <Radio className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
               <span>Realtime Operations & Footfall Broadcast</span>
@@ -175,7 +175,7 @@ export default function TVDisplay() {
         <div className="flex items-center gap-6">
           <button
             onClick={() => setSoundMuted(!soundMuted)}
-            className="p-3 rounded-2xl bg-black/10 border border-black/20 text-amber-300 hover:bg-black/20 transition-all shadow-md"
+            className="p-3 rounded-2xl bg-white/10 border border-white/20 text-amber-300 hover:bg-white/20 transition-all shadow-md"
             title={soundMuted ? 'Unmute TV Broadcast Chime' : 'Mute TV Broadcast Chime'}
           >
             {soundMuted ? <VolumeX className="w-6 h-6 text-rose-400" /> : <Volume2 className="w-6 h-6 text-amber-300" />}
@@ -183,7 +183,7 @@ export default function TVDisplay() {
 
           <div className="text-right">
             <div className="text-4xl font-black text-amber-300 font-mono tracking-tight">{currentTime}</div>
-            <div className="text-xs text-black/90 font-bold uppercase tracking-wider">{new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}</div>
+            <div className="text-xs text-white/90 font-bold uppercase tracking-wider">{new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}</div>
           </div>
         </div>
       </div>
@@ -196,8 +196,8 @@ export default function TVDisplay() {
             <Users className="w-8 h-8 text-amber-400" />
           </div>
           <div>
-            <div className="text-6xl sm:text-7xl font-black text-black font-mono drop-shadow-lg">{footfallTotal.toLocaleString('en-IN')}</div>
-            <div className="text-xs text-black/90 font-bold mt-3 flex items-center gap-1.5">
+            <div className="text-6xl sm:text-7xl font-black text-white font-mono drop-shadow-lg">{footfallTotal.toLocaleString('en-IN')}</div>
+            <div className="text-xs text-white/90 font-bold mt-3 flex items-center gap-1.5">
               <TrendingUp className="w-4 h-4 text-emerald-400 shrink-0" />
               <span>Realtime Store Entrance Visitor Tally</span>
             </div>
@@ -210,8 +210,8 @@ export default function TVDisplay() {
             <Sparkles className="w-8 h-8 text-amber-400" />
           </div>
           <div>
-            <div className="text-6xl sm:text-7xl font-black text-black font-mono drop-shadow-lg">{npsScore}%</div>
-            <div className="text-xs text-black/90 font-bold mt-3 flex items-center gap-1.5">
+            <div className="text-6xl sm:text-7xl font-black text-white font-mono drop-shadow-lg">{npsScore}%</div>
+            <div className="text-xs text-white/90 font-bold mt-3 flex items-center gap-1.5">
               <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
               <span>Satisfied Customer Feedback Score</span>
             </div>
@@ -224,8 +224,8 @@ export default function TVDisplay() {
             <Target className="w-8 h-8 text-amber-400" />
           </div>
           <div>
-            <div className="text-6xl sm:text-7xl font-black text-black font-mono drop-shadow-lg">{openDiverts}</div>
-            <div className="text-xs text-black/90 font-semibold mt-3">Active Merchandise Sourcing Requests</div>
+            <div className="text-6xl sm:text-7xl font-black text-white font-mono drop-shadow-lg">{openDiverts}</div>
+            <div className="text-xs text-white/90 font-semibold mt-3">Active Merchandise Sourcing Requests</div>
           </div>
         </div>
       </div>

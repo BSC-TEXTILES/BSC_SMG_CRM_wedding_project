@@ -1048,13 +1048,13 @@ export default function WeddingRegistrationPage() {
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-primary/70 backdrop-blur-md animate-modal-backdrop overflow-y-auto">
             <div className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl border border-accent/30 overflow-hidden animate-pop-in">
               <div className="bg-gradient-to-r from-primary to-primary px-6 py-8 text-center">
-                <div className="w-20 h-20 rounded-full bg-primary/10 border-4 border-primary/30 text-primary flex items-center justify-center mx-auto shadow-lg animate-pulse-ring">
+                <div className="w-20 h-20 rounded-full bg-white/10 border-4 border-accent/40 text-accent flex items-center justify-center mx-auto shadow-lg animate-pulse-ring">
                   <Loader2 className="w-10 h-10 animate-spin" />
                 </div>
                 <h2 className="text-xl font-black text-accent tracking-tight mt-4 animate-fade-up-step" style={{ animationDelay: '0.2s' }}>
                   Submitting Your Request
                 </h2>
-                <p className="text-xs text-black font-medium mt-2 animate-fade-up-step" style={{ animationDelay: '0.4s' }}>
+                <p className="text-xs text-white/80 font-medium mt-2 animate-fade-up-step" style={{ animationDelay: '0.4s' }}>
                   Saving to database and sending confirmation email with your Tracking ID...
                 </p>
               </div>
@@ -1106,7 +1106,7 @@ export default function WeddingRegistrationPage() {
                 <h2 className="text-xl font-black text-accent tracking-tight mt-3 animate-fade-up-step" style={{ animationDelay: '0.35s' }}>
                   Your request was saved successfully!
                 </h2>
-                <p className="text-xs text-black font-medium mt-1 animate-fade-up-step" style={{ animationDelay: '0.5s' }}>
+                <p className="text-xs text-white/80 font-medium mt-1 animate-fade-up-step" style={{ animationDelay: '0.5s' }}>
                   Thank you for choosing BSC Textiles. Our team will contact you shortly. An email has been sent with your reference number.
                 </p>
               </div>

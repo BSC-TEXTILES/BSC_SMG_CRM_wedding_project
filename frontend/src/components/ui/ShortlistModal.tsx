@@ -95,10 +95,10 @@ export default function ShortlistModal({ candidate, isOpen, onClose, onShortlist
       <div className="relative w-full max-w-3xl max-h-[92vh] bg-background rounded-3xl shadow-2xl flex flex-col z-10 overflow-hidden border-2 border-accent/50">
         
         {/* Modal Header */}
-        <div className="bg-gradient-to-r from-primary via-primary to-[#3D2B1F] text-black p-5 sm:p-6 border-b-2 border-accent/40 relative">
+        <div className="bg-gradient-to-r from-primary via-primary to-[#3D2B1F] text-white p-5 sm:p-6 border-b-2 border-accent/40 relative">
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-2 rounded-2xl bg-black/10 text-black hover:bg-black/20 transition-all border border-black/20 shadow-md"
+            className="absolute top-4 right-4 p-2 rounded-2xl bg-white/10 text-white hover:bg-white/20 transition-all border border-white/20 shadow-md"
             title="Close"
           >
             <X className="w-5 h-5" />
@@ -114,7 +114,7 @@ export default function ShortlistModal({ candidate, isOpen, onClose, onShortlist
                   onError={(e) => { e.currentTarget.style.display = 'none'; }}
                 />
               ) : (
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary-hover text-black font-black text-xl flex items-center justify-center border-2 border-accent shadow-md">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary-hover text-accent font-black text-xl flex items-center justify-center border-2 border-accent shadow-md">
                   {candidate.initials || candidate.name?.slice(0, 2).toUpperCase()}
                 </div>
               )}
@@ -122,13 +122,13 @@ export default function ShortlistModal({ candidate, isOpen, onClose, onShortlist
 
             <div>
               <div className="flex items-center gap-2">
-                <span className="px-2.5 py-0.5 rounded-full bg-black/20 text-amber-300 border border-amber-400/30 text-[10px] font-black uppercase tracking-wider">
+                <span className="px-2.5 py-0.5 rounded-full bg-white/10 text-amber-300 border border-amber-400/30 text-[10px] font-black uppercase tracking-wider">
                   Candidate Evaluation
                 </span>
-                <span className="font-mono text-xs text-black">{candidate.appNo || candidate.empNo}</span>
+                <span className="font-mono text-xs text-white/80">{candidate.appNo || candidate.empNo}</span>
               </div>
-              <h2 className="text-xl sm:text-2xl font-black text-black tracking-tight mt-0.5">{candidate.name}</h2>
-              <p className="text-xs text-black font-semibold mt-0.5">
+              <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight mt-0.5">{candidate.name}</h2>
+              <p className="text-xs text-white/90 font-semibold mt-0.5">
                 Applied Role: <strong className="text-amber-300 font-extrabold">{candidate.desig || 'Staff'}</strong> • Phone: {candidate.phone}
               </p>
             </div>

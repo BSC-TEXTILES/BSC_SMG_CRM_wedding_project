@@ -214,7 +214,7 @@ export default function Attendance() {
                         </button>
                       </td>
                       <td className="p-4 text-[#5D4E42] font-semibold">{emp.department || 'Retail Sales'}</td>
-                      <td className="p-4 text-accent font-extrabold">{emp.desig || emp.designation || 'Staff'}</td>
+                      <td className="p-4 text-primary font-extrabold">{emp.desig || emp.designation || 'Staff'}</td>
                       <td className="p-4 text-[#5D4E42]">General Shift (10 AM - 9 PM)</td>
                       <td className="p-4">
                         <span className="px-3 py-1 rounded-full text-xs font-black bg-emerald-100/90 text-emerald-800 border border-emerald-300/50 shadow-2xs inline-flex items-center gap-1.5">

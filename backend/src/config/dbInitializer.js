@@ -763,6 +763,91 @@ async function autoInitializeDatabase(pool) {
         INDEX \`idx_bgm_group\` (\`group_id\`),
         INDEX \`idx_bgm_batch\` (\`batch_id\`),
         INDEX \`idx_bgm_candidate\` (\`candidate_id\`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+
+      // ── Security: JWT Blacklist ─────────────────────────────────────
+      // Tokens are added here on logout / forced-logout / password change.
+      // The authenticate middleware checks this table before allowing requests.
+      `CREATE TABLE IF NOT EXISTS \`jwt_blacklist\` (
+        \`id\` INT AUTO_INCREMENT PRIMARY KEY,
+        \`token_jti\` VARCHAR(255) NOT NULL COMMENT 'JWT jti claim or fallback hash',
+        \`user_id\` INT NULL,
+        \`username\` VARCHAR(150) NULL,
+        \`reason\` VARCHAR(100) NOT NULL DEFAULT 'logout',
+        \`expires_at\` DATETIME NOT NULL COMMENT 'When the original JWT expires (auto-cleanup)',
+        \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX \`idx_jbl_token\` (\`token_jti\`(100)),
+        INDEX \`idx_jbl_user\` (\`user_id\`),
+        INDEX \`idx_jbl_expires\` (\`expires_at\`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+
+      // ── Security: Session Activity Log ──────────────────────────────
+      // Tracks every authenticated API call for anomaly detection.
+      `CREATE TABLE IF NOT EXISTS \`session_activity\` (
+        \`id\` BIGINT AUTO_INCREMENT PRIMARY KEY,
+        \`user_id\` INT NULL,
+        \`username\` VARCHAR(150) NOT NULL,
+        \`session_id\` VARCHAR(255) NULL,
+        \`action\` VARCHAR(100) NOT NULL COMMENT 'e.g. PAGE_VIEW, API_CALL, ROUTE_CHECK',
+        \`module\` VARCHAR(100) NULL,
+        \`details\` JSON NULL,
+        \`ip_address\` VARCHAR(50) NULL,
+        \`user_agent\` TEXT NULL,
+        \`location_id\` INT NULL,
+        \`method\` VARCHAR(10) NULL,
+        \`path\` VARCHAR(500) NULL,
+        \`status_code\` INT NULL,
+        \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX \`idx_sa_user\` (\`user_id\`),
+        INDEX \`idx_sa_username\` (\`username\`),
+        INDEX \`idx_sa_action\` (\`action\`),
+        INDEX \`idx_sa_created\` (\`created_at\`),
+        INDEX \`idx_sa_session\` (\`session_id\`(100))
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+
+      // ── Security: Allowed Route Patterns ────────────────────────────
+      // Server-side route-to-role mapping for validation.
+      `CREATE TABLE IF NOT EXISTS \`allowed_routes\` (
+        \`id\` INT AUTO_INCREMENT PRIMARY KEY,
+        \`role\` VARCHAR(100) NOT NULL,
+        \`route_pattern\` VARCHAR(500) NOT NULL COMMENT 'Regex pattern',
+        \`description\` VARCHAR(255) NULL,
+        \`is_active\` TINYINT(1) DEFAULT 1,
+        \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE INDEX \`idx_ar_role_route\` (\`role\`, \`route_pattern\`(200))
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+
+      // ── Consent: Policy Versions ─────────────────────────────────────
+      `CREATE TABLE IF NOT EXISTS \`policy_versions\` (
+        \`id\` INT AUTO_INCREMENT PRIMARY KEY,
+        \`policy_type\` VARCHAR(50) NOT NULL COMMENT 'privacy_policy or terms',
+        \`version\` VARCHAR(20) NOT NULL,
+        \`title\` VARCHAR(255) NOT NULL,
+        \`content\` LONGTEXT NULL,
+        \`is_current\` TINYINT(1) DEFAULT 1,
+        \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE INDEX \`idx_pv_type_version\` (\`policy_type\`, \`version\`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+
+      // ── Consent: User Consent Records ────────────────────────────────
+      `CREATE TABLE IF NOT EXISTS \`user_consents\` (
+        \`id\` INT AUTO_INCREMENT PRIMARY KEY,
+        \`user_id\` INT NULL,
+        \`username\` VARCHAR(150) NOT NULL,
+        \`privacy_policy_accepted\` TINYINT(1) DEFAULT 0,
+        \`privacy_policy_version\` VARCHAR(20) NULL,
+        \`privacy_policy_accepted_at\` TIMESTAMP NULL,
+        \`terms_accepted\` TINYINT(1) DEFAULT 0,
+        \`terms_version\` VARCHAR(20) NULL,
+        \`terms_accepted_at\` TIMESTAMP NULL,
+        \`consent_status\` VARCHAR(20) NOT NULL DEFAULT 'pending' COMMENT 'pending, accepted, revoked',
+        \`ip_address\` VARCHAR(50) NULL,
+        \`user_agent\` TEXT NULL,
+        \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        \`updated_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX \`idx_uc_user\` (\`user_id\`),
+        INDEX \`idx_uc_username\` (\`username\`),
+        INDEX \`idx_uc_status\` (\`consent_status\`)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
     ];
 
@@ -981,6 +1066,64 @@ async function autoInitializeDatabase(pool) {
       logDebug(`[Auto DB Initializer] system roles seeded`);
     } catch(e) {
       logDebug(`[Auto DB Initializer] system roles seed warning:`, e.message);
+    }
+
+    // Seed default allowed_routes for server-side route validation
+    try {
+      const routeSeeds = [
+        // Super Admin & Admin: access everything
+        { role: 'Super Admin', pattern: '^/$', desc: 'Home' },
+        { role: 'Super Admin', pattern: '^/(dashboard|employees|candidates|attendance|payroll|settings|security|system-admin|hr-operations|reports|recruitment|onboarding|training|leave|expense|assets|communication|help|chat-dashboard|wedding-.*|crm-.*|vm-.*|telecaller-.*|batch-.*|daily-mcheck|mcheck-history|greeter|footfall|tv|dev-tools|dev-tools-monitoring|public-feedback|shortlist-offers|offer-letter|interview-schedule|candidate-entry|manpower|doj-desk|employee-corner|candidate-details|workflow-approval|help-desk|security-audit-log)(\\/.*)?$', desc: 'Full admin access' },
+        { role: 'Admin', pattern: '^/$', desc: 'Home' },
+        { role: 'Admin', pattern: '^/(dashboard|employees|candidates|attendance|payroll|settings|security|system-admin|hr-operations|reports|recruitment|onboarding|training|leave|expense|assets|communication|help|chat-dashboard|wedding-.*|crm-.*|vm-.*|telecaller-.*|batch-.*|daily-mcheck|mcheck-history|greeter|footfall|tv|dev-tools|dev-tools-monitoring|public-feedback|shortlist-offers|offer-letter|interview-schedule|candidate-entry|manpower|doj-desk|employee-corner|candidate-details|workflow-approval|help-desk|security-audit-log)(\\/.*)?$', desc: 'Full admin access' },
+        // HR
+        { role: 'HR', pattern: '^/$', desc: 'Home' },
+        { role: 'HR', pattern: '^/(dashboard|employees|candidates|attendance|reports|recruitment|onboarding|training|leave|candidate-entry|manpower|doj-desk|employee-corner|candidate-details|help-desk|shortlist-offers|offer-letter|interview-schedule)(\\/.*)?$', desc: 'HR access' },
+        // Manager
+        { role: 'Manager', pattern: '^/$', desc: 'Home' },
+        { role: 'Manager', pattern: '^/(dashboard|employees|candidates|attendance|reports|training|leave|employee-corner|help-desk)(\\/.*)?$', desc: 'Manager access' },
+        // Telecaller
+        { role: 'Telecaller', pattern: '^/$', desc: 'Home' },
+        { role: 'Telecaller', pattern: '^/(telecaller|wedding-crm|wedding-tracking|wedding-customer-register|wedding-operations-desk|crm-dashboard|help-desk)(\\/.*)?$', desc: 'Telecaller access' },
+        // CRM Executive
+        { role: 'CRM Executive', pattern: '^/$', desc: 'Home' },
+        { role: 'CRM Executive', pattern: '^/(crm-dashboard|crm-executive|wedding-crm|wedding-tracking|wedding-customer-register|wedding-operations-desk|help-desk)(\\/.*)?$', desc: 'CRM Executive access' },
+        // CRM Manager
+        { role: 'CRM Manager', pattern: '^/$', desc: 'Home' },
+        { role: 'CRM Manager', pattern: '^/(crm-dashboard|crm-manager|crm-executive|wedding-crm|wedding-tracking|wedding-customer-register|wedding-operations-desk|reports|help-desk)(\\/.*)?$', desc: 'CRM Manager access' },
+        // VM
+        { role: 'VM', pattern: '^/$', desc: 'Home' },
+        { role: 'VM', pattern: '^/(vm-checklist|vm-dashboard|vm-extension-telecaller|help-desk)(\\/.*)?$', desc: 'VM access' },
+        // Greeter
+        { role: 'Greeter', pattern: '^/$', desc: 'Home' },
+        { role: 'Greeter', pattern: '^/(greeter|footfall|tv|public-feedback|help-desk)(\\/.*)?$', desc: 'Greeter access' },
+        // Employee
+        { role: 'Employee', pattern: '^/$', desc: 'Home' },
+        { role: 'Employee', pattern: '^/(dashboard|employee-corner|help-desk)(\\/.*)?$', desc: 'Employee access' },
+      ];
+      for (const r of routeSeeds) {
+        try {
+          await connection.query(
+            `INSERT IGNORE INTO allowed_routes (role, route_pattern, description) VALUES (?, ?, ?)`,
+            [r.role, r.pattern, r.desc]
+          );
+        } catch (e) {}
+      }
+      logDebug(`[Auto DB Initializer] allowed_routes seeded`);
+    } catch(e) {
+      logDebug(`[Auto DB Initializer] allowed_routes seed warning:`, e.message);
+    }
+
+    // Seed default policy versions
+    try {
+      await connection.query(
+        `INSERT IGNORE INTO policy_versions (policy_type, version, title, is_current) VALUES
+         ('privacy_policy', '1.0', 'Privacy Policy v1.0', 1),
+         ('terms', '1.0', 'Terms and Conditions v1.0', 1)`
+      );
+      logDebug(`[Auto DB Initializer] policy_versions seeded`);
+    } catch(e) {
+      logDebug(`[Auto DB Initializer] policy_versions seed warning:`, e.message);
     }
 
     // ------------------

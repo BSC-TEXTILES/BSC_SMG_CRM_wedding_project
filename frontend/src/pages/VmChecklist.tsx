@@ -915,12 +915,12 @@ export default function VmChecklist() {
                                 ? sc === 'Pass'
                                   ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
                                   : sc === 'Fail'
-                                    ? 'bg-rose-600 text-black border-rose-600 shadow-sm'
-                                    : 'bg-gray-700 text-black border-gray-700 shadow-sm'
+                                    ? 'bg-rose-600 text-white border-rose-600 shadow-sm'
+                                    : 'bg-gray-700 text-white border-gray-700 shadow-sm'
                                 : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
                                 }`}
                             >
-                              {sc === 'Pass' ? '✓ Pass' : sc === 'Fail' ? '✗ Fail' : '— N/A'}
+                              {sc === 'Pass' ? '✓ Pass' : sc === 'Fail' ? '✗ Fail' : '—  N/A'}
                             </button>
                           );
                         })}
@@ -1049,7 +1049,7 @@ export default function VmChecklist() {
                     }
                     window.scrollTo({ top: 300, behavior: 'smooth' });
                   }}>
-                    <div className={`absolute top-0 left-0 w-1 h-full ${subScore >= 80 ? 'bg-emerald-500' : subScore >= 50 ? 'bg-black' : 'bg-rose-500'}`} />
+                    <div className={`absolute top-0 left-0 w-1 h-full ${subScore >= 80 ? 'bg-emerald-500' : subScore >= 50 ? 'bg-amber-500' : 'bg-rose-500'}`} />
                     <div className="flex justify-between items-start mb-2">
                       <div className="text-[10px] font-black uppercase text-primary/60">{d}</div>
                       <div className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${subScore >= 80 ? 'bg-emerald-100 text-emerald-700' : subScore >= 50 ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-700'}`}>
@@ -1296,7 +1296,7 @@ export default function VmChecklist() {
                     <span className={floor.score >= 80 ? 'text-emerald-700' : floor.score >= 50 ? 'text-amber-700' : 'text-rose-700'}>{floor.score}%</span>
                   </div>
                   <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                    <div className={`h-full rounded-full ${floor.score >= 80 ? 'bg-emerald-500' : floor.score >= 50 ? 'bg-black' : 'bg-rose-500'}`} style={{ width: `${floor.score}%` }}></div>
+                    <div className={`h-full rounded-full ${floor.score >= 80 ? 'bg-emerald-500' : floor.score >= 50 ? 'bg-amber-500' : 'bg-rose-500'}`} style={{ width: `${floor.score}%` }}></div>
                   </div>
                 </div>
               ))}
@@ -1318,7 +1318,7 @@ export default function VmChecklist() {
                       </span>
                     </div>
                     <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                      <div className={`h-full rounded-full ${sec.score >= 80 ? 'bg-emerald-500' : sec.score >= 50 ? 'bg-black' : 'bg-rose-500'}`} style={{ width: `${sec.score}%` }}></div>
+                      <div className={`h-full rounded-full ${sec.score >= 80 ? 'bg-emerald-500' : sec.score >= 50 ? 'bg-amber-500' : 'bg-rose-500'}`} style={{ width: `${sec.score}%` }}></div>
                     </div>
                     {sec.lastDate && (
                       <div className="text-[10px] text-primary/50 font-medium">
@@ -1360,20 +1360,20 @@ export default function VmChecklist() {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
           <div className="card-glass bg-white rounded-3xl w-full max-w-lg shadow-2xl border-2 border-accent/40 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             {/* Modal Header */}
-            <div className="p-5 bg-gradient-to-r from-primary via-primary to-[#3D2B1F] text-black flex items-center justify-between">
+            <div className="p-5 bg-gradient-to-r from-primary via-primary to-[#3D2B1F] text-white flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center font-black">
                   <FolderPlus className="w-5 h-5 text-accent" />
                 </div>
                 <div>
-                  <h3 className="text-base font-extrabold text-black">Create New Floor / Department Folder</h3>
+                  <h3 className="text-base font-extrabold text-white">Create New Floor / Department Folder</h3>
                   <p className="text-xs text-accent">Admin Store Configuration</p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setIsCreateModalOpen(false)}
-                className="text-black hover:text-black p-1 rounded-lg hover:bg-black/10"
+                className="text-white hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>

@@ -46,7 +46,7 @@ export default function DesktopModeWarning() {
           <button 
             type="button"
             onClick={() => setDismissed(true)}
-            className="p-1 rounded-lg hover:bg-black/20 transition-colors"
+            className="p-1 rounded-lg text-white/80 hover:text-white hover:bg-white/20 transition-colors"
             aria-label="Close"
           >
             <X className="w-5 h-5" />

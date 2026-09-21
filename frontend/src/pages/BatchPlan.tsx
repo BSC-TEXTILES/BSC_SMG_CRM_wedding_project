@@ -256,7 +256,7 @@ export default function BatchPlan() {
               <div>
                 <p className="text-xs font-semibold text-primary/60">Total Batches</p>
                 <p className="text-xl sm:text-2xl font-black text-primary">{stats.totalBatches}</p>
-                <p className="text-[10px] text-accent font-bold mt-0.5">{stats.activeBatches} Currently Active</p>
+                <p className="text-[10px] text-primary/70 font-bold mt-0.5">{stats.activeBatches} Currently Active</p>
               </div>
             </div>
 

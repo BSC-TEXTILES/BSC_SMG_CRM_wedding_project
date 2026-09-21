@@ -1,6 +1,7 @@
 const db = require('../config/db');
 const bcrypt = require('bcryptjs');
 const { getLocationFilter, injectLocationId } = require('../middleware/auth');
+const { getCache, setCache } = require('../config/redisClient');
 
 // Helper to generate UUIDs
 function getUUID() {
@@ -139,6 +140,10 @@ exports.verifyPin = async (req, res) => {
 // ── Sections ────────────────────────────────────────────────
 exports.getSections = async (req, res) => {
   try {
+    const cacheKey = 'app:prod:crm:sections';
+    const cached = await getCache(cacheKey);
+    if (cached) return res.json(cached);
+
     const defaultSections = [
       { id: 'sec_1', name: 'Ground Floor Saree', sectionType: 'retail', manager: 'Ground Floor Saree Incharge' },
       { id: 'sec_2', name: '1st Floor Saree', sectionType: 'retail', manager: '1st Floor Saree Manager' },
@@ -166,7 +171,9 @@ exports.getSections = async (req, res) => {
     }
 
     const [rows] = await db.query('SELECT * FROM Sections WHERE isActive = TRUE ORDER BY id ASC');
-    return res.json({ success: true, sections: rows.length > 0 ? rows : defaultSections });
+    const result = { success: true, sections: rows.length > 0 ? rows : defaultSections };
+    await setCache(cacheKey, result, 3600); // 1 hour TTL
+    return res.json(result);
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
   }

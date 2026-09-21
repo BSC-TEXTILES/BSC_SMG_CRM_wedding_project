@@ -48,11 +48,11 @@ export default function DirectMessagingModal({ isOpen, onClose, session }: Direc
           <div className="flex items-center gap-2.5">
             <MessageSquare className="w-5 h-5 text-accent" />
             <div>
-              <h3 className="font-extrabold text-sm tracking-tight">Direct Text Messaging</h3>
-              <p className="text-[10px] text-black/80">Secure text-only staff communication</p>
+              <h3 className="font-extrabold text-sm tracking-tight text-white">Direct Text Messaging</h3>
+              <p className="text-[10px] text-white/80">Secure text-only staff communication</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-1 rounded-lg text-black hover:text-black hover:bg-black/10">
+          <button onClick={onClose} className="p-1 rounded-lg text-white/80 hover:text-white hover:bg-white/10">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -91,7 +91,7 @@ export default function DirectMessagingModal({ isOpen, onClose, session }: Direc
                   >
                     {m.text}
                   </div>
-                  <div className="flex items-center gap-1 text-[9px] text-[#9A8D82] mt-0.5 font-mono">
+                  <div className="flex items-center gap-1 text-[9px] text-[#687080] mt-0.5 font-mono">
                     <span>Delivered</span>
                     <CheckCheck className="w-3 h-3 text-emerald-600" />
                   </div>

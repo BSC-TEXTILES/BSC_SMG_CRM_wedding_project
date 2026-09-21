@@ -1,6 +1,7 @@
 const authService = require('../services/authService');
 const { successRes, errorRes } = require('../utils/response');
 const { createCaptcha, verifyCaptcha } = require('../utils/captcha');
+const { blacklistToken } = require('../middleware/auth');
 
 const loginSecurity = require('../utils/loginSecurity');
 
@@ -142,7 +143,22 @@ class AuthController {
       let token = null;
       if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
         token = req.headers.authorization.split(' ')[1];
+      } else if (req.headers['x-auth-token']) {
+        token = req.headers['x-auth-token'];
+      } else if (req.cookies && req.cookies.token) {
+        token = req.cookies.token;
       }
+
+      // Blacklist the JWT so it cannot be reused until natural expiry
+      if (token) {
+        await blacklistToken(
+          token,
+          req.user ? req.user.id : null,
+          req.user ? req.user.username : null,
+          'logout'
+        );
+      }
+
       await authService.logout(token, req.user ? req.user.id : null, req.user ? req.user.username : null, req.ip);
       res.clearCookie('token', { path: '/' });
       return successRes(res, {}, 'Logged out successfully');

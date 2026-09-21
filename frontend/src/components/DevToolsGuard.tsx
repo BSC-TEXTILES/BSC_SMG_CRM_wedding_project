@@ -126,7 +126,7 @@ export default function DevToolsGuard() {
         </div>
         <h2
           id="devtools-guard-title"
-          className="text-2xl font-black text-black tracking-tight mb-3"
+          className="text-2xl font-black text-white tracking-tight mb-3"
         >
           Developer Tools Detected
         </h2>

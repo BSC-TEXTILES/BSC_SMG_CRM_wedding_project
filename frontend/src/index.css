@@ -23,6 +23,19 @@
   --color-danger: #C7374A;           /* Master Danger */
   --color-info: #3567A8;             /* Master Info */
 
+  /* Semantic Contrast System Tokens */
+  --text-primary: #182033;
+  --text-secondary: #687080;
+  --text-muted: #8E98A8;
+  --text-inverse: #FFFFFF;
+  --text-inverse-muted: rgba(255, 255, 255, 0.8);
+  --text-gold: #C9A45C;
+  --surface-light: #FFFFFF;
+  --surface-dark: #101C36;
+  --surface-navy: #101C36;
+  --border-light: #DFDDD7;
+  --border-dark: rgba(255, 255, 255, 0.15);
+
   /* Reusable standard aliases matching existing code */
   --bg: var(--color-background);
   --surface: var(--color-card);
@@ -467,6 +480,39 @@ html, #root, * {
   }
 }
 
-/* Removed dangerous global contrast overrides that override child elements */
+/* ── Semantic Surface & Contrast Utilities ────────────────────────── */
+.surface-dark,
+.surface-navy,
+.dark-surface {
+  background-color: var(--surface-dark);
+  color: var(--text-inverse);
+}
+.surface-dark h1, .surface-dark h2, .surface-dark h3, .surface-dark h4, .surface-dark h5, .surface-dark h6,
+.surface-navy h1, .surface-navy h2, .surface-navy h3, .surface-navy h4, .surface-navy h5, .surface-navy h6,
+.dark-surface h1, .dark-surface h2, .dark-surface h3, .dark-surface h4, .dark-surface h5, .dark-surface h6 {
+  color: var(--text-inverse);
+}
+
+.surface-light,
+.light-surface {
+  background-color: var(--surface-light);
+  color: var(--text-primary);
+}
+.surface-light h1, .surface-light h2, .surface-light h3, .surface-light h4, .surface-light h5, .surface-light h6,
+.light-surface h1, .light-surface h2, .light-surface h3, .light-surface h4, .light-surface h5, .light-surface h6 {
+  color: var(--text-primary);
+}
+
+/* Modal overlay & container contrast safety rules */
+.modal-dark-header {
+  background-color: var(--color-primary);
+  color: #FFFFFF;
+}
+.modal-dark-header h1, .modal-dark-header h2, .modal-dark-header h3, .modal-dark-header h4 {
+  color: #FFFFFF;
+}
+.modal-dark-header p {
+  color: rgba(255, 255, 255, 0.85);
+}
 
 

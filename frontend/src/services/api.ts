@@ -375,6 +375,50 @@ export const API = {
     return apiFetch('/security/dashboard-stats');
   },
 
+  // ── Server-Side Route Validation ─────────────────────────────────
+  async validateRoute(pathname: string) {
+    try {
+      return await apiFetch('/security/validate-route', {
+        method: 'POST',
+        body: JSON.stringify({ pathname })
+      });
+    } catch {
+      return { success: true, allowed: true, reason: 'Validation unavailable — frontend guard active' };
+    }
+  },
+
+  // ── Session Activity ─────────────────────────────────────────────
+  async getSessionActivity(params?: { userId?: number; username?: string; action?: string; limit?: number; offset?: number }) {
+    const q = params ? new URLSearchParams(params as any).toString() : '';
+    return apiFetch(`/security/session-activity${q ? `?${q}` : ''}`);
+  },
+
+  // ── Force Logout (Admin) ─────────────────────────────────────────
+  async forceLogoutUser(userId?: number, username?: string, reason?: string) {
+    return apiFetch('/security/force-logout', {
+      method: 'POST',
+      body: JSON.stringify({ userId, username, reason })
+    });
+  },
+
+  // ── Consent ──────────────────────────────────────────────────────
+  async getConsentStatus() {
+    return apiFetch('/consent/status');
+  },
+  async acceptConsent(privacyPolicyAccepted: boolean, termsAccepted: boolean) {
+    return apiFetch('/consent/accept', {
+      method: 'POST',
+      body: JSON.stringify({ privacyPolicyAccepted, termsAccepted })
+    });
+  },
+  async getPolicyVersions() {
+    return apiFetch('/consent/policy-versions');
+  },
+  async getUserConsents(params?: { username?: string; status?: string; limit?: number; offset?: number }) {
+    const q = params ? new URLSearchParams(params as any).toString() : '';
+    return apiFetch(`/consent/admin/user-consents${q ? `?${q}` : ''}`);
+  },
+
   // User Tracking
   async trackUserLogin(userId: string | number, username: string, ipAddress?: string, userAgent?: string, locationId?: number | null, locationName?: string | null) {
     return apiFetch('/user-tracking/login', {

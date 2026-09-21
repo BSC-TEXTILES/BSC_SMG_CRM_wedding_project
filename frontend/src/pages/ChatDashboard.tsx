@@ -179,18 +179,18 @@ const ChatDashboard = () => {
         {/* Chat History */}
         <div className={`flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 ${error ? 'pt-16' : ''}`}>
           {isInitialLoading ? (
-            <div className="h-full flex flex-col items-center justify-center text-slate-400 space-y-4">
-              <RefreshCw className="w-8 h-8 animate-spin text-slate-300" />
+            <div className="h-full flex flex-col items-center justify-center text-slate-500 space-y-4">
+              <RefreshCw className="w-8 h-8 animate-spin text-slate-500" />
               <p className="text-sm font-medium">Loading chat history...</p>
             </div>
           ) : messages.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-slate-400 space-y-4">
+            <div className="h-full flex flex-col items-center justify-center text-slate-500 space-y-4">
               <div className="w-16 h-16 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center">
-                <MessageSquare className="w-8 h-8 text-slate-300" />
+                <MessageSquare className="w-8 h-8 text-slate-500" />
               </div>
               <div className="text-center space-y-1">
                 <p className="text-sm font-medium">No messages yet. Start a conversation!</p>
-                <p className="text-xs text-slate-400">Type a message below to get started.</p>
+                <p className="text-xs text-slate-500">Type a message below to get started.</p>
               </div>
             </div>
           ) : (
@@ -203,7 +203,7 @@ const ChatDashboard = () => {
                 }`}>
                   <p className="text-sm whitespace-pre-wrap break-words">{msg.text}</p>
                   <div className={`flex items-center gap-1.5 mt-2 text-[10px] font-medium ${
-                    msg.sender === 'user' ? 'text-slate-400' : 'text-slate-500'
+                    msg.sender === 'user' ? 'text-slate-500' : 'text-slate-500'
                   }`}>
                     <span>{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                     {msg.sender === 'user' && msg.status === 'sending' && (
@@ -248,7 +248,7 @@ const ChatDashboard = () => {
             </button>
           </form>
           <div className="mt-2 text-center">
-            <span className="text-[10px] font-medium text-slate-400">Press Enter to send</span>
+            <span className="text-[10px] font-medium text-slate-500">Press Enter to send</span>
           </div>
         </div>
       </div>

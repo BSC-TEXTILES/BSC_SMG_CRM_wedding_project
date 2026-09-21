@@ -158,7 +158,7 @@ export default function FeedbackList() {
     const hoursElapsed = (Date.now() - createdTime) / (1000 * 60 * 60);
 
     if (hoursElapsed > 24) {
-      return { label: '🚨 SLA Critical (>24h)', color: 'bg-rose-600 text-black font-black animate-pulse' };
+      return { label: '🚨 SLA Critical (>24h)', color: 'bg-rose-600 text-white font-black animate-pulse' };
     } else if (hoursElapsed > 2) {
       return { label: '⚠️ SLA Warning (>2h)', color: 'bg-amber-100 text-amber-900 border border-amber-300 font-extrabold' };
     }
@@ -537,7 +537,7 @@ export default function FeedbackList() {
                     <button
                       onClick={() => handleUpdateCall('escalated_manager')}
                       disabled={updating}
-                      className="px-3.5 py-2 rounded-xl bg-purple-700 text-black font-extrabold text-xs shadow-xs"
+                      className="px-3.5 py-2 rounded-xl bg-purple-700 text-white font-extrabold text-xs shadow-xs"
                     >
                       Escalate Manager
                     </button>

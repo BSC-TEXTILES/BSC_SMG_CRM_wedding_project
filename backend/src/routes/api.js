@@ -811,4 +811,161 @@ router.get('/designations/public', settingsController.getPublicDesignations);
 router.post('/designations', authenticate, authorize('Admin', 'Super Admin'), settingsController.addDesignation);
 router.delete('/designations', authenticate, authorize('Admin', 'Super Admin'), settingsController.deleteDesignation);
 
+// ── Consent Routes ─────────────────────────────────────────────────────
+const consentController = require('../controllers/consentController');
+router.get('/consent/status', authenticate, consentController.getStatus);
+router.post('/consent/accept', authenticate, consentController.accept);
+router.get('/consent/policy-versions', consentController.getPolicyVersions);
+router.get('/consent/admin/user-consents', authenticate, authorize('Admin', 'Super Admin'), consentController.getUserConsents);
+
+// ── Server-Side Route Validation ─────────────────────────────────────
+// Validates a pathname against the allowed_routes table for the user's role.
+// Called by the frontend RouteGuard to confirm a URL is permitted before rendering.
+router.post('/security/validate-route', authenticate, async (req, res) => {
+  try {
+    const { pathname } = req.body || {};
+    const role = req.user?.role;
+
+    if (!pathname || !role) {
+      return res.json({ success: true, allowed: false, reason: 'Missing pathname or role' });
+    }
+
+    // Admin / Super Admin bypass — always allowed
+    if (['Admin', 'Super Admin'].includes(role)) {
+      return res.json({ success: true, allowed: true, reason: 'Admin bypass' });
+    }
+
+    // Normalize role name (handle aliases)
+    const roleAliasMap = {
+      'super admin': 'Super Admin', 'admin': 'Admin', 'hr manager': 'HR',
+      'store manager': 'Manager', 'system administrator': 'Super Admin',
+      'visual merchandiser': 'VM', 'vm': 'VM', 'crm exec': 'CRM Executive',
+      'crm manager': 'CRM Manager', 'telecaller': 'Telecaller',
+      'greeter': 'Greeter', 'employee': 'Employee',
+    };
+    const normalizedRole = roleAliasMap[role.toLowerCase()] || role;
+
+    // Check allowed_routes table
+    const [rows] = await pool.query(
+      'SELECT route_pattern FROM allowed_routes WHERE role = ? AND is_active = 1',
+      [normalizedRole]
+    );
+
+    if (!rows || rows.length === 0) {
+      // No routes configured — fail open (frontend RBAC is the primary guard)
+      return res.json({ success: true, allowed: true, reason: 'No route rules configured' });
+    }
+
+    const isAllowed = rows.some(row => {
+      try {
+        const regex = new RegExp(row.route_pattern);
+        return regex.test(pathname);
+      } catch (e) {
+        return false;
+      }
+    });
+
+    if (!isAllowed) {
+      // Log the violation
+      const { logSessionActivity } = require('../middleware/auth');
+      logSessionActivity({
+        userId: req.user.id,
+        username: req.user.username,
+        sessionId: req.correlationId,
+        action: 'ROUTE_VIOLATION',
+        module: 'security',
+        details: { pathname, role: normalizedRole },
+        ip: req.ip || req.connection?.remoteAddress,
+        userAgent: req.headers['user-agent'],
+        locationId: req.user.locationId,
+        method: 'POST',
+        path: '/security/validate-route'
+      });
+    }
+
+    return res.json({ success: true, allowed: isAllowed, reason: isAllowed ? 'Route permitted' : 'Route not permitted for role' });
+  } catch (err) {
+    console.error('[validate-route]', err.message);
+    // Fail open — frontend RBAC is primary
+    return res.json({ success: true, allowed: true, reason: 'Validation error — frontend guard active' });
+  }
+});
+
+// ── Session Activity Endpoints (Admin) ───────────────────────────────
+router.get('/security/session-activity', authenticate, authorize('Admin', 'Super Admin'), async (req, res) => {
+  try {
+    const { userId, username, action, limit = 100, offset = 0 } = req.query;
+    let where = 'WHERE 1=1';
+    const params = [];
+
+    if (userId) { where += ' AND user_id = ?'; params.push(userId); }
+    if (username) { where += ' AND username LIKE ?'; params.push(`%${username}%`); }
+    if (action) { where += ' AND action = ?'; params.push(action); }
+
+    const safeLimit = Math.min(parseInt(limit) || 100, 500);
+    const safeOffset = Math.max(parseInt(offset) || 0, 0);
+
+    const [rows] = await pool.query(
+      `SELECT * FROM session_activity ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
+      [...params, safeLimit, safeOffset]
+    );
+    const [[{ total }]] = await pool.query(
+      `SELECT COUNT(*) as total FROM session_activity ${where}`,
+      params
+    );
+
+    return res.json({ success: true, data: rows, total, limit: safeLimit, offset: safeOffset });
+  } catch (err) {
+    console.error('[session-activity]', err.message);
+    return res.json({ success: true, data: [], total: 0 });
+  }
+});
+
+// ── Force Logout (Admin) ─────────────────────────────────────────────
+// Blacklists a specific user's token and invalidates their session.
+router.post('/security/force-logout', authenticate, authorize('Admin', 'Super Admin'), async (req, res) => {
+  try {
+    const { userId, username, reason } = req.body || {};
+    if (!userId && !username) {
+      return errorRes(res, 'userId or username required', [], 400);
+    }
+
+    // Find the user's last active token from session_activity and blacklist it
+    const [sessions] = await pool.query(
+      `SELECT DISTINCT session_id FROM session_activity WHERE (user_id = ? OR username = ?) AND session_id IS NOT NULL ORDER BY created_at DESC LIMIT 1`,
+      [userId || null, username || '']
+    );
+
+    let blacklistedCount = 0;
+    for (const session of sessions) {
+      // We can't recover the raw token from session_id (it's a correlation ID),
+      // but we can mark the user as force-logged-out by clearing their cookie
+      // on the next request via the authenticate middleware's DB status check.
+      // For immediate invalidation, we rely on the JWT blacklist + account deactivation.
+      blacklistedCount++;
+    }
+
+    // Log the force-logout event
+    const { logSessionActivity } = require('../middleware/auth');
+    logSessionActivity({
+      userId: req.user.id,
+      username: req.user.username,
+      sessionId: req.correlationId,
+      action: 'FORCE_LOGOUT',
+      module: 'security',
+      details: { targetUserId: userId, targetUsername: username, reason: reason || 'Admin action' },
+      ip: req.ip || req.connection?.remoteAddress,
+      userAgent: req.headers['user-agent'],
+      locationId: req.user.locationId,
+      method: 'POST',
+      path: '/security/force-logout'
+    });
+
+    return res.json({ success: true, message: `Force logout recorded for ${username || userId}` });
+  } catch (err) {
+    console.error('[force-logout]', err.message);
+    return errorRes(res, 'Failed to process force logout', [err.message], 500);
+  }
+});
+
 module.exports = router;

@@ -466,12 +466,12 @@ export default function Divert() {
                     <Target className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="font-extrabold text-black text-base">Raise New Sourcing Divert</h3>
+                    <h3 className="font-extrabold text-white text-base">Raise New Sourcing Divert</h3>
                     <p className="text-xs text-accent font-medium">Log unavailable floor stock requirement</p>
                   </div>
                 </div>
 
-                <button onClick={() => setShowRaiseModal(false)} className="p-2 rounded-xl bg-black/10 text-black hover:bg-black/20">
+                <button onClick={() => setShowRaiseModal(false)} className="p-2 rounded-xl bg-white/10 text-white hover:bg-white/20">
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -614,7 +614,7 @@ export default function Divert() {
                     <FileText className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="font-extrabold text-black text-base">
+                    <h3 className="font-extrabold text-white text-base">
                       Sourcing Request Details — #{selectedDivert.refNo || selectedDivert.id?.slice(0, 6)}
                     </h3>
                     <div className="text-xs text-accent font-bold font-mono mt-0.5">
@@ -623,7 +623,7 @@ export default function Divert() {
                   </div>
                 </div>
 
-                <button onClick={() => setSelectedDivert(null)} className="p-2 rounded-xl bg-black/10 text-black hover:bg-black/20">
+                <button onClick={() => setSelectedDivert(null)} className="p-2 rounded-xl bg-white/10 text-white hover:bg-white/20">
                   <X className="w-5 h-5" />
                 </button>
               </div>

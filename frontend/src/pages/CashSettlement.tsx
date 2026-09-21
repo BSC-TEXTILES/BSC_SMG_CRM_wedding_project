@@ -161,9 +161,9 @@ export default function CashSettlement() {
               <div className="text-[10px] uppercase tracking-widest text-amber-300 font-bold">Total Sales Amount</div>
               <div className="text-2xl font-black">₹{saleAmount.toLocaleString()}</div>
             </div>
-            <div className="w-px h-8 bg-black/20"></div>
+            <div className="w-px h-8 bg-white/20"></div>
             <div>
-              <div className="text-[10px] uppercase tracking-widest text-black font-bold">Average Bill Value (ABV)</div>
+              <div className="text-[10px] uppercase tracking-widest text-amber-300 font-bold">Average Bill Value (ABV)</div>
               <div className="text-lg font-bold">₹{abv}</div>
             </div>
           </div>

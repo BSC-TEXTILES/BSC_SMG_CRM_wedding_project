@@ -712,14 +712,14 @@ export default function EmployeesPage() {
                   <Edit3 className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-extrabold text-black text-base sm:text-lg">Edit Employee Details — {editModal.emp?.name}</h3>
+                  <h3 className="font-extrabold text-white text-base sm:text-lg">Edit Employee Details — {editModal.emp?.name}</h3>
                   <div className="text-xs text-accent font-mono mt-0.5 font-bold">
                     App/Emp ID: {editModal.emp?.appNo || editModal.emp?.empNo}
                   </div>
                 </div>
               </div>
 
-              <button onClick={() => setEditModal({ open: false, emp: null })} className="p-2 rounded-xl bg-black/10 text-black hover:bg-black/20 transition-colors">
+              <button onClick={() => setEditModal({ open: false, emp: null })} className="p-2 rounded-xl bg-white/10 text-white hover:bg-white/20 transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>

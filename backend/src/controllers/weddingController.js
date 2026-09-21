@@ -8,6 +8,10 @@ const { successRes, errorRes } = require('../utils/response');
 const { getLocationFilter, injectLocationId } = require('../middleware/auth');
 const { encryptField, decryptRows, decryptRow } = require('../utils/crypto');
 const { parseCsv, rowsToObjects } = require('../utils/csv');
+const { 
+  getCache, setCache, delCache, delCachePattern, 
+  acquireLock, releaseLock, bfExists, isReady 
+} = require('../config/redisClient');
 
 // Free-text PII fields stored encrypted at rest (AES-256-GCM, see utils/crypto.js)
 const ENCRYPTED_FIELDS = ['customer_notes', 'visit_notes', 'appointment_notes', 'purchase_notes', 'note_content', 'communication_details'];
@@ -910,6 +914,9 @@ class WeddingController {
         `Created wedding customer ${customerName} (${customerCode}). Expected shopping: ${expectedShoppingDate}, Follow-up: ${followUpDate}`
       ]);
 
+      await bfAdd('wedding_customers_bf', newId.toString());
+      await delCachePattern('app:prod:wedding:dashboard:*');
+
       return successRes(res, {
         id: newId,
         customer_code: customerCode,
@@ -931,7 +938,33 @@ class WeddingController {
   async getCustomerById(req, res) {
     try {
       const id = parseInt(req.params.id, 10);
+      
+      // 1. Bloom Filter Check
+      const mightExist = await bfExists('wedding_customers_bf', id.toString());
+      if (!mightExist) {
+        // Definitely doesn't exist, avoid DB hit completely
+        return errorRes(res, 'Customer not found or access denied', [], 404);
+      }
+
       const { clause: locClause, params } = resolveLocFilter(req, 'w');
+      const cacheKey = `app:prod:wedding:customer:${id}:${req.user?.locationId || 'global'}:${req.user?.role || 'anon'}`;
+      
+      const cached = await getCache(cacheKey);
+      if (cached) {
+        return successRes(res, cached, 'Customer details retrieved from cache');
+      }
+
+      // Stampede protection
+      let lockAcquired = false;
+      const lockKey = `${cacheKey}:lock`;
+      if (isReady()) {
+        lockAcquired = await acquireLock(lockKey, 5);
+        if (!lockAcquired) {
+          await new Promise(r => setTimeout(r, 100));
+          const retryCache = await getCache(cacheKey);
+          if (retryCache) return successRes(res, retryCache, 'Customer details retrieved from cache');
+        }
+      }
 
       const [rows] = await pool.query(`
         SELECT 
@@ -949,6 +982,8 @@ class WeddingController {
       `, [id, ...params]);
 
       if (!rows || rows.length === 0) {
+        if (lockAcquired) await releaseLock(lockKey);
+        // Do NOT cache negative result
         return errorRes(res, 'Customer not found or access denied', [], 404);
       }
 
@@ -959,6 +994,7 @@ class WeddingController {
         const isAssigned = (customer.assigned_telecaller_id === req.user.id) ||
                            (customer.assigned_telecaller && customer.assigned_telecaller.toLowerCase() === (req.user.fullName || req.user.username || '').toLowerCase());
         if (!isAssigned) {
+          if (lockAcquired) await releaseLock(lockKey);
           return errorRes(res, 'Access denied: Customer is not assigned to your calling queue', [], 403);
         }
       }
@@ -980,15 +1016,21 @@ class WeddingController {
         ORDER BY created_at DESC
       `, [id]);
 
-      return successRes(res, {
+      const data = {
         customer,
         callLogs: callLogs || [],
         timeline: callLogs || [],
         auditLogs: auditLogs || []
-      }, 'Customer details fetched successfully');
+      };
+
+      await setCache(cacheKey, data, 120); // Cache for 2 minutes
+      if (lockAcquired) await releaseLock(lockKey);
+
+      return successRes(res, data, 'Customer details retrieved successfully');
     } catch (err) {
+      if (lockAcquired) await releaseLock(lockKey).catch(() => {});
       console.error('[WeddingController.getCustomerById Error]', err);
-      return errorRes(res, 'Failed to fetch customer details', [err.message], 500);
+      return errorRes(res, 'Failed to retrieve customer', [err.message], 500);
     }
   }
 
@@ -1094,6 +1136,9 @@ class WeddingController {
         changes.length > 0 ? changes.join(', ') : 'Updated customer profile details'
       ]);
 
+      await delCachePattern(`app:prod:wedding:customer:${id}:*`);
+      await delCachePattern('app:prod:wedding:dashboard:*');
+
       return successRes(res, { id }, 'Customer updated successfully');
     } catch (err) {
       console.error('[WeddingController.updateCustomer Error]', err);
@@ -1130,6 +1175,9 @@ class WeddingController {
         req.user?.fullName || 'Staff',
         `Archived customer ${prev.customer_name} (${prev.customer_code})`
       ]);
+
+      await delCachePattern(`app:prod:wedding:customer:${id}:*`);
+      await delCachePattern('app:prod:wedding:dashboard:*');
 
       return successRes(res, { id }, 'Customer archived successfully');
     } catch (err) {
@@ -1359,6 +1407,85 @@ class WeddingController {
     } catch (err) {
       console.error('[WeddingController.logCall Error]', err);
       return errorRes(res, 'Failed to log call', [err.message], 500);
+    }
+  }
+
+  // ── Dashboard Stats ────────────────────────────────────────────────
+  async getDashboardStats(req, res) {
+    try {
+      const { clause: locClause, params } = resolveLocFilter(req, 'w');
+      // Create a scope-aware cache key based on the location and user role context
+      const cacheKey = `app:prod:wedding:dashboard:${req.user?.locationId || 'global'}:${req.user?.role || 'anon'}`;
+      
+      const cached = await getCache(cacheKey);
+      if (cached) {
+        return successRes(res, cached, 'Dashboard stats retrieved from cache');
+      }
+
+      // Ensure we don't stampede the database if cache expires and 50 users hit the dashboard at once
+      let lockAcquired = false;
+      const lockKey = `${cacheKey}:lock`;
+      if (isReady()) {
+        lockAcquired = await acquireLock(lockKey, 10);
+        if (!lockAcquired) {
+          // If we couldn't get the lock, wait briefly and try cache again
+          await new Promise(r => setTimeout(r, 200));
+          const retryCache = await getCache(cacheKey);
+          if (retryCache) return successRes(res, retryCache, 'Dashboard stats retrieved from cache');
+          // If still no cache, proceed to DB (maybe lock holder died)
+        }
+      }
+
+      const today = new Date().toISOString().split('T')[0];
+
+      // Total Active Customers
+      const [[{ totalCustomers }]] = await pool.query(`
+        SELECT COUNT(*) as totalCustomers FROM wedding_customers w WHERE w.is_deleted = 0 ${locClause}
+      `, params);
+
+      // Follow-ups due today
+      const [[{ dueToday }]] = await pool.query(`
+        SELECT COUNT(*) as dueToday FROM wedding_customers w 
+        WHERE w.is_deleted = 0 AND w.follow_up_date = ? ${locClause}
+      `, [today, ...params]);
+
+      // Overdue Follow-ups
+      const [[{ overdue }]] = await pool.query(`
+        SELECT COUNT(*) as overdue FROM wedding_customers w 
+        WHERE w.is_deleted = 0 
+          AND w.follow_up_date < ? 
+          AND w.customer_status NOT IN ('Converted', 'Visited Store', 'Not Interested', 'Cancelled', 'Closed')
+          ${locClause}
+      `, [today, ...params]);
+
+      // Unassigned Customers (Hot Leads)
+      const [[{ unassigned }]] = await pool.query(`
+        SELECT COUNT(*) as unassigned FROM wedding_customers w 
+        WHERE w.is_deleted = 0 AND (w.assigned_telecaller_id IS NULL OR w.assigned_telecaller = '') ${locClause}
+      `, params);
+
+      // Converted this month
+      const [[{ convertedThisMonth }]] = await pool.query(`
+        SELECT COUNT(*) as convertedThisMonth FROM wedding_customers w 
+        WHERE w.is_deleted = 0 AND w.customer_status = 'Converted' 
+          AND MONTH(w.updated_at) = MONTH(CURDATE()) AND YEAR(w.updated_at) = YEAR(CURDATE()) ${locClause}
+      `, params);
+
+      const data = {
+        totalCustomers,
+        followUpsDueToday: dueToday,
+        overdueFollowUps: overdue,
+        unassignedLeads: unassigned,
+        convertedThisMonth
+      };
+
+      await setCache(cacheKey, data, 60); // Cache for 60 seconds (TTL)
+      if (lockAcquired) await releaseLock(lockKey);
+
+      return successRes(res, data, 'Dashboard stats retrieved');
+    } catch (err) {
+      console.error('[WeddingController.getDashboardStats Error]', err);
+      return errorRes(res, 'Failed to retrieve dashboard statistics', [err.message], 500);
     }
   }
 

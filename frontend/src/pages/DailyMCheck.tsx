@@ -48,7 +48,7 @@ const STATUS_OPTIONS = ['PENDING', 'IN_PROGRESS', 'DONE', 'NOT_DONE', 'POSTPONED
 function Toast({ msg, type }: { msg: string; type: 'success' | 'error' | 'info' }) {
   const bg = type === 'success' ? 'bg-emerald-600' : type === 'error' ? 'bg-red-600' : 'bg-primary';
   return (
-    <div className={`fixed bottom-6 right-6 z-[200] px-5 py-3 rounded-xl text-black text-sm font-semibold shadow-xl animate-slide-up ${bg}`}>
+    <div className={`fixed bottom-6 right-6 z-[200] px-5 py-3 rounded-xl text-white text-sm font-semibold shadow-xl animate-slide-up ${bg}`}>
       {msg}
     </div>
   );
@@ -319,7 +319,7 @@ export default function DailyMCheck() {
   const KpiCard = ({ label, value, color, icon: Icon }: any) => (
     <div className="card-glass p-4 flex items-center gap-3 min-w-0 bg-white border border-gray-100 shadow-sm rounded-2xl">
       <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${color}`}>
-        <Icon className="w-5 h-5 text-black" />
+        <Icon className="w-5 h-5 text-white" />
       </div>
       <div className="min-w-0">
         <div className="text-2xl font-black text-primary leading-tight">{value}</div>
@@ -460,7 +460,7 @@ export default function DailyMCheck() {
                 <SquareCheck className="w-4 h-4 text-accent" />
                 <span>Start Checklist</span>
                 {selectedModule && (
-                  <span className="text-[10px] bg-accent/20 px-2 py-0.5 rounded-full text-accent font-bold">
+                  <span className="text-[10px] bg-accent/20 px-2 py-0.5 rounded-full text-[#9E762E] font-bold">
                     {selectedModule.module_name}
                   </span>
                 )}
@@ -488,20 +488,20 @@ export default function DailyMCheck() {
           {!selectedModule ? (
             <>
               {/* Date Banner */}
-              <div className="bg-primary rounded-2xl p-5 text-white flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-md border border-black/10">
+              <div className="bg-primary rounded-2xl p-5 text-white flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-md border border-white/10">
                 <div>
                   <div className="text-[10px] font-black uppercase tracking-widest text-accent mb-1">BSC SMG CRM — DAILY MANAGEMENT CHECKLIST</div>
                   <div className="text-2xl font-black">{dashData?.dateDisplay || selectedDate}</div>
-                  <div className="text-sm text-black/90 mt-0.5">
+                  <div className="text-sm text-white/80 mt-0.5">
                     {dashLoading ? 'Loading metrics...' : `${kpi?.total ?? 0} Total Daily Checkpoints`}
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="text-right">
                     <div className="text-4xl font-black text-accent">{dashLoading ? '—' : `${kpi?.completionPct || 0}%`}</div>
-                    <div className="text-[10px] font-bold text-black uppercase tracking-wide">Overall Completion</div>
+                    <div className="text-[10px] font-bold text-white/70 uppercase tracking-wide">Overall Completion</div>
                   </div>
-                  <div className="w-14 h-14 rounded-full border-4 border-black/20 flex items-center justify-center relative">
+                  <div className="w-14 h-14 rounded-full border-4 border-white/20 flex items-center justify-center relative">
                     <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 56 56">
                       <circle cx="28" cy="28" r="24" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="5" />
                       <circle
@@ -510,7 +510,7 @@ export default function DailyMCheck() {
                         strokeLinecap="round"
                       />
                     </svg>
-                    <BarChart3 className="w-5 h-5 text-black relative z-10" />
+                    <BarChart3 className="w-5 h-5 text-accent relative z-10" />
                   </div>
                 </div>
               </div>
@@ -914,9 +914,9 @@ export default function DailyMCheck() {
                   <Settings className="w-5 h-5 text-accent" />
                   MCheck Administrator Configuration
                 </h3>
-                <p className="text-xs text-black/90">Manage modules, checkpoints, assignments, and verification schedules</p>
+                <p className="text-xs text-white/80">Manage modules, checkpoints, assignments, and verification schedules</p>
               </div>
-              <button onClick={() => setShowAdminModal(false)} className="text-black hover:text-black">
+              <button onClick={() => setShowAdminModal(false)} className="p-1.5 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>

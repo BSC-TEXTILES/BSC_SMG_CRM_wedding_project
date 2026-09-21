@@ -1,16 +1,16 @@
-const rateLimit = require('express-rate-limit');
+const { buildResilientLimiter, ipKeyGenerator } = require('./rateLimiterFactory');
 
-// Helper to extract a unique identifier (User ID if logged in, otherwise IP)
+// Helper to extract a unique identifier (User ID if logged in, otherwise client IP)
 const keyGenerator = (req) => {
   if (req.user && req.user.id) {
     return `user_${req.user.id}`;
   }
-  // Fallback to IP address for unauthenticated or malformed requests
-  return req.ip;
+  // Safe IPv4 / IPv6 fallback
+  return ipKeyGenerator(req);
 };
 
 // Telecaller Queue Limiter (60 requests per minute per user)
-const telecallerQueueLimiter = rateLimit({
+const telecallerQueueLimiter = buildResilientLimiter({
   windowMs: 60 * 1000, // 1 minute
   max: 60, // 60 requests per user
   keyGenerator,
@@ -24,7 +24,7 @@ const telecallerQueueLimiter = rateLimit({
 });
 
 // General Internal Dashboard Limiter (120 requests per minute per user)
-const dashboardLimiter = rateLimit({
+const dashboardLimiter = buildResilientLimiter({
   windowMs: 60 * 1000,
   max: 120,
   keyGenerator,

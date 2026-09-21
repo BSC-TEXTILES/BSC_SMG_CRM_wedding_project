@@ -549,7 +549,7 @@ export default function CandidatesPage() {
                   `}
                 >
                   <span>{p.label}</span>
-                  <span className={`text-[10px] px-1.5 py-[2px] rounded-full ${activeStatus === p.key ? 'bg-black/20 text-black' : 'bg-black/5 text-primary'}`}>
+                  <span className={`text-[10px] px-1.5 py-[2px] rounded-full font-bold ${activeStatus === p.key ? 'bg-white/20 text-white' : 'bg-primary/10 text-primary'}`}>
                     {count}
                   </span>
                 </button>

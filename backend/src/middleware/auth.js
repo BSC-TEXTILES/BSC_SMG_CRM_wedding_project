@@ -1,8 +1,104 @@
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const { errorRes } = require('../utils/response');
 const { getJwtSecret } = require('../utils/secrets');
 const pool = require('../config/db');
 const { authorizeLocationAccess } = require('../services/authorizationService');
+const { getCache, setCache, isReady } = require('../config/redisClient');
+
+// ── JWT Blacklist Cache ────────────────────────────────────────────
+// In-memory set of token hashes that have been blacklisted (logout/force-logout).
+// Periodically synced from the database to avoid a DB check on every request.
+const BLACKLIST_CACHE = new Set();
+let blacklistLastSync = 0;
+const BLACKLIST_SYNC_TTL_MS = 30000; // sync every 30 seconds
+
+function hashToken(token) {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
+
+async function isTokenBlacklisted(token) {
+  const tokenHash = hashToken(token);
+  if (BLACKLIST_CACHE.has(tokenHash)) return true;
+
+  if (isReady()) {
+    try {
+      const redisBlacklisted = await getCache(`app:prod:jwt_blacklist:${tokenHash}`);
+      if (redisBlacklisted) {
+        BLACKLIST_CACHE.add(tokenHash);
+        return true;
+      }
+    } catch (e) {}
+  }
+
+  // Periodic sync from DB
+  if (Date.now() - blacklistLastSync > BLACKLIST_SYNC_TTL_MS) {
+    try {
+      const [rows] = await pool.query(
+        'SELECT token_jti FROM jwt_blacklist WHERE expires_at > NOW() LIMIT 500'
+      );
+      BLACKLIST_CACHE.clear();
+      rows.forEach(r => BLACKLIST_CACHE.add(r.token_jti));
+      blacklistLastSync = Date.now();
+    } catch (err) {
+      // Table may not exist yet — fail open
+    }
+  }
+
+  return BLACKLIST_CACHE.has(tokenHash);
+}
+
+/**
+ * Add a token to the blacklist (called on logout, force-logout, password change).
+ */
+async function blacklistToken(token, userId, username, reason = 'logout') {
+  try {
+    const decoded = jwt.decode(token);
+    const tokenHash = hashToken(token);
+    const expiresAt = decoded?.exp ? new Date(decoded.exp * 1000) : new Date(Date.now() + 6 * 60 * 60 * 1000);
+
+    if (isReady()) {
+      const remainingSeconds = Math.max(60, Math.floor((expiresAt.getTime() - Date.now()) / 1000));
+      await setCache(`app:prod:jwt_blacklist:${tokenHash}`, true, remainingSeconds);
+    }
+
+    await pool.query(
+      `INSERT IGNORE INTO jwt_blacklist (token_jti, user_id, username, reason, expires_at) VALUES (?, ?, ?, ?, ?)`,
+      [tokenHash, userId || null, username || null, reason, expiresAt]
+    );
+    BLACKLIST_CACHE.add(tokenHash);
+  } catch (err) {
+    console.warn('[blacklistToken] Failed to blacklist token:', err.message);
+  }
+}
+
+/**
+ * Log session activity (non-blocking).
+ */
+async function logSessionActivity(data) {
+  try {
+    await pool.query(
+      `INSERT INTO session_activity (user_id, username, session_id, action, module, details, ip_address, user_agent, location_id, method, path, status_code)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        data.userId || null,
+        data.username || 'anonymous',
+        data.sessionId || null,
+        data.action || 'API_CALL',
+        data.module || null,
+        data.details ? JSON.stringify(data.details) : null,
+        data.ip || null,
+        data.userAgent || null,
+        data.locationId || null,
+        data.method || null,
+        data.path || null,
+        data.statusCode || null
+      ]
+    );
+  } catch (err) {
+    // Non-blocking — never throw
+  }
+}
 
 /**
  * authenticate — verifies JWT and attaches full user+location context to req.user
@@ -75,6 +171,16 @@ const authenticate = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, getJwtSecret());
+
+    // ── JWT Blacklist check ──────────────────────────────────────────
+    // If the token has been blacklisted (logout / force-logout / password change),
+    // reject immediately — the cookie/header is stale.
+    const blacklisted = await isTokenBlacklisted(token);
+    if (blacklisted) {
+      res.clearCookie('token', { path: '/' });
+      return errorRes(res, 'Session has been invalidated. Please log in again.', [], 401);
+    }
+
     req.user = decoded;
     // Attach correlation ID for request tracing
     req.correlationId = `req_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
@@ -143,6 +249,21 @@ const authenticate = async (req, res, next) => {
         return errorRes(res, 'Account is temporarily locked. Try again later.', [], 401);
       }
     }
+
+    // ── Session activity logging (non-blocking) ──────────────────────
+    logSessionActivity({
+      userId: decoded.id,
+      username: decoded.username,
+      sessionId: req.correlationId,
+      action: 'API_CALL',
+      module: req.path?.split('/')[1] || 'unknown',
+      details: { method: req.method, path: req.path },
+      ip: req.ip || req.connection?.remoteAddress,
+      userAgent: req.headers['user-agent'],
+      locationId: decoded.locationId,
+      method: req.method,
+      path: req.path
+    });
 
     next();
   } catch (err) {
@@ -377,5 +498,8 @@ module.exports = {
   authorizeLocationAccess,
   getLocationFilter,
   injectLocationId,
-  invalidateUserStatusCache
+  invalidateUserStatusCache,
+  blacklistToken,
+  logSessionActivity,
+  hashToken
 };

@@ -454,7 +454,7 @@ export default function DevToolsMonitoringPanel({ session, className = '' }: Dev
                         <td className="py-2.5 px-3">
                           <div className="font-bold text-primary text-[11px]">{source}</div>
                           {isOpened && (
-                            <span className="text-[9px] font-black text-accent uppercase">
+                            <span className="text-[9px] font-black text-primary/70 uppercase">
                               Confidence: {confidence}
                             </span>
                           )}

@@ -534,14 +534,14 @@ export default function DashboardPage() {
                       className="p-5 rounded-2xl border border-accent-soft bg-background hover:bg-primary hover:text-white transition-all text-left group flex flex-col justify-between space-y-4 shadow-sm hover:shadow-md"
                     >
                       <div className="flex items-center justify-between">
-                        <div className="p-3 rounded-xl bg-white border border-accent-soft group-hover:bg-black/20 group-hover:border-black/30 text-primary group-hover:text-black">
+                        <div className="p-3 rounded-xl bg-white border border-accent-soft group-hover:bg-white/10 group-hover:border-white/20 text-primary group-hover:text-accent transition-colors">
                           <Icon className="w-5 h-5" />
                         </div>
-                        <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-black transition-transform group-hover:translate-x-1" />
+                        <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-white transition-transform group-hover:translate-x-1" />
                       </div>
                       <div>
-                        <div className="font-black text-sm text-primary group-hover:text-black">{item.label}</div>
-                        <div className="text-xs text-primary group-hover:text-black font-medium mt-1 leading-relaxed">{item.desc}</div>
+                        <div className="font-black text-sm text-primary group-hover:text-white transition-colors">{item.label}</div>
+                        <div className="text-xs text-primary/70 group-hover:text-white/80 font-medium mt-1 leading-relaxed transition-colors">{item.desc}</div>
                       </div>
                     </button>
                   );
@@ -624,12 +624,12 @@ export default function DashboardPage() {
                           onClick={() => navigate(item.path)}
                           className="w-full p-3 rounded-xl border border-accent-soft bg-background hover:bg-primary hover:text-white transition-all text-left group flex items-center gap-3 shadow-xs"
                         >
-                          <div className="p-2 rounded-lg bg-white border border-accent-soft group-hover:bg-black/20 group-hover:border-black/30 text-primary group-hover:text-black">
+                          <div className="p-2 rounded-lg bg-white border border-accent-soft group-hover:bg-white/10 group-hover:border-white/20 text-primary group-hover:text-accent transition-colors">
                             <Icon className="w-4 h-4" />
                           </div>
                           <div>
-                            <div className="font-extrabold text-xs text-primary group-hover:text-black">{item.label}</div>
-                            <div className="text-[10px] text-primary group-hover:text-black">{item.desc}</div>
+                            <div className="font-extrabold text-xs text-primary group-hover:text-white transition-colors">{item.label}</div>
+                            <div className="text-[10px] text-primary/70 group-hover:text-white/80 transition-colors">{item.desc}</div>
                           </div>
                         </button>
                       );

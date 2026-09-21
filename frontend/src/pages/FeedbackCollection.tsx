@@ -514,7 +514,7 @@ export default function FeedbackCollection() {
 
                   <div className="flex items-center gap-3 self-start md:self-auto">
                     {selectedFeedback.isNegative ? (
-                      <span className="px-3.5 py-1.5 rounded-xl bg-rose-600 text-black font-extrabold text-xs shadow-sm flex items-center gap-1.5">
+                      <span className="px-3.5 py-1.5 rounded-xl bg-rose-600 text-white font-extrabold text-xs shadow-sm flex items-center gap-1.5">
                         <ShieldAlert className="w-4 h-4" /> High Priority Escalation
                       </span>
                     ) : (
@@ -537,7 +537,7 @@ export default function FeedbackCollection() {
                 {selectedFeedback.isNegative && (
                   <div className="card-glass p-4 rounded-2xl border-l-4 border-l-rose-500 bg-rose-500/10 border border-rose-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
                     <div className="flex items-center gap-3">
-                      <div className="p-2.5 rounded-xl bg-rose-600 text-black shadow-sm shrink-0">
+                      <div className="p-2.5 rounded-xl bg-rose-600 text-white shadow-sm shrink-0">
                         <TriangleAlert className="w-5 h-5" />
                       </div>
                       <div>

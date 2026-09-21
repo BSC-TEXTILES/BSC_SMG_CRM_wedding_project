@@ -191,6 +191,7 @@ export default function UserManagementPage() {
   // State - User Activity
   const [userActivity, setUserActivity] = useState<AuditLog[]>([]);
   const [loadingActivity, setLoadingActivity] = useState(false);
+  const [userConsent, setUserConsent] = useState<any>(null);
 
   // State - Inline Location Edit
   const [editingLocationUserId, setEditingLocationUserId] = useState<number | null>(null);
@@ -711,9 +712,17 @@ export default function UserManagementPage() {
     setSelectedUser(user);
     setActivityModalOpen(true);
     setLoadingActivity(true);
+    setUserConsent(null);
     try {
       const res = await API.getAdminUser(user.id);
       setUserActivity(res?.recentActivity || []);
+      // Load consent status for this user
+      try {
+        const consentRes = await API.getUserConsents({ username: user.username, limit: 1 });
+        if (consentRes?.success && consentRes.data?.data?.length > 0) {
+          setUserConsent(consentRes.data.data[0]);
+        }
+      } catch {}
     } catch (err: any) {
       showToast('Failed to load user activity: ' + (err.message || 'Error'), 'error');
     } finally {
@@ -1235,14 +1244,14 @@ export default function UserManagementPage() {
                   <UserPlus className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-extrabold text-black">Create New User</h3>
-                  <p className="text-xs text-black/90">Provision login credentials and initial role privileges</p>
+                  <h3 className="text-base font-extrabold text-white">Create New User</h3>
+                  <p className="text-xs text-white/90">Provision login credentials and initial role privileges</p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setCreateModalOpen(false)}
-                className="p-1.5 rounded-xl hover:bg-black/10 text-black/90 hover:text-black cursor-pointer"
+                className="p-1.5 rounded-xl hover:bg-white/10 text-white/90 hover:text-white cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1559,14 +1568,14 @@ export default function UserManagementPage() {
                   <Edit className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-extrabold text-black">Edit User: @{selectedUser.username}</h3>
-                  <p className="text-xs text-black/90">Update profile details, role assignments, or active status</p>
+                  <h3 className="text-base font-extrabold text-white">Edit User: @{selectedUser.username}</h3>
+                  <p className="text-xs text-white/90">Update profile details, role assignments, or active status</p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setEditModalOpen(false)}
-                className="p-1.5 rounded-xl hover:bg-black/10 text-black/90 hover:text-black cursor-pointer"
+                className="p-1.5 rounded-xl hover:bg-white/10 text-white/90 hover:text-white cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1784,14 +1793,14 @@ export default function UserManagementPage() {
                   <Key className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-extrabold text-black">Reset Password</h3>
-                  <p className="text-xs text-black/90">Set a new password for @{selectedUser.username}</p>
+                  <h3 className="text-base font-extrabold text-white">Reset Password</h3>
+                  <p className="text-xs text-white/90">Set a new password for @{selectedUser.username}</p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setResetPwdModalOpen(false)}
-                className="p-1.5 rounded-xl hover:bg-black/10 text-black/90 hover:text-black cursor-pointer"
+                className="p-1.5 rounded-xl hover:bg-white/10 text-white/90 hover:text-white cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1869,13 +1878,13 @@ export default function UserManagementPage() {
                   <SlidersHorizontal className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-extrabold text-black flex items-center gap-2">
+                  <h3 className="text-base font-extrabold text-white flex items-center gap-2">
                     <span>Access Control Matrix: @{selectedUser.username}</span>
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-accent/20 text-accent uppercase">
                       {selectedUser.role}
                     </span>
                   </h3>
-                  <p className="text-xs text-black/90">
+                  <p className="text-xs text-white/90">
                     Granular permission levels per section: View, Create, Modify, Delete, Export &amp; Authorize
                   </p>
                 </div>
@@ -1883,7 +1892,7 @@ export default function UserManagementPage() {
               <button
                 type="button"
                 onClick={() => setPermModalOpen(false)}
-                className="p-1.5 rounded-xl hover:bg-black/10 text-black/90 hover:text-black cursor-pointer"
+                className="p-1.5 rounded-xl hover:bg-white/10 text-white/90 hover:text-white cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1984,7 +1993,7 @@ export default function UserManagementPage() {
                             type="button"
                             onClick={() => handleToggleCell(m.key, 'can_view')}
                             className={`w-6 h-6 rounded-md flex items-center justify-center mx-auto transition-colors cursor-pointer ${
-                              perm.can_view ? 'bg-green-600 text-black' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+                              perm.can_view ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
                             }`}
                             title="Toggle View access"
                           >
@@ -1998,7 +2007,7 @@ export default function UserManagementPage() {
                             type="button"
                             onClick={() => handleToggleCell(m.key, 'can_add')}
                             className={`w-6 h-6 rounded-md flex items-center justify-center mx-auto transition-colors cursor-pointer ${
-                              perm.can_add ? 'bg-blue-600 text-black' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+                              perm.can_add ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
                             }`}
                             title="Toggle Add access"
                           >
@@ -2012,7 +2021,7 @@ export default function UserManagementPage() {
                             type="button"
                             onClick={() => handleToggleCell(m.key, 'can_edit')}
                             className={`w-6 h-6 rounded-md flex items-center justify-center mx-auto transition-colors cursor-pointer ${
-                              perm.can_edit ? 'bg-black text-black' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+                              perm.can_edit ? 'bg-black text-white' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
                             }`}
                             title="Toggle Edit access"
                           >
@@ -2026,7 +2035,7 @@ export default function UserManagementPage() {
                             type="button"
                             onClick={() => handleToggleCell(m.key, 'can_delete')}
                             className={`w-6 h-6 rounded-md flex items-center justify-center mx-auto transition-colors cursor-pointer ${
-                              perm.can_delete ? 'bg-red-600 text-black' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+                              perm.can_delete ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
                             }`}
                             title="Toggle Delete access"
                           >
@@ -2040,7 +2049,7 @@ export default function UserManagementPage() {
                             type="button"
                             onClick={() => handleToggleCell(m.key, 'can_export')}
                             className={`w-6 h-6 rounded-md flex items-center justify-center mx-auto transition-colors cursor-pointer ${
-                              perm.can_export ? 'bg-indigo-600 text-black' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+                              perm.can_export ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
                             }`}
                             title="Toggle Export access"
                           >
@@ -2103,20 +2112,54 @@ export default function UserManagementPage() {
                   <Activity className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-extrabold text-black">Security &amp; Action Log: @{selectedUser.username}</h3>
-                  <p className="text-xs text-black/90">Recent transactions and access events recorded in audit log</p>
+                  <h3 className="text-base font-extrabold text-white">Security &amp; Action Log: @{selectedUser.username}</h3>
+                  <p className="text-xs text-white/90">Recent transactions and access events recorded in audit log</p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setActivityModalOpen(false)}
-                className="p-1.5 rounded-xl hover:bg-black/10 text-black/90 hover:text-black cursor-pointer"
+                className="p-1.5 rounded-xl hover:bg-white/10 text-white/90 hover:text-white cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="p-4 flex-1 overflow-y-auto space-y-3">
+              {/* Consent Status */}
+              {userConsent && (
+                <div className="p-3 rounded-xl bg-primary/5 border border-accent/15">
+                  <div className="flex items-center gap-2 mb-2">
+                    <ShieldCheck className="w-4 h-4 text-accent" />
+                    <span className="text-xs font-black text-primary uppercase tracking-wider">Consent Status</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 text-[11px]">
+                    <div>
+                      <span className="font-bold text-primary/60">Privacy Policy:</span>
+                      <span className={`ml-2 font-bold ${userConsent.privacy_policy_accepted ? 'text-green-700' : 'text-red-600'}`}>
+                        {userConsent.privacy_policy_accepted ? `Accepted (v${userConsent.privacy_policy_version})` : 'Not Accepted'}
+                      </span>
+                      {userConsent.privacy_policy_accepted_at && (
+                        <div className="text-[10px] text-primary/40 mt-0.5">
+                          {new Date(userConsent.privacy_policy_accepted_at).toLocaleString()}
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <span className="font-bold text-primary/60">Terms:</span>
+                      <span className={`ml-2 font-bold ${userConsent.terms_accepted ? 'text-green-700' : 'text-red-600'}`}>
+                        {userConsent.terms_accepted ? `Accepted (v${userConsent.terms_version})` : 'Not Accepted'}
+                      </span>
+                      {userConsent.terms_accepted_at && (
+                        <div className="text-[10px] text-primary/40 mt-0.5">
+                          {new Date(userConsent.terms_accepted_at).toLocaleString()}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {loadingActivity ? (
                 <div className="py-12 text-center text-primary/60">
                   <RefreshCw className="w-6 h-6 animate-spin mx-auto text-accent mb-2" />
@@ -2180,13 +2223,13 @@ export default function UserManagementPage() {
       {deleteConfirmOpen && selectedUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
           <div className="card-glass bg-white rounded-2xl w-full max-w-sm shadow-2xl border border-red-300 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="p-5 bg-red-600 text-black flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-black/20 flex items-center justify-center font-black">
-                <TriangleAlert className="w-6 h-6 text-black" />
+            <div className="p-5 bg-red-600 text-white flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center font-black">
+                <TriangleAlert className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h3 className="text-base font-extrabold text-black">Delete User Account</h3>
-                <p className="text-xs text-black">Permanent deletion</p>
+                <h3 className="text-base font-extrabold text-white">Delete User Account</h3>
+                <p className="text-xs text-white/90">Permanent deletion</p>
               </div>
             </div>
 
@@ -2211,7 +2254,7 @@ export default function UserManagementPage() {
                 type="button"
                 onClick={handleDeleteUser}
                 disabled={submitting}
-                className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-black text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-sm"
+                className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-sm"
               >
                 {submitting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                 <span>{submitting ? 'Deleting...' : 'Delete Permanently'}</span>

@@ -59,6 +59,7 @@ import ConnectivityBanner from './components/ConnectivityBanner';
 import ErrorBoundary from './components/ErrorBoundary';
 import SessionTimeoutGuard from './components/SessionTimeoutGuard';
 import DesktopModeWarning from './components/DesktopModeWarning';
+import ConsentGuard from './components/ConsentGuard';
 import { useUrlGuard } from './hooks/useUrlGuard';
 import { Auth } from './services/api';
 
@@ -81,6 +82,7 @@ export default function App() {
       <ConnectivityBanner />
       <UserTracker />
       <UrlGuardMonitor />
+      <ConsentGuard>
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
@@ -158,6 +160,7 @@ export default function App() {
         <Route path="/chat-dashboard" element={<RouteGuard pageKey="dashboard"><ChatDashboard /></RouteGuard>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </ConsentGuard>
       <QuickActionCenter />
       <AuthChatWidget />
       <SessionTimeoutGuard />

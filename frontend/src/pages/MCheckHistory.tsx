@@ -12,7 +12,7 @@ import {
 
 function Toast({ msg, type }: { msg: string; type: string }) {
   const bg = type === 'success' ? 'bg-emerald-600' : type === 'error' ? 'bg-red-600' : 'bg-primary';
-  return <div className={`fixed bottom-6 right-6 z-[200] px-5 py-3 rounded-xl text-black text-sm font-semibold shadow-xl animate-slide-up ${bg}`}>{msg}</div>;
+  return <div className={`fixed bottom-6 right-6 z-[200] px-5 py-3 rounded-xl text-white text-sm font-semibold shadow-xl animate-slide-up ${bg}`}>{msg}</div>;
 }
 
 export default function MCheckHistory() {
@@ -178,7 +178,7 @@ export default function MCheckHistory() {
                 <div className="card-glass rounded-2xl p-8 text-center">
                   <History className="w-10 h-10 text-gray-200 mx-auto mb-3" />
                   <div className="text-sm font-bold text-gray-400">No history found</div>
-                  <div className="text-xs text-gray-300 mt-1">Complete some daily checklists to see history here</div>
+                  <div className="text-xs text-gray-500 mt-1">Complete some daily checklists to see history here</div>
                 </div>
               ) : (
                 <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-1">
@@ -195,7 +195,7 @@ export default function MCheckHistory() {
                 <div className="card-glass rounded-2xl p-10 flex flex-col items-center justify-center h-full text-center">
                   <Calendar className="w-12 h-12 text-gray-200 mb-4" />
                   <div className="text-base font-bold text-gray-400">Select a date from the list</div>
-                  <div className="text-sm text-gray-300 mt-1">to view the detailed daily report</div>
+                  <div className="text-sm text-gray-500 mt-1">to view the detailed daily report</div>
                 </div>
               ) : dayReportLoading ? (
                 <div className="card-glass rounded-2xl p-10 flex items-center justify-center">
@@ -212,14 +212,14 @@ export default function MCheckHistory() {
                       <div>
                         <div className="text-[10px] font-black text-accent uppercase tracking-widest mb-1">DAILY REVIEW</div>
                         <div className="text-xl font-black">{dayReport.dateDisplay}</div>
-                        <div className="text-sm text-black mt-1">{dayReport.kpis.total} total checkpoints</div>
+                        <div className="text-sm text-white/80 mt-1">{dayReport.kpis.total} total checkpoints</div>
                       </div>
                       <div className="text-right">
                         <div className="text-3xl font-black text-accent">{dayReport.kpis.completionPct}%</div>
-                        <div className="text-[10px] text-black/50 uppercase">Completion</div>
+                        <div className="text-[10px] text-white/60 uppercase">Completion</div>
                       </div>
                     </div>
-                    <div className="mt-3 h-2 bg-black/10 rounded-full overflow-hidden">
+                    <div className="mt-3 h-2 bg-white/10 rounded-full overflow-hidden">
                       <div className="h-full bg-accent rounded-full" style={{ width: `${dayReport.kpis.completionPct}%` }} />
                     </div>
                     {/* KPI row */}
@@ -229,11 +229,11 @@ export default function MCheckHistory() {
                         { label: 'Not Done', val: dayReport.kpis.notDone, color: 'text-red-400' },
                         { label: 'In Prog', val: dayReport.kpis.inProgress, color: 'text-amber-400' },
                         { label: 'Postponed', val: dayReport.kpis.postponed, color: 'text-purple-400' },
-                        { label: 'Pending', val: dayReport.kpis.pending, color: 'text-black/40' },
+                        { label: 'Pending', val: dayReport.kpis.pending, color: 'text-white/50' },
                       ].map(s => (
                         <div key={s.label} className="text-center">
                           <div className={`text-lg font-black ${s.color}`}>{s.val}</div>
-                          <div className="text-[9px] text-black/40 font-semibold">{s.label}</div>
+                          <div className="text-[9px] text-white/60 font-semibold">{s.label}</div>
                         </div>
                       ))}
                     </div>
@@ -247,7 +247,7 @@ export default function MCheckHistory() {
                         <div key={i} className="flex items-center gap-3">
                           <div className="text-xs font-bold text-primary w-40 truncate flex-shrink-0">{m.module_name}</div>
                           <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-                            <div className={`h-full rounded-full ${m.completion_pct === 100 ? 'bg-emerald-500' : m.completion_pct >= 50 ? 'bg-black' : 'bg-red-400'}`}
+                            <div className={`h-full rounded-full ${m.completion_pct === 100 ? 'bg-emerald-500' : m.completion_pct >= 50 ? 'bg-amber-500' : 'bg-red-400'}`}
                               style={{ width: `${m.completion_pct}%` }} />
                           </div>
                           <div className="text-xs font-black text-primary w-14 text-right flex-shrink-0">{m.done}/{m.total}</div>
@@ -287,7 +287,7 @@ export default function MCheckHistory() {
                       <BarChart3 className="w-3.5 h-3.5 text-accent" /> Open Dashboard
                     </button>
                     <button onClick={() => handleExport(selectedDate, 'pdf')}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-red-600 text-black text-xs font-bold hover:bg-red-700 transition-all shadow-sm">
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-red-600 text-white text-xs font-bold hover:bg-red-700 transition-all shadow-sm">
                       <Download className="w-3.5 h-3.5" /> PDF
                     </button>
                     <button onClick={() => handleExport(selectedDate, 'excel')}

@@ -222,7 +222,7 @@ export default function EmployeeProfileModal({ employee, onClose, onUpdated }: E
                   {currentEmp.initials || empName.slice(0, 2).toUpperCase()}
                 </div>
               )}
-              <span className="absolute -bottom-2 -right-2 px-3 py-1 rounded-full bg-emerald-500 text-white text-[10px] font-black uppercase tracking-wider shadow-md border-2 border-black">
+              <span className="absolute -bottom-2 -right-2 px-3 py-1 rounded-full bg-emerald-500 text-white text-[10px] font-black uppercase tracking-wider shadow-md border-2 border-emerald-600">
                 Active Staff
               </span>
             </div>
@@ -329,7 +329,7 @@ export default function EmployeeProfileModal({ employee, onClose, onUpdated }: E
                         <div className="text-base font-bold text-emerald-700 font-mono">{sal.incentive > 0 ? `+₹${sal.incentive.toLocaleString('en-IN')}` : 'Included'}</div>
                       </div>
                       <div className="bg-primary p-3 rounded-xl border border-amber-400 shadow-2xs">
-                        <div className="text-[9px] uppercase font-black text-amber-400 mb-0.5">Total Package</div>
+                        <div className="text-[9px] uppercase font-black text-white/90 mb-0.5">Total Package</div>
                         <div className="text-base font-black text-white font-mono">₹{sal.total.toLocaleString('en-IN')}</div>
                       </div>
                     </div>
@@ -430,7 +430,7 @@ export default function EmployeeProfileModal({ employee, onClose, onUpdated }: E
                           className="p-3 rounded-xl border border-accent-soft bg-background hover:bg-primary hover:text-white transition-all flex items-center justify-between font-bold group"
                         >
                           <span>📷 Staff Profile Photo</span>
-                          <ExternalLink className="w-4 h-4 text-amber-600 group-hover:text-black" />
+                          <ExternalLink className="w-4 h-4 text-amber-600 group-hover:text-white" />
                         </a>
                       )}
                       {fileUrl(currentEmp.aadhaarUrl || currentEmp.aadharUrl || currentEmp.aadhaar_url || currentEmp.aadhar_url) && (
@@ -441,7 +441,7 @@ export default function EmployeeProfileModal({ employee, onClose, onUpdated }: E
                           className="p-3 rounded-xl border border-accent-soft bg-background hover:bg-primary hover:text-white transition-all flex items-center justify-between font-bold group"
                         >
                           <span>📄 Aadhaar Card Document</span>
-                          <ExternalLink className="w-4 h-4 text-amber-600 group-hover:text-black" />
+                          <ExternalLink className="w-4 h-4 text-amber-600 group-hover:text-white" />
                         </a>
                       )}
                       {fileUrl(currentEmp.resumeUrl) && (
@@ -452,7 +452,7 @@ export default function EmployeeProfileModal({ employee, onClose, onUpdated }: E
                           className="p-3 rounded-xl border border-accent-soft bg-background hover:bg-primary hover:text-white transition-all flex items-center justify-between font-bold group"
                         >
                           <span>📑 Employee Resume / CV</span>
-                          <ExternalLink className="w-4 h-4 text-amber-600 group-hover:text-black" />
+                          <ExternalLink className="w-4 h-4 text-amber-600 group-hover:text-white" />
                         </a>
                       )}
                     </div>

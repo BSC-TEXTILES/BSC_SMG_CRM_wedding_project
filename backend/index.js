@@ -60,6 +60,7 @@ if (passengerPort) {
 // ── Load modules ──────────────────────────────────────────────────────────────
 const pool = require('./src/config/db');
 const { autoInitializeDatabase } = require('./src/config/dbInitializer');
+const { redisClient, isReady } = require('./src/config/redisClient');
 const apiRoutes = require('./src/routes/api');
 const landingRoutes = require('./src/routes/landingRoutes');
 const { errorRes } = require('./src/utils/response');
@@ -202,22 +203,21 @@ app.get(['/uploads/*', '/candidate-resumes/*', '/candidate-photos/*', '/employee
 // ── Brute-Force Protection on Credential Endpoints ───────────────────────────
 // 50 attempts / 10 min / IP is generous for humans (office NAT with several
 // staff logging in) yet hostile to credential stuffing.
-const rateLimit = require('express-rate-limit');
-const authLimiter = rateLimit({
+const { buildResilientLimiter } = require('./src/middleware/rateLimiterFactory');
+
+const authLimiter = buildResilientLimiter({
   windowMs: 10 * 60 * 1000,
   max: 50,
   standardHeaders: true,
   legacyHeaders: false,
-  validate: false, // trust proxy is set above; silence v7 startup warning
   message: { success: false, message: 'Too many login attempts. Please try again in a few minutes.', errors: [] }
 });
 
-const globalLimiter = rateLimit({
+const globalLimiter = buildResilientLimiter({
   windowMs: 15 * 60 * 1000,
   max: 5000, // Increased to 5000: avoid blocking shared office NATs
   standardHeaders: true,
   legacyHeaders: false,
-  validate: false,
   skip: (req) => {
     const url = req.originalUrl || req.url || '';
     return url.includes('/security/shield-status') || url.includes('/health') || url.includes('/db-status');
@@ -246,6 +246,7 @@ app.get(['/health', '/api/health'], async (req, res) => {
     status: isHealthy ? 'healthy' : 'degraded',
     server: 'operational',
     database: dbStatus,
+    redis: isReady() ? 'connected' : 'degraded',
     timestamp: new Date().toISOString()
   });
 });
@@ -475,6 +476,8 @@ app.use('/api', function(req, res, next) {
 let distDir = path.join(APP_ROOT, 'dist');
 if (!fs.existsSync(distDir) && fs.existsSync(path.join(APP_ROOT, '..', 'dist'))) {
   distDir = path.join(APP_ROOT, '..', 'dist');
+} else if (!fs.existsSync(distDir) && fs.existsSync(path.join(APP_ROOT, '..', 'frontend', 'dist'))) {
+  distDir = path.join(APP_ROOT, '..', 'frontend', 'dist');
 }
 // Favicon & Icon static route handler (prevents 503 / 404 errors on live server)
 app.get(['/favicon.ico', '/favicon.png', '/logo.png'], (req, res) => {
@@ -559,10 +562,12 @@ app.use((err, req, res, next) => {
   errorRes(res, msg, [], err.status || 500);
 });
 
-// ── DB Init ───────────────────────────────────────────────────────────────────
+// ── DB & Cache Init ───────────────────────────────────────────────────────────────────
 autoInitializeDatabase(pool)
-  .then(() => {
+  .then(async () => {
     console.log('[Boot] DB init complete');
+    const { initBloomFilter } = require('./src/config/redisClient');
+    await initBloomFilter('wedding_customers_bf', 0.01, 100000).catch(() => {});
     // Start workflow timeout processor after DB is ready
   })
   .catch(err => console.error('[Boot] DB init error:', err.message));
@@ -612,33 +617,21 @@ if (isSocketPort) {
     console.log(`====================================================`);
   });
 
-  // Secondary/Fallback listener: if PORT is not 3000 (e.g. 5000), also serve port 3000 for standard reverse proxies
-  if (Number(PORT) !== 3000) {
-    try {
-      const fallback3000 = http.createServer(app);
-      fallback3000.keepAliveTimeout = 65000;
-      fallback3000.headersTimeout = 66000;
-      fallback3000.listen(3000, '0.0.0.0', () => {
-        console.log(`  [Proxy Sync] Secondary listener active on port 3000`);
-      });
-      fallback3000.on('error', (e) => {
-        // Port 3000 may already be taken or restricted; non-fatal
-        console.log(`  [Proxy Sync] Secondary port 3000 skipped (${e.code})`);
-      });
-    } catch (e) {}
-  } else if (Number(PORT) !== 5000) {
-    try {
-      const fallback5000 = http.createServer(app);
-      fallback5000.keepAliveTimeout = 65000;
-      fallback5000.headersTimeout = 66000;
-      fallback5000.listen(5000, '0.0.0.0', () => {
-        console.log(`  [Proxy Sync] Secondary listener active on port 5000`);
-      });
-      fallback5000.on('error', (e) => {
-        // Port 5000 may already be taken; non-fatal
-        console.log(`  [Proxy Sync] Secondary port 5000 skipped (${e.code})`);
-      });
-    } catch (e) {}
+  // Secondary/Fallback listener: only if explicitly enabled in development
+  if (process.env.ENABLE_SECONDARY_PORTS === 'true') {
+    if (Number(PORT) !== 3000) {
+      try {
+        const fallback3000 = http.createServer(app);
+        fallback3000.keepAliveTimeout = 65000;
+        fallback3000.headersTimeout = 66000;
+        fallback3000.listen(3000, '0.0.0.0', () => {
+          console.log(`  [Proxy Sync] Secondary listener active on port 3000`);
+        });
+        fallback3000.on('error', (e) => {
+          console.log(`  [Proxy Sync] Secondary port 3000 skipped (${e.code})`);
+        });
+      } catch (e) {}
+    }
   }
 }
 
@@ -650,7 +643,7 @@ server.on('error', (err) => {
   // If primary port had EADDRINUSE on 5000, attempt automatic fallback to 3000
   if (err.code === 'EADDRINUSE' && !isSocketPort && Number(PORT) === 5000) {
     console.warn(`[Server Recovery] Port 5000 in use. Attempting recovery on port 3000...`);
-    PORT = 3000; // Prevent infinite loop if port 3000 is also in use
+    PORT = 3000;
     try {
       server.listen(3000, '0.0.0.0', () => {
         console.log(`[Server Recovery] BSC HRMS recovered and running on port 3000`);

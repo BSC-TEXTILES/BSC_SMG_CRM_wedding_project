@@ -20,7 +20,7 @@ export default function PageHeader({
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
       <div>
         {section && (
-          <p className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-[#C9A45C] mb-1">
+          <p className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-[#9E762E] mb-1">
             {section}
           </p>
         )}

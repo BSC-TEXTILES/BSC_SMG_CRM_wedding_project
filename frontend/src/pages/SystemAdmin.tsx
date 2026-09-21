@@ -64,7 +64,7 @@ function formatTimeIST(dateStr: string | null | undefined): string {
   } catch { return '—'; }
 }
 
-type TabKey = 'devtools' | 'security' | 'auth' | 'live' | 'logs' | 'events';
+type TabKey = 'devtools' | 'security' | 'auth' | 'live' | 'logs' | 'events' | 'session-activity';
 
 interface AuthActivity {
   summary: {
@@ -138,6 +138,15 @@ export default function SystemAdminPage() {
   const [liveActivity, setLiveActivity] = useState<LiveActivityItem[]>([]);
   const [liveLoading, setLiveLoading] = useState(false);
 
+  // Session Activity (new security feature)
+  const [sessionActivity, setSessionActivity] = useState<any[]>([]);
+  const [sessionLoading, setSessionLoading] = useState(false);
+  const [sessionTotal, setSessionTotal] = useState(0);
+  const [sessionPage, setSessionPage] = useState(0);
+  const [sessionActionFilter, setSessionActionFilter] = useState('');
+  const [sessionUserFilter, setSessionUserFilter] = useState('');
+  const sessionLimit = 30;
+
   // Dashboard Stats
   const [dashStats, setDashStats] = useState({ securityEvents: 0, authEvents: 0, systemLogs: 0, todayEvents: 0 });
   const [statsLoading, setStatsLoading] = useState(false);
@@ -201,7 +210,7 @@ export default function SystemAdminPage() {
     if (!isAdmin) return;
     setLiveLoading(true);
     try {
-      const res = await apiFetch('/security/live-activity?limit=30');
+      const res = await apiFetch('/security/live-activity?limit=100');
       if (res && Array.isArray(res.activity)) setLiveActivity(res.activity);
       setConnectionError(null);
     } catch {
@@ -210,6 +219,27 @@ export default function SystemAdminPage() {
       setLiveLoading(false);
     }
   }, [isAdmin]);
+
+  const loadSessionActivity = useCallback(async () => {
+    if (!isAdmin) return;
+    setSessionLoading(true);
+    try {
+      const params: any = { limit: sessionLimit, offset: sessionPage * sessionLimit };
+      if (sessionActionFilter) params.action = sessionActionFilter;
+      if (sessionUserFilter) params.username = sessionUserFilter;
+      const q = new URLSearchParams(params).toString();
+      const res = await apiFetch(`/security/session-activity?${q}`);
+      if (res && Array.isArray(res.data)) {
+        setSessionActivity(res.data);
+        setSessionTotal(res.total || 0);
+      }
+      setConnectionError(null);
+    } catch {
+      setConnectionError('Unable to load session activity');
+    } finally {
+      setSessionLoading(false);
+    }
+  }, [isAdmin, sessionPage, sessionActionFilter, sessionUserFilter]);
 
   const loadDashStats = useCallback(async () => {
     if (!isAdmin) return;
@@ -236,6 +266,7 @@ export default function SystemAdminPage() {
     loadSecurityEvents();
     loadSystemLogs();
     loadLiveActivity();
+    loadSessionActivity();
 
     // Real-time updates via Socket.IO
     const unsubSecEvent = NotificationService.onSecurityEvent(() => {
@@ -260,12 +291,17 @@ export default function SystemAdminPage() {
       unsubSecCleared();
       clearInterval(pollInterval);
     };
-  }, [navigate, loadDashStats, loadAuthActivity, loadSecurityEvents, loadSystemLogs, loadLiveActivity]);
+  }, [navigate, loadDashStats, loadAuthActivity, loadSecurityEvents, loadSystemLogs, loadLiveActivity, loadSessionActivity]);
 
   // Reload system logs when filter/page changes
   useEffect(() => {
     if (session) loadSystemLogs();
   }, [logsPage, logsModuleFilter, session, loadSystemLogs]);
+
+  // Reload session activity when filter/page changes
+  useEffect(() => {
+    if (session) loadSessionActivity();
+  }, [sessionPage, sessionActionFilter, sessionUserFilter, session, loadSessionActivity]);
 
   // ── Filtered Security Events ────────────────────────────────────────────
 
@@ -302,6 +338,7 @@ export default function SystemAdminPage() {
     { key: 'devtools', label: 'Developer Tools', icon: ShieldAlert },
     { key: 'security', label: 'Security Monitoring', icon: Shield },
     { key: 'auth', label: 'Authentication Activity', icon: LogIn },
+    { key: 'session-activity', label: 'Session Activity', icon: Clock },
     { key: 'live', label: 'Live Activity', icon: Activity },
     { key: 'logs', label: 'System Logs', icon: FileText },
     { key: 'events', label: 'Security Events', icon: Eye }
@@ -569,6 +606,125 @@ export default function SystemAdminPage() {
                   <p className="font-bold text-primary text-sm">No authentication data available</p>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* ── TAB: Session Activity ──────────────────────────────────── */}
+          {activeTab === 'session-activity' && (
+            <div className="space-y-4 animate-fade-in">
+              <div className="card-glass p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="font-extrabold text-primary text-sm uppercase tracking-wider flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-accent" />
+                      <span>Session Activity Log</span>
+                    </h3>
+                    <p className="text-[11px] text-primary font-medium mt-0.5">Tracks every authenticated API call for anomaly detection. Records route violations, page views, and security events.</p>
+                  </div>
+                  <button onClick={loadSessionActivity} disabled={sessionLoading} className="p-1.5 rounded-xl bg-white border border-accent/25 text-primary hover:bg-gray-50 cursor-pointer">
+                    <RefreshCw className={`w-3.5 h-3.5 text-accent ${sessionLoading ? 'animate-spin' : ''}`} />
+                  </button>
+                </div>
+
+                {/* Filters */}
+                <div className="flex flex-wrap items-center gap-3 mb-4">
+                  <div className="flex items-center gap-2">
+                    <Search className="w-3.5 h-3.5 text-primary/40" />
+                    <input
+                      type="text"
+                      placeholder="Filter by username..."
+                      value={sessionUserFilter}
+                      onChange={e => { setSessionUserFilter(e.target.value); setSessionPage(0); }}
+                      className="px-3 py-1.5 text-xs font-medium rounded-lg border border-accent-soft bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent/30 w-40"
+                    />
+                  </div>
+                  <select
+                    value={sessionActionFilter}
+                    onChange={e => { setSessionActionFilter(e.target.value); setSessionPage(0); }}
+                    className="px-3 py-1.5 text-xs font-medium rounded-lg border border-accent-soft bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent/30"
+                  >
+                    <option value="">All Actions</option>
+                    <option value="API_CALL">API Calls</option>
+                    <option value="ROUTE_VIOLATION">Route Violations</option>
+                    <option value="FORCE_LOGOUT">Force Logouts</option>
+                    <option value="PAGE_VIEW">Page Views</option>
+                  </select>
+                  <span className="text-[10px] font-bold text-primary/40">{sessionTotal} total records</span>
+                </div>
+
+                {sessionLoading && sessionActivity.length === 0 ? (
+                  <div className="py-8 text-center">
+                    <Loader2 className="w-5 h-5 animate-spin mx-auto text-accent mb-2" />
+                    <p className="font-bold text-xs text-primary/60">Loading session activity...</p>
+                  </div>
+                ) : sessionActivity.length === 0 ? (
+                  <div className="py-8 text-center">
+                    <Clock className="w-8 h-8 text-accent/30 mx-auto mb-2" />
+                    <p className="font-bold text-xs text-primary/60">No session activity recorded yet</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="overflow-x-auto rounded-xl border border-accent-soft">
+                      <table className="w-full text-xs">
+                        <thead>
+                          <tr className="bg-background border-b border-accent-soft">
+                            <th className="px-3 py-2.5 text-left font-extrabold text-primary uppercase tracking-wider">Time (IST)</th>
+                            <th className="px-3 py-2.5 text-left font-extrabold text-primary uppercase tracking-wider">User</th>
+                            <th className="px-3 py-2.5 text-left font-extrabold text-primary uppercase tracking-wider">Action</th>
+                            <th className="px-3 py-2.5 text-left font-extrabold text-primary uppercase tracking-wider">Method</th>
+                            <th className="px-3 py-2.5 text-left font-extrabold text-primary uppercase tracking-wider">Path</th>
+                            <th className="px-3 py-2.5 text-left font-extrabold text-primary uppercase tracking-wider">IP</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-accent-soft">
+                          {sessionActivity.map((item: any) => (
+                            <tr key={item.id} className="hover:bg-background/50 transition-colors">
+                              <td className="px-3 py-2 font-medium text-primary whitespace-nowrap">{formatIST(item.created_at)}</td>
+                              <td className="px-3 py-2 font-bold text-primary">{item.username}</td>
+                              <td className="px-3 py-2">
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                                  item.action === 'ROUTE_VIOLATION' ? 'bg-red-100 text-red-700 border border-red-200' :
+                                  item.action === 'FORCE_LOGOUT' ? 'bg-orange-100 text-orange-700 border border-orange-200' :
+                                  item.action === 'API_CALL' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
+                                  'bg-gray-100 text-gray-700 border border-gray-200'
+                                }`}>
+                                  {item.action}
+                                </span>
+                              </td>
+                              <td className="px-3 py-2 font-medium text-primary">{item.method || '—'}</td>
+                              <td className="px-3 py-2 font-medium text-primary max-w-[200px] truncate" title={item.path}>{item.path || '—'}</td>
+                              <td className="px-3 py-2 font-medium text-primary/60">{item.ip_address || '—'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Pagination */}
+                    {sessionTotal > sessionLimit && (
+                      <div className="flex items-center justify-between mt-3 pt-3 border-t border-accent-soft">
+                        <button
+                          onClick={() => setSessionPage(p => Math.max(0, p - 1))}
+                          disabled={sessionPage === 0}
+                          className="px-3 py-1.5 text-xs font-bold rounded-lg border border-accent-soft bg-white text-primary hover:bg-background disabled:opacity-40 cursor-pointer"
+                        >
+                          Previous
+                        </button>
+                        <span className="text-[10px] font-bold text-primary/50">
+                          Page {sessionPage + 1} of {Math.ceil(sessionTotal / sessionLimit)}
+                        </span>
+                        <button
+                          onClick={() => setSessionPage(p => p + 1)}
+                          disabled={(sessionPage + 1) * sessionLimit >= sessionTotal}
+                          className="px-3 py-1.5 text-xs font-bold rounded-lg border border-accent-soft bg-white text-primary hover:bg-background disabled:opacity-40 cursor-pointer"
+                        >
+                          Next
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
           )}
 

@@ -664,11 +664,11 @@ export default function SectionAllocationPage() {
             <span className="text-accent font-black">{selectedEmpIds.length}</span> Employees Selected
           </span>
 
-          <div className="h-4 w-px bg-black/20" />
+          <div className="h-4 w-px bg-white/20" />
 
           <button
             onClick={() => setBulkModal({ open: true, action: 'assign', section: '' })}
-            className="px-3.5 py-1.5 rounded-xl bg-accent text-white font-bold text-xs hover:bg-black transition-all shadow-xs flex items-center gap-1.5"
+            className="px-3.5 py-1.5 rounded-xl bg-accent text-white font-bold text-xs hover:bg-accent-hover transition-all shadow-xs flex items-center gap-1.5"
           >
             <Layers className="w-3.5 h-3.5" />
             <span>Bulk Assign Section</span>
@@ -676,14 +676,14 @@ export default function SectionAllocationPage() {
 
           <button
             onClick={() => setBulkModal({ open: true, action: 'remove', section: '' })}
-            className="px-3.5 py-1.5 rounded-xl bg-rose-600/30 text-rose-200 border border-rose-400/40 font-bold text-xs hover:bg-rose-600 hover:text-black transition-all shadow-xs"
+            className="px-3.5 py-1.5 rounded-xl bg-rose-600/30 text-rose-200 border border-rose-400/40 font-bold text-xs hover:bg-rose-600 hover:text-white transition-all shadow-xs"
           >
             <span>Remove Section</span>
           </button>
 
           <button
             onClick={() => setSelectedEmpIds([])}
-            className="p-1 rounded-lg text-black hover:text-black"
+            className="p-1 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
