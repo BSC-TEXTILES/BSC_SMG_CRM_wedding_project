@@ -69,12 +69,13 @@ async function generateNextQrCodeId() {
 
 // Generate QR Code image (PNG data URL and SVG)
 async function generateQrCodeImages(targetUrl) {
+  const fallbackUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(targetUrl)}`;
   if (!QRCode) {
-    return { qrCodeDataUrl: '', qrCodeSvg: '' };
+    return { qrCodeDataUrl: fallbackUrl, qrCodeSvg: '' };
   }
   try {
     const qrCodeDataUrl = await QRCode.toDataURL(targetUrl, {
-      width: 300,
+      width: 400,
       margin: 2,
       color: {
         dark: '#0B1F35',
@@ -85,7 +86,7 @@ async function generateQrCodeImages(targetUrl) {
 
     const qrCodeSvg = await QRCode.toString(targetUrl, {
       type: 'svg',
-      width: 300,
+      width: 400,
       margin: 2,
       color: {
         dark: '#0B1F35',
@@ -94,10 +95,10 @@ async function generateQrCodeImages(targetUrl) {
       errorCorrectionLevel: 'M'
     });
 
-    return { qrCodeDataUrl, qrCodeSvg };
+    return { qrCodeDataUrl: qrCodeDataUrl || fallbackUrl, qrCodeSvg: qrCodeSvg || '' };
   } catch (err) {
     console.error('[QR Code Generation Error]', err);
-    return { qrCodeDataUrl: null, qrCodeSvg: null };
+    return { qrCodeDataUrl: fallbackUrl, qrCodeSvg: '' };
   }
 }
 
@@ -1130,9 +1131,9 @@ exports.generateLocationQrCodes = async (req, res) => {
         await db.query(`
           INSERT INTO FeedbackQrCode (
             id, qrCodeId, name, description, locationId, locationCode, locationName,
-            sectionId, sectionName, floor, feedbackFormId, targetUrl, qrCodeDataUrl, qrCodeSvg,
+            sectionId, sectionName, feedbackFormId, targetUrl, qrCodeDataUrl, qrCodeSvg,
             status, scanCount, createdBy, createdByName
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, NULL, NULL, 'Ground Floor', NULL, ?, ?, ?, 'active', 0, ?, ?)
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, ?, ?, ?, 'active', 0, ?, ?)
         `, [
           id, qrCodeId, `${location.locationName} Feedback`, `Official Customer Feedback QR for ${location.storeName}`,
           location.id, location.locationCode, location.locationName,
@@ -1271,9 +1272,9 @@ exports.getLocationQrCodes = async (req, res) => {
         await db.query(`
           INSERT INTO FeedbackQrCode (
             id, qrCodeId, name, description, locationId, locationCode, locationName,
-            sectionId, sectionName, floor, feedbackFormId, targetUrl, qrCodeDataUrl, qrCodeSvg,
+            sectionId, sectionName, feedbackFormId, targetUrl, qrCodeDataUrl, qrCodeSvg,
             status, scanCount, createdBy, createdByName
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, NULL, NULL, 'Ground Floor', NULL, ?, ?, ?, 'active', 0, 1, 'System')
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, ?, ?, ?, 'active', 0, 1, 'System')
         `, [
           id, qrCodeId, `${location.locationName} Feedback`, `Official Customer Feedback QR for ${location.storeName}`,
           location.id, location.locationCode, location.locationName,

@@ -1340,16 +1340,14 @@ export const API = {
 
   async getLocationQrCodes(locationId?: number | string) {
     const q = locationId ? `?locationId=${encodeURIComponent(String(locationId))}` : '';
-    const res = await apiFetch(`/feedback-qr/location-codes${q}`);
-    return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
+    return await apiFetch(`/feedback-qr/location-codes${q}`);
   },
 
   async generateLocationQrCodes(locationId?: number | string) {
     const q = locationId ? `?locationId=${encodeURIComponent(String(locationId))}` : '';
-    const res = await apiFetch(`/feedback-qr/generate-locations${q}`, {
+    return await apiFetch(`/feedback-qr/generate-locations${q}`, {
       method: 'POST'
     });
-    return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
   },
 
   async getSectionsForQr(locationId?: number | string) {
