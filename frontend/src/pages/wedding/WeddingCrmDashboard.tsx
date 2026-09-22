@@ -8,6 +8,7 @@ import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../../utils/side
 import WeddingNav from './WeddingNav';
 import { WeddingStats, getStatusBadge } from './weddingTypes';
 import LocationFilterSelect from '../../components/ui/LocationFilterSelect';
+import { useLocationContext } from '../../context/LocationContext';
 import {
   Users,
   UserPlus,
@@ -64,6 +65,8 @@ export default function WeddingCrmDashboard() {
     todayAppointments: 0
   });
 
+  const { currentLocation, isGlobalAdmin: globalAdminFromContext } = useLocationContext();
+
   const [enhancedStats, setEnhancedStats] = useState<any>(null);
   const [locationCards, setLocationCards] = useState<any[]>([]);
   const [pipelineData, setPipelineData] = useState<any>(null);
@@ -71,26 +74,30 @@ export default function WeddingCrmDashboard() {
   const [telecallerPerformance, setTelecallerPerformance] = useState<any[]>([]);
   const [locations, setLocations] = useState<any[]>([]);
   const [selectedLocation, setSelectedLocation] = useState<number | ''>(() => {
+    const sess = Auth.get();
+    const isAdminRole = ['Admin', 'Super Admin', 'system administrator'].includes(sess?.role || '');
+    const isGlobal = isAdminRole && (!sess?.locationId || sess?.isGlobalAdmin === true);
+    if (!isGlobal && sess?.locationId) {
+      return sess.locationId;
+    }
     const saved = typeof localStorage !== 'undefined' ? localStorage.getItem('bsc_selected_location') : null;
     return saved && saved !== 'ALL' ? Number(saved) : '';
   });
 
-  // Listen to global location changes (e.g. from Topbar)
-  useEffect(() => {
-    const handleLocChange = (e: any) => {
-      const locId = e?.detail?.locationId;
-      const parsed = locId && locId !== 'ALL' ? Number(locId) : '';
-      setSelectedLocation(parsed);
-      loadData(parsed);
-    };
-    window.addEventListener('bsc_location_changed', handleLocChange);
-    return () => window.removeEventListener('bsc_location_changed', handleLocChange);
-  }, []);
-
   const loadData = useCallback(async (locId?: number | '') => {
     setLoading(true);
     try {
-      const targetLoc = locId !== undefined && locId !== '' ? locId : undefined;
+      const sess = Auth.get();
+      const isAdminRole = ['Admin', 'Super Admin', 'system administrator'].includes(sess?.role || '');
+      const isGlobal = isAdminRole && (!sess?.locationId || sess?.isGlobalAdmin === true);
+
+      let targetLoc: number | undefined;
+      if (isGlobal) {
+        targetLoc = locId !== undefined && locId !== '' ? Number(locId) : undefined;
+      } else {
+        targetLoc = sess?.locationId ? Number(sess.locationId) : (locId ? Number(locId) : 3);
+      }
+
       const [statsRes, enhRes, locsRes, perfRes, pipeRes, upRes] = await Promise.all([
         API.getWeddingStats(targetLoc).catch(() => null),
         API.getWeddingEnhancedDashboard(targetLoc).catch(() => null),
@@ -103,8 +110,13 @@ export default function WeddingCrmDashboard() {
       if (statsRes?.data) setStats(statsRes.data);
       if (enhRes?.data) {
         setEnhancedStats(enhRes.data);
-        if (Array.isArray(enhRes.data.locationBreakdown)) {
-          setLocationCards(enhRes.data.locationBreakdown);
+        const rawBreakdown = enhRes.data.locationBreakdown || enhRes.data.locationCards || [];
+        if (Array.isArray(rawBreakdown)) {
+          if (!isGlobal && targetLoc) {
+            setLocationCards(rawBreakdown.filter((c: any) => Number(c.location_id || c.id) === targetLoc));
+          } else {
+            setLocationCards(rawBreakdown);
+          }
         }
       }
       if (locsRes?.locations) setLocations(locsRes.locations);
@@ -118,6 +130,26 @@ export default function WeddingCrmDashboard() {
     }
   }, []);
 
+  // Listen to global location changes (e.g. from Topbar)
+  useEffect(() => {
+    const handleLocChange = (e: any) => {
+      const sess = Auth.get();
+      const isAdminRole = ['Admin', 'Super Admin', 'system administrator'].includes(sess?.role || '');
+      const isGlobal = isAdminRole && (!sess?.locationId || sess?.isGlobalAdmin === true);
+      if (!isGlobal && sess?.locationId) {
+        setSelectedLocation(sess.locationId);
+        loadData(sess.locationId);
+        return;
+      }
+      const locId = e?.detail?.locationId;
+      const parsed = locId && locId !== 'ALL' ? Number(locId) : '';
+      setSelectedLocation(parsed);
+      loadData(parsed);
+    };
+    window.addEventListener('bsc_location_changed', handleLocChange);
+    return () => window.removeEventListener('bsc_location_changed', handleLocChange);
+  }, [loadData]);
+
   useEffect(() => {
     if (!Auth.check()) {
       navigate('/login', { replace: true });
@@ -125,18 +157,31 @@ export default function WeddingCrmDashboard() {
     }
     const sess = Auth.get();
     setSession(sess);
-    if (sess?.locationId) {
+    const isAdminRole = ['Admin', 'Super Admin', 'system administrator'].includes(sess?.role || '');
+    const isGlobal = isAdminRole && (!sess?.locationId || sess?.isGlobalAdmin === true);
+    if (!isGlobal && sess?.locationId) {
       setSelectedLocation(sess.locationId);
       loadData(sess.locationId);
     } else {
-      loadData('');
+      const saved = typeof localStorage !== 'undefined' ? localStorage.getItem('bsc_selected_location') : null;
+      const initial = saved && saved !== 'ALL' ? Number(saved) : '';
+      setSelectedLocation(initial);
+      loadData(initial);
     }
   }, [navigate, loadData]);
 
-  const handleLocationChange = (newLoc: number | '') => {
-    setSelectedLocation(newLoc);
-    loadData(newLoc);
-  };
+  const filteredLocationCards = React.useMemo(() => {
+    const isAdminRole = ['Admin', 'Super Admin', 'system administrator'].includes(session?.role || '');
+    const isGlobal = globalAdminFromContext && isAdminRole && (!session?.locationId || session?.isGlobalAdmin === true);
+    if (!isGlobal) {
+      const myLoc = Number(session?.locationId || 3);
+      return locationCards.filter((loc: any) => Number(loc.location_id || loc.id) === myLoc);
+    }
+    if (selectedLocation) {
+      return locationCards.filter((loc: any) => Number(loc.location_id || loc.id) === Number(selectedLocation));
+    }
+    return locationCards;
+  }, [locationCards, session, globalAdminFromContext, selectedLocation]);
 
   return (
     <div className="min-h-screen bg-[#F6F4EF] flex text-[#182033]">
@@ -389,8 +434,8 @@ export default function WeddingCrmDashboard() {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  {locationCards.length > 0 ? (
-                    locationCards.map((loc: any, idx: number) => (
+                  {filteredLocationCards.length > 0 ? (
+                    filteredLocationCards.map((loc: any, idx: number) => (
                       <div
                         key={idx}
                         className="p-3.5 rounded-xl bg-[#F6F4EF] border border-[#DFDDD7] hover:border-[#C9A45C] transition-all"
@@ -398,24 +443,24 @@ export default function WeddingCrmDashboard() {
                         <div className="font-black text-xs text-[#182033] flex items-center justify-between">
                           <span>{loc.location_name || loc.name}</span>
                           <span className="text-[10px] bg-white px-2 py-0.5 rounded-full border border-[#DFDDD7] font-bold">
-                            {loc.customer_count || loc.count || 0} leads
+                            {loc.customer_count || loc.total_customers || loc.count || 0} leads
                           </span>
                         </div>
                         <div className="mt-2 text-xs space-y-1 text-muted">
                           <div className="flex justify-between">
                             <span>Confirmed:</span>
-                            <span className="font-bold text-blue-700">{loc.confirmed_count || 0}</span>
+                            <span className="font-bold text-blue-700">{loc.confirmed_count || loc.purchases || 0}</span>
                           </div>
                           <div className="flex justify-between">
                             <span>Visited / Won:</span>
-                            <span className="font-bold text-emerald-700">{loc.won_count || 0}</span>
+                            <span className="font-bold text-emerald-700">{loc.won_count || loc.visits || 0}</span>
                           </div>
                         </div>
                       </div>
                     ))
                   ) : (
                     <div className="col-span-3 text-center py-6 text-xs text-muted">
-                      No location breakdown data available yet.
+                      No location data available for your assigned scope.
                     </div>
                   )}
                 </div>

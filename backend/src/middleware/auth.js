@@ -188,14 +188,18 @@ const authenticate = async (req, res, next) => {
         let dbStatus = null;
         try {
           const [uRows] = await pool.query(
-            "SELECT `active` FROM `users` WHERE `id` = ? LIMIT 1",
+            "SELECT `active`, `location_id`, `location_code`, `role`, `full_name` FROM `users` WHERE `id` = ? LIMIT 1",
             [userId]
           );
           if (uRows && uRows.length > 0) {
             dbStatus = {
               exists: true,
               active: uRows[0].active === 1 || uRows[0].active === true,
-              locked: false
+              locked: false,
+              locationId: uRows[0].location_id,
+              locationCode: uRows[0].location_code,
+              role: uRows[0].role,
+              fullName: uRows[0].full_name
             };
           }
         } catch (err) {
@@ -238,6 +242,23 @@ const authenticate = async (req, res, next) => {
       } else if (status.locked) {
         res.clearCookie('token', { path: '/' });
         return errorRes(res, 'Account is temporarily locked. Try again later.', [], 401);
+      }
+      if (status.locationId !== undefined) {
+        req.user.locationId = status.locationId;
+      }
+      if (status.locationCode !== undefined) {
+        req.user.locationCode = status.locationCode;
+      }
+      if (status.role) {
+        req.user.role = status.role;
+      }
+      if (status.fullName) {
+        req.user.fullName = status.fullName;
+      }
+      const isAdminRole = ['Admin', 'Super Admin', 'system administrator'].includes(req.user.role);
+      req.user.isGlobalAdmin = isAdminRole && (!req.user.locationId);
+      if (!isAdminRole && req.user.locationId) {
+        req.user.allowedLocations = [req.user.locationId];
       }
     }
 

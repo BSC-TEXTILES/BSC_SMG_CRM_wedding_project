@@ -32,7 +32,8 @@ export default function LocationFilterSelect({
   } = useLocationContext();
 
   const session = Auth.get();
-  const effectiveIsGlobal = isGlobalAdmin || !session?.locationId || ['Admin', 'Super Admin'].includes(session?.role || '');
+  const isAdminRole = ['Admin', 'Super Admin', 'system administrator'].includes(session?.role || '');
+  const effectiveIsGlobal = isGlobalAdmin && isAdminRole && (!session?.locationId || session?.isGlobalAdmin === true);
 
   // Active locations to display in the selector
   const displayLocations: LocationItem[] = (
@@ -61,7 +62,7 @@ export default function LocationFilterSelect({
     const numericVal = rawVal ? Number(rawVal) : '';
 
     if (autoSyncGlobal) {
-      const globalVal = rawVal ? String(rawVal) : 'ALL';
+      const globalVal = rawVal ? String(rawVal) : (effectiveIsGlobal ? 'ALL' : String(session?.locationId || '3'));
       setCurrentLocation(globalVal);
     }
 
@@ -70,16 +71,16 @@ export default function LocationFilterSelect({
     }
   };
 
-  // If user is restricted to a single branch, show fixed lock badge
-  if (!effectiveIsGlobal && !canSwitch && displayLocations.length <= 1) {
-    const singleLoc = displayLocations[0] || MASTER_LOCATIONS.find(l => l.id === (session?.locationId || 2)) || MASTER_LOCATIONS[1];
+  // If user is restricted to a single branch or is not a global admin with multi-location access, show fixed lock badge
+  if (!effectiveIsGlobal && (!canSwitch || displayLocations.length <= 1)) {
+    const singleLoc = displayLocations[0] || MASTER_LOCATIONS.find(l => l.id === (session?.locationId || 3)) || MASTER_LOCATIONS[2];
     return (
       <div
         className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#F6F4EF] border border-[#DFDDD7] text-[#182033] text-xs font-bold shadow-2xs select-none ${className}`}
         title={`Your account is scoped strictly to ${singleLoc.name} (${singleLoc.code})`}
       >
         <MapPin className="w-3.5 h-3.5 text-[#C9A45C] flex-shrink-0" />
-        <span className="truncate max-w-[130px]">{singleLoc.name} ({singleLoc.code})</span>
+        <span className="truncate max-w-[150px]">Location: {singleLoc.name} ({singleLoc.code})</span>
         <Lock className="w-3 h-3 text-[#687080] flex-shrink-0" />
       </div>
     );
@@ -102,7 +103,7 @@ export default function LocationFilterSelect({
         aria-label="Filter by store location"
         className="w-full pl-8 sm:pl-8.5 pr-8 py-2 bg-white hover:bg-[#FDFBF7] focus:bg-white border border-[#DFDDD7] hover:border-[#C9A45C] focus:border-[#C9A45C] focus:ring-1 focus:ring-[#C9A45C] rounded-xl text-xs font-bold text-[#182033] transition-all shadow-2xs cursor-pointer appearance-none outline-none disabled:opacity-60 disabled:cursor-not-allowed min-w-[145px] sm:min-w-[170px]"
       >
-        {showAllOption && (
+        {effectiveIsGlobal && showAllOption && (
           <option value="">
             {allOptionLabel}
           </option>

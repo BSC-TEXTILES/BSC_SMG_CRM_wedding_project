@@ -55,6 +55,12 @@ export default function TelecallerDeskPage() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [locationFilter, setLocationFilter] = useState<number | ''>(() => {
+    const sess = Auth.get();
+    const isAdminRole = ['Admin', 'Super Admin', 'system administrator'].includes(sess?.role || '');
+    const isGlobal = isAdminRole && (!sess?.locationId || sess?.isGlobalAdmin === true);
+    if (!isGlobal && sess?.locationId) {
+      return sess.locationId;
+    }
     const saved = typeof localStorage !== 'undefined' ? localStorage.getItem('bsc_selected_location') : null;
     return saved && saved !== 'ALL' ? Number(saved) : '';
   });
@@ -63,6 +69,13 @@ export default function TelecallerDeskPage() {
   // Listen to global location changes (e.g. from Topbar)
   useEffect(() => {
     const handleLocChange = (e: any) => {
+      const sess = Auth.get();
+      const isAdminRole = ['Admin', 'Super Admin', 'system administrator'].includes(sess?.role || '');
+      const isGlobal = isAdminRole && (!sess?.locationId || sess?.isGlobalAdmin === true);
+      if (!isGlobal && sess?.locationId) {
+        setLocationFilter(sess.locationId);
+        return;
+      }
       const locId = e?.detail?.locationId;
       const parsed = locId && locId !== 'ALL' ? Number(locId) : '';
       setLocationFilter(parsed);
@@ -95,7 +108,9 @@ export default function TelecallerDeskPage() {
     }
     const sess = Auth.get();
     setSession(sess);
-    if (sess?.locationId && !sess.isGlobalAdmin) {
+    const isAdminRole = ['Admin', 'Super Admin', 'system administrator'].includes(sess?.role || '');
+    const isGlobal = isAdminRole && (!sess?.locationId || sess?.isGlobalAdmin === true);
+    if (!isGlobal && sess?.locationId) {
       setLocationFilter(sess.locationId);
     }
     API.getLocations().then(res => {

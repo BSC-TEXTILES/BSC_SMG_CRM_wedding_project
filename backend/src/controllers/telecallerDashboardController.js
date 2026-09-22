@@ -1,4 +1,4 @@
-const { pool } = require('../config/db');
+const pool = require('../config/db');
 const { successRes, errorRes } = require('../utils/response');
 const { logAction } = require('../utils/logger');
 const { getLocationFilter } = require('../middleware/auth');

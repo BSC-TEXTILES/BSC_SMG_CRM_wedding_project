@@ -2683,13 +2683,41 @@ class WeddingController {
 
       const rawParam = req.query?.locationId || req.query?.location_id || req.headers?.['x-location-id'] || req.body?.locationId || req.body?.location_id;
       const requestedLoc = parseTargetLocation(rawParam);
-      const activeLocId = requestedLoc || req.user?.locationId;
+
+      const isAdminRole = ['Admin', 'Super Admin', 'system administrator'].includes(req.user?.role);
+      const isGlobal = isAdminRole && (!req.user?.locationId || req.user?.isGlobalAdmin);
 
       let locCardsWhere = '';
       let locCardsParams = [];
-      if (activeLocId) {
-        locCardsWhere = 'WHERE l.id = ?';
-        locCardsParams.push(activeLocId);
+
+      if (isGlobal) {
+        if (requestedLoc) {
+          locCardsWhere = 'WHERE l.id = ?';
+          locCardsParams.push(requestedLoc);
+        }
+      } else {
+        let allowed = [];
+        if (Array.isArray(req.user?.allowedLocations) && req.user.allowedLocations.length > 0) {
+          allowed = req.user.allowedLocations;
+        } else if (req.user?.locationId) {
+          allowed = [req.user.locationId];
+        }
+
+        if (allowed.length === 1) {
+          locCardsWhere = 'WHERE l.id = ?';
+          locCardsParams.push(allowed[0]);
+        } else if (allowed.length > 1) {
+          if (requestedLoc && allowed.includes(requestedLoc)) {
+            locCardsWhere = 'WHERE l.id = ?';
+            locCardsParams.push(requestedLoc);
+          } else {
+            const placeholders = allowed.map(() => '?').join(', ');
+            locCardsWhere = `WHERE l.id IN (${placeholders})`;
+            locCardsParams.push(...allowed);
+          }
+        } else {
+          locCardsWhere = 'WHERE 1 = 0';
+        }
       }
 
       const [locRows] = await pool.query(`
@@ -2709,7 +2737,7 @@ class WeddingController {
       `, locCardsParams);
       const locationCards = locRows || [];
 
-      return successRes(res, { stats, locationCards }, 'Enhanced dashboard stats fetched');
+      return successRes(res, { stats, locationCards, locationBreakdown: locationCards }, 'Enhanced dashboard stats fetched');
     } catch (err) {
       console.error('[WeddingController.getEnhancedDashboardStats Error]', err);
       return errorRes(res, 'Failed to fetch enhanced dashboard', [err.message], 500);

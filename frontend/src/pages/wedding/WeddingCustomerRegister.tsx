@@ -59,6 +59,12 @@ export default function WeddingCustomerRegister() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [locationFilter, setLocationFilter] = useState<number | ''>(() => {
+    const sess = Auth.get();
+    const isAdminRole = ['Admin', 'Super Admin', 'system administrator'].includes(sess?.role || '');
+    const isGlobal = isAdminRole && (!sess?.locationId || sess?.isGlobalAdmin === true);
+    if (!isGlobal && sess?.locationId) {
+      return sess.locationId;
+    }
     const saved = typeof localStorage !== 'undefined' ? localStorage.getItem('bsc_selected_location') : null;
     return saved && saved !== 'ALL' ? Number(saved) : '';
   });
@@ -70,6 +76,14 @@ export default function WeddingCustomerRegister() {
   // Listen to global location changes (e.g. from Topbar)
   useEffect(() => {
     const handleLocChange = (e: any) => {
+      const sess = Auth.get();
+      const isAdminRole = ['Admin', 'Super Admin', 'system administrator'].includes(sess?.role || '');
+      const isGlobal = isAdminRole && (!sess?.locationId || sess?.isGlobalAdmin === true);
+      if (!isGlobal && sess?.locationId) {
+        setLocationFilter(sess.locationId);
+        setCurrentPage(1);
+        return;
+      }
       const locId = e?.detail?.locationId;
       const parsed = locId && locId !== 'ALL' ? Number(locId) : '';
       setLocationFilter(parsed);
@@ -129,12 +143,17 @@ export default function WeddingCustomerRegister() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
+      const sess = Auth.get();
+      const isAdminRole = ['Admin', 'Super Admin', 'system administrator'].includes(sess?.role || '');
+      const isGlobal = isAdminRole && (!sess?.locationId || sess?.isGlobalAdmin === true);
+      const effectiveLoc = !isGlobal ? (sess?.locationId || 3) : (locationFilter !== '' ? locationFilter : undefined);
+
       const params: any = {
         limit: pageSize,
         offset: (currentPage - 1) * pageSize,
         search: searchQuery.trim() || undefined,
         status: statusFilter || undefined,
-        location_id: locationFilter !== '' ? locationFilter : undefined,
+        location_id: effectiveLoc,
         telecaller_id: telecallerFilter || undefined,
         date_filter: dateFilter !== 'all' ? dateFilter : undefined,
         from_date: fromDate || undefined,
@@ -144,7 +163,7 @@ export default function WeddingCustomerRegister() {
       const [custRes, locsRes, callersRes] = await Promise.all([
         API.getWeddingCustomers(params),
         API.getLocations().catch(() => ({ locations: [] })),
-        API.getWeddingTelecallers(locationFilter !== '' ? locationFilter : undefined).catch(() => ({ telecallers: [] }))
+        API.getWeddingTelecallers(effectiveLoc).catch(() => ({ telecallers: [] }))
       ]);
 
       if (custRes?.customers) {
@@ -167,7 +186,9 @@ export default function WeddingCustomerRegister() {
     }
     const sess = Auth.get();
     setSession(sess);
-    if (sess?.locationId && !sess.isGlobalAdmin) {
+    const isAdminRole = ['Admin', 'Super Admin', 'system administrator'].includes(sess?.role || '');
+    const isGlobal = isAdminRole && (!sess?.locationId || sess?.isGlobalAdmin === true);
+    if (!isGlobal && sess?.locationId) {
       setLocationFilter(sess.locationId);
     }
     loadData();

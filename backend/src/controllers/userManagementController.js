@@ -438,8 +438,8 @@ const updateUser = async (req, res) => {
       await db.query(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, params);
     }
 
-    // Status changes must hit live sessions immediately
-    if (active !== undefined) {
+    // Status, location, and role changes must hit live sessions immediately
+    if (active !== undefined || scopeProvided || role !== undefined) {
       invalidateUserStatusCache(id);
     }
 
