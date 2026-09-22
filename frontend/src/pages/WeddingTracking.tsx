@@ -85,7 +85,9 @@ export default function WeddingTracking() {
       <header className="bg-[#3D2B1F] p-4 sm:p-5 shadow-lg border-b border-[#D4A58A]/30">
         <div className="max-w-3xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="BSC Logo" className="w-11 h-11 object-contain rounded-xl bg-white p-1 shadow-md" />
+            <div className="w-13 h-10 rounded-xl bg-white p-1 shadow-md border border-[#D4A58A]/30 flex items-center justify-center flex-shrink-0">
+              <img src="/logo.png" alt="BSC Logo" className="max-h-full max-w-full object-contain" />
+            </div>
             <div>
               <h1 className="font-extrabold text-base sm:text-lg text-white leading-tight">BSC Wedding Tracking</h1>
               <div className="text-[10px] text-[#D4A58A] font-bold uppercase tracking-widest mt-0.5">

@@ -245,25 +245,47 @@ html, #root, * {
 }
 
 /* Modern Form Controls */
-.input-modern, .select-modern, .textarea-modern {
-  width: 100%;
-  padding: 10px 14px;
-  border-radius: 10px;
-  border: 1px solid var(--color-border);
-  background-color: #FFFFFF;
-  color: var(--color-text);
-  font-weight: 600;
-  font-size: 13px;
-  transition: all 0.15s ease-in-out;
+@layer components {
+  .input-modern, .select-modern, .textarea-modern {
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--color-border);
+    background-color: #FFFFFF;
+    color: var(--color-text);
+    font-weight: 600;
+    font-size: 13px;
+    transition: all 0.15s ease-in-out;
+  }
+  .input-modern:focus, .select-modern:focus, .textarea-modern:focus {
+    outline: none;
+    border-color: var(--color-gold);
+    background-color: #FFFFFF;
+    box-shadow: 0 0 0 3px rgba(201, 164, 92, 0.2);
+  }
+  .input-modern::placeholder, .textarea-modern::placeholder {
+    color: var(--color-text-secondary);
+  }
 }
-.input-modern:focus, .select-modern:focus, .textarea-modern:focus {
-  outline: none;
-  border-color: var(--color-gold);
-  background-color: #FFFFFF;
-  box-shadow: 0 0 0 3px rgba(201, 164, 92, 0.2);
-}
-.input-modern::placeholder, .textarea-modern::placeholder {
-  color: var(--color-text-secondary);
+
+/* Master Form Icon Offset Protection — Never Overlap Input Text with Icons */
+input[class*="pl-7"], select[class*="pl-7"], .input-modern[class*="pl-7"] { padding-left: 1.75rem !important; }
+input[class*="pl-8"], select[class*="pl-8"], .input-modern[class*="pl-8"] { padding-left: 2rem !important; }
+input[class*="pl-9"], select[class*="pl-9"], .input-modern[class*="pl-9"] { padding-left: 2.25rem !important; }
+input[class*="pl-10"], select[class*="pl-10"], .input-modern[class*="pl-10"] { padding-left: 2.5rem !important; }
+input[class*="pl-11"], select[class*="pl-11"], .input-modern[class*="pl-11"] { padding-left: 2.75rem !important; }
+input[class*="pl-12"], select[class*="pl-12"], .input-modern[class*="pl-12"] { padding-left: 3rem !important; }
+
+input[class*="pr-8"], select[class*="pr-8"], .input-modern[class*="pr-8"] { padding-right: 2rem !important; }
+input[class*="pr-9"], select[class*="pr-9"], .input-modern[class*="pr-9"] { padding-right: 2.25rem !important; }
+input[class*="pr-10"], select[class*="pr-10"], .input-modern[class*="pr-10"] { padding-right: 2.5rem !important; }
+input[class*="pr-11"], select[class*="pr-11"], .input-modern[class*="pr-11"] { padding-right: 2.75rem !important; }
+input[class*="pr-12"], select[class*="pr-12"], .input-modern[class*="pr-12"] { padding-right: 3rem !important; }
+
+/* Pointer events fix for icons inside form fields */
+.relative > svg.pointer-events-none,
+.relative > svg[class*="absolute"]:first-child {
+  pointer-events: none;
 }
 
 /* Modern Buttons — Master Color System */

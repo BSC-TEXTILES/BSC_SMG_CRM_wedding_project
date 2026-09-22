@@ -226,22 +226,28 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
               <Menu className="w-5 h-5 text-[#C9A45C]" />
             </button>
             {/* ONLY LOGO */}
-            <img 
-              src="/logo.png" 
-              alt="BSC Logo" 
-              className="w-9 h-9 object-contain rounded-xl bg-white p-1 shadow-md border border-[#C9A45C]/40 hover:scale-105 transition-transform cursor-pointer"
+            <div 
+              className="w-10 h-9 rounded-xl bg-white p-1 shadow-md border border-[#C9A45C]/40 hover:scale-105 transition-transform cursor-pointer flex items-center justify-center flex-shrink-0"
               onClick={handleToggle}
               title="BSC Logo - Click to expand navigation"
-            />
+            >
+              <img 
+                src="/logo.png" 
+                alt="BSC Logo" 
+                className="max-h-full max-w-full object-contain"
+              />
+            </div>
           </div>
         ) : (
           <div className="p-3.5 border-b border-[#C9A45C]/15 flex items-center justify-between min-h-[64px] w-full">
             <div className="flex items-center gap-2.5 min-w-0">
-              <img 
-                src="/logo.png" 
-                alt="BSC Logo" 
-                className="w-10 h-10 object-contain rounded-xl bg-white p-1 shadow-md border border-[#C9A45C]/30 flex-shrink-0" 
-              />
+              <div className="w-12 h-10 rounded-xl bg-white p-1 shadow-md border border-[#C9A45C]/30 flex items-center justify-center flex-shrink-0">
+                <img 
+                  src="/logo.png" 
+                  alt="BSC Logo" 
+                  className="max-h-full max-w-full object-contain" 
+                />
+              </div>
               <div className="min-w-0">
                 <div className="font-extrabold text-sm text-white tracking-wide leading-tight truncate">BSC EXCLUSIVE</div>
                 <div className="text-[9px] font-bold uppercase tracking-widest mt-0.5 flex items-center gap-1 truncate text-[#E4C982]">

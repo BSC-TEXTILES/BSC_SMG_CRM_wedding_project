@@ -260,7 +260,9 @@ export default function CandidateEntryPage() {
       <header className="bg-primary p-4 sm:p-5 text-white shadow-lg sticky top-0 z-30 border-b border-accent/30">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="BSC Logo" className="w-11 h-11 object-contain rounded-xl bg-white p-1 shadow-md border border-black/20" />
+            <div className="w-13 h-10 rounded-xl bg-white p-1 shadow-md border border-[#C9A45C]/30 flex items-center justify-center flex-shrink-0">
+              <img src="/logo.png" alt="BSC Logo" className="max-h-full max-w-full object-contain" />
+            </div>
             <div>
               <h1 className="font-extrabold text-base sm:text-lg leading-tight tracking-tight">BSC Candidate Registration</h1>
               <div className="text-[10px] text-accent font-bold uppercase tracking-widest mt-0.5">

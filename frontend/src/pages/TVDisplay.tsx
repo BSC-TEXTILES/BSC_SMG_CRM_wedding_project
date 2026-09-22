@@ -162,7 +162,9 @@ export default function TVDisplay() {
       {/* Top Monitor Header */}
       <div className="flex items-center justify-between border-b border-black/15 pb-6">
         <div className="flex items-center gap-4">
-          <img src="/logo.png" alt="Logo" className="w-14 h-14 bg-white p-1.5 rounded-2xl shadow-lg border border-black/20" />
+          <div className="w-16 h-12 bg-white p-1 rounded-2xl shadow-lg border border-black/20 flex items-center justify-center flex-shrink-0">
+            <img src="/logo.png" alt="Logo" className="max-h-full max-w-full object-contain" />
+          </div>
           <div>
             <h1 className="text-3xl font-black tracking-tight text-white drop-shadow-md">BSC EXCLUSIVE DAVANAGERE</h1>
             <div className="text-xs font-extrabold text-accent uppercase tracking-widest mt-0.5 flex items-center gap-2">

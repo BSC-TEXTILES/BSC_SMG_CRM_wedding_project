@@ -230,11 +230,13 @@ export default function LoginPage() {
 
       <div className="w-full max-w-md bg-white rounded-3xl overflow-hidden shadow-2xl border border-accent-soft animate-fade-in">
         {/* Card Header */}
-        <div className="bg-[#101C36] p-6 flex items-center gap-4 border-b border-[#C9A45C]/30 shadow-sm">
-          <img src="/logo.png" alt="BSC Logo" className="w-12 h-12 object-contain rounded-2xl bg-white p-1.5 shadow-md border border-[#C9A45C]/30" />
-          <div>
-            <h2 className="text-lg font-black text-white leading-tight tracking-tight">Enterprise Operations Portal</h2>
-            <div className="text-[11px] text-[#E5C378] font-extrabold uppercase tracking-wider mt-0.5">
+        <div className="bg-[#101C36] p-5 sm:p-6 flex items-center gap-3.5 border-b border-[#C9A45C]/30 shadow-sm">
+          <div className="w-14 h-12 rounded-2xl bg-white p-1 shadow-md border border-[#C9A45C]/30 flex items-center justify-center flex-shrink-0">
+            <img src="/logo.png" alt="BSC Logo" className="max-h-full max-w-full object-contain" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h2 className="text-lg font-black text-white leading-tight tracking-tight truncate">Enterprise Operations Portal</h2>
+            <div className="text-[11px] text-[#E5C378] font-extrabold uppercase tracking-wider mt-0.5 truncate">
               BSC EXCLUSIVE · MULTI-LOCATION SYSTEM
             </div>
           </div>
@@ -295,7 +297,7 @@ export default function LoginPage() {
               Username / Email
             </label>
             <div className="relative">
-              <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-secondary" />
+              <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-secondary pointer-events-none" />
               <input
                 type="text"
                 name="username"
@@ -305,7 +307,7 @@ export default function LoginPage() {
                 onChange={(e) => setUsername(e.target.value)}
                 onBlur={() => { if (username.trim()) checkServerLock(username.trim()); }}
                 placeholder="Enter your username or email"
-                className="input-modern w-full pl-10 pr-4 text-xs font-semibold"
+                className="input-modern w-full !pl-10 pr-4 text-xs font-semibold"
                 required
               />
             </div>
@@ -316,7 +318,7 @@ export default function LoginPage() {
               Password
             </label>
             <div className="relative">
-              <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-secondary" />
+              <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-secondary pointer-events-none" />
               <input
                 type={showPassword ? "text" : "password"}
                 name="password"
@@ -325,13 +327,13 @@ export default function LoginPage() {
                 disabled={isLocked && lockRemainingSeconds > 0}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••••"
-                className="input-modern w-full pl-10 pr-10 text-xs font-semibold"
+                className="input-modern w-full !pl-10 !pr-10 text-xs font-semibold"
                 required
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary transition-colors focus:outline-none"
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary transition-colors focus:outline-none cursor-pointer"
                 aria-label={showPassword ? "Hide password" : "Show password"}
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -345,7 +347,7 @@ export default function LoginPage() {
             </label>
             <div className="flex items-center gap-2.5">
               <div className="relative flex-1">
-                <Hash className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-secondary" />
+                <Hash className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-secondary pointer-events-none" />
                 <input
                   type="text"
                   name="captcha"
@@ -359,7 +361,7 @@ export default function LoginPage() {
                   }}
                   placeholder={`Enter ${codeLength} digits`}
                   inputMode="numeric"
-                  className="input-modern w-full pl-10 pr-3 text-xs font-bold tracking-widest"
+                  className="input-modern w-full !pl-10 pr-3 text-xs font-bold tracking-widest"
                   required
                 />
               </div>

@@ -41,11 +41,13 @@ export default function ForgotPasswordPage() {
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 sm:p-6">
         <ToastContainer />
         <div className="w-full max-w-md bg-white rounded-3xl overflow-hidden shadow-2xl border border-accent-soft animate-fade-in">
-          <div className="bg-primary p-6 flex items-center gap-4 border-b border-accent/30">
-            <img src="/logo.png" alt="BSC Logo" className="w-12 h-12 object-contain rounded-2xl bg-white p-1.5 shadow-md border border-accent/30" />
-            <div>
-              <h2 className="text-lg font-black text-primary leading-tight tracking-tight">Password Reset</h2>
-              <div className="text-[10px] text-accent font-bold uppercase tracking-widest mt-0.5">
+          <div className="bg-[#101C36] p-5 sm:p-6 flex items-center gap-3.5 border-b border-[#C9A45C]/30 shadow-sm">
+            <div className="w-14 h-12 rounded-2xl bg-white p-1 shadow-md border border-[#C9A45C]/30 flex items-center justify-center flex-shrink-0">
+              <img src="/logo.png" alt="BSC Logo" className="max-h-full max-w-full object-contain" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-lg font-black text-white leading-tight tracking-tight truncate">Password Reset</h2>
+              <div className="text-[11px] text-[#E5C378] font-extrabold uppercase tracking-wider mt-0.5 truncate">
                 BSC EXCLUSIVE · MULTI-LOCATION SYSTEM
               </div>
             </div>
@@ -87,11 +89,13 @@ export default function ForgotPasswordPage() {
 
       <div className="w-full max-w-md bg-white rounded-3xl overflow-hidden shadow-2xl border border-accent-soft animate-fade-in">
         {/* Card Header */}
-        <div className="bg-[#101C36] p-6 flex items-center gap-4 border-b border-[#C9A45C]/30 shadow-sm">
-          <img src="/logo.png" alt="BSC Logo" className="w-12 h-12 object-contain rounded-2xl bg-white p-1.5 shadow-md border border-[#C9A45C]/30" />
-          <div>
-            <h2 className="text-lg font-black text-white leading-tight tracking-tight">Password Reset</h2>
-            <div className="text-[11px] text-[#E5C378] font-extrabold uppercase tracking-wider mt-0.5">
+        <div className="bg-[#101C36] p-5 sm:p-6 flex items-center gap-3.5 border-b border-[#C9A45C]/30 shadow-sm">
+          <div className="w-14 h-12 rounded-2xl bg-white p-1 shadow-md border border-[#C9A45C]/30 flex items-center justify-center flex-shrink-0">
+            <img src="/logo.png" alt="BSC Logo" className="max-h-full max-w-full object-contain" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h2 className="text-lg font-black text-white leading-tight tracking-tight truncate">Password Reset</h2>
+            <div className="text-[11px] text-[#E5C378] font-extrabold uppercase tracking-wider mt-0.5 truncate">
               BSC EXCLUSIVE · MULTI-LOCATION SYSTEM
             </div>
           </div>
@@ -117,7 +121,7 @@ export default function ForgotPasswordPage() {
               Email Address
             </label>
             <div className="relative">
-              <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-primary" />
+              <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-primary pointer-events-none" />
               <input
                 type="email"
                 name="email"
@@ -125,7 +129,7 @@ export default function ForgotPasswordPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your registered email"
-                className="w-full text-xs font-semibold pl-10 pr-4 py-3 rounded-xl border border-accent-soft bg-white text-primary placeholder-primary/60 focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all shadow-xs"
+                className="input-modern w-full !pl-10 pr-4 text-xs font-semibold"
                 required
               />
             </div>
