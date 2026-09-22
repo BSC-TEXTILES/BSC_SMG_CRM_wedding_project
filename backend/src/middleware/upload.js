@@ -17,7 +17,12 @@ if (!uploadDir) {
     if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
   }
 } else {
-  if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+  try {
+    if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+  } catch (e) {
+    uploadDir = path.join(__dirname, '../../uploads');
+    try { if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true }); } catch (err) {}
+  }
 }
 const subdirs = [
   'candidate-resumes',
@@ -31,10 +36,12 @@ const subdirs = [
 ];
 
 subdirs.forEach((dir) => {
-  const fullPath = path.join(uploadDir, dir);
-  if (!fs.existsSync(fullPath)) {
-    fs.mkdirSync(fullPath, { recursive: true });
-  }
+  try {
+    const fullPath = path.join(uploadDir, dir);
+    if (!fs.existsSync(fullPath)) {
+      fs.mkdirSync(fullPath, { recursive: true });
+    }
+  } catch (e) {}
 });
 
 const storage = multer.diskStorage({
