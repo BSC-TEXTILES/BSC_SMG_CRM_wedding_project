@@ -15,6 +15,7 @@ interface DashboardLayoutProps {
   subtitle?: string;
   /** Optional dynamic sub-crumb(s) under the route-derived page crumb. */
   breadcrumbs?: BreadcrumbCrumb[] | null;
+  hideBreadcrumbs?: boolean;
   rightElement?: React.ReactNode;
 }
 
@@ -23,6 +24,7 @@ export default function DashboardLayout({
   title,
   subtitle,
   breadcrumbs = [],
+  hideBreadcrumbs,
   rightElement
 }: DashboardLayoutProps) {
   const navigate = useNavigate();
@@ -54,6 +56,7 @@ export default function DashboardLayout({
         <Topbar
           title={title}
           breadcrumbs={breadcrumbs}
+          hideBreadcrumbs={hideBreadcrumbs}
           session={session}
           onMenuClick={() => setSidebarOpen(true)}
           rightElement={rightElement}

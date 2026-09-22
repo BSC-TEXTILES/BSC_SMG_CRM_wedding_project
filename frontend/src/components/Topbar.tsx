@@ -18,12 +18,13 @@ interface TopbarProps {
    * the current route automatically, so never pass them here.
    */
   breadcrumbs?: BreadcrumbCrumb[] | null;
+  hideBreadcrumbs?: boolean;
   session: UserSession | null;
   onMenuClick: () => void;
   rightElement?: React.ReactNode;
 }
 
-export default function Topbar({ title, breadcrumbs, session, onMenuClick, rightElement }: TopbarProps) {
+export default function Topbar({ title, breadcrumbs, hideBreadcrumbs, session, onMenuClick, rightElement }: TopbarProps) {
   const crumbs = useBreadcrumbs(breadcrumbs);
   const [clock, setClock] = useState<string>('');
   const [unreadCount, setUnreadCount] = useState(0);
@@ -177,9 +178,11 @@ export default function Topbar({ title, breadcrumbs, session, onMenuClick, right
 
         {/* ── Row 2: Route-derived breadcrumb trail (own row → can never
                overlap top navigation, search, notifications or profile) ── */}
-        <div className="px-2 sm:px-3 lg:px-5 pb-1.5 bg-[#F6F4EF] border-t border-[#DFDDD7]">
-          <Breadcrumbs items={crumbs} />
-        </div>
+        {!hideBreadcrumbs && (
+          <div className="px-2 sm:px-3 lg:px-5 pb-1.5 bg-[#F6F4EF] border-t border-[#DFDDD7]">
+            <Breadcrumbs items={crumbs} />
+          </div>
+        )}
       </header>
 
       {/* Drawers & Modals */}

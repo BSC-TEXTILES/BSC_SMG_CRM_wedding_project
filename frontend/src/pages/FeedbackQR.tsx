@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Link } from 'react-router-dom';
 import DashboardLayout from '../components/layouts/DashboardLayout';
 import {
   QrCode,
@@ -13,7 +12,6 @@ import {
   Globe,
   FileText,
   RefreshCw,
-  SlidersHorizontal,
   Store,
   Layers,
   CheckCircle2,
@@ -308,33 +306,7 @@ export default function FeedbackQR() {
     <DashboardLayout 
       title="Location-Based Feedback QR Codes" 
       subtitle="POS & Customer Checkout QR Displays — Belagavi, Davanagere & Shivamogga"
-      rightElement={
-        <div className="flex items-center gap-2.5">
-          <Link
-            to="/feedback-qr-management"
-            className="btn-secondary"
-          >
-            <SlidersHorizontal className="w-3.5 h-3.5 text-accent" />
-            <span className="hidden sm:inline">Advanced QR Management</span>
-            <span className="sm:hidden">Manage</span>
-          </Link>
-          {isGlobalAdmin && (
-            <button
-              onClick={handleGenerateAll}
-              disabled={generating}
-              className="btn-gold inline-flex items-center gap-2 text-xs py-2 px-4 shadow-md disabled:opacity-50 cursor-pointer"
-              title="Generate or update distinct QR codes for all locations"
-            >
-              {generating ? (
-                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <Sparkles className="w-3.5 h-3.5" />
-              )}
-              <span>{generating ? 'Refreshing...' : 'Sync QR Codes'}</span>
-            </button>
-          )}
-        </div>
-      }
+      hideBreadcrumbs={true}
     >
       <div className="max-w-7xl mx-auto space-y-6">
 
