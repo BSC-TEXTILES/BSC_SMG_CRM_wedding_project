@@ -7,7 +7,7 @@
     "dev": "cd client && npm run dev",
     "build": "node build.js",
     "start": "node index.js",
-    "postinstall": "npm run build"
+    "postinstall": "node build.js || (echo 'Build failed' && exit 1)"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
