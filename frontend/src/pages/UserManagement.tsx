@@ -156,9 +156,7 @@ export default function UserManagementPage() {
   const [formDesignation, setFormDesignation] = useState('');
   const [formEmployeeId, setFormEmployeeId] = useState('');
   const [formRole, setFormRole] = useState('HR');
-  const [formLocationId, setFormLocationId] = useState<string>('2');
   const [formLocationIds, setFormLocationIds] = useState<string[]>(['2']);
-  const [formAllLocations, setFormAllLocations] = useState<boolean>(false);
   const [formSelectedModules, setFormSelectedModules] = useState<string[]>([]);
   const [formSection, setFormSection] = useState('');
   const [formJoiningDate, setFormJoiningDate] = useState('');
@@ -1334,9 +1332,6 @@ export default function UserManagementPage() {
                     value={formRole}
                     onChange={e => {
                       setFormRole(e.target.value);
-                      // Admin roles default to global access — still adjustable below
-                      if (['Admin', 'Super Admin'].includes(e.target.value)) setFormAllLocations(true);
-                      else setFormAllLocations(false);
                     }}
                     className="w-full px-3 py-2 text-xs rounded-xl border border-accent/30 focus:outline-none focus:ring-2 focus:ring-accent/50 text-primary font-bold bg-white"
                   >

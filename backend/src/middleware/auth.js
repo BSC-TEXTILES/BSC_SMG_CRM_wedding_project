@@ -312,7 +312,6 @@ const MODULE_TO_ROUTE_PATTERNS = {
   mcheck_audit: ['/mcheck', '/mcheck-audit', '/mcheck_audit'],
   user_management: ['/user', '/users', '/user-management', '/permissions'],
   system_admin: ['/system-admin', '/system', '/admin'],
-  main_crm: ['/main-crm', '/crm'],
   batch_plan: ['/batch-plan', '/batch', '/batches'],
   doj_desk: ['/doj-desk', '/doj', '/employees/not-joined'],
   joining_desk: ['/joining-desk', '/joining', '/employees/joined-store'],

@@ -33,7 +33,6 @@
 
 **Part III — Dashboards**
 16. Admin / HR / Manager / Greeter Dashboard (one page, four views)
-17. Main CRM Dashboard
 18. Where Every Metric Comes From
 
 **Part IV — Wedding CRM**
@@ -166,7 +165,7 @@ These roles are actually implemented in the portal's access-control code. The fi
 | **Wedding Collection Manager** | Wedding CRM and operations, dashboard, registration, footfall, diverts, broadcast. |
 | **CRM Manager** | Wedding CRM operations suite: CRM, registration, telecaller desk, dashboard, footfall, broadcast. |
 | **CRM Executive** | Same suite as CRM Manager minus broadcast. |
-| **Data Analyst** | Read-oriented: dashboards, wedding CRM & operations, MCheck reports, Main CRM / regional analytics. |
+| **Data Analyst** | Read-oriented: dashboards, wedding CRM & operations, MCheck reports, regional analytics. |
 | **VM (Visual Merchandiser)** | VM Checklist, dashboard, footfall, broadcast. |
 | **Greeter** | Entrance kiosk duties: Footfall, Greeter Kiosk, Feedback QR display/submission pages, wedding registration. Greeters land on the greeter view of the dashboard. |
 | **Recruiter** | Candidate CRM, dashboard, broadcast, applicant registration link. |
@@ -368,7 +367,7 @@ Opened from the "Configure Module Access Matrix" action. Title: **"Access Contro
 - A "Selected: {n}" pill (or "{n} / {max} max limit") counts modules; a filter box "Filter modules…" narrows the list. Over the limit: `User is restricted to a maximum of {max} modules (currently selected: {n})`.
 - Footer note: *"Changes apply instantly across current and subsequent sessions."* Buttons: **Save Matrix Permissions** / Cancel.
 
-**Gated modules** (the complete list): dashboard, wedding_crm, telecaller_desk, telecaller_dashboard, wedding_registration, wedding_operations, main_crm, candidates, offer, openings, employees, dept_hiring, section_allocation, attendance, footfall, feedback_collection, feedback_list, feedback_qr, feedback_public, divert, pm_view, vm_checklist, daily_mcheck, mcheck_reports, mcheck_history, batch_plan, doj_desk, joining_desk, greyhr, regional_analytics, mcheck_audit, broadcast, settings, user_management, system_admin, greeter, tv, candidate_apply, telecaller workspace items.
+**Gated modules** (the complete list): dashboard, wedding_crm, telecaller_desk, telecaller_dashboard, wedding_registration, wedding_operations, candidates, offer, openings, employees, dept_hiring, section_allocation, attendance, footfall, feedback_collection, feedback_list, feedback_qr, feedback_public, divert, pm_view, vm_checklist, daily_mcheck, mcheck_reports, mcheck_history, batch_plan, doj_desk, joining_desk, greyhr, regional_analytics, mcheck_audit, broadcast, settings, user_management, system_admin, greeter, tv, candidate_apply, telecaller workspace items.
 
 Admin and Super Admin bypass the matrix entirely — they always have full access and it cannot be narrowed.
 
@@ -421,14 +420,6 @@ Banners: "Admin Dashboard — Executive & Workforce Operations" (Executive store
 **Panels:** "Workforce Distribution by Department" (bar list, "{n} Staff ({pct}%)", link "View Full Employee Register") · "Store Operations Quick Links" (Feedback Collection, Feedback Call Queue, Employee Register, Section Allocation, Staff Attendance, Cash Settlement Desk, Candidate Applicants) · greeters instead see "Greeter Visitor Management Desks" (8 tiles including VM Checklist Audit and Live TV Monitor Screen) · "Active Store Staff Directory" table — Emp/App ID · Employee Name · Designation · Department · Section · Joining Date · Status — with search "Search employee by name, ID, section…", pagination (6/page) and row-click to open the employee profile modal.
 
 Greeter-role users who reach this page are redirected to `/footfall` — their working home is the greeter kiosk flow (the greeter dashboard view is served inside this same page for the roles above).
-
-## 17. Main CRM Dashboard
-
-**Route:** `/main-crm` (key `main_crm`; `/regional-analytics` redirects here). The master list of **public wedding registrations** (the customer-facing wizard in §30), for Admins/Managers/CRM roles/Data Analysts:
-
-- Global search, per-row **detail drawer** (bride & groom, family counts, functions, shopping requirements, "Master Artisan / Pit Loom Spec" provenance rows, "Inspected By" line).
-- Columns: **Registration ID · Bride & Groom Family · Contact Details · Muhurtham Date · Preferred Textile Collection · Est. Budget · Dedicated Stylist**; footer "Rows per page: 10 • Showing Page {p} of {q}".
-- Actions call the wedding-registration endpoints: view, update status, re-send confirmation email (`Confirmation email sent successfully.` / `This registration has no email address on file.`), and export.
 
 ## 18. Where Every Metric Comes From
 
@@ -644,7 +635,7 @@ Result panel: **"Import Completed — Inserted: {n} customers / Duplicates Skipp
 
 Client/server validation mirrors §22 plus future-date rules for wedding/shopping dates (`'A valid future wedding date is required.'`, `'Please enter a valid 10-digit Indian mobile number.'`). Guards: `'Please fill all required fields correctly'`, `'Please fix the errors before submitting'`.
 
-On submit: a `wedding_registrations` row **and** the linked CRM customer are created in one transaction; a confirmation email is attempted (its failure never loses the registration). Success screen shows the **Registration ID** (tap to copy: `'Registration ID copied to clipboard!'`) and tracking ID. Duplicates: `'A registration with this mobile number already exists at this store. Please contact the store directly.'` (server: 409 with the existing record's ID and an offer to register a *new wedding under the same customer*). New registrations appear in the Admin's Main CRM (§17) and the store's telecaller queue as **New Leads** immediately.
+On submit: a `wedding_registrations` row **and** the linked CRM customer are created in one transaction; a confirmation email is attempted (its failure never loses the registration). Success screen shows the **Registration ID** (tap to copy: `'Registration ID copied to clipboard!'`) and tracking ID. Duplicates: `'A registration with this mobile number already exists at this store. Please contact the store directly.'` (server: 409 with the existing record's ID and an offer to register a *new wedding under the same customer*). New registrations appear in the store's telecaller queue as **New Leads** immediately.
 
 ## 31. Track Wedding Request (Public)
 
@@ -846,7 +837,7 @@ The "Daily Management Checklist & Operational Verification System" — 6 operati
 
 ## 56. Retired Modules (Important Note)
 
-These pages are **deliberately disabled** in the current release; their old bookmarks redirect with a note "Disabled pages per user request": **Onboarding**, **Exit & FnF**, **Interview Panel** (→ `/employees` or `/candidates`). Several sidebar names kept for muscle-memory redirect to their live equivalents: `/roster` → Attendance, `/joining-desk` → DOJ Desk, `/greyhr` → Employees, `/regional-analytics` → Main CRM, legacy `?tab=` wedding links → the dedicated wedding routes. Any feature listed in older brochures but not reachable in the menu is **not currently implemented**.
+These pages are **deliberately disabled** in the current release; their old bookmarks redirect with a note "Disabled pages per user request": **Onboarding**, **Exit & FnF**, **Interview Panel** (→ `/employees` or `/candidates`). Several sidebar names kept for muscle-memory redirect to their live equivalents: `/roster` → Attendance, `/joining-desk` → DOJ Desk, `/greyhr` → Employees, `/regional-analytics` → Dashboard, legacy `?tab=` wedding links → the dedicated wedding routes. Any feature listed in older brochures but not reachable in the menu is **not currently implemented**.
 
 ---
 
@@ -857,7 +848,7 @@ These pages are **deliberately disabled** in the current release; their old book
 - **Search boxes** are "contains" text matches across the fields listed in each page's placeholder (name, mobile, ID…). They filter client-side on most registers; server-side on customer lists.
 - **Filter selects** (Status / Role / Location / Telecaller / Floor / Sentiment / date presets) combine with search; "Reset" appears as choosing *All* again or pressing the reload icon.
 - **Location filters** on every CRM/store-ops page respect the top-bar branch scope; for global admins they narrow, for store users they are locked.
-- **Sorting:** QR Management table columns are click-sortable (▲▼ indicators); most registers default to newest-first or follow-up-date order; pagination is 15/page (customer register), 20 (QR, call history), 6 (staff directory), 10 (Main CRM).
+- **Sorting:** QR Management table columns are click-sortable (▲▼ indicators); most registers default to newest-first or follow-up-date order; pagination is 15/page (customer register), 20 (QR, call history), 6 (staff directory).
 - **Global search** (`Ctrl+K`) spans people/customers/pages from anywhere.
 
 ## 58. Forms and Validation Rules (system-wide)

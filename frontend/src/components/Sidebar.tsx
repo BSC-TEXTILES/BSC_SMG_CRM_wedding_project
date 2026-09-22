@@ -121,7 +121,6 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
   const navItems = [
     // Enterprise (Admin landing module at top)
     { key: 'dashboard', href: '/dashboard', label: 'Dashboard', icon: BarChart3, section: 'Enterprise' },
-    { key: 'main_crm', href: '/main-crm', label: 'Main CRM Portal', icon: Sparkles, section: 'Enterprise' },
     { key: 'employees', href: '/employees', label: 'Employee & Store Directory', icon: UserCheck, section: 'Enterprise' },
     { key: 'user_management', href: '/user-management', label: 'User Management', icon: Shield, section: 'Enterprise' },
     { key: 'attendance', href: '/attendance', label: 'Attendance & Roster', icon: UserCheck, section: 'Enterprise' },

@@ -1032,11 +1032,16 @@ class WeddingController {
 
       const customer = rows[0];
 
-      // IDOR protection: Telecallers may only inspect their assigned customers
-      if (req.user && req.user.role === 'Telecaller') {
-        const isAssigned = (customer.assigned_telecaller_id === req.user.id) ||
-                           (customer.assigned_telecaller && customer.assigned_telecaller.toLowerCase() === (req.user.fullName || req.user.username || '').toLowerCase());
-        if (!isAssigned) {
+      // IDOR protection: Telecallers may inspect their assigned customers, auto-assigned, or customers belonging to their assigned store location
+      if (req.user && ['Telecaller', 'CRM Executive', 'VM Extension Telecaller'].includes(req.user.role)) {
+        const matchesAssignedId = customer.assigned_telecaller_id === req.user.id;
+        const matchesAssignedName = customer.assigned_telecaller &&
+          customer.assigned_telecaller.toLowerCase() === (req.user.fullName || req.user.username || '').toLowerCase();
+        const matchesLocation = req.user.locationId && Number(customer.location_id) === Number(req.user.locationId);
+        const isUnassignedOrAuto = !customer.assigned_telecaller ||
+          ['auto-assigned', 'unassigned', ''].includes(String(customer.assigned_telecaller).toLowerCase().trim());
+
+        if (!matchesAssignedId && !matchesAssignedName && !matchesLocation && !isUnassignedOrAuto) {
           if (lockAcquired) await releaseLock(lockKey);
           return errorRes(res, 'Access denied: Customer is not assigned to your calling queue', [], 403);
         }
@@ -2651,8 +2656,6 @@ class WeddingController {
           SUM(CASE WHEN w.follow_up_date < CURDATE() AND w.customer_status NOT IN ('Converted','Visited Store','Not Interested','Cancelled','Closed') THEN 1 ELSE 0 END) AS overdueFollowUps,
           SUM(CASE WHEN w.wedding_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY) THEN 1 ELSE 0 END) AS upcomingWeddings30,
           SUM(CASE WHEN w.wedding_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY) THEN 1 ELSE 0 END) AS upcomingWeddings7,
-          (SELECT COUNT(*) FROM wedding_visits v WHERE v.customer_id IN (SELECT id FROM wedding_customers WHERE is_deleted=0) ${locClause.replace('w.', 'v.')} AND v.visit_date = CURDATE()) AS todayVisits,
-          (SELECT COUNT(*) FROM wedding_appointments a WHERE a.customer_id IN (SELECT id FROM wedding_customers WHERE is_deleted=0) ${locClause.replace('w.', 'a.')} AND a.appointment_date = CURDATE()) AS todayAppointments,
           SUM(CASE WHEN w.customer_status = 'Shopping Date Confirmed' THEN 1 ELSE 0 END) AS shoppingConfirmed,
           SUM(CASE WHEN w.customer_status IN ('Visited Store') THEN 1 ELSE 0 END) AS storeVisitsDone,
           SUM(CASE WHEN w.customer_status = 'Converted' THEN 1 ELSE 0 END) AS purchaseCompleted,
@@ -2662,23 +2665,43 @@ class WeddingController {
         WHERE w.is_deleted = 0 ${locClause}
       `, params);
 
-      const main = mainStats[0] || {};
+      let todayVisits = 0;
+      let todayAppointments = 0;
+      try {
+        const [visitRows] = await pool.query(
+          `SELECT COUNT(*) AS count FROM wedding_visits v WHERE v.visit_date = CURDATE() ${locClause.replace(/w\./g, 'v.')}`,
+          params
+        );
+        todayVisits = Number(visitRows[0]?.count) || 0;
+      } catch (vErr) {
+        console.warn('[getEnhancedDashboardStats visits count fallback]', vErr.message);
+      }
 
-      const raw = main;
+      try {
+        const [apptRows] = await pool.query(
+          `SELECT COUNT(*) AS count FROM wedding_appointments a WHERE a.appointment_date = CURDATE() ${locClause.replace(/w\./g, 'a.')}`,
+          params
+        );
+        todayAppointments = Number(apptRows[0]?.count) || 0;
+      } catch (aErr) {
+        console.warn('[getEnhancedDashboardStats appts count fallback]', aErr.message);
+      }
+
+      const main = mainStats[0] || {};
       const stats = {
-        totalCustomers: Number(raw.totalCustomers) || 0,
-        todayRegistrations: Number(raw.todayRegistrations) || 0,
-        todayFollowUps: Number(raw.todayFollowUps) || 0,
-        overdueFollowUps: Number(raw.overdueFollowUps) || 0,
-        upcomingWeddings7: Number(raw.upcomingWeddings7) || 0,
-        upcomingWeddings30: Number(raw.upcomingWeddings30) || 0,
-        todayVisits: Number(raw.todayVisits) || 0,
-        todayAppointments: Number(raw.todayAppointments) || 0,
-        shoppingConfirmed: Number(raw.shoppingConfirmed) || 0,
-        storeVisitsDone: Number(raw.storeVisitsDone) || 0,
-        purchaseCompleted: Number(raw.purchaseCompleted) || 0,
-        notInterested: Number(raw.notInterested) || 0,
-        cancelledClosed: Number(raw.cancelledClosed) || 0
+        totalCustomers: Number(main.totalCustomers) || 0,
+        todayRegistrations: Number(main.todayRegistrations) || 0,
+        todayFollowUps: Number(main.todayFollowUps) || 0,
+        overdueFollowUps: Number(main.overdueFollowUps) || 0,
+        upcomingWeddings7: Number(main.upcomingWeddings7) || 0,
+        upcomingWeddings30: Number(main.upcomingWeddings30) || 0,
+        todayVisits,
+        todayAppointments,
+        shoppingConfirmed: Number(main.shoppingConfirmed) || 0,
+        storeVisitsDone: Number(main.storeVisitsDone) || 0,
+        purchaseCompleted: Number(main.purchaseCompleted) || 0,
+        notInterested: Number(main.notInterested) || 0,
+        cancelledClosed: Number(main.cancelledClosed) || 0
       };
 
       const rawParam = req.query?.locationId || req.query?.location_id || req.headers?.['x-location-id'] || req.body?.locationId || req.body?.location_id;

@@ -294,7 +294,6 @@ export default function DashboardPage() {
   const canAccessEmployees = isAdminUser || allowed.includes('employees');
 
   const ALL_MODULE_CARDS = useMemo(() => [
-    { key: 'main_crm', label: 'Main CRM Portal', path: '/main-crm', icon: Sparkles, desc: 'Central customer relationship management and pipeline', tag: 'Enterprise' },
     { key: 'wedding_crm', label: 'Wedding Follow-up CRM', path: '/wedding-crm/dashboard', icon: Heart, desc: 'Track wedding customer visits, budgets & conversion pipelines', tag: 'Wedding' },
     { key: 'wedding_registration', label: 'Wedding Customer Registration', path: '/wedding/customer-registration', icon: UserPlus, desc: 'Register newly visiting wedding parties and customer details', tag: 'Wedding' },
     { key: 'telecaller_desk', label: 'Telecaller Calling Desk', path: '/telecaller/desk', icon: PhoneCall, desc: 'Daily calling desk for wedding lead inquiries & follow-ups', tag: 'Telecaller' },

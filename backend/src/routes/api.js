@@ -260,6 +260,11 @@ router.get('/feedback-qr/locations', authenticate, feedbackQrController.getLocat
 router.get('/feedback-qr/sections', authenticate, feedbackQrController.getSectionsForLocation);
 router.get('/feedback-qr/forms', authenticate, feedbackQrController.getFeedbackForms);
 router.get('/feedback-qr/export', authenticate, feedbackQrController.exportQrCodes);
+
+// Location-based QR Code endpoints (must be defined BEFORE /:id dynamic route)
+router.post('/feedback-qr/generate-locations', authenticate, authorize('Admin', 'Super Admin', 'HR', 'Manager'), feedbackQrController.generateLocationQrCodes);
+router.get('/feedback-qr/location-codes', authenticate, feedbackQrController.getLocationQrCodes);
+
 router.get('/feedback-qr/:id', authenticate, feedbackQrController.getQrCodeById);
 router.get('/feedback-qr/:qrCodeId/scans', authenticate, feedbackQrController.getQrCodeScans);
 router.post('/feedback-qr', authenticate, authorize('Admin', 'Super Admin', 'HR', 'Manager'), feedbackQrController.createQrCode);
@@ -267,10 +272,6 @@ router.put('/feedback-qr/:id', authenticate, authorize('Admin', 'Super Admin', '
 router.delete('/feedback-qr/:id', authenticate, authorize('Admin', 'Super Admin'), feedbackQrController.deleteQrCode);
 router.post('/feedback-qr/:id/toggle-status', authenticate, authorize('Admin', 'Super Admin', 'HR', 'Manager'), feedbackQrController.toggleQrCodeStatus);
 router.post('/feedback-qr/:id/regenerate', authenticate, authorize('Admin', 'Super Admin', 'HR', 'Manager'), feedbackQrController.regenerateQrCode);
-
-// Location-based QR Code endpoints
-router.post('/feedback-qr/generate-locations', authenticate, authorize('Admin', 'Super Admin', 'HR', 'Manager'), feedbackQrController.generateLocationQrCodes);
-router.get('/feedback-qr/location-codes', authenticate, feedbackQrController.getLocationQrCodes);
 
 // Public scan endpoint (location-based and qrCodeId-based)
 router.post('/feedback-qr/scan/location/:locationCode', feedbackQrController.trackQrScan);
@@ -832,7 +833,6 @@ router.get('/consent/admin/user-consents', authenticate, authorize('Admin', 'Sup
 // Called by the frontend RouteGuard to confirm a URL is permitted before rendering.
 const ROUTE_TO_MODULE_MAP = [
   { pattern: /^\/dashboard(\/|$)/, module: 'dashboard' },
-  { pattern: /^\/main-crm(\/|$)/, module: 'main_crm' },
   { pattern: /^\/wedding-crm\/customers\/new(\/|$)/, module: 'wedding_registration' },
   { pattern: /^\/wedding\/customer-registration(\/|$)/, module: 'wedding_registration' },
   { pattern: /^\/wedding-registration(\/|$)/, module: 'wedding_registration' },

@@ -23,7 +23,7 @@ const ALL_ADMIN_KEYS = [
   'attendance', 'dashboard', 'candidates', 'offer', 'openings', 'daily_mcheck', 'mcheck_reports', 
   'mcheck_history', 'employees', 'dept_hiring', 'section_allocation', 'feedback_public', 'tv', 
   'greeter', 'broadcast', 'user_management', 'settings', 'system_admin', 'telecaller_dashboard', 
-  'telecaller_desk', 'joining_desk', 'doj_desk', 'greyhr', 'batch_plan', 'mcheck_audit', 'main_crm', 
+  'telecaller_desk', 'joining_desk', 'doj_desk', 'greyhr', 'batch_plan', 'mcheck_audit',
   'regional_analytics'
 ];
 
@@ -55,7 +55,7 @@ export const ROLE_NAV_MAP: Record<string, string[]> = {
     'wedding_crm', 'wedding_operations', 'wedding_registration', 'telecaller_desk', 'telecaller_dashboard', 'dashboard', 'footfall', 'broadcast'
   ],
   'Data Analyst': [
-    'wedding_crm', 'wedding_operations', 'dashboard', 'mcheck_reports', 'regional_analytics', 'main_crm'
+    'wedding_crm', 'wedding_operations', 'dashboard', 'mcheck_reports', 'regional_analytics'
   ],
   'Telecaller': [
     'wedding_crm', 'telecaller_dashboard', 'telecaller_desk', 'wedding_registration'
@@ -109,11 +109,10 @@ export const MODULE_KEY_TO_ROUTE: Record<string, string> = {
   settings: '/settings',
   system_admin: '/system-admin',
   user_management: '/user-management',
-  main_crm: '/main-crm',
   batch_plan: '/batch-plan',
   doj_desk: '/doj-desk',
   joining_desk: '/doj-desk',
-  regional_analytics: '/main-crm',
+  regional_analytics: '/dashboard',
   candidate_apply: '/apply',
   greeter: '/greeter',
   tv: '/tv',

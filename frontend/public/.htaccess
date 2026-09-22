@@ -1,0 +1,27 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # Allow all webmanifest and json files
+  <FilesMatch "\.(webmanifest|json|ico|png|jpg|jpeg|svg|css|js)$">
+    <IfModule mod_authz_core.c>
+      Require all granted
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+      Order allow,deny
+      Allow from all
+    </IfModule>
+  </FilesMatch>
+
+  # Add MIME type for webmanifest
+  <IfModule mod_mime.c>
+    AddType application/manifest+json .webmanifest
+    AddType application/json .json
+  </IfModule>
+
+  # Route frontend SPA if not handled by reverse proxy
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+  RewriteRule ^ index.html [L]
+</IfModule>

@@ -512,6 +512,31 @@ app.get(['/favicon.ico', '/favicon.png', '/logo.png'], (req, res) => {
   return res.status(204).end();
 });
 
+// Web App Manifest handler (serves manifest.json and manifest.webmanifest with correct MIME type)
+app.get(['/manifest.json', '/manifest.webmanifest'], (req, res) => {
+  const manifestName = path.basename(req.path);
+  const possiblePaths = [
+    path.join(distDir, manifestName),
+    path.join(distDir, 'manifest.webmanifest'),
+    path.join(distDir, 'manifest.json'),
+    path.join(APP_ROOT, '..', 'frontend', 'public', manifestName),
+    path.join(APP_ROOT, '..', 'frontend', 'public', 'manifest.webmanifest'),
+    path.join(APP_ROOT, '..', 'frontend', 'public', 'manifest.json'),
+    path.join(APP_ROOT, 'public', manifestName),
+    path.join(APP_ROOT, 'public', 'manifest.webmanifest'),
+    path.join(APP_ROOT, 'public', 'manifest.json')
+  ];
+  for (const p of possiblePaths) {
+    if (fs.existsSync(p) && fs.statSync(p).isFile()) {
+      res.type('application/manifest+json');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+      return res.sendFile(p);
+    }
+  }
+  return res.status(404).end();
+});
+
 if (fs.existsSync(distDir)) {
   console.log(`[Boot] Serving frontend from: ${distDir}`);
   // Vite emits content-hashed filenames — they are safe to cache forever.

@@ -70,7 +70,6 @@ const ROLE_ROUTE_MAP: Record<string, RegExp[]> = {
     /^\/dashboard/,
     /^\/mcheck-reports$/,
     /^\/regional-analytics$/,
-    /^\/main-crm$/,
   ],
   'VM': [
     /^\/vm-checklist$/,
@@ -132,7 +131,6 @@ const ROLE_ROUTE_MAP: Record<string, RegExp[]> = {
     /^\/batch-plan$/,
     /^\/doj-desk$/,
     /^\/offer/,
-    /^\/main-crm$/,
     /^\/telecaller(\/|$)/,
     /^\/telecaller-dashboard$/,
   ],

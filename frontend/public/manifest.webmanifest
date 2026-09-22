@@ -1,0 +1,21 @@
+{
+  "short_name": "BSC CRM",
+  "name": "BSC Exclusive Retail Operations & HRMS",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/logo.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#1E2D4E",
+  "theme_color": "#1E2D4E",
+  "display": "standalone",
+  "orientation": "any"
+}

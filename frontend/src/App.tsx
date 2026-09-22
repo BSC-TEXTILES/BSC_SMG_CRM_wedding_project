@@ -29,7 +29,6 @@ import Greeter from './pages/Greeter';
 import Attendance from './pages/Attendance';
 import DailyMCheck from './pages/DailyMCheck';
 import MCheckReports from './pages/MCheckReports';
-import MainCrmDashboard from './pages/MainCrmDashboard';
 import MCheckHistory from './pages/MCheckHistory';
 import WeddingCRM from './pages/WeddingCRM';
 import TelecallerDashboard from './pages/TelecallerDashboard';
@@ -90,7 +89,6 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/dashboard" element={<RouteGuard pageKey="dashboard"><Dashboard /></RouteGuard>} />
-        <Route path="/main-crm" element={<RouteGuard pageKey="main_crm"><MainCrmDashboard /></RouteGuard>} />
         <Route path="/wedding-crm" element={<RouteGuard pageKey="wedding_crm"><WeddingCRM /></RouteGuard>} />
         <Route path="/wedding-crm/dashboard" element={<RouteGuard pageKey="wedding_crm"><WeddingCrmDashboard /></RouteGuard>} />
         <Route path="/wedding-crm/customers" element={<RouteGuard pageKey="wedding_crm"><WeddingCustomerRegister /></RouteGuard>} />
@@ -147,7 +145,7 @@ export default function App() {
         {/* Dead sidebar links — redirect to nearest relevant live page */}
         <Route path="/joining-desk" element={<Navigate to="/doj-desk" replace />} />
         <Route path="/greyhr" element={<Navigate to="/employees" replace />} />
-        <Route path="/regional-analytics" element={<Navigate to="/main-crm" replace />} />
+        <Route path="/regional-analytics" element={<Navigate to="/dashboard" replace />} />
         <Route path="/employees" element={<RouteGuard pageKey="employees"><Employees /></RouteGuard>} />
         <Route path="/batch-plan" element={<RouteGuard pageKey="batch_plan"><BatchPlan /></RouteGuard>} />
         <Route path="/doj-desk" element={<RouteGuard pageKey="doj_desk"><DojDesk /></RouteGuard>} />
