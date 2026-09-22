@@ -160,36 +160,62 @@ export default function WeddingOperationsDesk() {
     setLoading(true);
     setError('');
     try {
-      const [customersRes, statsRes] = await Promise.all([
+      const currentSession = Auth.get();
+      const locId = currentSession?.locationId;
+
+      const [customersResSettled, statsResSettled] = await Promise.allSettled([
         API.getWeddingCustomers({ limit: 5000 }),
-        API.getWeddingEnhancedDashboard()
+        API.getWeddingEnhancedDashboard(locId || undefined)
       ]);
 
-      // Map snake_case backend rows to camelCase frontend fields
-      const rawCustomers = customersRes?.customers || customersRes?.data?.customers || [];
-      setCustomers(rawCustomers.map(mapCustomer));
+      let rawCustomers: any[] = [];
+      if (customersResSettled.status === 'fulfilled') {
+        const val = customersResSettled.value;
+        rawCustomers = val?.customers || val?.data?.customers || [];
+        setCustomers(rawCustomers.map(mapCustomer));
+      } else {
+        console.error('[WeddingOperationsDesk] customers fetch error:', customersResSettled.reason);
+        setError(customersResSettled.reason?.message || 'Failed to load wedding customers');
+      }
 
-      // Extract stats: API layer spreads res.data, so stats may be at statsRes.stats or statsRes.data.stats
-      const rawStats = statsRes?.stats || statsRes?.data?.stats || {};
-      const rawLocationCards = statsRes?.locationCards || statsRes?.data?.locationCards || [];
-
-      // Compute pending follow-ups (customers with follow_up_date >= today and not in terminal states)
+      // Compute dynamic fallbacks from actual customer records
       const today = new Date().toISOString().slice(0, 10);
-      const allCustomers = rawCustomers;
-      const pendingFollowups = allCustomers.filter((c: any) =>
+      const pendingFollowups = rawCustomers.filter((c: any) =>
         c.follow_up_date && c.follow_up_date >= today &&
         !['Converted', 'Visited Store', 'Not Interested', 'Cancelled', 'Closed'].includes(c.customer_status)
       ).length;
 
+      let rawStats: any = {};
+      let rawLocationCards: any[] = [];
+
+      if (statsResSettled.status === 'fulfilled') {
+        const val = statsResSettled.value;
+        rawStats = val?.stats || val?.data?.stats || {};
+        rawLocationCards = val?.locationCards || val?.data?.locationCards || [];
+      } else {
+        console.warn('[WeddingOperationsDesk] enhanced stats fetch degraded:', statsResSettled.reason);
+      }
+
+      // Compute stats with fallbacks from loaded customers if backend stats had partial values
+      const totalCust = rawStats.totalCustomers !== undefined ? Number(rawStats.totalCustomers) : rawCustomers.length;
+      const newReg = rawStats.todayRegistrations !== undefined ? Number(rawStats.todayRegistrations) :
+        rawCustomers.filter(c => (c.created_at || '').slice(0, 10) === today).length;
+      const overdue = rawStats.overdueFollowUps !== undefined ? Number(rawStats.overdueFollowUps) :
+        rawCustomers.filter(c => c.follow_up_date && c.follow_up_date < today && !['Converted', 'Visited Store', 'Not Interested', 'Cancelled', 'Closed'].includes(c.customer_status)).length;
+      const todayFu = rawStats.todayFollowUps !== undefined ? Number(rawStats.todayFollowUps) :
+        rawCustomers.filter(c => (c.follow_up_date || '').slice(0, 10) === today).length;
+      const shopConf = rawStats.shoppingConfirmed !== undefined ? Number(rawStats.shoppingConfirmed) :
+        rawCustomers.filter(c => c.customer_status === 'Shopping Date Confirmed').length;
+
       setStats({
-        totalCustomers: rawStats.totalCustomers || 0,
-        newRegistrations: rawStats.todayRegistrations || 0,
+        totalCustomers: totalCust,
+        newRegistrations: newReg,
         pendingFollowups,
-        overdueFollowups: rawStats.overdueFollowUps || 0,
+        overdueFollowups: overdue,
         upcomingWeddings: rawStats.upcomingWeddings30 || 0,
-        shoppingConfirmed: rawStats.shoppingConfirmed || 0,
+        shoppingConfirmed: shopConf,
         visitsScheduled: (rawStats.todayVisits || 0) + (rawStats.todayAppointments || 0),
-        todayFollowups: rawStats.todayFollowUps || 0,
+        todayFollowups: todayFu,
         locationCards: rawLocationCards,
       });
     } catch (err: any) {
@@ -208,6 +234,21 @@ export default function WeddingOperationsDesk() {
     setSession(Auth.get());
     loadData();
   }, [navigate, loadData]);
+
+  // Section-level auto update without full page reload
+  useEffect(() => {
+    const handleAutoUpdate = () => {
+      loadData();
+    };
+    window.addEventListener('wedding_data_updated', handleAutoUpdate);
+    window.addEventListener('wedding:customer_registered', handleAutoUpdate);
+    const interval = setInterval(loadData, 60000);
+    return () => {
+      window.removeEventListener('wedding_data_updated', handleAutoUpdate);
+      window.removeEventListener('wedding:customer_registered', handleAutoUpdate);
+      clearInterval(interval);
+    };
+  }, [loadData]);
 
   useEffect(() => {
     let list = [...customers];
@@ -294,17 +335,62 @@ export default function WeddingOperationsDesk() {
     return <span className={getStatusBadgeClass(status)}>{status}</span>;
   };
 
+  const locName = session?.locationName || (session?.locationId === 3 ? 'Shivamogga' : session?.locationId === 2 ? 'Belagavi' : session?.locationId === 1 ? 'Davanagere' : '');
+  const locCode = session?.locationCode || (session?.locationId === 3 ? 'SHI' : session?.locationId === 2 ? 'BEL' : session?.locationId === 1 ? 'DAV' : '');
+
   return (
     <DashboardLayout
       title="Wedding Operations Desk"
       subtitle="Real-time wedding customer registrations, follow-up status, visit planning, and operational activity."
       rightElement={
-        <button onClick={loadData} className="btn-secondary">
+        <button
+          onClick={() => {
+            loadData();
+            showToast('Refreshing Wedding Operations data...', 'info');
+          }}
+          disabled={loading}
+          className="btn-secondary flex items-center gap-2"
+        >
           <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-accent' : ''}`} />
           Refresh
         </button>
       }
     >
+      {/* ── Page Header: Title + Description + Assigned Location Scope + Refresh ── */}
+      <div className="card-glass p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-3 flex-wrap">
+            <h1 className="text-xl sm:text-2xl font-black text-text-primary tracking-tight">
+              Wedding Operations Desk
+            </h1>
+            {locName && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-primary/10 text-primary border border-primary/20">
+                <MapPin className="w-3.5 h-3.5 text-accent" />
+                Assigned Location: {locName} {locCode ? `(${locCode})` : ''}
+              </span>
+            )}
+          </div>
+          <p className="text-xs sm:text-sm text-text-secondary mt-1">
+            Real-time wedding customer registrations, follow-up status, visit planning, and operational activity.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3 flex-shrink-0">
+          <button
+            onClick={() => {
+              loadData();
+              showToast('Refreshing Wedding Operations data...', 'info');
+            }}
+            disabled={loading}
+            className="btn-secondary flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold shadow-2xs hover:border-accent transition-all cursor-pointer"
+            title="Refresh Wedding Operations Data"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-accent' : ''}`} />
+            <span>Refresh</span>
+          </button>
+        </div>
+      </div>
+
       {/* Date Filters */}
       <div className="card-glass p-3 flex flex-wrap gap-2 items-center">
         <Calendar className="w-4 h-4 text-text-secondary ml-2" />
@@ -359,19 +445,29 @@ export default function WeddingOperationsDesk() {
             </button>
           ))}
         </div>
-        <div className="p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div className="relative max-w-sm w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary" />
-            <input
-              type="text"
-              placeholder="Search by ID, name, mobile, email, telecaller, location..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="input-modern w-full pl-9 pr-4"
-            />
+
+        {/* Customer Register Header */}
+        <div className="p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border">
+          <div>
+            <h2 className="text-base font-bold text-text-primary">Customer Register</h2>
+            <p className="text-xs text-text-secondary">
+              Viewing active wedding customers {locName ? `for ${locName}` : ''}
+            </p>
           </div>
-          <div className="text-sm font-medium text-text-secondary bg-background px-3 py-1.5 rounded-lg border border-border">
-            {filtered.length} Record{filtered.length !== 1 ? 's' : ''} Found
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <div className="relative max-w-sm w-full">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary" />
+              <input
+                type="text"
+                placeholder="Search by ID, name, mobile, email, telecaller, location..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="input-modern w-full pl-9 pr-4 text-xs"
+              />
+            </div>
+            <div className="text-sm font-medium text-text-secondary bg-background px-3 py-1.5 rounded-lg border border-border whitespace-nowrap">
+              {filtered.length} Record{filtered.length !== 1 ? 's' : ''} Found
+            </div>
           </div>
         </div>
 
@@ -398,7 +494,7 @@ export default function WeddingOperationsDesk() {
                     </div>
                   </td>
                 </tr>
-              ) : error ? (
+              ) : error && customers.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-12 text-center">
                     <div className="flex flex-col items-center justify-center space-y-2">
@@ -413,12 +509,19 @@ export default function WeddingOperationsDesk() {
               ) : filtered.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-12 text-center text-text-secondary">
-                    <div className="flex flex-col items-center justify-center space-y-2 min-h-[240px]">
+                    <div className="flex flex-col items-center justify-center space-y-2 min-h-[200px]">
                       <Search className="w-10 h-10 text-border" />
-                      <p className="text-sm font-medium">No wedding customers match your selected filters.</p>
-                      <button onClick={() => { setActiveFilter('All Customers'); setSearchQuery(''); setActiveRange('all'); }} className="text-accent hover:underline text-xs mt-2 font-semibold">
-                        Clear Filters
-                      </button>
+                      <p className="text-base font-bold text-text-primary">0 Records Found</p>
+                      <p className="text-xs text-text-secondary">
+                        {customers.length === 0
+                          ? `No wedding customers registered yet for ${locName || 'this location'}.`
+                          : 'No wedding customers match your selected filters.'}
+                      </p>
+                      {(activeFilter !== 'All Customers' || searchQuery || activeRange !== 'all') && (
+                        <button onClick={() => { setActiveFilter('All Customers'); setSearchQuery(''); setActiveRange('all'); }} className="text-accent hover:underline text-xs mt-2 font-semibold">
+                          Clear Filters
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

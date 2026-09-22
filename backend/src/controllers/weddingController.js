@@ -2743,22 +2743,27 @@ class WeddingController {
         }
       }
 
-      const [locRows] = await pool.query(`
-        SELECT
-          l.id AS location_id, l.location_code, l.location_name,
-          COUNT(w.id) AS total_customers,
-          SUM(CASE WHEN DATE(w.created_at) = CURDATE() THEN 1 ELSE 0 END) AS new_customers,
-          SUM(CASE WHEN w.follow_up_date < CURDATE() AND w.customer_status NOT IN ('Converted','Visited Store','Not Interested','Cancelled','Closed') THEN 1 ELSE 0 END) AS pending_followups,
-          SUM(CASE WHEN w.wedding_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY) THEN 1 ELSE 0 END) AS upcoming_weddings,
-          SUM(CASE WHEN w.customer_status IN ('Visited Store','Converted') THEN 1 ELSE 0 END) AS visits,
-          SUM(CASE WHEN w.customer_status = 'Converted' THEN 1 ELSE 0 END) AS purchases
-        FROM locations l
-        LEFT JOIN wedding_customers w ON w.location_id = l.id AND w.is_deleted = 0
-        ${locCardsWhere}
-        GROUP BY l.id, l.location_code, l.location_name
-        ORDER BY l.sort_order ASC
-      `, locCardsParams);
-      const locationCards = locRows || [];
+      let locationCards = [];
+      try {
+        const [locRows] = await pool.query(`
+          SELECT
+            l.id AS location_id, l.location_code, l.location_name, COALESCE(l.sort_order, 0) AS sort_order,
+            COUNT(w.id) AS total_customers,
+            SUM(CASE WHEN DATE(w.created_at) = CURDATE() THEN 1 ELSE 0 END) AS new_customers,
+            SUM(CASE WHEN w.follow_up_date < CURDATE() AND w.customer_status NOT IN ('Converted','Visited Store','Not Interested','Cancelled','Closed') THEN 1 ELSE 0 END) AS pending_followups,
+            SUM(CASE WHEN w.wedding_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY) THEN 1 ELSE 0 END) AS upcoming_weddings,
+            SUM(CASE WHEN w.customer_status IN ('Visited Store','Converted') THEN 1 ELSE 0 END) AS visits,
+            SUM(CASE WHEN w.customer_status = 'Converted' THEN 1 ELSE 0 END) AS purchases
+          FROM locations l
+          LEFT JOIN wedding_customers w ON w.location_id = l.id AND w.is_deleted = 0
+          ${locCardsWhere}
+          GROUP BY l.id, l.location_code, l.location_name, l.sort_order
+          ORDER BY l.sort_order ASC, l.id ASC
+        `, locCardsParams);
+        locationCards = locRows || [];
+      } catch (locErr) {
+        console.warn('[getEnhancedDashboardStats locationCards query fallback]', locErr.message);
+      }
 
       return successRes(res, { stats, locationCards, locationBreakdown: locationCards }, 'Enhanced dashboard stats fetched');
     } catch (err) {
