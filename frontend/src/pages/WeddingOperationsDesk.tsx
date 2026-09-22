@@ -342,19 +342,6 @@ export default function WeddingOperationsDesk() {
     <DashboardLayout
       title="Wedding Operations Desk"
       subtitle="Real-time wedding customer registrations, follow-up status, visit planning, and operational activity."
-      rightElement={
-        <button
-          onClick={() => {
-            loadData();
-            showToast('Refreshing Wedding Operations data...', 'info');
-          }}
-          disabled={loading}
-          className="btn-secondary flex items-center gap-2"
-        >
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-accent' : ''}`} />
-          Refresh
-        </button>
-      }
     >
       {/* ── Page Header: Title + Description + Assigned Location Scope + Refresh ── */}
       <div className="card-glass p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -373,21 +360,6 @@ export default function WeddingOperationsDesk() {
           <p className="text-xs sm:text-sm text-text-secondary mt-1">
             Real-time wedding customer registrations, follow-up status, visit planning, and operational activity.
           </p>
-        </div>
-
-        <div className="flex items-center gap-3 flex-shrink-0">
-          <button
-            onClick={() => {
-              loadData();
-              showToast('Refreshing Wedding Operations data...', 'info');
-            }}
-            disabled={loading}
-            className="btn-secondary flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold shadow-2xs hover:border-accent transition-all cursor-pointer"
-            title="Refresh Wedding Operations Data"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-accent' : ''}`} />
-            <span>Refresh</span>
-          </button>
         </div>
       </div>
 
