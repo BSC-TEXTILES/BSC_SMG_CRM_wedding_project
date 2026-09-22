@@ -331,20 +331,26 @@ export default function PublicFeedback() {
 
               <div className="space-y-1.5">
                 <label className="block text-xs font-extrabold text-primary">Mobile Number *</label>
-                <div className="relative flex items-center">
-                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none z-10">
-                    <div className="bg-accent/15 p-1.5 rounded-xl text-primary flex items-center justify-center">
+                <div className="flex items-center h-14 w-full rounded-2xl border border-accent-soft bg-white/95 focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/30 transition-all shadow-xs overflow-hidden">
+                  {/* Fixed Country Code & Phone Icon Area */}
+                  <div className="flex items-center gap-2 pl-3.5 pr-3 h-full bg-accent/5 border-r border-accent-soft text-primary select-none shrink-0">
+                    <div className="bg-accent/15 p-1.5 rounded-xl flex items-center justify-center shrink-0">
                       <Phone className="w-4 h-4 text-primary" />
                     </div>
-                    <span className="text-xs font-bold font-mono text-primary/80 border-r border-accent/40 pr-2.5 select-none">
+                    <span className="text-xs sm:text-sm font-bold font-mono tracking-wide text-primary">
                       +91
                     </span>
                   </div>
+
+                  {/* 10-Digit Mobile Number Input Area */}
                   <input
                     type="tel"
+                    inputMode="numeric"
+                    autoComplete="tel-national"
+                    pattern="[0-9]{10}"
                     required
                     maxLength={10}
-                    placeholder="10-digit mobile number"
+                    placeholder="Enter 10-digit mobile number"
                     value={mobile}
                     onChange={(e) => {
                       let val = e.target.value.replace(/\D/g, '');
@@ -353,7 +359,16 @@ export default function PublicFeedback() {
                       }
                       setMobile(val.slice(0, 10));
                     }}
-                    className="w-full text-xs font-mono font-semibold pl-24 pr-4 h-14 rounded-2xl border border-accent-soft bg-white/95 text-primary outline-none focus:border-accent focus:ring-2 focus:ring-accent/30 transition-all shadow-xs"
+                    onPaste={(e) => {
+                      e.preventDefault();
+                      const pasteText = e.clipboardData.getData('text') || '';
+                      let val = pasteText.replace(/\D/g, '');
+                      if (val.startsWith('91') && val.length > 10) {
+                        val = val.slice(2);
+                      }
+                      setMobile(val.slice(0, 10));
+                    }}
+                    className="flex-1 h-full min-w-0 px-3.5 sm:px-4 text-xs sm:text-sm font-mono font-semibold bg-transparent text-primary placeholder:text-gray-400 placeholder:font-sans outline-none"
                   />
                 </div>
                 <p className="text-[10.5px] font-bold text-primary pt-0.5">
