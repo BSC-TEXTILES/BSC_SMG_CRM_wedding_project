@@ -1,27 +1,33 @@
+# Global Permissions: Allow all requests through to application/proxy
+<IfModule mod_authz_core.c>
+  Require all granted
+</IfModule>
+<IfModule !mod_authz_core.c>
+  Order allow,deny
+  Allow from all
+</IfModule>
+
+# Correct MIME Types for PWA and manifest assets
+<IfModule mod_mime.c>
+  AddType application/manifest+json .webmanifest
+  AddType application/json .json
+  AddType image/svg+xml .svg
+</IfModule>
+
+# URL Rewriting for Single Page Application
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
 
-  # Allow all webmanifest and json files
-  <FilesMatch "\.(webmanifest|json|ico|png|jpg|jpeg|svg|css|js)$">
-    <IfModule mod_authz_core.c>
-      Require all granted
-    </IfModule>
-    <IfModule !mod_authz_core.c>
-      Order allow,deny
-      Allow from all
-    </IfModule>
-  </FilesMatch>
+  # NEVER rewrite backend API, Socket.IO, uploads, or system routes
+  RewriteCond %{REQUEST_URI} ^/(api|socket\.io|uploads|health|db-status) [NC]
+  RewriteRule ^ - [L]
 
-  # Add MIME type for webmanifest
-  <IfModule mod_mime.c>
-    AddType application/manifest+json .webmanifest
-    AddType application/json .json
-  </IfModule>
-
-  # Route frontend SPA if not handled by reverse proxy
+  # Allow existing physical files and directories to be served directly
   RewriteCond %{REQUEST_FILENAME} -f [OR]
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^ - [L]
+
+  # Route all other routes to SPA entry point
   RewriteRule ^ index.html [L]
 </IfModule>
