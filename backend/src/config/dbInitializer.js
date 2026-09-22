@@ -1411,23 +1411,6 @@ async function autoInitializeDatabase(pool) {
         logDebug(`[Auto DB Initializer Warning for Feedback QR Code tables]:`, e.message);
       }
 
-      const [fbCountRows] = await connection.query(`SELECT COUNT(*) as cnt FROM Feedback`);
-      if (fbCountRows && fbCountRows[0] && fbCountRows[0].cnt === 0) {
-        const todayStr = new Date().toISOString().split('T')[0];
-        const initialFeedbacks = [
-          ['fb_demo_1', todayStr, 'Ramesh Kumar', '9876543210', 'sec_1', JSON.stringify({ q1: 'Very satisfied', q2: 'Yes, exactly', q3: 'Excellent', q4: 'Extremely helpful', q5: 'Definitely recommend' }), 'Liked Most: Excellent saree collection & courteous staff assistance.', 'qr', 0],
-          ['fb_demo_2', todayStr, 'Anita Patil', '9845012345', 'sec_3', JSON.stringify({ q1: 'Satisfied', q2: 'Yes, with assistance', q3: 'Good', q4: 'Helpful', q5: 'Probably recommend' }), 'Liked Most: Good variety in ladies wear section.', 'qr', 0],
-          ['fb_demo_3', todayStr, 'Suresh Gowda', '9741234567', 'sec_5', JSON.stringify({ q1: 'Neutral', q2: 'Partially', q3: 'Average', q4: 'Average', q5: 'Neutral' }), 'Can Improve: Need more size variations in mens suits.', 'qr', 0]
-        ];
-
-        for (const [id, ed, cn, mob, sec, ans, vc, src, isNeg] of initialFeedbacks) {
-          await connection.query(`
-            INSERT IGNORE INTO Feedback (id, entryDate, customerName, mobile, sectionId, answers, voice, source, isNegative)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-          `, [id, ed, cn, mob, sec, ans, vc, src, isNeg]);
-        }
-        logDebug(`[Auto DB Initializer] Seeded initial customer feedback collection entries`);
-      }
 
       logDebug(`[Auto DB Initializer] Verified Sections & FeedbackQuestions tables`);
     } catch (e) {
