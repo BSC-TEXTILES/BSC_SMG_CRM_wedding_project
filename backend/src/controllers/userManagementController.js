@@ -269,6 +269,19 @@ const createUser = async (req, res) => {
       ? null
       : (locationId || (isGlobalRole ? null : 2));
 
+    // ── Assigned locations must be valid actual store locations ─────
+    if (Array.isArray(locationIds) && locationIds.length > 0) {
+      const check = await _validateAssignedLocations(locationIds);
+      if (!check.ok) {
+        return errorRes(res, 'Assigned locations must be valid actual store locations', [], 400);
+      }
+    } else if (!wantsAllLocations && locationId) {
+      const check = await _validateAssignedLocations([locationId]);
+      if (!check.ok) {
+        return errorRes(res, 'Assigned location must be a valid actual store location', [], 400);
+      }
+    }
+
     return _insertUser(req, res, { username, password, role, fullName, email, phone, department, designation,
                                      employeeId: cleanEmployeeId, section, joiningDate,
                                      resolvedLocationId, locationIds, allLocations, maxModules, permissions });
@@ -426,10 +439,24 @@ const updateUser = async (req, res) => {
 
     // Location scope. `locationIds` alone must also update the primary
     // location column — otherwise the account would keep its old store in
-    // `users.location_id` while user_locations says otherwise, and login,
+    // `users.location_id` while user_locations says otherwise and login,
     // location dashboards and the user list would disagree.
     const hasLocationIds = Array.isArray(locationIds) && locationIds.length > 0;
     const scopeProvided = allLocations !== undefined || locationId !== undefined || hasLocationIds;
+
+    // ── Assigned locations must be valid actual store locations ─────
+    if (hasLocationIds) {
+      const check = await _validateAssignedLocations(locationIds);
+      if (!check.ok) {
+        return errorRes(res, 'Assigned locations must be valid actual store locations', [], 400);
+      }
+    } else if (locationId) {
+      const check = await _validateAssignedLocations([locationId]);
+      if (!check.ok) {
+        return errorRes(res, 'Assigned location must be a valid actual store location', [], 400);
+      }
+    }
+
     if (scopeProvided) {
       const wantsAllLocations = allLocations === true;
       // Primary location = the explicitly requested one, else the first
