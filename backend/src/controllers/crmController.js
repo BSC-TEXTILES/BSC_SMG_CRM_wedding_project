@@ -1517,6 +1517,52 @@ exports.getFeedbacks = async (req, res) => {
   }
 };
 
+exports.deleteFeedback = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ success: false, message: 'Feedback ID is required' });
+    }
+    await db.query('DELETE FROM CallQueue WHERE feedbackId = ? OR id = ?', [id, id]).catch(() => {});
+    await db.query('DELETE FROM Feedback WHERE id = ?', [id]);
+    await db.query('UPDATE FeedbackQrScan SET isFeedbackSubmitted = 0, feedbackId = NULL WHERE feedbackId = ?', [id]).catch(() => {});
+
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('feedback:deleted', { id });
+    }
+    return res.json({ success: true, message: 'Feedback record deleted successfully' });
+  } catch (err) {
+    console.error('[deleteFeedback Error]', err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+exports.clearAllFeedbacks = async (req, res) => {
+  try {
+    const targetLoc = req.query.locationId;
+    if (targetLoc && targetLoc !== 'ALL') {
+      await db.query(`
+        DELETE FROM CallQueue WHERE feedbackId IN (SELECT id FROM Feedback WHERE location_id = ?)
+      `, [targetLoc]).catch(() => {});
+      await db.query('DELETE FROM Feedback WHERE location_id = ?', [targetLoc]);
+    } else {
+      await db.query('DELETE FROM CallQueue').catch(() => {});
+      await db.query('DELETE FROM Feedback').catch(() => {});
+      await db.query('UPDATE FeedbackQrScan SET isFeedbackSubmitted = 0, feedbackId = NULL').catch(() => {});
+    }
+
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('feedback:cleared');
+    }
+    return res.json({ success: true, message: 'All feedback records removed successfully' });
+  } catch (err) {
+    console.error('[clearAllFeedbacks Error]', err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+};
+
 // ── Chat System (Gemini AI) ─────────────────────────────────────────────────
 let GoogleGenerativeAI = null;
 try {

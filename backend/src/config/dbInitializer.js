@@ -1898,7 +1898,46 @@ async function autoInitializeDatabase(pool) {
       }
     }
 
-    const [finalTables] = await connection.query(`SHOW TABLES`);
+    // Purge test / demo feedback records and orphan tickets
+    try {
+      logDebug(`[Auto DB Initializer] Purging test/demo feedback records...`);
+      await connection.query(`
+        DELETE FROM CallQueue 
+        WHERE customerName IN ('Trial', 'test', 'demo', 'Demo', 'Test', 'T1', 'Suresh Gowda', 'Anita Patil', 'Ramesh Kumar', 'Valued Customer')
+           OR mobile IN ('+919654186453', '9654186453', '+919849865416', '9849865416', '+919864685465', '9864685465', '+919987866534', '9987866534', '+919845464464', '9845464464', '+919798564168', '9798564168', '+918986541564', '8986541564', '6874685', '9741234567', '9845012345', '9876543210')
+           OR LOWER(customerName) LIKE '%test%'
+           OR LOWER(customerName) LIKE '%demo%'
+           OR LOWER(customerName) LIKE '%trial%'
+           OR feedbackId IN (
+             SELECT id FROM Feedback 
+             WHERE customerName IN ('Trial', 'test', 'demo', 'Demo', 'Test', 'T1', 'Suresh Gowda', 'Anita Patil', 'Ramesh Kumar')
+                OR custName IN ('Trial', 'test', 'demo', 'Demo', 'Test', 'T1', 'Suresh Gowda', 'Anita Patil', 'Ramesh Kumar')
+                OR LOWER(customerName) LIKE '%test%'
+                OR LOWER(customerName) LIKE '%demo%'
+                OR LOWER(customerName) LIKE '%trial%'
+           )
+      `).catch(() => {});
+
+      await connection.query(`
+        DELETE FROM Feedback 
+        WHERE customerName IN ('Trial', 'test', 'demo', 'Demo', 'Test', 'T1', 'Suresh Gowda', 'Anita Patil', 'Ramesh Kumar')
+           OR custName IN ('Trial', 'test', 'demo', 'Demo', 'Test', 'T1', 'Suresh Gowda', 'Anita Patil', 'Ramesh Kumar')
+           OR mobile IN ('+919654186453', '9654186453', '+919849865416', '9849865416', '+919864685465', '9864685465', '+919987866534', '9987866534', '+919845464464', '9845464464', '+919798564168', '9798564168', '+918986541564', '8986541564', '6874685', '9741234567', '9845012345', '9876543210')
+           OR custMobile IN ('+919654186453', '9654186453', '+919849865416', '9849865416', '+919864685465', '9864685465', '+919987866534', '9987866534', '+919845464464', '9845464464', '+919798564168', '9798564168', '+918986541564', '8986541564', '6874685', '9741234567', '9845012345', '9876543210')
+           OR LOWER(customerName) LIKE '%test%'
+           OR LOWER(customerName) LIKE '%demo%'
+           OR LOWER(customerName) LIKE '%trial%'
+           OR customerName = 'T1'
+      `).catch(() => {});
+
+      await connection.query(`
+        UPDATE FeedbackQrScan SET isFeedbackSubmitted = 0, feedbackId = NULL 
+        WHERE feedbackId IS NOT NULL AND feedbackId NOT IN (SELECT id FROM Feedback)
+      `).catch(() => {});
+      logDebug(`[Auto DB Initializer] Test/demo feedback purge complete`);
+    } catch (cleanErr) {
+      logDebug(`[Auto DB Initializer Warning on feedback cleanup]:`, cleanErr.message);
+    }
     logDebug(`====================================================`);
     logDebug(`  [Auto DB Initializer] DATABASE FULLY INITIALIZED!`);
     logDebug(`  Total Active Tables: ${finalTables.length}`);

@@ -34,7 +34,8 @@ import {
   Send,
   UserCheck,
   MapPin,
-  Globe
+  Globe,
+  Trash2
 } from 'lucide-react';
 
 export default function FeedbackCollection() {
@@ -90,6 +91,34 @@ export default function FeedbackCollection() {
       showToast('Failed to update resolution: ' + (err.message || 'Error'), 'error');
     } finally {
       setSavingResolution(false);
+    }
+  };
+
+  const handleDeleteFeedback = async (id: string) => {
+    if (!id) return;
+    if (!window.confirm('Are you sure you want to permanently delete this customer feedback record?')) return;
+    try {
+      await API.deleteFeedback(id);
+      showToast('Feedback record deleted successfully', 'success');
+      if (selectedFeedback?.id === id) {
+        setSelectedFeedback(null);
+      }
+      loadFeedbacks();
+    } catch (err: any) {
+      showToast('Failed to delete feedback: ' + (err.message || 'Error'), 'error');
+    }
+  };
+
+  const handleClearAllFeedbacks = async () => {
+    const locMsg = currentLocation && currentLocation !== 'ALL' ? `for ${currentLocationLabel}` : 'across all locations';
+    if (!window.confirm(`Are you sure you want to permanently delete ALL feedback details ${locMsg}? This cannot be undone.`)) return;
+    try {
+      await API.clearAllFeedbacks(currentLocation && currentLocation !== 'ALL' ? currentLocation : undefined);
+      showToast('All feedback details cleared successfully', 'success');
+      setSelectedFeedback(null);
+      loadFeedbacks();
+    } catch (err: any) {
+      showToast('Failed to clear feedbacks: ' + (err.message || 'Error'), 'error');
     }
   };
 
@@ -229,6 +258,16 @@ export default function FeedbackCollection() {
                 <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
                 <span>Refresh</span>
               </button>
+              {feedbacks.length > 0 && (
+                <button
+                  onClick={handleClearAllFeedbacks}
+                  className="px-3.5 py-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-extrabold hover:bg-rose-100 flex items-center gap-1.5 shadow-xs transition-colors"
+                  title="Permanently remove feedback details"
+                >
+                  <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                  <span>Clear All Feedbacks</span>
+                </button>
+              )}
               <button
                 onClick={handleExportCSV}
                 className="btn-gold text-xs px-4 py-2 flex items-center gap-1.5 shadow-md"
@@ -460,12 +499,21 @@ export default function FeedbackCollection() {
                             {f.voice || 'No extra comments'}
                           </td>
                           <td className="py-3.5 px-4 text-right">
-                            <button
-                              onClick={() => handleOpenModal(f)}
-                              className="px-3 py-1.5 rounded-xl border border-primary text-primary font-extrabold text-[11px] hover:bg-primary hover:text-white transition-all flex items-center gap-1 ml-auto shadow-xs"
-                            >
-                              <Eye className="w-3.5 h-3.5" /> View Ticket
-                            </button>
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                onClick={() => handleOpenModal(f)}
+                                className="px-3 py-1.5 rounded-xl border border-primary text-primary font-extrabold text-[11px] hover:bg-primary hover:text-white transition-all flex items-center gap-1 shadow-xs"
+                              >
+                                <Eye className="w-3.5 h-3.5" /> View Ticket
+                              </button>
+                              <button
+                                onClick={() => handleDeleteFeedback(f.id)}
+                                className="p-1.5 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-600 hover:text-white transition-all shadow-xs cursor-pointer"
+                                title="Delete this feedback record"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );
@@ -777,12 +825,23 @@ export default function FeedbackCollection() {
 
                 {/* 8. Action Buttons (Modal Footer) */}
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-[#DFDDD7]">
-                  <button
-                    onClick={() => setSelectedFeedback(null)}
-                    className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-white border border-[#DFDDD7] hover:bg-[#F6F4EF] text-[#182033] font-extrabold text-xs transition-all shadow-sm cursor-pointer"
-                  >
-                    Close Dashboard
-                  </button>
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <button
+                      onClick={() => setSelectedFeedback(null)}
+                      className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-white border border-[#DFDDD7] hover:bg-[#F6F4EF] text-[#182033] font-extrabold text-xs transition-all shadow-sm cursor-pointer"
+                    >
+                      Close Dashboard
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteFeedback(selectedFeedback.id)}
+                      className="px-4 py-2.5 rounded-xl bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-700 font-extrabold text-xs shadow-sm active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
+                      title="Permanently remove this ticket"
+                    >
+                      <Trash2 className="w-4 h-4 text-rose-600" />
+                      <span>Delete Ticket</span>
+                    </button>
+                  </div>
 
                   <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
                     <button

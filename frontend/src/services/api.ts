@@ -707,6 +707,11 @@ export const API = {
     const q = new URLSearchParams(params as any).toString();
     return apiFetch(`/crm/feedbacks${q ? `?${q}` : ''}`);
   },
+  async deleteFeedback(id: string) { return apiFetch(`/crm/feedbacks/${id}`, { method: 'DELETE' }); },
+  async clearAllFeedbacks(locationId?: string) {
+    const q = locationId ? `?locationId=${encodeURIComponent(locationId)}` : '';
+    return apiFetch(`/crm/feedbacks${q}`, { method: 'DELETE' });
+  },
   async submitFeedback(payload: any) { return apiFetch('/crm/feedback', { method: 'POST', body: JSON.stringify(payload) }); },
   async getCallQueue(params?: { date?: string; startDate?: string; endDate?: string; status?: string; search?: string }) {
     const q = new URLSearchParams(params as any).toString();

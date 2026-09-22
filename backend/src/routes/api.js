@@ -172,6 +172,8 @@ router.post('/crm/footfall/upsert', authenticate, authorizeLocationAccess(), crm
 router.get('/crm/feedback-questions', authenticate, crmController.getFeedbackQuestions);
 router.get('/crm/feedback-stats', authenticate, authorizeLocationAccess(), crmController.getFeedbackStats);
 router.get('/crm/feedbacks', authenticate, authorizeLocationAccess(), crmController.getFeedbacks);
+router.delete('/crm/feedbacks/:id', authenticate, authorizeLocationAccess(), crmController.deleteFeedback);
+router.delete('/crm/feedbacks', authenticate, authorizeLocationAccess(), crmController.clearAllFeedbacks);
 router.post('/crm/feedback', optionalAuthenticate, authorizeLocationAccess(), crmController.submitFeedback);
 router.get('/crm/call-queue', authenticate, authorizeLocationAccess(), crmController.getCallQueue);
 router.post('/crm/call-queue/update', authenticate, authorizeLocationAccess(), crmController.updateCallQueue);
