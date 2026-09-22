@@ -53,14 +53,9 @@ class AuthController {
     const userAgent = req.headers['user-agent'];
 
     try {
-      // 1. Check account / IP lockout first (allow master admin recovery to unlock)
-      const cleanU = String(username || '').trim().toLowerCase();
-      const cleanP = String(password || '').trim();
-      const isBuiltinAdmin = ['admin@bsctextiles.com', 'admin'].includes(cleanU);
-      const isMasterAdminAuth = isBuiltinAdmin && cleanP === (process.env.ADMIN_PASSWORD || 'admin@2026');
-
+      // 1. Check account / IP lockout first
       const lockCheck = loginSecurity.checkLock(username, clientIp);
-      if (lockCheck.isLocked && !isMasterAdminAuth) {
+      if (lockCheck.isLocked) {
         return res.status(423).json({
           success: false,
           locked: true,

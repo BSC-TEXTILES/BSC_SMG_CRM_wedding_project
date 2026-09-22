@@ -268,56 +268,6 @@ export default function SettingsPage() {
                   <span>Open User Management</span>
                 </button>
               </div>
-
-              {/* System Credentials Quick Reference Card */}
-              <div className="card-glass p-5 border-2 border-accent/30 space-y-3 bg-gradient-to-r from-sky-50/60 to-sky-100/40">
-                <div className="flex items-center justify-between border-b border-accent/30 pb-2">
-                  <h3 className="font-extrabold text-primary text-xs uppercase tracking-wider flex items-center gap-2">
-                    <Shield className="w-4 h-4 text-accent" />
-                    <span>Built-in System Accounts Reference</span>
-                  </h3>
-                  <span className="text-[10px] font-black text-accent bg-amber-200/60 px-2 py-0.5 rounded-full uppercase">
-                    {session?.locationName || 'Multi-Location System'}
-                  </span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs font-semibold">
-                  <div className="p-3 bg-white rounded-xl border border-accent-soft">
-                    <div className="text-[10px] font-black text-primary uppercase">System Admin</div>
-                    <div className="font-extrabold text-primary font-mono mt-0.5">admin@bsctextiles.com</div>
-                    <div className="text-[11px] text-emerald-700 font-bold flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Password stored as bcrypt hash
-                    </div>
-                  </div>
-                  <div className="p-3 bg-white rounded-xl border border-accent-soft">
-                    <div className="text-[10px] font-black text-primary uppercase">HR Specialist</div>
-                    <div className="font-extrabold text-primary font-mono mt-0.5">hr@bsctextiles.com</div>
-                    <div className="text-[11px] text-emerald-700 font-bold flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Password stored as bcrypt hash
-                    </div>
-                  </div>
-                  <div className="p-3 bg-white rounded-xl border border-accent-soft">
-                    <div className="text-[10px] font-black text-primary uppercase">Store Manager</div>
-                    <div className="font-extrabold text-primary font-mono mt-0.5">manager@bsctextiles.com</div>
-                    <div className="text-[11px] text-emerald-700 font-bold flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Password stored as bcrypt hash
-                    </div>
-                  </div>
-                  <div className="p-3 bg-white rounded-xl border-2 border-emerald-500/40 bg-emerald-50/50">
-                    <div className="text-[10px] font-black text-emerald-800 uppercase flex items-center justify-between">
-                      <span>Greeter Desk</span>
-                      <span className="px-1.5 py-[2px] rounded bg-emerald-600 text-white font-mono text-[9px]">NEW</span>
-                    </div>
-                    <div className="font-extrabold text-primary font-mono mt-0.5">greeter@bsctextiles.com</div>
-                    <div className="text-[11px] text-emerald-700 font-bold flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Password stored as bcrypt hash
-                    </div>
-                  </div>
-                </div>
-                <p className="text-[10px] text-primary font-medium">
-                  Passwords are never displayed anywhere in the application. They are stored as one-way bcrypt hashes;
-                  user accounts are created and managed from the User Management hub above.
-                </p>
-              </div>
             </div>
           )}
 

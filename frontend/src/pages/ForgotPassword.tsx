@@ -124,7 +124,7 @@ export default function ForgotPasswordPage() {
                 autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@bsctextiles.com"
+                placeholder="Enter your registered email"
                 className="w-full text-xs font-semibold pl-10 pr-4 py-3 rounded-xl border border-accent-soft bg-white text-primary placeholder-primary/60 focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all shadow-xs"
                 required
               />

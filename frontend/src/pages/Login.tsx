@@ -304,7 +304,7 @@ export default function LoginPage() {
                 disabled={isLocked && lockRemainingSeconds > 0}
                 onChange={(e) => setUsername(e.target.value)}
                 onBlur={() => { if (username.trim()) checkServerLock(username.trim()); }}
-                placeholder="admin@bsctextiles.com"
+                placeholder="Enter your username or email"
                 className="w-full text-xs font-semibold pl-10 pr-4 py-3 rounded-xl border border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#101C36] focus:ring-2 focus:ring-[#101C36]/20 transition-all shadow-xs disabled:bg-gray-100 disabled:cursor-not-allowed"
                 required
               />

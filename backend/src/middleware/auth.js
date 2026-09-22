@@ -113,15 +113,6 @@ async function logSessionActivity(data) {
  * and keeps the backend authoritative instead of relying on the frontend
  * hiding links.
  */
-// Built-in deployment accounts. Their JWTs are issued without a database row
-// (master recovery access), so they are the only identities allowed to proceed
-// when no row is found for the id inside the token.
-const BUILTIN_ACCOUNT_USERNAMES = [
-  'admin@bsctextiles.com', 'admin',
-  'hr@bsctextiles.com', 'hr',
-  'manager@bsctextiles.com', 'manager',
-  'greeter@bsctextiles.com', 'greeter'
-];
 
 // Short-TTL status cache: keeps the per-request cost of the check negligible
 // while still picking up admin changes within a few seconds.
@@ -237,10 +228,8 @@ const authenticate = async (req, res, next) => {
 
     if (status) {
       if (!status.exists) {
-        if (!BUILTIN_ACCOUNT_USERNAMES.includes(username)) {
-          res.clearCookie('token', { path: '/' });
-          return errorRes(res, 'This account no longer exists', [], 401);
-        }
+        res.clearCookie('token', { path: '/' });
+        return errorRes(res, 'This account no longer exists', [], 401);
       } else if (!status.active) {
         res.clearCookie('token', { path: '/' });
         return errorRes(res, 'Your account has been deactivated. Contact a system administrator.', [], 401);

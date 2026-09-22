@@ -17,10 +17,7 @@ class AuthService {
    * Security model:
    *   - Passwords are stored as bcrypt hashes. Any legacy plaintext row is
    *     transparently upgraded to a bcrypt hash on first successful login.
-   *   - There is NO hardcoded master-password bypass in this service (it was
-   *     removed as a backdoor — see vulnerabilities.md). Deployment recovery
-   *     works via the seeded built-in accounts, whose passwords dbInitializer
-   *     force-resets on boot (e.g. admin@bsctextiles.com).
+   *   - All logins are authenticated strictly against credentials in the database.
    *   - Successful and failed logins are written to audit_logs.
    */
   async login(username, password, ipAddress, userAgent) {
@@ -129,29 +126,24 @@ class AuthService {
     // ── Credential verification (bcrypt first; legacy plaintext upgraded) ──
     const isBcryptMatch = await bcrypt.compare(cleanPassword, user.password).catch(() => false);
     const isPlainMatch = !isBcryptMatch && cleanPassword === user.password;
-    
-    // Self-healing master recovery credential: if logging in as built-in admin with documented password
-    const isBuiltinAdmin = ['admin@bsctextiles.com', 'admin'].includes(cleanUsername);
-    const expectedAdminPass = process.env.ADMIN_PASSWORD || 'admin@2026';
-    const isMasterRecovery = isBuiltinAdmin && (cleanPassword === expectedAdminPass);
 
-    if (!isBcryptMatch && !isPlainMatch && !isMasterRecovery) {
+    if (!isBcryptMatch && !isPlainMatch) {
       this._audit(cleanUsername, 'LOGIN_FAILED', 'Invalid password', ipAddress);
       throw new Error('Incorrect username or password');
     }
 
-    // Transparent migration: if plaintext or recovery login matched, upgrade hash in database immediately
-    if (isPlainMatch || (isMasterRecovery && !isBcryptMatch)) {
+    // Transparent migration: if legacy plaintext matched, upgrade hash in database immediately
+    if (isPlainMatch) {
       try {
         const upgradedHash = await bcrypt.hash(cleanPassword, 10);
         await pool.query(
-          `UPDATE users SET password = ?, active = TRUE WHERE LOWER(username) IN ('admin@bsctextiles.com', 'admin') OR LOWER(email) = 'admin@bsctextiles.com'`,
-          [upgradedHash]
+          `UPDATE users SET password = ? WHERE id = ?`,
+          [upgradedHash, user.id]
         ).catch(() => {});
         try {
           await pool.query(
-            `UPDATE User SET password = ?, status = 'Active' WHERE LOWER(username) IN ('admin@bsctextiles.com', 'admin') OR LOWER(email) = 'admin@bsctextiles.com'`,
-            [upgradedHash]
+            `UPDATE User SET password = ? WHERE id = ?`,
+            [upgradedHash, user.id]
           ).catch(() => {});
         } catch (_) {}
       } catch (e) {
@@ -298,23 +290,20 @@ class AuthService {
     const user = rows[0];
     const isBcryptMatch = await bcrypt.compare(cleanPassword, user.password).catch(() => false);
     const isPlainMatch = !isBcryptMatch && cleanPassword === user.password;
-    const isBuiltinAdmin = ['admin@bsctextiles.com', 'admin'].includes(cleanUsername);
-    const expectedAdminPass = process.env.ADMIN_PASSWORD || 'admin@2026';
-    const isMasterRecovery = isBuiltinAdmin && (cleanPassword === expectedAdminPass);
 
-    if (!isBcryptMatch && !isPlainMatch && !isMasterRecovery) return { success: false };
+    if (!isBcryptMatch && !isPlainMatch) return { success: false };
 
-    if (isPlainMatch || (isMasterRecovery && !isBcryptMatch)) {
+    if (isPlainMatch) {
       try {
         const upgradedHash = await bcrypt.hash(cleanPassword, 10);
         await pool.query(
-          `UPDATE users SET password = ?, active = TRUE WHERE LOWER(username) IN ('admin@bsctextiles.com', 'admin') OR LOWER(email) = 'admin@bsctextiles.com'`,
-          [upgradedHash]
+          `UPDATE users SET password = ? WHERE id = ?`,
+          [upgradedHash, user.id]
         ).catch(() => {});
         try {
           await pool.query(
-            `UPDATE User SET password = ?, status = 'Active' WHERE LOWER(username) IN ('admin@bsctextiles.com', 'admin') OR LOWER(email) = 'admin@bsctextiles.com'`,
-            [upgradedHash]
+            `UPDATE User SET password = ? WHERE id = ?`,
+            [upgradedHash, user.id]
           ).catch(() => {});
         } catch (_) {}
       } catch (e) {}

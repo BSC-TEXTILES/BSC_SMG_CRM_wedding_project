@@ -928,70 +928,14 @@ async function autoInitializeDatabase(pool) {
     }
     // ------------------
 
-    // Seed default admin users
-    // Seeding is INSERT-only for staff accounts so password changes made in the
-    // Settings module survive restarts. Passwords read from environment variables.
+    // Ensure default company setting exists
     try {
-      const defaultAdminPass = process.env.ADMIN_PASSWORD || 'admin@2026';
-      const defaultUserPass = process.env.DEFAULT_USER_PASSWORD || 'bsc@2026';
-      const defaultGreeterPass = process.env.GREETER_PASSWORD || 'bsc@123';
-      const hashedPassAdmin = await bcrypt.hash(defaultAdminPass, 10);
-      const hashedPassDefault = await bcrypt.hash(defaultUserPass, 10);
-      const hashedPassGreeter = await bcrypt.hash(defaultGreeterPass, 10);
-
-      // Seed in `users` table (insert-only: existing passwords are never overwritten)
       await connection.query(
-        `INSERT INTO users (username, email, password, full_name, role, active) VALUES
-         ('admin@bsctextiles.com', 'admin@bsctextiles.com', ?, 'System Administrator', 'Admin', TRUE),
-         ('admin', 'admin@bsctextiles.com', ?, 'System Administrator', 'Admin', TRUE),
-         ('hr', 'hr@bsctextiles.com', ?, 'HR Manager', 'HR', TRUE),
-         ('manager', 'manager@bsctextiles.com', ?, 'Store Manager', 'Manager', TRUE),
-         ('greeter@bsctextiles.com', 'greeter@bsctextiles.com', ?, 'Greeter Staff', 'Greeter', TRUE),
-         ('greeter', 'greeter@bsctextiles.com', ?, 'Greeter Staff', 'Greeter', TRUE)
-         ON DUPLICATE KEY UPDATE full_name = VALUES(full_name), active = TRUE`,
-        [hashedPassAdmin, hashedPassAdmin, hashedPassDefault, hashedPassDefault, hashedPassGreeter, hashedPassGreeter]
+        `INSERT INTO Setting (settingKey, settingValue, category) VALUES
+         ('company_name', 'BSC EXCLUSIVE DAVANAGERE', 'General')
+         ON DUPLICATE KEY UPDATE settingValue = settingValue`
       );
-
-      // Seed in `User` table (if User table exists)
-      try {
-        await connection.query(
-          `INSERT INTO User (roleId, username, email, password, fullName, role, status) VALUES
-           (2, 'admin@bsctextiles.com', 'admin@bsctextiles.com', ?, 'System Administrator', 'Admin', 'Active')
-           ON DUPLICATE KEY UPDATE status = 'Active'`,
-          [hashedPassAdmin]
-        );
-      } catch (e) {}
-
-      // Seed default company setting for Davangere
-      try {
-        await connection.query(
-          `INSERT INTO Setting (settingKey, settingValue, category) VALUES
-           ('company_name', 'BSC EXCLUSIVE DAVANAGERE', 'General')
-           ON DUPLICATE KEY UPDATE settingValue = 'BSC EXCLUSIVE DAVANAGERE'`
-        );
-      } catch(e) {}
-
-      // Force update existing admin rows in both users and User tables
-      try {
-        await connection.query(
-          `UPDATE users SET password = ?, active = TRUE 
-           WHERE LOWER(username) IN ('admin@bsctextiles.com', 'admin') OR LOWER(email) = 'admin@bsctextiles.com'`,
-          [hashedPassAdmin]
-        );
-      } catch (e) {}
-
-      try {
-        await connection.query(
-          `UPDATE User SET password = ?, status = 'Active' 
-           WHERE LOWER(username) IN ('admin@bsctextiles.com', 'admin') OR LOWER(email) = 'admin@bsctextiles.com'`,
-          [hashedPassAdmin]
-        );
-      } catch (e) {}
-
-      logDebug(`[Auto DB Initializer] Admin user seeded successfully`);
-    } catch (err) {
-      logDebug(`[Auto DB Initializer User Seed Warning]:`, err.message);
-    }
+    } catch (e) {}
 
     // Seed default designations if empty or missing
     const defaultDesignations = [
