@@ -611,9 +611,9 @@ exports.getFeedbackStats = async (req, res) => {
 
     // Location breakdown from real database records
     let byLocation = {
-      belagavi: { locationId: 1, locationCode: 'BEL', name: 'Belagavi', total: 0, positive: 0, negative: 0, avgRating: '5.0', scans: 0 },
-      davanagere: { locationId: 2, locationCode: 'DAV', name: 'Davanagere', total: 0, positive: 0, negative: 0, avgRating: '5.0', scans: 0 },
-      shivamogga: { locationId: 3, locationCode: 'SHI', name: 'Shivamogga', total: 0, positive: 0, negative: 0, avgRating: '5.0', scans: 0 }
+      belagavi: { locationId: 1, locationCode: 'BEL', name: 'Belagavi', total: 0, positive: 0, negative: 0, needsFollowUp: 0, avgRating: '5.0', scans: 0 },
+      davanagere: { locationId: 2, locationCode: 'DAV', name: 'Davanagere', total: 0, positive: 0, negative: 0, needsFollowUp: 0, avgRating: '5.0', scans: 0 },
+      shivamogga: { locationId: 3, locationCode: 'SHI', name: 'Shivamogga', total: 0, positive: 0, negative: 0, needsFollowUp: 0, avgRating: '5.0', scans: 0 }
     };
 
     try {
@@ -648,6 +648,22 @@ exports.getFeedbackStats = async (req, res) => {
         scanMap[s.locationId] = Number(s.scanCount) || 0;
       });
 
+      // Query needs follow-up counts per location
+      const [locQueueRows] = await db.query(`
+        SELECT 
+          f.location_id,
+          COUNT(DISTINCT f.id) as followUpCount
+        FROM Feedback f
+        LEFT JOIN CallQueue cq ON (cq.feedbackId = f.id OR cq.id = f.id)
+        WHERE (f.isNegative = 1 OR cq.id IS NOT NULL) AND (cq.status IS NULL OR cq.status = 'new' OR cq.status = 'pending')
+        GROUP BY f.location_id
+      `).catch(() => [[]]);
+
+      const queueMap = {};
+      (locQueueRows || []).forEach(q => {
+        queueMap[Number(q.location_id)] = Number(q.followUpCount) || 0;
+      });
+
       (locFeedbackRows || []).forEach(r => {
         const lid = Number(r.location_id);
         const t = Number(r.totalCount) || 0;
@@ -655,10 +671,11 @@ exports.getFeedbackStats = async (req, res) => {
         const p = Math.max(0, t - n);
         const avg = r.avgRating ? Number(r.avgRating).toFixed(1) : '5.0';
         const sc = scanMap[lid] || 0;
+        const fu = queueMap[lid] || n;
 
-        if (lid === 1) byLocation.belagavi = { ...byLocation.belagavi, total: t, positive: p, negative: n, avgRating: avg, scans: sc };
-        if (lid === 2) byLocation.davanagere = { ...byLocation.davanagere, total: t, positive: p, negative: n, avgRating: avg, scans: sc };
-        if (lid === 3) byLocation.shivamogga = { ...byLocation.shivamogga, total: t, positive: p, negative: n, avgRating: avg, scans: sc };
+        if (lid === 1) byLocation.belagavi = { ...byLocation.belagavi, total: t, positive: p, negative: n, needsFollowUp: fu, avgRating: avg, scans: sc };
+        if (lid === 2) byLocation.davanagere = { ...byLocation.davanagere, total: t, positive: p, negative: n, needsFollowUp: fu, avgRating: avg, scans: sc };
+        if (lid === 3) byLocation.shivamogga = { ...byLocation.shivamogga, total: t, positive: p, negative: n, needsFollowUp: fu, avgRating: avg, scans: sc };
       });
     } catch (e) {
       console.warn('[getFeedbackStats Location Breakdown Warning]:', e.message);
@@ -672,6 +689,7 @@ exports.getFeedbackStats = async (req, res) => {
       totalFeedback: total,
       positiveFeedback: pos,
       negativeFeedback: neg,
+      needsFollowUp: pendingCallQueue || neg,
       npsScore: nps,
       pendingCallQueue,
       totalCallQueue,
@@ -1496,6 +1514,7 @@ exports.getFeedbacks = async (req, res) => {
     const negative = formatted.filter(r => r.isNegative).length;
     const positive = total - negative;
     const npsScore = total > 0 ? Math.round((positive / total) * 100) : 100;
+    const needsFollowUp = negative;
 
     return res.json({
       success: true,
@@ -1504,6 +1523,7 @@ exports.getFeedbacks = async (req, res) => {
         total,
         positive,
         negative,
+        needsFollowUp,
         npsScore
       }
     });
@@ -1512,7 +1532,7 @@ exports.getFeedbacks = async (req, res) => {
     return res.json({
       success: true,
       feedbacks: [],
-      stats: { total: 0, positive: 0, negative: 0, npsScore: 100 }
+      stats: { total: 0, positive: 0, negative: 0, needsFollowUp: 0, npsScore: 100 }
     });
   }
 };

@@ -243,8 +243,8 @@ export default function LoginPage() {
         {/* Card Body */}
         <form onSubmit={handleLogin} className="p-7 space-y-5">
           <div>
-            <h3 className="text-xl font-black text-slate-900 tracking-tight">Welcome Back</h3>
-            <p className="text-xs text-slate-600 font-medium mt-1">Sign in with your authorized system credentials. Your location will be loaded automatically.</p>
+            <h3 className="text-xl font-black text-text-primary tracking-tight">Welcome Back</h3>
+            <p className="text-xs text-text-secondary font-medium mt-1">Sign in with your authorized system credentials. Your location will be loaded automatically.</p>
           </div>
 
           {/* Security Violation Alert */}
@@ -291,11 +291,11 @@ export default function LoginPage() {
           )}
 
           <div className="space-y-1.5">
-            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-800">
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-text-primary">
               Username / Email
             </label>
             <div className="relative">
-              <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+              <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-secondary" />
               <input
                 type="text"
                 name="username"
@@ -305,18 +305,18 @@ export default function LoginPage() {
                 onChange={(e) => setUsername(e.target.value)}
                 onBlur={() => { if (username.trim()) checkServerLock(username.trim()); }}
                 placeholder="Enter your username or email"
-                className="w-full text-xs font-semibold pl-10 pr-4 py-3 rounded-xl border border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#101C36] focus:ring-2 focus:ring-[#101C36]/20 transition-all shadow-xs disabled:bg-gray-100 disabled:cursor-not-allowed"
+                className="input-modern w-full pl-10 pr-4 text-xs font-semibold"
                 required
               />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-800">
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-text-primary">
               Password
             </label>
             <div className="relative">
-              <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+              <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-secondary" />
               <input
                 type={showPassword ? "text" : "password"}
                 name="password"
@@ -325,13 +325,13 @@ export default function LoginPage() {
                 disabled={isLocked && lockRemainingSeconds > 0}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••••"
-                className="w-full text-xs font-semibold pl-10 pr-10 py-3 rounded-xl border border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#101C36] focus:ring-2 focus:ring-[#101C36]/20 transition-all shadow-xs disabled:bg-gray-100 disabled:cursor-not-allowed"
+                className="input-modern w-full pl-10 pr-10 text-xs font-semibold"
                 required
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-800 transition-colors focus:outline-none"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary transition-colors focus:outline-none"
                 aria-label={showPassword ? "Hide password" : "Show password"}
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -340,12 +340,12 @@ export default function LoginPage() {
           </div>
 
           <div className="space-y-1.5">
-            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-800">
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-text-primary">
               Security Code
             </label>
             <div className="flex items-center gap-2.5">
               <div className="relative flex-1">
-                <Hash className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                <Hash className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-secondary" />
                 <input
                   type="text"
                   name="captcha"
@@ -359,7 +359,7 @@ export default function LoginPage() {
                   }}
                   placeholder={`Enter ${codeLength} digits`}
                   inputMode="numeric"
-                  className="w-full text-xs font-bold pl-10 pr-3 py-3 rounded-xl border border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#101C36] focus:ring-2 focus:ring-[#101C36]/20 transition-all shadow-xs tracking-widest disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className="input-modern w-full pl-10 pr-3 text-xs font-bold tracking-widest"
                   required
                 />
               </div>
@@ -377,7 +377,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => { loadCaptcha(true); setCountdown(30); }}
-                  className="p-2 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100 transition-colors"
+                  className="btn-secondary p-2"
                   title="Load a new security code"
                   aria-label="Refresh captcha"
                 >
@@ -385,7 +385,7 @@ export default function LoginPage() {
                 </button>
               </div>
             </div>
-            <p className="text-[11px] text-slate-600 font-medium">Refreshes automatically in {countdown}s for your security.</p>
+            <p className="text-[11px] text-text-secondary font-medium">Refreshes automatically in {countdown}s for your security.</p>
           </div>
 
           <div className="flex justify-between items-center">
@@ -393,15 +393,15 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => setShowPrivacyPolicy(true)}
-                className="text-xs text-slate-700 hover:text-slate-900 font-bold hover:underline"
+                className="text-xs text-text-secondary hover:text-text-primary font-bold hover:underline"
               >
                 Privacy Policy
               </button>
-              <span className="text-xs text-slate-400">•</span>
+              <span className="text-xs text-border">•</span>
               <button
                 type="button"
                 onClick={() => setShowTermsModal(true)}
-                className="text-xs text-slate-700 hover:text-slate-900 font-bold hover:underline"
+                className="text-xs text-text-secondary hover:text-text-primary font-bold hover:underline"
               >
                 Terms
               </button>
@@ -409,7 +409,7 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => navigate('/forgot-password')}
-              className="text-xs text-slate-700 hover:text-slate-900 font-bold hover:underline"
+              className="text-xs text-text-secondary hover:text-text-primary font-bold hover:underline"
             >
               Forgot password?
             </button>
@@ -438,11 +438,11 @@ export default function LoginPage() {
             )}
           </button>
 
-          <div className="pt-2 border-t border-slate-200 space-y-2">
+          <div className="pt-2 border-t border-border space-y-2">
             <button
               type="button"
               onClick={() => navigate('/wedding-registration')}
-              className="w-full py-3 px-4 rounded-xl border border-slate-300 text-slate-800 bg-white font-bold text-xs tracking-wide hover:bg-slate-50 active:scale-[0.99] transition-all shadow-xs flex items-center justify-center gap-2"
+                className="btn-secondary w-full tracking-wide flex items-center justify-center gap-2"
             >
               <span>Register for Wedding Shopping</span>
               <Sparkles className="w-4 h-4 text-amber-600" />
@@ -450,27 +450,27 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => navigate('/track')}
-              className="w-full py-2.5 px-4 rounded-xl border border-slate-300 text-slate-800 bg-white font-bold text-xs tracking-wide hover:bg-slate-50 active:scale-[0.99] transition-all shadow-xs flex items-center justify-center gap-2"
+              className="btn-secondary w-full tracking-wide flex items-center justify-center gap-2"
             >
-              <Search className="w-3.5 h-3.5 text-slate-600" />
+              <Search className="w-3.5 h-3.5 text-text-secondary" />
               <span>Track Wedding Request</span>
             </button>
           </div>
         </form>
 
         {/* Card Footer */}
-        <div className="bg-slate-50 px-7 py-3.5 border-t border-slate-200 flex items-center justify-between text-xs text-slate-700 font-semibold">
+        <div className="bg-background px-7 py-3.5 border-t border-border flex items-center justify-between text-xs text-text-secondary font-semibold">
           <span className="flex items-center gap-1.5">
             <ShieldCheck className="w-4 h-4 text-emerald-600" />
             <span>Authorized access only · Location auto-assigned</span>
           </span>
-          <span className="font-bold text-slate-800">BSC v3.0</span>
+          <span className="font-bold text-text-primary">BSC v3.0</span>
         </div>
       </div>
 
       {/* Location Info Note */}
-      <div className="mt-4 flex items-center gap-1.5 text-xs text-slate-700 font-medium">
-        <MapPin className="w-3.5 h-3.5 text-slate-500" />
+      <div className="mt-4 flex items-center gap-1.5 text-xs text-text-secondary font-medium">
+        <MapPin className="w-3.5 h-3.5 text-text-secondary" />
         <span>Your location (Belagavi / Davanagere / Shivamogga) is assigned by the System Admin</span>
       </div>
 

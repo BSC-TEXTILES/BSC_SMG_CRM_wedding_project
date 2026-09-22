@@ -4,6 +4,7 @@ const { successRes, errorRes } = require('../utils/response');
 const { logAction } = require('../utils/logger');
 const userSyncService = require('../services/userSyncService');
 const { invalidateUserStatusCache } = require('../middleware/auth');
+const realtimeService = require('../services/realtimeService');
 
 /**
  * Parses the `id:name` pairs produced by GROUP_CONCAT in listUsers.
@@ -32,36 +33,37 @@ function _parseLocationPairs(pairs, row = {}) {
 
 // ── Module Registry — matches sidebar navItems ────────────────────
 const MODULE_REGISTRY = [
-  { key: 'dashboard', label: 'Dashboard', section: 'Core Workspace' },
-  { key: 'wedding_crm', label: 'Wedding Follow-up CRM', section: 'Store Operations' },
+  { key: 'dashboard', label: 'Dashboard', section: 'Enterprise' },
+  { key: 'wedding_crm', label: 'Wedding CRM', section: 'Store Operations' },
+  { key: 'wedding_registration', label: 'Wedding Customer Registration', section: 'Store Operations' },
   { key: 'telecaller_desk', label: 'Telecaller Calling Desk', section: 'Store Operations' },
-  { key: 'telecaller_dashboard', label: 'Telecaller Dashboard', section: 'Telecaller' },
+  { key: 'telecaller_dashboard', label: 'Telecaller Dashboard', section: 'Store Operations' },
+  { key: 'wedding_operations', label: 'Wedding Operations', section: 'Store Operations' },
   { key: 'footfall', label: 'Hourly Footfall', section: 'Store Operations' },
   { key: 'feedback_collection', label: 'Feedback Collection', section: 'Store Operations' },
   { key: 'feedback_list', label: 'Feedback Call Queue', section: 'Store Operations' },
   { key: 'feedback_qr', label: 'Feedback QR Code', section: 'Store Operations' },
   { key: 'divert', label: 'Sourcing Diverts', section: 'Store Operations' },
-  { key: 'candidates', label: 'Candidate CRM', section: 'Core Workspace' },
-  { key: 'offer', label: 'Offer Desk', section: 'Core Workspace' },
-  { key: 'openings', label: 'Manpower Planning', section: 'Core Workspace' },
-  { key: 'employees', label: 'Employee Directory', section: 'Talent Management' },
-  { key: 'dept_hiring', label: 'Department Hiring Status', section: 'Talent Management' },
-  { key: 'section_allocation', label: 'Section Allocation', section: 'Talent Management' },
+  { key: 'pm_view', label: 'Purchase Manager View', section: 'Store Operations' },
+  { key: 'vm_checklist', label: 'VM Checklist', section: 'Store Operations' },
+  { key: 'attendance', label: 'Attendance & Roster', section: 'Store Operations' },
+  { key: 'candidates', label: 'Candidate CRM', section: 'Talent' },
+  { key: 'offer', label: 'Offer Desk', section: 'Talent' },
+  { key: 'openings', label: 'Manpower Planning', section: 'Talent' },
+  { key: 'employees', label: 'Employee Directory', section: 'Enterprise' },
+  { key: 'dept_hiring', label: 'Department Hiring Status', section: 'Talent' },
+  { key: 'section_allocation', label: 'Section Allocation', section: 'Talent' },
   { key: 'broadcast', label: 'Broadcast Center', section: 'Administration' },
   { key: 'settings', label: 'System Settings', section: 'Administration' },
   { key: 'daily_mcheck', label: 'Daily MCheck', section: 'Daily Operations' },
   { key: 'mcheck_reports', label: 'MCheck Reports', section: 'Daily Operations' },
   { key: 'mcheck_history', label: 'MCheck History', section: 'Daily Operations' },
   { key: 'user_management', label: 'User Management', section: 'Administration' },
-  { key: 'attendance', label: 'Attendance & Roster', section: 'Store Operations' },
-  { key: 'pm_view', label: 'Purchase Manager View', section: 'Store Operations' },
-  { key: 'vm_checklist', label: 'VM Checklist', section: 'Store Operations' },
+  { key: 'system_admin', label: 'System Administrator', section: 'Administration' },
+  { key: 'candidate_apply', label: 'Job Applicant Registration', section: 'Public Portals' },
   { key: 'greeter', label: 'Greeter Kiosk', section: 'Public Portals' },
   { key: 'tv', label: 'Live TV Kiosk', section: 'Public Portals' },
-  { key: 'feedback_public', label: 'Customer Feedback QR', section: 'Public Portals' },
-  { key: 'system_admin', label: 'System Administrator', section: 'Administration' },
-  { key: 'wedding_registration', label: 'Applicant Registration', section: 'Public Portals' },
-  { key: 'wedding_operations', label: 'Wedding Operations', section: 'Store Operations' }
+  { key: 'feedback_public', label: 'Customer Feedback QR', section: 'Public Portals' }
 ];
 
 // ── List all users with their permission counts ───────────────────
@@ -339,6 +341,15 @@ async function _insertUser(req, res, { username, password, role, fullName, email
                                         locationId: resolvedLocationId,
                                         allLocations: wantsAllLocations, locationIds });
 
+    realtimeService.emitUserChange('CREATE', {
+      id: newUserId,
+      username,
+      role,
+      employeeId: finalEmployeeId,
+      locationId: resolvedLocationId,
+      active: true
+    });
+
     return successRes(res, { id: newUserId, username, employeeId: finalEmployeeId }, 'User created successfully');
   } catch (err) {
     return errorRes(res, 'Failed to create user', [err.message], 500);
@@ -474,6 +485,14 @@ const updateUser = async (req, res) => {
 
     await _audit(req, 'UPDATE_USER', { userId: id, username: user.username, changes: req.body });
 
+    realtimeService.emitUserChange('UPDATE', {
+      id,
+      username: user.username,
+      role: role !== undefined ? role : user.prevRole,
+      active: active !== undefined ? active : true,
+      locationId: req.body.locationId
+    });
+
     return successRes(res, { id }, 'User updated successfully');
   } catch (err) {
     return errorRes(res, 'Failed to update user', [err.message], 500);
@@ -507,6 +526,8 @@ const deleteUser = async (req, res) => {
     invalidateUserStatusCache(user.id);
 
     await _audit(req, 'DELETE_USER', { userId: user.id, username: user.username });
+
+    realtimeService.emitUserChange('DELETE', { id: user.id, username: user.username });
 
     return successRes(res, { id }, 'User deleted successfully');
   } catch (err) {
@@ -574,7 +595,13 @@ const updatePermissions = async (req, res) => {
       }
     }
 
+    invalidateUserStatusCache(id);
+
     await _audit(req, 'UPDATE_PERMISSIONS', { userId: id, username: user.username, moduleCount: permissions.filter(p => p.can_view).length });
+
+    realtimeService.emitPermissionsChange(id, { username: user.username });
+    realtimeService.emitUserChange('PERMISSIONS', { id, username: user.username });
+    realtimeService.emitUserChange('UPDATE', { id, username: user.username });
 
     return successRes(res, { id }, 'Permissions updated successfully');
   } catch (err) {
@@ -606,6 +633,8 @@ const toggleStatus = async (req, res) => {
     invalidateUserStatusCache(id);
 
     await _audit(req, newStatus ? 'ACTIVATE_USER' : 'DEACTIVATE_USER', { userId: id, username: user.username });
+
+    realtimeService.emitUserChange('STATUS', { id, username: user.username, active: !!newStatus });
 
     return successRes(res, { id, active: !!newStatus }, `User ${newStatus ? 'activated' : 'deactivated'} successfully`);
   } catch (err) {

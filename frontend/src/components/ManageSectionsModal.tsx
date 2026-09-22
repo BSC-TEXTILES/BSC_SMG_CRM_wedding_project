@@ -277,13 +277,13 @@ export default function ManageSectionsModal({ isOpen, onClose, onSectionsUpdated
                             <div className="flex items-center justify-end gap-1">
                               <button
                                 onClick={() => handleSaveEdit(sec.id)}
-                                className="px-2 py-1 rounded-lg bg-emerald-600 text-white font-bold text-xs"
+                                className="btn-success text-xs"
                               >
                                 Save
                               </button>
                               <button
                                 onClick={() => setEditingId(null)}
-                                className="px-2 py-1 rounded-lg bg-slate-200 text-slate-700 font-bold text-xs"
+                                className="btn-secondary text-xs"
                               >
                                 Cancel
                               </button>

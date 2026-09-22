@@ -52,7 +52,7 @@ export default function MainCrmDashboard() {
       budget: '₹4,20,000',
       stylist: 'Ramesh Katti',
       stylistInitials: 'RK',
-      stylistColor: 'bg-slate-800 text-white'
+      stylistColor: 'bg-primary text-white'
     },
     {
       id: 'REG-2024-SHV-057',

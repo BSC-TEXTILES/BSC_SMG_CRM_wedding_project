@@ -818,7 +818,7 @@ export default function WeddingCustomerRegister() {
                                   <div className={`text-[9px] font-bold uppercase ${isSelected ? 'text-[#C9A45C]' : 'text-muted'}`}>
                                     {t.role}
                                   </div>
-                                  <div className={`text-[9px] ${isSelected ? 'text-slate-300' : 'text-muted'}`}>
+                                  <div className={`text-[9px] ${isSelected ? 'text-border' : 'text-muted'}`}>
                                     {t.location_name || 'All Locations'}
                                   </div>
                                 </div>

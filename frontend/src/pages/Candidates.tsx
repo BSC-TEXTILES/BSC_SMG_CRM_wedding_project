@@ -650,13 +650,13 @@ export default function CandidatesPage() {
                             value={c.status || 'New'}
                             disabled={actionLoading}
                             onChange={(e) => handleStatusSelect(c, e.target.value)}
-                            className={`text-[11px] font-extrabold rounded-xl border-2 px-2.5 py-1.5 cursor-pointer outline-none transition-all shadow-xs ${c.status === 'New' ? 'bg-slate-100 text-slate-800 border-slate-300' :
-                                c.status === 'Shortlisted' ? 'bg-blue-50 text-blue-800 border-blue-300' :
-                                  c.status === 'Joined' ? 'bg-teal-50 text-teal-800 border-teal-300 font-black' :
-                                    c.status === 'Hold' ? 'bg-orange-50 text-orange-800 border-orange-300' :
-                                      c.status === 'Rejected' || c.status === 'Offer Rejected' ? 'bg-rose-50 text-rose-800 border-rose-300' :
-                                        'bg-slate-100 text-slate-800 border-slate-300'
-                              }`}
+                            className={`badge ${c.status === 'New' ? 'b-new' :
+                                c.status === 'Shortlisted' ? 'b-info' :
+                                  c.status === 'Joined' ? 'b-sel' :
+                                    c.status === 'Hold' ? 'b-hold' :
+                                      c.status === 'Rejected' || c.status === 'Offer Rejected' ? 'b-rej' :
+                                        'b-new'
+                              } text-[11px] font-extrabold cursor-pointer`}
                           >
                             <option value="New">🔵 New</option>
                             <option value="Shortlisted">📋 Shortlisted (Move to Wedding Operations)</option>

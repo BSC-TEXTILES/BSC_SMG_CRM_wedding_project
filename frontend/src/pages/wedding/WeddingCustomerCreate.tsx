@@ -688,7 +688,7 @@ export default function WeddingCustomerCreate() {
                   onClick={() => handleSubmit('register')}
                   className="px-5 py-2.5 rounded-xl bg-white hover:bg-[#F6F4EF] border border-[#DFDDD7] font-bold text-xs text-[#182033] transition-all disabled:opacity-50 flex items-center gap-2"
                 >
-                  {saving && <div className="w-3.5 h-3.5 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin" />}
+                  {saving && <div className="w-3.5 h-3.5 border-2 border-border border-t-primary rounded-full animate-spin" />}
                   {saving ? 'Saving...' : 'Save to Register'}
                 </button>
 

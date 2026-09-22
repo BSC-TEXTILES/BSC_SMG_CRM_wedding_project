@@ -702,9 +702,12 @@ export const API = {
   async getFootfall(date?: string) { return apiFetch(`/crm/footfall${date ? `?date=${date}` : ''}`); },
   async upsertFootfall(payload: any) { return apiFetch('/crm/footfall/upsert', { method: 'POST', body: JSON.stringify(payload) }); },
   async getFeedbackQuestions() { return apiFetch('/crm/feedback-questions'); },
-  async getFeedbackStats() { return apiFetch('/crm/feedback-stats'); },
-  async getFeedbacks(params?: { date?: string; startDate?: string; endDate?: string; isNegative?: string; search?: string }) {
-    const q = new URLSearchParams(params as any).toString();
+  async getFeedbackStats(params?: { location_id?: string | number; locationId?: string | number }) {
+    const q = params ? new URLSearchParams(params as any).toString() : '';
+    return apiFetch(`/crm/feedback-stats${q ? `?${q}` : ''}`);
+  },
+  async getFeedbacks(params?: { date?: string; startDate?: string; endDate?: string; isNegative?: string; search?: string; location_id?: string | number; locationId?: string | number }) {
+    const q = params ? new URLSearchParams(params as any).toString() : '';
     return apiFetch(`/crm/feedbacks${q ? `?${q}` : ''}`);
   },
   async deleteFeedback(id: string) { return apiFetch(`/crm/feedbacks/${id}`, { method: 'DELETE' }); },

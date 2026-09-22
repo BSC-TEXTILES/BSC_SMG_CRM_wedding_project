@@ -290,7 +290,7 @@ export default function TelecallerDeskPage() {
                   { key: 'upcoming', label: 'Upcoming', count: queueRecords.upcoming.length, color: 'text-blue-700 bg-blue-50' },
                   { key: 'priority', label: 'VIP / Priority', count: queueRecords.priority.length, color: 'text-indigo-700 bg-indigo-50' },
                   { key: 'newLeads', label: 'New Leads', count: queueRecords.newLeads.length, color: 'text-emerald-700 bg-emerald-50' },
-                  { key: 'myQueue', label: 'My Queue', count: queueRecords.myQueue.length, color: 'text-[#101C36] bg-slate-100' }
+                  { key: 'myQueue', label: 'My Queue', count: queueRecords.myQueue.length, color: 'text-primary bg-primary-soft' }
                 ].map((tab) => (
                   <button
                     key={tab.key}
@@ -388,7 +388,7 @@ export default function TelecallerDeskPage() {
                           </td>
                           <td className="py-3 px-4 font-semibold text-gray-700">
                             {cust.assigned_telecaller ? (
-                              <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-800 px-2 py-0.5 rounded text-[11px] font-bold">
+                              <span className="badge b-new text-[11px]">
                                 👤 {cust.assigned_telecaller}
                               </span>
                             ) : (

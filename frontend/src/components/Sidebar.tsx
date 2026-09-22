@@ -10,6 +10,7 @@ import {
 import { getDashboardLabelForRole } from '../utils/dashboardRouting';
 import { getRoleNavMap, resolveAllowedPages } from '../utils/rbac';
 import { useLocationContext } from '../context/LocationContext';
+import { permissionsCache } from '../context/PermissionsCache';
 
 interface SidebarProps {
   session: UserSession | null;
@@ -23,15 +24,12 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
   const [collapsed, setCollapsed] = useState<boolean>(getSidebarCollapsed());
   const navScrollRef = useRef<HTMLDivElement>(null);
 
-  let activeLocationLabel = '';
-  try {
-    const locCtx = useLocationContext();
-    if (locCtx) {
-      activeLocationLabel = locCtx.currentLocation === 'ALL'
-        ? '🌐 ALL LOCATIONS'
-        : `📍 ${locCtx.currentLocationLabel.toUpperCase()}`;
-    }
-  } catch (e) {}
+  const locCtx = useLocationContext();
+  const activeLocationLabel = locCtx
+    ? locCtx.currentLocation === 'ALL'
+      ? '🌐 ALL LOCATIONS'
+      : `📍 ${(locCtx.currentLocationLabel || session?.locationName || 'STORE').toUpperCase()}`
+    : '';
 
   useEffect(() => {
     const unsub = subscribeSidebarCollapsed((c) => {
@@ -121,21 +119,17 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
   ].includes((role || '').trim().toLowerCase().replace(/[_\s-]+/g, ' '));
 
   const navItems = [
-    // Telecaller Workspace (Only for Telecaller role)
-    { key: 'telecaller_desk', href: '/telecaller/desk', label: 'Telecaller Desk', icon: PhoneCall, section: 'Telecaller Workspace', isNew: true },
-    { key: 'wedding_crm', href: '/wedding-crm/customers', label: 'Customer Register', icon: Users, section: 'Telecaller Workspace' },
-    { key: 'wedding_registration', href: '/wedding/customer-registration', label: 'Register Wedding Customer', icon: Heart, section: 'Telecaller Workspace' },
-
     // Enterprise (Admin landing module at top)
-    { key: 'dashboard', href: '/dashboard', label: 'Admin Dashboard', icon: BarChart3, section: 'Enterprise' },
+    { key: 'dashboard', href: '/dashboard', label: 'Dashboard', icon: BarChart3, section: 'Enterprise' },
     { key: 'employees', href: '/employees', label: 'Employee & Store Directory', icon: UserCheck, section: 'Enterprise' },
     { key: 'user_management', href: '/user-management', label: 'User Management', icon: Shield, section: 'Enterprise' },
     { key: 'attendance', href: '/attendance', label: 'Attendance & Roster', icon: UserCheck, section: 'Enterprise' },
 
     // Store Operations
     { key: 'wedding_crm', href: '/wedding-crm/dashboard', label: 'Wedding CRM', icon: Sparkles, section: 'Store Operations', isNew: true },
-    { key: 'telecaller_desk', href: '/telecaller/desk', label: 'Telecaller Desk', icon: PhoneCall, section: 'Store Operations', isNew: true },
     { key: 'wedding_registration', href: '/wedding/customer-registration', label: 'Wedding Customer Registration', icon: Heart, section: 'Store Operations' },
+    { key: 'telecaller_desk', href: '/telecaller/desk', label: 'Telecaller Desk', icon: PhoneCall, section: 'Store Operations', isNew: true },
+    { key: 'telecaller_dashboard', href: '/telecaller-dashboard', label: 'Telecaller Dashboard', icon: BarChart3, section: 'Store Operations' },
     { key: 'wedding_operations', href: '/wedding-operations', label: 'Wedding Operations', icon: FileText, section: 'Store Operations' },
     { key: 'footfall', href: '/footfall', label: 'Hourly Footfall', icon: BarChart3, section: 'Store Operations' },
     { key: 'feedback_collection', href: '/feedback-collection', label: 'Feedback Collection', icon: FileText, section: 'Store Operations' },
@@ -147,6 +141,7 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
 
     // Talent
     { key: 'candidates', href: '/candidates', label: 'Candidate CRM', icon: Users, section: 'Talent' },
+    { key: 'offer', href: '/offer-process', label: 'Offer Desk', icon: FileText, section: 'Talent' },
     { key: 'openings', href: '/openings', label: 'Manpower Planning', icon: Briefcase, section: 'Talent' },
     { key: 'dept_hiring', href: '/department-hiring', label: 'Department Hiring Status', icon: Briefcase, section: 'Talent' },
     { key: 'section_allocation', href: '/section-allocation', label: 'Section Allocation', icon: UserCheck, section: 'Talent' },
@@ -169,28 +164,27 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
   ];
 
   useEffect(() => {
-    // 1. Check user-specific permissions first
-    API.getMyPermissions().then(myPerms => {
-      if (myPerms && myPerms.custom && Array.isArray(myPerms.modules) && myPerms.modules.length > 0) {
-        setAllowed(resolveAllowedPages(role, null, myPerms.modules));
-        return;
-      }
-
-      // 2. Fall back to role-based page visibility settings from database
-      API.getPageSettings().then(res => {
-        const settingsObj = (res && res.settings) ? res.settings : (res || {});
-        // resolveAllowedPages intersects the role map with the DB settings —
-        // a `false` in the DB always hides the entry, even for Admin/HR/Manager.
-        setAllowed(resolveAllowedPages(role, settingsObj, null));
+    const updateAllowed = () => {
+      permissionsCache.get().then(({ myPerms, pageSettings }) => {
+        const userModules = myPerms?.custom && Array.isArray(myPerms.modules) ? myPerms.modules : null;
+        setAllowed(resolveAllowedPages(role, pageSettings, userModules));
       }).catch((err) => {
-        console.error('[Sidebar] Failed to load page settings:', err);
-        // On error, keep current allowed state (initialized from role map)
-        // Do NOT silently fallback to hardcoded defaults
+        console.error('[Sidebar] Failed to load permissions:', err);
+        setAllowed(getRoleNavMap(role));
       });
-    }).catch((err) => {
-      console.error('[Sidebar] Failed to load user permissions:', err);
-      // On error, keep current allowed state
-    });
+    };
+
+    updateAllowed();
+
+    const handlePermissionsUpdated = () => {
+      permissionsCache.invalidate();
+      updateAllowed();
+    };
+
+    window.addEventListener('permissions-updated', handlePermissionsUpdated);
+    return () => {
+      window.removeEventListener('permissions-updated', handlePermissionsUpdated);
+    };
   }, [role]);
 
   const initials = session?.fullName
@@ -297,11 +291,8 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
 
         {/* Navigation Items */}
         <div ref={navScrollRef} className="flex-1 overflow-y-auto px-2 py-1.5 space-y-3">
-          {(isTelecallerRole 
-            ? ['Telecaller Workspace', 'Public Portals'] 
-            : ['Enterprise', 'Store Operations', 'Talent', 'Daily Operations', 'Administration', 'Public Portals']
-          ).map(section => {
-            // Strict RBAC rendering: only keys resolved for THIS role
+          {['Enterprise', 'Store Operations', 'Talent', 'Daily Operations', 'Administration', 'Public Portals'].map(section => {
+            // Strict RBAC rendering: only keys resolved for THIS user
             const items = navItems.filter(item => item.section === section && allowed.includes(item.key));
             if (items.length === 0) return null;
 

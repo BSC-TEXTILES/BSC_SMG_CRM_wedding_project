@@ -179,152 +179,169 @@ export default function FeedbackList() {
 
   return (
     <DashboardLayout title="Feedback Call Queue Desk" subtitle="Telecaller Resolution Workspace & Customer Issue Lifecycle Management">
-      <div className="space-y-6">
+      <div className="w-full max-w-[1680px] mx-auto min-w-0 overflow-x-clip flex flex-col gap-4 sm:gap-5">
 
         {/* KPI Analytics Metric Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="card-glass p-5 flex items-center justify-between border-l-4 border-l-rose-500">
-            <div>
-              <div className="text-[10.5px] font-black uppercase text-primary tracking-wider">Pending Calls</div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 auto-rows-fr">
+          <div className="card-glass h-full p-4 sm:p-5 flex items-center justify-between gap-3 border-l-4 border-l-rose-500 min-w-0">
+            <div className="min-w-0">
+              <div className="text-[10.5px] font-black uppercase text-primary tracking-wider truncate">Pending Calls</div>
               <div className="text-2xl font-black text-rose-600 mt-1">{pendingCount}</div>
-              <div className="text-[11px] text-rose-700 font-bold mt-0.5 flex items-center gap-1">
-                <TriangleAlert className="w-3 h-3" /> Auto-Escalated Tickets
+              <div className="text-[11px] text-rose-700 font-bold mt-0.5 flex items-center gap-1 min-w-0">
+                <TriangleAlert className="w-3 h-3 shrink-0" />
+                <span className="truncate">Auto-Escalated Tickets</span>
               </div>
             </div>
-            <div className="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center font-black">
+            <div className="w-11 h-11 sm:w-12 sm:h-12 shrink-0 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center font-black">
               <PhoneCall className="w-6 h-6 text-rose-600" />
             </div>
           </div>
 
-          <div className="card-glass p-5 flex items-center justify-between">
-            <div>
-              <div className="text-[10.5px] font-black uppercase text-primary tracking-wider">In Progress</div>
+          <div className="card-glass h-full p-4 sm:p-5 flex items-center justify-between gap-3 min-w-0">
+            <div className="min-w-0">
+              <div className="text-[10.5px] font-black uppercase text-primary tracking-wider truncate">In Progress</div>
               <div className="text-2xl font-black text-blue-600 mt-1">{inProgressCount}</div>
-              <div className="text-[11px] text-blue-700 font-bold mt-0.5 flex items-center gap-1">
-                <Clock className="w-3 h-3" /> Telecaller Contacted
+              <div className="text-[11px] text-blue-700 font-bold mt-0.5 flex items-center gap-1 min-w-0">
+                <Clock className="w-3 h-3 shrink-0" />
+                <span className="truncate">Telecaller Contacted</span>
               </div>
             </div>
-            <div className="w-12 h-12 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center font-black">
+            <div className="w-11 h-11 sm:w-12 sm:h-12 shrink-0 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center font-black">
               <Clock className="w-6 h-6 text-blue-600" />
             </div>
           </div>
 
-          <div className="card-glass p-5 flex items-center justify-between">
-            <div>
-              <div className="text-[10.5px] font-black uppercase text-primary tracking-wider">Resolved Today</div>
+          <div className="card-glass h-full p-4 sm:p-5 flex items-center justify-between gap-3 min-w-0">
+            <div className="min-w-0">
+              <div className="text-[10.5px] font-black uppercase text-primary tracking-wider truncate">Resolved Today</div>
               <div className="text-2xl font-black text-emerald-600 mt-1">{resolvedCount}</div>
-              <div className="text-[11px] text-emerald-700 font-bold mt-0.5 flex items-center gap-1">
-                <CircleCheck className="w-3 h-3" /> Issue Closed
+              <div className="text-[11px] text-emerald-700 font-bold mt-0.5 flex items-center gap-1 min-w-0">
+                <CircleCheck className="w-3 h-3 shrink-0" />
+                <span className="truncate">Issue Closed</span>
               </div>
             </div>
-            <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center font-black">
+            <div className="w-11 h-11 sm:w-12 sm:h-12 shrink-0 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center font-black">
               <CircleCheck className="w-6 h-6 text-emerald-600" />
             </div>
           </div>
 
-          <div className="card-glass p-5 flex items-center justify-between">
-            <div>
-              <div className="text-[10.5px] font-black uppercase text-primary tracking-wider">Escalated Manager</div>
+          <div className="card-glass h-full p-4 sm:p-5 flex items-center justify-between gap-3 min-w-0">
+            <div className="min-w-0">
+              <div className="text-[10.5px] font-black uppercase text-primary tracking-wider truncate">Escalated Manager</div>
               <div className="text-2xl font-black text-purple-700 mt-1">{escalatedCount}</div>
-              <div className="text-[11px] text-purple-800 font-bold mt-0.5 flex items-center gap-1">
-                <ShieldAlert className="w-3 h-3" /> Senior Review
+              <div className="text-[11px] text-purple-800 font-bold mt-0.5 flex items-center gap-1 min-w-0">
+                <ShieldAlert className="w-3 h-3 shrink-0" />
+                <span className="truncate">Senior Review</span>
               </div>
             </div>
-            <div className="w-12 h-12 rounded-2xl bg-purple-100 text-purple-700 flex items-center justify-center font-black">
+            <div className="w-11 h-11 sm:w-12 sm:h-12 shrink-0 rounded-2xl bg-purple-100 text-purple-700 flex items-center justify-center font-black">
               <ShieldAlert className="w-6 h-6 text-purple-700" />
             </div>
           </div>
         </div>
 
-        {/* Filter Toolbar */}
-        <div className="card-glass p-4 flex flex-col sm:flex-row items-center gap-3">
-          <div className="relative flex-1 w-full">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search call queue by customer name, mobile, or notes..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="input-modern pl-9 py-2 text-xs font-semibold"
-            />
-          </div>
+        {/* Filter Toolbar — search left, status + date right (same height, no sparse gap) */}
+        <div className="card-glass p-3 sm:p-4">
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] gap-3 items-center">
+            <div className="relative min-w-0 w-full">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Search customer / mobile / notes..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="input-modern w-full pl-9 pr-3 h-9 text-xs font-semibold"
+              />
+            </div>
 
-          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-            <Filter className="w-3.5 h-3.5 text-accent hidden sm:block" />
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="select-modern text-xs font-bold py-2"
-            >
-              <option value="all">All Call Statuses</option>
-              <option value="new">Pending / New</option>
-              <option value="called">In Progress / Called</option>
-              <option value="resolved">Resolved</option>
-              <option value="escalated_manager">Escalated to Store Manager</option>
-            </select>
-
-            <Calendar className="w-3.5 h-3.5 text-accent hidden sm:block ml-2" />
-            <select
-              value={datePreset}
-              onChange={(e) => setDatePreset(e.target.value)}
-              className="select-modern text-xs font-bold py-2"
-            >
-              <option value="all">All Time</option>
-              <option value="today">Today</option>
-              <option value="yesterday">Yesterday</option>
-              <option value="week">This Week</option>
-              <option value="month">This Month</option>
-              <option value="last_month">Last Month</option>
-              <option value="custom">Custom date</option>
-            </select>
-
-            {datePreset === 'custom' && (
-              <div className="flex items-center gap-1.5 animate-fade-in">
-                <input
-                  type="date"
-                  value={startDateInput}
-                  onChange={(e) => setStartDateInput(e.target.value)}
-                  className="input-modern text-xs font-semibold py-1.5"
-                />
-                <span className="text-xs font-bold text-gray-500">to</span>
-                <input
-                  type="date"
-                  value={endDateInput}
-                  onChange={(e) => setEndDateInput(e.target.value)}
-                  className="input-modern text-xs font-semibold py-1.5"
-                />
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full min-w-0">
+              <div className="flex items-center gap-1.5 min-w-0 flex-1 sm:flex-none">
+                <Filter className="w-3.5 h-3.5 text-accent hidden sm:block shrink-0" />
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="select-modern text-xs font-bold h-9 w-full sm:w-auto min-w-0 sm:min-w-[168px] sm:flex-1"
+                  aria-label="Call status filter"
+                >
+                  <option value="all">All Call Statuses</option>
+                  <option value="new">Pending / New</option>
+                  <option value="called">In Progress / Called</option>
+                  <option value="resolved">Resolved</option>
+                  <option value="escalated_manager">Escalated to Store Manager</option>
+                </select>
               </div>
-            )}
+
+              <div className="flex items-center gap-1.5 min-w-0 flex-1 sm:flex-none">
+                <Calendar className="w-3.5 h-3.5 text-accent hidden sm:block shrink-0" />
+                <select
+                  value={datePreset}
+                  onChange={(e) => setDatePreset(e.target.value)}
+                  className="select-modern text-xs font-bold h-9 w-full sm:w-auto min-w-0 sm:min-w-[132px] sm:flex-1"
+                  aria-label="Date range filter"
+                >
+                  <option value="all">All Time</option>
+                  <option value="today">Today</option>
+                  <option value="yesterday">Yesterday</option>
+                  <option value="week">This Week</option>
+                  <option value="month">This Month</option>
+                  <option value="last_month">Last Month</option>
+                  <option value="custom">Custom date</option>
+                </select>
+              </div>
+
+              {datePreset === 'custom' && (
+                <div className="flex items-center gap-1.5 animate-fade-in w-full sm:w-auto">
+                  <input
+                    type="date"
+                    value={startDateInput}
+                    onChange={(e) => setStartDateInput(e.target.value)}
+                    className="input-modern text-xs font-semibold h-9 min-w-0 flex-1 sm:flex-none"
+                    aria-label="Start date"
+                  />
+                  <span className="text-xs font-bold text-gray-500 shrink-0">to</span>
+                  <input
+                    type="date"
+                    value={endDateInput}
+                    onChange={(e) => setEndDateInput(e.target.value)}
+                    className="input-modern text-xs font-semibold h-9 min-w-0 flex-1 sm:flex-none"
+                    aria-label="End date"
+                  />
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Call Queue Master Register Table */}
-        <div className="card-glass overflow-hidden">
-          <div className="p-5 border-b border-accent-soft flex items-center justify-between">
-            <h3 className="font-extrabold text-sm text-primary uppercase tracking-wider flex items-center gap-2">
-              <PhoneCall className="w-4 h-4 text-accent" />
-              <span>Feedback Call Queue Register ({callQueue.length})</span>
+        {/* Call Queue Master Register Table — full content width */}
+        <div className="card-glass overflow-hidden w-full min-w-0 flex flex-col">
+          <div className="px-4 sm:px-5 py-3.5 sm:py-4 border-b border-accent-soft flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
+            <h3 className="font-extrabold text-xs sm:text-sm text-primary uppercase tracking-wider flex items-center gap-2 min-w-0">
+              <PhoneCall className="w-4 h-4 text-accent shrink-0" />
+              <span className="truncate">Feedback Call Queue Register ({callQueue.length})</span>
             </h3>
-            <button onClick={fetchCallQueue} className="text-xs font-bold text-accent hover:underline flex items-center gap-1">
+            <button
+              onClick={fetchCallQueue}
+              className="text-xs font-bold text-accent hover:underline flex items-center gap-1 shrink-0 self-start sm:self-auto"
+            >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
               <span>Sync Real-Time Queue</span>
             </button>
           </div>
 
           {loading ? (
-            <div className="py-12 text-center text-gray-500 font-bold text-xs flex flex-col items-center gap-2">
+            <div className="min-h-[240px] sm:min-h-[300px] px-4 py-12 text-center text-gray-500 font-bold text-xs flex flex-col items-center justify-center gap-2">
               <RefreshCw className="w-6 h-6 animate-spin text-accent" />
               <span>Loading telecaller call queue...</span>
             </div>
           ) : callQueue.length === 0 ? (
-            <div className="py-12 text-center text-gray-500 font-bold text-xs space-y-2">
+            <div className="min-h-[240px] sm:min-h-[300px] px-4 sm:px-6 py-12 text-center text-gray-500 font-bold text-xs flex flex-col items-center justify-center gap-2">
               <CircleCheck className="w-10 h-10 text-emerald-400 mx-auto" />
               <div className="text-sm text-primary font-black">No Pending Follow-up Calls</div>
-              <p className="text-gray-400 font-medium">All escalated customer feedbacks have been handled or resolved.</p>
+              <p className="text-gray-400 font-medium max-w-sm leading-relaxed">All escalated customer feedbacks have been handled or resolved.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs font-semibold border-collapse">
+            <div className="overflow-x-auto w-full">
+              <table className="w-full min-w-[900px] text-left text-xs font-semibold border-collapse">
                 <thead className="bg-primary text-white uppercase text-[10.5px] tracking-wider">
                   <tr>
                     <th className="p-4">Customer Details</th>

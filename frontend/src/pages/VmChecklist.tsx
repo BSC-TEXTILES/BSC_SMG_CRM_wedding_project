@@ -603,7 +603,7 @@ export default function VmChecklist() {
                           setDeleteError(null);
                           setIsDeleteModalOpen(true);
                         }}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                        className="p-1.5 rounded-lg text-text-secondary hover:text-status-danger hover:bg-status-danger/10 transition-colors"
                         title={`Delete ${floorInfo.label}`}
                       >
                         <Trash2 className="w-4 h-4" />
@@ -1297,8 +1297,8 @@ export default function VmChecklist() {
                     <span className="truncate pr-2">{floor.name}</span>
                     <span className={floor.score >= 80 ? 'text-emerald-700' : floor.score >= 50 ? 'text-amber-700' : 'text-rose-700'}>{floor.score}%</span>
                   </div>
-                  <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                    <div className={`h-full rounded-full ${floor.score >= 80 ? 'bg-emerald-500' : floor.score >= 50 ? 'bg-amber-500' : 'bg-rose-500'}`} style={{ width: `${floor.score}%` }}></div>
+                  <div className="w-full bg-border-soft rounded-full h-2 overflow-hidden">
+                    <div className={`h-full rounded-full ${floor.score >= 80 ? 'bg-status-success' : floor.score >= 50 ? 'bg-status-warning' : 'bg-status-danger'}`} style={{ width: `${floor.score}%` }}></div>
                   </div>
                 </div>
               ))}
@@ -1319,8 +1319,8 @@ export default function VmChecklist() {
                         {sec.score}% {sec.score >= 80 ? 'Pass' : sec.score >= 50 ? 'Review' : 'Failed'}
                       </span>
                     </div>
-                    <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                      <div className={`h-full rounded-full ${sec.score >= 80 ? 'bg-emerald-500' : sec.score >= 50 ? 'bg-amber-500' : 'bg-rose-500'}`} style={{ width: `${sec.score}%` }}></div>
+                    <div className="w-full bg-border-soft rounded-full h-1.5 overflow-hidden">
+                      <div className={`h-full rounded-full ${sec.score >= 80 ? 'bg-status-success' : sec.score >= 50 ? 'bg-status-warning' : 'bg-status-danger'}`} style={{ width: `${sec.score}%` }}></div>
                     </div>
                     {sec.lastDate && (
                       <div className="text-[10px] text-primary/50 font-medium">
@@ -1346,8 +1346,8 @@ export default function VmChecklist() {
                         {q.passPercent}% Pass / {100 - q.passPercent}% Attention
                       </span>
                     </div>
-                    <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                      <div className={`h-full rounded-full ${q.passPercent >= 80 ? 'bg-emerald-500' : 'bg-rose-500'}`} style={{ width: `${q.passPercent}%` }}></div>
+                    <div className="w-full bg-border-soft rounded-full h-1.5 overflow-hidden">
+                      <div className={`h-full rounded-full ${q.passPercent >= 80 ? 'bg-status-success' : 'bg-status-danger'}`} style={{ width: `${q.passPercent}%` }}></div>
                     </div>
                   </div>
                 ))}

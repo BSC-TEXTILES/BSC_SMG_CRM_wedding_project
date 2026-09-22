@@ -6,6 +6,7 @@ import ToastContainer, { showToast } from '../components/Toast';
 import { API, Auth, UserSession } from '../services/api';
 import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../utils/sidebarState';
 import { useLocationContext, LocationItem } from '../context/LocationContext';
+import { useRealtimeSection } from '../hooks/useRealtimeSection';
 import {
   MessageSquare,
   Search,
@@ -43,7 +44,7 @@ export default function FeedbackCollection() {
   const [session, setSession] = useState<UserSession | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [collapsed, setCollapsed] = useState<boolean>(getSidebarCollapsed());
-  const { currentLocation, allLocations, currentLocationLabel, isGlobalAdmin } = useLocationContext();
+  const { currentLocation, setCurrentLocation, allLocations, currentLocationLabel, isGlobalAdmin, canSwitch } = useLocationContext();
 
   useEffect(() => {
     return subscribeSidebarCollapsed(setCollapsed);
@@ -51,7 +52,12 @@ export default function FeedbackCollection() {
 
   // Feedbacks & Stats
   const [feedbacks, setFeedbacks] = useState<any[]>([]);
-  const [stats, setStats] = useState<any>({ total: 0, positive: 0, negative: 0, npsScore: 100 });
+  const [stats, setStats] = useState<any>({ total: 0, positive: 0, negative: 0, needsFollowUp: 0, npsScore: 100 });
+  const [locationBreakdown, setLocationBreakdown] = useState<any>({
+    belagavi: { total: 0, positive: 0, negative: 0, needsFollowUp: 0 },
+    davanagere: { total: 0, positive: 0, negative: 0, needsFollowUp: 0 },
+    shivamogga: { total: 0, positive: 0, negative: 0, needsFollowUp: 0 }
+  });
   const [loading, setLoading] = useState<boolean>(true);
 
   // Filters
@@ -110,7 +116,7 @@ export default function FeedbackCollection() {
   };
 
   const handleClearAllFeedbacks = async () => {
-    const locMsg = currentLocation && currentLocation !== 'ALL' ? `for ${currentLocationLabel}` : 'across all locations';
+    const locMsg = currentLocation && currentLocation !== 'ALL' ? `for ${getActiveLocationName()}` : 'across all locations';
     if (!window.confirm(`Are you sure you want to permanently delete ALL feedback details ${locMsg}? This cannot be undone.`)) return;
     try {
       await API.clearAllFeedbacks(currentLocation && currentLocation !== 'ALL' ? currentLocation : undefined);
@@ -126,6 +132,29 @@ export default function FeedbackCollection() {
     const istOffset = 5.5 * 60 * 60 * 1000;
     const istDate = new Date(d.getTime() + (d.getTimezoneOffset() * 60000) + istOffset);
     return istDate.toISOString().split('T')[0];
+  };
+
+  const getActiveLocationName = () => {
+    if (currentLocation === '1' || currentLocation === 'BEL') return 'Belagavi';
+    if (currentLocation === '2' || currentLocation === 'DAV') return 'Davanagere';
+    if (currentLocation === '3' || currentLocation === 'SHI') return 'Shivamogga';
+    return currentLocationLabel || 'Selected Location';
+  };
+
+  const getLocationBadgeText = () => {
+    if (!currentLocation || currentLocation === 'ALL') {
+      return 'ALL LOCATIONS';
+    }
+    if (currentLocation === '1' || currentLocation === 'BEL') {
+      return 'Location: Belagavi (BEL)';
+    }
+    if (currentLocation === '2' || currentLocation === 'DAV') {
+      return 'Location: Davanagere (DAV)';
+    }
+    if (currentLocation === '3' || currentLocation === 'SHI') {
+      return 'Location: Shivamogga (SHI)';
+    }
+    return `Location: ${currentLocationLabel || currentLocation}`;
   };
 
   const loadFeedbacks = useCallback(async () => {
@@ -166,10 +195,20 @@ export default function FeedbackCollection() {
         params.location_id = currentLocation;
       }
 
-      const res = await API.getFeedbacks(params);
+      // Fetch feedbacks and stats concurrently
+      const [res, statsRes] = await Promise.all([
+        API.getFeedbacks(params),
+        API.getFeedbackStats(currentLocation && currentLocation !== 'ALL' ? { location_id: currentLocation } : undefined).catch(() => null)
+      ]);
+
       if (res && res.success) {
         setFeedbacks(res.feedbacks || []);
-        if (res.stats) setStats(res.stats);
+        if (res.stats) {
+          setStats(res.stats);
+        }
+      }
+      if (statsRes?.byLocation) {
+        setLocationBreakdown(statsRes.byLocation);
       }
     } catch (err: any) {
       console.warn('getFeedbacks background sync:', err?.message || err);
@@ -177,6 +216,11 @@ export default function FeedbackCollection() {
       setLoading(false);
     }
   }, [datePreset, startDateInput, endDateInput, sentimentFilter, search, currentLocation]);
+
+  // Real-time automatic updates for feedback and callqueue sections
+  useRealtimeSection(['feedback', 'callqueue'], () => {
+    loadFeedbacks();
+  });
 
   useEffect(() => {
     if (!Auth.check()) {
@@ -186,10 +230,10 @@ export default function FeedbackCollection() {
     setSession(Auth.get());
     loadFeedbacks();
 
-    // Auto-refresh every 5 seconds for live feedback collection updates
+    // Auto-refresh every 8 seconds for live feedback collection updates
     const interval = setInterval(() => {
       loadFeedbacks();
-    }, 5000);
+    }, 8000);
     return () => clearInterval(interval);
   }, [navigate, loadFeedbacks]);
 
@@ -200,10 +244,12 @@ export default function FeedbackCollection() {
       return;
     }
 
-    const headers = ['Feedback ID', 'Date', 'Customer Name', 'Mobile', 'Sentiment', 'Answers Summary', 'Customer Voice Notes'];
+    const headers = ['Feedback ID', 'Store Location', 'Date', 'Time', 'Customer Name', 'Mobile', 'Sentiment', 'Answers Summary', 'Customer Voice Notes'];
     const rows = feedbacks.map(f => [
       f.id || '',
+      `"${f.locationName || (f.location_id === 1 ? 'Belagavi' : f.location_id === 3 ? 'Shivamogga' : 'Davanagere')} (${f.locationCode || (f.location_id === 1 ? 'BEL' : f.location_id === 3 ? 'SHI' : 'DAV')})"`,
       f.entryDate || '',
+      f.entryTime || '',
       `"${(f.customerName || 'Anonymous').replace(/"/g, '""')}"`,
       `"${(f.mobile || '').replace(/"/g, '""')}"`,
       f.isNegative ? 'Negative / Escalated' : 'Positive / Satisfied',
@@ -215,12 +261,13 @@ export default function FeedbackCollection() {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `BSC_Customer_Feedbacks_${new Date().toISOString().split('T')[0]}.csv`);
+    const locSlug = currentLocation === '1' ? 'Belagavi' : currentLocation === '2' ? 'Davanagere' : currentLocation === '3' ? 'Shivamogga' : 'All_Locations';
+    link.setAttribute('download', `BSC_Customer_Feedbacks_${locSlug}_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
 
-    showToast('Exported feedback data to CSV', 'success');
+    showToast(`Exported ${feedbacks.length} feedback records (${locSlug}) to CSV`, 'success');
   };
 
   return (
@@ -237,23 +284,42 @@ export default function FeedbackCollection() {
 
         <main className="p-4 lg:p-6 space-y-6 flex-1 overflow-y-auto">
           {/* Header & Quick Action Bar */}
-          <div className="card-glass p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="card-glass p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary text-accent text-[10px] font-black uppercase tracking-widest mb-1.5">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary text-accent text-[10px] font-black uppercase tracking-widest mb-1.5 shadow-2xs">
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>{isGlobalAdmin ? 'All Locations' : currentLocationLabel}</span>
+                <span>{getLocationBadgeText()}</span>
               </div>
               <h2 className="text-xl font-black text-primary tracking-tight flex items-center gap-2">
                 <MessageSquare className="w-5 h-5 text-accent" />
                 <span>Customer Feedback Repository</span>
               </h2>
-              <p className="text-xs text-primary font-medium mt-0.5">Real-time log of customer survey responses, satisfaction scores &amp; voice of customer notes.</p>
+              <p className="text-xs text-primary font-medium mt-0.5">
+                Real-time log of customer survey responses, satisfaction scores &amp; voice of customer notes.
+              </p>
             </div>
 
-            <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
+            <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto justify-start md:justify-end">
+              {canSwitch && (
+                <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border-2 border-accent shadow-xs">
+                  <MapPin className="w-4 h-4 text-accent shrink-0" />
+                  <span className="text-[11px] font-black uppercase text-primary hidden sm:inline">Store:</span>
+                  <select
+                    value={currentLocation}
+                    onChange={(e) => setCurrentLocation(e.target.value)}
+                    className="select-modern text-xs font-black py-1 pr-7 pl-1.5 bg-transparent border-0 text-primary cursor-pointer focus:ring-0"
+                    aria-label="Filter by Location"
+                  >
+                    <option value="ALL">All Locations (Combined)</option>
+                    <option value="1">Belagavi (BEL)</option>
+                    <option value="2">Davanagere (DAV)</option>
+                    <option value="3">Shivamogga (SHI)</option>
+                  </select>
+                </div>
+              )}
               <button
                 onClick={loadFeedbacks}
-                className="px-3.5 py-2 rounded-xl bg-white border border-accent-soft text-primary text-xs font-extrabold hover:bg-gray-50 flex items-center gap-1.5 shadow-xs"
+                className="px-3.5 py-2 rounded-xl bg-white border border-accent-soft text-primary text-xs font-extrabold hover:bg-gray-50 flex items-center gap-1.5 shadow-xs cursor-pointer"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
                 <span>Refresh</span>
@@ -261,16 +327,16 @@ export default function FeedbackCollection() {
               {feedbacks.length > 0 && (
                 <button
                   onClick={handleClearAllFeedbacks}
-                  className="px-3.5 py-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-extrabold hover:bg-rose-100 flex items-center gap-1.5 shadow-xs transition-colors"
+                  className="px-3.5 py-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-extrabold hover:bg-rose-100 flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
                   title="Permanently remove feedback details"
                 >
                   <Trash2 className="w-3.5 h-3.5 text-rose-600" />
-                  <span>Clear All Feedbacks</span>
+                  <span>Clear Feedback</span>
                 </button>
               )}
               <button
                 onClick={handleExportCSV}
-                className="btn-gold text-xs px-4 py-2 flex items-center gap-1.5 shadow-md"
+                className="btn-gold text-xs px-4 py-2 flex items-center gap-1.5 shadow-md cursor-pointer"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>Export Report (CSV)</span>
@@ -278,15 +344,140 @@ export default function FeedbackCollection() {
             </div>
           </div>
 
+          {/* Location-wise Visibility Summary Cards */}
+          {canSwitch && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="text-[11px] font-black uppercase tracking-wider text-primary flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-accent" />
+                  <span>Store Locations Breakdown</span>
+                </div>
+                {currentLocation !== 'ALL' && (
+                  <button
+                    onClick={() => setCurrentLocation('ALL')}
+                    className="text-[11px] font-black text-accent hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <span>Reset to All Locations</span>
+                    <ArrowUpRight className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {/* Belagavi */}
+                <div
+                  onClick={() => setCurrentLocation('1')}
+                  className={`card-glass p-3.5 rounded-2xl cursor-pointer transition-all hover:scale-[1.01] hover:shadow-md border-2 ${
+                    currentLocation === '1' || currentLocation === 'BEL'
+                      ? 'border-accent bg-accent/5 ring-2 ring-accent/30 shadow-sm'
+                      : 'border-black/10'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
+                      <span className="text-xs font-black uppercase tracking-wide text-primary">Belagavi (BEL)</span>
+                    </div>
+                    <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200">
+                      Store #1
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 mt-2.5 pt-2.5 border-t border-accent-soft/50 text-center">
+                    <div>
+                      <div className="text-[10px] font-bold text-gray-500 uppercase">Feedbacks</div>
+                      <div className="text-base font-black text-primary mt-0.5">{locationBreakdown.belagavi?.total ?? 0}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-bold text-emerald-600 uppercase">Positive</div>
+                      <div className="text-base font-black text-emerald-700 mt-0.5">{locationBreakdown.belagavi?.positive ?? 0}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-bold text-rose-600 uppercase">Follow-up</div>
+                      <div className="text-base font-black text-rose-700 mt-0.5">{locationBreakdown.belagavi?.needsFollowUp ?? 0}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Davanagere */}
+                <div
+                  onClick={() => setCurrentLocation('2')}
+                  className={`card-glass p-3.5 rounded-2xl cursor-pointer transition-all hover:scale-[1.01] hover:shadow-md border-2 ${
+                    currentLocation === '2' || currentLocation === 'DAV'
+                      ? 'border-accent bg-accent/5 ring-2 ring-accent/30 shadow-sm'
+                      : 'border-black/10'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                      <span className="text-xs font-black uppercase tracking-wide text-primary">Davanagere (DAV)</span>
+                    </div>
+                    <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+                      Store #2
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 mt-2.5 pt-2.5 border-t border-accent-soft/50 text-center">
+                    <div>
+                      <div className="text-[10px] font-bold text-gray-500 uppercase">Feedbacks</div>
+                      <div className="text-base font-black text-primary mt-0.5">{locationBreakdown.davanagere?.total ?? 0}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-bold text-emerald-600 uppercase">Positive</div>
+                      <div className="text-base font-black text-emerald-700 mt-0.5">{locationBreakdown.davanagere?.positive ?? 0}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-bold text-rose-600 uppercase">Follow-up</div>
+                      <div className="text-base font-black text-rose-700 mt-0.5">{locationBreakdown.davanagere?.needsFollowUp ?? 0}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Shivamogga */}
+                <div
+                  onClick={() => setCurrentLocation('3')}
+                  className={`card-glass p-3.5 rounded-2xl cursor-pointer transition-all hover:scale-[1.01] hover:shadow-md border-2 ${
+                    currentLocation === '3' || currentLocation === 'SHI'
+                      ? 'border-accent bg-accent/5 ring-2 ring-accent/30 shadow-sm'
+                      : 'border-black/10'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2.5 h-2.5 rounded-full bg-purple-500" />
+                      <span className="text-xs font-black uppercase tracking-wide text-primary">Shivamogga (SHI)</span>
+                    </div>
+                    <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-purple-50 text-purple-800 border border-purple-200">
+                      Store #3
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 mt-2.5 pt-2.5 border-t border-accent-soft/50 text-center">
+                    <div>
+                      <div className="text-[10px] font-bold text-gray-500 uppercase">Feedbacks</div>
+                      <div className="text-base font-black text-primary mt-0.5">{locationBreakdown.shivamogga?.total ?? 0}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-bold text-emerald-600 uppercase">Positive</div>
+                      <div className="text-base font-black text-emerald-700 mt-0.5">{locationBreakdown.shivamogga?.positive ?? 0}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-bold text-rose-600 uppercase">Follow-up</div>
+                      <div className="text-base font-black text-rose-700 mt-0.5">{locationBreakdown.shivamogga?.needsFollowUp ?? 0}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Feedback Dashboard KPI Metrics */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Total Feedbacks */}
             <div className="card-glass p-5 flex items-center justify-between">
               <div>
                 <div className="text-[10.5px] font-black uppercase tracking-wider text-primary">Total Feedbacks</div>
-                <div className="text-2xl font-black text-primary mt-1">{stats.total || feedbacks.length}</div>
+                <div className="text-2xl font-black text-primary mt-1">{stats.total ?? feedbacks.length}</div>
                 <div className="text-[11px] text-emerald-700 font-bold mt-0.5 flex items-center gap-1">
-                  <TrendingUp className="w-3 h-3" /> All Submitted Visits
+                  <TrendingUp className="w-3 h-3" />
+                  <span>{currentLocation && currentLocation !== 'ALL' ? `${getActiveLocationName()} Visits` : 'All Submitted Visits'}</span>
                 </div>
               </div>
               <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center font-black">
@@ -298,7 +489,7 @@ export default function FeedbackCollection() {
             <div className="card-glass p-5 flex items-center justify-between">
               <div>
                 <div className="text-[10.5px] font-black uppercase tracking-wider text-primary">Satisfaction Rate</div>
-                <div className="text-2xl font-black text-emerald-600 mt-1">{stats.npsScore || 100}%</div>
+                <div className="text-2xl font-black text-emerald-600 mt-1">{stats.npsScore ?? 100}%</div>
                 <div className="text-[11px] text-gray-500 font-semibold mt-0.5">CSAT Index Score</div>
               </div>
               <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center font-black">
@@ -310,7 +501,7 @@ export default function FeedbackCollection() {
             <div className="card-glass p-5 flex items-center justify-between">
               <div>
                 <div className="text-[10.5px] font-black uppercase tracking-wider text-primary">Positive Ratings</div>
-                <div className="text-2xl font-black text-emerald-700 mt-1">{stats.positive || 0}</div>
+                <div className="text-2xl font-black text-emerald-700 mt-1">{stats.positive ?? 0}</div>
                 <div className="text-[11px] text-emerald-600 font-bold mt-0.5">Satisfied Shoppers</div>
               </div>
               <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center">
@@ -322,7 +513,7 @@ export default function FeedbackCollection() {
             <div className="card-glass p-5 flex items-center justify-between border-l-4 border-l-rose-500">
               <div>
                 <div className="text-[10.5px] font-black uppercase tracking-wider text-primary">Needs Follow-up</div>
-                <div className="text-2xl font-black text-rose-600 mt-1">{stats.negative || 0}</div>
+                <div className="text-2xl font-black text-rose-600 mt-1">{stats.needsFollowUp ?? stats.negative ?? 0}</div>
                 <div className="text-[11px] text-rose-600 font-bold mt-0.5 flex items-center gap-1">
                   <CircleAlert className="w-3 h-3" /> Auto-Escalated to Queue
                 </div>
@@ -405,7 +596,9 @@ export default function FeedbackCollection() {
                 <MessageSquare className="w-4 h-4 text-accent" />
                 <span>Collected Survey Log ({feedbacks.length})</span>
               </h3>
-              <span className="text-xs text-primary font-semibold">Showing real-time records</span>
+              <span className="text-xs text-primary font-semibold">
+                Showing real-time records {currentLocation && currentLocation !== 'ALL' ? `• ${getActiveLocationName()}` : '• All Locations'}
+              </span>
             </div>
 
             {loading ? (
@@ -416,7 +609,11 @@ export default function FeedbackCollection() {
             ) : feedbacks.length === 0 ? (
               <div className="py-12 text-center text-xs font-bold text-gray-500 space-y-2">
                 <MessageSquare className="w-10 h-10 text-gray-300 mx-auto" />
-                <div className="text-sm text-primary font-extrabold">No Feedback Submissions Found</div>
+                <div className="text-sm text-primary font-extrabold">
+                  {currentLocation && currentLocation !== 'ALL'
+                    ? `No feedback submissions found for ${getActiveLocationName()}.`
+                    : 'No feedback submissions found across all locations.'}
+                </div>
                 <p className="text-gray-400 font-medium">Customer responses from the Customer Experience Survey will appear here in real-time.</p>
               </div>
             ) : (
@@ -425,6 +622,7 @@ export default function FeedbackCollection() {
                   <thead>
                     <tr className="border-b border-accent-soft text-[10.5px] font-black uppercase text-primary bg-background/80">
                       <th className="py-3 px-4">Date &amp; Time</th>
+                      <th className="py-3 px-4">Store Location</th>
                       <th className="py-3 px-4">Customer Details</th>
                       <th className="py-3 px-4">Overall Experience</th>
                       <th className="py-3 px-4">Product Found</th>
@@ -438,6 +636,9 @@ export default function FeedbackCollection() {
                       const ans = f.answers || {};
                       const overallExp = ans['q1'] || 'Satisfied';
                       const productFound = ans['q2'] || 'Yes';
+                      const locId = Number(f.location_id);
+                      const locCode = f.locationCode || (locId === 1 ? 'BEL' : locId === 3 ? 'SHI' : 'DAV');
+                      const locName = f.locationName || (locId === 1 ? 'Belagavi' : locId === 3 ? 'Shivamogga' : 'Davanagere');
 
                       return (
                         <tr key={f.id} className="hover:bg-black/5 font-medium transition-colors">
@@ -451,6 +652,18 @@ export default function FeedbackCollection() {
                                 <span>{f.entryTime}</span>
                               </div>
                             )}
+                          </td>
+                          <td className="py-3.5 px-4">
+                            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-black uppercase tracking-wide border shadow-2xs ${
+                              locCode === 'BEL' || locId === 1
+                                ? 'bg-blue-50 text-blue-800 border-blue-200'
+                                : locCode === 'DAV' || locId === 2
+                                ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                : 'bg-purple-50 text-purple-800 border-purple-200'
+                            }`}>
+                              <MapPin className="w-3 h-3 flex-shrink-0" />
+                              <span>{locName} ({locCode})</span>
+                            </span>
                           </td>
                           <td className="py-3.5 px-4">
                             <div className="font-extrabold text-primary flex items-center gap-1.5">
@@ -502,7 +715,7 @@ export default function FeedbackCollection() {
                             <div className="flex items-center justify-end gap-1.5">
                               <button
                                 onClick={() => handleOpenModal(f)}
-                                className="px-3 py-1.5 rounded-xl border border-primary text-primary font-extrabold text-[11px] hover:bg-primary hover:text-white transition-all flex items-center gap-1 shadow-xs"
+                                className="px-3 py-1.5 rounded-xl border border-primary text-primary font-extrabold text-[11px] hover:bg-primary hover:text-white transition-all flex items-center gap-1 shadow-xs cursor-pointer"
                               >
                                 <Eye className="w-3.5 h-3.5" /> View Ticket
                               </button>
@@ -545,6 +758,12 @@ export default function FeedbackCollection() {
                       <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-primary text-accent text-[10px] font-black uppercase tracking-widest">
                         BSC EXCLUSIVE RETAIL
                       </span>
+                      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-accent-soft text-primary font-black uppercase text-[10px] border border-accent/40">
+                        <MapPin className="w-3 h-3 text-accent" />
+                        <span>
+                          {selectedFeedback.locationName || (selectedFeedback.location_id === 1 ? 'Belagavi' : selectedFeedback.location_id === 3 ? 'Shivamogga' : 'Davanagere')} ({selectedFeedback.locationCode || (selectedFeedback.location_id === 1 ? 'BEL' : selectedFeedback.location_id === 3 ? 'SHI' : 'DAV')})
+                        </span>
+                      </span>
                     </div>
 
                     <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-primary">
@@ -552,6 +771,10 @@ export default function FeedbackCollection() {
                     </h2>
 
                     <div className="flex flex-wrap items-center gap-4 text-xs font-semibold text-primary pt-1">
+                      <span className="flex items-center gap-1.5 font-bold">
+                        <MapPin className="w-3.5 h-3.5 text-accent" />
+                        Store: <strong>{selectedFeedback.locationName || (selectedFeedback.location_id === 1 ? 'Belagavi' : selectedFeedback.location_id === 3 ? 'Shivamogga' : 'Davanagere')} ({selectedFeedback.locationCode || (selectedFeedback.location_id === 1 ? 'BEL' : selectedFeedback.location_id === 3 ? 'SHI' : 'DAV')})</strong>
+                      </span>
                       <span className="flex items-center gap-1.5 font-mono">
                         <Phone className="w-3.5 h-3.5 text-accent" />
                         {selectedFeedback.mobile || 'No Mobile Provided'}

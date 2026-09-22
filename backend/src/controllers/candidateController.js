@@ -4,6 +4,7 @@ const db = require('../config/db');
 const { logAction } = require('../utils/logger');
 const { successRes, errorRes } = require('../utils/response');
 const { getLocationFilter, injectLocationId } = require('../middleware/auth');
+const realtimeService = require('../services/realtimeService');
 
 class CandidateController {
   async getCandidates(req, res) {
@@ -25,6 +26,7 @@ class CandidateController {
       const locationId = injectLocationId(req) || 2; // fallback to Davanagere
       const locationCode = (req.user && req.user.locationCode) ? req.user.locationCode : 'DAV';
       const result = await candidateService.addCandidate({ ...d, locationId, locationCode });
+      realtimeService.emitCandidateChange('CREATE', { appNo: result.appNo, candidateCode: result.candidateCode, ...d }, locationId);
       return res.json({ success: true, appNo: result.appNo, candidateCode: result.candidateCode });
     } catch (err) {
       return errorRes(res, `Failed to add candidate: ${err.message}`, [err.message], 500);
@@ -45,6 +47,7 @@ class CandidateController {
       const user = req.body.doneBy || updates.doneBy || (req.user ? req.user.username : 'HR');
 
       const result = await candidateService.updateCandidateFull(appNo, updates, user);
+      realtimeService.emitCandidateChange('UPDATE', { appNo, ...updates }, req.user ? req.user.locationId : null);
       return res.json(result);
     } catch (err) {
       console.error('[updateCandidate Controller Error]:', err);
@@ -56,6 +59,7 @@ class CandidateController {
     try {
       const { appNo } = req.params;
       const result = await candidateService.deleteCandidate(appNo);
+      realtimeService.emitCandidateChange('DELETE', { appNo }, req.user ? req.user.locationId : null);
       return res.json(result);
     } catch (err) {
       return errorRes(res, 'Failed to delete candidate', [err.message], 500);
@@ -560,6 +564,14 @@ const createdDate = new Date(r.created_at || Date.now());
         userId: user.id, appNo: linkedAppNo, changes: Object.keys(payload)
       });
 
+      realtimeService.emitEmployeeChange('UPDATE', {
+        id: user.id,
+        appNo: linkedAppNo,
+        department: payload.department,
+        designation: payload.designation || payload.desig,
+        status: payload.status
+      }, user.location_id || (req.user ? req.user.locationId : null));
+
       return res.json({ success: true, userId: user.id, appNo: linkedAppNo });
     } catch (err) {
       console.error('[updateEmployee ERROR]', err);
@@ -598,6 +610,11 @@ const createdDate = new Date(r.created_at || Date.now());
         userId: user ? user.id : null, appNo, identifier
       });
 
+      realtimeService.emitEmployeeChange('DELETE', {
+        id: user ? user.id : identifier,
+        appNo
+      }, user?.location_id || (req.user ? req.user.locationId : null));
+
       return res.json({ success: true });
     } catch (err) {
       console.error('[deleteEmployee ERROR]', err);
@@ -614,6 +631,7 @@ const createdDate = new Date(r.created_at || Date.now());
       
       const user = req.user ? req.user.username : 'HR';
       const result = await candidateService.bulkAddEmployees(employees, user);
+      realtimeService.emitEmployeeChange('CREATE', { count: employees.length }, req.user ? req.user.locationId : null);
       return res.json(result);
     } catch (err) {
       return errorRes(res, 'Failed to bulk import employees', [err.message], 500);

@@ -168,8 +168,8 @@ export function getStatusBadge(status?: string) {
   }
   if (s.includes('pending') || s.includes('new')) {
     return {
-      bg: 'bg-slate-100 text-slate-800 border-slate-300',
-      dot: 'bg-slate-600'
+      bg: 'bg-primary-soft text-primary border-border',
+      dot: 'bg-primary'
     };
   }
   if (s.includes('not interested') || s.includes('lost') || s.includes('cancel') || s.includes('invalid')) {

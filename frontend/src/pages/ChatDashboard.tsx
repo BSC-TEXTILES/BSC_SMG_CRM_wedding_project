@@ -130,7 +130,7 @@ const ChatDashboard = () => {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-80px)] bg-gray-50 p-4 lg:p-6 overflow-hidden">
+    <div className="flex flex-col h-[calc(100vh-80px)] bg-background p-4 lg:p-6 overflow-hidden">
       {/* Header */}
       <div className="card-glass p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shrink-0 mb-6">
         <div>
@@ -138,25 +138,25 @@ const ChatDashboard = () => {
             <MessageSquare className="w-6 h-6 text-accent" />
             <span>Chat Dashboard</span>
           </h2>
-          <p className="text-xs text-primary font-medium mt-0.5">
+          <p className="text-xs text-text-secondary font-medium mt-0.5">
             Real-time chat with system assistant
           </p>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={loadChatHistory}
-            className="px-4 py-2 bg-white border border-slate-200 rounded-lg shadow-sm hover:bg-slate-50 text-sm font-medium text-slate-700 transition-colors flex items-center gap-2"
+            className="btn-secondary flex items-center gap-2"
           >
             <RefreshCw className="w-4 h-4" />
             <span className="hidden sm:inline">Refresh</span>
           </button>
-          <Link to="/dashboard" className="px-4 py-2 bg-white border border-slate-200 rounded-lg shadow-sm hover:bg-slate-50 text-sm font-medium text-slate-700 transition-colors flex items-center gap-2">
+          <Link to="/dashboard" className="btn-secondary flex items-center gap-2">
             <LayoutDashboard className="w-4 h-4" />
             <span className="hidden sm:inline">Back to Dashboard</span>
           </Link>
           <button
             onClick={handleClearChat}
-            className="px-4 py-2 bg-red-50 text-red-700 border border-red-200 rounded-lg shadow-sm hover:bg-red-100 text-sm font-bold transition-colors flex items-center gap-2"
+            className="btn-danger flex items-center gap-2"
           >
             <X className="w-4 h-4" />
             <span className="hidden sm:inline">Clear Chat</span>
@@ -165,12 +165,12 @@ const ChatDashboard = () => {
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 bg-white border border-slate-200 rounded-xl shadow-sm flex flex-col overflow-hidden min-h-0 relative">
+      <div className="flex-1 card-glass border border-border rounded-xl flex flex-col overflow-hidden min-h-0 relative">
         {error && (
-          <div className="absolute top-0 left-0 right-0 z-10 p-3 bg-red-50 border-b border-red-100 flex items-center gap-2 text-sm font-medium text-red-700">
+          <div className="absolute top-0 left-0 right-0 z-10 p-3 bg-status-danger/10 border-b border-status-danger/20 flex items-center gap-2 text-sm font-medium text-status-danger">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <p>{error}</p>
-            <button onClick={() => setError(null)} className="ml-auto text-red-500 hover:text-red-700">
+            <button onClick={() => setError(null)} className="ml-auto text-status-danger hover:text-status-danger">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -179,18 +179,18 @@ const ChatDashboard = () => {
         {/* Chat History */}
         <div className={`flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 ${error ? 'pt-16' : ''}`}>
           {isInitialLoading ? (
-            <div className="h-full flex flex-col items-center justify-center text-slate-500 space-y-4">
-              <RefreshCw className="w-8 h-8 animate-spin text-slate-500" />
+            <div className="h-full flex flex-col items-center justify-center text-text-secondary space-y-4">
+              <RefreshCw className="w-8 h-8 animate-spin text-text-secondary" />
               <p className="text-sm font-medium">Loading chat history...</p>
             </div>
           ) : messages.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-slate-500 space-y-4">
-              <div className="w-16 h-16 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center">
-                <MessageSquare className="w-8 h-8 text-slate-500" />
+            <div className="h-full flex flex-col items-center justify-center text-text-secondary space-y-4">
+              <div className="w-16 h-16 rounded-2xl bg-background border border-border-soft flex items-center justify-center">
+                <MessageSquare className="w-8 h-8 text-text-secondary" />
               </div>
               <div className="text-center space-y-1">
                 <p className="text-sm font-medium">No messages yet. Start a conversation!</p>
-                <p className="text-xs text-slate-500">Type a message below to get started.</p>
+                <p className="text-xs text-text-secondary">Type a message below to get started.</p>
               </div>
             </div>
           ) : (
@@ -198,19 +198,17 @@ const ChatDashboard = () => {
               <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-[85%] sm:max-w-[70%] rounded-2xl px-4 py-3 ${
                   msg.sender === 'user'
-                    ? 'bg-slate-900 text-white rounded-tr-sm'
-                    : 'bg-slate-100 text-slate-800 rounded-tl-sm border border-slate-200'
+                    ? 'bg-primary text-white rounded-tr-sm'
+                    : 'bg-background text-text-primary rounded-tl-sm border border-border'
                 }`}>
                   <p className="text-sm whitespace-pre-wrap break-words">{msg.text}</p>
-                  <div className={`flex items-center gap-1.5 mt-2 text-[10px] font-medium ${
-                    msg.sender === 'user' ? 'text-slate-500' : 'text-slate-500'
-                  }`}>
+                  <div className="flex items-center gap-1.5 mt-2 text-[10px] font-medium text-white/70">
                     <span>{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                     {msg.sender === 'user' && msg.status === 'sending' && (
                       <RefreshCw className="w-3 h-3 animate-spin" />
                     )}
                     {msg.sender === 'user' && msg.status === 'error' && (
-                      <AlertCircle className="w-3 h-3 text-red-400" />
+                      <AlertCircle className="w-3 h-3 text-status-danger" />
                     )}
                   </div>
                 </div>
@@ -221,7 +219,7 @@ const ChatDashboard = () => {
         </div>
 
         {/* Input Area */}
-        <div className="p-4 bg-white border-t border-slate-100 shrink-0">
+        <div className="p-4 bg-card border-t border-border shrink-0">
           <form onSubmit={handleSendMessage} className="relative flex items-end gap-2 max-w-4xl mx-auto">
             <div className="relative flex-1">
               <input
@@ -231,14 +229,14 @@ const ChatDashboard = () => {
                 onKeyDown={handleKeyDown}
                 placeholder="Type your message..."
                 disabled={isLoading}
-                className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-xl focus:ring-2 focus:ring-accent focus:border-accent block px-4 py-3.5 pr-12 transition-all disabled:opacity-60"
+                className="input-modern w-full pr-12"
                 autoFocus
               />
             </div>
             <button
               type="submit"
               disabled={!inputText.trim() || isLoading}
-              className="shrink-0 p-3.5 rounded-xl bg-accent text-white hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-sm"
+              className="shrink-0 p-3.5 rounded-xl bg-accent text-primary hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-sm"
             >
               {isLoading ? (
                 <RefreshCw className="w-5 h-5 animate-spin" />
@@ -248,7 +246,7 @@ const ChatDashboard = () => {
             </button>
           </form>
           <div className="mt-2 text-center">
-            <span className="text-[10px] font-medium text-slate-500">Press Enter to send</span>
+            <span className="text-[10px] font-medium text-text-secondary">Press Enter to send</span>
           </div>
         </div>
       </div>

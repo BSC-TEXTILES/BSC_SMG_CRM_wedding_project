@@ -123,9 +123,9 @@ export function resolveAllowedPages(
     return roleKeys;
   }
 
-  // User-specific permission overrides (exact module list)
-  if (userModules && Array.isArray(userModules) && userModules.length > 0) {
-    return userModules.filter(k => roleKeys.includes(k));
+  // User-specific permission overrides (exact module list assigned by Admin in Access Control Matrix)
+  if (userModules && Array.isArray(userModules)) {
+    return userModules;
   }
 
   if (dbSettings && Object.keys(dbSettings).length > 0) {

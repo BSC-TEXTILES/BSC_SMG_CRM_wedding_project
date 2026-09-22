@@ -283,7 +283,7 @@ export default function Greeter() {
           <button
             onClick={() => handleLogVisitor(-2, 'minus2')}
             disabled={currentSlotCount === 0}
-            className="bg-slate-700/90 hover:bg-slate-800 disabled:opacity-40 text-white py-4 text-base sm:text-lg font-black rounded-2xl shadow-lg active:scale-95 transition-all duration-150 flex flex-col items-center justify-center gap-1 border border-slate-500/30"
+            className="bg-primary/90 hover:bg-primary-dark disabled:opacity-40 text-white py-4 text-base sm:text-lg font-black rounded-2xl shadow-lg active:scale-95 transition-all duration-150 flex flex-col items-center justify-center gap-1 border border-primary/30"
           >
             <Minus className="w-6 h-6 sm:w-7 sm:h-7 stroke-[3]" />
             <span>-2 Group</span>

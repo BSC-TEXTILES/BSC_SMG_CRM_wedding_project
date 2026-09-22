@@ -605,14 +605,10 @@ if (Server) {
       }
     });
 
+    const realtimeService = require('./src/services/realtimeService');
+    realtimeService.init(io);
     app.set('io', io);
-
-    io.on('connection', (socket) => {
-      console.log(`[Socket] Client connected: ${socket.id}`);
-      socket.on('disconnect', () => {
-        console.log(`[Socket] Client disconnected: ${socket.id}`);
-      });
-    });
+    app.set('realtimeService', realtimeService);
   } catch (socketErr) {
     console.warn('[Socket] Failed to initialize Socket.io:', socketErr.message);
   }

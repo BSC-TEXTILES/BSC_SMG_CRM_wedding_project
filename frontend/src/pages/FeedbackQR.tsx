@@ -307,7 +307,7 @@ export default function FeedbackQR() {
         <div className="flex items-center gap-2.5">
           <Link
             to="/feedback-qr-management"
-            className="inline-flex items-center gap-2 text-xs py-2 px-4 rounded-xl border border-slate-200 bg-white text-slate-800 font-bold hover:bg-slate-50 transition-all shadow-xs"
+            className="btn-secondary"
           >
             <SlidersHorizontal className="w-3.5 h-3.5 text-accent" />
             <span className="hidden sm:inline">Advanced QR Management</span>
@@ -338,23 +338,23 @@ export default function FeedbackQR() {
               <Store className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-xs font-black uppercase tracking-wider text-slate-800">
+              <div className="text-xs font-black uppercase tracking-wider text-text-primary">
                 Store Location Filter
               </div>
-              <div className="text-[11px] text-slate-500">
+              <div className="text-[11px] text-text-secondary">
                 Switch location to view specific QR or choose "All Locations" for all 3 store cards
               </div>
             </div>
           </div>
 
           {/* Interactive Location Switcher Pills */}
-          <div className="flex items-center gap-1.5 p-1.5 bg-slate-100/90 rounded-2xl border border-slate-200/90 overflow-x-auto max-w-full">
+          <div className="flex items-center gap-1.5 p-1.5 bg-background rounded-2xl border border-border overflow-x-auto max-w-full">
             <button
               onClick={() => setCurrentLocation('ALL')}
               className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
                 currentLocation === 'ALL'
                   ? 'bg-accent text-white shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'
+                      : 'text-text-secondary hover:text-text-primary hover:bg-white/80'
               }`}
             >
               <Layers className="w-3.5 h-3.5" />
@@ -370,12 +370,12 @@ export default function FeedbackQR() {
                   className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
                     isSelected
                       ? 'bg-primary text-white shadow-sm'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'
+                  : 'text-text-secondary hover:text-text-primary hover:bg-white/80'
                   }`}
                 >
                   <MapPin className="w-3.5 h-3.5" />
                   <span>{loc.name}</span>
-                  <span className={`text-[10px] px-1.5 py-0.2 rounded-md ${isSelected ? 'bg-white/20 text-white' : 'bg-slate-200/80 text-slate-700 font-bold'}`}>
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-md ${isSelected ? 'bg-white/20 text-white' : 'bg-border-soft text-text-primary font-bold'}`}>
                     {loc.code}
                   </span>
                 </button>
@@ -388,8 +388,8 @@ export default function FeedbackQR() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="card-glass p-4 border border-accent/20 flex items-center justify-between">
             <div className="space-y-0.5">
-              <div className="text-[11px] font-black uppercase tracking-wider text-slate-500">Total Scans</div>
-              <div className="text-2xl font-black text-slate-900">{totals.scans}</div>
+              <div className="text-[11px] font-black uppercase tracking-wider text-text-secondary">Total Scans</div>
+              <div className="text-2xl font-black text-text-primary">{totals.scans}</div>
             </div>
             <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
               <Smartphone className="w-5 h-5" />
@@ -398,7 +398,7 @@ export default function FeedbackQR() {
 
           <div className="card-glass p-4 border border-accent/20 flex items-center justify-between">
             <div className="space-y-0.5">
-              <div className="text-[11px] font-black uppercase tracking-wider text-slate-500">Feedbacks Logged</div>
+              <div className="text-[11px] font-black uppercase tracking-wider text-text-secondary">Feedbacks Logged</div>
               <div className="text-2xl font-black text-emerald-600">{totals.feedbacks}</div>
             </div>
             <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
@@ -408,7 +408,7 @@ export default function FeedbackQR() {
 
           <div className="card-glass p-4 border border-accent/20 flex items-center justify-between">
             <div className="space-y-0.5">
-              <div className="text-[11px] font-black uppercase tracking-wider text-slate-500">Converted Scans</div>
+              <div className="text-[11px] font-black uppercase tracking-wider text-text-secondary">Converted Scans</div>
               <div className="text-2xl font-black text-accent">{totals.converted}</div>
             </div>
             <div className="w-10 h-10 rounded-2xl bg-accent/15 text-accent flex items-center justify-center">
@@ -436,14 +436,14 @@ export default function FeedbackQR() {
                   <div className="flex items-start justify-between gap-3 mb-4">
                     <div>
                       <div className="flex items-center gap-2">
-                        <h3 className="font-black text-slate-900 text-base tracking-tight">
+                        <h3 className="font-black text-text-primary text-base tracking-tight">
                           {store.name}
                         </h3>
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider ${store.theme.badgeBg} ${store.theme.badgeText} border border-current/20`}>
                           {store.code}
                         </span>
                       </div>
-                      <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                      <p className="text-[11px] text-text-secondary font-medium mt-0.5">
                         {store.storeName}
                       </p>
                     </div>
@@ -455,7 +455,7 @@ export default function FeedbackQR() {
                   </div>
 
                   {/* QR Code Container - Always clean, high-contrast white card for effortless camera scanning */}
-                  <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-md text-center relative group">
+                  <div className="p-4 bg-white rounded-2xl border border-border shadow-md text-center relative group">
                     <div className="relative inline-block p-2 bg-white rounded-xl">
                       <img
                         src={qrCodeImageSrc}
@@ -468,35 +468,35 @@ export default function FeedbackQR() {
                     </div>
 
                     <div className="mt-1 text-center">
-                      <span className="text-[10px] font-bold tracking-widest text-slate-500 uppercase">
+                      <span className="text-[10px] font-bold tracking-widest text-text-secondary uppercase">
                         Scan with any smartphone camera
                       </span>
                     </div>
                   </div>
 
                   {/* Public Feedback URL Box */}
-                  <div className="mt-4 p-3.5 rounded-2xl bg-slate-50/90 border border-slate-200/90 shadow-xs space-y-1.5">
-                    <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-slate-500">
+                  <div className="mt-4 p-3.5 rounded-2xl bg-background border border-border shadow-xs space-y-1.5">
+                    <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-text-secondary">
                       <span className="flex items-center gap-1.5">
                         <Globe className="w-3.5 h-3.5 text-accent" />
                         Public Feedback Destination
                       </span>
-                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-700 shadow-xs">
+                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-white border border-border text-text-secondary shadow-xs">
                         location={store.code}
                       </span>
                     </div>
-                    <div className="text-[11px] font-mono font-bold text-slate-800 break-all select-all bg-white p-2.5 rounded-xl border border-slate-200/70 shadow-xs">
+                    <div className="text-[11px] font-mono font-bold text-text-primary break-all select-all bg-white p-2.5 rounded-xl border border-border/70 shadow-xs">
                       {targetUrl}
                     </div>
                   </div>
 
                   {/* Location Specific Counters */}
                   <div className="grid grid-cols-3 gap-2 mt-4 text-center">
-                    <div className="p-2.5 rounded-2xl bg-slate-50 border border-slate-200/80">
-                      <div className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+                    <div className="p-2.5 rounded-2xl bg-background border border-border">
+                      <div className="text-[10px] font-black uppercase tracking-wider text-text-secondary">
                         Scans
                       </div>
-                      <div className="text-lg font-black text-slate-900 mt-0.5">
+                      <div className="text-lg font-black text-text-primary mt-0.5">
                         {qrData?.scanCount || 0}
                       </div>
                     </div>
@@ -522,11 +522,11 @@ export default function FeedbackQR() {
                 </div>
 
                 {/* Action Buttons Bar */}
-                <div className="space-y-2 pt-4 border-t border-slate-100">
+                <div className="space-y-2 pt-4 border-t border-border-soft">
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       onClick={() => handleCopyUrl(targetUrl, store.name)}
-                      className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl font-bold text-xs transition-all shadow-xs border bg-white border-slate-200 text-slate-800 hover:bg-slate-50 hover:border-slate-300 cursor-pointer active:scale-97"
+                      className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl font-bold text-xs transition-all shadow-xs border bg-white border-border text-text-primary hover:bg-primary-soft hover:border-primary/40 cursor-pointer active:scale-97"
                       title={`Copy ${store.name} URL`}
                     >
                       {copiedLocation === store.name ? (
@@ -544,7 +544,7 @@ export default function FeedbackQR() {
 
                     <button
                       onClick={() => handleOpenFeedback(targetUrl)}
-                      className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl font-bold text-xs transition-all shadow-xs border bg-white border-slate-200 text-slate-800 hover:bg-slate-50 hover:border-slate-300 cursor-pointer active:scale-97"
+                      className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl font-bold text-xs transition-all shadow-xs border bg-white border-border text-text-primary hover:bg-primary-soft hover:border-primary/40 cursor-pointer active:scale-97"
                       title={`Open ${store.name} Feedback Form`}
                     >
                       <ExternalLink className="w-3.5 h-3.5 text-blue-500" />
@@ -555,7 +555,7 @@ export default function FeedbackQR() {
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       onClick={() => handleDownloadPng(qrCodeImageSrc, store.code, store.name)}
-                      className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl font-semibold text-[11px] transition-all border border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer bg-white"
+                      className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl font-semibold text-[11px] transition-all border border-border text-text-secondary hover:bg-primary-soft cursor-pointer bg-white"
                       title="Download print-ready PNG image"
                     >
                       <Download className="w-3 h-3 text-accent" />
@@ -564,7 +564,7 @@ export default function FeedbackQR() {
 
                     <button
                       onClick={() => handleDownloadSvg(qrData?.qrCodeSvg || null, store.code, store.name, targetUrl)}
-                      className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl font-semibold text-[11px] transition-all border border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer bg-white"
+                      className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl font-semibold text-[11px] transition-all border border-border text-text-secondary hover:bg-primary-soft cursor-pointer bg-white"
                       title="Download high-res vector SVG"
                     >
                       <Share2 className="w-3 h-3 text-emerald-600" />
@@ -584,8 +584,8 @@ export default function FeedbackQR() {
             <span>End-to-End Location Feedback Architecture</span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-primary/80 dark:text-slate-300">
-            <div className="p-4 rounded-2xl bg-white/50 dark:bg-slate-900/50 border border-primary/10 space-y-1.5">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-primary/80 dark:text-border">
+            <div className="p-4 rounded-2xl bg-primary-soft/50 border border-primary/10 space-y-1.5">
               <div className="font-black text-primary dark:text-white flex items-center gap-1.5">
                 <span className="w-5 h-5 rounded-full bg-accent/20 text-accent font-black text-[11px] flex items-center justify-center">1</span>
                 Unique Location URL
@@ -595,7 +595,7 @@ export default function FeedbackQR() {
               </p>
             </div>
 
-            <div className="p-4 rounded-2xl bg-white/50 dark:bg-slate-900/50 border border-primary/10 space-y-1.5">
+            <div className="p-4 rounded-2xl bg-primary-soft/50 border border-primary/10 space-y-1.5">
               <div className="font-black text-primary dark:text-white flex items-center gap-1.5">
                 <span className="w-5 h-5 rounded-full bg-accent/20 text-accent font-black text-[11px] flex items-center justify-center">2</span>
                 Zero Manual Selection
@@ -605,7 +605,7 @@ export default function FeedbackQR() {
               </p>
             </div>
 
-            <div className="p-4 rounded-2xl bg-white/50 dark:bg-slate-900/50 border border-primary/10 space-y-1.5">
+            <div className="p-4 rounded-2xl bg-primary-soft/50 border border-primary/10 space-y-1.5">
               <div className="font-black text-primary dark:text-white flex items-center gap-1.5">
                 <span className="w-5 h-5 rounded-full bg-accent/20 text-accent font-black text-[11px] flex items-center justify-center">3</span>
                 Strict Server Persistence & Isolation

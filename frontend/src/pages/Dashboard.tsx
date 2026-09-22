@@ -37,9 +37,13 @@ import {
   ShieldAlert,
   FileText,
   SquareCheck,
+  Heart,
   Settings
 } from 'lucide-react';
 import EmployeeProfileModal from '../components/ui/EmployeeProfileModal';
+import { permissionsCache } from '../context/PermissionsCache';
+import { resolveAllowedPages, getRoleNavMap } from '../utils/rbac';
+import { useRealtimeSection } from '../hooks/useRealtimeSection';
 
 
 export default function DashboardPage() {
@@ -53,9 +57,13 @@ export default function DashboardPage() {
     return subscribeSidebarCollapsed(setCollapsed);
   }, []);
 
+  // Resolved permissions
+  const [allowed, setAllowed] = useState<string[]>(() => getRoleNavMap(Auth.get()?.role));
+
   // Employees & Operational Stats
   const [employees, setEmployees] = useState<any[]>([]);
   const [candidates, setCandidates] = useState<any[]>([]);
+  const [weddingStats, setWeddingStats] = useState<any>(null);
 
   // Operational Kiosk KPIs
   const [footfallToday, setFootfallToday] = useState(0);
@@ -76,25 +84,39 @@ export default function DashboardPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 6;
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (customAllowed?: string[]) => {
+    const list = customAllowed || allowed;
+    const sess = Auth.get();
+    const roleNorm = (sess?.role || '').toLowerCase().replace(/[_\s-]+/g, ' ');
+    const isAdmin = ['admin', 'super admin', 'system administrator'].includes(roleNorm);
+
+    const canEmp = isAdmin || list.includes('employees');
+    const canCand = isAdmin || list.includes('candidates');
+    const canFF = isAdmin || list.includes('footfall');
+    const canDiv = isAdmin || list.includes('divert');
+    const canFB = isAdmin || list.includes('feedback_collection') || list.includes('feedback_list');
+    const canWed = isAdmin || list.includes('wedding_crm') || list.includes('wedding_registration');
+
     try {
-      const [empData, candData, ffData, divData, fbData] = await Promise.all([
-        API.getEmployees().catch(() => ({ employees: [] })),
-        API.getCandidates({ limit: 500 }).catch(() => ({ candidates: [] })),
-        API.getFootfall().catch(() => ({ entries: [] })),
-        API.getDiverts().catch(() => ({ diverts: [] })),
-        API.getFeedbackStats().catch(() => ({
+      const [empData, candData, ffData, divData, fbData, wedData] = await Promise.all([
+        canEmp ? API.getEmployees().catch(() => ({ employees: [] })) : Promise.resolve({ employees: [] }),
+        canCand ? API.getCandidates({ limit: 500 }).catch(() => ({ candidates: [] })) : Promise.resolve({ candidates: [] }),
+        canFF ? API.getFootfall().catch(() => ({ entries: [] })) : Promise.resolve({ entries: [] }),
+        canDiv ? API.getDiverts().catch(() => ({ diverts: [] })) : Promise.resolve({ diverts: [] }),
+        canFB ? API.getFeedbackStats().catch(() => ({
           totalFeedback: 0,
           positiveFeedback: 0,
           negativeFeedback: 0,
           npsScore: 100,
           pendingCallQueue: 0,
           totalCallQueue: 0
-        }))
+        })) : Promise.resolve(null),
+        canWed ? API.getWeddingStats().catch(() => null) : Promise.resolve(null)
       ]);
 
       if (empData && empData.employees) setEmployees(empData.employees);
       if (candData && candData.candidates) setCandidates(candData.candidates);
+      if (wedData && (wedData.stats || wedData.data)) setWeddingStats(wedData.stats || wedData.data);
 
       if (ffData && ffData.entries) {
         const tot = ffData.entries.reduce((sum: number, e: any) => sum + (Number(e.visitors !== undefined ? e.visitors : e.visitorsCount || e.visitors_count) || 0), 0);
@@ -117,7 +139,7 @@ export default function DashboardPage() {
     } catch (err: any) {
       console.warn('Dashboard data load warning:', err.message);
     }
-  }, []);
+  }, [allowed]);
 
   useEffect(() => {
     if (!Auth.check()) {
@@ -130,8 +152,39 @@ export default function DashboardPage() {
       return;
     }
     setSession(sess);
-    loadData();
+
+    permissionsCache.get().then(({ myPerms, pageSettings }) => {
+      const userModules = myPerms?.custom && Array.isArray(myPerms.modules) ? myPerms.modules : null;
+      const res = resolveAllowedPages(sess?.role, pageSettings, userModules);
+      setAllowed(res);
+      loadData(res);
+    }).catch(() => {
+      loadData(getRoleNavMap(sess?.role));
+    });
   }, [loadData, navigate]);
+
+  // Real-time Section Updates: silently refresh dashboard data without reloading page
+  useRealtimeSection(
+    ['wedding', 'wedding_reg', 'feedback', 'callqueue', 'footfall', 'divert', 'employee', 'candidate'],
+    () => {
+      loadData();
+    }
+  );
+
+  // Live synchronizer when permissions are updated from Admin Matrix
+  useEffect(() => {
+    const handlePermUpdate = () => {
+      const sess = Auth.get();
+      permissionsCache.get().then(({ myPerms, pageSettings }) => {
+        const userModules = myPerms?.custom && Array.isArray(myPerms.modules) ? myPerms.modules : null;
+        const res = resolveAllowedPages(sess?.role, pageSettings, userModules);
+        setAllowed(res);
+        loadData(res);
+      }).catch(() => {});
+    };
+    window.addEventListener('permissions-updated', handlePermUpdate);
+    return () => window.removeEventListener('permissions-updated', handlePermUpdate);
+  }, [loadData]);
 
   // Gender Statistics for Active Employees
   const femaleEmployees = useMemo(() => {
@@ -196,6 +249,29 @@ export default function DashboardPage() {
   const isAdminDashboard = activeDashboard === 'admin';
   const isHRDashboard = activeDashboard === 'hr';
   const isManagerDashboard = activeDashboard === 'manager';
+
+  const canAccessEmployees = isAdminUser || allowed.includes('employees');
+
+  const ALL_MODULE_CARDS = useMemo(() => [
+    { key: 'wedding_crm', label: 'Wedding Follow-up CRM', path: '/wedding', icon: Heart, desc: 'Track wedding customer visits, budgets & conversion pipelines', tag: 'Wedding' },
+    { key: 'wedding_registration', label: 'Wedding Customer Registration', path: '/wedding/customer-registration', icon: UserPlus, desc: 'Register newly visiting wedding parties and customer details', tag: 'Wedding' },
+    { key: 'telecaller_desk', label: 'Telecaller Calling Desk', path: '/telecaller', icon: PhoneCall, desc: 'Daily calling desk for wedding lead inquiries & follow-ups', tag: 'Telecaller' },
+    { key: 'telecaller_dashboard', label: 'Telecaller Dashboard', path: '/telecaller-dashboard', icon: BarChart3, desc: 'Analytics and calling KPIs for telecaller operations', tag: 'Telecaller' },
+    { key: 'feedback_collection', label: 'Customer Feedback Collection', path: '/feedback-collection', icon: MessageSquare, desc: 'View customer experience reviews, CSAT & sentiment', tag: 'Feedback' },
+    { key: 'feedback_list', label: 'Feedback Call Queue', path: '/feedback-list', icon: PhoneCall, desc: 'Follow-up call queue for customer feedback resolution', tag: 'Feedback' },
+    { key: 'feedback_qr', label: 'Customer Feedback QR Portal', path: '/feedback-qr', icon: QrCode, desc: 'Display QR code for on-floor tablet survey collection', tag: 'Feedback' },
+    { key: 'footfall', label: 'Hourly Footfall Register', path: '/footfall', icon: Footprints, desc: 'Log and monitor store visitor footfall by the hour', tag: 'Operations' },
+    { key: 'divert', label: 'Sourcing Diverts', path: '/divert', icon: Target, desc: 'Raise merchandise requests for unsupplied items', tag: 'Operations' },
+    { key: 'vm_checklist', label: 'VM Checklist Audit', path: '/vm-checklist', icon: FileCheck, desc: 'Visual merchandising daily checklist audit', tag: 'Operations' },
+    { key: 'employees', label: 'Employee Register', path: '/employees', icon: Users, desc: 'Store staff directory, designations & attendance profiles', tag: 'Staff' },
+    { key: 'candidates', label: 'Candidate CRM', path: '/candidates', icon: UserPlus, desc: 'Hiring pipeline, interview stages & candidate evaluations', tag: 'HR' },
+    { key: 'user_management', label: 'Access Control Matrix', path: '/user-management', icon: ShieldCheck, desc: 'Manage system users, roles, and granular permissions', tag: 'Admin' },
+    { key: 'settings', label: 'System Settings', path: '/settings', icon: Settings, desc: 'Platform configuration, store location details & preferences', tag: 'Admin' },
+  ], []);
+
+  const assignedCards = useMemo(() => {
+    return ALL_MODULE_CARDS.filter(c => isAdminUser || allowed.includes(c.key));
+  }, [ALL_MODULE_CARDS, isAdminUser, allowed]);
 
   const dashboardTitle = isGreeter
     ? "Entrance Greeter & Visitor Desk"
@@ -286,103 +362,80 @@ export default function DashboardPage() {
                 </div>
               )}
 
-              {isGreeter ? (
-                <>
+              <div className="flex flex-wrap items-center gap-2">
+                {isAdminDashboard && (
                   <button 
-                    onClick={() => navigate('/greeter')} 
-                    className="btn-gold text-xs px-4 py-2 flex items-center gap-1.5 shadow-sm font-extrabold"
+                    onClick={() => navigate('/user-management')} 
+                    className="btn-gold text-xs px-3.5 py-1.5 flex items-center gap-1.5 shadow-sm font-extrabold"
                   >
-                    <UserCheck className="w-4 h-4" />
-                    <span>Greeter Kiosk</span>
+                    <ShieldCheck className="w-4 h-4" />
+                    <span>User Matrix</span>
                   </button>
+                )}
+                {(isAdminUser || allowed.includes('wedding_crm')) && (
+                  <button 
+                    onClick={() => navigate('/wedding')} 
+                    className="btn-gold text-xs px-3.5 py-1.5 flex items-center gap-1.5 shadow-sm font-extrabold"
+                  >
+                    <Heart className="w-4 h-4" />
+                    <span>Wedding CRM</span>
+                  </button>
+                )}
+                {(isAdminUser || allowed.includes('wedding_registration')) && (
+                  <button 
+                    onClick={() => navigate('/wedding/customer-registration')} 
+                    className="btn-primary text-xs px-3.5 py-1.5 flex items-center gap-1.5 shadow-sm font-extrabold"
+                  >
+                    <UserPlus className="w-4 h-4" />
+                    <span>New Wedding Lead</span>
+                  </button>
+                )}
+                {(isAdminUser || allowed.includes('telecaller_desk')) && (
+                  <button 
+                    onClick={() => navigate('/telecaller')} 
+                    className="btn-primary text-xs px-3.5 py-1.5 flex items-center gap-1.5 shadow-sm font-extrabold"
+                  >
+                    <PhoneCall className="w-4 h-4" />
+                    <span>Calling Desk</span>
+                  </button>
+                )}
+                {(isAdminUser || allowed.includes('telecaller_dashboard')) && (
+                  <button 
+                    onClick={() => navigate('/telecaller-dashboard')} 
+                    className="px-3.5 py-1.5 rounded-xl bg-white border border-accent-soft text-primary text-xs font-extrabold hover:bg-gray-50 flex items-center gap-1.5 shadow-xs"
+                  >
+                    <BarChart3 className="w-4 h-4 text-accent" />
+                    <span>Telecaller Dashboard</span>
+                  </button>
+                )}
+                {(isAdminUser || allowed.includes('feedback_collection')) && (
+                  <button 
+                    onClick={() => navigate('/feedback-collection')} 
+                    className="px-3.5 py-1.5 rounded-xl bg-white border border-accent-soft text-primary text-xs font-extrabold hover:bg-gray-50 flex items-center gap-1.5 shadow-xs"
+                  >
+                    <MessageSquare className="w-4 h-4 text-accent" />
+                    <span>Feedback Logs</span>
+                  </button>
+                )}
+                {(isAdminUser || allowed.includes('footfall')) && (
                   <button 
                     onClick={() => navigate('/footfall')} 
-                    className="btn-primary text-xs px-4 py-2 flex items-center gap-1.5 shadow-sm font-extrabold"
+                    className="px-3.5 py-1.5 rounded-xl bg-white border border-accent-soft text-primary text-xs font-extrabold hover:bg-gray-50 flex items-center gap-1.5 shadow-xs"
                   >
-                    <Footprints className="w-4 h-4" />
-                    <span>Hourly Footfall</span>
+                    <Footprints className="w-4 h-4 text-accent" />
+                    <span>Footfall</span>
                   </button>
+                )}
+                {(isAdminUser || allowed.includes('feedback_qr')) && (
                   <button 
                     onClick={() => navigate('/feedback-qr')} 
-                    className="px-4 py-2 rounded-xl bg-white border border-accent-soft text-primary text-xs font-extrabold hover:bg-gray-50 flex items-center gap-1.5 shadow-xs"
+                    className="px-3.5 py-1.5 rounded-xl bg-white border border-accent-soft text-primary text-xs font-extrabold hover:bg-gray-50 flex items-center gap-1.5 shadow-xs"
                   >
                     <QrCode className="w-4 h-4 text-accent" />
                     <span>Feedback QR</span>
                   </button>
-                </>
-              ) : isAdminDashboard ? (
-                <>
-                  <button 
-                    onClick={() => navigate('/user-management')} 
-                    className="btn-gold text-xs px-4 py-2 flex items-center gap-1.5 shadow-sm font-extrabold"
-                  >
-                    <ShieldCheck className="w-4 h-4" />
-                    <span>User Management</span>
-                  </button>
-                  <button 
-                    onClick={() => navigate('/settings')} 
-                    className="btn-primary text-xs px-4 py-2 flex items-center gap-1.5 shadow-sm font-extrabold"
-                  >
-                    <Settings className="w-4 h-4" />
-                    <span>System Settings</span>
-                  </button>
-                  <button 
-                    onClick={() => navigate('/attendance')} 
-                    className="px-4 py-2 rounded-xl bg-white border border-accent-soft text-primary text-xs font-extrabold hover:bg-gray-50 flex items-center gap-1.5 shadow-xs"
-                  >
-                    <CalendarCheck className="w-4 h-4 text-accent" />
-                    <span>Attendance</span>
-                  </button>
-                </>
-              ) : isHRDashboard ? (
-                <>
-                  <button 
-                    onClick={() => navigate('/candidates')} 
-                    className="btn-gold text-xs px-4 py-2 flex items-center gap-1.5 shadow-sm font-extrabold"
-                  >
-                    <Users className="w-4 h-4" />
-                    <span>Candidate CRM</span>
-                  </button>
-                  <button 
-                    onClick={() => navigate('/offer-process')} 
-                    className="btn-primary text-xs px-4 py-2 flex items-center gap-1.5 shadow-sm font-extrabold"
-                  >
-                    <FileText className="w-4 h-4" />
-                    <span>Wedding Operations</span>
-                  </button>
-                  <button 
-                    onClick={() => navigate('/attendance')} 
-                    className="px-4 py-2 rounded-xl bg-white border border-accent-soft text-primary text-xs font-extrabold hover:bg-gray-50 flex items-center gap-1.5 shadow-xs"
-                  >
-                    <CalendarCheck className="w-4 h-4 text-accent" />
-                    <span>Mark Attendance</span>
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button 
-                    onClick={() => navigate('/daily-mcheck')} 
-                    className="btn-gold text-xs px-4 py-2 flex items-center gap-1.5 shadow-sm font-extrabold"
-                  >
-                    <SquareCheck className="w-4 h-4" />
-                    <span>Daily MCheck</span>
-                  </button>
-                  <button 
-                    onClick={() => navigate('/footfall')} 
-                    className="btn-primary text-xs px-4 py-2 flex items-center gap-1.5 shadow-sm font-extrabold"
-                  >
-                    <Footprints className="w-4 h-4" />
-                    <span>Hourly Footfall</span>
-                  </button>
-                  <button 
-                    onClick={() => navigate('/feedback-collection')} 
-                    className="px-4 py-2 rounded-xl bg-white border border-accent-soft text-primary text-xs font-extrabold hover:bg-gray-50 flex items-center gap-1.5 shadow-xs"
-                  >
-                    <MessageSquare className="w-4 h-4 text-accent" />
-                    <span>Feedback Queue</span>
-                  </button>
-                </>
-              )}
+                )}
+              </div>
             </div>
           </div>
 
@@ -427,10 +480,39 @@ export default function DashboardPage() {
               />
             </div>
           ) : (
-            /* Admin / HR / Manager Full Metric Cards Grid */
-            <>
-              {/* Primary Metric Cards Grid - Row 1 */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            /* Dynamic Metric Cards Grid based on ACM allowed modules */
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {(isAdminUser || allowed.includes('wedding_crm')) && (
+                <MetricCard
+                  title="Wedding Follow-ups"
+                  value={weddingStats?.total_customers ?? "Open CRM"}
+                  subtext="Wedding client pipeline & visits"
+                  icon={Sparkles}
+                  color="gold"
+                  onClick={() => navigate('/wedding-crm/dashboard')}
+                />
+              )}
+              {(isAdminUser || allowed.includes('wedding_registration')) && (
+                <MetricCard
+                  title="Customer Registration"
+                  value="Register"
+                  subtext="Register new wedding customer"
+                  icon={Heart}
+                  color="rose"
+                  onClick={() => navigate('/wedding/customer-registration')}
+                />
+              )}
+              {(isAdminUser || allowed.includes('telecaller_desk') || allowed.includes('telecaller_dashboard')) && (
+                <MetricCard
+                  title="Telecaller Workspace"
+                  value="Calling Desk"
+                  subtext="Call queue & follow-ups"
+                  icon={PhoneCall}
+                  color="indigo"
+                  onClick={() => navigate(allowed.includes('telecaller_desk') ? '/telecaller/desk' : '/telecaller-dashboard')}
+                />
+              )}
+              {(isAdminUser || allowed.includes('employees')) && (
                 <MetricCard
                   title="Active Store Staff"
                   value={employees.length}
@@ -439,14 +521,18 @@ export default function DashboardPage() {
                   color="navy"
                   onClick={() => navigate('/employees')}
                 />
+              )}
+              {(isAdminUser || allowed.includes('feedback_collection')) && (
                 <MetricCard
                   title="Customer Feedbacks"
                   value={feedbackStats.totalFeedback}
                   subtext={`Positive: ${feedbackStats.positiveFeedback} • Neg: ${feedbackStats.negativeFeedback}`}
                   icon={MessageSquare}
-                  color="gold"
+                  color="teal"
                   onClick={() => navigate('/feedback-collection')}
                 />
+              )}
+              {(isAdminUser || allowed.includes('feedback_list')) && (
                 <MetricCard
                   title="Pending Call Queue"
                   value={feedbackStats.pendingCallQueue}
@@ -455,6 +541,8 @@ export default function DashboardPage() {
                   color="rose"
                   onClick={() => navigate('/feedback-list')}
                 />
+              )}
+              {(isAdminUser || allowed.includes('feedback_collection')) && (
                 <MetricCard
                   title="Satisfaction NPS"
                   value={`${feedbackStats.npsScore}%`}
@@ -463,10 +551,8 @@ export default function DashboardPage() {
                   color="teal"
                   onClick={() => navigate('/feedback-collection')}
                 />
-              </div>
-
-              {/* Secondary Store Floor Operations KPIs - Row 2 */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              )}
+              {(isAdminUser || allowed.includes('footfall')) && (
                 <MetricCard
                   title="Today Visitor Count"
                   value={footfallToday}
@@ -475,14 +561,8 @@ export default function DashboardPage() {
                   color="emerald"
                   onClick={() => navigate('/footfall')}
                 />
-                <MetricCard
-                  title="Total Call Queue"
-                  value={feedbackStats.totalCallQueue}
-                  subtext={`Pending: ${feedbackStats.pendingCallQueue} callbacks`}
-                  icon={PhoneCall}
-                  color="gold"
-                  onClick={() => navigate('/feedback-list')}
-                />
+              )}
+              {(isAdminUser || allowed.includes('divert')) && (
                 <MetricCard
                   title="Sourcing Diverts"
                   value={openDivertsCount}
@@ -491,6 +571,8 @@ export default function DashboardPage() {
                   color="amber"
                   onClick={() => navigate('/divert')}
                 />
+              )}
+              {(isAdminUser || allowed.includes('feedback_qr')) && (
                 <MetricCard
                   title="Feedback QR Portal"
                   value="Scan QR"
@@ -499,8 +581,8 @@ export default function DashboardPage() {
                   color="indigo"
                   onClick={() => navigate('/feedback-qr')}
                 />
-              </div>
-            </>
+              )}
+            </div>
           )}
 
           {/* Main Content Area */}
@@ -542,6 +624,55 @@ export default function DashboardPage() {
                       <div>
                         <div className="font-black text-sm text-primary group-hover:text-white transition-colors">{item.label}</div>
                         <div className="text-xs text-primary/70 group-hover:text-white/80 font-medium mt-1 leading-relaxed transition-colors">{item.desc}</div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : !canAccessEmployees ? (
+            /* User without direct Employee Register permissions: Authorized Workspaces & Assigned Modules Hub */
+            <div className="card-glass p-6 space-y-6">
+              <div className="border-b border-accent-soft pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <h3 className="font-extrabold text-primary text-base tracking-tight flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-accent" />
+                    <span>Your Authorized Workspaces &amp; Assigned Modules</span>
+                  </h3>
+                  <p className="text-xs text-primary/70 font-medium mt-0.5">
+                    Select any granted module below to navigate directly to your workspace.
+                  </p>
+                </div>
+                <span className="text-xs font-bold text-accent bg-accent/10 px-3 py-1 rounded-full w-fit">
+                  {assignedCards.length} Modules Available
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {assignedCards.map(item => {
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      key={item.key}
+                      onClick={() => navigate(item.path)}
+                      className="p-5 rounded-2xl border border-accent-soft bg-background hover:bg-primary hover:text-white transition-all text-left group flex flex-col justify-between space-y-4 shadow-xs hover:shadow-md cursor-pointer"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="p-3 rounded-xl bg-white border border-accent-soft group-hover:bg-white/10 group-hover:border-white/20 text-primary group-hover:text-accent transition-colors">
+                          <Icon className="w-5 h-5" />
+                        </div>
+                        <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-accent/15 text-primary group-hover:bg-white/20 group-hover:text-white transition-colors">
+                          {item.tag}
+                        </span>
+                      </div>
+                      <div>
+                        <div className="font-black text-sm text-primary group-hover:text-white transition-colors flex items-center justify-between">
+                          <span>{item.label}</span>
+                          <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-white transition-transform group-hover:translate-x-1" />
+                        </div>
+                        <div className="text-xs text-primary/70 group-hover:text-white/80 font-medium mt-1 leading-relaxed transition-colors">
+                          {item.desc}
+                        </div>
                       </div>
                     </button>
                   );
@@ -609,14 +740,20 @@ export default function DashboardPage() {
 
                   <div className="space-y-2.5">
                     {[
-                      { label: 'Feedback Collection', path: '/feedback-collection', icon: MessageSquare, desc: 'View collected customer feedbacks & CSAT' },
-                      { label: 'Feedback Call Queue', path: '/feedback-list', icon: MessageSquare, desc: 'View customer survey call queue' },
-                      { label: 'Employee Register', path: '/employees', icon: Users, desc: 'Manage full staff directory & profiles' },
-                      { label: 'Section Allocation', path: '/section-allocation', icon: Building2, desc: 'Assign staff to store floor sections' },
-                      { label: 'Staff Attendance', path: '/attendance', icon: CalendarCheck, desc: 'Mark daily attendance register' },
-                      { label: 'Cash Settlement Desk', path: '/cash-settlement', icon: DollarSign, desc: 'POS daily cash counter settlement' },
-                      { label: 'Candidate Applicants', path: '/candidates', icon: UserPlus, desc: 'View applicant pool for new hiring' }
-                    ].map((item) => {
+                      { key: 'wedding_crm', label: 'Wedding Follow-ups', path: '/wedding', icon: Heart, desc: 'Manage wedding customer leads & follow-ups' },
+                      { key: 'wedding_registration', label: 'Wedding Registration', path: '/wedding/customer-registration', icon: UserPlus, desc: 'Register newly visiting wedding parties' },
+                      { key: 'telecaller_desk', label: 'Telecaller Calling Desk', path: '/telecaller', icon: PhoneCall, desc: 'Execute daily calling schedule' },
+                      { key: 'telecaller_dashboard', label: 'Telecaller Dashboard', path: '/telecaller-dashboard', icon: BarChart3, desc: 'Telecaller team performance KPIs' },
+                      { key: 'feedback_collection', label: 'Feedback Collection', path: '/feedback-collection', icon: MessageSquare, desc: 'View collected customer feedbacks & CSAT' },
+                      { key: 'feedback_list', label: 'Feedback Call Queue', path: '/feedback-list', icon: PhoneCall, desc: 'View customer survey call queue' },
+                      { key: 'employees', label: 'Employee Register', path: '/employees', icon: Users, desc: 'Manage full staff directory & profiles' },
+                      { key: 'section_allocation', label: 'Section Allocation', path: '/section-allocation', icon: Building2, desc: 'Assign staff to store floor sections' },
+                      { key: 'attendance', label: 'Staff Attendance', path: '/attendance', icon: CalendarCheck, desc: 'Mark daily attendance register' },
+                      { key: 'cash_settlement', label: 'Cash Settlement Desk', path: '/cash-settlement', icon: DollarSign, desc: 'POS daily cash counter settlement' },
+                      { key: 'candidates', label: 'Candidate Applicants', path: '/candidates', icon: UserPlus, desc: 'View applicant pool for new hiring' },
+                      { key: 'footfall', label: 'Hourly Footfall', path: '/footfall', icon: Footprints, desc: 'Log & monitor visitor footfall' },
+                      { key: 'divert', label: 'Sourcing Diverts', path: '/divert', icon: Target, desc: 'Merchandise diversion requests' }
+                    ].filter(item => isAdminUser || allowed.includes(item.key)).map((item) => {
                       const Icon = item.icon;
                       return (
                         <button

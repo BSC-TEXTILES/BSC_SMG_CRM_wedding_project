@@ -29,9 +29,9 @@ const COLUMNS = [
     key: 'new',
     label: '1. New Leads',
     statuses: ['New', 'New Lead', 'Contact Pending'],
-    color: 'border-slate-300',
-    headerBg: 'bg-slate-50',
-    countBadge: 'bg-slate-200 text-slate-800'
+    color: 'border-border',
+    headerBg: 'bg-background',
+    countBadge: 'bg-primary-soft text-primary'
   },
   {
     key: 'contacted',

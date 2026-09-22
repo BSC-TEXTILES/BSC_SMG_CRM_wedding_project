@@ -143,7 +143,7 @@ export default function ChatWidget() {
         onClick={() => setIsOpen(!isOpen)}
         className={`fixed bottom-6 right-24 z-50 w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 border-2 ${
           isOpen
-            ? 'bg-slate-800 text-white border-slate-700 rotate-0'
+            ? 'bg-primary text-white border-primary-light rotate-0'
             : 'bg-accent text-white border-accent/50 hover:scale-110 hover:shadow-accent/30'
         }`}
         title={isOpen ? 'Close Chat' : 'Open AI Chat Assistant'}
@@ -164,16 +164,16 @@ export default function ChatWidget() {
 
       {/* Chat Panel */}
       {isOpen && (
-        <div className="fixed bottom-24 right-6 z-50 w-[380px] max-w-[calc(100vw-3rem)] h-[520px] max-h-[calc(100vh-8rem)] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden animate-slide-up">
+        <div className="fixed bottom-24 right-6 z-50 w-[380px] max-w-[calc(100vw-3rem)] h-[520px] max-h-[calc(100vh-8rem)] bg-white rounded-2xl shadow-2xl border border-border flex flex-col overflow-hidden animate-slide-up">
           {/* Header */}
-          <div className="bg-slate-900 text-white px-4 py-3 flex items-center justify-between shrink-0">
+          <div className="bg-primary-dark text-white px-4 py-3 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-lg bg-accent/20 flex items-center justify-center">
                 <MessageSquare className="w-4 h-4 text-accent" />
               </div>
               <div>
                 <h3 className="text-sm font-bold">AI Assistant</h3>
-                <p className="text-[10px] text-slate-500">Powered by Gemini</p>
+                <p className="text-[10px] text-text-secondary">Powered by Gemini</p>
               </div>
             </div>
             <div className="flex items-center gap-1">
@@ -212,20 +212,20 @@ export default function ChatWidget() {
           )}
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-3 space-y-3 min-h-0 bg-slate-50">
+          <div className="flex-1 overflow-y-auto p-3 space-y-3 min-h-0 bg-background">
             {isInitialLoading ? (
-              <div className="h-full flex flex-col items-center justify-center text-slate-500 space-y-2">
-                <RefreshCw className="w-6 h-6 animate-spin text-slate-300" />
+              <div className="h-full flex flex-col items-center justify-center text-text-secondary space-y-2">
+                <RefreshCw className="w-6 h-6 animate-spin text-border" />
                 <p className="text-xs font-medium">Loading...</p>
               </div>
             ) : messages.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-slate-500 space-y-3 px-4">
+              <div className="h-full flex flex-col items-center justify-center text-text-secondary space-y-3 px-4">
                 <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center">
                   <MessageSquare className="w-6 h-6 text-accent" />
                 </div>
                 <div className="text-center">
-                  <p className="text-xs font-semibold text-slate-600">AI Chat Assistant</p>
-                  <p className="text-[10px] text-slate-500 mt-0.5">Ask me anything about BSC Enterprise</p>
+                  <p className="text-xs font-semibold text-text-secondary">AI Chat Assistant</p>
+                  <p className="text-[10px] text-text-secondary mt-0.5">Ask me anything about BSC Enterprise</p>
                 </div>
               </div>
             ) : (
@@ -233,12 +233,12 @@ export default function ChatWidget() {
                 <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[85%] rounded-xl px-3 py-2 text-xs leading-relaxed ${
                     msg.sender === 'user'
-                      ? 'bg-slate-900 text-white rounded-br-sm'
-                      : 'bg-white text-slate-800 rounded-bl-sm border border-slate-200 shadow-xs'
+                      ? 'bg-primary text-white rounded-br-sm'
+                      : 'bg-card text-text-primary rounded-bl-sm border border-border shadow-xs'
                   }`}>
                     <p className="whitespace-pre-wrap break-words">{msg.text}</p>
                     <div className={`flex items-center gap-1 mt-1 text-[9px] font-medium ${
-                      msg.sender === 'user' ? 'text-slate-500' : 'text-slate-500'
+                      msg.sender === 'user' ? 'text-text-secondary' : 'text-text-secondary'
                     }`}>
                       <span>{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                       {msg.sender === 'user' && msg.status === 'sending' && (
@@ -256,7 +256,7 @@ export default function ChatWidget() {
           </div>
 
           {/* Input */}
-          <form onSubmit={handleSendMessage} className="p-3 bg-white border-t border-slate-100 shrink-0">
+          <form onSubmit={handleSendMessage} className="p-3 bg-card border-t border-border shrink-0">
             <div className="flex items-center gap-2">
               <input
                 ref={inputRef}
@@ -266,7 +266,7 @@ export default function ChatWidget() {
                 onKeyDown={handleKeyDown}
                 placeholder="Type a message..."
                 disabled={isLoading}
-                className="flex-1 bg-slate-50 border border-slate-200 text-slate-900 text-xs rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-accent focus:border-accent transition-all disabled:opacity-50"
+                className="input-modern flex-1 text-xs"
                 autoFocus
               />
               <button
@@ -281,7 +281,7 @@ export default function ChatWidget() {
                 )}
               </button>
             </div>
-            <p className="text-[9px] text-slate-500 text-center mt-1.5">Press Enter to send</p>
+            <p className="text-[9px] text-text-secondary text-center mt-1.5">Press Enter to send</p>
           </form>
         </div>
       )}

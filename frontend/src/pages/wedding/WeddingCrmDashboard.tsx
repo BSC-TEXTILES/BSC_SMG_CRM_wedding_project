@@ -236,10 +236,10 @@ export default function WeddingCrmDashboard() {
             <div className="bg-white p-4 rounded-2xl border border-[#DFDDD7] shadow-xs relative overflow-hidden group hover:border-[#C9A45C] transition-all">
               <div className="flex items-center justify-between text-[#687080] mb-2">
                 <span className="text-[10px] font-extrabold uppercase tracking-wider">Pending Calls</span>
-                <Clock className="w-4 h-4 text-slate-600" />
+                <Clock className="w-4 h-4 text-text-secondary" />
               </div>
-              <div className="text-2xl font-black text-slate-800">{stats.callsPending || 0}</div>
-              <div className="text-[10px] text-slate-500 font-bold mt-1">In telecaller queue</div>
+              <div className="text-2xl font-black text-text-primary">{stats.callsPending || 0}</div>
+              <div className="text-[10px] text-text-secondary font-bold mt-1">In telecaller queue</div>
             </div>
 
             {/* 6. Connected */}
@@ -437,9 +437,9 @@ export default function WeddingCrmDashboard() {
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center">
-                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-                    <div className="text-[10px] font-bold text-slate-600 uppercase">1. New Leads</div>
-                    <div className="text-lg font-black text-slate-800 mt-1">{stats.newRequests || stats.todayNewCustomers || 0}</div>
+                  <div className="p-3 rounded-xl bg-primary-soft border border-border">
+                    <div className="text-[10px] font-bold text-text-secondary uppercase">1. New Leads</div>
+                    <div className="text-lg font-black text-text-primary mt-1">{stats.newRequests || stats.todayNewCustomers || 0}</div>
                   </div>
                   <div className="p-3 rounded-xl bg-amber-50 border border-amber-200">
                     <div className="text-[10px] font-bold text-amber-800 uppercase">2. Contacted</div>

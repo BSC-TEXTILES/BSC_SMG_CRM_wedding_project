@@ -3,6 +3,7 @@ const { successRes, errorRes } = require('../utils/response');
 const { getLocationFilter, injectLocationId } = require('../middleware/auth');
 const { encryptField, decryptRows, decryptRow } = require('../utils/crypto');
 const { sendWeddingRegistrationConfirmation } = require('../config/email');
+const realtimeService = require('../services/realtimeService');
 const {
   isValidMobile,
   normalizeMobile,
@@ -708,6 +709,8 @@ class WeddingRegistrationController {
         this.updateEmailStatus(newId, 'EMAIL_FAILED', err.message);
       });
 
+      realtimeService.emitWeddingRegistrationChange('CREATE', { id: newId, registration_id: registrationId, customer_name: data.customer_name?.trim() }, locationId);
+
       return successRes(res, {
         id: newId,
         customer_id: registrationId,
@@ -944,6 +947,8 @@ class WeddingRegistrationController {
         'Updated wedding registration details'
       ]);
 
+      realtimeService.emitWeddingRegistrationChange('UPDATE', { id, registration_id: prev.registration_id }, prev.location_id);
+
       return successRes(res, { id }, 'Wedding registration updated successfully.');
     } catch (err) {
       console.error('[WeddingRegistrationController.updateRegistration Error]', err);
@@ -979,6 +984,8 @@ class WeddingRegistrationController {
         req.user?.fullName || 'Staff',
         `Archived registration ${prev.customer_name} (${prev.registration_id})`
       ]);
+
+      realtimeService.emitWeddingRegistrationChange('DELETE', { id, registration_id: prev.registration_id }, prev.location_id);
 
       return successRes(res, { id }, 'Registration archived successfully');
     } catch (err) {

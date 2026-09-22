@@ -828,15 +828,75 @@ router.get('/consent/policy-versions', consentController.getPolicyVersions);
 router.get('/consent/admin/user-consents', authenticate, authorize('Admin', 'Super Admin'), consentController.getUserConsents);
 
 // ── Server-Side Route Validation ─────────────────────────────────────
-// Validates a pathname against the allowed_routes table for the user's role.
+// Validates a pathname against the user_permissions matrix and allowed_routes table.
 // Called by the frontend RouteGuard to confirm a URL is permitted before rendering.
+const ROUTE_TO_MODULE_MAP = [
+  { pattern: /^\/dashboard(\/|$)/, module: 'dashboard' },
+  { pattern: /^\/main-crm(\/|$)/, module: 'main_crm' },
+  { pattern: /^\/wedding-crm\/customers\/new(\/|$)/, module: 'wedding_registration' },
+  { pattern: /^\/wedding\/customer-registration(\/|$)/, module: 'wedding_registration' },
+  { pattern: /^\/wedding-registration(\/|$)/, module: 'wedding_registration' },
+  { pattern: /^\/wedding-crm(\/|$)/, module: 'wedding_crm' },
+  { pattern: /^\/wedding-operations(\/|$)/, module: 'wedding_operations' },
+  { pattern: /^\/telecaller\/desk(\/|$)/, module: 'telecaller_desk' },
+  { pattern: /^\/telecaller-dashboard(\/|$)/, module: 'telecaller_dashboard' },
+  { pattern: /^\/footfall(\/|$)/, module: 'footfall' },
+  { pattern: /^\/feedback-collection(\/|$)/, module: 'feedback_collection' },
+  { pattern: /^\/feedback-list(\/|$)/, module: 'feedback_list' },
+  { pattern: /^\/feedback-qr-management(\/|$)/, module: 'feedback_qr' },
+  { pattern: /^\/feedback-qr(\/|$)/, module: 'feedback_qr' },
+  { pattern: /^\/divert(\/|$)/, module: 'divert' },
+  { pattern: /^\/candidates(\/|$)/, module: 'candidates' },
+  { pattern: /^\/offer-process(\/|$)/, module: 'offer' },
+  { pattern: /^\/openings(\/|$)/, module: 'openings' },
+  { pattern: /^\/employees(\/|$)/, module: 'employees' },
+  { pattern: /^\/department-hiring(\/|$)/, module: 'dept_hiring' },
+  { pattern: /^\/section-allocation(\/|$)/, module: 'section_allocation' },
+  { pattern: /^\/daily-mcheck(\/|$)/, module: 'daily_mcheck' },
+  { pattern: /^\/mcheck-reports(\/|$)/, module: 'mcheck_reports' },
+  { pattern: /^\/mcheck-history(\/|$)/, module: 'mcheck_history' },
+  { pattern: /^\/broadcast-center(\/|$)/, module: 'broadcast' },
+  { pattern: /^\/user-management(\/|$)/, module: 'user_management' },
+  { pattern: /^\/settings(\/|$)/, module: 'settings' },
+  { pattern: /^\/system-admin(\/|$)/, module: 'system_admin' },
+  { pattern: /^\/attendance(\/|$)/, module: 'attendance' },
+  { pattern: /^\/pm-view(\/|$)/, module: 'pm_view' },
+  { pattern: /^\/vm-checklist(\/|$)/, module: 'vm_checklist' },
+  { pattern: /^\/greeter(\/|$)/, module: 'greeter' },
+  { pattern: /^\/tv(\/|$)/, module: 'tv' },
+  { pattern: /^\/chat-dashboard(\/|$)/, module: 'dashboard' },
+  { pattern: /^\/batch-plan(\/|$)/, module: 'batch_plan' },
+  { pattern: /^\/doj-desk(\/|$)/, module: 'doj_desk' },
+];
+
+const PUBLIC_ROUTE_PATTERNS = [
+  /^\/$/,
+  /^\/login/,
+  /^\/forgot-password/,
+  /^\/apply/,
+  /^\/applicants\//,
+  /^\/candidate-registration/,
+  /^\/wedding-registration$/,
+  /^\/feedback-public/,
+  /^\/feedback-qr$/,
+  /^\/track/,
+  /^\/tv$/,
+  /^\/cash-settlement/
+];
+
 router.post('/security/validate-route', authenticate, async (req, res) => {
   try {
     const { pathname } = req.body || {};
     const role = req.user?.role;
+    const userId = req.user?.id;
 
     if (!pathname || !role) {
       return res.json({ success: true, allowed: false, reason: 'Missing pathname or role' });
+    }
+
+    // Public routes are always allowed
+    if (PUBLIC_ROUTE_PATTERNS.some(rx => rx.test(pathname))) {
+      return res.json({ success: true, allowed: true, reason: 'Public route' });
     }
 
     // Admin / Super Admin bypass — always allowed
@@ -844,7 +904,44 @@ router.post('/security/validate-route', authenticate, async (req, res) => {
       return res.json({ success: true, allowed: true, reason: 'Admin bypass' });
     }
 
-    // Normalize role name (handle aliases)
+    // 1. Check user-specific permissions (Access Control Matrix)
+    try {
+      const [userPerms] = await pool.query(
+        'SELECT module, can_view FROM user_permissions WHERE user_id = ?',
+        [userId]
+      );
+
+      if (userPerms && userPerms.length > 0) {
+        const matched = ROUTE_TO_MODULE_MAP.find(m => m.pattern.test(pathname));
+        if (!matched) {
+          // Unconstrained internal path
+          return res.json({ success: true, allowed: true, reason: 'Unconstrained path' });
+        }
+
+        const permRow = userPerms.find(p => p.module === matched.module);
+        if (permRow && permRow.can_view) {
+          return res.json({ success: true, allowed: true, reason: 'Permitted by user Access Control Matrix' });
+        }
+
+        // Related wedding module aliases
+        if (matched.module === 'wedding_crm' && userPerms.some(p => (p.module === 'wedding_registration' || p.module === 'telecaller_desk') && p.can_view)) {
+          return res.json({ success: true, allowed: true, reason: 'Permitted via related wedding module' });
+        }
+        if (matched.module === 'wedding_registration' && userPerms.some(p => p.module === 'wedding_crm' && p.can_view)) {
+          return res.json({ success: true, allowed: true, reason: 'Permitted via Wedding CRM view access' });
+        }
+
+        return res.json({
+          success: true,
+          allowed: false,
+          reason: `Access to module "${matched.module.replace(/_/g, ' ')}" not granted in matrix`
+        });
+      }
+    } catch (e) {
+      console.warn('[validate-route] user_permissions check fallback:', e.message);
+    }
+
+    // 2. Fall back to role-based routes table
     const roleAliasMap = {
       'super admin': 'Super Admin',
       'admin': 'Admin',
@@ -876,14 +973,13 @@ router.post('/security/validate-route', authenticate, async (req, res) => {
     const cleanRole = (role || '').trim().toLowerCase().replace(/[_\s-]+/g, ' ');
     const normalizedRole = roleAliasMap[cleanRole] || roleAliasMap[role.toLowerCase()] || role;
 
-    // Check allowed_routes table
     const [rows] = await pool.query(
       'SELECT route_pattern FROM allowed_routes WHERE role = ? AND is_active = 1',
       [normalizedRole]
     );
 
     if (!rows || rows.length === 0) {
-      // No routes configured — fail open (frontend RBAC is the primary guard)
+      // No role rules configured — fail open (frontend RBAC is the primary guard)
       return res.json({ success: true, allowed: true, reason: 'No route rules configured' });
     }
 
@@ -896,25 +992,11 @@ router.post('/security/validate-route', authenticate, async (req, res) => {
       }
     });
 
-    if (!isAllowed) {
-      // Log the violation
-      const { logSessionActivity } = require('../middleware/auth');
-      logSessionActivity({
-        userId: req.user.id,
-        username: req.user.username,
-        sessionId: req.correlationId,
-        action: 'ROUTE_VIOLATION',
-        module: 'security',
-        details: { pathname, role: normalizedRole },
-        ip: req.ip || req.connection?.remoteAddress,
-        userAgent: req.headers['user-agent'],
-        locationId: req.user.locationId,
-        method: 'POST',
-        path: '/security/validate-route'
-      });
-    }
-
-    return res.json({ success: true, allowed: isAllowed, reason: isAllowed ? 'Route permitted' : 'Route not permitted for role' });
+    return res.json({
+      success: true,
+      allowed: isAllowed,
+      reason: isAllowed ? 'Route permitted for role' : `Route not permitted for role ${normalizedRole}`
+    });
   } catch (err) {
     console.error('[validate-route]', err.message);
     // Fail open — frontend RBAC is primary

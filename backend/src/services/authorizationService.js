@@ -74,24 +74,89 @@ async function checkPermission(user, { module = null, action = 'can_view', locat
     }
   }
 
+const ROLE_DEFAULT_MODULES = {
+  'HR': ['dashboard', 'wedding_crm', 'wedding_registration', 'footfall', 'feedback_collection', 'feedback_list', 'feedback_qr',
+         'divert', 'candidates', 'offer', 'openings', 'employees', 'dept_hiring', 'section_allocation',
+         'broadcast', 'daily_mcheck', 'mcheck_reports', 'mcheck_history'],
+  'Manager': ['dashboard', 'wedding_crm', 'wedding_registration', 'telecaller_desk', 'telecaller_dashboard', 'wedding_operations', 'footfall', 'feedback_collection', 'feedback_list', 'feedback_qr',
+              'divert', 'candidates', 'offer', 'openings', 'employees', 'dept_hiring', 'section_allocation',
+              'broadcast', 'daily_mcheck', 'mcheck_reports', 'mcheck_history'],
+  'Telecaller': ['wedding_crm', 'telecaller_desk', 'telecaller_dashboard', 'wedding_registration'],
+  'VM Extension Telecaller': ['wedding_crm', 'telecaller_desk', 'telecaller_dashboard', 'wedding_registration'],
+  'CRM Executive': ['wedding_crm', 'telecaller_desk', 'telecaller_dashboard', 'wedding_registration', 'dashboard', 'footfall'],
+  'CRM Manager': ['wedding_crm', 'telecaller_desk', 'telecaller_dashboard', 'wedding_registration', 'wedding_operations', 'dashboard', 'footfall', 'broadcast'],
+  'Recruiter': ['dashboard', 'wedding_crm', 'candidates', 'broadcast'],
+  'Interviewer': ['candidates'],
+  'Employee': ['dashboard', 'wedding_crm', 'wedding_registration'],
+  'Greeter': ['wedding_crm', 'wedding_registration', 'footfall', 'feedback_collection', 'feedback_list', 'feedback_qr', 'divert', 'tv', 'greeter'],
+  'VM': ['vm_checklist', 'dashboard', 'footfall', 'broadcast'],
+  'Guest': ['candidate_apply', 'feedback_public']
+};
+
   // 5. Module + Action permission check
   if (module) {
     const safeAction = VALID_ACTIONS.includes(action) ? action : 'can_view';
     try {
-      const [rows] = await pool.query(
-        `SELECT ${safeAction} as allowed FROM user_permissions WHERE user_id = ? AND module = ?`,
-        [user.id, module]
+      // Check if user has records in user_permissions
+      const [allUserPerms] = await pool.query(
+        'SELECT module, can_view, can_add, can_edit, can_delete, can_export, can_approve FROM user_permissions WHERE user_id = ?',
+        [user.id]
       );
 
-      if (!rows.length) {
-        return { allowed: false, reason: `No permissions configured for module: ${module}` };
+      if (allUserPerms && allUserPerms.length > 0) {
+        // User has customized permissions from Admin Access Control Matrix
+        let permRow = allUserPerms.find(p => p.module === module);
+
+        // Check related aliases (e.g. wedding_registration grants wedding customer creation)
+        if (!permRow && module === 'wedding_crm') {
+          permRow = allUserPerms.find(p => p.module === 'wedding_registration' || p.module === 'telecaller_desk');
+        }
+        if (!permRow && module === 'wedding_registration') {
+          permRow = allUserPerms.find(p => p.module === 'wedding_crm');
+        }
+
+        if (!permRow) {
+          return { allowed: false, reason: `No permissions configured for module: ${module}` };
+        }
+
+        if (!permRow[safeAction]) {
+          return { allowed: false, reason: `Action ${safeAction.replace('can_', '')} not permitted for module: ${module}` };
+        }
+
+        return { allowed: true, reason: 'Permission granted' };
       }
 
-      if (!rows[0].allowed) {
-        return { allowed: false, reason: `Action ${safeAction.replace('can_', '')} not permitted for module: ${module}` };
+      // Fall back to role defaults if user has no custom matrix records
+      const cleanRole = (role || '').trim().toLowerCase().replace(/[_\s-]+/g, ' ');
+      const matchedRoleKey = Object.keys(ROLE_DEFAULT_MODULES).find(
+        k => k.toLowerCase().replace(/[_\s-]+/g, ' ') === cleanRole
+      );
+      const roleModules = matchedRoleKey ? ROLE_DEFAULT_MODULES[matchedRoleKey] : (ROLE_DEFAULT_MODULES['Employee'] || []);
+
+      if (!roleModules.includes(module)) {
+        return { allowed: false, reason: `Role ${role} does not have access to module: ${module}` };
       }
+
+      // If action is can_view, allow
+      if (safeAction === 'can_view') {
+        return { allowed: true, reason: 'Role default view permitted' };
+      }
+
+      // Check role default mutation rights
+      if (['Manager', 'CRM Manager', 'Floor Manager'].includes(matchedRoleKey || '')) {
+        return { allowed: true, reason: 'Manager mutation permitted' };
+      }
+      if (matchedRoleKey === 'HR' && safeAction !== 'can_delete') {
+        return { allowed: true, reason: 'HR mutation permitted' };
+      }
+      if (['Telecaller', 'CRM Executive', 'VM Extension Telecaller'].includes(matchedRoleKey || '')) {
+        if (['can_add', 'can_edit'].includes(safeAction)) {
+          return { allowed: true, reason: 'Telecaller mutation permitted' };
+        }
+      }
+
+      return { allowed: false, reason: `Action ${safeAction.replace('can_', '')} not permitted for role: ${role}` };
     } catch (err) {
-      // If user_permissions table doesn't exist, fall back to allowing role-based access
       console.warn('[AuthzService] Permission check failed, falling back:', err.message);
       return { allowed: true, reason: 'Permission table unavailable, falling back to role-based access' };
     }

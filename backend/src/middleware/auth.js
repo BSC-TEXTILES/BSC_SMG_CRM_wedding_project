@@ -261,14 +261,49 @@ const authenticate = async (req, res, next) => {
 };
 
 /**
- * authorize — role-based access control
+ * authorize — role-based access control with Access Control Matrix override
  */
 const authorize = (...roles) => {
-  return (req, res, next) => {
-    if (!req.user || !roles.includes(req.user.role)) {
+  return async (req, res, next) => {
+    if (!req.user) {
       return errorRes(res, 'Forbidden: insufficient permissions', [], 403);
     }
-    next();
+    // Admin / Super Admin always have full access
+    if (['Admin', 'Super Admin'].includes(req.user.role)) {
+      return next();
+    }
+    if (roles.includes(req.user.role)) {
+      return next();
+    }
+
+    // Check if user has explicit permission in user_permissions matrix
+    try {
+      const pool = require('../config/db');
+      const [perms] = await pool.query(
+        'SELECT module, can_view, can_add, can_edit, can_delete FROM user_permissions WHERE user_id = ?',
+        [req.user.id]
+      );
+      if (perms && perms.length > 0) {
+        const fullPath = (req.originalUrl || req.baseUrl || req.path || '').toLowerCase();
+        const method = (req.method || 'GET').toUpperCase();
+        const actionField = method === 'GET' ? 'can_view' : (method === 'POST' ? 'can_add' : (method === 'DELETE' ? 'can_delete' : 'can_edit'));
+
+        const hasPerm = perms.some(p => {
+          if (!p[actionField]) return false;
+          const normMod = p.module.toLowerCase().replace(/_/g, '-');
+          const rawMod = p.module.toLowerCase();
+          return fullPath.includes(normMod) || fullPath.includes(rawMod);
+        });
+
+        if (hasPerm) {
+          return next();
+        }
+      }
+    } catch (e) {
+      // Fall through to 403
+    }
+
+    return errorRes(res, 'Forbidden: insufficient permissions', [], 403);
   };
 };
 
@@ -292,17 +327,22 @@ const authorize = (...roles) => {
  */
 const LOCATION_CODE_MAP = {
   'BEL': 1,
+  'BELAGAVI': 1,
   'DAV': 2,
-  'SHI': 3
+  'DAVANAGERE': 2,
+  'DAVANGERE': 2,
+  'SHI': 3,
+  'SHIVAMOGGA': 3,
+  'SHIMOGA': 3
 };
 
 function parseTargetLocation(val) {
-  if (val === undefined || val === null || val === '' || val === 'all') return null;
+  if (val === undefined || val === null || val === '') return null;
+  const s = String(val).trim().toLowerCase();
+  if (['all', 'all locations', 'all_locations', '0'].includes(s)) return null;
   let parsed = parseInt(val, 10);
-  if (isNaN(parsed) && typeof val === 'string') {
-    parsed = LOCATION_CODE_MAP[val.trim().toUpperCase()] || null;
-  }
-  return parsed;
+  if (!isNaN(parsed) && parsed > 0) return parsed;
+  return LOCATION_CODE_MAP[String(val).trim().toUpperCase()] || null;
 }
 
 /**

@@ -5,6 +5,8 @@ import Topbar from '../components/Topbar';
 import ToastContainer, { showToast } from '../components/Toast';
 import { API, Auth, UserSession } from '../services/api';
 import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../utils/sidebarState';
+import { permissionsCache } from '../context/PermissionsCache';
+import { useRealtimeSection } from '../hooks/useRealtimeSection';
 import {
   Users,
   UserPlus,
@@ -251,6 +253,9 @@ export default function UserManagementPage() {
         setModules([
           { key: 'dashboard', label: 'Dashboard', section: 'Core Workspace' },
           { key: 'wedding_crm', label: 'Wedding Follow-up CRM', section: 'Store Operations' },
+          { key: 'wedding_registration', label: 'Wedding Customer Registration', section: 'Store Operations' },
+          { key: 'telecaller_desk', label: 'Telecaller Calling Desk', section: 'Store Operations' },
+          { key: 'telecaller_dashboard', label: 'Telecaller Dashboard', section: 'Store Operations' },
           { key: 'footfall', label: 'Hourly Footfall', section: 'Store Operations' },
           { key: 'feedback_collection', label: 'Feedback Collection', section: 'Store Operations' },
           { key: 'feedback_list', label: 'Feedback Call Queue', section: 'Store Operations' },
@@ -294,6 +299,11 @@ export default function UserManagementPage() {
       setLoading(false);
     }
   }, []);
+
+  // Real-time Section Updates: silently refresh users & matrix data when any user/permissions change
+  useRealtimeSection(['user', 'permissions'], () => {
+    loadData();
+  });
 
   // Filtered users list
   const filteredUsers = useMemo(() => {
@@ -697,6 +707,8 @@ export default function UserManagementPage() {
     try {
       const payload = Object.values(userPermissions);
       await API.updateAdminUserPermissions(selectedUser.id, payload);
+      permissionsCache.invalidate();
+      window.dispatchEvent(new Event('permissions-updated'));
       showToast(`Permissions matrix for "${selectedUser.username}" saved successfully`, 'success');
       setPermModalOpen(false);
       loadData();

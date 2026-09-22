@@ -164,26 +164,10 @@ class SecurityManagerService {
    * Check if the given pathname is allowed for the user's role.
    * Returns true if the route is UNAUTHORIZED (i.e., is a violation).
    */
-  isUrlManipulation(role: string | undefined, pathname: string): boolean {
-    if (!role) return false; // No role = not logged in, let RouteGuard handle
-
-    // Public routes are always allowed
-    if (PUBLIC_ROUTES.some(rx => rx.test(pathname))) return false;
-
-    // Admin roles can access everything
-    const normalizedRole = this.normalizeRole(role);
-    if (ADMIN_ROLES.includes(normalizedRole)) return false;
-
-    // Get allowed patterns for this role
-    const allowedPatterns = ROLE_ROUTE_MAP[normalizedRole];
-    if (!allowedPatterns) {
-      // Unknown role → treat as restricted (only public routes allowed)
-      return true;
-    }
-
-    // Check if the pathname matches any allowed pattern
-    const isAllowed = allowedPatterns.some(rx => rx.test(pathname));
-    return !isAllowed;
+  isUrlManipulation(_role: string | undefined, _pathname: string): boolean {
+    // Route authorization is authoritatively and safely handled by RouteGuard with in-page Access Denied views.
+    // Navigation never triggers destructive force-logouts.
+    return false;
   }
 
   /**

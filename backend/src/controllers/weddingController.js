@@ -6,6 +6,7 @@ const DESK_CACHE_TTL_MS = 30000;
 const pool = require('../config/db');
 const { successRes, errorRes } = require('../utils/response');
 const { getLocationFilter, injectLocationId } = require('../middleware/auth');
+const realtimeService = require('../services/realtimeService');
 const { encryptField, decryptRows, decryptRow } = require('../utils/crypto');
 const { parseCsv, rowsToObjects } = require('../utils/csv');
 const { 
@@ -944,6 +945,8 @@ class WeddingController {
       await bfAdd('wedding_customers_bf', newId.toString());
       await delCachePattern('app:prod:wedding:dashboard:*');
 
+      realtimeService.emitWeddingChange('CREATE', { id: newId, customer_code: customerCode, customer_name: customerName }, locationId);
+
       return successRes(res, {
         id: newId,
         customer_code: customerCode,
@@ -1447,6 +1450,8 @@ class WeddingController {
         telecallerName,
         `Logged call outcome: ${callOutcome}. Status: ${newCustomerStatus}. ${nextFollowUpDate ? `Next call: ${nextFollowUpDate}` : ''}`
       ]);
+
+      realtimeService.emitWeddingChange('CALL_LOGGED', { id: cust.id, customer_status: newCustomerStatus, call_status: newCallStatus }, cust.location_id);
 
       return successRes(res, {
         customerId: cust.id,
