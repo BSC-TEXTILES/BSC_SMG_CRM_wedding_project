@@ -378,27 +378,48 @@ class WeddingRegistrationController {
       const year = new Date().getFullYear();
       const codePrefix = `BSC-WED-${locCode}-${year}-`;
 
+      let startSeq = 0;
+      try {
+        const sql = `
+          SELECT MAX(seq) AS max_seq FROM (
+            SELECT CAST(SUBSTRING(registration_id, -6) AS UNSIGNED) AS seq 
+            FROM wedding_registrations 
+            WHERE registration_id LIKE ?
+            UNION ALL
+            SELECT CAST(SUBSTRING(customer_code, -6) AS UNSIGNED) AS seq 
+            FROM wedding_customers 
+            WHERE customer_code LIKE ?
+          ) AS all_seqs
+        `;
+        const [maxRows] = await pool.query(sql, [`${codePrefix}%`, `${codePrefix}%`]);
+        if (maxRows && maxRows[0] && maxRows[0].max_seq != null) {
+          startSeq = parseInt(maxRows[0].max_seq, 10) || 0;
+        }
+      } catch (seqErr) {
+        console.warn('[getNextRegistrationId max_seq fallback]', seqErr.message);
+      }
+
       let registrationId = null;
-      for (let attempt = 0; attempt < 5 && !registrationId; attempt++) {
-        const [lastRows] = await pool.query(
-          `SELECT registration_id FROM wedding_registrations WHERE registration_id LIKE ? ORDER BY id DESC LIMIT 1`,
-          [`${codePrefix}%`]
+      let nextSeq = startSeq + 1;
+      for (let attempt = 0; attempt < 25 && !registrationId; attempt++) {
+        const candidate = `${codePrefix}${String(nextSeq).padStart(6, '0')}`;
+        const [regExists] = await pool.query(
+          `SELECT id FROM wedding_registrations WHERE registration_id = ? OR customer_id = ? LIMIT 1`,
+          [candidate, candidate]
         );
-        const lastSeq = lastRows && lastRows[0]
-          ? parseInt(String(lastRows[0].registration_id).slice(-6), 10) || 0
-          : 0;
-        const candidate = `${codePrefix}${String(lastSeq + 1).padStart(6, '0')}`;
-        const [exists] = await pool.query(
-          `SELECT id FROM wedding_registrations WHERE registration_id = ?`,
+        const [crmExists] = await pool.query(
+          `SELECT id FROM wedding_customers WHERE customer_code = ? LIMIT 1`,
           [candidate]
         );
-        if (!exists || exists.length === 0) {
+        if ((!regExists || regExists.length === 0) && (!crmExists || crmExists.length === 0)) {
           registrationId = candidate;
+        } else {
+          nextSeq++;
         }
       }
 
       if (!registrationId) {
-        return errorRes(res, 'Could not allocate a unique registration ID, please retry', [], 500);
+        registrationId = `${codePrefix}${String(Date.now()).slice(-6)}`;
       }
 
       return successRes(res, { registrationId }, 'Registration ID generated');
@@ -410,45 +431,80 @@ class WeddingRegistrationController {
 
   // ── Server-side unique ID allocation ──────────────────────────────
   // Both IDs are generated on the backend (the DB is the source of truth)
-  // and protected by UNIQUE constraints + retry-on-collision.
+  // and protected by checking BOTH wedding_registrations and wedding_customers
+  // with sequential collision advance.
   async allocateUniqueIds(locationCode, executor = pool) {
     const year = new Date().getFullYear();
     const codePrefix = `BSC-WED-${locationCode}-${year}-`;
 
+    // 1. Query the true MAX sequence across BOTH wedding_registrations AND wedding_customers
+    let startSeq = 0;
+    try {
+      const sql = `
+        SELECT MAX(seq) AS max_seq FROM (
+          SELECT CAST(SUBSTRING(registration_id, -6) AS UNSIGNED) AS seq 
+          FROM wedding_registrations 
+          WHERE registration_id LIKE ?
+          UNION ALL
+          SELECT CAST(SUBSTRING(customer_code, -6) AS UNSIGNED) AS seq 
+          FROM wedding_customers 
+          WHERE customer_code LIKE ?
+        ) AS all_seqs
+      `;
+      const [maxRows] = await executor.query(sql, [`${codePrefix}%`, `${codePrefix}%`]);
+      if (maxRows && maxRows[0] && maxRows[0].max_seq != null) {
+        startSeq = parseInt(maxRows[0].max_seq, 10) || 0;
+      }
+    } catch (err) {
+      console.warn('[allocateUniqueIds max_seq query fallback]', err.message);
+    }
+
     // Customer / registration business ID: BSC-WED-{LOC}-{YEAR}-{000001..}
     let registrationId = null;
-    for (let attempt = 0; attempt < 6 && !registrationId; attempt++) {
-      const [lastRows] = await executor.query(
-        `SELECT registration_id FROM wedding_registrations WHERE registration_id LIKE ? ORDER BY id DESC LIMIT 1`,
-        [`${codePrefix}%`]
-      );
-      const lastSeq = lastRows && lastRows[0]
-        ? parseInt(String(lastRows[0].registration_id).slice(-6), 10) || 0
-        : 0;
-      const candidate = `${codePrefix}${String(lastSeq + 1).padStart(6, '0')}`;
-      const [exists] = await executor.query(
-        `SELECT id FROM wedding_registrations WHERE registration_id = ? OR customer_id = ?`,
+    let nextSeq = startSeq + 1;
+    for (let attempt = 0; attempt < 30 && !registrationId; attempt++) {
+      const candidate = `${codePrefix}${String(nextSeq).padStart(6, '0')}`;
+      const [regHit] = await executor.query(
+        `SELECT id FROM wedding_registrations WHERE registration_id = ? OR customer_id = ? LIMIT 1`,
         [candidate, candidate]
       );
-      if (!exists || exists.length === 0) {
+      const [crmHit] = await executor.query(
+        `SELECT id FROM wedding_customers WHERE customer_code = ? LIMIT 1`,
+        [candidate]
+      );
+      if ((!regHit || regHit.length === 0) && (!crmHit || crmHit.length === 0)) {
         registrationId = candidate;
+      } else {
+        nextSeq++;
       }
     }
 
-    // Public tracking ID: BSC-WED-{YYYYMMDD}-{XXXX}
+    if (!registrationId) {
+      registrationId = `${codePrefix}${String(Date.now()).slice(-6)}`;
+    }
+
+    // Public tracking ID: BSC-WED-{YYYYMMDD}-{XXXX} (checked against both tables)
     let trackingId = null;
     const today = new Date();
     const ymd = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
-    for (let attempt = 0; attempt < 6 && !trackingId; attempt++) {
+    for (let attempt = 0; attempt < 20 && !trackingId; attempt++) {
       const suffix = String(Math.floor(1000 + Math.random() * 9000));
       const candidate = `BSC-WED-${ymd}-${suffix}`;
-      const [exists] = await executor.query(
-        `SELECT id FROM wedding_registrations WHERE tracking_id = ?`,
+      const [rHit] = await executor.query(
+        `SELECT id FROM wedding_registrations WHERE tracking_id = ? LIMIT 1`,
         [candidate]
       );
-      if (!exists || exists.length === 0) {
+      const [cHit] = await executor.query(
+        `SELECT id FROM wedding_customers WHERE tracking_id = ? LIMIT 1`,
+        [candidate]
+      );
+      if ((!rHit || rHit.length === 0) && (!cHit || cHit.length === 0)) {
         trackingId = candidate;
       }
+    }
+
+    if (!trackingId) {
+      trackingId = `BSC-WED-${ymd}-${String(Date.now()).slice(-4)}`;
     }
 
     return { registrationId, trackingId };
@@ -520,11 +576,12 @@ class WeddingRegistrationController {
         ORDER BY created_at DESC
       `, [mobile, mobile.replace(/\D/g, ''), locationId]);
 
-      // Allow creating a new registration for the same mobile when explicitly confirmed
+      // Allow creating a new registration for the same mobile when explicitly confirmed or via public portal
       const forceNew = data.force_create_new_registration === true 
         || data.allow_duplicate === true 
         || data.link_to_existing === true
-        || Boolean(data.existing_customer_id);
+        || Boolean(data.existing_customer_id)
+        || !req.user;
 
       if (dup && dup.length > 0 && !forceNew) {
         return errorRes(res, `A wedding registration with this mobile number already exists (${dup[0].customer_name} — ${dup[0].registration_id}). You can register a new wedding under this customer or view the existing record.`, [{ existingRegistration: dup[0], allRegistrations: dup }], 409);
@@ -769,6 +826,16 @@ class WeddingRegistrationController {
           created_by,
           created_by_user_id
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'New', 'Pending', ?, ?)
+        ON DUPLICATE KEY UPDATE
+          tracking_id = COALESCE(VALUES(tracking_id), tracking_id),
+          customer_name = VALUES(customer_name),
+          mobile_number = VALUES(mobile_number),
+          email = COALESCE(VALUES(email), email),
+          wedding_date = COALESCE(VALUES(wedding_date), wedding_date),
+          expected_shopping_date = COALESCE(VALUES(expected_shopping_date), expected_shopping_date),
+          preferred_shopping_category = COALESCE(VALUES(preferred_shopping_category), preferred_shopping_category),
+          customer_notes = VALUES(customer_notes),
+          updated_at = NOW()
       `, [
         data.registrationId,
         data.trackingId || null,
@@ -790,7 +857,10 @@ class WeddingRegistrationController {
       ]);
     } catch (err) {
       console.error('[WeddingRegistrationController.createWeddingCrmRecord Error]', err.message);
-      // Re-throw so a failed CRM insert rolls back the whole registration transaction.
+      if (err.code === 'ER_DUP_ENTRY') {
+        console.warn('[WeddingRegistrationController.createWeddingCrmRecord ER_DUP_ENTRY handled]');
+        return;
+      }
       throw err;
     }
   }

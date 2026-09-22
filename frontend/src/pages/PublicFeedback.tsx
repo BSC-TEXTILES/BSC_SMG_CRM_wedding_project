@@ -333,11 +333,11 @@ export default function PublicFeedback() {
                 <label className="block text-xs font-extrabold text-primary">Mobile Number *</label>
                 <div className="flex items-center h-14 w-full rounded-2xl border border-accent-soft bg-white/95 focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/30 transition-all shadow-xs overflow-hidden">
                   {/* Fixed Country Code & Phone Icon Area */}
-                  <div className="flex items-center gap-2 pl-3.5 pr-3 h-full bg-accent/5 border-r border-accent-soft text-primary select-none shrink-0">
-                    <div className="bg-accent/15 p-1.5 rounded-xl flex items-center justify-center shrink-0">
+                  <div className="flex items-center gap-2 px-3.5 h-full bg-accent/10 border-r border-accent-soft text-primary select-none shrink-0">
+                    <div className="bg-accent/20 p-1.5 rounded-xl flex items-center justify-center shrink-0">
                       <Phone className="w-4 h-4 text-primary" />
                     </div>
-                    <span className="text-xs sm:text-sm font-bold font-mono tracking-wide text-primary">
+                    <span className="text-xs sm:text-sm font-bold font-mono tracking-wide text-primary whitespace-nowrap">
                       +91
                     </span>
                   </div>
@@ -368,7 +368,7 @@ export default function PublicFeedback() {
                       }
                       setMobile(val.slice(0, 10));
                     }}
-                    className="flex-1 h-full min-w-0 px-3.5 sm:px-4 text-xs sm:text-sm font-mono font-semibold bg-transparent text-primary placeholder:text-gray-400 placeholder:font-sans outline-none"
+                    className="flex-1 h-full min-w-0 px-4 text-xs sm:text-sm font-mono font-semibold bg-transparent text-primary placeholder:text-gray-400 placeholder:font-sans outline-none border-0 focus:ring-0 focus:outline-none shadow-none"
                   />
                 </div>
                 <p className="text-[10.5px] font-bold text-primary pt-0.5">

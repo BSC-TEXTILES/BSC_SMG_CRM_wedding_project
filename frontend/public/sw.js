@@ -1,25 +1,23 @@
-const CACHE_NAME = 'bsc-crm-v1';
-const urlsToCache = [
-  '/',
-  '/index.html',
-  '/logo.png',
-  '/manifest.json'
-];
-
+// Self-destructing service worker to force cache eviction and unregister
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(urlsToCache);
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => caches.delete(cacheName))
+      );
+    }).then(() => {
+      return self.registration.unregister();
+    }).then(() => {
+      return self.clients.claim();
     })
   );
 });
 
 self.addEventListener('fetch', (event) => {
-  if (event.request.mode === 'navigate') {
-    event.respondWith(
-      fetch(event.request).catch(() => {
-        return caches.match('/index.html');
-      })
-    );
-  }
+  // Always fetch directly from network without caching
+  event.respondWith(fetch(event.request));
 });

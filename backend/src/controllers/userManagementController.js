@@ -31,6 +31,27 @@ function _parseLocationPairs(pairs, row = {}) {
   return [];
 }
 
+/**
+ * Assigned locations must be real store locations from the `locations` table.
+ * Rejects non-numeric ids, empty selections, and ids that do not exist.
+ * Returns { ok, ids } — ids are the cleaned unique integers when ok.
+ */
+async function _validateAssignedLocations(locationIds) {
+  if (!Array.isArray(locationIds) || locationIds.length === 0) {
+    return { ok: false, ids: [] };
+  }
+  const ids = locationIds.map(Number);
+  if (ids.some(id => !Number.isInteger(id) || id <= 0)) {
+    return { ok: false, ids: [] };
+  }
+  const unique = [...new Set(ids)];
+  const placeholders = unique.map(() => '?').join(',');
+  const [rows] = await db.query(`SELECT id FROM locations WHERE id IN (${placeholders})`, unique);
+  const found = new Set(rows.map(r => Number(r.id)));
+  const allValid = unique.every(id => found.has(id));
+  return { ok: allValid && unique.length > 0, ids: allValid ? unique : [] };
+}
+
 const MODULE_REGISTRY = [
   { key: 'dashboard', label: 'Dashboard', section: 'Enterprise' },
   { key: 'main_crm', label: 'Main CRM Portal', section: 'Enterprise' },

@@ -357,9 +357,7 @@ export default function UserManagementPage() {
     setFormDesignation('');
     setFormEmployeeId('');
     setFormRole('HR');
-    setFormLocationId('2');
     setFormLocationIds(['2']);
-    setFormAllLocations(false);
     setFormSelectedModules([]);
     setFormSection('');
     setFormJoiningDate('');
@@ -378,9 +376,14 @@ export default function UserManagementPage() {
       showToast('Password must be at least 6 characters long', 'error');
       return;
     }
+    if (formLocationIds.length === 0) {
+      showToast('Select at least one location in Assigned Locations', 'error');
+      return;
+    }
 
     setSubmitting(true);
     try {
+      const primaryLocationId = parseInt(formLocationIds[0], 10) || null;
       const payload: any = {
         username: formUsername.trim(),
         password: formPassword.trim(),
@@ -393,9 +396,9 @@ export default function UserManagementPage() {
         employeeId: formEmployeeId.trim() || null,
         section: formSection.trim() || null,
         joiningDate: formJoiningDate || null,
-        allLocations: formAllLocations,
-        locationId: formAllLocations ? null : (parseInt(formLocationId, 10) || null),
-        locationIds: formAllLocations ? [] : formLocationIds.map(Number),
+        allLocations: false,
+        locationId: primaryLocationId,
+        locationIds: formLocationIds.map(Number),
         permissions: formSelectedModules.map(m => ({ module: m, can_view: true }))
       };
 
@@ -425,8 +428,13 @@ export default function UserManagementPage() {
     setEditEmployeeId(user.employee_id || user.employeeId || '');
     setEditRole(user.role || 'HR');
     setEditLocationId(user.location_id ? String(user.location_id) : '2');
-    setEditLocationIds(user.assigned_locations?.map(l => String(l.id)) || [String(user.location_id || 2)]);
-    setEditAllLocations(user.assigned_locations?.length === 0 && !user.location_id);
+    const isGlobalScope = user.assigned_locations?.length === 0 && !user.location_id;
+    setEditAllLocations(isGlobalScope);
+    let assignedIds = user.assigned_locations?.map(l => String(l.id)) || [];
+    if (assignedIds.length === 0 && !isGlobalScope) {
+      assignedIds = [String(user.location_id || 2)];
+    }
+    setEditLocationIds(assignedIds);
     setEditMaxModules(user.max_modules !== null && user.max_modules !== undefined ? String(user.max_modules) : '');
     setEditActive(!!user.active);
     setEditSection(user.section || '');
@@ -438,9 +446,16 @@ export default function UserManagementPage() {
   const handleUpdateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedUser) return;
+    if (!editAllLocations && editLocationIds.length === 0) {
+      showToast('Select at least one location in Assigned Locations', 'error');
+      return;
+    }
 
     setSubmitting(true);
     try {
+      const primaryLoc = editLocationIds.includes(editLocationId)
+        ? editLocationId
+        : (editLocationIds[0] || editLocationId);
       const payload: any = {
         fullName: editFullName.trim(),
         email: editEmail.trim() || null,
@@ -452,7 +467,7 @@ export default function UserManagementPage() {
         joiningDate: editJoiningDate || null,
         role: editRole,
         allLocations: editAllLocations,
-        locationId: editAllLocations ? null : (parseInt(editLocationId, 10) || null),
+        locationId: editAllLocations ? null : (parseInt(primaryLoc, 10) || null),
         locationIds: editAllLocations ? [] : editLocationIds.map(Number),
         maxModules: editMaxModules ? parseInt(editMaxModules, 10) : null,
         active: editActive
@@ -1055,19 +1070,6 @@ export default function UserManagementPage() {
                                 {editingLocationUserId === user.id ? (
                                   <div ref={locationDropdownRef} className="relative">
                                     <div className="absolute left-0 top-full mt-1 z-50 bg-white rounded-xl border border-accent/30 shadow-xl py-1 min-w-[200px] animate-in fade-in zoom-in-95 duration-150">
-                                      <button
-                                        type="button"
-                                        onClick={() => handleChangeLocation(user, null)}
-                                        disabled={savingLocationUserId === user.id}
-                                        className={`w-full text-left px-3 py-1.5 text-xs font-semibold flex items-center gap-2 hover:bg-accent/10 transition-colors cursor-pointer ${
-                                          (user.location_id === null && (!user.assigned_locations || user.assigned_locations.length === 0))
-                                            ? 'bg-accent/15 text-accent' : 'text-primary'
-                                        }`}
-                                      >
-                                        <span>🌐</span>
-                                        <span>All Locations</span>
-                                        {savingLocationUserId === user.id && <RefreshCw className="w-3 h-3 animate-spin ml-auto" />}
-                                      </button>
                                       {(locations.length > 0 ? locations : []).map((loc: any) => (
                                         <button
                                           key={loc.id}
@@ -1467,47 +1469,31 @@ export default function UserManagementPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="block text-[10.5px] font-black uppercase tracking-wider text-primary">
-                    Assigned Locations
+                    Assigned Locations *
                   </label>
-                  <div className="flex items-center gap-2 mb-2">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={formAllLocations}
-                        onChange={(e) => {
-                          setFormAllLocations(e.target.checked);
-                          if (e.target.checked) setFormLocationIds([]);
-                        }}
-                        className="w-4 h-4 rounded border-accent-soft text-primary focus:ring-accent"
-                      />
-                      <span className="text-xs font-bold text-primary">All Locations</span>
-                    </label>
+                  <div className="flex flex-wrap gap-3">
+                    {(locations.length > 0 ? locations : [
+                      { id: 1, location_name: 'Belagavi', location_code: 'BEL' },
+                      { id: 2, location_name: 'Davanagere', location_code: 'DAV' },
+                      { id: 3, location_name: 'Shivamogga', location_code: 'SHI' }
+                    ]).map((loc: any) => (
+                      <label key={loc.id} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={formLocationIds.includes(String(loc.id))}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setFormLocationIds(prev => [...prev, String(loc.id)]);
+                            } else {
+                              setFormLocationIds(prev => prev.filter(id => id !== String(loc.id)));
+                            }
+                          }}
+                          className="w-4 h-4 rounded border-accent-soft text-primary focus:ring-accent"
+                        />
+                        <span className="text-xs font-semibold text-primary">{loc.location_name} ({loc.location_code})</span>
+                      </label>
+                    ))}
                   </div>
-                  {!formAllLocations && (
-                    <div className="flex flex-wrap gap-3">
-                      {(locations.length > 0 ? locations : [
-                        { id: 1, location_name: 'Belagavi', location_code: 'BEL' },
-                        { id: 2, location_name: 'Davanagere', location_code: 'DAV' },
-                        { id: 3, location_name: 'Shivamogga', location_code: 'SHI' }
-                      ]).map((loc: any) => (
-                        <label key={loc.id} className="flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={formLocationIds.includes(String(loc.id))}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setFormLocationIds(prev => [...prev, String(loc.id)]);
-                              } else {
-                                setFormLocationIds(prev => prev.filter(id => id !== String(loc.id)));
-                              }
-                            }}
-                            className="w-4 h-4 rounded border-accent-soft text-primary focus:ring-accent"
-                          />
-                          <span className="text-xs font-semibold text-primary">{loc.location_name} ({loc.location_code})</span>
-                        </label>
-                      ))}
-                    </div>
-                  )}
                 </div>
 
                 <div className="space-y-1.5">
@@ -1709,41 +1695,30 @@ export default function UserManagementPage() {
                   <label className="block text-[10.5px] font-black uppercase tracking-wider text-primary">
                     Assigned Locations
                   </label>
-                  <div className="flex items-center gap-2 mb-2">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={editAllLocations}
-                        onChange={(e) => {
-                          setEditAllLocations(e.target.checked);
-                          if (e.target.checked) setEditLocationIds([]);
-                        }}
-                        className="w-4 h-4 rounded border-accent-soft text-primary focus:ring-accent"
-                      />
-                      <span className="text-xs font-bold text-primary">All Locations</span>
-                    </label>
+                  <div className="flex flex-wrap gap-3">
+                    {(locations.length > 0 ? locations : [
+                      { id: 1, location_name: 'Belagavi', location_code: 'BEL' },
+                      { id: 2, location_name: 'Davanagere', location_code: 'DAV' },
+                      { id: 3, location_name: 'Shivamogga', location_code: 'SHI' }
+                    ]).map((loc: any) => (
+                      <label key={loc.id} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={editLocationIds.includes(String(loc.id))}
+                          onChange={(e) => {
+                            setEditAllLocations(false);
+                            if (e.target.checked) {
+                              setEditLocationIds(prev => [...prev, String(loc.id)]);
+                            } else {
+                              setEditLocationIds(prev => prev.filter(id => id !== String(loc.id)));
+                            }
+                          }}
+                          className="w-4 h-4 rounded border-accent-soft text-primary focus:ring-accent"
+                        />
+                        <span className="text-xs font-semibold text-primary">{loc.location_name} ({loc.location_code})</span>
+                      </label>
+                    ))}
                   </div>
-                  {!editAllLocations && (
-                    <div className="flex flex-wrap gap-3">
-                      {(locations.length > 0 ? locations : []).map((loc: any) => (
-                        <label key={loc.id} className="flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={editLocationIds.includes(String(loc.id))}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setEditLocationIds(prev => [...prev, String(loc.id)]);
-                              } else {
-                                setEditLocationIds(prev => prev.filter(id => id !== String(loc.id)));
-                              }
-                            }}
-                            className="w-4 h-4 rounded border-accent-soft text-primary focus:ring-accent"
-                          />
-                          <span className="text-xs font-semibold text-primary">{loc.location_name} ({loc.location_code})</span>
-                        </label>
-                      ))}
-                    </div>
-                  )}
                 </div>
 
                 <div>
