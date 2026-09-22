@@ -2778,8 +2778,8 @@ class WeddingController {
       const { clause: locClause, params } = resolveLocFilter(req, 'w');
 
       const [monthlyRegs] = await pool.query(`
-        SELECT DATE_FORMAT(created_at, '%Y-%m') AS month, COUNT(*) AS count
-        FROM wedding_customers WHERE is_deleted = 0 ${locClause}
+        SELECT DATE_FORMAT(w.created_at, '%Y-%m') AS month, COUNT(*) AS count
+        FROM wedding_customers w WHERE w.is_deleted = 0 ${locClause}
         GROUP BY month ORDER BY month DESC LIMIT 12
       `, params);
 
