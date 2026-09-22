@@ -334,15 +334,23 @@ exports.submitFeedback = async (req, res) => {
     `).catch(() => {});
 
     await db.query(`ALTER TABLE Feedback ADD COLUMN entryTime VARCHAR(32)`).catch(() => {});
+    await db.query(`ALTER TABLE Feedback ADD COLUMN locationCode VARCHAR(10)`).catch(() => {});
+    await db.query(`ALTER TABLE Feedback ADD COLUMN locationName VARCHAR(100)`).catch(() => {});
+    await db.query(`ALTER TABLE Feedback ADD COLUMN email VARCHAR(150)`).catch(() => {});
 
     const { 
       customerName, custName,
       mobile, custMobile,
+      email, custEmail,
       dob, custDob,
       sectionId, area,
       answers, q0, q1, q2, q3, q4, q5, q6, q7,
       likedMost, canImprove, additionalComments, voice, yourVoice,
-      source 
+      source,
+      locationCode,
+      location_id,
+      locationId: reqLocationId,
+      qrCodeId
     } = req.body;
 
     // Generate sequential continuous feedback ID starting from FB-00 (FB-00, FB-01, FB-02...)
@@ -377,6 +385,7 @@ exports.submitFeedback = async (req, res) => {
 
     const finalCustName = customerName || custName || 'Anonymous';
     let finalMobile = mobile || custMobile || '';
+    const finalEmail = email || custEmail || null;
     
     // Normalize phone to +91 format
     if (finalMobile) {
@@ -398,24 +407,76 @@ exports.submitFeedback = async (req, res) => {
     ].filter(Boolean).join('\n');
 
     const isNegative = evaluateFeedbackEscalation(answers || {}, compiledVoice, q0, q1, q2, q3);
-    const locationId = injectLocationId(req) || 2;
 
-    // Insert with one duplicate-ID retry (two customers can submit at once
-    // and compute the same FB-xx sequence). If every attempt fails we report
-    // failure honestly below — never a fake reference number.
+    // Location code to ID and Name mapping (strictly validate BEL, DAV, SHI)
+    const LOCATION_CODE_MAP = {
+      'BEL': 1,
+      'DAV': 2,
+      'SHI': 3,
+      'BELAGAVI': 1,
+      'DAVANAGERE': 2,
+      'SHIVAMOGGA': 3,
+      'SHIMOGA': 3
+    };
+    const LOCATION_NAME_MAP = {
+      'BEL': 'Belagavi',
+      'DAV': 'Davanagere',
+      'SHI': 'Shivamogga',
+      1: 'Belagavi',
+      2: 'Davanagere',
+      3: 'Shivamogga'
+    };
+    const ID_TO_CODE_MAP = {
+      1: 'BEL',
+      2: 'DAV',
+      3: 'SHI'
+    };
+
+    let targetLocCode = (locationCode || req.body.location || req.body.storeLocation || '').toUpperCase().trim();
+    let targetLocId = parseInt(location_id || reqLocationId || req.body.locationId, 10);
+
+    if (targetLocCode && LOCATION_CODE_MAP[targetLocCode]) {
+      targetLocId = LOCATION_CODE_MAP[targetLocCode];
+      targetLocCode = ID_TO_CODE_MAP[targetLocId];
+    } else if (targetLocId && ID_TO_CODE_MAP[targetLocId]) {
+      targetLocCode = ID_TO_CODE_MAP[targetLocId];
+    } else {
+      // If QR code provided, look up its location from FeedbackQrCode
+      if (qrCodeId) {
+        try {
+          const [qrRows] = await db.query(
+            'SELECT locationId, locationCode FROM FeedbackQrCode WHERE qrCodeId = ? LIMIT 1',
+            [qrCodeId]
+          );
+          if (qrRows && qrRows[0]) {
+            targetLocId = Number(qrRows[0].locationId);
+            targetLocCode = qrRows[0].locationCode || ID_TO_CODE_MAP[targetLocId];
+          }
+        } catch (e) {}
+      }
+
+      if (!targetLocId || !ID_TO_CODE_MAP[targetLocId]) {
+        targetLocId = injectLocationId(req) || 2;
+        targetLocCode = ID_TO_CODE_MAP[targetLocId] || 'DAV';
+      }
+    }
+
+    const targetLocName = LOCATION_NAME_MAP[targetLocCode] || 'Davanagere';
+
+    // Insert with duplicate-ID retry (two customers can submit simultaneously)
     let insertOk = false;
     for (let attempt = 0; attempt < 3 && !insertOk; attempt++) {
       try {
         await db.query(`
           INSERT INTO Feedback (
-            id, location_id, date, source, area, yourVoice, custName, custMobile, custDob,
+            id, location_id, locationCode, locationName, email, date, source, area, yourVoice, custName, custMobile, custDob,
             q0, q1, q2, q3, q4, q5, q6, q7,
-            status, entryDate, entryTime, customerName, mobile, dob, sectionId, answers, voice, isNegative
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new', ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            status, entryDate, entryTime, customerName, mobile, dob, sectionId, answers, voice, isNegative, qrCodeId
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `, [
-          id, locationId, dateFormatted, finalSource, finalArea, compiledVoice, finalCustName, finalMobile, finalDob,
+          id, targetLocId, targetLocCode, targetLocName, finalEmail, dateFormatted, finalSource, finalArea, compiledVoice, finalCustName, finalMobile, finalDob,
           q0 || null, q1 || null, q2 || null, q3 || null, q4 || null, q5 || null, q6 || null, q7 || null,
-          entryDate, entryTime, finalCustName, finalMobile, finalDob, sectionId || null, JSON.stringify(answers || {}), compiledVoice, isNegative ? 1 : 0
+          entryDate, entryTime, finalCustName, finalMobile, finalDob, sectionId || null, JSON.stringify(answers || {}), compiledVoice, isNegative ? 1 : 0, qrCodeId || null
         ]);
         insertOk = true;
       } catch (insertErr) {
@@ -436,14 +497,39 @@ exports.submitFeedback = async (req, res) => {
       });
     }
 
+    // Mark scan as submitted if a scan record exists for this QR or location
+    try {
+      if (qrCodeId) {
+        await db.query(`
+          UPDATE FeedbackQrScan SET isFeedbackSubmitted = 1, feedbackId = ?
+          WHERE (qrCodeRefId = ? OR qrCodeId = ?) AND isFeedbackSubmitted = 0
+          ORDER BY scannedAt DESC LIMIT 1
+        `, [id, qrCodeId, qrCodeId]);
+      } else {
+        await db.query(`
+          UPDATE FeedbackQrScan
+          SET isFeedbackSubmitted = 1, feedbackId = ?
+          WHERE isFeedbackSubmitted = 0 AND qrCodeRefId IN (
+            SELECT qrCodeId FROM (SELECT qrCodeId FROM FeedbackQrCode WHERE locationId = ?) as t
+          )
+          ORDER BY scannedAt DESC LIMIT 1
+        `, [id, targetLocId]);
+      }
+    } catch (scanUpdateErr) {
+      console.warn('[submitFeedback Scan Link Notice]:', scanUpdateErr.message);
+    }
+
     const io = req.app.get('io');
     if (io) {
       io.emit('feedback:submitted', {
         id,
-        location_id: locationId,
+        location_id: targetLocId,
+        locationCode: targetLocCode,
+        locationName: targetLocName,
         entryDate,
         customerName: finalCustName,
-        isNegative: !!isNegative
+        isNegative: !!isNegative,
+        qrCodeId: qrCodeId || null
       });
     }
 
@@ -453,13 +539,13 @@ exports.submitFeedback = async (req, res) => {
         await db.query(`
           INSERT INTO CallQueue (id, location_id, feedbackId, entryDate, customerName, mobile, status, notes)
           VALUES (?, ?, ?, ?, ?, ?, 'new', ?)
-        `, [cqId, locationId, id, entryDate, finalCustName, finalMobile, compiledVoice ? `Escalated Feedback: ${compiledVoice}` : 'Negative customer feedback auto-escalated']);
+        `, [cqId, targetLocId, id, entryDate, finalCustName, finalMobile, compiledVoice ? `Escalated Feedback: ${compiledVoice}` : 'Negative customer feedback auto-escalated']);
       } catch (cqErr) {}
 
       if (io) {
         io.emit('feedback:negative', {
           id,
-          location_id: locationId,
+          location_id: targetLocId,
           customerName: finalCustName,
           mobile: finalMobile || 'No Mobile',
           message: `ALERT: Negative customer feedback logged by ${finalCustName} (${finalMobile || 'No Mobile'})`
@@ -523,6 +609,61 @@ exports.getFeedbackStats = async (req, res) => {
       }
     } catch (e) {}
 
+    // Location breakdown from real database records
+    let byLocation = {
+      belagavi: { locationId: 1, locationCode: 'BEL', name: 'Belagavi', total: 0, positive: 0, negative: 0, avgRating: '5.0', scans: 0 },
+      davanagere: { locationId: 2, locationCode: 'DAV', name: 'Davanagere', total: 0, positive: 0, negative: 0, avgRating: '5.0', scans: 0 },
+      shivamogga: { locationId: 3, locationCode: 'SHI', name: 'Shivamogga', total: 0, positive: 0, negative: 0, avgRating: '5.0', scans: 0 }
+    };
+
+    try {
+      const [locFeedbackRows] = await db.query(`
+        SELECT 
+          location_id,
+          COUNT(*) as totalCount,
+          SUM(CASE WHEN isNegative = 1 THEN 1 ELSE 0 END) as negCount,
+          AVG(CASE 
+            WHEN JSON_EXTRACT(answers, '$.q1') = '"Very satisfied"' THEN 5
+            WHEN JSON_EXTRACT(answers, '$.q1') = '"Satisfied"' THEN 4
+            WHEN JSON_EXTRACT(answers, '$.q1') = '"Neutral"' THEN 3
+            WHEN JSON_EXTRACT(answers, '$.q1') = '"Dissatisfied"' THEN 2
+            WHEN JSON_EXTRACT(answers, '$.q1') = '"Very dissatisfied"' THEN 1
+            ELSE NULL
+          END) as avgRating
+        FROM Feedback
+        GROUP BY location_id
+      `);
+
+      // Query scan counts per location
+      const [locScanRows] = await db.query(`
+        SELECT fqc.locationId, COUNT(fqs.id) as scanCount
+        FROM FeedbackQrCode fqc
+        LEFT JOIN FeedbackQrScan fqs ON (fqs.qrCodeRefId = fqc.qrCodeId OR fqs.qrCodeId = fqc.qrCodeId)
+        WHERE fqc.deletedAt IS NULL
+        GROUP BY fqc.locationId
+      `).catch(() => [[]]);
+
+      const scanMap = {};
+      (locScanRows || []).forEach(s => {
+        scanMap[s.locationId] = Number(s.scanCount) || 0;
+      });
+
+      (locFeedbackRows || []).forEach(r => {
+        const lid = Number(r.location_id);
+        const t = Number(r.totalCount) || 0;
+        const n = Number(r.negCount) || 0;
+        const p = Math.max(0, t - n);
+        const avg = r.avgRating ? Number(r.avgRating).toFixed(1) : '5.0';
+        const sc = scanMap[lid] || 0;
+
+        if (lid === 1) byLocation.belagavi = { ...byLocation.belagavi, total: t, positive: p, negative: n, avgRating: avg, scans: sc };
+        if (lid === 2) byLocation.davanagere = { ...byLocation.davanagere, total: t, positive: p, negative: n, avgRating: avg, scans: sc };
+        if (lid === 3) byLocation.shivamogga = { ...byLocation.shivamogga, total: t, positive: p, negative: n, avgRating: avg, scans: sc };
+      });
+    } catch (e) {
+      console.warn('[getFeedbackStats Location Breakdown Warning]:', e.message);
+    }
+
     const pos = Math.max(0, total - neg);
     const nps = total > 0 ? Math.round((pos / total) * 100) : 100;
 
@@ -533,7 +674,8 @@ exports.getFeedbackStats = async (req, res) => {
       negativeFeedback: neg,
       npsScore: nps,
       pendingCallQueue,
-      totalCallQueue
+      totalCallQueue,
+      byLocation
     });
   } catch (err) {
     return res.json({
@@ -1248,11 +1390,11 @@ exports.getFeedbacks = async (req, res) => {
       params.push(date, altDate, date, altDate, date, altDate);
     } else {
       if (startDate) {
-        sql += ' AND (COALESCE(NULLIF(entryDate, ""), STR_TO_DATE(date, "%d/%m/%Y"), DATE(createdAt), DATE(created_at)) >= ?)';
+        sql += ' AND (COALESCE(entryDate, STR_TO_DATE(NULLIF(date, ""), "%d/%m/%Y"), DATE(createdAt), DATE(created_at)) >= ?)';
         params.push(startDate);
       }
       if (endDate) {
-        sql += ' AND (COALESCE(NULLIF(entryDate, ""), STR_TO_DATE(date, "%d/%m/%Y"), DATE(createdAt), DATE(created_at)) <= ?)';
+        sql += ' AND (COALESCE(entryDate, STR_TO_DATE(NULLIF(date, ""), "%d/%m/%Y"), DATE(createdAt), DATE(created_at)) <= ?)';
         params.push(endDate);
       }
     }
@@ -1268,7 +1410,7 @@ exports.getFeedbacks = async (req, res) => {
       params.push(s, s, s, s, s, s, s, s, s, s, s);
     }
 
-    sql += ' ORDER BY COALESCE(NULLIF(entryDate, ""), STR_TO_DATE(date, "%d/%m/%Y"), DATE(createdAt), DATE(created_at)) DESC, id DESC';
+    sql += ' ORDER BY COALESCE(entryDate, DATE(createdAt), DATE(created_at)) DESC, id DESC';
 
     const [rows] = await db.query(sql, params).catch(async (err) => {
       console.warn('[getFeedbacks Query Fail, fallback executing]:', err.message);
@@ -1313,8 +1455,18 @@ exports.getFeedbacks = async (req, res) => {
         entryTimeStr = getISTTimeString();
       }
 
+      const locCodeMap = { 1: 'BEL', 2: 'DAV', 3: 'SHI' };
+      const locNameMap = { 1: 'Belagavi', 2: 'Davanagere', 3: 'Shivamogga', 'BEL': 'Belagavi', 'DAV': 'Davanagere', 'SHI': 'Shivamogga' };
+      const resolvedLocId = Number(r.location_id) || (r.locationCode === 'BEL' ? 1 : r.locationCode === 'SHI' ? 3 : 2);
+      const resolvedLocCode = r.locationCode || locCodeMap[resolvedLocId] || 'DAV';
+      const resolvedLocName = r.locationName || locNameMap[resolvedLocCode] || 'Davanagere';
+
       return {
         ...r,
+        location_id: resolvedLocId,
+        locationCode: resolvedLocCode,
+        locationName: resolvedLocName,
+        email: r.email || '',
         customerName: r.customerName || r.custName || r.customer_name || r.name || 'Anonymous',
         custName: r.custName || r.customerName || 'Anonymous',
         mobile: r.mobile || r.custMobile || r.customerMobile || r.phone || '',

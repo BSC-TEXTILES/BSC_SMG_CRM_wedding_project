@@ -5,6 +5,7 @@ import Topbar from '../components/Topbar';
 import ToastContainer, { showToast } from '../components/Toast';
 import { API, Auth, UserSession } from '../services/api';
 import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../utils/sidebarState';
+import { useLocationContext, LocationItem } from '../context/LocationContext';
 import {
   MessageSquare,
   Search,
@@ -31,7 +32,9 @@ import {
   ShieldAlert,
   FileText,
   Send,
-  UserCheck
+  UserCheck,
+  MapPin,
+  Globe
 } from 'lucide-react';
 
 export default function FeedbackCollection() {
@@ -39,6 +42,7 @@ export default function FeedbackCollection() {
   const [session, setSession] = useState<UserSession | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [collapsed, setCollapsed] = useState<boolean>(getSidebarCollapsed());
+  const { currentLocation, allLocations, currentLocationLabel, isGlobalAdmin } = useLocationContext();
 
   useEffect(() => {
     return subscribeSidebarCollapsed(setCollapsed);
@@ -129,6 +133,9 @@ export default function FeedbackCollection() {
       if (sentimentFilter === 'negative') params.isNegative = 'true';
       if (sentimentFilter === 'positive') params.isNegative = 'false';
       if (search.trim()) params.search = search.trim();
+      if (currentLocation && currentLocation !== 'ALL') {
+        params.location_id = currentLocation;
+      }
 
       const res = await API.getFeedbacks(params);
       if (res && res.success) {
@@ -140,7 +147,7 @@ export default function FeedbackCollection() {
     } finally {
       setLoading(false);
     }
-  }, [datePreset, startDateInput, endDateInput, sentimentFilter, search]);
+  }, [datePreset, startDateInput, endDateInput, sentimentFilter, search, currentLocation]);
 
   useEffect(() => {
     if (!Auth.check()) {
@@ -205,7 +212,7 @@ export default function FeedbackCollection() {
             <div>
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary text-accent text-[10px] font-black uppercase tracking-widest mb-1.5">
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>BSC Exclusive Davanagere</span>
+                <span>{isGlobalAdmin ? 'All Locations' : currentLocationLabel}</span>
               </div>
               <h2 className="text-xl font-black text-primary tracking-tight flex items-center gap-2">
                 <MessageSquare className="w-5 h-5 text-accent" />

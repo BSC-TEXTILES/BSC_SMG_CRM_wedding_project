@@ -254,6 +254,11 @@ function authorizeLocationAccess(paramName = 'locationId') {
       return next(); // No specific location specified — let the controller handle filtering
     }
 
+    // Public / unauthenticated requests (e.g., customer feedback submission) are not scoped to a logged-in user
+    if (!req.user || !req.user.id || req.user.role === 'Guest' || req.user.id === 'anonymous') {
+      return next();
+    }
+
     const allowed = await checkLocationAccess(req.user, rawVal);
     if (!allowed) {
       return res.status(403).json({

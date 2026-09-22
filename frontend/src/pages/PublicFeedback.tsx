@@ -36,9 +36,21 @@ const defaultQuestions = [
   { id: 'q5', question: 'How likely are you to recommend BSC Exclusive to your friends and family?', category: 'Store Recommendation', options: ['Definitely recommend', 'Probably recommend', 'Neutral', 'Not recommend'] }
 ];
 
+// Location codes for the 3 standard locations
+const LOCATIONS = {
+  BEL: { code: 'BEL', name: 'Belagavi', storeName: 'BSC Textiles Belagavi' },
+  DAV: { code: 'DAV', name: 'Davanagere', storeName: 'BSC Textiles Davanagere' },
+  SHI: { code: 'SHI', name: 'Shivamogga', storeName: 'BSC Textiles Shivamogga' }
+};
+
 export default function PublicFeedback() {
   const [searchParams] = useSearchParams();
-  const qrCodeId = searchParams.get('qr');
+  const qrCodeId = searchParams.get('qr'); // Legacy support
+  const locationCode = searchParams.get('location'); // New location-based parameter
+  
+  // Determine the effective location
+  const effectiveLocationCode = locationCode?.toUpperCase() || qrCodeId;
+  const location = LOCATIONS[effectiveLocationCode as keyof typeof LOCATIONS] || LOCATIONS.DAV;
 
   const [questions, setQuestions] = useState<any[]>(defaultQuestions);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -56,10 +68,13 @@ export default function PublicFeedback() {
 
   // Track QR scan on mount
   useEffect(() => {
-    if (qrCodeId) {
+    if (location?.code) {
+      API.trackQrScanByLocation(location.code, 'feedback_form').catch((err: any) => console.warn('QR scan tracking failed:', err));
+    } else if (qrCodeId) {
+      // Legacy support
       API.trackQrScan(qrCodeId, 'feedback_form').catch((err: any) => console.warn('QR scan tracking failed:', err));
     }
-  }, [qrCodeId]);
+  }, [location?.code, qrCodeId]);
 
   useEffect(() => {
     API.getFeedbackQuestions()
@@ -84,6 +99,7 @@ export default function PublicFeedback() {
     setSubmitting(true);
     try {
       const normalizedMobile = mobile.length === 10 ? `+91${mobile}` : mobile;
+      const targetLocId = location.code === 'BEL' ? 1 : location.code === 'SHI' ? 3 : 2;
       const res: any = await API.submitFeedback({
         customerName,
         custName: customerName,
@@ -94,10 +110,14 @@ export default function PublicFeedback() {
         canImprove,
         additionalComments,
         source: 'qr',
-        qrCodeId: qrCodeId || undefined
+        qrCodeId: qrCodeId || undefined,
+        locationCode: location.code,
+        storeLocation: location.name,
+        location_id: targetLocId,
+        locationId: targetLocId
       });
       setRefNo(res?.id || res?.refNo || `FB-${Math.random().toString(36).substring(2, 8).toUpperCase()}`);
-      showToast('Feedback submitted successfully.', 'success');
+      showToast(`${location.name} feedback submitted successfully.`, 'success');
       setSubmitted(true);
     } catch (err) {
       console.error(err);
@@ -130,7 +150,7 @@ export default function PublicFeedback() {
 
           <div className="space-y-2">
             <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-primary border border-accent text-accent text-[10.5px] font-black uppercase tracking-widest">
-              <Store className="w-3.5 h-3.5" /> BSC EXCLUSIVE DAVANAGERE
+              <Store className="w-3.5 h-3.5" /> {location.storeName}
             </div>
             <h2 className="text-3xl font-black text-white tracking-tight">Thank You!</h2>
             <p className="text-white/85 text-sm font-medium leading-relaxed max-w-md mx-auto">
@@ -183,7 +203,7 @@ export default function PublicFeedback() {
             <div className="sm:col-span-2 space-y-2.5 text-center sm:text-left">
               <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-primary text-accent text-[11px] font-black uppercase tracking-widest border border-accent/80 shadow-sm">
                 <ShoppingBag className="w-3.5 h-3.5 text-accent" />
-                <span>BSC EXCLUSIVE DAVANAGERE • STORE SURVEY</span>
+                <span>{location.storeName} • STORE SURVEY</span>
               </div>
 
               <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-black text-white tracking-tight leading-tight drop-shadow-md">

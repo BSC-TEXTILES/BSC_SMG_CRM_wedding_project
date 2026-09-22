@@ -172,7 +172,7 @@ router.post('/crm/footfall/upsert', authenticate, authorizeLocationAccess(), crm
 router.get('/crm/feedback-questions', authenticate, crmController.getFeedbackQuestions);
 router.get('/crm/feedback-stats', authenticate, authorizeLocationAccess(), crmController.getFeedbackStats);
 router.get('/crm/feedbacks', authenticate, authorizeLocationAccess(), crmController.getFeedbacks);
-router.post('/crm/feedback', authenticate, authorizeLocationAccess(), crmController.submitFeedback);
+router.post('/crm/feedback', optionalAuthenticate, authorizeLocationAccess(), crmController.submitFeedback);
 router.get('/crm/call-queue', authenticate, authorizeLocationAccess(), crmController.getCallQueue);
 router.post('/crm/call-queue/update', authenticate, authorizeLocationAccess(), crmController.updateCallQueue);
 
@@ -265,6 +265,13 @@ router.put('/feedback-qr/:id', authenticate, authorize('Admin', 'Super Admin', '
 router.delete('/feedback-qr/:id', authenticate, authorize('Admin', 'Super Admin'), feedbackQrController.deleteQrCode);
 router.post('/feedback-qr/:id/toggle-status', authenticate, authorize('Admin', 'Super Admin', 'HR', 'Manager'), feedbackQrController.toggleQrCodeStatus);
 router.post('/feedback-qr/:id/regenerate', authenticate, authorize('Admin', 'Super Admin', 'HR', 'Manager'), feedbackQrController.regenerateQrCode);
+
+// Location-based QR Code endpoints
+router.post('/feedback-qr/generate-locations', authenticate, authorize('Admin', 'Super Admin', 'HR', 'Manager'), feedbackQrController.generateLocationQrCodes);
+router.get('/feedback-qr/location-codes', authenticate, feedbackQrController.getLocationQrCodes);
+
+// Public scan endpoint (location-based and qrCodeId-based)
+router.post('/feedback-qr/scan/location/:locationCode', feedbackQrController.trackQrScan);
 router.post('/feedback-qr/scan/:qrCodeId', feedbackQrController.trackQrScan);
 
 // ── Security Center (DevTools shield, GPS trail, login activity) ────────────

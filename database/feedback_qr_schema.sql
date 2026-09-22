@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS `FeedbackQrCode` (
   `createdAt` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `updatedAt` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `deletedAt` TIMESTAMP NULL,
-  FOREIGN KEY (`locationId`) REFERENCES `Company`(`id`) ON DELETE RESTRICT,
+  FOREIGN KEY (`locationId`) REFERENCES `locations`(`id`) ON DELETE RESTRICT,
   FOREIGN KEY (`createdBy`) REFERENCES `User`(`id`) ON DELETE RESTRICT,
   INDEX `idx_qr_code_id` (`qrCodeId`),
   INDEX `idx_location_id` (`locationId`),

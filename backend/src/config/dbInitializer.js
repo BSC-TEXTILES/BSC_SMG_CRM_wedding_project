@@ -864,6 +864,44 @@ async function autoInitializeDatabase(pool) {
       }
     }
 
+    // --- FIX: Drop old FK on FeedbackQrCode.locationId referencing Company(id) and ensure it references locations(id) ---
+    try {
+      const [fkRows] = await connection.query(`
+        SELECT CONSTRAINT_NAME 
+        FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE 
+        WHERE TABLE_SCHEMA = DATABASE() 
+          AND TABLE_NAME = 'FeedbackQrCode' 
+          AND COLUMN_NAME = 'locationId' 
+          AND REFERENCED_TABLE_NAME = 'Company'
+      `);
+      if (fkRows && fkRows.length > 0) {
+        for (const fk of fkRows) {
+          const dropFkSql = 'ALTER TABLE `FeedbackQrCode` DROP FOREIGN KEY `' + fk.CONSTRAINT_NAME + '`';
+          await connection.query(dropFkSql);
+          logDebug(`[FK Fix] Dropped old FK constraint: ${fk.CONSTRAINT_NAME}`);
+        }
+      }
+      // Ensure FK to locations exists
+      const [locFkRows] = await connection.query(`
+        SELECT CONSTRAINT_NAME 
+        FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE 
+        WHERE TABLE_SCHEMA = DATABASE() 
+          AND TABLE_NAME = 'FeedbackQrCode' 
+          AND COLUMN_NAME = 'locationId' 
+          AND REFERENCED_TABLE_NAME = 'locations'
+      `);
+      if (!locFkRows || locFkRows.length === 0) {
+        await connection.query(`
+          ALTER TABLE \`FeedbackQrCode\` 
+          ADD CONSTRAINT \`FeedbackQrCode_ibfk_location\` 
+          FOREIGN KEY (\`locationId\`) REFERENCES \`locations\`(\`id\`) ON DELETE RESTRICT
+        `);
+        logDebug(`[FK Fix] Added FK constraint FeedbackQrCode.locationId -> locations.id`);
+      }
+    } catch (fkErr) {
+      logDebug(`[FK Fix Warning]:`, fkErr.message);
+    }
+
     try {
       await connection.query(`
         INSERT INTO \`FeedbackForm\` (\`id\`, \`formId\`, \`name\`, \`description\`, \`questionsJson\`, \`isDefault\`, \`status\`, \`createdBy\`, \`createdByName\`)

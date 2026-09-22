@@ -1258,7 +1258,7 @@ export const API = {
     return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
   },
 
-  async getQrCodeStats(params?: { status?: string; locationId?: string }) {
+  async getQrCodeStats(params?: { status?: string; locationId?: string; floor?: string }) {
     const q = params ? new URLSearchParams(cleanQueryParams(params)).toString() : '';
     const res = await apiFetch(`/feedback-qr/stats${q ? `?${q}` : ''}`);
     return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
@@ -1290,8 +1290,12 @@ export const API = {
   async updateQrCode(id: string | number, data: {
     name?: string;
     description?: string;
+    locationId?: number | string;
+    locationCode?: string;
+    locationName?: string;
     sectionId?: string;
     sectionName?: string;
+    floor?: string;
     feedbackFormId?: string;
     status?: 'active' | 'inactive' | 'archived';
   }) {
@@ -1334,6 +1338,20 @@ export const API = {
     return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
   },
 
+  async getLocationQrCodes(locationId?: number | string) {
+    const q = locationId ? `?locationId=${encodeURIComponent(String(locationId))}` : '';
+    const res = await apiFetch(`/feedback-qr/location-codes${q}`);
+    return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
+  },
+
+  async generateLocationQrCodes(locationId?: number | string) {
+    const q = locationId ? `?locationId=${encodeURIComponent(String(locationId))}` : '';
+    const res = await apiFetch(`/feedback-qr/generate-locations${q}`, {
+      method: 'POST'
+    });
+    return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
+  },
+
   async getSectionsForQr(locationId?: number | string) {
     const q = locationId ? new URLSearchParams({ locationId: String(locationId) }).toString() : '';
     const res = await apiFetch(`/feedback-qr/sections${q ? `?${q}` : ''}`);
@@ -1351,7 +1369,16 @@ export const API = {
     return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
   },
 
-  // Track QR scan (public endpoint)
+  // Track QR scan (public endpoint) - location based
+  async trackQrScanByLocation(locationCode: string, source?: string) {
+    const res = await apiFetch(`/feedback-qr/scan/location/${locationCode}`, {
+      method: 'POST',
+      body: JSON.stringify({ source })
+    });
+    return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
+  },
+
+  // Track QR scan (public endpoint) - legacy qrCodeId based
   async trackQrScan(qrCodeId: string, source?: string) {
     const res = await apiFetch(`/feedback-qr/scan/${qrCodeId}`, {
       method: 'POST',

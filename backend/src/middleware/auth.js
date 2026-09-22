@@ -339,9 +339,13 @@ const getLocationFilter = async (req, tableAlias = '') => {
 
   const rawRequested = req.query?.location_id 
     || req.query?.locationId 
+    || req.query?.locationCode
+    || req.query?.location
     || req.headers?.['x-location-id']
     || req.body?.location_id
-    || req.body?.locationId;
+    || req.body?.locationId
+    || req.body?.locationCode
+    || req.body?.location;
   const requestedLocationId = parseTargetLocation(rawRequested);
 
   const isGlobalAdmin = !req.user.locationId || req.user.isGlobalAdmin || ['Admin', 'Super Admin'].includes(req.user.role);
@@ -407,8 +411,12 @@ const injectLocationId = (req) => {
   if (!req.user) return null;
   const rawRequested = req.body?.location_id 
     || req.body?.locationId 
+    || req.body?.locationCode
+    || req.body?.location
     || req.query?.location_id 
     || req.query?.locationId 
+    || req.query?.locationCode
+    || req.query?.location
     || req.headers?.['x-location-id'];
   const requestedLocationId = parseTargetLocation(rawRequested);
 

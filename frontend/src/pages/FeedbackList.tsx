@@ -22,8 +22,10 @@ import {
 import { API } from '../services/api';
 import { io } from 'socket.io-client';
 import { showToast } from '../components/Toast';
+import { useLocationContext } from '../context/LocationContext';
 
 export default function FeedbackList() {
+  const { currentLocation } = useLocationContext();
   const [callQueue, setCallQueue] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
@@ -83,6 +85,9 @@ export default function FeedbackList() {
 
       if (statusFilter !== 'all') params.status = statusFilter;
       if (search.trim()) params.search = search.trim();
+      if (currentLocation && currentLocation !== 'ALL') {
+        params.location_id = currentLocation;
+      }
 
       const res = await API.getCallQueue(params);
       if (res && res.callQueue) {
@@ -93,7 +98,7 @@ export default function FeedbackList() {
     } finally {
       setLoading(false);
     }
-  }, [datePreset, startDateInput, endDateInput, statusFilter, search]);
+  }, [datePreset, startDateInput, endDateInput, statusFilter, search, currentLocation]);
 
   useEffect(() => {
     fetchCallQueue();

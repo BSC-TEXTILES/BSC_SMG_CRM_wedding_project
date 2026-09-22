@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import DashboardLayout from '../components/layouts/DashboardLayout';
+import { useLocationContext } from '../context/LocationContext';
 import {
   QrCode,
   Plus,
@@ -77,6 +78,8 @@ import {
   Flag,
   Star,
   Heart,
+  Store,
+  Layers,
   ThumbsUp,
   ThumbsDown,
   MessageSquare,
@@ -163,7 +166,6 @@ import {
   Droplet,
   Pipette,
   SwatchBook,
-  Layers,
   Layout,
   LayoutDashboard,
   LayoutGrid,
@@ -406,7 +408,231 @@ const StatCard = ({
   );
 };
 
+// Location QR Card Component
+const LocationQrCard = ({ locQr, loading }: { locQr: any; loading: boolean }) => {
+  const locationColors = {
+    BEL: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-800', icon: 'text-blue-600' },
+    DAV: { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-800', icon: 'text-emerald-600' },
+    SHI: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-800', icon: 'text-amber-600' }
+  };
+  const colors = locationColors[locQr.locationCode as keyof typeof locationColors] || locationColors.BEL;
+
+  const handleCopyUrl = (url: string, locationName: string) => {
+    navigator.clipboard.writeText(url);
+    showToast(`${locationName} feedback link copied successfully.`, 'success');
+  };
+
+  const handleOpenFeedback = (url: string) => {
+    window.open(url, '_blank');
+  };
+
+  const handleDownloadPng = (qrCodeDataUrl: string, qrCodeId: string, name: string) => {
+    if (!qrCodeDataUrl) return;
+    const link = document.createElement('a');
+    link.href = qrCodeDataUrl;
+    link.download = `${qrCodeId}_${name.replace(/\s+/g, '_')}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('QR code PNG downloaded.', 'success');
+  };
+
+  const handleDownloadSvg = (qrCodeSvg: string, qrCodeId: string, name: string) => {
+    if (!qrCodeSvg) return;
+    const blob = new Blob([qrCodeSvg], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${qrCodeId}_${name.replace(/\s+/g, '_')}.svg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    showToast('QR code SVG downloaded.', 'success');
+  };
+
+  if (loading) {
+    return (
+      <div className="card-glass p-5 space-y-4 border border-accent-soft animate-pulse">
+        <div className="flex items-center justify-between">
+          <div className="h-5 bg-gray-200 rounded w-3/4"></div>
+          <div className="h-6 bg-gray-200 rounded w-20"></div>
+        </div>
+        <div className="h-48 bg-gray-100 rounded-xl flex items-center justify-center">
+          <div className="w-32 h-32 bg-gray-200 rounded"></div>
+        </div>
+        <div className="h-4 bg-gray-200 rounded w-full"></div>
+        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+        <div className="flex gap-2">
+          <div className="flex-1 h-10 bg-gray-200 rounded"></div>
+          <div className="flex-1 h-10 bg-gray-200 rounded"></div>
+          <div className="flex-1 h-10 bg-gray-200 rounded"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (locQr.status === 'not_created') {
+    return (
+      <div className="card-glass p-5 space-y-4 border border-dashed border-gray-300 bg-gray-50/50">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="font-extrabold text-primary text-sm uppercase tracking-wider">{locQr.locationName}</div>
+            <div className="text-[10px] font-mono font-black {colors.icon}">{locQr.locationCode}</div>
+          </div>
+          <Store className="w-10 h-10 text-gray-300" />
+        </div>
+        <div className="h-48 flex flex-col items-center justify-center text-gray-400 space-y-2">
+          <QrCode className="w-16 h-16 opacity-30" />
+          <p className="text-sm font-semibold">QR Code Not Generated</p>
+          <p className="text-xs text-gray-500">Click "Generate All Location QR Codes" to create</p>
+        </div>
+        <div className="text-center text-xs text-gray-500 border-t border-dashed border-gray-300 pt-3">
+          <p>No QR code exists for {locQr.storeName}</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`card-glass p-5 space-y-4 border {colors.border}`}>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="font-extrabold text-primary text-sm uppercase tracking-wider">{locQr.locationName}</div>
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${colors.bg} {colors.text} {colors.border}`}>
+              {locQr.locationCode}
+            </span>
+            <span className="text-[10px] text-primary/60 font-medium">{locQr.storeName}</span>
+          </div>
+        </div>
+        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${locQr.status === 'active' ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : 'bg-gray-100 text-gray-800 border-gray-200'}`}>
+          {locQr.status === 'active' ? 'Active' : 'Inactive'}
+        </span>
+      </div>
+
+      {/* QR Code */}
+      <div className="p-4 bg-white rounded-xl border border-accent-soft text-center">
+        {locQr.qrCodeDataUrl ? (
+          <img src={locQr.qrCodeDataUrl} alt={`QR Code ${locQr.qrCodeId}`} className="w-40 h-40 mx-auto" />
+        ) : (
+          <div className="w-40 h-40 flex items-center justify-center text-gray-400 mx-auto">
+            <QrCode className="w-16 h-16" />
+          </div>
+        )}
+      </div>
+
+      {/* URL */}
+      <div className="p-3 bg-gray-50 rounded-xl border border-accent-soft">
+        <div className="text-[10px] font-black uppercase tracking-wider text-primary/60 mb-1">Public Feedback URL</div>
+        <div className="text-xs font-mono text-primary truncate break-all">{locQr.targetUrl}</div>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-2 text-center">
+        <div className="p-2 {colors.bg} rounded-xl border {colors.border}">
+          <div className="font-extrabold text-lg {colors.text}">{locQr.scanCount}</div>
+          <div className="text-[10px] uppercase tracking-wider {colors.text}/80">Scans</div>
+        </div>
+        <div className="p-2 bg-emerald-50 rounded-xl border border-emerald-200">
+          <div className="font-extrabold text-lg text-emerald-800">{locQr.feedbackCount}</div>
+          <div className="text-[10px] uppercase tracking-wider text-emerald-700">Feedback</div>
+        </div>
+        <div className="p-2 bg-amber-50 rounded-xl border border-amber-200">
+          <div className="font-extrabold text-lg text-amber-800">{locQr.scansWithFeedback}</div>
+          <div className="text-[10px] uppercase tracking-wider text-amber-700">Converted</div>
+        </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex flex-wrap gap-2 pt-2 border-t border-accent-soft">
+        <ActionButton
+          onClick={() => locQr.targetUrl && handleCopyUrl(locQr.targetUrl, locQr.locationName)}
+          disabled={!locQr.targetUrl}
+          variant="ghost"
+          size="xs"
+          icon={<Copy className="w-3.5 h-3.5" />}
+          className="flex-1 min-w-0"
+          title="Copy URL"
+        >
+          Copy
+        </ActionButton>
+        <ActionButton
+          onClick={() => locQr.targetUrl && handleOpenFeedback(locQr.targetUrl)}
+          disabled={!locQr.targetUrl}
+          variant="ghost"
+          size="xs"
+          icon={<ArrowUpRight className="w-3.5 h-3.5" />}
+          className="flex-1 min-w-0"
+          title="Open Feedback Page"
+        >
+          Open
+        </ActionButton>
+        <ActionButton
+          onClick={() => locQr.qrCodeDataUrl && handleDownloadPng(locQr.qrCodeDataUrl, locQr.qrCodeId, locQr.name)}
+          disabled={!locQr.qrCodeDataUrl}
+          variant="ghost"
+          size="xs"
+          icon={<Image className="w-3.5 h-3.5" />}
+          className="flex-1 min-w-0"
+          title="Download PNG"
+        >
+          PNG
+        </ActionButton>
+        <ActionButton
+          onClick={() => locQr.qrCodeSvg && handleDownloadSvg(locQr.qrCodeSvg, locQr.qrCodeId, locQr.name)}
+          disabled={!locQr.qrCodeSvg}
+          variant="ghost"
+          size="xs"
+          icon={<FileText className="w-3.5 h-3.5" />}
+          className="flex-1 min-w-0"
+          title="Download SVG"
+        >
+          SVG
+        </ActionButton>
+      </div>
+    </div>
+  );
+};
+
+// Placeholder card when no QR codes loaded yet
+const LocationQrPlaceholder = ({ locationCode, locationName, storeName }: { locationCode: string; locationName: string; storeName: string }) => {
+  const locationColors = {
+    BEL: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-800', icon: 'text-blue-600' },
+    DAV: { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-800', icon: 'text-emerald-600' },
+    SHI: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-800', icon: 'text-amber-600' }
+  };
+  const colors = locationColors[locationCode as keyof typeof locationColors] || locationColors.BEL;
+
+  return (
+    <div className="card-glass p-5 space-y-4 border {colors.border}">
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="font-extrabold text-primary text-sm uppercase tracking-wider">{locationName}</div>
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${colors.bg} {colors.text} {colors.border}`}>
+              {locationCode}
+            </span>
+            <span className="text-[10px] text-primary/60 font-medium">{storeName}</span>
+          </div>
+        </div>
+        <Store className="w-10 h-10 text-gray-300" />
+      </div>
+      <div className="h-48 flex flex-col items-center justify-center text-gray-400 space-y-2">
+        <QrCode className="w-16 h-16 opacity-30" />
+        <p className="text-sm font-semibold">QR Code Not Generated</p>
+        <p className="text-xs text-gray-500">Click "Generate All Location QR Codes" to create</p>
+      </div>
+      <div className="text-center text-xs text-gray-500 border-t border-dashed border-gray-300 pt-3">
+        <p>No QR code exists for {storeName}</p>
+      </div>
+    </div>
+  );
+};
+
 export default function FeedbackQRManagement() {
+  const { currentLocation, isGlobalAdmin, allLocations } = useLocationContext();
   const [session, setSession] = useState<any>(null);
   const [qrCodes, setQrCodes] = useState<QRCode[]>([]);
   const [stats, setStats] = useState<QRCodeStats | null>(null);
@@ -457,9 +683,23 @@ export default function FeedbackQRManagement() {
   // View mode
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
 
+  // Location QR Codes (3 cards - one per location)
+  const [locationQrCodes, setLocationQrCodes] = useState<any[]>([]);
+  const [locationQrLoading, setLocationQrLoading] = useState(false);
+  const [generatingQr, setGeneratingQr] = useState(false);
+
+  // Filter location QR codes based on global location selector
+  const displayLocationQrCodes = useMemo(() => {
+    if (isGlobalAdmin && currentLocation !== 'ALL') {
+      return locationQrCodes.filter(loc => String(loc.locationId) === currentLocation);
+    }
+    return locationQrCodes;
+  }, [locationQrCodes, currentLocation, isGlobalAdmin]);
+
   const loadData = useCallback(async () => {
     setLoading(true);
     setLocationsLoading(true);
+    setLocationQrLoading(true);
     try {
       const params = {
         page: currentPage,
@@ -471,17 +711,20 @@ export default function FeedbackQRManagement() {
         sortBy,
         sortOrder
       };
-      const [qrRes, statsRes, locRes, masterLocRes, secRes, formRes] = await Promise.allSettled([
+      // For stats, also consider global location selector for global admins
+      const statsLocationId = (isGlobalAdmin && currentLocation !== 'ALL') ? currentLocation : (locationFilter || undefined);
+      const [qrRes, statsRes, locRes, masterLocRes, secRes, formRes, locQrRes] = await Promise.allSettled([
         API.getQrCodes(params),
         API.getQrCodeStats({ 
           status: statusFilter !== 'all' ? statusFilter : undefined, 
-          locationId: locationFilter || undefined,
+          locationId: statsLocationId,
           floor: floorFilter !== 'all' ? floorFilter : undefined 
         }),
         API.getLocationsForQr(),
         API.getLocations(),
         API.getSectionsForQr(locationFilter || undefined),
-        API.getFeedbackForms()
+        API.getFeedbackForms(),
+        API.getLocationQrCodes(statsLocationId || undefined)
       ]);
 
       if (qrRes.status === 'fulfilled' && qrRes.value?.success) {
@@ -535,13 +778,17 @@ export default function FeedbackQRManagement() {
       if (formRes.status === 'fulfilled' && formRes.value?.data) {
         setFeedbackForms(formRes.value.data || []);
       }
+      if (locQrRes.status === 'fulfilled' && locQrRes.value?.data) {
+        setLocationQrCodes(locQrRes.value.data || []);
+      }
     } catch (err: any) {
       console.error('Load data error:', err);
     } finally {
       setLoading(false);
       setLocationsLoading(false);
+      setLocationQrLoading(false);
     }
-  }, [currentPage, pageSize, search, statusFilter, locationFilter, floorFilter, sortBy, sortOrder]);
+  }, [currentPage, pageSize, search, statusFilter, locationFilter, floorFilter, sortBy, sortOrder, currentLocation]);
 
   useEffect(() => {
     if (!Auth.check()) {
@@ -710,6 +957,24 @@ export default function FeedbackQRManagement() {
     } catch (err: any) {
       console.error('Regenerate error:', err);
       showToast('Unable to regenerate QR code: ' + (err.message || 'Server error'), 'error');
+    }
+  };
+
+  const handleGenerateLocationQrCodes = async () => {
+    setGeneratingQr(true);
+    try {
+      const res = await API.generateLocationQrCodes();
+      if (res?.success) {
+        showToast('Location-based QR codes generated successfully.', 'success');
+        loadData();
+      } else {
+        showToast('Failed to generate QR codes: ' + (res?.error || 'Unknown error'), 'error');
+      }
+    } catch (err: any) {
+      console.error('Generate location QR codes error:', err);
+      showToast('Unable to generate QR codes: ' + (err.message || 'Server error'), 'error');
+    } finally {
+      setGeneratingQr(false);
     }
   };
 
@@ -891,6 +1156,53 @@ export default function FeedbackQRManagement() {
           <StatCard title="Active QR Codes" value={stats?.activeQrCodes || 0} subtitle={`${stats?.inactiveQrCodes || 0} inactive`} icon={CircleCheck} color="emerald" />
           <StatCard title="Total Scans" value={stats?.totalScans || 0} icon={ScanLine} color="blue" />
           <StatCard title="Total Feedback" value={stats?.totalFeedback || 0} subtitle={`Today: ${stats?.todayFeedback || 0} • Avg Rating: ${stats?.averageRating || '0.0'}/5`} icon={MessageSquare} color="purple" />
+        </div>
+
+        {/* Location-Based QR Codes (3 Cards - One per Store) */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="font-extrabold text-sm text-primary uppercase tracking-wider flex items-center gap-2">
+              <QrCode className="w-4 h-4 text-accent" />
+              <span>Store Feedback QR Codes</span>
+            </h3>
+            <div className="flex items-center gap-2">
+              <ActionButton 
+                onClick={handleGenerateLocationQrCodes} 
+                disabled={generatingQr}
+                variant="gold" 
+                icon={generatingQr ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+                className="hidden sm:flex"
+              >
+                {generatingQr ? 'Generating...' : 'Generate All Location QR Codes'}
+              </ActionButton>
+              <ActionButton 
+                onClick={handleGenerateLocationQrCodes} 
+                disabled={generatingQr}
+                variant="gold" 
+                icon={generatingQr ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+                className="sm:hidden"
+              >
+                {generatingQr ? 'Generating...' : '+ QR'}
+              </ActionButton>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {displayLocationQrCodes.map((locQr, idx) => (
+              <LocationQrCard 
+                key={locQr.locationCode} 
+                locQr={locQr} 
+                loading={locationQrLoading}
+              />
+            ))}
+            {/* Show placeholder cards if no data loaded yet */}
+            {!locationQrLoading && displayLocationQrCodes.length === 0 && (
+              <>
+                <LocationQrPlaceholder locationCode="BEL" locationName="Belagavi" storeName="BSC Textiles Belagavi" />
+                <LocationQrPlaceholder locationCode="DAV" locationName="Davanagere" storeName="BSC Textiles Davanagere" />
+                <LocationQrPlaceholder locationCode="SHI" locationName="Shivamogga" storeName="BSC Textiles Shivamogga" />
+              </>
+            )}
+          </div>
         </div>
 
         {/* Charts */}
