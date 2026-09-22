@@ -56,19 +56,7 @@ export default function RouteGuard({ pageKey, children }: { pageKey: string; chi
         return;
       }
 
-      // Backend route validation (secondary verification)
-      API.validateRoute(location.pathname).then((result: any) => {
-        if (cancelled) return;
-        if (result && result.success && result.allowed === false) {
-          setDeniedReason(result.reason || 'Route access restricted by server security policy.');
-          setResolution('denied');
-          return;
-        }
-        setResolution('allowed');
-      }).catch(() => {
-        // Validation endpoint unavailable — fail open since frontend permissions passed
-        setResolution('allowed');
-      });
+      setResolution('allowed');
     }).catch(() => {
       // Fallback: check static role navigation map
       const roleKeys = getRoleNavMap(role);

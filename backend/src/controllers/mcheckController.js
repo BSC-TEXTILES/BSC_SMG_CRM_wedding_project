@@ -4,7 +4,7 @@
  */
 
 const db = require('../config/db');
-const { getLocationFilter, injectLocationId } = require('../middleware/auth');
+const { getLocationFilter, injectLocationId, getEffectiveLocationId } = require('../middleware/auth');
 
 function getISTDateString(offset = 0) {
   const now = new Date();
@@ -619,12 +619,16 @@ exports.exportPdf = async (req, res) => {
 
     const navy = '#1E2D4E', gold = '#C9952A', green = '#2d8a4e', red = '#C0272D', orange = '#f97316', gray = '#6b7280';
 
+    const locId = getEffectiveLocationId(req);
+    const locNameMap = { 1: 'Belagavi (BEL)', 2: 'Davanagere (DAV)', 3: 'Shivamogga (SHI)' };
+    const locTitle = locId && locNameMap[locId] ? `The Textile Mall — ${locNameMap[locId]}` : 'The Textile Mall — All Locations';
+
     // Header
     doc.rect(0, 0, doc.page.width, 90).fill(navy);
     doc.fillColor('#FFFFFF').fontSize(18).font('Helvetica-Bold')
       .text('BSC TEXTILES PVT LTD', 40, 20);
     doc.fontSize(10).font('Helvetica')
-      .text('The Textile Mall — Davangere', 40, 43);
+      .text(locTitle, 40, 43);
     doc.fontSize(14).font('Helvetica-Bold').fillColor(gold)
       .text('DAILY MANAGEMENT CHECKLIST REPORT', 40, 60);
 

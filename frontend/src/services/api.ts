@@ -86,6 +86,11 @@ export const Auth = {
     return session?.isGlobalAdmin === true || session?.locationId === null || session?.locationId === undefined;
   },
 
+  getToken(): string | null {
+    const session = this.get();
+    return session?.token ?? null;
+  },
+
   clear() {
     try {
       localStorage.removeItem('bsc_crm_session');
@@ -162,11 +167,21 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
   }
 
   // Dynamic multi-location header injection
-  const activeLoc = typeof localStorage !== 'undefined' ? localStorage.getItem('bsc_selected_location') : null;
-  if (activeLoc && activeLoc !== 'ALL') {
+  const isGlobal = !session?.locationId || session?.isGlobalAdmin || ['Admin', 'Super Admin'].includes(session?.role || '');
+  let activeLoc = typeof localStorage !== 'undefined' ? localStorage.getItem('bsc_selected_location') : null;
+
+  if (!isGlobal && session?.locationId) {
+    // Non-global user: strictly enforce session location unless allowedLocations includes activeLoc
+    const allowed = Array.isArray(session.allowedLocations) && session.allowedLocations.length > 0 
+      ? session.allowedLocations.map(String) 
+      : [String(session.locationId)];
+    if (activeLoc && allowed.includes(activeLoc)) {
+      headers['X-Location-Id'] = activeLoc;
+    } else {
+      headers['X-Location-Id'] = String(session.locationId);
+    }
+  } else if (activeLoc && activeLoc !== 'ALL') {
     headers['X-Location-Id'] = activeLoc;
-  } else if (session && session.locationId) {
-    headers['X-Location-Id'] = String(session.locationId);
   }
 
   const apiBase = getApiBase();
@@ -478,8 +493,9 @@ export const API = {
     const query = new URLSearchParams(filters).toString();
     return apiFetch(`/candidates?${query}`);
   },
-  async getEmployees() {
-    return apiFetch('/employees');
+  async getEmployees(params?: { locationId?: string | number }) {
+    const q = params ? new URLSearchParams(cleanQueryParams(params)).toString() : '';
+    return apiFetch(`/employees${q ? `?${q}` : ''}`);
   },
   async addCandidate(data: any) {
     // Legacy route uses /add or we just map it in our generic call
@@ -699,7 +715,13 @@ export const API = {
   async updateCrmSettings(payload: any) { return apiFetch('/crm/settings/update', { method: 'POST', body: JSON.stringify(payload) }); },
   async verifyPin(payload: { type: string; pin: string }) { return apiFetch('/crm/verify-pin', { method: 'POST', body: JSON.stringify(payload) }); },
   async getSections() { return apiFetch('/crm/sections'); },
-  async getFootfall(date?: string) { return apiFetch(`/crm/footfall${date ? `?date=${date}` : ''}`); },
+  async getFootfall(date?: string, locationId?: string | number) {
+    const p: any = {};
+    if (date) p.date = date;
+    if (locationId) p.locationId = locationId;
+    const q = new URLSearchParams(cleanQueryParams(p)).toString();
+    return apiFetch(`/crm/footfall${q ? `?${q}` : ''}`);
+  },
   async upsertFootfall(payload: any) { return apiFetch('/crm/footfall/upsert', { method: 'POST', body: JSON.stringify(payload) }); },
   async getFeedbackQuestions() { return apiFetch('/crm/feedback-questions'); },
   async getFeedbackStats(params?: { location_id?: string | number; locationId?: string | number }) {
@@ -716,12 +738,15 @@ export const API = {
     return apiFetch(`/crm/feedbacks${q}`, { method: 'DELETE' });
   },
   async submitFeedback(payload: any) { return apiFetch('/crm/feedback', { method: 'POST', body: JSON.stringify(payload) }); },
-  async getCallQueue(params?: { date?: string; startDate?: string; endDate?: string; status?: string; search?: string }) {
-    const q = new URLSearchParams(params as any).toString();
+  async getCallQueue(params?: { date?: string; startDate?: string; endDate?: string; status?: string; search?: string; location_id?: string | number; locationId?: string | number }) {
+    const q = params ? new URLSearchParams(cleanQueryParams(params)).toString() : '';
     return apiFetch(`/crm/call-queue${q ? `?${q}` : ''}`);
   },
   async updateCallQueue(payload: any) { return apiFetch('/crm/call-queue/update', { method: 'POST', body: JSON.stringify(payload) }); },
-  async getDiverts() { return apiFetch('/crm/diverts'); },
+  async getDiverts(params?: { locationId?: string | number }) {
+    const q = params ? new URLSearchParams(cleanQueryParams(params)).toString() : '';
+    return apiFetch(`/crm/diverts${q ? `?${q}` : ''}`);
+  },
   async createDivert(payload: any) { return apiFetch('/crm/diverts/create', { method: 'POST', body: JSON.stringify(payload) }); },
   async updateDivert(payload: any) { return apiFetch('/crm/diverts/update', { method: 'POST', body: JSON.stringify(payload) }); },
   async getDivertUpdates(divertId: string) { return apiFetch(`/crm/diverts/updates?divertId=${divertId}`); },
@@ -773,10 +798,18 @@ export const API = {
   async saveMCheckAdminModule(payload: any) { return apiFetch('/mcheck/admin/module', { method: 'POST', body: JSON.stringify(payload) }); },
   async saveMCheckAdminCheckpoint(payload: any) { return apiFetch('/mcheck/admin/checkpoint', { method: 'POST', body: JSON.stringify(payload) }); },
   async reorderMCheckCheckpoints(order: any[]) { return apiFetch('/mcheck/admin/reorder', { method: 'POST', body: JSON.stringify({ order }) }); },
-  getMCheckExportUrl(type: 'pdf' | 'excel', params?: { date?: string; fromDate?: string; toDate?: string; module_id?: string; status?: string }) {
+  getMCheckExportUrl(type: 'pdf' | 'excel', params?: { date?: string; fromDate?: string; toDate?: string; module_id?: string; status?: string; locationId?: string }) {
     const apiBase = getApiBase();
-    const q = params ? new URLSearchParams(params as any).toString() : '';
-    return `${apiBase}/mcheck/export/${type === 'pdf' ? 'pdf' : 'excel'}${q ? `?${q}` : ''}`;
+    const token = Auth.getToken();
+    const activeLoc = typeof localStorage !== 'undefined' ? localStorage.getItem('bsc_selected_location') : null;
+    const mergedParams: any = { ...params };
+    if (token) mergedParams.token = token;
+    if (activeLoc && !mergedParams.locationId && activeLoc !== 'ALL') {
+      mergedParams.locationId = activeLoc;
+    }
+    const q = cleanQueryParams(mergedParams);
+    const qs = new URLSearchParams(q).toString();
+    return `${apiBase}/mcheck/export/${type === 'pdf' ? 'pdf' : 'excel'}${qs ? `?${qs}` : ''}`;
   },
 
   // ── Locations ────────────────────────────────────────────────

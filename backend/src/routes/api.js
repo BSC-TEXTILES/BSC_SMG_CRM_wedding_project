@@ -918,9 +918,21 @@ router.post('/security/validate-route', authenticate, async (req, res) => {
           return res.json({ success: true, allowed: true, reason: 'Unconstrained path' });
         }
 
+        if (matched.module === 'dashboard') {
+          return res.json({ success: true, allowed: true, reason: 'Dashboard access permitted' });
+        }
+
         const permRow = userPerms.find(p => p.module === matched.module);
-        if (permRow && permRow.can_view) {
-          return res.json({ success: true, allowed: true, reason: 'Permitted by user Access Control Matrix' });
+        if (permRow) {
+          if (permRow.can_view) {
+            return res.json({ success: true, allowed: true, reason: 'Permitted by user Access Control Matrix' });
+          } else {
+            return res.json({
+              success: true,
+              allowed: false,
+              reason: `Access to module "${matched.module.replace(/_/g, ' ')}" not granted in matrix`
+            });
+          }
         }
 
         // Related wedding module aliases
@@ -930,12 +942,6 @@ router.post('/security/validate-route', authenticate, async (req, res) => {
         if (matched.module === 'wedding_registration' && userPerms.some(p => p.module === 'wedding_crm' && p.can_view)) {
           return res.json({ success: true, allowed: true, reason: 'Permitted via Wedding CRM view access' });
         }
-
-        return res.json({
-          success: true,
-          allowed: false,
-          reason: `Access to module "${matched.module.replace(/_/g, ' ')}" not granted in matrix`
-        });
       }
     } catch (e) {
       console.warn('[validate-route] user_permissions check fallback:', e.message);

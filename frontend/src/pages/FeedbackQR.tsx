@@ -149,7 +149,7 @@ const DEFAULT_STORE_QRS: LocationQrData[] = [
 ];
 
 export default function FeedbackQR() {
-  const { currentLocation, setCurrentLocation, isGlobalAdmin } = useLocationContext();
+  const { currentLocation, setCurrentLocation, isGlobalAdmin, canSwitch, availableLocations, currentLocationLabel } = useLocationContext();
   const [locationQrCodes, setLocationQrCodes] = useState<LocationQrData[]>(DEFAULT_STORE_QRS);
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -158,7 +158,7 @@ export default function FeedbackQR() {
   const loadQrCodes = useCallback(async () => {
     try {
       // Pass locationId if a specific location is selected and not 'ALL'
-      const locIdParam = (isGlobalAdmin && currentLocation !== 'ALL') ? currentLocation : undefined;
+      const locIdParam = currentLocation !== 'ALL' ? currentLocation : undefined;
       const res: any = await API.getLocationQrCodes(locIdParam);
       
       const incomingList: LocationQrData[] = Array.isArray(res?.data)
@@ -280,24 +280,29 @@ export default function FeedbackQR() {
   };
 
   // Filter cards to display:
-  // When 'ALL' is selected, show all 3 locations.
-  // When a specific location (1, 2, or 3) is selected, show that specific store card.
+  // When 'ALL' is selected by Admin, show all 3 locations.
+  // When a specific location is selected or assigned, show that specific store card only.
   const displayedStores = useMemo(() => {
-    if (!isGlobalAdmin || currentLocation === 'ALL') {
+    if (isGlobalAdmin && currentLocation === 'ALL') {
       return STORE_LOCATIONS;
     }
-    const match = STORE_LOCATIONS.filter(s => String(s.id) === String(currentLocation));
-    return match.length > 0 ? match : STORE_LOCATIONS;
-  }, [currentLocation, isGlobalAdmin]);
+    const targetLoc = currentLocation && currentLocation !== 'ALL'
+      ? currentLocation
+      : (availableLocations[0] ? String(availableLocations[0].id) : '1');
+    const match = STORE_LOCATIONS.filter(s => String(s.id) === String(targetLoc));
+    return match.length > 0 ? match : (isGlobalAdmin ? STORE_LOCATIONS : []);
+  }, [currentLocation, isGlobalAdmin, availableLocations]);
 
-  // Overall totals across loaded QRs
+  // Overall totals across loaded QRs strictly for displayed stores
   const totals = useMemo(() => {
-    return locationQrCodes.reduce((acc, curr) => ({
+    const displayedIds = new Set(displayedStores.map(s => s.id));
+    const filteredQRs = locationQrCodes.filter(q => displayedIds.has(q.locationId));
+    return filteredQRs.reduce((acc, curr) => ({
       scans: acc.scans + (Number(curr.scanCount) || 0),
       feedbacks: acc.feedbacks + (Number(curr.feedbackCount) || 0),
       converted: acc.converted + (Number(curr.scansWithFeedback) || 0)
     }), { scans: 0, feedbacks: 0, converted: 0 });
-  }, [locationQrCodes]);
+  }, [locationQrCodes, displayedStores]);
 
   return (
     <DashboardLayout 
@@ -313,19 +318,21 @@ export default function FeedbackQR() {
             <span className="hidden sm:inline">Advanced QR Management</span>
             <span className="sm:hidden">Manage</span>
           </Link>
-          <button
-            onClick={handleGenerateAll}
-            disabled={generating}
-            className="btn-gold inline-flex items-center gap-2 text-xs py-2 px-4 shadow-md disabled:opacity-50 cursor-pointer"
-            title="Generate or update distinct QR codes for all locations"
-          >
-            {generating ? (
-              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <Sparkles className="w-3.5 h-3.5" />
-            )}
-            <span>{generating ? 'Refreshing...' : 'Sync QR Codes'}</span>
-          </button>
+          {isGlobalAdmin && (
+            <button
+              onClick={handleGenerateAll}
+              disabled={generating}
+              className="btn-gold inline-flex items-center gap-2 text-xs py-2 px-4 shadow-md disabled:opacity-50 cursor-pointer"
+              title="Generate or update distinct QR codes for all locations"
+            >
+              {generating ? (
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Sparkles className="w-3.5 h-3.5" />
+              )}
+              <span>{generating ? 'Refreshing...' : 'Sync QR Codes'}</span>
+            </button>
+          )}
         </div>
       }
     >
@@ -342,35 +349,42 @@ export default function FeedbackQR() {
                 Store Location Filter
               </div>
               <div className="text-[11px] text-text-secondary">
-                Switch location to view specific QR or choose "All Locations" for all 3 store cards
+                {canSwitch 
+                  ? 'Switch location to view specific QR or choose "All Locations"' 
+                  : `Scope fixed to assigned branch: ${currentLocationLabel}`}
               </div>
             </div>
           </div>
 
           {/* Interactive Location Switcher Pills */}
           <div className="flex items-center gap-1.5 p-1.5 bg-background rounded-2xl border border-border overflow-x-auto max-w-full">
-            <button
-              onClick={() => setCurrentLocation('ALL')}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
-                currentLocation === 'ALL'
-                  ? 'bg-accent text-white shadow-sm'
-                      : 'text-text-secondary hover:text-text-primary hover:bg-white/80'
-              }`}
-            >
-              <Layers className="w-3.5 h-3.5" />
-              <span>All Locations (3)</span>
-            </button>
+            {isGlobalAdmin && (
+              <button
+                onClick={() => setCurrentLocation('ALL')}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
+                  currentLocation === 'ALL'
+                    ? 'bg-accent text-white shadow-sm'
+                    : 'text-text-secondary hover:text-text-primary hover:bg-white/80'
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5" />
+                <span>All Locations (3)</span>
+              </button>
+            )}
 
-            {STORE_LOCATIONS.map((loc) => {
+            {availableLocations.map((loc) => {
               const isSelected = String(currentLocation) === String(loc.id);
               return (
                 <button
                   key={loc.id}
-                  onClick={() => setCurrentLocation(String(loc.id))}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
+                  onClick={() => canSwitch && setCurrentLocation(String(loc.id))}
+                  disabled={!canSwitch}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 whitespace-nowrap ${
+                    !canSwitch ? 'cursor-default' : 'cursor-pointer'
+                  } ${
                     isSelected
                       ? 'bg-primary text-white shadow-sm'
-                  : 'text-text-secondary hover:text-text-primary hover:bg-white/80'
+                      : 'text-text-secondary hover:text-text-primary hover:bg-white/80'
                   }`}
                 >
                   <MapPin className="w-3.5 h-3.5" />

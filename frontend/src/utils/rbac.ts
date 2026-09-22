@@ -81,6 +81,45 @@ export const ROLE_NAV_MAP: Record<string, string[]> = {
   'Guest': ['wedding_registration', 'candidate_apply']
 };
 
+export const MODULE_KEY_TO_ROUTE: Record<string, string> = {
+  dashboard: '/dashboard',
+  wedding_crm: '/wedding-crm',
+  wedding_registration: '/wedding/customer-registration',
+  wedding_operations: '/wedding-operations',
+  telecaller_desk: '/telecaller/desk',
+  telecaller_dashboard: '/telecaller-dashboard',
+  footfall: '/footfall',
+  feedback_collection: '/feedback-collection',
+  feedback_list: '/feedback-list',
+  feedback_qr: '/feedback-qr-management',
+  divert: '/divert',
+  pm_view: '/pm-view',
+  vm_checklist: '/vm-checklist',
+  attendance: '/attendance',
+  candidates: '/candidates',
+  offer: '/offer-process',
+  openings: '/openings',
+  employees: '/employees',
+  dept_hiring: '/department-hiring',
+  section_allocation: '/section-allocation',
+  daily_mcheck: '/daily-mcheck',
+  mcheck_reports: '/mcheck-reports',
+  mcheck_history: '/mcheck-history',
+  broadcast: '/broadcast-center',
+  settings: '/settings',
+  system_admin: '/system-admin',
+  user_management: '/user-management',
+  main_crm: '/main-crm',
+  batch_plan: '/batch-plan',
+  doj_desk: '/doj-desk',
+  joining_desk: '/doj-desk',
+  regional_analytics: '/main-crm',
+  candidate_apply: '/apply',
+  greeter: '/greeter',
+  tv: '/tv',
+  feedback_public: '/feedback-public'
+};
+
 export function getRoleNavMap(role?: string): string[] {
   const raw = (role || '').trim();
   if (ROLE_NAV_MAP[raw]) return ROLE_NAV_MAP[raw];
@@ -102,12 +141,17 @@ export function getRoleNavMap(role?: string): string[] {
   return ROLE_NAV_MAP['Employee'] || [];
 }
 
-
 /**
  * Resolve the effective page keys for a role, narrowed by the database-backed
  * page visibility settings (`${role}_${key}` → boolean) and/or user-specific
- * permissions. `dbSettings` values of `false` always win (deny); unset keys
- * fall back to the role map.
+ * permissions.
+ *
+ * Rules:
+ * 1. Admin & Super Admin always receive full access.
+ * 2. If user has explicit ACM permissions (userModules array), those govern effective
+ *    access, with 'dashboard' always guaranteed for authenticated users.
+ * 3. If no ACM overrides exist, fall back to role defaults (narrowed by page_visibility dbSettings).
+ * 4. 'dashboard' is always included so user lands cleanly on their dashboard.
  */
 export function resolveAllowedPages(
   role: string | undefined,
@@ -125,15 +169,27 @@ export function resolveAllowedPages(
 
   // User-specific permission overrides (exact module list assigned by Admin in Access Control Matrix)
   if (userModules && Array.isArray(userModules)) {
-    return userModules;
+    const allowedSet = new Set<string>(userModules);
+    // Ensure dashboard is always accessible to any authenticated user
+    allowedSet.add('dashboard');
+    return Array.from(allowedSet);
   }
 
+  // Base role defaults narrowed by database page_visibility settings if configured
   if (dbSettings && Object.keys(dbSettings).length > 0) {
-    return roleKeys.filter(key => {
+    const filtered = roleKeys.filter(key => {
       const dbKey = `${r}_${key}`;
       if (dbSettings[dbKey] !== undefined) return dbSettings[dbKey] === true;
       return true; // not explicitly configured → role-map default applies
     });
+    if (!filtered.includes('dashboard')) {
+      filtered.unshift('dashboard');
+    }
+    return filtered;
+  }
+
+  if (!roleKeys.includes('dashboard')) {
+    return ['dashboard', ...roleKeys];
   }
 
   return roleKeys;

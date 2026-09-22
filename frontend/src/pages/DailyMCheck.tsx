@@ -151,6 +151,12 @@ export default function DailyMCheck() {
     if (!Auth.check()) { navigate('/login'); return; }
     setSession(Auth.get());
     loadDashboard();
+
+    const handleLocChange = () => {
+      loadDashboard();
+    };
+    window.addEventListener('bsc_location_changed', handleLocChange);
+    return () => window.removeEventListener('bsc_location_changed', handleLocChange);
   }, [navigate, loadDashboard]);
 
   const handleSave = async (cpId: number, isSubmit: boolean) => {

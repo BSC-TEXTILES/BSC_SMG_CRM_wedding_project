@@ -3,14 +3,14 @@ const userSyncService = require('../services/userSyncService');
 const db = require('../config/db');
 const { logAction } = require('../utils/logger');
 const { successRes, errorRes } = require('../utils/response');
-const { getLocationFilter, injectLocationId } = require('../middleware/auth');
+const { getLocationFilter, injectLocationId, getEffectiveLocationId } = require('../middleware/auth');
 const realtimeService = require('../services/realtimeService');
 
 class CandidateController {
   async getCandidates(req, res) {
     try {
-      // Pass locationId from authenticated user to service layer
-      const locationId = req.user ? req.user.locationId : null;
+      // Pass authoritative locationId to service layer
+      const locationId = getEffectiveLocationId(req);
       const result = await candidateService.getCandidates(req.query, locationId);
       return res.json(result);
     } catch (err) {
@@ -88,7 +88,7 @@ class CandidateController {
   async getKPIs(req, res) {
     try {
       const { range, fromDate, toDate } = req.query;
-      const locationId = req.user ? req.user.locationId : null;
+      const locationId = getEffectiveLocationId(req);
       const result = await candidateService.getKPIs(range, fromDate, toDate, locationId);
       return res.json(result);
     } catch (err) {
@@ -108,12 +108,12 @@ class CandidateController {
 
   async getSystemActivity(req, res) {
     try {
-      const limit = req.query.limit || 10;
-      const locationId = req.user ? req.user.locationId : null;
+      const limit = parseInt(req.query.limit, 10) || 10;
+      const locationId = getEffectiveLocationId(req);
       const result = await candidateService.getSystemActivity(limit, locationId);
       return res.json(result);
     } catch (err) {
-      return res.json({ success: false, error: err.message });
+      return res.json({ success: false, activity: [] });
     }
   }
 
@@ -166,7 +166,7 @@ class CandidateController {
 
   async getPendingActions(req, res) {
     try {
-      const locationId = req.user ? req.user.locationId : null;
+      const locationId = getEffectiveLocationId(req);
       const result = await candidateService.getPendingActions(locationId);
       return res.json(result);
     } catch (err) {
@@ -176,7 +176,7 @@ class CandidateController {
 
   async getSourceBreakdown(req, res) {
     try {
-      const locationId = req.user ? req.user.locationId : null;
+      const locationId = getEffectiveLocationId(req);
       const result = await candidateService.getSourceBreakdown(locationId);
       return res.json(result);
     } catch (err) {

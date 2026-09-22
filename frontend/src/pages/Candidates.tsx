@@ -88,6 +88,12 @@ export default function CandidatesPage() {
     API.getDesignations().then(res => {
       if (res && res.designations) setDesignations(res.designations);
     }).catch(() => { });
+
+    const handleLocChange = () => {
+      loadCandidates();
+    };
+    window.addEventListener('bsc_location_changed', handleLocChange);
+    return () => window.removeEventListener('bsc_location_changed', handleLocChange);
   }, [navigate, loadCandidates]);
 
   // Filtering

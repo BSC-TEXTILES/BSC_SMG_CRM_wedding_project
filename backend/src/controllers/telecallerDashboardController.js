@@ -1,85 +1,79 @@
 const { pool } = require('../config/db');
 const { successRes, errorRes } = require('../utils/response');
 const { logAction } = require('../utils/logger');
+const { getLocationFilter } = require('../middleware/auth');
 
 const getDashboardStats = async (req, res) => {
   try {
     const userId = req.user?.id;
     const userRole = req.user?.role;
     const userFullName = req.user?.fullName;
-    const userLocationId = req.user?.locationId;
     const isAdmin = ['Super Admin', 'Admin'].includes(userRole);
 
-    let customerFilter = '';
-    const customerParams = [];
+    const { clause: locClause, params: locParams } = await getLocationFilter(req, '');
+    const { clause: wLocClause, params: wLocParams } = await getLocationFilter(req, 'w');
 
+    let callerClause = '';
+    const callerParams = [];
     if (!isAdmin) {
-      customerFilter = ' AND (assigned_telecaller_id = ? OR assigned_telecaller = ?)';
-      customerParams.push(userId, userFullName);
-    } else if (userLocationId) {
-      customerFilter = ' AND location_id = ?';
-      customerParams.push(userLocationId);
+      callerClause = ' AND (assigned_telecaller_id = ? OR assigned_telecaller = ?)';
+      callerParams.push(userId, userFullName);
     }
 
-    const locationFilter = !isAdmin && userLocationId
-      ? ' AND w.location_id = ?'
-      : '';
-    const locationParams = !isAdmin && userLocationId ? [userLocationId] : [];
+    const customerParams = [...locParams, ...callerParams];
+    const customerFilter = `${locClause}${callerClause}`;
 
     const [totalCustomersRows] = await pool.query(
-      `SELECT COUNT(*) AS total FROM wedding_customers WHERE is_deleted = 0${customerFilter}`,
+      `SELECT COUNT(*) AS total FROM wedding_customers WHERE is_deleted = 0 ${customerFilter}`,
       customerParams
     );
     const totalCustomers = totalCustomersRows[0]?.total || 0;
 
     const [todayFollowUpRows] = await pool.query(
-      `SELECT COUNT(*) AS total FROM wedding_customers WHERE is_deleted = 0 AND follow_up_date = CURDATE()${customerFilter}`,
+      `SELECT COUNT(*) AS total FROM wedding_customers WHERE is_deleted = 0 AND follow_up_date = CURDATE() ${customerFilter}`,
       customerParams
     );
     const todayFollowUps = todayFollowUpRows[0]?.total || 0;
 
     const [overdueFollowUpRows] = await pool.query(
-      `SELECT COUNT(*) AS total FROM wedding_customers WHERE is_deleted = 0 AND follow_up_date < CURDATE() AND customer_status NOT IN ('Converted','Closed','Cancelled','Visited')${customerFilter}`,
+      `SELECT COUNT(*) AS total FROM wedding_customers WHERE is_deleted = 0 AND follow_up_date < CURDATE() AND customer_status NOT IN ('Converted','Closed','Cancelled','Visited') ${customerFilter}`,
       customerParams
     );
     const overdueFollowUps = overdueFollowUpRows[0]?.total || 0;
 
     const [upcomingFollowUpRows] = await pool.query(
-      `SELECT COUNT(*) AS total FROM wedding_customers WHERE is_deleted = 0 AND follow_up_date > CURDATE() AND follow_up_date <= DATE_ADD(CURDATE(), INTERVAL 7 DAY)${customerFilter}`,
+      `SELECT COUNT(*) AS total FROM wedding_customers WHERE is_deleted = 0 AND follow_up_date > CURDATE() AND follow_up_date <= DATE_ADD(CURDATE(), INTERVAL 7 DAY) ${customerFilter}`,
       customerParams
     );
     const upcomingFollowUps = upcomingFollowUpRows[0]?.total || 0;
 
-    let callLogFilter = '';
-    const callLogParams = [];
+    let callLogFilter = `${wLocClause}`;
+    const callLogParams = [...wLocParams];
     if (!isAdmin) {
-      callLogFilter = ' AND (c.telecaller_id = ? OR c.telecaller_name = ?)';
+      callLogFilter += ' AND (c.telecaller_id = ? OR c.telecaller_name = ?)';
       callLogParams.push(userId, userFullName);
-    } else if (userLocationId) {
-      callLogFilter = ' AND w.location_id = ?';
-      callLogParams.push(userLocationId);
     }
 
     const [callsCompletedTodayRows] = await pool.query(
-      `SELECT COUNT(*) AS total FROM wedding_call_logs c JOIN wedding_customers w ON c.customer_id = w.id WHERE c.call_date = CURDATE() AND w.is_deleted = 0${callLogFilter}`,
+      `SELECT COUNT(*) AS total FROM wedding_call_logs c JOIN wedding_customers w ON c.customer_id = w.id WHERE c.call_date = CURDATE() AND w.is_deleted = 0 ${callLogFilter}`,
       callLogParams
     );
     const callsCompletedToday = callsCompletedTodayRows[0]?.total || 0;
 
     const [totalCallsRows] = await pool.query(
-      `SELECT COUNT(*) AS total FROM wedding_call_logs c JOIN wedding_customers w ON c.customer_id = w.id WHERE w.is_deleted = 0${callLogFilter}`,
+      `SELECT COUNT(*) AS total FROM wedding_call_logs c JOIN wedding_customers w ON c.customer_id = w.id WHERE w.is_deleted = 0 ${callLogFilter}`,
       callLogParams
     );
     const totalCalls = totalCallsRows[0]?.total || 0;
 
     const [noAnswerTodayRows] = await pool.query(
-      `SELECT COUNT(*) AS total FROM wedding_call_logs c JOIN wedding_customers w ON c.customer_id = w.id WHERE c.call_date = CURDATE() AND c.call_outcome = 'No Answer' AND w.is_deleted = 0${callLogFilter}`,
+      `SELECT COUNT(*) AS total FROM wedding_call_logs c JOIN wedding_customers w ON c.customer_id = w.id WHERE c.call_date = CURDATE() AND c.call_outcome = 'No Answer' AND w.is_deleted = 0 ${callLogFilter}`,
       callLogParams
     );
     const noAnswerToday = noAnswerTodayRows[0]?.total || 0;
 
     const [convertedRows] = await pool.query(
-      `SELECT COUNT(*) AS total FROM wedding_customers WHERE is_deleted = 0 AND customer_status = 'Converted'${customerFilter}`,
+      `SELECT COUNT(*) AS total FROM wedding_customers WHERE is_deleted = 0 AND customer_status = 'Converted' ${customerFilter}`,
       customerParams
     );
     const convertedCount = convertedRows[0]?.total || 0;
@@ -89,7 +83,7 @@ const getDashboardStats = async (req, res) => {
       : 0;
 
     const [statusRows] = await pool.query(
-      `SELECT customer_status, COUNT(*) AS count FROM wedding_customers WHERE is_deleted = 0${customerFilter} GROUP BY customer_status`,
+      `SELECT customer_status, COUNT(*) AS count FROM wedding_customers WHERE is_deleted = 0 ${customerFilter} GROUP BY customer_status`,
       customerParams
     );
     const statusBreakdown = {};
@@ -120,19 +114,19 @@ const getFollowUpPipeline = async (req, res) => {
     const userId = req.user?.id;
     const userRole = req.user?.role;
     const userFullName = req.user?.fullName;
-    const userLocationId = req.user?.locationId;
     const isAdmin = ['Super Admin', 'Admin'].includes(userRole);
 
-    let customerFilter = '';
-    const customerParams = [];
+    const { clause: wLocClause, params: wLocParams } = await getLocationFilter(req, 'w');
 
+    let callerClause = '';
+    const callerParams = [];
     if (!isAdmin) {
-      customerFilter = ' AND (w.assigned_telecaller_id = ? OR w.assigned_telecaller = ?)';
-      customerParams.push(userId, userFullName);
-    } else if (userLocationId) {
-      customerFilter = ' AND w.location_id = ?';
-      customerParams.push(userLocationId);
+      callerClause = ' AND (w.assigned_telecaller_id = ? OR w.assigned_telecaller = ?)';
+      callerParams.push(userId, userFullName);
     }
+
+    const customerFilter = `${wLocClause}${callerClause}`;
+    const customerParams = [...wLocParams, ...callerParams];
 
     const baseSelect = `
       SELECT w.id, w.customer_code, w.customer_name, w.mobile_number, w.wedding_date,
@@ -145,7 +139,7 @@ const getFollowUpPipeline = async (req, res) => {
         (SELECT COUNT(*) FROM wedding_call_logs cl WHERE cl.customer_id = w.id) AS total_calls_count
       FROM wedding_customers w
       LEFT JOIN locations l ON w.location_id = l.id
-      WHERE w.is_deleted = 0${customerFilter}
+      WHERE w.is_deleted = 0 ${customerFilter}
     `;
 
     const [todayRows] = await pool.query(
@@ -163,16 +157,6 @@ const getFollowUpPipeline = async (req, res) => {
       customerParams
     );
 
-    let callbackFilter = '';
-    const callbackParams = [];
-    if (!isAdmin) {
-      callbackFilter = ' AND (w.assigned_telecaller_id = ? OR w.assigned_telecaller = ?)';
-      callbackParams.push(userId, userFullName);
-    } else if (userLocationId) {
-      callbackFilter = ' AND w.location_id = ?';
-      callbackParams.push(userLocationId);
-    }
-
     const [callbackRows] = await pool.query(
       `SELECT w.id, w.customer_code, w.customer_name, w.mobile_number, w.wedding_date,
         w.expected_shopping_date, w.preferred_shopping_category, w.estimated_family_size,
@@ -182,9 +166,9 @@ const getFollowUpPipeline = async (req, res) => {
         (SELECT COUNT(*) FROM wedding_call_logs cl WHERE cl.customer_id = w.id) AS total_calls_count
       FROM wedding_customers w
       LEFT JOIN locations l ON w.location_id = l.id
-      WHERE w.is_deleted = 0 AND w.call_status = 'Call Back Requested'${callbackFilter}
+      WHERE w.is_deleted = 0 AND w.call_status = 'Call Back Requested' ${customerFilter}
       ORDER BY w.updated_at DESC LIMIT 20`,
-      callbackParams
+      customerParams
     );
 
     return successRes(res, {
@@ -204,34 +188,36 @@ const getCallHistory = async (req, res) => {
     const userId = req.user?.id;
     const userRole = req.user?.role;
     const userFullName = req.user?.fullName;
-    const userLocationId = req.user?.locationId;
     const isAdmin = ['Super Admin', 'Admin'].includes(userRole);
 
     const limit = Math.min(parseInt(req.query.limit) || 50, 100);
     const offset = parseInt(req.query.offset) || 0;
     const { date } = req.query;
 
-    let callLogFilter = '';
-    const callLogParams = [];
+    const { clause: wLocClause, params: wLocParams } = await getLocationFilter(req, 'w');
+
+    let callerClause = '';
+    const callerParams = [];
     if (!isAdmin) {
-      callLogFilter = ' AND (c.telecaller_id = ? OR c.telecaller_name = ?)';
-      callLogParams.push(userId, userFullName);
-    } else if (userLocationId) {
-      callLogFilter = ' AND w.location_id = ?';
-      callLogParams.push(userLocationId);
+      callerClause = ' AND (c.telecaller_id = ? OR c.telecaller_name = ?)';
+      callerParams.push(userId, userFullName);
     }
 
     let dateFilter = '';
+    const dateParams = [];
     if (date) {
       dateFilter = ' AND c.call_date = ?';
-      callLogParams.push(date);
+      dateParams.push(date);
     }
+
+    const callLogFilter = `${wLocClause}${callerClause}${dateFilter}`;
+    const callLogParams = [...wLocParams, ...callerParams, ...dateParams];
 
     const [countRows] = await pool.query(
       `SELECT COUNT(*) AS total
        FROM wedding_call_logs c
        JOIN wedding_customers w ON c.customer_id = w.id
-       WHERE w.is_deleted = 0${callLogFilter}${dateFilter}`,
+       WHERE w.is_deleted = 0 ${callLogFilter}`,
       callLogParams
     );
     const total = countRows[0]?.total || 0;
@@ -245,7 +231,7 @@ const getCallHistory = async (req, res) => {
       FROM wedding_call_logs c
       JOIN wedding_customers w ON c.customer_id = w.id
       LEFT JOIN locations l ON w.location_id = l.id
-      WHERE w.is_deleted = 0${callLogFilter}${dateFilter}
+      WHERE w.is_deleted = 0 ${callLogFilter}
       ORDER BY c.call_date DESC, c.call_time DESC
       LIMIT ? OFFSET ?
     `;
@@ -270,13 +256,11 @@ const getPerformanceMetrics = async (req, res) => {
     const userId = req.user?.id;
     const userRole = req.user?.role;
     const userFullName = req.user?.fullName;
-    const userLocationId = req.user?.locationId;
     const isAdmin = ['Super Admin', 'Admin'].includes(userRole);
 
     const period = req.query.period || 'today';
 
     let periodCondition = '';
-    let periodDateValue;
     if (period === 'week') {
       periodCondition = ' AND c.call_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)';
     } else if (period === 'month') {
@@ -285,58 +269,58 @@ const getPerformanceMetrics = async (req, res) => {
       periodCondition = ' AND c.call_date = CURDATE()';
     }
 
-    let customerFilter = '';
-    const customerParams = [];
+    const { clause: locClause, params: locParams } = await getLocationFilter(req, '');
+    const { clause: wLocClause, params: wLocParams } = await getLocationFilter(req, 'w');
+
+    let callerClause = '';
+    const callerParams = [];
     if (!isAdmin) {
-      customerFilter = ' AND (assigned_telecaller_id = ? OR assigned_telecaller = ?)';
-      customerParams.push(userId, userFullName);
-    } else if (userLocationId) {
-      customerFilter = ' AND location_id = ?';
-      customerParams.push(userLocationId);
+      callerClause = ' AND (assigned_telecaller_id = ? OR assigned_telecaller = ?)';
+      callerParams.push(userId, userFullName);
     }
 
-    let callLogFilter = '';
-    const callLogParams = [];
+    const customerParams = [...locParams, ...callerParams];
+    const customerFilter = `${locClause}${callerClause}`;
+
+    let callLogFilter = `${wLocClause}`;
+    const callLogParams = [...wLocParams];
     if (!isAdmin) {
-      callLogFilter = ' AND (c.telecaller_id = ? OR c.telecaller_name = ?)';
+      callLogFilter += ' AND (c.telecaller_id = ? OR c.telecaller_name = ?)';
       callLogParams.push(userId, userFullName);
-    } else if (userLocationId) {
-      callLogFilter = ' AND w.location_id = ?';
-      callLogParams.push(userLocationId);
     }
 
     const [totalAssignedRows] = await pool.query(
-      `SELECT COUNT(*) AS total FROM wedding_customers WHERE is_deleted = 0 AND assigned_telecaller_id IS NOT NULL${customerFilter}`,
+      `SELECT COUNT(*) AS total FROM wedding_customers WHERE is_deleted = 0 AND assigned_telecaller_id IS NOT NULL ${customerFilter}`,
       customerParams
     );
     const totalAssigned = totalAssignedRows[0]?.total || 0;
 
     const [totalCallsRows] = await pool.query(
-      `SELECT COUNT(*) AS total FROM wedding_call_logs c JOIN wedding_customers w ON c.customer_id = w.id WHERE w.is_deleted = 0${callLogFilter}${periodCondition}`,
+      `SELECT COUNT(*) AS total FROM wedding_call_logs c JOIN wedding_customers w ON c.customer_id = w.id WHERE w.is_deleted = 0 ${callLogFilter}${periodCondition}`,
       [...callLogParams]
     );
     const totalCalls = totalCallsRows[0]?.total || 0;
 
     const [contactedRows] = await pool.query(
-      `SELECT COUNT(DISTINCT c.customer_id) AS total FROM wedding_call_logs c JOIN wedding_customers w ON c.customer_id = w.id WHERE w.is_deleted = 0 AND c.call_outcome != 'No Answer'${callLogFilter}${periodCondition}`,
+      `SELECT COUNT(DISTINCT c.customer_id) AS total FROM wedding_call_logs c JOIN wedding_customers w ON c.customer_id = w.id WHERE w.is_deleted = 0 AND c.call_outcome != 'No Answer' ${callLogFilter}${periodCondition}`,
       [...callLogParams]
     );
     const contactedCount = contactedRows[0]?.total || 0;
 
     const [connectedRows] = await pool.query(
-      `SELECT COUNT(*) AS total FROM wedding_call_logs c JOIN wedding_customers w ON c.customer_id = w.id WHERE w.is_deleted = 0 AND c.call_status = 'Connected'${callLogFilter}${periodCondition}`,
+      `SELECT COUNT(*) AS total FROM wedding_call_logs c JOIN wedding_customers w ON c.customer_id = w.id WHERE w.is_deleted = 0 AND c.call_status = 'Connected' ${callLogFilter}${periodCondition}`,
       [...callLogParams]
     );
     const connectedCount = connectedRows[0]?.total || 0;
 
     const [noAnswerRows] = await pool.query(
-      `SELECT COUNT(*) AS total FROM wedding_call_logs c JOIN wedding_customers w ON c.customer_id = w.id WHERE w.is_deleted = 0 AND c.call_outcome = 'No Answer'${callLogFilter}${periodCondition}`,
+      `SELECT COUNT(*) AS total FROM wedding_call_logs c JOIN wedding_customers w ON c.customer_id = w.id WHERE w.is_deleted = 0 AND c.call_outcome = 'No Answer' ${callLogFilter}${periodCondition}`,
       [...callLogParams]
     );
     const noAnswerCount = noAnswerRows[0]?.total || 0;
 
     const [convertedRows] = await pool.query(
-      `SELECT COUNT(*) AS total FROM wedding_customers WHERE is_deleted = 0 AND customer_status = 'Converted'${customerFilter}`,
+      `SELECT COUNT(*) AS total FROM wedding_customers WHERE is_deleted = 0 AND customer_status = 'Converted' ${customerFilter}`,
       customerParams
     );
     const convertedCount = convertedRows[0]?.total || 0;
@@ -352,7 +336,7 @@ const getPerformanceMetrics = async (req, res) => {
     }
 
     const [convertedThisPeriodRows] = await pool.query(
-      `SELECT COUNT(*) AS total FROM wedding_customers WHERE is_deleted = 0 AND customer_status = 'Converted'${customerFilter}${convertedPeriodFilter}`,
+      `SELECT COUNT(*) AS total FROM wedding_customers WHERE is_deleted = 0 AND customer_status = 'Converted' ${customerFilter}${convertedPeriodFilter}`,
       convertedPeriodParams
     );
     const convertedThisPeriod = convertedThisPeriodRows[0]?.total || 0;
@@ -388,7 +372,6 @@ const getCustomerDetail = async (req, res) => {
     const userId = req.user?.id;
     const userRole = req.user?.role;
     const userFullName = req.user?.fullName;
-    const userLocationId = req.user?.locationId;
     const isAdmin = ['Super Admin', 'Admin'].includes(userRole);
 
     const [customerRows] = await pool.query(
@@ -400,18 +383,27 @@ const getCustomerDetail = async (req, res) => {
     );
 
     if (customerRows.length === 0) {
-      return errorRes(res, 'Customer not found', 404);
+      return errorRes(res, 'Customer not found', [], 404);
     }
 
     const customer = customerRows[0];
 
+    // Verify location isolation for non-global admins
     if (!isAdmin) {
+      let allowed = req.user?.allowedLocations;
+      if (!Array.isArray(allowed) || allowed.length === 0) {
+        allowed = req.user?.locationId ? [req.user.locationId] : [];
+      }
+      if (allowed.length > 0 && !allowed.includes(customer.location_id)) {
+        return errorRes(res, 'Access denied: customer belongs to another location', [], 403);
+      }
+
       const matchesAssignedId = customer.assigned_telecaller_id === userId;
       const matchesAssignedName = customer.assigned_telecaller === userFullName;
-      const matchesLocation = userLocationId && customer.location_id === userLocationId;
+      const matchesLocation = req.user?.locationId && customer.location_id === req.user?.locationId;
 
       if (!matchesAssignedId && !matchesAssignedName && !matchesLocation) {
-        return errorRes(res, 'Access denied: customer not assigned to you', 403);
+        return errorRes(res, 'Access denied: customer not assigned to you', [], 403);
       }
     }
 
@@ -462,21 +454,21 @@ const getRecentCustomers = async (req, res) => {
     const userId = req.user?.id;
     const userRole = req.user?.role;
     const userFullName = req.user?.fullName;
-    const userLocationId = req.user?.locationId;
     const isAdmin = ['Super Admin', 'Admin'].includes(userRole);
 
     const limit = Math.min(parseInt(req.query.limit) || 10, 50);
 
-    let customerFilter = '';
-    const customerParams = [];
+    const { clause: wLocClause, params: wLocParams } = await getLocationFilter(req, 'w');
 
+    let callerClause = '';
+    const callerParams = [];
     if (!isAdmin) {
-      customerFilter = ' AND (w.assigned_telecaller_id = ? OR w.assigned_telecaller = ?)';
-      customerParams.push(userId, userFullName);
-    } else if (userLocationId) {
-      customerFilter = ' AND w.location_id = ?';
-      customerParams.push(userLocationId);
+      callerClause = ' AND (w.assigned_telecaller_id = ? OR w.assigned_telecaller = ?)';
+      callerParams.push(userId, userFullName);
     }
+
+    const customerFilter = `${wLocClause}${callerClause}`;
+    const customerParams = [...wLocParams, ...callerParams];
 
     const query = `
       SELECT w.id, w.customer_code, w.customer_name, w.mobile_number, w.email,
@@ -488,7 +480,7 @@ const getRecentCustomers = async (req, res) => {
         l.location_name, l.location_code
       FROM wedding_customers w
       LEFT JOIN locations l ON w.location_id = l.id
-      WHERE w.is_deleted = 0${customerFilter}
+      WHERE w.is_deleted = 0 ${customerFilter}
       ORDER BY w.updated_at DESC
       LIMIT ?
     `;

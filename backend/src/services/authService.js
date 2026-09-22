@@ -178,7 +178,8 @@ class AuthService {
     const locationId   = user.locationId   || null;
     const locationCode = user.locationCode || null;
     const locationName = user.locationName || null;
-    const isGlobalAdmin = locationId === null; // null location = Global Admin (all locations)
+    const isAdminRole = ['Admin', 'Super Admin', 'system administrator'].includes(user.role);
+    const isGlobalAdmin = isAdminRole && (locationId === null || locationId === undefined);
 
     if (isGlobalAdmin) {
       try {

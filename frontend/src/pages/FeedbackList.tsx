@@ -181,6 +181,78 @@ export default function FeedbackList() {
     <DashboardLayout title="Feedback Call Queue Desk" subtitle="Telecaller Resolution Workspace & Customer Issue Lifecycle Management">
       <div className="w-full max-w-[1680px] mx-auto min-w-0 overflow-x-clip flex flex-col gap-4 sm:gap-5">
 
+        {/* Top Search + Filter Toolbar — search + status + time in one row on desktop */}
+        <div className="card-glass p-3 sm:p-4">
+          <div className="flex flex-col lg:flex-row lg:items-center gap-2.5 lg:gap-3">
+            <div className="relative min-w-0 w-full lg:flex-1">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Search call queue by customer name, mobile, or notes..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="input-modern w-full pl-9 pr-3 h-9 text-xs font-semibold"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 lg:flex lg:items-center lg:shrink-0">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <Filter className="w-3.5 h-3.5 text-accent hidden sm:block shrink-0" />
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="select-modern text-xs font-bold h-9 w-full sm:w-auto min-w-0 sm:min-w-[168px]"
+                  aria-label="Call status filter"
+                >
+                  <option value="all">All Call Statuses</option>
+                  <option value="new">Pending / New</option>
+                  <option value="called">In Progress / Called</option>
+                  <option value="resolved">Resolved</option>
+                  <option value="escalated_manager">Escalated to Store Manager</option>
+                </select>
+              </div>
+
+              <div className="flex items-center gap-1.5 min-w-0">
+                <Calendar className="w-3.5 h-3.5 text-accent hidden sm:block shrink-0" />
+                <select
+                  value={datePreset}
+                  onChange={(e) => setDatePreset(e.target.value)}
+                  className="select-modern text-xs font-bold h-9 w-full sm:w-auto min-w-0 sm:min-w-[132px]"
+                  aria-label="Date range filter"
+                >
+                  <option value="all">All Time</option>
+                  <option value="today">Today</option>
+                  <option value="yesterday">Yesterday</option>
+                  <option value="week">This Week</option>
+                  <option value="month">This Month</option>
+                  <option value="last_month">Last Month</option>
+                  <option value="custom">Custom date</option>
+                </select>
+              </div>
+
+              {datePreset === 'custom' && (
+                <div className="flex items-center gap-1.5 animate-fade-in sm:col-span-2 lg:col-auto">
+                  <input
+                    type="date"
+                    value={startDateInput}
+                    onChange={(e) => setStartDateInput(e.target.value)}
+                    className="input-modern text-xs font-semibold h-9 min-w-0 flex-1 lg:flex-none"
+                    aria-label="Start date"
+                  />
+                  <span className="text-xs font-bold text-gray-500 shrink-0">to</span>
+                  <input
+                    type="date"
+                    value={endDateInput}
+                    onChange={(e) => setEndDateInput(e.target.value)}
+                    className="input-modern text-xs font-semibold h-9 min-w-0 flex-1 lg:flex-none"
+                    aria-label="End date"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
         {/* KPI Analytics Metric Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 auto-rows-fr">
           <div className="card-glass h-full p-4 sm:p-5 flex items-center justify-between gap-3 border-l-4 border-l-rose-500 min-w-0">
@@ -236,78 +308,6 @@ export default function FeedbackList() {
             </div>
             <div className="w-11 h-11 sm:w-12 sm:h-12 shrink-0 rounded-2xl bg-purple-100 text-purple-700 flex items-center justify-center font-black">
               <ShieldAlert className="w-6 h-6 text-purple-700" />
-            </div>
-          </div>
-        </div>
-
-        {/* Filter Toolbar — search left, status + date right (same height, no sparse gap) */}
-        <div className="card-glass p-3 sm:p-4">
-          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] gap-3 items-center">
-            <div className="relative min-w-0 w-full">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-              <input
-                type="text"
-                placeholder="Search customer / mobile / notes..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="input-modern w-full pl-9 pr-3 h-9 text-xs font-semibold"
-              />
-            </div>
-
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full min-w-0">
-              <div className="flex items-center gap-1.5 min-w-0 flex-1 sm:flex-none">
-                <Filter className="w-3.5 h-3.5 text-accent hidden sm:block shrink-0" />
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="select-modern text-xs font-bold h-9 w-full sm:w-auto min-w-0 sm:min-w-[168px] sm:flex-1"
-                  aria-label="Call status filter"
-                >
-                  <option value="all">All Call Statuses</option>
-                  <option value="new">Pending / New</option>
-                  <option value="called">In Progress / Called</option>
-                  <option value="resolved">Resolved</option>
-                  <option value="escalated_manager">Escalated to Store Manager</option>
-                </select>
-              </div>
-
-              <div className="flex items-center gap-1.5 min-w-0 flex-1 sm:flex-none">
-                <Calendar className="w-3.5 h-3.5 text-accent hidden sm:block shrink-0" />
-                <select
-                  value={datePreset}
-                  onChange={(e) => setDatePreset(e.target.value)}
-                  className="select-modern text-xs font-bold h-9 w-full sm:w-auto min-w-0 sm:min-w-[132px] sm:flex-1"
-                  aria-label="Date range filter"
-                >
-                  <option value="all">All Time</option>
-                  <option value="today">Today</option>
-                  <option value="yesterday">Yesterday</option>
-                  <option value="week">This Week</option>
-                  <option value="month">This Month</option>
-                  <option value="last_month">Last Month</option>
-                  <option value="custom">Custom date</option>
-                </select>
-              </div>
-
-              {datePreset === 'custom' && (
-                <div className="flex items-center gap-1.5 animate-fade-in w-full sm:w-auto">
-                  <input
-                    type="date"
-                    value={startDateInput}
-                    onChange={(e) => setStartDateInput(e.target.value)}
-                    className="input-modern text-xs font-semibold h-9 min-w-0 flex-1 sm:flex-none"
-                    aria-label="Start date"
-                  />
-                  <span className="text-xs font-bold text-gray-500 shrink-0">to</span>
-                  <input
-                    type="date"
-                    value={endDateInput}
-                    onChange={(e) => setEndDateInput(e.target.value)}
-                    className="input-modern text-xs font-semibold h-9 min-w-0 flex-1 sm:flex-none"
-                    aria-label="End date"
-                  />
-                </div>
-              )}
             </div>
           </div>
         </div>

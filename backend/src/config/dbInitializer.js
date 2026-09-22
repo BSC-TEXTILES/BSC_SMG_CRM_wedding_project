@@ -353,6 +353,32 @@ async function autoInitializeDatabase(pool) {
         \`done_at\` DATETIME NULL
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`,
 
+      `CREATE TABLE IF NOT EXISTS \`exit_records\` (
+        \`id\` INT AUTO_INCREMENT PRIMARY KEY,
+        \`record_id\` VARCHAR(50) NOT NULL UNIQUE,
+        \`emp_name\` VARCHAR(255) NOT NULL,
+        \`designation\` VARCHAR(150) NOT NULL,
+        \`lwd\` DATE NULL,
+        \`progress\` INT DEFAULT 0,
+        \`status\` VARCHAR(50) DEFAULT 'Pending',
+        \`location_id\` INT NOT NULL DEFAULT 2,
+        \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`,
+
+      `CREATE TABLE IF NOT EXISTS \`exit_items\` (
+        \`id\` INT AUTO_INCREMENT PRIMARY KEY,
+        \`exit_id\` INT NULL,
+        \`record_id\` VARCHAR(50) NOT NULL,
+        \`section\` VARCHAR(100) NOT NULL,
+        \`item_id\` VARCHAR(100) NOT NULL,
+        \`item\` VARCHAR(255) NOT NULL,
+        \`mandatory\` BOOLEAN DEFAULT FALSE,
+        \`status\` VARCHAR(50) DEFAULT 'Pending',
+        \`remarks\` TEXT NULL,
+        \`done_by\` VARCHAR(150) NULL,
+        \`done_at\` DATETIME NULL
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`,
+
       // User Management — granular per-user module-level permissions
       `CREATE TABLE IF NOT EXISTS \`user_permissions\` (
         \`id\` INT AUTO_INCREMENT PRIMARY KEY,

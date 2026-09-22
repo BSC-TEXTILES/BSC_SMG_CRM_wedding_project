@@ -121,6 +121,7 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
   const navItems = [
     // Enterprise (Admin landing module at top)
     { key: 'dashboard', href: '/dashboard', label: 'Dashboard', icon: BarChart3, section: 'Enterprise' },
+    { key: 'main_crm', href: '/main-crm', label: 'Main CRM Portal', icon: Sparkles, section: 'Enterprise' },
     { key: 'employees', href: '/employees', label: 'Employee & Store Directory', icon: UserCheck, section: 'Enterprise' },
     { key: 'user_management', href: '/user-management', label: 'User Management', icon: Shield, section: 'Enterprise' },
     { key: 'attendance', href: '/attendance', label: 'Attendance & Roster', icon: UserCheck, section: 'Enterprise' },
@@ -143,6 +144,7 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
     { key: 'candidates', href: '/candidates', label: 'Candidate CRM', icon: Users, section: 'Talent' },
     { key: 'offer', href: '/offer-process', label: 'Offer Desk', icon: FileText, section: 'Talent' },
     { key: 'openings', href: '/openings', label: 'Manpower Planning', icon: Briefcase, section: 'Talent' },
+    { key: 'doj_desk', href: '/doj-desk', label: 'DOJ Not Joined Desk', icon: UserCheck, section: 'Talent' },
     { key: 'dept_hiring', href: '/department-hiring', label: 'Department Hiring Status', icon: Briefcase, section: 'Talent' },
     { key: 'section_allocation', href: '/section-allocation', label: 'Section Allocation', icon: UserCheck, section: 'Talent' },
 
@@ -150,6 +152,7 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
     { key: 'daily_mcheck', href: '/daily-mcheck', label: 'MCheck Store Audit', icon: SquareCheck, section: 'Daily Operations' },
     { key: 'mcheck_reports', href: '/mcheck-reports', label: 'MCheck Reports', icon: BarChart3, section: 'Daily Operations' },
     { key: 'mcheck_history', href: '/mcheck-history', label: 'MCheck History', icon: ClipboardList, section: 'Daily Operations' },
+    { key: 'batch_plan', href: '/batch-plan', label: 'Batch Plan', icon: FileText, section: 'Daily Operations' },
 
     // Administration
     { key: 'broadcast', href: '/broadcast-center', label: 'Broadcast Center', icon: Megaphone, section: 'Administration' },

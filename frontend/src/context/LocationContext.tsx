@@ -32,7 +32,16 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [session, setSession] = useState<UserSession | null>(() => Auth.get());
   const [dbLocations, setDbLocations] = useState<LocationItem[]>(MASTER_LOCATIONS);
   const [currentLocation, setCurrentLocationState] = useState<string>(() => {
-    return localStorage.getItem('bsc_selected_location') || 'ALL';
+    const sess = Auth.get();
+    const isGlobal = !sess?.locationId || sess?.isGlobalAdmin || ['Admin', 'Super Admin'].includes(sess?.role || '');
+    const saved = localStorage.getItem('bsc_selected_location');
+    if (isGlobal) {
+      return saved || 'ALL';
+    }
+    if (sess?.locationId) {
+      return String(sess.locationId);
+    }
+    return saved || '1';
   });
 
   // Load locations dynamically from API
@@ -47,7 +56,13 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Synchronize with external changes (e.g. storage or custom event from page selectors)
   useEffect(() => {
     const handleAuthChange = () => {
-      setSession(Auth.get());
+      const updatedSess = Auth.get();
+      setSession(updatedSess);
+      const isGlobal = !updatedSess?.locationId || updatedSess?.isGlobalAdmin || ['Admin', 'Super Admin'].includes(updatedSess?.role || '');
+      if (!isGlobal && updatedSess?.locationId) {
+        setCurrentLocationState(String(updatedSess.locationId));
+        localStorage.setItem('bsc_selected_location', String(updatedSess.locationId));
+      }
     };
     const handleLocationEvent = (e: any) => {
       const newLoc = e?.detail?.locationId;
@@ -74,7 +89,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     const allowed = Array.isArray(session.allowedLocations) && session.allowedLocations.length > 0
       ? session.allowedLocations
-      : (session.locationId ? [session.locationId] : [2]);
+      : (session.locationId ? [session.locationId] : [1]);
 
     return activeMasterList.filter(loc => allowed.includes(loc.id));
   }, [session, isGlobalAdmin, activeMasterList]);
@@ -87,16 +102,21 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (isGlobalAdmin) return; // Can access any location
 
     const allowedIds = availableLocations.map(l => String(l.id));
-    if (currentLocation !== 'ALL' && !allowedIds.includes(currentLocation)) {
-      // Auto-revert to the user's primary or first allowed location
-      const fallback = allowedIds[0] || String(session.locationId || 2);
+    // For non-global admin, 'ALL' is NEVER allowed. Must match one of allowedIds
+    if (!allowedIds.includes(currentLocation)) {
+      const fallback = allowedIds[0] || (session.locationId ? String(session.locationId) : '1');
       setCurrentLocationState(fallback);
       localStorage.setItem('bsc_selected_location', fallback);
     }
   }, [session, isGlobalAdmin, availableLocations, currentLocation]);
 
   const setCurrentLocation = (locId: string) => {
-    const val = String(locId || 'ALL');
+    const val = String(locId || (isGlobalAdmin ? 'ALL' : (session?.locationId ? String(session.locationId) : '1')));
+    // Non-global admin cannot switch to 'ALL' or unauthorized location
+    if (!isGlobalAdmin) {
+      const allowedIds = availableLocations.map(l => String(l.id));
+      if (!allowedIds.includes(val)) return;
+    }
     setCurrentLocationState(val);
     localStorage.setItem('bsc_selected_location', val);
     // Dispatch custom event so listeners throughout the app can re-fetch data

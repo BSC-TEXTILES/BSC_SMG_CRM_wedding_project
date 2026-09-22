@@ -1,6 +1,7 @@
 const db = require('../config/db');
 const { successRes, errorRes } = require('../utils/response');
 const { logAction } = require('../utils/logger');
+const { getLocationFilter } = require('../middleware/auth');
 const userSyncService = require('../services/userSyncService');
 
 /**
@@ -36,6 +37,7 @@ const getOffers = async (req, res) => {
       `);
     } catch (e) {}
 
+    const { clause: locClause, params: locParams } = await getLocationFilter(req, 'so');
     const [rows] = await db.query(`
       SELECT 
         so.*,
@@ -48,8 +50,9 @@ const getOffers = async (req, res) => {
       FROM selection_offers so
       LEFT JOIN hr_evaluations he ON so.app_no = he.app_no
       LEFT JOIN candidates c ON so.app_no = c.app_no
+      WHERE 1=1 ${locClause}
       ORDER BY so.created_at DESC
-    `);
+    `, locParams);
 
     const fmt = (d) => (d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—');
     const iso = (d) => {
@@ -267,7 +270,7 @@ const createDirectOffer = async (req, res) => {
     // If offer already exists, update it instead of erroring
     const [existing] = await db.query(`SELECT id FROM selection_offers WHERE app_no = ?`, [appNo]);
 
-    const [candRows] = await db.query(`SELECT name, designation, department FROM candidates WHERE app_no = ?`, [appNo]);
+    const [candRows] = await db.query(`SELECT name, designation, department, location_id FROM candidates WHERE app_no = ?`, [appNo]);
     if (candRows.length === 0) return errorRes(res, 'Candidate not found', [], 404);
     const c = candRows[0];
 
@@ -283,8 +286,8 @@ const createDirectOffer = async (req, res) => {
     } else {
       // Insert new offer
       await db.query(
-        `INSERT INTO selection_offers (app_no, name, designation, department, notice_period, est_doj, status, created_at, updated_at, remarks) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [appNo, c.name, finalDesig, finalDept, null, doj, 'Shortlisted', now, now, remarks || null]
+        `INSERT INTO selection_offers (app_no, name, designation, department, notice_period, est_doj, status, created_at, updated_at, remarks, location_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [appNo, c.name, finalDesig, finalDept, null, doj, 'Shortlisted', now, now, remarks || null, c.location_id || 2]
       );
     }
 

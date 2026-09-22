@@ -1,6 +1,7 @@
 const db = require('../config/db');
 const bcrypt = require('bcryptjs');
-const { getLocationFilter, injectLocationId } = require('../middleware/auth');
+const { getLocationFilter, injectLocationId, getEffectiveLocationId } = require('../middleware/auth');
+const realtimeService = require('../services/realtimeService');
 const { getCache, setCache } = require('../config/redisClient');
 
 // Helper to generate UUIDs
@@ -210,6 +211,12 @@ exports.upsertFootfall = async (req, res) => {
     if (io) {
       io.emit('footfall:updated', { location_id: locationId, entryDate, slotHour, visitors: Number(visitors) || 0, remarks, submittedBy });
     }
+    realtimeService.emitEntityChange({
+      entity: 'FOOTFALL',
+      action: 'UPDATE',
+      locationId,
+      meta: { entryDate, slotHour, visitors: Number(visitors) || 0 }
+    });
 
     return res.json({ success: true, message: 'Footfall slot updated successfully' });
   } catch (err) {
@@ -677,6 +684,15 @@ exports.getFeedbackStats = async (req, res) => {
         if (lid === 2) byLocation.davanagere = { ...byLocation.davanagere, total: t, positive: p, negative: n, needsFollowUp: fu, avgRating: avg, scans: sc };
         if (lid === 3) byLocation.shivamogga = { ...byLocation.shivamogga, total: t, positive: p, negative: n, needsFollowUp: fu, avgRating: avg, scans: sc };
       });
+
+      // Strict location scoping for byLocation breakdown:
+      // Uses server-authoritative effectiveLocationId (never trusts spoofed params for restricted users)
+      const effectiveLocId = getEffectiveLocationId(req);
+      if (effectiveLocId) {
+        if (effectiveLocId === 1) byLocation = { belagavi: byLocation.belagavi };
+        else if (effectiveLocId === 2) byLocation = { davanagere: byLocation.davanagere };
+        else if (effectiveLocId === 3) byLocation = { shivamogga: byLocation.shivamogga };
+      }
     } catch (e) {
       console.warn('[getFeedbackStats Location Breakdown Warning]:', e.message);
     }
@@ -734,10 +750,11 @@ exports.getCallQueue = async (req, res) => {
 
     // Auto-sync missing CallQueue entries for negative feedbacks (from both QR and Staff sources)
     await db.query(`
-      INSERT INTO CallQueue (id, feedbackId, entryDate, customerName, mobile, status, notes)
+      INSERT INTO CallQueue (id, feedbackId, location_id, entryDate, customerName, mobile, status, notes)
       SELECT 
         CONCAT('cq_auto_', f.id) as id,
         f.id as feedbackId,
+        COALESCE(f.location_id, 2) as location_id,
         COALESCE(NULLIF(f.entryDate, ''), STR_TO_DATE(f.date, '%d/%m/%Y'), '${getISTDateString()}') as entryDate,
         COALESCE(NULLIF(f.customerName, ''), NULLIF(f.custName, ''), 'Valued Customer') as customerName,
         COALESCE(NULLIF(f.mobile, ''), NULLIF(f.custMobile, ''), '') as mobile,

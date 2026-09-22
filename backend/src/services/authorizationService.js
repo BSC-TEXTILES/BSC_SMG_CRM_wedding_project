@@ -315,8 +315,24 @@ function authorizeLocationAccess(paramName = 'locationId') {
       || req.query['locationId']
       || req.headers['x-location-id'];
 
-    if (rawVal === undefined || rawVal === null || rawVal === '' || rawVal === 'all') {
+    const isGlobal = !req.user?.locationId || req.user?.isGlobalAdmin || ['Admin', 'Super Admin'].includes(req.user?.role);
+
+    if (rawVal === undefined || rawVal === null || rawVal === '') {
       return next(); // No specific location specified — let the controller handle filtering
+    }
+
+    if (String(rawVal).trim().toLowerCase() === 'all') {
+      if (isGlobal) return next();
+      return res.status(403).json({
+        success: false,
+        error: {
+          code: 'LOCATION_ACCESS_DENIED',
+          message: 'Access denied: You are restricted to your assigned store location.',
+          details: { requestedLocation: rawVal }
+        },
+        message: 'Access denied: You are restricted to your assigned store location.',
+        errors: ['Single-location accounts cannot access All Locations data.']
+      });
     }
 
     // Public / unauthenticated requests (e.g., customer feedback submission) are not scoped to a logged-in user

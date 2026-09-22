@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const { getEffectiveLocationId, getLocationFilter } = require('../middleware/auth');
 let QRCode = null;
 try {
   QRCode = require('qrcode');
@@ -170,13 +171,11 @@ exports.getQrCodes = async (req, res) => {
     `;
     const params = [];
 
-    // Location filter for non-global admins
-    if (!isGlobalAdmin && userLocationId) {
+    // Strict location scoping: restricted users locked to their branch; Global Admin filters if selected
+    const effectiveLoc = getEffectiveLocationId(req);
+    if (effectiveLoc) {
       sql += ' AND fqc.locationId = ?';
-      params.push(userLocationId);
-    } else if (locationId) {
-      sql += ' AND fqc.locationId = ?';
-      params.push(locationId);
+      params.push(effectiveLoc);
     }
 
     if (floor && floor !== 'all') {
@@ -649,14 +648,11 @@ exports.getQrCodeStats = async (req, res) => {
     let locationFilter = '';
     const params = [];
 
-    // Location scoping: non-global admins locked to their location
-    if (!isGlobalAdmin && userLocationId) {
+    // Strict location scoping: restricted users locked to assigned branch; Admin filters if selected
+    const effectiveLoc = getEffectiveLocationId(req);
+    if (effectiveLoc) {
       locationFilter = ' AND fqc.locationId = ?';
-      params.push(userLocationId);
-    } else if (rawLoc && rawLoc !== 'ALL' && rawLoc !== 'all') {
-      const parsedLocId = parseInt(rawLoc, 10) || (rawLoc.toUpperCase() === 'BEL' ? 1 : rawLoc.toUpperCase() === 'SHI' ? 3 : 2);
-      locationFilter = ' AND fqc.locationId = ?';
-      params.push(parsedLocId);
+      params.push(effectiveLoc);
     }
 
     // Status filter
@@ -699,13 +695,9 @@ exports.getQrCodeStats = async (req, res) => {
     // Total Feedback directly from Feedback table
     let fbLocFilter = '';
     const fbParams = [];
-    if (!isGlobalAdmin && userLocationId) {
+    if (effectiveLoc) {
       fbLocFilter = ' AND f.location_id = ?';
-      fbParams.push(userLocationId);
-    } else if (rawLoc && rawLoc !== 'ALL' && rawLoc !== 'all') {
-      const parsedLocId = parseInt(rawLoc, 10) || (rawLoc.toUpperCase() === 'BEL' ? 1 : rawLoc.toUpperCase() === 'SHI' ? 3 : 2);
-      fbLocFilter = ' AND f.location_id = ?';
-      fbParams.push(parsedLocId);
+      fbParams.push(effectiveLoc);
     }
     const [feedbackRows] = await db.query(`SELECT COUNT(*) as total FROM Feedback f WHERE 1=1 ${fbLocFilter}`, fbParams);
 
@@ -1201,17 +1193,11 @@ exports.getLocationQrCodes = async (req, res) => {
     const isGlobalAdmin = checkIsGlobalAdmin(session);
     const userLocationId = session?.locationId;
 
-    // Requested location from query param or header
-    const reqLoc = req.query?.locationId || req.query?.locationCode || req.headers?.['x-location-id'];
+    // Authoritative location scoping using getEffectiveLocationId
+    const effectiveLoc = getEffectiveLocationId(req);
     let targetLocations = STANDARD_LOCATIONS;
-
-    if (reqLoc && reqLoc !== 'ALL' && reqLoc !== 'all') {
-      const parsedId = parseInt(reqLoc, 10);
-      const upperCode = String(reqLoc).trim().toUpperCase();
-      const filtered = STANDARD_LOCATIONS.filter(loc => loc.id === parsedId || loc.locationCode === upperCode);
-      if (filtered.length > 0) targetLocations = filtered;
-    } else if (!isGlobalAdmin && userLocationId) {
-      targetLocations = STANDARD_LOCATIONS.filter(loc => loc.id === userLocationId);
+    if (effectiveLoc) {
+      targetLocations = STANDARD_LOCATIONS.filter(loc => loc.id === effectiveLoc);
     }
 
     const baseUrl = process.env.FRONTEND_URL || 'https://bsctextiles.in';
@@ -1461,12 +1447,11 @@ exports.exportQrCodes = async (req, res) => {
     `;
     const params = [];
 
-    if (!isGlobalAdmin && userLocationId) {
+    // Strict location scoping for export
+    const effectiveLoc = getEffectiveLocationId(req);
+    if (effectiveLoc) {
       sql += ' AND fqc.locationId = ?';
-      params.push(userLocationId);
-    } else if (locationId) {
-      sql += ' AND fqc.locationId = ?';
-      params.push(locationId);
+      params.push(effectiveLoc);
     }
 
     if (status) {

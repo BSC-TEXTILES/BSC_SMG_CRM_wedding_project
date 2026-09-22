@@ -144,6 +144,12 @@ export default function EmployeesPage() {
     const sess = Auth.get();
     setSession(sess);
     loadEmployees();
+
+    const handleLocChange = () => {
+      loadEmployees();
+    };
+    window.addEventListener('bsc_location_changed', handleLocChange);
+    return () => window.removeEventListener('bsc_location_changed', handleLocChange);
   }, [navigate, loadEmployees]);
 
   // Unique lists for filtering

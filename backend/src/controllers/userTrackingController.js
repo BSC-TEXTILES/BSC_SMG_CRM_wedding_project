@@ -6,6 +6,7 @@
 const pool = require('../config/db');
 const auditService = require('../services/auditService');
 const { successRes, errorRes } = require('../utils/response');
+const { getLocationFilter, getEffectiveLocationId } = require('../middleware/auth');
 
 // Track user login
 async function trackLogin(req, res) {
@@ -148,6 +149,7 @@ async function trackActivity(req, res) {
 // Get active users
 async function getActiveUsers(req, res) {
   try {
+    const { clause: locClause, params: locParams } = await getLocationFilter(req, 'user_sessions');
     const [rows] = await pool.query(
       `SELECT 
         user_id as id,
@@ -159,8 +161,9 @@ async function getActiveUsers(req, res) {
         user_agent,
         session_id
        FROM user_sessions 
-       WHERE is_active = TRUE
-       ORDER BY login_time DESC`
+       WHERE is_active = TRUE ${locClause}
+       ORDER BY login_time DESC`,
+      locParams
     );
     
     return successRes(res, { activeUsers: rows }, 'Active users retrieved');
@@ -173,11 +176,14 @@ async function getActiveUsers(req, res) {
 async function getUserTrackingStats(req, res) {
   try {
     const results = {};
+    const { clause: locClause, params: locParams } = await getLocationFilter(req, 'audit_logs');
+    const { clause: usLocClause, params: usLocParams } = await getLocationFilter(req, 'us');
 
     // Total logins today
     try {
       const [[{ count }]] = await pool.query(
-        "SELECT COUNT(*) as count FROM audit_logs WHERE action = 'USER_LOGIN' AND DATE(created_at) = CURDATE()"
+        `SELECT COUNT(*) as count FROM audit_logs WHERE action = 'USER_LOGIN' AND DATE(created_at) = CURDATE() ${locClause}`,
+        locParams
       );
       results.totalLoginsToday = count || 0;
     } catch { results.totalLoginsToday = 0; }
@@ -185,7 +191,8 @@ async function getUserTrackingStats(req, res) {
     // Total logouts today
     try {
       const [[{ count }]] = await pool.query(
-        "SELECT COUNT(*) as count FROM audit_logs WHERE action = 'USER_LOGOUT' AND DATE(created_at) = CURDATE()"
+        `SELECT COUNT(*) as count FROM audit_logs WHERE action = 'USER_LOGOUT' AND DATE(created_at) = CURDATE() ${locClause}`,
+        locParams
       );
       results.totalLogoutsToday = count || 0;
     } catch { results.totalLogoutsToday = 0; }
@@ -196,9 +203,10 @@ async function getUserTrackingStats(req, res) {
         `SELECT username, user_id, MAX(created_at) as last_activity
          FROM audit_logs 
          WHERE action IN ('USER_LOGIN', 'USER_ACTIVITY: Page Navigation')
-         AND DATE(created_at) = CURDATE()
+         AND DATE(created_at) = CURDATE() ${locClause}
          GROUP BY username, user_id
-         ORDER BY last_activity DESC`
+         ORDER BY last_activity DESC`,
+        locParams
       );
       results.activeUsersToday = rows.length;
       results.recentActiveUsers = rows.slice(0, 10);
@@ -212,8 +220,9 @@ async function getUserTrackingStats(req, res) {
       const [rows] = await pool.query(
         `SELECT id, username, user_id, action, module, details, created_at, ip_address
          FROM audit_logs 
-         WHERE action IN ('USER_LOGIN', 'USER_LOGOUT', 'USER_ACTIVITY: Page Navigation')
-         ORDER BY created_at DESC LIMIT 20`
+         WHERE action IN ('USER_LOGIN', 'USER_LOGOUT', 'USER_ACTIVITY: Page Navigation') ${locClause}
+         ORDER BY created_at DESC LIMIT 20`,
+        locParams
       );
       results.recentActivity = rows;
     } catch { results.recentActivity = []; }
@@ -226,8 +235,9 @@ async function getUserTrackingStats(req, res) {
           COUNT(DISTINCT us.username) as user_count
          FROM user_sessions us
          JOIN users u ON u.username = us.username
-         WHERE us.is_active = TRUE
-         GROUP BY u.role`
+         WHERE us.is_active = TRUE ${usLocClause}
+         GROUP BY u.role`,
+        usLocParams
       );
       results.usersByRole = rows;
     } catch { results.usersByRole = []; }
@@ -242,6 +252,7 @@ async function getUserTrackingStats(req, res) {
 async function getUserActivity(req, res) {
   try {
     const { userId, username, action, fromDate, toDate, limit, offset } = req.query;
+    const { clause: locClause, params: locParams } = await getLocationFilter(req, 'audit_logs');
     
     const conditions = [];
     const params = [];
@@ -270,13 +281,16 @@ async function getUserActivity(req, res) {
     // Only show user tracking related actions
     conditions.push("action LIKE 'USER_%' OR action LIKE '%USER_ACTIVITY%'");
 
-    const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+    let where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : 'WHERE 1=1';
+    where += ` ${locClause}`;
+    const allParams = [...params, ...locParams];
+
     const safeLimit = Math.min(Math.max(parseInt(limit, 10) || 50, 1), 500);
     const safeOffset = Math.max(parseInt(offset, 10) || 0, 0);
 
     // Get total count
     const [[{ total }]] = await pool.query(
-      `SELECT COUNT(*) as total FROM audit_logs ${where}`, params
+      `SELECT COUNT(*) as total FROM audit_logs ${where}`, allParams
     );
 
     // Get paginated results
@@ -284,7 +298,7 @@ async function getUserActivity(req, res) {
       `SELECT id, username, user_id, action, module, details, ip_address, created_at
        FROM audit_logs ${where}
        ORDER BY created_at DESC LIMIT ? OFFSET ?`,
-      [...params, safeLimit, safeOffset]
+      [...allParams, safeLimit, safeOffset]
     );
 
     return successRes(res, { 

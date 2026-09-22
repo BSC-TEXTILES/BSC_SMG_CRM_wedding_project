@@ -1,6 +1,7 @@
 const db = require('../config/db');
 const { successRes, errorRes } = require('../utils/response');
 const { logAction } = require('../utils/logger');
+const { getLocationFilter, getEffectiveLocationId } = require('../middleware/auth');
 
 const DEFAULT_EXIT_ITEMS = [
   { section: '1. Resignation & Notice Period', item: 'Resignation Letter / Email received & accepted', mandatory: true },
@@ -15,7 +16,8 @@ const DEFAULT_EXIT_ITEMS = [
 
 const getExitList = async (req, res) => {
   try {
-    const [rows] = await db.query(`SELECT * FROM exit_records ORDER BY created_at DESC`);
+    const { clause: locClause, params: locParams } = await getLocationFilter(req, 'exit_records');
+    const [rows] = await db.query(`SELECT * FROM exit_records WHERE 1=1 ${locClause} ORDER BY created_at DESC`, locParams);
 
     const records = rows.map((r) => {
       const lwdDate = new Date(r.lwd);
@@ -46,11 +48,12 @@ const createExit = async (req, res) => {
 
     const recordId = 'EX-' + Date.now().toString().slice(-6);
     const lwdDate = new Date(lwd);
+    const locId = getEffectiveLocationId(req) || (req.user && req.user.locationId) || 2;
 
     const [resArr] = await db.query(
-      `INSERT INTO exit_records (record_id, emp_name, designation, lwd, progress, status)
-       VALUES (?, ?, ?, ?, 0, 'Pending')`,
-      [recordId, empName, desig || 'Staff', lwdDate]
+      `INSERT INTO exit_records (record_id, emp_name, designation, lwd, progress, status, location_id)
+       VALUES (?, ?, ?, ?, 0, 'Pending', ?)`,
+      [recordId, empName, desig || 'Staff', lwdDate, locId]
     );
 
     const exitId = resArr.insertId;

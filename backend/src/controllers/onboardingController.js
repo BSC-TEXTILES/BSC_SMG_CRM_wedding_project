@@ -1,6 +1,7 @@
 const db = require('../config/db');
 const { successRes, errorRes } = require('../utils/response');
 const { logAction } = require('../utils/logger');
+const { getLocationFilter, getEffectiveLocationId } = require('../middleware/auth');
 
 const DEFAULT_ONBOARDING_ITEMS = [
   { section: '1. Documentation & Verification', item: 'Aadhar Card & ID Proof collected', mandatory: true },
@@ -15,7 +16,8 @@ const DEFAULT_ONBOARDING_ITEMS = [
 
 const getOnboardingList = async (req, res) => {
   try {
-    const [rows] = await db.query(`SELECT * FROM onboarding_records ORDER BY created_at DESC`);
+    const { clause: locClause, params: locParams } = await getLocationFilter(req, 'onboarding_records');
+    const [rows] = await db.query(`SELECT * FROM onboarding_records WHERE 1=1 ${locClause} ORDER BY created_at DESC`, locParams);
 
     const records = rows.map((r) => {
       const joiningDate = new Date(r.joining_date);
@@ -49,11 +51,12 @@ const createOnboarding = async (req, res) => {
 
     const recordId = 'OB-' + Date.now().toString().slice(-6);
     const jDate = new Date(joiningDate);
+    const locId = getEffectiveLocationId(req) || (req.user && req.user.locationId) || 2;
 
     const [resArr] = await db.query(
-      `INSERT INTO onboarding_records (record_id, emp_name, designation, joining_date, progress, status)
-       VALUES (?, ?, ?, ?, 0, 'On Track')`,
-      [recordId, empName, desig, jDate]
+      `INSERT INTO onboarding_records (record_id, emp_name, designation, joining_date, progress, status, location_id)
+       VALUES (?, ?, ?, ?, 0, 'On Track', ?)`,
+      [recordId, empName, desig, jDate, locId]
     );
 
     const onboardingId = resArr.insertId;

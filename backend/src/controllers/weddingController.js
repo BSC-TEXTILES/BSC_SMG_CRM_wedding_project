@@ -58,7 +58,8 @@ function resolveLocFilter(req, tableAlias = 'w') {
     || req.body?.location_id;
   const requestedLocationId = parseTargetLocation(rawParam);
 
-  const isGlobal = !req.user.locationId || req.user.isGlobalAdmin || ['Admin', 'Super Admin'].includes(req.user.role);
+  const isAdminRole = ['Admin', 'Super Admin', 'system administrator'].includes(req.user.role);
+  const isGlobal = isAdminRole && (!req.user.locationId || req.user.isGlobalAdmin);
 
   if (isGlobal) {
     if (requestedLocationId) {
@@ -78,27 +79,34 @@ function resolveLocFilter(req, tableAlias = 'w') {
     allowed = [req.user.locationId];
   }
 
-  if (requestedLocationId) {
-    if (allowed.includes(requestedLocationId)) {
+  // If single-location user, STRICTLY clamp to that location
+  // Ignore any tampering attempts in URL parameters or body
+  if (allowed.length === 1) {
+    return {
+      clause: `AND ${col} = ?`,
+      params: [allowed[0]]
+    };
+  }
+
+  // If multi-location user:
+  if (allowed.length > 1) {
+    if (requestedLocationId && allowed.includes(requestedLocationId)) {
       return {
         clause: `AND ${col} = ?`,
         params: [requestedLocationId]
       };
     }
-    // Unauthorized location requested by branch user
-    return { clause: `AND 1 = 0`, params: [] };
-  }
-
-  if (allowed.length > 1) {
+    // Unauthorized location requested by branch user -> clamp to primary
+    if (requestedLocationId && !allowed.includes(requestedLocationId)) {
+      return {
+        clause: `AND ${col} = ?`,
+        params: [allowed[0]]
+      };
+    }
     const placeholders = allowed.map(() => '?').join(', ');
     return {
       clause: `AND ${col} IN (${placeholders})`,
       params: allowed
-    };
-  } else if (allowed.length === 1) {
-    return {
-      clause: `AND ${col} = ?`,
-      params: [allowed[0]]
     };
   }
 
@@ -485,12 +493,7 @@ class WeddingController {
       `, params);
 
       // Appointments counts
-      let apptParams = [];
-      let apptWhere = '';
-      if (req.user && req.user.locationId) {
-        apptWhere += ' AND a.location_id = ?';
-        apptParams.push(req.user.locationId);
-      }
+      const { clause: apptLocClause, params: apptLocParams } = resolveLocFilter(req, 'a');
       const [apptRows] = await pool.query(`
         SELECT
           SUM(CASE WHEN a.appointment_date = CURDATE() THEN 1 ELSE 0 END) AS todayAppointments,
@@ -498,19 +501,16 @@ class WeddingController {
           SUM(CASE WHEN a.appointment_status = 'Completed' THEN 1 ELSE 0 END) AS completedAppointments,
           SUM(CASE WHEN a.appointment_status = 'Cancelled' THEN 1 ELSE 0 END) AS cancelledAppointments
         FROM wedding_appointments a
-        WHERE 1=1 ${apptWhere}
-      `, apptParams);
+        WHERE 1=1 ${apptLocClause}
+      `, apptLocParams);
 
       const rawAppts = apptRows[0] || {};
       const raw = rows[0] || {};
 
       // Calls logged today count
-      let callLogWhere = 'WHERE cl.call_date = CURDATE()';
-      let callLogParams = [];
-      if (req.user && req.user.locationId) {
-        callLogWhere += ' AND cl.location_id = ?';
-        callLogParams.push(req.user.locationId);
-      }
+      const { clause: clLocClause, params: clLocParams } = resolveLocFilter(req, 'cl');
+      let callLogWhere = `WHERE cl.call_date = CURDATE() ${clLocClause}`;
+      let callLogParams = [...clLocParams];
       if (req.user && req.user.role === 'Telecaller') {
         callLogWhere += ' AND (cl.telecaller_id = ? OR cl.telecaller_name = ?)';
         callLogParams.push(req.user.id, req.user.fullName || req.user.username || '');
@@ -544,37 +544,50 @@ class WeddingController {
         cancelledAppointments: Number(rawAppts.cancelledAppointments) || 0,
         // Compatibility Aliases
         total_customers: Number(raw.totalCustomers) || 0,
+        followUpsDueToday: Number(raw.todayFollowUps) || 0,
         due_today: Number(raw.todayFollowUps) || 0,
         overdue: Number(raw.overdueFollowUps) || 0,
         calls_pending: Number(raw.callsPending) || 0,
         calls_completed: Number(raw.callsCompleted) || 0,
         shopping_confirmed: Number(raw.shoppingConfirmed) || 0,
         visited_converted: Number(raw.visitedConverted) || 0,
-        not_interested: Number(raw.notInterested) || 0
+        not_interested: Number(raw.notInterested) || 0,
+        unassignedLeads: Number(raw.callsPending) || 0,
+        convertedThisMonth: Number(raw.convertedCustomers) || 0
       };
 
-      // Location breakdown if Global Admin
-      let locationStats = [];
-      if (!req.user || !req.user.locationId) {
-        const [locRows] = await pool.query(`
-          SELECT 
-            l.id AS location_id,
-            l.location_code,
-            l.location_name,
-            COUNT(w.id) AS total_customers,
-            SUM(CASE WHEN w.follow_up_date = CURDATE() THEN 1 ELSE 0 END) AS today_follow_ups,
-            SUM(CASE WHEN w.follow_up_date < CURDATE() AND w.customer_status NOT IN ('Converted', 'Visited Store', 'Not Interested', 'Cancelled', 'Closed') THEN 1 ELSE 0 END) AS overdue_follow_ups
-          FROM locations l
-          LEFT JOIN wedding_customers w ON w.location_id = l.id AND w.is_deleted = 0
-          GROUP BY l.id, l.location_code, l.location_name
-          ORDER BY l.sort_order ASC
-        `);
-        locationStats = locRows || [];
+      // Location breakdown (scoped if specific location selected/assigned)
+      const rawParam = req.query?.locationId || req.query?.location_id || req.headers?.['x-location-id'] || req.body?.locationId || req.body?.location_id;
+      const requestedLoc = parseTargetLocation(rawParam);
+      const activeLocId = requestedLoc || req.user?.locationId;
+
+      let locQueryWhere = '';
+      let locQueryParams = [];
+      if (activeLocId) {
+        locQueryWhere = 'WHERE l.id = ?';
+        locQueryParams.push(activeLocId);
       }
+
+      const [locRows] = await pool.query(`
+        SELECT 
+          l.id AS location_id,
+          l.location_code,
+          l.location_name,
+          COUNT(w.id) AS total_customers,
+          SUM(CASE WHEN w.follow_up_date = CURDATE() THEN 1 ELSE 0 END) AS today_follow_ups,
+          SUM(CASE WHEN w.follow_up_date < CURDATE() AND w.customer_status NOT IN ('Converted', 'Visited Store', 'Not Interested', 'Cancelled', 'Closed') THEN 1 ELSE 0 END) AS overdue_follow_ups
+        FROM locations l
+        LEFT JOIN wedding_customers w ON w.location_id = l.id AND w.is_deleted = 0
+        ${locQueryWhere}
+        GROUP BY l.id, l.location_code, l.location_name
+        ORDER BY l.sort_order ASC
+      `, locQueryParams);
+      const locationStats = locRows || [];
 
       return successRes(res, {
         stats,
-        locationStats
+        locationStats,
+        ...stats
       }, 'Dashboard stats fetched successfully');
     } catch (err) {
       console.error('[WeddingController.getDashboardStats Error]', err);
@@ -1465,84 +1478,7 @@ class WeddingController {
     }
   }
 
-  // ── Dashboard Stats ────────────────────────────────────────────────
-  async getDashboardStats(req, res) {
-    try {
-      const { clause: locClause, params } = resolveLocFilter(req, 'w');
-      // Create a scope-aware cache key based on the location and user role context
-      const cacheKey = `app:prod:wedding:dashboard:${req.user?.locationId || 'global'}:${req.user?.role || 'anon'}`;
-      
-      const cached = await getCache(cacheKey);
-      if (cached) {
-        return successRes(res, cached, 'Dashboard stats retrieved from cache');
-      }
 
-      // Ensure we don't stampede the database if cache expires and 50 users hit the dashboard at once
-      let lockAcquired = false;
-      const lockKey = `${cacheKey}:lock`;
-      if (isReady()) {
-        lockAcquired = await acquireLock(lockKey, 10);
-        if (!lockAcquired) {
-          // If we couldn't get the lock, wait briefly and try cache again
-          await new Promise(r => setTimeout(r, 200));
-          const retryCache = await getCache(cacheKey);
-          if (retryCache) return successRes(res, retryCache, 'Dashboard stats retrieved from cache');
-          // If still no cache, proceed to DB (maybe lock holder died)
-        }
-      }
-
-      const today = new Date().toISOString().split('T')[0];
-
-      // Total Active Customers
-      const [[{ totalCustomers }]] = await pool.query(`
-        SELECT COUNT(*) as totalCustomers FROM wedding_customers w WHERE w.is_deleted = 0 ${locClause}
-      `, params);
-
-      // Follow-ups due today
-      const [[{ dueToday }]] = await pool.query(`
-        SELECT COUNT(*) as dueToday FROM wedding_customers w 
-        WHERE w.is_deleted = 0 AND w.follow_up_date = ? ${locClause}
-      `, [today, ...params]);
-
-      // Overdue Follow-ups
-      const [[{ overdue }]] = await pool.query(`
-        SELECT COUNT(*) as overdue FROM wedding_customers w 
-        WHERE w.is_deleted = 0 
-          AND w.follow_up_date < ? 
-          AND w.customer_status NOT IN ('Converted', 'Visited Store', 'Not Interested', 'Cancelled', 'Closed')
-          ${locClause}
-      `, [today, ...params]);
-
-      // Unassigned Customers (Hot Leads)
-      const [[{ unassigned }]] = await pool.query(`
-        SELECT COUNT(*) as unassigned FROM wedding_customers w 
-        WHERE w.is_deleted = 0 AND (w.assigned_telecaller_id IS NULL OR w.assigned_telecaller = '') ${locClause}
-      `, params);
-
-      // Converted this month
-      const [[{ convertedThisMonth }]] = await pool.query(`
-        SELECT COUNT(*) as convertedThisMonth FROM wedding_customers w 
-        WHERE w.is_deleted = 0 AND w.customer_status = 'Converted' 
-          AND MONTH(w.updated_at) = MONTH(CURDATE()) AND YEAR(w.updated_at) = YEAR(CURDATE()) ${locClause}
-      `, params);
-
-      const data = {
-        totalCustomers,
-        followUpsDueToday: dueToday,
-        overdueFollowUps: overdue,
-        unassignedLeads: unassigned,
-        convertedThisMonth
-      };
-
-      await setCache(cacheKey, data, 60); // Cache for 60 seconds (TTL)
-      if (lockAcquired) await releaseLock(lockKey);
-
-      return successRes(res, data, 'Dashboard stats retrieved');
-    } catch (err) {
-      console.error('[WeddingController.getDashboardStats Error]', err);
-      return errorRes(res, 'Failed to retrieve dashboard statistics', [err.message], 500);
-    }
-  }
 
   // ── 9. Telecaller Calling Desk Queue ─────────────────────────────────
   async getCallingDesk(req, res) {
@@ -2745,24 +2681,33 @@ class WeddingController {
         cancelledClosed: Number(raw.cancelledClosed) || 0
       };
 
-      let locationCards = [];
-      if (!req.user || !req.user.locationId) {
-        const [locRows] = await pool.query(`
-          SELECT
-            l.id AS location_id, l.location_code, l.location_name,
-            COUNT(w.id) AS total_customers,
-            SUM(CASE WHEN DATE(w.created_at) = CURDATE() THEN 1 ELSE 0 END) AS new_customers,
-            SUM(CASE WHEN w.follow_up_date < CURDATE() AND w.customer_status NOT IN ('Converted','Visited Store','Not Interested','Cancelled','Closed') THEN 1 ELSE 0 END) AS pending_followups,
-            SUM(CASE WHEN w.wedding_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY) THEN 1 ELSE 0 END) AS upcoming_weddings,
-            SUM(CASE WHEN w.customer_status IN ('Visited Store','Converted') THEN 1 ELSE 0 END) AS visits,
-            SUM(CASE WHEN w.customer_status = 'Converted' THEN 1 ELSE 0 END) AS purchases
-          FROM locations l
-          LEFT JOIN wedding_customers w ON w.location_id = l.id AND w.is_deleted = 0
-          GROUP BY l.id, l.location_code, l.location_name
-          ORDER BY l.sort_order ASC
-        `);
-        locationCards = locRows || [];
+      const rawParam = req.query?.locationId || req.query?.location_id || req.headers?.['x-location-id'] || req.body?.locationId || req.body?.location_id;
+      const requestedLoc = parseTargetLocation(rawParam);
+      const activeLocId = requestedLoc || req.user?.locationId;
+
+      let locCardsWhere = '';
+      let locCardsParams = [];
+      if (activeLocId) {
+        locCardsWhere = 'WHERE l.id = ?';
+        locCardsParams.push(activeLocId);
       }
+
+      const [locRows] = await pool.query(`
+        SELECT
+          l.id AS location_id, l.location_code, l.location_name,
+          COUNT(w.id) AS total_customers,
+          SUM(CASE WHEN DATE(w.created_at) = CURDATE() THEN 1 ELSE 0 END) AS new_customers,
+          SUM(CASE WHEN w.follow_up_date < CURDATE() AND w.customer_status NOT IN ('Converted','Visited Store','Not Interested','Cancelled','Closed') THEN 1 ELSE 0 END) AS pending_followups,
+          SUM(CASE WHEN w.wedding_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY) THEN 1 ELSE 0 END) AS upcoming_weddings,
+          SUM(CASE WHEN w.customer_status IN ('Visited Store','Converted') THEN 1 ELSE 0 END) AS visits,
+          SUM(CASE WHEN w.customer_status = 'Converted' THEN 1 ELSE 0 END) AS purchases
+        FROM locations l
+        LEFT JOIN wedding_customers w ON w.location_id = l.id AND w.is_deleted = 0
+        ${locCardsWhere}
+        GROUP BY l.id, l.location_code, l.location_name
+        ORDER BY l.sort_order ASC
+      `, locCardsParams);
+      const locationCards = locRows || [];
 
       return successRes(res, { stats, locationCards }, 'Enhanced dashboard stats fetched');
     } catch (err) {

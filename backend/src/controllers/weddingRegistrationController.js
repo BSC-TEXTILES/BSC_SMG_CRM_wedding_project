@@ -255,11 +255,6 @@ class WeddingRegistrationController {
         queryParams.push(status);
       }
 
-      if (locationId && locationId !== 'all') {
-        whereClauses.push(`wr.location_id = ?`);
-        queryParams.push(parseInt(locationId, 10));
-      }
-
       if (search && search.trim()) {
         const q = `%${search.trim().toLowerCase()}%`;
         whereClauses.push(`(
@@ -1005,10 +1000,6 @@ class WeddingRegistrationController {
       if (status && status !== 'all') {
         whereClauses.push(`wr.status = ?`);
         queryParams.push(status);
-      }
-      if (locationId && locationId !== 'all') {
-        whereClauses.push(`wr.location_id = ?`);
-        queryParams.push(parseInt(locationId, 10));
       }
       if (fromDate && toDate) {
         whereClauses.push(`DATE(wr.created_at) BETWEEN ? AND ?`);

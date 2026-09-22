@@ -1,6 +1,7 @@
 const db = require('../config/db');
 const { successRes, errorRes } = require('../utils/response');
 const { logAction } = require('../utils/logger');
+const { getLocationFilter } = require('../middleware/auth');
 const crypto = require('crypto');
 
 const generateToken = () => {
@@ -107,8 +108,10 @@ const getCallStatus = async (req, res) => {
 
 const getInterviews = async (req, res) => {
   try {
+    const { clause: locClause, params: locParams } = await getLocationFilter(req, 'candidates');
     const [candRows] = await db.query(
-      `SELECT app_no, name as candidate_name, designation, status, created_at FROM candidates WHERE status IN ('Interview Scheduled', 'Interviewed') ORDER BY updated_at DESC`
+      `SELECT app_no, name as candidate_name, designation, status, created_at FROM candidates WHERE status IN ('Interview Scheduled', 'Interviewed') ${locClause} ORDER BY updated_at DESC`,
+      locParams
     );
 
     const [evalRows] = await db.query(`SELECT * FROM hr_evaluations`);
@@ -432,16 +435,16 @@ const approveSelection = async (req, res) => {
 
     await db.query(`DELETE FROM selected_candidates WHERE app_no = ?`, [appNo]);
     await db.query(
-      `INSERT INTO selected_candidates (candidate_id, app_no, name, phone, designation, source, hr_score, assigned_score, total_score, decision_date, decision_by, is_probation, remarks)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [cand.id, appNo, candidate || cand.name, cand.phone, useDesig, cand.source, hrScore, assignedScore, hrScore + assignedScore, now, user, probation ? 1 : 0, remarks]
+      `INSERT INTO selected_candidates (candidate_id, app_no, name, phone, designation, source, hr_score, assigned_score, total_score, decision_date, decision_by, is_probation, remarks, location_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [cand.id, appNo, candidate || cand.name, cand.phone, useDesig, cand.source, hrScore, assignedScore, hrScore + assignedScore, now, user, probation ? 1 : 0, remarks, cand.location_id || 2]
     );
 
     const [offRows] = await db.query(`SELECT id FROM selection_offers WHERE app_no = ?`, [appNo]);
     if (offRows.length === 0) {
       await db.query(
-        `INSERT INTO selection_offers (candidate_id, app_no, name, designation, department, notice_period, est_doj, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [cand.id, appNo, candidate || cand.name, useDesig, department || null, noticePd || null, estDoj ? new Date(estDoj) : null, 'Pending Accept']
+        `INSERT INTO selection_offers (candidate_id, app_no, name, designation, department, notice_period, est_doj, status, location_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [cand.id, appNo, candidate || cand.name, useDesig, department || null, noticePd || null, estDoj ? new Date(estDoj) : null, 'Pending Accept', cand.location_id || 2]
       );
     } else {
       const offUpd = [];
@@ -450,6 +453,7 @@ const approveSelection = async (req, res) => {
       if (department) { offUpd.push('department = ?'); offParams.push(department); }
       if (noticePd) { offUpd.push('notice_period = ?'); offParams.push(noticePd); }
       if (estDoj) { offUpd.push('est_doj = ?'); offParams.push(new Date(estDoj)); }
+      if (cand.location_id) { offUpd.push('location_id = ?'); offParams.push(cand.location_id); }
       if (offUpd.length > 0) {
         offParams.push(appNo);
         await db.query(`UPDATE selection_offers SET ${offUpd.join(', ')} WHERE app_no = ?`, offParams);
@@ -458,16 +462,16 @@ const approveSelection = async (req, res) => {
 
     // Activity log
     await db.query(
-      `INSERT INTO candidate_activities (candidate_id, app_no, action_type, icon, label, by_user, remarks, color)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [cand.id, appNo, 'selected', '✅', probation ? 'Selected (Probation)' : 'Selected by Manager', user, remarks, 'green']
+      `INSERT INTO candidate_activities (candidate_id, app_no, action_type, icon, label, by_user, remarks, color, location_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [cand.id, appNo, 'selected', '✅', probation ? 'Selected (Probation)' : 'Selected by Manager', user, remarks, 'green', cand.location_id || 2]
     );
 
     await logAction(user, 'APPROVE_SELECTION', 'INTERVIEW', { appNo, probation });
 
     return res.json({ success: true });
   } catch (err) {
-    return errorRes(res, 'Failed to approve selection', [err.message], 500);
+    return errorRes(res, 'Failed to approve candidate selection', [err.message], 500);
   }
 };
 
@@ -488,9 +492,9 @@ const rejectCandidate = async (req, res) => {
 
     await db.query(`DELETE FROM rejected_candidates WHERE app_no = ?`, [appNo]);
     await db.query(
-      `INSERT INTO rejected_candidates (candidate_id, app_no, name, phone, designation, source, stage, rejection_date, rejected_by, remarks)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [cand.id, appNo, cand.name, cand.phone, cand.designation, cand.source, stage, now, user, remarks]
+      `INSERT INTO rejected_candidates (candidate_id, app_no, name, phone, designation, source, stage, rejection_date, rejected_by, remarks, location_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [cand.id, appNo, cand.name, cand.phone, cand.designation, cand.source, stage, now, user, remarks, cand.location_id || 2]
     );
 
     await logAction(user, 'REJECT_CANDIDATE', 'INTERVIEW', { appNo, stage, remarks });
@@ -503,7 +507,8 @@ const rejectCandidate = async (req, res) => {
 
 const getSelectedCandidates = async (req, res) => {
   try {
-    const [rows] = await db.query(`SELECT * FROM selected_candidates ORDER BY decision_date DESC`);
+    const { clause: locClause, params: locParams } = await getLocationFilter(req, 'selected_candidates');
+    const [rows] = await db.query(`SELECT * FROM selected_candidates WHERE 1=1 ${locClause} ORDER BY decision_date DESC`, locParams);
     const candidates = rows.map((r) => ({
       appNo: r.app_no,
       name: r.name,
@@ -524,7 +529,8 @@ const getSelectedCandidates = async (req, res) => {
 
 const getRejectedCandidates = async (req, res) => {
   try {
-    const [rows] = await db.query(`SELECT * FROM rejected_candidates ORDER BY rejection_date DESC`);
+    const { clause: locClause, params: locParams } = await getLocationFilter(req, 'rejected_candidates');
+    const [rows] = await db.query(`SELECT * FROM rejected_candidates WHERE 1=1 ${locClause} ORDER BY rejection_date DESC`, locParams);
     const candidates = rows.map((r) => ({
       appNo: r.app_no,
       name: r.name,

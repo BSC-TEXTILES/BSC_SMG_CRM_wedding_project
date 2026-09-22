@@ -632,7 +632,7 @@ const LocationQrPlaceholder = ({ locationCode, locationName, storeName }: { loca
 };
 
 export default function FeedbackQRManagement() {
-  const { currentLocation, isGlobalAdmin, allLocations } = useLocationContext();
+  const { currentLocation, isGlobalAdmin, canSwitch, availableLocations, allLocations } = useLocationContext();
   const [session, setSession] = useState<any>(null);
   const [qrCodes, setQrCodes] = useState<QRCode[]>([]);
   const [stats, setStats] = useState<QRCodeStats | null>(null);
@@ -671,48 +671,60 @@ export default function FeedbackQRManagement() {
     sectionName: '',
     floor: '',
     feedbackFormId: '',
-    status: 'active' as 'active' | 'inactive' | 'archived'
+    status: 'active' as 'active' | 'inactive' | 'archived',
   });
   const [isCustomFloor, setIsCustomFloor] = useState(false);
-  const [locations, setLocations] = useState<Location[]>([]);
-  const [sections, setSections] = useState<Section[]>([]);
-  const [feedbackForms, setFeedbackForms] = useState<FeedbackForm[]>([]);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-  const [locationsLoading, setLocationsLoading] = useState(false);
 
   // View mode
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
 
-  // Location QR Codes (3 cards - one per location)
+  // Dropdown data
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [sections, setSections] = useState<Section[]>([]);
+  const [feedbackForms, setFeedbackForms] = useState<FeedbackForm[]>([]);
+  const [locationsLoading, setLocationsLoading] = useState(false);
+
+  // Location QR codes
   const [locationQrCodes, setLocationQrCodes] = useState<any[]>([]);
   const [locationQrLoading, setLocationQrLoading] = useState(false);
   const [generatingQr, setGeneratingQr] = useState(false);
+
+  // Active view tab
+  const [activeTab, setActiveTab] = useState<'all' | 'locations' | 'analytics'>('all');
 
   // Filter location QR codes based on global location selector
   const displayLocationQrCodes = useMemo(() => {
     if (isGlobalAdmin && currentLocation !== 'ALL') {
       return locationQrCodes.filter(loc => String(loc.locationId) === currentLocation);
     }
+    if (!isGlobalAdmin) {
+      const targetLoc = currentLocation && currentLocation !== 'ALL'
+        ? currentLocation
+        : (availableLocations[0] ? String(availableLocations[0].id) : '1');
+      return locationQrCodes.filter(loc => String(loc.locationId) === targetLoc);
+    }
     return locationQrCodes;
-  }, [locationQrCodes, currentLocation, isGlobalAdmin]);
+  }, [locationQrCodes, currentLocation, isGlobalAdmin, availableLocations]);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     setLocationsLoading(true);
     setLocationQrLoading(true);
     try {
+      const effectiveLocId = (currentLocation && currentLocation !== 'ALL') ? currentLocation : (locationFilter || undefined);
       const params = {
         page: currentPage,
         limit: pageSize,
         search: search || undefined,
         status: statusFilter !== 'all' ? statusFilter : undefined,
-        locationId: locationFilter || undefined,
+        locationId: effectiveLocId,
         floor: floorFilter !== 'all' ? floorFilter : undefined,
         sortBy,
         sortOrder
       };
       // For stats, also consider global location selector for global admins
-      const statsLocationId = (isGlobalAdmin && currentLocation !== 'ALL') ? currentLocation : (locationFilter || undefined);
+      const statsLocationId = effectiveLocId;
       const [qrRes, statsRes, locRes, masterLocRes, secRes, formRes, locQrRes] = await Promise.allSettled([
         API.getQrCodes(params),
         API.getQrCodeStats({ 
@@ -722,9 +734,9 @@ export default function FeedbackQRManagement() {
         }),
         API.getLocationsForQr(),
         API.getLocations(),
-        API.getSectionsForQr(locationFilter || undefined),
+        API.getSectionsForQr(effectiveLocId),
         API.getFeedbackForms(),
-        API.getLocationQrCodes(statsLocationId || undefined)
+        API.getLocationQrCodes(statsLocationId)
       ]);
 
       if (qrRes.status === 'fulfilled' && qrRes.value?.success) {

@@ -31,9 +31,9 @@ function _parseLocationPairs(pairs, row = {}) {
   return [];
 }
 
-// ── Module Registry — matches sidebar navItems ────────────────────
 const MODULE_REGISTRY = [
   { key: 'dashboard', label: 'Dashboard', section: 'Enterprise' },
+  { key: 'main_crm', label: 'Main CRM Portal', section: 'Enterprise' },
   { key: 'wedding_crm', label: 'Wedding CRM', section: 'Store Operations' },
   { key: 'wedding_registration', label: 'Wedding Customer Registration', section: 'Store Operations' },
   { key: 'telecaller_desk', label: 'Telecaller Calling Desk', section: 'Store Operations' },
@@ -53,11 +53,17 @@ const MODULE_REGISTRY = [
   { key: 'employees', label: 'Employee Directory', section: 'Enterprise' },
   { key: 'dept_hiring', label: 'Department Hiring Status', section: 'Talent' },
   { key: 'section_allocation', label: 'Section Allocation', section: 'Talent' },
+  { key: 'batch_plan', label: 'Batch Plan', section: 'Daily Operations' },
+  { key: 'doj_desk', label: 'DOJ Not Joined Desk', section: 'Talent' },
+  { key: 'joining_desk', label: 'Store Joining Desk', section: 'Talent' },
+  { key: 'regional_analytics', label: 'Regional Analytics', section: 'Enterprise' },
   { key: 'broadcast', label: 'Broadcast Center', section: 'Administration' },
   { key: 'settings', label: 'System Settings', section: 'Administration' },
   { key: 'daily_mcheck', label: 'Daily MCheck', section: 'Daily Operations' },
   { key: 'mcheck_reports', label: 'MCheck Reports', section: 'Daily Operations' },
   { key: 'mcheck_history', label: 'MCheck History', section: 'Daily Operations' },
+  { key: 'mcheck_audit', label: 'MCheck Store Audit', section: 'Daily Operations' },
+  { key: 'greyhr', label: 'GreyHR Sync', section: 'Enterprise' },
   { key: 'user_management', label: 'User Management', section: 'Administration' },
   { key: 'system_admin', label: 'System Administrator', section: 'Administration' },
   { key: 'candidate_apply', label: 'Job Applicant Registration', section: 'Public Portals' },
@@ -476,8 +482,18 @@ const updateUser = async (req, res) => {
       } catch (e) {
         console.warn('[UserMgmt] user_locations sync warning:', e.message);
       }
+    } else if (locationId !== undefined && locationId) {
+      // Single locationId updated — strictly synchronize user_locations
+      try {
+        await db.query(`DELETE FROM user_locations WHERE user_id = ?`, [id]);
+        await db.query(
+          `INSERT INTO user_locations (user_id, location_id) VALUES (?, ?)`,
+          [id, locationId]
+        );
+      } catch (e) {
+        console.warn('[UserMgmt] user_locations sync warning:', e.message);
+      }
     }
-    // If neither allLocations nor locationIds provided, leave user_locations untouched
 
     // ── Propagate the change to every dashboard that reads this person ──
     await userSyncService.ensureEmployeeId(id);
@@ -703,6 +719,9 @@ const getMyPermissions = async (req, res) => {
     }
 
     const viewableModules = rows.filter(r => r.can_view).map(r => r.module);
+    if (!viewableModules.includes('dashboard')) {
+      viewableModules.unshift('dashboard');
+    }
 
     return successRes(res, {
       isAdmin: false,

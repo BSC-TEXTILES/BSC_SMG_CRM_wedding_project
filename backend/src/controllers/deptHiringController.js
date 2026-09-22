@@ -1,4 +1,5 @@
 const pool = require('../config/db');
+const { getLocationFilter, getEffectiveLocationId } = require('../middleware/auth');
 
 class DeptHiringController {
   // GET /api/dept-hiring/targets
@@ -6,7 +7,8 @@ class DeptHiringController {
     try {
       let targets = [];
       try {
-        const [rows] = await pool.query('SELECT * FROM department_hiring_targets ORDER BY department, section');
+        const { clause: locClause, params: locParams } = await getLocationFilter(req, 'department_hiring_targets');
+        const [rows] = await pool.query(`SELECT * FROM department_hiring_targets WHERE 1=1 ${locClause} ORDER BY department, section`, locParams);
         targets = rows || [];
       } catch (e) {
         targets = [];
@@ -15,12 +17,13 @@ class DeptHiringController {
       // Also calculate actual joined counts per dept, section, designation from candidates/employees
       let joinedCounts = {};
       try {
+        const { clause: cLocClause, params: cLocParams } = await getLocationFilter(req, 'candidates');
         const [candRows] = await pool.query(`
           SELECT designation, COUNT(*) as cnt 
           FROM candidates 
-          WHERE status = 'Joined' 
+          WHERE status = 'Joined' ${cLocClause}
           GROUP BY designation
-        `);
+        `, cLocParams);
         (candRows || []).forEach(r => {
           if (r.designation) {
             joinedCounts[r.designation.toLowerCase()] = r.cnt;
@@ -49,16 +52,17 @@ class DeptHiringController {
 
       const reqCount = parseInt(requiredOpenings, 10) || 0;
       const targetCount = parseInt(hiringTarget, 10) || reqCount;
+      const locId = getEffectiveLocationId(req) || (req.user && req.user.locationId) || 2;
 
       await pool.query(`
-        INSERT INTO department_hiring_targets (department, section, designation, required_openings, hiring_target, remarks)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO department_hiring_targets (department, section, designation, required_openings, hiring_target, remarks, location_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
         ON DUPLICATE KEY UPDATE 
           required_openings = VALUES(required_openings),
           hiring_target = VALUES(hiring_target),
           remarks = VALUES(remarks),
           updated_at = CURRENT_TIMESTAMP
-      `, [department, section, designation, reqCount, targetCount, remarks || '']);
+      `, [department, section, designation, reqCount, targetCount, remarks || '', locId]);
 
       return res.json({ success: true, message: 'Hiring target updated successfully' });
     } catch (err) {
@@ -72,7 +76,8 @@ class DeptHiringController {
     try {
       let allocations = [];
       try {
-        const [rows] = await pool.query('SELECT * FROM section_allocations');
+        const { clause: locClause, params: locParams } = await getLocationFilter(req, 'section_allocations');
+        const [rows] = await pool.query(`SELECT * FROM section_allocations WHERE 1=1 ${locClause}`, locParams);
         allocations = rows || [];
       } catch (e) {
         allocations = [];
@@ -92,16 +97,18 @@ class DeptHiringController {
         return res.status(400).json({ success: false, error: 'Employee ID is required' });
       }
 
+      const locId = getEffectiveLocationId(req) || (req.user && req.user.locationId) || 2;
+
       await pool.query(`
-        INSERT INTO section_allocations (employee_id, app_no, employee_name, department, section, assigned_by, notes)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO section_allocations (employee_id, app_no, employee_name, department, section, assigned_by, notes, location_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ON DUPLICATE KEY UPDATE
           department = VALUES(department),
           section = VALUES(section),
           assigned_by = VALUES(assigned_by),
           notes = VALUES(notes),
           updated_at = CURRENT_TIMESTAMP
-      `, [employeeId, appNo || '', employeeName || '', department || '', section || '', assignedBy || 'HR', notes || '']);
+      `, [employeeId, appNo || '', employeeName || '', department || '', section || '', assignedBy || 'HR', notes || '', locId]);
 
       return res.json({ success: true, message: 'Section allocation saved successfully' });
     } catch (err) {
@@ -119,14 +126,15 @@ class DeptHiringController {
       }
 
       const targetSection = action === 'remove' ? '' : (section || '');
+      const locId = getEffectiveLocationId(req) || (req.user && req.user.locationId) || 2;
 
       for (const emp of employees) {
         const empId = emp.employeeId || emp.id || emp.appNo;
         if (!empId) continue;
 
         await pool.query(`
-          INSERT INTO section_allocations (employee_id, app_no, employee_name, department, section, assigned_by)
-          VALUES (?, ?, ?, ?, ?, ?)
+          INSERT INTO section_allocations (employee_id, app_no, employee_name, department, section, assigned_by, location_id)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
           ON DUPLICATE KEY UPDATE
             section = VALUES(section),
             assigned_by = VALUES(assigned_by),
@@ -137,7 +145,8 @@ class DeptHiringController {
           emp.employeeName || emp.name || '', 
           emp.department || '', 
           targetSection, 
-          assignedBy || 'HR'
+          assignedBy || 'HR',
+          locId
         ]);
       }
 

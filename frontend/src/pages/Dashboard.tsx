@@ -38,20 +38,27 @@ import {
   FileText,
   SquareCheck,
   Heart,
-  Settings
+  Settings,
+  MapPin,
+  Lock,
+  Megaphone,
+  Briefcase
 } from 'lucide-react';
 import EmployeeProfileModal from '../components/ui/EmployeeProfileModal';
 import { permissionsCache } from '../context/PermissionsCache';
 import { resolveAllowedPages, getRoleNavMap } from '../utils/rbac';
 import { useRealtimeSection } from '../hooks/useRealtimeSection';
+import { useLocationContext } from '../context/LocationContext';
 
 
 export default function DashboardPage() {
   const navigate = useNavigate();
+  const { currentLocation, currentLocationLabel, isGlobalAdmin, canSwitch, availableLocations } = useLocationContext();
   const [session, setSession] = useState<UserSession | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [collapsed, setCollapsed] = useState<boolean>(getSidebarCollapsed());
   const [selectedEmployee, setSelectedEmployee] = useState<any | null>(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     return subscribeSidebarCollapsed(setCollapsed);
@@ -84,11 +91,15 @@ export default function DashboardPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 6;
 
-  const loadData = useCallback(async (customAllowed?: string[]) => {
+  const loadData = useCallback(async (customAllowed?: string[], targetLoc?: string) => {
     const list = customAllowed || allowed;
     const sess = Auth.get();
     const roleNorm = (sess?.role || '').toLowerCase().replace(/[_\s-]+/g, ' ');
     const isAdmin = ['admin', 'super admin', 'system administrator'].includes(roleNorm);
+
+    // Resolve active location scope
+    const activeLoc = targetLoc !== undefined ? targetLoc : currentLocation;
+    const locParam = activeLoc && activeLoc !== 'ALL' ? activeLoc : undefined;
 
     const canEmp = isAdmin || list.includes('employees');
     const canCand = isAdmin || list.includes('candidates');
@@ -97,13 +108,15 @@ export default function DashboardPage() {
     const canFB = isAdmin || list.includes('feedback_collection') || list.includes('feedback_list');
     const canWed = isAdmin || list.includes('wedding_crm') || list.includes('wedding_registration');
 
+    setLoading(true);
+
     try {
       const [empData, candData, ffData, divData, fbData, wedData] = await Promise.all([
-        canEmp ? API.getEmployees().catch(() => ({ employees: [] })) : Promise.resolve({ employees: [] }),
-        canCand ? API.getCandidates({ limit: 500 }).catch(() => ({ candidates: [] })) : Promise.resolve({ candidates: [] }),
-        canFF ? API.getFootfall().catch(() => ({ entries: [] })) : Promise.resolve({ entries: [] }),
-        canDiv ? API.getDiverts().catch(() => ({ diverts: [] })) : Promise.resolve({ diverts: [] }),
-        canFB ? API.getFeedbackStats().catch(() => ({
+        canEmp ? API.getEmployees(locParam ? { locationId: locParam } : undefined).catch(() => ({ employees: [] })) : Promise.resolve({ employees: [] }),
+        canCand ? API.getCandidates({ limit: 500, ...(locParam ? { locationId: locParam } : {}) }).catch(() => ({ candidates: [] })) : Promise.resolve({ candidates: [] }),
+        canFF ? API.getFootfall(undefined, locParam).catch(() => ({ entries: [] })) : Promise.resolve({ entries: [] }),
+        canDiv ? API.getDiverts(locParam ? { locationId: locParam } : undefined).catch(() => ({ diverts: [] })) : Promise.resolve({ diverts: [] }),
+        canFB ? API.getFeedbackStats(locParam ? { location_id: locParam } : undefined).catch(() => ({
           totalFeedback: 0,
           positiveFeedback: 0,
           negativeFeedback: 0,
@@ -111,22 +124,36 @@ export default function DashboardPage() {
           pendingCallQueue: 0,
           totalCallQueue: 0
         })) : Promise.resolve(null),
-        canWed ? API.getWeddingStats().catch(() => null) : Promise.resolve(null)
+        canWed ? API.getWeddingStats(locParam).catch(() => null) : Promise.resolve(null)
       ]);
 
       if (empData && empData.employees) setEmployees(empData.employees);
+      else setEmployees([]);
+
       if (candData && candData.candidates) setCandidates(candData.candidates);
-      if (wedData && (wedData.stats || wedData.data)) setWeddingStats(wedData.stats || wedData.data);
+      else setCandidates([]);
+
+      if (wedData && (wedData.stats || wedData.data || wedData.totalCustomers !== undefined)) {
+        setWeddingStats(wedData.stats || wedData.data || wedData);
+      } else {
+        setWeddingStats(null);
+      }
 
       if (ffData && ffData.entries) {
         const tot = ffData.entries.reduce((sum: number, e: any) => sum + (Number(e.visitors !== undefined ? e.visitors : e.visitorsCount || e.visitors_count) || 0), 0);
         setFootfallToday(tot);
+      } else {
+        setFootfallToday(0);
       }
+
       if (divData && divData.diverts) {
         const openDivs = divData.diverts.filter((d: any) => d.status === 'Open' || d.status === 'In Progress').length;
         setOpenDivertsCount(openDivs);
+      } else {
+        setOpenDivertsCount(0);
       }
-      if (fbData && fbData.success) {
+
+      if (fbData && (fbData.success || fbData.totalFeedback !== undefined)) {
         setFeedbackStats({
           totalFeedback: fbData.totalFeedback || 0,
           positiveFeedback: fbData.positiveFeedback || 0,
@@ -135,11 +162,15 @@ export default function DashboardPage() {
           pendingCallQueue: fbData.pendingCallQueue || 0,
           totalCallQueue: fbData.totalCallQueue || 0
         });
+      } else {
+        setFeedbackStats({ totalFeedback: 0, positiveFeedback: 0, negativeFeedback: 0, npsScore: 100, pendingCallQueue: 0, totalCallQueue: 0 });
       }
     } catch (err: any) {
       console.warn('Dashboard data load warning:', err.message);
+    } finally {
+      setLoading(false);
     }
-  }, [allowed]);
+  }, [allowed, currentLocation]);
 
   useEffect(() => {
     if (!Auth.check()) {
@@ -162,6 +193,16 @@ export default function DashboardPage() {
       loadData(getRoleNavMap(sess?.role));
     });
   }, [loadData, navigate]);
+
+  // Synchronize dashboard immediately when branch location is switched anywhere in the app
+  useEffect(() => {
+    const handleLocChange = (e: any) => {
+      const newLoc = e?.detail?.locationId;
+      loadData(undefined, String(newLoc || 'ALL'));
+    };
+    window.addEventListener('bsc_location_changed', handleLocChange);
+    return () => window.removeEventListener('bsc_location_changed', handleLocChange);
+  }, [loadData]);
 
   // Real-time Section Updates: silently refresh dashboard data without reloading page
   useRealtimeSection(
@@ -253,18 +294,28 @@ export default function DashboardPage() {
   const canAccessEmployees = isAdminUser || allowed.includes('employees');
 
   const ALL_MODULE_CARDS = useMemo(() => [
-    { key: 'wedding_crm', label: 'Wedding Follow-up CRM', path: '/wedding', icon: Heart, desc: 'Track wedding customer visits, budgets & conversion pipelines', tag: 'Wedding' },
+    { key: 'main_crm', label: 'Main CRM Portal', path: '/main-crm', icon: Sparkles, desc: 'Central customer relationship management and pipeline', tag: 'Enterprise' },
+    { key: 'wedding_crm', label: 'Wedding Follow-up CRM', path: '/wedding-crm/dashboard', icon: Heart, desc: 'Track wedding customer visits, budgets & conversion pipelines', tag: 'Wedding' },
     { key: 'wedding_registration', label: 'Wedding Customer Registration', path: '/wedding/customer-registration', icon: UserPlus, desc: 'Register newly visiting wedding parties and customer details', tag: 'Wedding' },
-    { key: 'telecaller_desk', label: 'Telecaller Calling Desk', path: '/telecaller', icon: PhoneCall, desc: 'Daily calling desk for wedding lead inquiries & follow-ups', tag: 'Telecaller' },
+    { key: 'telecaller_desk', label: 'Telecaller Calling Desk', path: '/telecaller/desk', icon: PhoneCall, desc: 'Daily calling desk for wedding lead inquiries & follow-ups', tag: 'Telecaller' },
     { key: 'telecaller_dashboard', label: 'Telecaller Dashboard', path: '/telecaller-dashboard', icon: BarChart3, desc: 'Analytics and calling KPIs for telecaller operations', tag: 'Telecaller' },
+    { key: 'wedding_operations', label: 'Wedding Operations Desk', path: '/wedding-operations', icon: FileText, desc: 'Operational workflows and active wedding party scheduling', tag: 'Wedding' },
     { key: 'feedback_collection', label: 'Customer Feedback Collection', path: '/feedback-collection', icon: MessageSquare, desc: 'View customer experience reviews, CSAT & sentiment', tag: 'Feedback' },
     { key: 'feedback_list', label: 'Feedback Call Queue', path: '/feedback-list', icon: PhoneCall, desc: 'Follow-up call queue for customer feedback resolution', tag: 'Feedback' },
-    { key: 'feedback_qr', label: 'Customer Feedback QR Portal', path: '/feedback-qr', icon: QrCode, desc: 'Display QR code for on-floor tablet survey collection', tag: 'Feedback' },
+    { key: 'feedback_qr', label: 'Customer Feedback QR Portal', path: '/feedback-qr-management', icon: QrCode, desc: 'Display QR code for on-floor tablet survey collection', tag: 'Feedback' },
     { key: 'footfall', label: 'Hourly Footfall Register', path: '/footfall', icon: Footprints, desc: 'Log and monitor store visitor footfall by the hour', tag: 'Operations' },
     { key: 'divert', label: 'Sourcing Diverts', path: '/divert', icon: Target, desc: 'Raise merchandise requests for unsupplied items', tag: 'Operations' },
+    { key: 'attendance', label: 'Attendance & Roster', path: '/attendance', icon: UserCheck, desc: 'Staff attendance tracking and duty rosters', tag: 'Operations' },
+    { key: 'daily_mcheck', label: 'Daily MCheck Store Audit', path: '/daily-mcheck', icon: SquareCheck, desc: 'Daily store operations and compliance checklists', tag: 'Operations' },
+    { key: 'mcheck_reports', label: 'MCheck Reports', path: '/mcheck-reports', icon: BarChart3, desc: 'Compliance audit trends, ratings & store metrics', tag: 'Operations' },
+    { key: 'batch_plan', label: 'Batch Plan', path: '/batch-plan', icon: FileText, desc: 'Store operational batch schedule & resource planning', tag: 'Operations' },
     { key: 'vm_checklist', label: 'VM Checklist Audit', path: '/vm-checklist', icon: FileCheck, desc: 'Visual merchandising daily checklist audit', tag: 'Operations' },
     { key: 'employees', label: 'Employee Register', path: '/employees', icon: Users, desc: 'Store staff directory, designations & attendance profiles', tag: 'Staff' },
     { key: 'candidates', label: 'Candidate CRM', path: '/candidates', icon: UserPlus, desc: 'Hiring pipeline, interview stages & candidate evaluations', tag: 'HR' },
+    { key: 'doj_desk', label: 'DOJ Not Joined Desk', path: '/doj-desk', icon: UserCheck, desc: 'Track candidate dates of joining and post-offer dropouts', tag: 'HR' },
+    { key: 'dept_hiring', label: 'Department Hiring Status', path: '/department-hiring', icon: Briefcase, desc: 'Department-level vacancy status and requisition pipelines', tag: 'HR' },
+    { key: 'section_allocation', label: 'Section Allocation', path: '/section-allocation', icon: UserCheck, desc: 'Store floor section allocation for sales staff', tag: 'HR' },
+    { key: 'broadcast', label: 'Broadcast Center', path: '/broadcast-center', icon: Megaphone, desc: 'Store-wide notifications and urgent announcements', tag: 'Admin' },
     { key: 'user_management', label: 'Access Control Matrix', path: '/user-management', icon: ShieldCheck, desc: 'Manage system users, roles, and granular permissions', tag: 'Admin' },
     { key: 'settings', label: 'System Settings', path: '/settings', icon: Settings, desc: 'Platform configuration, store location details & preferences', tag: 'Admin' },
   ], []);
@@ -336,6 +387,19 @@ export default function DashboardPage() {
                   : 'Daily MCheck audits, hourly footfall registers, feedback call queues & merchandise diverts.'
                 }
               </p>
+
+              {/* Location Scope Indicator */}
+              <div className="flex flex-wrap items-center gap-2 mt-2.5">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white border border-accent-soft shadow-2xs text-xs font-black text-primary">
+                  <MapPin className="w-3.5 h-3.5 text-accent flex-shrink-0" />
+                  <span>
+                    {isGlobalAdmin
+                      ? (currentLocation === 'ALL' ? 'Location: All Locations (Global Scope)' : `Location: ${currentLocationLabel}`)
+                      : `Assigned Location: ${currentLocationLabel}`}
+                  </span>
+                  {!isGlobalAdmin && <Lock className="w-3 h-3 text-accent flex-shrink-0 ml-0.5" />}
+                </div>
+              </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
@@ -846,7 +910,9 @@ export default function DashboardPage() {
                       ) : (
                         <tr>
                           <td colSpan={7} className="py-12 text-center text-gray-500 font-semibold">
-                            No employees found matching your query.
+                            {searchQuery.trim()
+                              ? `No employees found matching "${searchQuery}".`
+                              : `No active staff registered for ${currentLocationLabel}.`}
                           </td>
                         </tr>
                       )}

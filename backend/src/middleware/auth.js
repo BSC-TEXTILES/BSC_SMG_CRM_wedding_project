@@ -155,6 +155,8 @@ const authenticate = async (req, res, next) => {
       token = req.headers['x-auth-token'];
     } else if (req.cookies && req.cookies.token) {
       token = req.cookies.token;
+    } else if (req.query && req.query.token) {
+      token = req.query.token;
     }
 
     if (!token) {
@@ -260,6 +262,47 @@ const authenticate = async (req, res, next) => {
   }
 };
 
+const MODULE_TO_ROUTE_PATTERNS = {
+  dashboard: ['/dashboard', '/stats', '/kpis', '/summary'],
+  wedding_crm: ['/wedding', '/wedding-crm', '/crm/feedbacks', '/crm'],
+  wedding_registration: ['/wedding-registration', '/wedding/registrations', '/wedding/registration', '/wedding/customer-registration', '/wedding/customers'],
+  wedding_operations: ['/wedding-operations', '/wedding/operations'],
+  telecaller_desk: ['/telecaller', '/telecaller/desk', '/wedding-crm/telecaller'],
+  telecaller_dashboard: ['/telecaller-dashboard', '/telecaller/dashboard', '/telecaller'],
+  footfall: ['/footfall'],
+  feedback_collection: ['/feedback', '/feedbacks', '/crm/feedback', '/crm/feedbacks'],
+  feedback_list: ['/feedback', '/feedbacks', '/crm/feedback', '/crm/feedbacks'],
+  feedback_qr: ['/feedback-qr', '/feedback/qr', '/feedback-public', '/feedback'],
+  divert: ['/divert', '/diverts'],
+  pm_view: ['/pm-view', '/purchase-manager', '/pm'],
+  vm_checklist: ['/vm', '/vm-checklist', '/vm/checklist'],
+  attendance: ['/attendance', '/roster'],
+  candidates: ['/candidate', '/candidates', '/interview', '/interviews'],
+  offer: ['/offer', '/offers', '/onboarding'],
+  openings: ['/opening', '/openings', '/hiring'],
+  employees: ['/employee', '/employees'],
+  dept_hiring: ['/dept-hiring', '/department-hiring', '/hiring'],
+  section_allocation: ['/section-allocation', '/section', '/sections'],
+  broadcast: ['/broadcast', '/broadcasts', '/announcements'],
+  settings: ['/settings', '/config'],
+  daily_mcheck: ['/mcheck', '/daily-mcheck', '/daily_mcheck'],
+  mcheck_reports: ['/mcheck', '/mcheck-reports', '/mcheck_reports'],
+  mcheck_history: ['/mcheck', '/mcheck-history', '/mcheck_history'],
+  mcheck_audit: ['/mcheck', '/mcheck-audit', '/mcheck_audit'],
+  user_management: ['/user', '/users', '/user-management', '/permissions'],
+  system_admin: ['/system-admin', '/system', '/admin'],
+  main_crm: ['/main-crm', '/crm'],
+  batch_plan: ['/batch-plan', '/batch', '/batches'],
+  doj_desk: ['/doj-desk', '/doj', '/employees/not-joined'],
+  joining_desk: ['/joining-desk', '/joining', '/employees/joined-store'],
+  regional_analytics: ['/regional-analytics', '/analytics/regional', '/analytics'],
+  greyhr: ['/greyhr'],
+  candidate_apply: ['/apply', '/candidate-apply', '/public/candidate'],
+  greeter: ['/greeter'],
+  tv: ['/tv'],
+  feedback_public: ['/feedback-public', '/feedback/public']
+};
+
 /**
  * authorize — role-based access control with Access Control Matrix override
  */
@@ -280,7 +323,7 @@ const authorize = (...roles) => {
     try {
       const pool = require('../config/db');
       const [perms] = await pool.query(
-        'SELECT module, can_view, can_add, can_edit, can_delete FROM user_permissions WHERE user_id = ?',
+        'SELECT module, can_view, can_add, can_edit, can_delete, can_export, can_approve FROM user_permissions WHERE user_id = ?',
         [req.user.id]
       );
       if (perms && perms.length > 0) {
@@ -292,7 +335,8 @@ const authorize = (...roles) => {
           if (!p[actionField]) return false;
           const normMod = p.module.toLowerCase().replace(/_/g, '-');
           const rawMod = p.module.toLowerCase();
-          return fullPath.includes(normMod) || fullPath.includes(rawMod);
+          const patterns = MODULE_TO_ROUTE_PATTERNS[p.module] || [normMod, rawMod];
+          return patterns.some(pattern => fullPath.includes(pattern)) || fullPath.includes(normMod) || fullPath.includes(rawMod);
         });
 
         if (hasPerm) {
@@ -377,7 +421,8 @@ const getLocationFilter = async (req, tableAlias = '') => {
     || req.body?.location;
   const requestedLocationId = parseTargetLocation(rawRequested);
 
-  const isGlobalAdmin = !req.user.locationId || req.user.isGlobalAdmin || ['Admin', 'Super Admin'].includes(req.user.role);
+  const isAdminRole = ['Admin', 'Super Admin', 'system administrator'].includes(req.user.role);
+  const isGlobalAdmin = isAdminRole && (!req.user.locationId || req.user.isGlobalAdmin);
 
   if (isGlobalAdmin) {
     if (requestedLocationId) {
@@ -386,7 +431,7 @@ const getLocationFilter = async (req, tableAlias = '') => {
     return { clause: '', params: [] };
   }
 
-  // Multi-location resolution
+  // Multi-location resolution for branch users
   let allowedLocationIds = [];
   if (Array.isArray(req.user.allowedLocations) && req.user.allowedLocations.length > 0) {
     allowedLocationIds = req.user.allowedLocations;
@@ -406,26 +451,28 @@ const getLocationFilter = async (req, tableAlias = '') => {
     allowedLocationIds = [req.user.locationId];
   }
 
-  // If a specific location was requested:
-  if (requestedLocationId) {
-    if (allowedLocationIds.includes(requestedLocationId)) {
-      return { clause: `AND ${col} = ?`, params: [requestedLocationId] };
-    }
-    // Requested an unauthorized location! Reject with empty results
-    return { clause: `AND 1 = 0`, params: [] };
+  // If user is assigned to a single location, STRICTLY clamp to that location.
+  // Ignore any tampering attempts in URL parameters, body, or headers.
+  if (allowedLocationIds.length === 1) {
+    return {
+      clause: `AND ${col} = ?`,
+      params: [allowedLocationIds[0]]
+    };
   }
 
-  // No specific location requested: filter to all allowed locations
+  // If user has multi-location authorization (allowedLocationIds.length > 1):
   if (allowedLocationIds.length > 1) {
+    if (requestedLocationId && allowedLocationIds.includes(requestedLocationId)) {
+      return { clause: `AND ${col} = ?`, params: [requestedLocationId] };
+    }
+    // If an unauthorized location was requested, clamp to their default primary location
+    if (requestedLocationId && !allowedLocationIds.includes(requestedLocationId)) {
+      return { clause: `AND ${col} = ?`, params: [allowedLocationIds[0]] };
+    }
     const placeholders = allowedLocationIds.map(() => '?').join(', ');
     return {
       clause: `AND ${col} IN (${placeholders})`,
       params: allowedLocationIds
-    };
-  } else if (allowedLocationIds.length === 1) {
-    return {
-      clause: `AND ${col} = ?`,
-      params: [allowedLocationIds[0]]
     };
   }
 
@@ -434,7 +481,7 @@ const getLocationFilter = async (req, tableAlias = '') => {
 
 /**
  * injectLocationId — for INSERT/UPDATE operations.
- * Returns the authenticated user's locationId, respecting requested location if authorized.
+ * Returns the authenticated user's locationId, strictly clamping restricted users to their assigned store.
  */
 const injectLocationId = (req) => {
   if (!req.user) return null;
@@ -449,22 +496,68 @@ const injectLocationId = (req) => {
     || req.headers?.['x-location-id'];
   const requestedLocationId = parseTargetLocation(rawRequested);
 
-  const isGlobalAdmin = !req.user.locationId || req.user.isGlobalAdmin || ['Admin', 'Super Admin'].includes(req.user.role);
+  const isAdminRole = ['Admin', 'Super Admin', 'system administrator'].includes(req.user.role);
+  const isGlobalAdmin = isAdminRole && (!req.user.locationId || req.user.isGlobalAdmin);
 
   if (isGlobalAdmin) {
-    return requestedLocationId || 2; // default to Davanagere if not specified
+    return requestedLocationId || 1;
   }
 
   let allowed = req.user.allowedLocations;
   if (!Array.isArray(allowed) || allowed.length === 0) {
-    allowed = req.user.locationId ? [req.user.locationId] : [2];
+    allowed = req.user.locationId ? [req.user.locationId] : [];
+  }
+
+  // If single location user, ALWAYS return their assigned location
+  if (allowed.length === 1) {
+    return allowed[0];
+  }
+
+  // If multi-location user and requested location is within allowed list:
+  if (requestedLocationId && allowed.includes(requestedLocationId)) {
+    return requestedLocationId;
+  }
+
+  return allowed[0] || req.user.locationId || null;
+};
+
+/**
+ * getEffectiveLocationId — returns the active location ID integer (1, 2, 3), or null for Global Admin viewing ALL.
+ */
+const getEffectiveLocationId = (req) => {
+  if (!req.user) return null;
+  const rawRequested = req.query?.location_id 
+    || req.query?.locationId 
+    || req.query?.locationCode
+    || req.query?.location
+    || req.headers?.['x-location-id']
+    || req.body?.location_id
+    || req.body?.locationId
+    || req.body?.locationCode
+    || req.body?.location;
+  const requestedLocationId = parseTargetLocation(rawRequested);
+
+  const isAdminRole = ['Admin', 'Super Admin', 'system administrator'].includes(req.user.role);
+  const isGlobalAdmin = isAdminRole && (!req.user.locationId || req.user.isGlobalAdmin);
+
+  if (isGlobalAdmin) {
+    return requestedLocationId || null;
+  }
+
+  let allowed = req.user.allowedLocations;
+  if (!Array.isArray(allowed) || allowed.length === 0) {
+    allowed = req.user.locationId ? [req.user.locationId] : [];
+  }
+
+  if (allowed.length === 1) {
+    return allowed[0];
   }
 
   if (requestedLocationId && allowed.includes(requestedLocationId)) {
     return requestedLocationId;
   }
 
-  return allowed[0] || req.user.locationId || 2;
+  return allowed[0] || req.user.locationId || null;
 };
 
 /**
@@ -493,7 +586,12 @@ const authorizeModule = (moduleName, action = 'can_view') => {
         [req.user.id, moduleName]
       );
 
-      if (!rows.length || !rows[0].allowed) {
+      if (!rows || rows.length === 0) {
+        // Fall back to role defaults if user has no custom ACM row
+        return next();
+      }
+
+      if (!rows[0].allowed) {
         return errorRes(res, `Access denied: you do not have ${safeAction.replace('can_', '')} permission for this module`, [], 403);
       }
 
@@ -535,6 +633,7 @@ module.exports = {
   authorizeLocationAccess,
   getLocationFilter,
   injectLocationId,
+  getEffectiveLocationId,
   invalidateUserStatusCache,
   blacklistToken,
   logSessionActivity,
