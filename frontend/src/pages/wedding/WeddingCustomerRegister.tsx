@@ -6,6 +6,7 @@ import PageContainer from '../../components/ui/PageContainer';
 import { showToast } from '../../components/Toast';
 import { API, Auth, UserSession } from '../../services/api';
 import WeddingNav from './WeddingNav';
+import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../../utils/sidebarState';
 import {
   WeddingCustomer,
   CUSTOMER_STATUSES,

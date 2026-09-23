@@ -7,6 +7,8 @@ import WeddingNav from './WeddingNav';
 import { WeddingStats, getStatusBadge } from './weddingTypes';
 import LocationFilterSelect from '../../components/ui/LocationFilterSelect';
 import { useLocationContext } from '../../context/LocationContext';
+import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../../utils/sidebarState';
+import ToastContainer, { showToast } from '../../components/Toast';
 import {
   Users,
   UserPlus,

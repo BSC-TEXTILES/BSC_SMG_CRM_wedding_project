@@ -48,6 +48,7 @@ const STATUS_OPTIONS = ['PENDING', 'IN_PROGRESS', 'DONE', 'NOT_DONE', 'POSTPONED
 export default function DailyMCheck() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const [session, setSession] = useState<any>(() => Auth.get());
 
   const [selectedDate, setSelectedDate] = useState(() => {
     const urlDate = searchParams.get('date');

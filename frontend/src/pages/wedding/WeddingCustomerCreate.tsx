@@ -230,7 +230,7 @@ export default function WeddingCustomerCreate() {
         { label: 'Register Customer' }
       ]}
     >
-      <PageContainer maxWidth="xl">
+      <PageContainer maxWidth="6xl">
         <div className="space-y-6">
           <ToastContainer />
 

@@ -40,6 +40,7 @@ import {
 
 export default function FeedbackCollection() {
   const navigate = useNavigate();
+  const [session, setSession] = useState<any>(() => Auth.get());
   const { currentLocation, setCurrentLocation, allLocations, currentLocationLabel, isGlobalAdmin, canSwitch } = useLocationContext();
 
   // Feedbacks & Stats
