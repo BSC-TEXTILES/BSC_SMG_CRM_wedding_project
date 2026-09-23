@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { API, Auth, UserSession } from '../services/api';
-import { BarChart3, Users, Target, FileText, PartyPopper, LogOut, ClipboardList, Settings, DoorOpen, UserCheck, Briefcase, ChevronRight, Sparkles, Megaphone, SquareCheck, Menu, Shield, ShieldAlert, PhoneCall, Heart, Calendar, History } from 'lucide-react';
+import { BarChart3, Users, Target, FileText, PartyPopper, LogOut, ClipboardList, Settings, DoorOpen, UserCheck, Briefcase, ChevronRight, Sparkles, Megaphone, SquareCheck, Menu, Shield, ShieldAlert, PhoneCall, Heart, Calendar, History, X } from 'lucide-react';
 import { 
   getSidebarCollapsed, 
   setSidebarCollapsed, 
