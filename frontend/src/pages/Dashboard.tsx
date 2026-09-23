@@ -133,7 +133,7 @@ export default function DashboardPage() {
           totalCallQueue: 0
         })),
         API.getWeddingStats(locParam).catch(() => null),
-        API.getTelecallerStats ? API.getTelecallerStats(locParam).catch(() => null) : Promise.resolve(null),
+        (API as any).getTelecallerStats ? (API as any).getTelecallerStats(locParam).catch(() => null) : Promise.resolve(null),
         isAdm ? API.getGlobalStats().catch(() => ({ locations: [] })) : Promise.resolve({ locations: [] })
       ]);
 

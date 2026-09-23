@@ -47,7 +47,7 @@ export default function Greeter() {
       const nowHour = new Date().getHours();
       setActiveSlotHour(nowHour);
 
-      const res = await API.getFootfall(today, { location_id: Number(kioskLocationId) });
+      const res = await API.getFootfall(today, kioskLocationId ? Number(kioskLocationId) : undefined);
       if (res && res.entries && Array.isArray(res.entries)) {
         const currentSlotEntry = res.entries.find((e: any) => Number(e.slotHour) === nowHour);
         const countFromDB = Number(currentSlotEntry?.visitors || 0);

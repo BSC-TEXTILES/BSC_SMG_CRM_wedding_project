@@ -78,8 +78,8 @@ export default function TVDisplay() {
     try {
       const today = new Date().toISOString().split('T')[0];
       const [ffRes, divRes, fbRes] = await Promise.all([
-        API.getFootfall(today, { location_id: Number(tvLocationId) }),
-        API.getDiverts({ location_id: Number(tvLocationId) }).catch(() => ({ diverts: [] })),
+        API.getFootfall(today, tvLocationId ? Number(tvLocationId) : undefined),
+        API.getDiverts(tvLocationId ? { locationId: tvLocationId } : undefined).catch(() => ({ diverts: [] })),
         API.getFeedbackStats({ location_id: Number(tvLocationId) }).catch(() => ({ npsScore: 96 }))
       ]);
 

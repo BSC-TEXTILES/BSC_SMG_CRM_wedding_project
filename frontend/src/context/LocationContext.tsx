@@ -74,7 +74,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     if (Array.isArray(sess.allowedLocations) && sess.allowedLocations.length > 0) {
       const first = sess.allowedLocations[0];
-      return String(typeof first === 'object' && first !== null ? first.id : first);
+      return String(first && typeof first === 'object' ? (first as any).id : (first ?? ''));
     }
 
     return '';
