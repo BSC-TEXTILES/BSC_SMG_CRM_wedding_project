@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation, Link } from 'react-router-dom';
 import { Auth, API } from '../services/api';
-import { getDashboardRouteForRole } from '../utils/dashboardRouting';
+import { getDefaultLandingRoute } from '../utils/moduleRegistry';
 import { getRoleNavMap, resolveAllowedPages } from '../utils/rbac';
 import { permissionsCache } from '../context/PermissionsCache';
 import { Loader2, ShieldAlert, ArrowLeft, Home } from 'lucide-react';
@@ -88,10 +88,10 @@ export default function RouteGuard({ pageKey, children }: { pageKey: string; chi
 
   if (resolution === 'denied') {
     const session = Auth.get();
-    const defaultDashboard = getDashboardRouteForRole(session?.role);
+    const returnRoute = getDefaultLandingRoute(session, allowedModules);
 
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center">
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center select-none font-sans">
         <div className="card-glass max-w-md w-full p-8 border border-red-200/60 shadow-2xl rounded-2xl flex flex-col items-center animate-in fade-in zoom-in-95 duration-200">
           <div className="w-16 h-16 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center mb-4 border border-red-200 shadow-inner">
             <ShieldAlert className="w-8 h-8" />
@@ -104,11 +104,11 @@ export default function RouteGuard({ pageKey, children }: { pageKey: string; chi
           </p>
           <div className="flex flex-col sm:flex-row gap-3 w-full">
             <Link
-              to={defaultDashboard}
+              to={returnRoute}
               className="btn-gold flex-1 py-2.5 text-xs font-black flex items-center justify-center gap-2 rounded-xl shadow-sm"
             >
               <Home className="w-4 h-4" />
-              <span>Return to Dashboard</span>
+              <span>{returnRoute === '/no-access' ? 'View Account Status' : 'Return to My Workspace'}</span>
             </Link>
           </div>
           <div className="mt-4 text-[10px] text-primary/40 font-medium">

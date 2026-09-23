@@ -166,12 +166,9 @@ export function resolveAllowedPages(
     return roleKeys;
   }
 
-  // User-specific permission overrides (exact module list assigned by Admin in Access Control Matrix)
+  // User-specific permission overrides (exact module list assigned by Admin in Access Control Matrix / User Management)
   if (userModules && Array.isArray(userModules)) {
-    const allowedSet = new Set<string>(userModules);
-    // Ensure dashboard is always accessible to any authenticated user
-    allowedSet.add('dashboard');
-    return Array.from(allowedSet);
+    return Array.from(new Set(userModules));
   }
 
   // Base role defaults narrowed by database page_visibility settings if configured

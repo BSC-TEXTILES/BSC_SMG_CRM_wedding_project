@@ -48,6 +48,7 @@ import WeddingFollowUpCalendar from './pages/wedding/WeddingFollowUpCalendar';
 import WeddingStatusBoard from './pages/wedding/WeddingStatusBoard';
 import WeddingReports from './pages/wedding/WeddingReports';
 import WeddingImport from './pages/wedding/WeddingImport';
+import NoAccess from './pages/NoAccess';
 import ToastContainer from './components/Toast';
 import { LocationProvider } from './context/LocationContext';
 import QuickActionCenter from './components/ui/QuickActionCenter';
@@ -88,6 +89,7 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/no-access" element={<NoAccess />} />
         <Route path="/dashboard" element={<RouteGuard pageKey="dashboard"><Dashboard /></RouteGuard>} />
         <Route path="/wedding-crm" element={<RouteGuard pageKey="wedding_crm"><WeddingCRM /></RouteGuard>} />
         <Route path="/wedding-crm/dashboard" element={<RouteGuard pageKey="wedding_crm"><WeddingCrmDashboard /></RouteGuard>} />

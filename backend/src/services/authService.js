@@ -189,14 +189,31 @@ class AuthService {
         allowedLocations = allLocs || [];
       } catch (e) {}
     } else if (allowedLocations.length === 0 && locationId) {
+      const locNum = Number(locationId);
       allowedLocations = [{
-        id: locationId,
-        code: locationCode || 'DAV',
-        name: locationName || 'Davanagere'
+        id: locNum,
+        code: locationCode || (locNum === 1 ? 'BEL' : locNum === 3 ? 'SHI' : 'DAV'),
+        name: locationName || (locNum === 1 ? 'Belagavi' : locNum === 3 ? 'Shivamogga' : 'Davanagere')
       }];
     }
 
     const allowedLocationIds = allowedLocations.map(l => l.id);
+
+    // Retrieve user's explicitly assigned modules from user_permissions
+    let userModules = [];
+    let hasCustomModules = false;
+    try {
+      const [permRows] = await pool.query(
+        'SELECT module FROM user_permissions WHERE user_id = ? AND can_view = TRUE',
+        [user.id]
+      );
+      if (permRows && permRows.length > 0) {
+        userModules = permRows.map(r => r.module);
+        hasCustomModules = true;
+      }
+    } catch (e) {
+      console.warn('[AuthService] user_permissions query error:', e.message);
+    }
 
     const token = jwt.sign(
       {
@@ -208,7 +225,8 @@ class AuthService {
         locationCode,
         locationName,
         isGlobalAdmin,
-        allowedLocations: allowedLocationIds
+        allowedLocations: allowedLocationIds,
+        modules: hasCustomModules ? userModules : undefined
       },
       getJwtSecret(),
       { expiresIn: SESSION_EXPIRES_IN }
@@ -234,7 +252,8 @@ class AuthService {
         locationCode,
         locationName,
         isGlobalAdmin,
-        allowedLocations
+        allowedLocations,
+        modules: hasCustomModules ? userModules : undefined
       }
     };
   }

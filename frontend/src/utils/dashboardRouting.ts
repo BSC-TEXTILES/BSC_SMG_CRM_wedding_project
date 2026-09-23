@@ -127,60 +127,17 @@ export function getDashboardRouteForRole(role?: string): string {
   }
 }
 
+import { getDefaultLandingRoute } from './moduleRegistry';
+
+export { getDefaultLandingRoute };
+
 /**
  * Resolves the authorized landing route for a user based on their role and
  * their effective allowed page keys from the Access Control Matrix (ACM).
- * If the role's default landing page is blocked in ACM, gracefully falls
- * back to the next authorized page.
+ * Delegates to centralized moduleRegistry engine.
  */
 export function getAuthorizedLandingRoute(role?: string, allowedPageKeys?: string[] | null): string {
-  const defaultRoute = getDashboardRouteForRole(role);
-  if (!allowedPageKeys || !Array.isArray(allowedPageKeys) || allowedPageKeys.length === 0) {
-    return defaultRoute;
-  }
-
-  const r = (role || '').trim().toLowerCase().replace(/[_\s-]+/g, ' ');
-  const isTelecallerType = [
-    'telecaller', 'caller', 'tele-caller', 'tele caller',
-    'vm extension telecaller', 'vm telecaller', 'crm executive', 'crm exec'
-  ].includes(r);
-
-  if (isTelecallerType) {
-    // If Telecaller has telecaller_desk permission, open telecaller desk
-    if (allowedPageKeys.includes('telecaller_desk')) return '/telecaller/desk';
-    // If telecaller_desk is disabled but telecaller_dashboard is enabled
-    if (allowedPageKeys.includes('telecaller_dashboard')) return '/telecaller-dashboard';
-    // If only general wedding_crm is enabled
-    if (allowedPageKeys.includes('wedding_crm')) return '/wedding-crm/dashboard';
-    // If wedding_registration is enabled
-    if (allowedPageKeys.includes('wedding_registration')) return '/wedding/customer-registration';
-    // Fallbacks if all wedding features are denied in ACM
-    if (allowedPageKeys.includes('dashboard')) return '/dashboard';
-    if (allowedPageKeys.includes('footfall')) return '/footfall';
-  }
-
-  const routeKeyMap: Record<string, string> = {
-    '/dashboard': 'dashboard',
-    '/dashboard?view=manager': 'dashboard',
-    '/dashboard?view=hr': 'dashboard',
-    '/vm-checklist': 'vm_checklist',
-    '/footfall': 'footfall',
-    '/wedding-crm/dashboard': 'wedding_crm',
-    '/wedding-crm/reports': 'wedding_crm',
-    '/telecaller/desk': 'telecaller_desk'
-  };
-
-  const requiredKey = routeKeyMap[defaultRoute];
-  if (!requiredKey || allowedPageKeys.includes(requiredKey)) {
-    return defaultRoute;
-  }
-
-  if (allowedPageKeys.includes('dashboard')) return '/dashboard';
-  if (allowedPageKeys.includes('telecaller_desk')) return '/telecaller/desk';
-  if (allowedPageKeys.includes('wedding_crm')) return '/wedding-crm/dashboard';
-  if (allowedPageKeys.includes('footfall')) return '/footfall';
-
-  return defaultRoute;
+  return getDefaultLandingRoute({ role }, allowedPageKeys);
 }
 
 

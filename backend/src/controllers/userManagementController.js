@@ -766,9 +766,6 @@ const getMyPermissions = async (req, res) => {
     }
 
     const viewableModules = rows.filter(r => r.can_view).map(r => r.module);
-    if (!viewableModules.includes('dashboard')) {
-      viewableModules.unshift('dashboard');
-    }
 
     return successRes(res, {
       isAdmin: false,

@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { API, Auth } from '../services/api';
 import ToastContainer, { showToast } from '../components/Toast';
 import { ShieldCheck, ShieldAlert, Lock, User, ArrowRight, MapPin, RefreshCw, Hash, Eye, EyeOff, Sparkles, Search } from 'lucide-react';
 import PrivacyPolicyModal from '../components/ui/PrivacyPolicyModal';
 import TermsAndConditionsModal from '../components/ui/TermsAndConditionsModal';
-import { getDashboardRouteForRole } from '../utils/dashboardRouting';
+import { resolvePostLoginRoute } from '../utils/moduleRegistry';
+import { permissionsCache } from '../context/PermissionsCache';
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const securityViolation = searchParams.get('security') === 'unauthorized';
   const violationPath = searchParams.get('path') || '';
@@ -135,7 +137,11 @@ export default function LoginPage() {
   useEffect(() => {
     if (Auth.check()) {
       const user = Auth.get();
-      navigate(getDashboardRouteForRole(user?.role), { replace: true });
+      resolvePostLoginRoute(user).then((route) => {
+        navigate(route, { replace: true });
+      }).catch(() => {
+        navigate('/no-access', { replace: true });
+      });
     }
   }, [navigate]);
 
@@ -203,9 +209,16 @@ export default function LoginPage() {
             { timeout: 8000, maximumAge: 300000 }
           );
         }
-        // Detect role and route directly to authorized dashboard (Admin, HR, or Manager Dashboard)
-        const targetDashboard = getDashboardRouteForRole(user.role);
-        navigate(targetDashboard, { replace: true });
+        // Clear cached permissions so the latest module assignments from User Management apply
+        permissionsCache.clear();
+
+        // Check for any intended return path passed via location state
+        const locState = location.state as { from?: string } | undefined;
+        const intendedRoute = locState?.from || null;
+
+        // Resolve exact authorized default landing route based on assigned modules & role
+        const targetRoute = await resolvePostLoginRoute(user, intendedRoute);
+        navigate(targetRoute, { replace: true });
       } else {
         if (res.locked || res.remainingSeconds) {
           setIsLocked(true);

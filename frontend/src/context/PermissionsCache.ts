@@ -55,7 +55,10 @@ class PermissionsCacheService {
    * Deduplicates concurrent callers: multiple awaits on get() during the same
    * fetch share a single in-flight Promise.
    */
-  async get(): Promise<CachedPermissions> {
+  async get(forceRefresh = false): Promise<CachedPermissions> {
+    if (forceRefresh) {
+      this.invalidate();
+    }
     const now = Date.now();
     if (this.cache && now - this.loadedAt < this.TTL_MS) {
       return this.cache;
@@ -127,6 +130,10 @@ class PermissionsCacheService {
     this.cache = null;
     this.loadedAt = 0;
     this.loading = null;
+  }
+
+  clear(): void {
+    this.invalidate();
   }
 }
 
