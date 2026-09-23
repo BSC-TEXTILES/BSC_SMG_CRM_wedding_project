@@ -6,6 +6,7 @@ import ForgotPassword from './pages/ForgotPassword';
 import Dashboard from './pages/Dashboard';
 import WeddingRegistration from './pages/WeddingRegistration';
 import Candidates from './pages/Candidates';
+import OfferProcess from './pages/OfferProcess';
 import WeddingOperationsDesk from './pages/WeddingOperationsDesk';
 import Employees from './pages/Employees';
 import Openings from './pages/Openings';
@@ -139,7 +140,7 @@ export default function App() {
         <Route path="/track" element={<WeddingTracking />} />
         <Route path="/interview-panel" element={<Navigate to="/candidates" replace />} />
         <Route path="/interview-form" element={<Navigate to="/candidates" replace />} />
-        <Route path="/offer-process" element={<RouteGuard pageKey="offer"><WeddingOperationsDesk /></RouteGuard>} />
+        <Route path="/offer-process" element={<RouteGuard pageKey="offer"><OfferProcess /></RouteGuard>} />
         {/* Disabled pages per user request: Onboarding, Exit & FnF, Interview Panel */}
         <Route path="/onboarding" element={<Navigate to="/employees" replace />} />
         <Route path="/employee-exit" element={<Navigate to="/employees" replace />} />

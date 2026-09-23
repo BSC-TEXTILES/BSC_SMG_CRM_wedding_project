@@ -128,7 +128,6 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
     // Store Operations
     { key: 'wedding_crm', href: '/wedding-crm/dashboard', label: 'Wedding CRM', icon: Sparkles, section: 'Store Operations', isNew: true },
     { key: 'wedding_registration', href: '/wedding/customer-registration', label: 'Wedding Customer Registration', icon: Heart, section: 'Store Operations' },
-    { key: 'telecaller_desk', href: '/telecaller/desk', label: 'Telecaller Desk', icon: PhoneCall, section: 'Store Operations', isNew: true },
     { key: 'telecaller_dashboard', href: '/telecaller-dashboard', label: 'Telecaller Dashboard', icon: BarChart3, section: 'Store Operations' },
     { key: 'wedding_operations', href: '/wedding-operations', label: 'Wedding Operations', icon: FileText, section: 'Store Operations' },
     { key: 'footfall', href: '/footfall', label: 'Hourly Footfall', icon: BarChart3, section: 'Store Operations' },
