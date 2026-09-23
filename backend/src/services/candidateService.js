@@ -255,8 +255,9 @@ class CandidateService {
       }
     }
 
-    const locationId = data.locationId || 2; // default to Davanagere
-    const locationCode = data.locationCode || 'DAV';
+    const locCodeMap = { 1: 'BEL', 2: 'DAV', 3: 'SHI' };
+    const locationId = data.locationId ? Number(data.locationId) : null;
+    const locationCode = data.locationCode || (locationId ? locCodeMap[locationId] : null);
 
     const [res] = await pool.query(
       `INSERT INTO candidates (

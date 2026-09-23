@@ -372,9 +372,12 @@ class WeddingRegistrationController {
 
   async getNextRegistrationId(req, res) {
     try {
-      const locationId = req.query.location_id || req.query.locationId || 2;
-      const [locRows] = await pool.query(`SELECT location_code FROM locations WHERE id = ?`, [locationId]);
-      const locCode = locRows[0]?.location_code || 'BSC';
+      const locationId = req.query.location_id || req.query.locationId || (req.user && req.user.locationId) || null;
+      let locCode = 'BSC';
+      if (locationId) {
+        const [locRows] = await pool.query(`SELECT location_code FROM locations WHERE id = ?`, [locationId]);
+        if (locRows[0]?.location_code) locCode = locRows[0].location_code;
+      }
       const year = new Date().getFullYear();
       const codePrefix = `BSC-WED-${locCode}-${year}-`;
 

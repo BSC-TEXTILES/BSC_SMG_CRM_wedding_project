@@ -48,7 +48,7 @@ const createExit = async (req, res) => {
 
     const recordId = 'EX-' + Date.now().toString().slice(-6);
     const lwdDate = new Date(lwd);
-    const locId = getEffectiveLocationId(req) || (req.user && req.user.locationId) || 2;
+    const locId = injectLocationId(req) || getEffectiveLocationId(req) || (req.user && req.user.locationId) || null;
 
     const [resArr] = await db.query(
       `INSERT INTO exit_records (record_id, emp_name, designation, lwd, progress, status, location_id)

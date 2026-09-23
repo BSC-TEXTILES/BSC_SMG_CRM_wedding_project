@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import Sidebar from '../../components/Sidebar';
-import Topbar from '../../components/Topbar';
+import DashboardLayout from '../../components/layouts/DashboardLayout';
+import PageContainer from '../../components/ui/PageContainer';
 import ToastContainer, { showToast } from '../../components/Toast';
 import { API, Auth, UserSession } from '../../services/api';
-import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../../utils/sidebarState';
 import WeddingNav from './WeddingNav';
 import LocationFilterSelect from '../../components/ui/LocationFilterSelect';
 import {
@@ -78,12 +77,7 @@ const COLUMNS = [
 export default function WeddingStatusBoard() {
   const navigate = useNavigate();
   const [session, setSession] = useState<UserSession | null>(() => Auth.get());
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState<boolean>(getSidebarCollapsed());
 
-  useEffect(() => {
-    return subscribeSidebarCollapsed(setCollapsed);
-  }, []);
 
   const [loading, setLoading] = useState(true);
   const [columnData, setColumnData] = useState<Record<string, any[]>>({});
@@ -166,25 +160,12 @@ export default function WeddingStatusBoard() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F6F4EF] flex text-[#182033]">
-      <Sidebar
-        session={session}
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-      />
-
-      <div
-        className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${
-          collapsed ? 'lg:pl-20' : 'lg:pl-64'
-        }`}
-      >
-        <Topbar
-          title="Wedding Status Pipeline"
-          session={session}
-          onMenuClick={() => setSidebarOpen(true)}
-        />
-
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-[1800px] w-full mx-auto space-y-6 overflow-x-auto">
+    <DashboardLayout
+      title="Wedding Status Pipeline"
+      breadcrumbs={[{ label: 'Wedding CRM', href: '/wedding-crm/dashboard' }, { label: 'Status Pipeline' }]}
+    >
+      <PageContainer maxWidth="full">
+        <div className="space-y-6">
           <ToastContainer />
 
           <WeddingNav
@@ -238,16 +219,17 @@ export default function WeddingStatusBoard() {
             })}
           </div>
 
-          {/* Kanban Board */}
-          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 pb-4 min-w-[900px]">
-            {COLUMNS.map((col) => {
-              const cards = columnData[col.key] || [];
+          {/* Kanban Board Container */}
+          <div className="overflow-x-auto pb-4 -mx-4 sm:mx-0 px-4 sm:px-0">
+            <div className="flex xl:grid xl:grid-cols-6 gap-4 min-w-[1080px] xl:min-w-0">
+              {COLUMNS.map((col) => {
+                const cards = columnData[col.key] || [];
 
-              return (
-                <div
-                  key={col.key}
-                  className={`bg-white rounded-3xl border-2 ${col.color} shadow-xs flex flex-col min-h-[560px] max-h-[78vh]`}
-                >
+                return (
+                  <div
+                    key={col.key}
+                    className={`bg-white rounded-3xl border-2 ${col.color} shadow-xs flex flex-col min-h-[520px] max-h-[76vh] w-[270px] xl:w-auto shrink-0 xl:shrink`}
+                  >
                   {/* Column Header */}
                   <div
                     className={`flex items-center justify-between px-4 py-3 border-b border-[#DFDDD7] ${col.headerBg} rounded-t-3xl`}
@@ -376,9 +358,10 @@ export default function WeddingStatusBoard() {
                 </div>
               );
             })}
+            </div>
           </div>
-        </main>
-      </div>
-    </div>
+        </div>
+      </PageContainer>
+    </DashboardLayout>
   );
 }

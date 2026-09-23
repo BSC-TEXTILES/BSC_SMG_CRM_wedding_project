@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { API } from '../services/api';
+import { API, Auth } from '../services/api';
+import { useLocationContext } from '../context/LocationContext';
 import ToastContainer, { showToast } from '../components/Toast';
 import { optimizeFile } from '../utils/fileOptimizer';
 import { 
@@ -8,7 +9,17 @@ import {
 } from 'lucide-react';
 
 export default function CandidateEntryPage() {
+  const locCtx = useLocationContext();
+  const session = Auth.get();
+  const roleNorm = (session?.role || '').toLowerCase().replace(/[_\s-]+/g, ' ');
+  const isAdmin = ['admin', 'super admin', 'system administrator'].includes(roleNorm);
+
   const [step, setStep] = useState(1);
+  const [selectedLocationId, setSelectedLocationId] = useState<string>(() => {
+    if (session?.locationId) return String(session.locationId);
+    if (locCtx.currentLocation && locCtx.currentLocation !== 'ALL') return locCtx.currentLocation;
+    return '';
+  });
   const [designations, setDesignations] = useState<string[]>([]);
   const [dupWarn, setDupWarn] = useState('');
   const [editAppNo, setEditAppNo] = useState<string | null>(null);
@@ -192,6 +203,16 @@ export default function CandidateEntryPage() {
         }
       }
 
+      const effectiveLocId = selectedLocationId 
+        || (session?.locationId ? String(session.locationId) : '') 
+        || (locCtx.currentLocation && locCtx.currentLocation !== 'ALL' ? locCtx.currentLocation : '');
+
+      if (!effectiveLocId) {
+        showToast('Store location could not be determined. Please select an authorized store location.', 'error');
+        setLoading(false);
+        return;
+      }
+
       setLoadingText('Finalizing Registration...');
       const payload = {
         name,
@@ -220,6 +241,7 @@ export default function CandidateEntryPage() {
         resumeUrl,
         photoUrl,
         aadhaarUrl,
+        locationId: Number(effectiveLocId),
         source: 'Walk-in',
         status: 'New'
       };
@@ -232,7 +254,7 @@ export default function CandidateEntryPage() {
         showToast('Registration details updated successfully.', 'success');
         setSuccessAppNo(targetAppNo);
       } else {
-        const res = await API.addCandidate({ appNo: targetAppNo, ...payload });
+        const res = await API.addCandidate({ appNo: targetAppNo, ...payload, locationId: Number(effectiveLocId) });
         setSuccessAppNo(res.appNo || targetAppNo);
         showToast(`Candidate application submitted successfully. Application No: ${res.appNo || targetAppNo}`, 'success');
       }
@@ -266,7 +288,9 @@ export default function CandidateEntryPage() {
             <div>
               <h1 className="font-extrabold text-base sm:text-lg leading-tight tracking-tight">BSC Candidate Registration</h1>
               <div className="text-[10px] text-accent font-bold uppercase tracking-widest mt-0.5">
-                BSC EXCLUSIVE DAVANAGERE
+                BSC EXCLUSIVE · {selectedLocationId 
+                  ? (locCtx.allLocations.find(l => String(l.id) === selectedLocationId)?.name || 'STORE').toUpperCase() 
+                  : (session?.locationName || (locCtx.activeLocation.id !== 'ALL' ? locCtx.activeLocation.name : 'ALL LOCATIONS')).toUpperCase()}
               </div>
             </div>
           </div>
@@ -315,11 +339,36 @@ export default function CandidateEntryPage() {
           <div className="card-glass p-6 sm:p-8 space-y-6 animate-fade-in shadow-xl">
             {/* Section 1: Personal Details */}
             <div className="space-y-4">
-              <div className="border-b border-accent-soft pb-3 flex items-center gap-2">
-                <User className="w-5 h-5 text-accent" />
-                <h2 className="text-sm font-extrabold uppercase text-primary tracking-wider">
-                  1. Personal &amp; Contact Details
-                </h2>
+              <div className="border-b border-accent-soft pb-3 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <User className="w-5 h-5 text-accent" />
+                  <h2 className="text-sm font-extrabold uppercase text-primary tracking-wider">
+                    1. Personal &amp; Contact Details
+                  </h2>
+                </div>
+                {/* Store Location Indicator / Dropdown */}
+                <div className="flex items-center gap-1.5">
+                  <MapPin className="w-4 h-4 text-accent" />
+                  {isAdmin || !session?.locationId ? (
+                    <select
+                      value={selectedLocationId}
+                      onChange={(e) => setSelectedLocationId(e.target.value)}
+                      required
+                      className="px-2.5 py-1 text-xs font-bold rounded-lg border border-accent-soft bg-white text-primary focus:outline-none focus:ring-1 focus:ring-accent"
+                    >
+                      <option value="">Select Location *</option>
+                      {locCtx.allLocations.map((loc) => (
+                        <option key={loc.id} value={loc.id}>
+                          {loc.name} ({loc.code})
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span className="text-xs font-black text-primary px-2.5 py-1 rounded-lg bg-accent-soft/40 border border-accent-soft">
+                      {session?.locationName || locCtx.activeLocation.name}
+                    </span>
+                  )}
+                </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

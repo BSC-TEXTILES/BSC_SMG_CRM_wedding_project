@@ -21,10 +21,39 @@ interface BreadcrumbsProps {
 export default function Breadcrumbs({ items, className = '' }: BreadcrumbsProps) {
   if (!items || items.length === 0) return null;
   const lastIndex = items.length - 1;
+  const parentCrumb = items.length >= 2 ? items[items.length - 2] : null;
+  const currentCrumb = items[lastIndex];
 
   return (
     <nav aria-label="Breadcrumb" className={`min-w-0 ${className}`}>
-      <ol className="flex flex-wrap items-center gap-y-0.5 min-w-0 text-[11px] font-semibold leading-tight">
+      {/* Mobile concise breadcrumb: parent link + current */}
+      {items.length > 2 && parentCrumb && (
+        <div className="sm:hidden flex items-center min-w-0 text-[11px] font-semibold">
+          {parentCrumb.href ? (
+            <Link
+              to={parentCrumb.href}
+              title={parentCrumb.label}
+              className="text-[#687080] hover:text-[#C9A45C] hover:underline transition-colors flex items-center gap-0.5 truncate max-w-[45vw]"
+            >
+              <span>‹</span>
+              <span className="truncate">{parentCrumb.label}</span>
+            </Link>
+          ) : (
+            <span className="text-[#687080] truncate max-w-[40vw]">
+              ‹ {parentCrumb.label}
+            </span>
+          )}
+          <ChevronRight className="w-3 h-3 mx-1 text-[#C9A45C] flex-shrink-0" aria-hidden="true" />
+          <span className="text-[#182033] font-bold truncate max-w-[45vw]">
+            {currentCrumb.label}
+          </span>
+        </div>
+      )}
+
+      {/* Standard breadcrumb list (always shown if <= 2 items, or on sm+ screens) */}
+      <ol className={`items-center gap-y-0.5 min-w-0 text-[11px] font-semibold leading-tight ${
+        items.length > 2 ? 'hidden sm:flex flex-wrap' : 'flex flex-wrap'
+      }`}>
         {items.map((crumb, idx) => {
           const isLast = idx === lastIndex;
           const clickable = !isLast && !!crumb.href;

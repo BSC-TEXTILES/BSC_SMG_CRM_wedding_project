@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import Sidebar from '../../components/Sidebar';
-import Topbar from '../../components/Topbar';
+import DashboardLayout from '../../components/layouts/DashboardLayout';
+import PageContainer from '../../components/ui/PageContainer';
 import ToastContainer, { showToast } from '../../components/Toast';
 import { API, Auth, UserSession } from '../../services/api';
-import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../../utils/sidebarState';
 import WeddingNav from './WeddingNav';
 import {
   CATEGORY_OPTIONS,
@@ -33,12 +32,6 @@ import {
 export default function WeddingCustomerCreate() {
   const navigate = useNavigate();
   const [session, setSession] = useState<UserSession | null>(() => Auth.get());
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState<boolean>(getSidebarCollapsed());
-
-  useEffect(() => {
-    return subscribeSidebarCollapsed(setCollapsed);
-  }, []);
 
   const [locations, setLocations] = useState<any[]>([]);
   const [telecallers, setTelecallers] = useState<any[]>([]);
@@ -229,25 +222,16 @@ export default function WeddingCustomerCreate() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F6F4EF] flex text-[#182033]">
-      <Sidebar
-        session={session}
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-      />
-
-      <div
-        className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${
-          collapsed ? 'lg:pl-20' : 'lg:pl-64'
-        }`}
-      >
-        <Topbar
-          title="Wedding Customer Registration"
-          session={session}
-          onMenuClick={() => setSidebarOpen(true)}
-        />
-
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-[1200px] w-full mx-auto space-y-6">
+    <DashboardLayout
+      title="Wedding Customer Registration"
+      breadcrumbs={[
+        { label: 'Wedding CRM', href: '/wedding-crm/dashboard' },
+        { label: 'Customer Register', href: '/wedding-crm/customers' },
+        { label: 'Register Customer' }
+      ]}
+    >
+      <PageContainer maxWidth="xl">
+        <div className="space-y-6">
           <ToastContainer />
 
           <WeddingNav
@@ -681,12 +665,12 @@ export default function WeddingCustomerCreate() {
                 Cancel and discard
               </Link>
 
-              <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto">
                 <button
                   type="button"
                   disabled={saving}
                   onClick={() => handleSubmit('register')}
-                  className="px-5 py-2.5 rounded-xl bg-white hover:bg-[#F6F4EF] border border-[#DFDDD7] font-bold text-xs text-[#182033] transition-all disabled:opacity-50 flex items-center gap-2"
+                  className="px-5 py-2.5 rounded-xl bg-white hover:bg-[#F6F4EF] border border-[#DFDDD7] font-bold text-xs text-[#182033] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {saving && <div className="w-3.5 h-3.5 border-2 border-border border-t-primary rounded-full animate-spin" />}
                   {saving ? 'Saving...' : 'Save to Register'}
@@ -696,7 +680,7 @@ export default function WeddingCustomerCreate() {
                   type="button"
                   disabled={saving}
                   onClick={() => handleSubmit('desk')}
-                  className="px-5 py-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-300 font-bold text-xs text-amber-900 transition-all disabled:opacity-50 flex items-center gap-2"
+                  className="px-5 py-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-300 font-bold text-xs text-amber-900 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {saving && <div className="w-3.5 h-3.5 border-2 border-amber-300 border-t-amber-700 rounded-full animate-spin" />}
                   {saving ? 'Saving...' : 'Save & Assign to Desk'}
@@ -706,7 +690,7 @@ export default function WeddingCustomerCreate() {
                   type="button"
                   disabled={saving}
                   onClick={() => handleSubmit('detail')}
-                  className="px-6 py-2.5 rounded-xl bg-[#101C36] hover:bg-[#07101F] text-[#C9A45C] font-black text-xs shadow-md border border-[#C9A45C]/30 flex items-center gap-2 transition-all disabled:opacity-50"
+                  className="px-6 py-2.5 rounded-xl bg-[#101C36] hover:bg-[#07101F] text-[#C9A45C] font-black text-xs shadow-md border border-[#C9A45C]/30 flex items-center justify-center gap-2 transition-all disabled:opacity-50"
                 >
                   {saving ? (
                     <div className="w-4 h-4 border-2 border-[#C9A45C]/30 border-t-[#C9A45C] rounded-full animate-spin" />
@@ -718,8 +702,8 @@ export default function WeddingCustomerCreate() {
               </div>
             </div>
           </div>
-        </main>
-      </div>
-    </div>
+        </div>
+      </PageContainer>
+    </DashboardLayout>
   );
 }

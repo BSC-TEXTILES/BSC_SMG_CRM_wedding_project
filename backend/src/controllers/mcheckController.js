@@ -168,8 +168,11 @@ exports.saveResponse = async (req, res) => {
       return res.status(400).json({ success: false, error: 'checkpoint_id and response_date are required' });
     }
 
-    // Location from JWT — cannot be overridden by frontend
-    const locationId = req.user ? (req.user.locationId || 2) : 2;
+    // Location from session or requested store
+    const locationId = injectLocationId(req) || (req.user && req.user.locationId) || (req.body.location_id ? parseInt(req.body.location_id, 10) : null);
+    if (!locationId) {
+      return res.status(400).json({ success: false, error: 'Store location could not be determined.' });
+    }
 
     // Fetch checkpoint to get module/checklist IDs
     const [cpRows] = await db.query(
@@ -249,10 +252,13 @@ exports.submitAll = async (req, res) => {
     }
 
     // Resolve location
-    let locationId = req.user ? (req.user.locationId || 2) : 2;
+    let locationId = injectLocationId(req) || (req.user && req.user.locationId) || null;
     const isGlobalAdmin = !req.user?.locationId || req.user?.isGlobalAdmin || ['Admin', 'Super Admin'].includes(req.user?.role);
     if (isGlobalAdmin && (req.body.location_id || req.body.locationId)) {
       locationId = parseInt(req.body.location_id || req.body.locationId, 10);
+    }
+    if (!locationId) {
+      return res.status(400).json({ success: false, error: 'Store location could not be determined.' });
     }
 
     const [checkpoints] = await db.query(

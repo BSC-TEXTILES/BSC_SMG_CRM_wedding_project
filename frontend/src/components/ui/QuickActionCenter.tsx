@@ -69,7 +69,7 @@ export default function QuickActionCenter() {
       ];
 
   return (
-    <div ref={containerRef} className="fixed bottom-6 right-6 z-40 flex flex-col items-end">
+    <div ref={containerRef} className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 flex flex-col items-end">
       {/* Expanded Speed Dial Menu */}
       {open && (
         <div className="mb-3 space-y-2 animate-fade-in">

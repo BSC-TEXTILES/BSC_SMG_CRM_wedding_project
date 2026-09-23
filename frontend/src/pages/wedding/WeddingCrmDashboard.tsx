@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import Sidebar from '../../components/Sidebar';
-import Topbar from '../../components/Topbar';
-import ToastContainer, { showToast } from '../../components/Toast';
+import DashboardLayout from '../../components/layouts/DashboardLayout';
+import PageContainer from '../../components/ui/PageContainer';
 import { API, Auth, UserSession } from '../../services/api';
-import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../../utils/sidebarState';
 import WeddingNav from './WeddingNav';
 import { WeddingStats, getStatusBadge } from './weddingTypes';
 import LocationFilterSelect from '../../components/ui/LocationFilterSelect';
@@ -184,25 +182,12 @@ export default function WeddingCrmDashboard() {
   }, [locationCards, session, globalAdminFromContext, selectedLocation]);
 
   return (
-    <div className="min-h-screen bg-[#F6F4EF] flex text-[#182033]">
-      <Sidebar
-        session={session}
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-      />
-
-      <div
-        className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${
-          collapsed ? 'lg:pl-20' : 'lg:pl-64'
-        }`}
-      >
-        <Topbar
-          title="Wedding CRM Dashboard"
-          session={session}
-          onMenuClick={() => setSidebarOpen(true)}
-        />
-
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-[1600px] w-full mx-auto space-y-6">
+    <DashboardLayout
+      title="Wedding CRM Dashboard"
+      breadcrumbs={[{ label: 'Wedding CRM', href: '/wedding-crm/dashboard' }, { label: 'Dashboard' }]}
+    >
+      <PageContainer maxWidth="full">
+        <div className="space-y-6">
           <ToastContainer />
 
           <WeddingNav
@@ -590,12 +575,12 @@ export default function WeddingCrmDashboard() {
                       No upcoming weddings recorded in the next 30 days.
                     </div>
                   )}
-                </div>
               </div>
             </div>
           </div>
-        </main>
-      </div>
-    </div>
+        </div>
+        </div>
+      </PageContainer>
+    </DashboardLayout>
   );
 }

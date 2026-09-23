@@ -83,8 +83,8 @@ router.get('/public/migrate-db', authenticate, authorize('Admin', 'Super Admin')
 
 // ── Candidate Routes ─────────────────────────────────────────
 router.get('/candidates', authenticate, authorizeLocationAccess(), candidateController.getCandidates);
-router.post('/candidates', candidateController.addCandidate);
-router.post('/candidates/add', candidateController.addCandidate);
+router.post('/candidates', optionalAuthenticate, candidateController.addCandidate);
+router.post('/candidates/add', optionalAuthenticate, candidateController.addCandidate);
 router.put('/candidates/:appNo', authenticate, authorizeLocationAccess(), candidateController.updateCandidate);
 router.post('/candidates/update', authenticate, authorizeLocationAccess(), candidateController.updateCandidate);
 router.delete('/candidates/:appNo', authenticate, authorize('Admin', 'Super Admin'), candidateController.deleteCandidate);

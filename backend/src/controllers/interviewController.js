@@ -437,14 +437,14 @@ const approveSelection = async (req, res) => {
     await db.query(
       `INSERT INTO selected_candidates (candidate_id, app_no, name, phone, designation, source, hr_score, assigned_score, total_score, decision_date, decision_by, is_probation, remarks, location_id)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [cand.id, appNo, candidate || cand.name, cand.phone, useDesig, cand.source, hrScore, assignedScore, hrScore + assignedScore, now, user, probation ? 1 : 0, remarks, cand.location_id || 2]
+      [cand.id, appNo, candidate || cand.name, cand.phone, useDesig, cand.source, hrScore, assignedScore, hrScore + assignedScore, now, user, probation ? 1 : 0, remarks, cand.location_id || req.user?.locationId || null]
     );
 
     const [offRows] = await db.query(`SELECT id FROM selection_offers WHERE app_no = ?`, [appNo]);
     if (offRows.length === 0) {
       await db.query(
         `INSERT INTO selection_offers (candidate_id, app_no, name, designation, department, notice_period, est_doj, status, location_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [cand.id, appNo, candidate || cand.name, useDesig, department || null, noticePd || null, estDoj ? new Date(estDoj) : null, 'Pending Accept', cand.location_id || 2]
+        [cand.id, appNo, candidate || cand.name, useDesig, department || null, noticePd || null, estDoj ? new Date(estDoj) : null, 'Pending Accept', cand.location_id || req.user?.locationId || null]
       );
     } else {
       const offUpd = [];
@@ -464,7 +464,7 @@ const approveSelection = async (req, res) => {
     await db.query(
       `INSERT INTO candidate_activities (candidate_id, app_no, action_type, icon, label, by_user, remarks, color, location_id)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [cand.id, appNo, 'selected', '✅', probation ? 'Selected (Probation)' : 'Selected by Manager', user, remarks, 'green', cand.location_id || 2]
+      [cand.id, appNo, 'selected', '✅', probation ? 'Selected (Probation)' : 'Selected by Manager', user, remarks, 'green', cand.location_id || req.user?.locationId || null]
     );
 
     await logAction(user, 'APPROVE_SELECTION', 'INTERVIEW', { appNo, probation });
@@ -494,7 +494,7 @@ const rejectCandidate = async (req, res) => {
     await db.query(
       `INSERT INTO rejected_candidates (candidate_id, app_no, name, phone, designation, source, stage, rejection_date, rejected_by, remarks, location_id)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [cand.id, appNo, cand.name, cand.phone, cand.designation, cand.source, stage, now, user, remarks, cand.location_id || 2]
+      [cand.id, appNo, cand.name, cand.phone, cand.designation, cand.source, stage, now, user, remarks, cand.location_id || req.user?.locationId || null]
     );
 
     await logAction(user, 'REJECT_CANDIDATE', 'INTERVIEW', { appNo, stage, remarks });

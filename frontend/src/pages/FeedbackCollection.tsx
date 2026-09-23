@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Sidebar from '../components/Sidebar';
-import Topbar from '../components/Topbar';
+import DashboardLayout from '../components/layouts/DashboardLayout';
+import PageContainer from '../components/ui/PageContainer';
 import ToastContainer, { showToast } from '../components/Toast';
 import { API, Auth, UserSession } from '../services/api';
-import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../utils/sidebarState';
 import { useLocationContext, LocationItem } from '../context/LocationContext';
 import { useRealtimeSection } from '../hooks/useRealtimeSection';
 import {
@@ -41,14 +40,7 @@ import {
 
 export default function FeedbackCollection() {
   const navigate = useNavigate();
-  const [session, setSession] = useState<UserSession | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState<boolean>(getSidebarCollapsed());
   const { currentLocation, setCurrentLocation, allLocations, currentLocationLabel, isGlobalAdmin, canSwitch } = useLocationContext();
-
-  useEffect(() => {
-    return subscribeSidebarCollapsed(setCollapsed);
-  }, []);
 
   // Feedbacks & Stats
   const [feedbacks, setFeedbacks] = useState<any[]>([]);
@@ -271,18 +263,10 @@ export default function FeedbackCollection() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <DashboardLayout title="Customer Feedback Collection & Analytics">
       <ToastContainer />
-      <Sidebar session={session} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-
-      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${collapsed ? 'lg:pl-20' : 'lg:pl-64'}`}>
-        <Topbar
-          title="Customer Feedback Collection & Analytics"
-          session={session}
-          onMenuClick={() => setSidebarOpen(true)}
-        />
-
-        <main className="p-4 lg:p-6 space-y-6 flex-1 overflow-y-auto">
+      <PageContainer maxWidth="full">
+        <div className="space-y-6">
           {/* Header & Quick Action Bar */}
           <div className="card-glass p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div>
@@ -617,123 +601,231 @@ export default function FeedbackCollection() {
                 <p className="text-gray-400 font-medium">Customer responses from the Customer Experience Survey will appear here in real-time.</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr className="border-b border-accent-soft text-[10.5px] font-black uppercase text-primary bg-background/80">
-                      <th className="py-3 px-4">Date &amp; Time</th>
-                      <th className="py-3 px-4">Store Location</th>
-                      <th className="py-3 px-4">Customer Details</th>
-                      <th className="py-3 px-4">Overall Experience</th>
-                      <th className="py-3 px-4">Product Found</th>
-                      <th className="py-3 px-4">Sentiment</th>
-                      <th className="py-3 px-4">Voice of Customer</th>
-                      <th className="py-3 px-4 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-accent-soft/60">
-                    {feedbacks.map((f: any) => {
-                      const ans = f.answers || {};
-                      const overallExp = ans['q1'] || 'Satisfied';
-                      const productFound = ans['q2'] || 'Yes';
-                      const locId = Number(f.location_id);
-                      const locCode = f.locationCode || (locId === 1 ? 'BEL' : locId === 3 ? 'SHI' : 'DAV');
-                      const locName = f.locationName || (locId === 1 ? 'Belagavi' : locId === 3 ? 'Shivamogga' : 'Davanagere');
+              <>
+                {/* Desktop Table View */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-accent-soft text-[10.5px] font-black uppercase text-primary bg-background/80">
+                        <th className="py-3 px-4">Date &amp; Time</th>
+                        <th className="py-3 px-4">Store Location</th>
+                        <th className="py-3 px-4">Customer Details</th>
+                        <th className="py-3 px-4">Overall Experience</th>
+                        <th className="py-3 px-4">Product Found</th>
+                        <th className="py-3 px-4">Sentiment</th>
+                        <th className="py-3 px-4">Voice of Customer</th>
+                        <th className="py-3 px-4 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-accent-soft/60">
+                      {feedbacks.map((f: any) => {
+                        const ans = f.answers || {};
+                        const overallExp = ans['q1'] || 'Satisfied';
+                        const productFound = ans['q2'] || 'Yes';
+                        const locId = Number(f.location_id);
+                        const locCode = f.locationCode || (locId === 1 ? 'BEL' : locId === 3 ? 'SHI' : 'DAV');
+                        const locName = f.locationName || (locId === 1 ? 'Belagavi' : locId === 3 ? 'Shivamogga' : 'Davanagere');
 
-                      return (
-                        <tr key={f.id} className="hover:bg-black/5 font-medium transition-colors">
-                          <td className="py-3.5 px-4 text-[#5D4E42]">
-                            <div className="font-bold text-primary font-mono text-[11px]">
-                              {f.entryDate || 'Today'}
-                            </div>
-                            {f.entryTime && (
-                              <div className="text-[10.5px] text-gray-500 font-semibold flex items-center gap-1 mt-0.5">
-                                <Clock className="w-3 h-3 text-accent" />
-                                <span>{f.entryTime}</span>
+                        return (
+                          <tr key={f.id} className="hover:bg-black/5 font-medium transition-colors">
+                            <td className="py-3.5 px-4 text-[#5D4E42]">
+                              <div className="font-bold text-primary font-mono text-[11px]">
+                                {f.entryDate || 'Today'}
                               </div>
-                            )}
-                          </td>
-                          <td className="py-3.5 px-4">
-                            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-black uppercase tracking-wide border shadow-2xs ${
-                              locCode === 'BEL' || locId === 1
-                                ? 'bg-blue-50 text-blue-800 border-blue-200'
-                                : locCode === 'DAV' || locId === 2
-                                ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                                : 'bg-purple-50 text-purple-800 border-purple-200'
-                            }`}>
-                              <MapPin className="w-3 h-3 flex-shrink-0" />
-                              <span>{locName} ({locCode})</span>
-                            </span>
-                          </td>
-                          <td className="py-3.5 px-4">
-                            <div className="font-extrabold text-primary flex items-center gap-1.5">
+                              {f.entryTime && (
+                                <div className="text-[10.5px] text-gray-500 font-semibold flex items-center gap-1 mt-0.5">
+                                  <Clock className="w-3 h-3 text-accent" />
+                                  <span>{f.entryTime}</span>
+                                </div>
+                              )}
+                            </td>
+                            <td className="py-3.5 px-4">
+                              <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-black uppercase tracking-wide border shadow-2xs ${
+                                locCode === 'BEL' || locId === 1
+                                  ? 'bg-blue-50 text-blue-800 border-blue-200'
+                                  : locCode === 'DAV' || locId === 2
+                                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                  : 'bg-purple-50 text-purple-800 border-purple-200'
+                              }`}>
+                                <MapPin className="w-3 h-3 flex-shrink-0" />
+                                <span>{locName} ({locCode})</span>
+                              </span>
+                            </td>
+                            <td className="py-3.5 px-4">
+                              <div className="font-extrabold text-primary flex items-center gap-1.5">
+                                <User className="w-3.5 h-3.5 text-accent" />
+                                <span>{f.customerName || 'Anonymous'}</span>
+                              </div>
+                              {f.mobile && (
+                                <div className="text-[11px] text-gray-500 font-mono flex items-center gap-1 mt-0.5">
+                                  <Phone className="w-3 h-3 text-gray-400" />
+                                  <span>{f.mobile}</span>
+                                </div>
+                              )}
+                            </td>
+                            <td className="py-3.5 px-4">
+                              <span className="px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-primary/10 text-primary">
+                                {overallExp}
+                              </span>
+                            </td>
+                            <td className="py-3.5 px-4">
+                              <span className="text-xs font-bold text-gray-700">{productFound}</span>
+                            </td>
+                            <td className="py-3.5 px-4">
+                              {f.status === 'resolved' || f.status === 'closed' ? (
+                                <span className="px-2.5 py-1 rounded-full text-xs font-extrabold bg-emerald-100 text-emerald-800 flex items-center gap-1 w-max shadow-xs">
+                                  <CircleCheck className="w-3.5 h-3.5" /> Resolved &amp; Closed
+                                </span>
+                              ) : f.status === 'escalated_manager' ? (
+                                <span className="px-2.5 py-1 rounded-full text-xs font-extrabold bg-purple-100 text-purple-900 border border-purple-300 flex items-center gap-1 w-max shadow-xs">
+                                  <ShieldAlert className="w-3.5 h-3.5 text-purple-700" /> Escalated to Manager
+                                </span>
+                              ) : f.status === 'called' || f.status === 'in_progress' ? (
+                                <span className="px-2.5 py-1 rounded-full text-xs font-extrabold bg-blue-100 text-blue-800 flex items-center gap-1 w-max shadow-xs">
+                                  <Clock className="w-3.5 h-3.5" /> In Progress
+                                </span>
+                              ) : f.isNegative ? (
+                                <span className="px-2.5 py-1 rounded-full text-xs font-extrabold bg-rose-100 text-rose-800 flex items-center gap-1 w-max shadow-xs">
+                                  <ThumbsDown className="w-3.5 h-3.5" /> Auto-Escalated (New)
+                                </span>
+                              ) : (
+                                <span className="px-2.5 py-1 rounded-full text-xs font-extrabold bg-emerald-50 text-emerald-700 flex items-center gap-1 w-max border border-emerald-200">
+                                  <ThumbsUp className="w-3.5 h-3.5 text-emerald-600" /> Satisfied
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-3.5 px-4 max-w-xs truncate text-[#5D4E42] font-medium text-[11px]">
+                              {f.voice || 'No extra comments'}
+                            </td>
+                            <td className="py-3.5 px-4 text-right">
+                              <div className="flex items-center justify-end gap-1.5">
+                                <button
+                                  onClick={() => handleOpenModal(f)}
+                                  className="px-3 py-1.5 rounded-xl border border-primary text-primary font-extrabold text-[11px] hover:bg-primary hover:text-white transition-all flex items-center gap-1 shadow-xs cursor-pointer"
+                                >
+                                  <Eye className="w-3.5 h-3.5" /> View Ticket
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteFeedback(f.id)}
+                                  className="p-1.5 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-600 hover:text-white transition-all shadow-xs cursor-pointer"
+                                  title="Delete this feedback record"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile Responsive Cards View */}
+                <div className="md:hidden space-y-3">
+                  {feedbacks.map((f: any) => {
+                    const ans = f.answers || {};
+                    const overallExp = ans['q1'] || 'Satisfied';
+                    const productFound = ans['q2'] || 'Yes';
+                    const locId = Number(f.location_id);
+                    const locCode = f.locationCode || (locId === 1 ? 'BEL' : locId === 3 ? 'SHI' : 'DAV');
+                    const locName = f.locationName || (locId === 1 ? 'Belagavi' : locId === 3 ? 'Shivamogga' : 'Davanagere');
+
+                    return (
+                      <div key={f.id} className="bg-white rounded-xl border border-gray-200 p-4 shadow-xs space-y-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wide border ${
+                            locCode === 'BEL' || locId === 1
+                              ? 'bg-blue-50 text-blue-800 border-blue-200'
+                              : locCode === 'DAV' || locId === 2
+                              ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                              : 'bg-purple-50 text-purple-800 border-purple-200'
+                          }`}>
+                            <MapPin className="w-3 h-3 flex-shrink-0" />
+                            <span>{locName} ({locCode})</span>
+                          </span>
+                          <span className="text-[10px] text-gray-500 font-mono font-medium flex items-center gap-1">
+                            <Clock className="w-3 h-3 text-accent" />
+                            {f.entryDate || 'Today'} {f.entryTime && `• ${f.entryTime}`}
+                          </span>
+                        </div>
+
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <div className="font-extrabold text-primary flex items-center gap-1.5 text-sm">
                               <User className="w-3.5 h-3.5 text-accent" />
                               <span>{f.customerName || 'Anonymous'}</span>
                             </div>
                             {f.mobile && (
-                              <div className="text-[11px] text-gray-500 font-mono flex items-center gap-1 mt-0.5">
-                                <Phone className="w-3 h-3 text-gray-400" />
+                              <a
+                                href={`tel:${f.mobile}`}
+                                className="text-xs text-primary font-mono font-bold flex items-center gap-1 mt-0.5 hover:underline"
+                              >
+                                <Phone className="w-3 h-3 text-accent" />
                                 <span>{f.mobile}</span>
-                              </div>
+                              </a>
                             )}
-                          </td>
-                          <td className="py-3.5 px-4">
-                            <span className="px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-primary/10 text-primary">
-                              {overallExp}
-                            </span>
-                          </td>
-                          <td className="py-3.5 px-4">
-                            <span className="text-xs font-bold text-gray-700">{productFound}</span>
-                          </td>
-                          <td className="py-3.5 px-4">
+                          </div>
+                          <div>
                             {f.status === 'resolved' || f.status === 'closed' ? (
-                              <span className="px-2.5 py-1 rounded-full text-xs font-extrabold bg-emerald-100 text-emerald-800 flex items-center gap-1 w-max shadow-xs">
-                                <CircleCheck className="w-3.5 h-3.5" /> Resolved &amp; Closed
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 flex items-center gap-1">
+                                <CircleCheck className="w-3 h-3" /> Resolved
                               </span>
                             ) : f.status === 'escalated_manager' ? (
-                              <span className="px-2.5 py-1 rounded-full text-xs font-extrabold bg-purple-100 text-purple-900 border border-purple-300 flex items-center gap-1 w-max shadow-xs">
-                                <ShieldAlert className="w-3.5 h-3.5 text-purple-700" /> Escalated to Manager
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-purple-100 text-purple-900 border border-purple-300 flex items-center gap-1">
+                                <ShieldAlert className="w-3 h-3 text-purple-700" /> Escalated
                               </span>
                             ) : f.status === 'called' || f.status === 'in_progress' ? (
-                              <span className="px-2.5 py-1 rounded-full text-xs font-extrabold bg-blue-100 text-blue-800 flex items-center gap-1 w-max shadow-xs">
-                                <Clock className="w-3.5 h-3.5" /> In Progress
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-100 text-blue-800 flex items-center gap-1">
+                                <Clock className="w-3 h-3" /> In Progress
                               </span>
                             ) : f.isNegative ? (
-                              <span className="px-2.5 py-1 rounded-full text-xs font-extrabold bg-rose-100 text-rose-800 flex items-center gap-1 w-max shadow-xs">
-                                <ThumbsDown className="w-3.5 h-3.5" /> Auto-Escalated (New)
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-100 text-rose-800 flex items-center gap-1">
+                                <ThumbsDown className="w-3 h-3" /> Escalated
                               </span>
                             ) : (
-                              <span className="px-2.5 py-1 rounded-full text-xs font-extrabold bg-emerald-50 text-emerald-700 flex items-center gap-1 w-max border border-emerald-200">
-                                <ThumbsUp className="w-3.5 h-3.5 text-emerald-600" /> Satisfied
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-50 text-emerald-700 flex items-center gap-1 border border-emerald-200">
+                                <ThumbsUp className="w-3 h-3 text-emerald-600" /> Satisfied
                               </span>
                             )}
-                          </td>
-                          <td className="py-3.5 px-4 max-w-xs truncate text-[#5D4E42] font-medium text-[11px]">
-                            {f.voice || 'No extra comments'}
-                          </td>
-                          <td className="py-3.5 px-4 text-right">
-                            <div className="flex items-center justify-end gap-1.5">
-                              <button
-                                onClick={() => handleOpenModal(f)}
-                                className="px-3 py-1.5 rounded-xl border border-primary text-primary font-extrabold text-[11px] hover:bg-primary hover:text-white transition-all flex items-center gap-1 shadow-xs cursor-pointer"
-                              >
-                                <Eye className="w-3.5 h-3.5" /> View Ticket
-                              </button>
-                              <button
-                                onClick={() => handleDeleteFeedback(f.id)}
-                                className="p-1.5 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-600 hover:text-white transition-all shadow-xs cursor-pointer"
-                                title="Delete this feedback record"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-primary/10 text-primary">
+                            Exp: {overallExp}
+                          </span>
+                          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-gray-100 text-gray-700">
+                            Found: {productFound}
+                          </span>
+                        </div>
+
+                        {f.voice && (
+                          <p className="text-[11px] text-gray-600 italic bg-gray-50 p-2.5 rounded-lg border border-gray-100">
+                            "{f.voice}"
+                          </p>
+                        )}
+
+                        <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+                          <button
+                            onClick={() => handleOpenModal(f)}
+                            className="px-3 py-1.5 rounded-xl border border-primary text-primary font-bold text-xs hover:bg-primary hover:text-white transition-all flex items-center gap-1 shadow-xs"
+                          >
+                            <Eye className="w-3.5 h-3.5" /> View Ticket
+                          </button>
+                          <button
+                            onClick={() => handleDeleteFeedback(f.id)}
+                            className="p-1.5 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-600 hover:text-white transition-all shadow-xs"
+                            title="Delete this feedback record"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
             )}
           </div>
 
@@ -1107,8 +1199,8 @@ export default function FeedbackCollection() {
               </div>
             </div>
           )}
-        </main>
-      </div>
-    </div>
+        </div>
+      </PageContainer>
+    </DashboardLayout>
   );
 }

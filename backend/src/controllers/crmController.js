@@ -198,7 +198,16 @@ exports.getFootfall = async (req, res) => {
 exports.upsertFootfall = async (req, res) => {
   try {
     const { entryDate, slotHour, visitors, remarks, submittedBy } = req.body;
-    const locationId = injectLocationId(req) || 2;
+    let locationId = injectLocationId(req);
+    if (!locationId && (req.body.location_id || req.body.locationId)) {
+      locationId = Number(req.body.location_id || req.body.locationId) || null;
+    }
+    if (!locationId && req.user && req.user.locationId) {
+      locationId = req.user.locationId;
+    }
+    if (!locationId) {
+      return res.status(400).json({ success: false, error: 'Store location could not be determined. Please specify a valid store location.' });
+    }
     const id = getUUID();
     await db.query(`
       INSERT INTO FootfallEntries (id, location_id, entryDate, slotHour, visitors, remarks, submittedBy)
@@ -463,12 +472,21 @@ exports.submitFeedback = async (req, res) => {
       }
 
       if (!targetLocId || !ID_TO_CODE_MAP[targetLocId]) {
-        targetLocId = injectLocationId(req) || 2;
-        targetLocCode = ID_TO_CODE_MAP[targetLocId] || 'DAV';
+        targetLocId = injectLocationId(req) || (req.user && req.user.locationId) || null;
+        if (targetLocId && ID_TO_CODE_MAP[targetLocId]) {
+          targetLocCode = ID_TO_CODE_MAP[targetLocId];
+        }
       }
     }
 
-    const targetLocName = LOCATION_NAME_MAP[targetLocCode] || 'Davanagere';
+    if (!targetLocId || !ID_TO_CODE_MAP[targetLocId]) {
+      return res.status(400).json({
+        success: false,
+        error: 'Store location could not be determined. Please submit feedback using a valid store QR code or select your store branch.'
+      });
+    }
+
+    const targetLocName = LOCATION_NAME_MAP[targetLocCode] || (targetLocId === 1 ? 'Belagavi' : targetLocId === 3 ? 'Shivamogga' : 'Davanagere');
 
     // Insert with duplicate-ID retry (two customers can submit simultaneously)
     let insertOk = false;
@@ -948,7 +966,7 @@ exports.updateCallQueue = async (req, res) => {
 
     if (!updated) {
       const newCqId = getUUID();
-      const locationId = injectLocationId(req) || 2;
+      const locationId = injectLocationId(req) || (req.user && req.user.locationId) || null;
       try {
         await db.query(`
           INSERT INTO CallQueue (id, location_id, feedbackId, entryDate, customerName, mobile, status, notes, attempts)
@@ -1039,7 +1057,10 @@ exports.getDiverts = async (req, res) => {
 exports.createDivert = async (req, res) => {
   try {
     const { sectionId, productWanted, quantity, priceRange, reasonCode, customerName, customerMobile: rawMobile, createdBy } = req.body;
-    const locationId = injectLocationId(req) || 2;
+    const locationId = injectLocationId(req) || (req.user && req.user.locationId) || null;
+    if (!locationId) {
+      return res.status(400).json({ success: false, error: 'Store location could not be determined.' });
+    }
     const id = getUUID();
     const entryDate = new Date().toISOString().split('T')[0];
     
@@ -1128,7 +1149,10 @@ exports.getCashSettlement = async (req, res) => {
 exports.saveCashSettlement = async (req, res) => {
   try {
     const { entryDate, saleAmount, billsCount, cashTotal, cardTotal, upiTotal, submittedBy, counters } = req.body;
-    const locationId = injectLocationId(req) || 2;
+    const locationId = injectLocationId(req) || (req.user && req.user.locationId) || null;
+    if (!locationId) {
+      return res.status(400).json({ success: false, error: 'Store location could not be determined.' });
+    }
     const [existing] = await db.query('SELECT id FROM CashSettlements WHERE entryDate = ? AND location_id = ?', [entryDate, locationId]);
     const settlementId = existing.length > 0 ? existing[0].id : getUUID();
 
@@ -1218,7 +1242,10 @@ exports.getVmSubmissions = async (req, res) => {
 exports.submitVm = async (req, res) => {
   try {
     const { shift, floor, section, scorePercent, submittedBy, entries } = req.body;
-    const locationId = injectLocationId(req) || 2;
+    const locationId = injectLocationId(req) || (req.user && req.user.locationId) || null;
+    if (!locationId) {
+      return res.status(400).json({ success: false, error: 'Store location could not be determined.' });
+    }
     const submissionId = getUUID();
     const entryDate = new Date().toISOString().split('T')[0];
 

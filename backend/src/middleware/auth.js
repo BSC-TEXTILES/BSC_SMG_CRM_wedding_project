@@ -520,7 +520,7 @@ const injectLocationId = (req) => {
   const isGlobalAdmin = isAdminRole && (!req.user.locationId || req.user.isGlobalAdmin);
 
   if (isGlobalAdmin) {
-    return requestedLocationId || 1;
+    return requestedLocationId || null;
   }
 
   let allowed = req.user.allowedLocations;

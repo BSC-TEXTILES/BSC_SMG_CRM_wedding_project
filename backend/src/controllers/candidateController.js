@@ -22,9 +22,20 @@ class CandidateController {
   async addCandidate(req, res) {
     try {
       const d = req.body.data || req.body;
-      // Inject authenticated user's location — frontend cannot override this
-      const locationId = injectLocationId(req) || 2; // fallback to Davanagere
-      const locationCode = (req.user && req.user.locationCode) ? req.user.locationCode : 'DAV';
+      let locationId = injectLocationId(req);
+      if (!locationId && (d.locationId || d.location_id)) {
+        const rawLoc = d.locationId || d.location_id;
+        const parsed = parseInt(rawLoc, 10);
+        locationId = (!isNaN(parsed) && parsed > 0) ? parsed : null;
+      }
+      if (!locationId && req.user && req.user.locationId) {
+        locationId = req.user.locationId;
+      }
+      if (!locationId) {
+        return errorRes(res, 'Store location could not be determined. Please specify a valid store location.', ['locationId missing'], 400);
+      }
+      const locCodeMap = { 1: 'BEL', 2: 'DAV', 3: 'SHI' };
+      const locationCode = (req.user && req.user.locationCode) ? req.user.locationCode : (locCodeMap[locationId] || 'BEL');
       const result = await candidateService.addCandidate({ ...d, locationId, locationCode });
       realtimeService.emitCandidateChange('CREATE', { appNo: result.appNo, candidateCode: result.candidateCode, ...d }, locationId);
       return res.json({ success: true, appNo: result.appNo, candidateCode: result.candidateCode });
@@ -481,8 +492,8 @@ const createdDate = new Date(r.created_at || Date.now());
           q4: r.q4 || '',
           remarks: r.remarks || r.offer_remarks || '',
           section: r.section || '',
-          locationId: r.location_id || 2,
-          locationCode: r.location_code || 'DAV',
+          locationId: r.location_id || null,
+          locationCode: r.location_code || (r.location_id === 1 ? 'BEL' : r.location_id === 2 ? 'DAV' : r.location_id === 3 ? 'SHI' : null),
           createdAt: r.created_at || null,
           rawDate,
           date: joiningDateObj.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })

@@ -52,7 +52,7 @@ class DeptHiringController {
 
       const reqCount = parseInt(requiredOpenings, 10) || 0;
       const targetCount = parseInt(hiringTarget, 10) || reqCount;
-      const locId = getEffectiveLocationId(req) || (req.user && req.user.locationId) || 2;
+      const locId = injectLocationId(req) || getEffectiveLocationId(req) || (req.user && req.user.locationId) || null;
 
       await pool.query(`
         INSERT INTO department_hiring_targets (department, section, designation, required_openings, hiring_target, remarks, location_id)
@@ -97,7 +97,7 @@ class DeptHiringController {
         return res.status(400).json({ success: false, error: 'Employee ID is required' });
       }
 
-      const locId = getEffectiveLocationId(req) || (req.user && req.user.locationId) || 2;
+      const locId = injectLocationId(req) || getEffectiveLocationId(req) || (req.user && req.user.locationId) || null;
 
       await pool.query(`
         INSERT INTO section_allocations (employee_id, app_no, employee_name, department, section, assigned_by, notes, location_id)
@@ -126,7 +126,7 @@ class DeptHiringController {
       }
 
       const targetSection = action === 'remove' ? '' : (section || '');
-      const locId = getEffectiveLocationId(req) || (req.user && req.user.locationId) || 2;
+      const locId = injectLocationId(req) || getEffectiveLocationId(req) || (req.user && req.user.locationId) || null;
 
       for (const emp of employees) {
         const empId = emp.employeeId || emp.id || emp.appNo;

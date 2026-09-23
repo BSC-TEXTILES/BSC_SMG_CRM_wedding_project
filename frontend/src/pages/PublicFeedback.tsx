@@ -23,6 +23,7 @@ import {
   Check,
   Award,
   ShoppingBag,
+  ChevronRight,
   Lock
 } from 'lucide-react';
 import { API } from '../services/api';
@@ -48,9 +49,16 @@ export default function PublicFeedback() {
   const qrCodeId = searchParams.get('qr'); // Legacy support
   const locationCode = searchParams.get('location'); // New location-based parameter
   
-  // Determine the effective location
-  const effectiveLocationCode = locationCode?.toUpperCase() || qrCodeId;
-  const location = LOCATIONS[effectiveLocationCode as keyof typeof LOCATIONS] || LOCATIONS.DAV;
+  // Determine the effective location without hardcoded fallback
+  const [selectedLocKey, setSelectedLocKey] = useState<string>(() => {
+    const raw = (locationCode || qrCodeId || '').toUpperCase();
+    if (raw && LOCATIONS[raw as keyof typeof LOCATIONS]) {
+      return raw;
+    }
+    return '';
+  });
+
+  const location = selectedLocKey ? LOCATIONS[selectedLocKey as keyof typeof LOCATIONS] : null;
 
   const [questions, setQuestions] = useState<any[]>(defaultQuestions);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -135,6 +143,40 @@ export default function PublicFeedback() {
     if (l.includes('dissatisfied') || l.includes('poor') || l.includes('no') || l.includes('not recommend')) return <Frown className="w-4 h-4 text-rose-500 shrink-0" />;
     return <Star className="w-4 h-4 text-accent shrink-0" />;
   };
+
+  if (!location) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4 select-text">
+        <div className="card-glass p-8 max-w-md w-full text-center space-y-6 animate-scale-in">
+          <div className="w-16 h-16 bg-primary text-accent rounded-3xl flex items-center justify-center mx-auto shadow-xl">
+            <Store className="w-8 h-8" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-black text-primary">BSC Customer Feedback</h2>
+            <p className="text-gray-600 text-xs font-semibold mt-1">
+              Please select the BSC Exclusive store you visited today to start your feedback:
+            </p>
+          </div>
+          <div className="space-y-3">
+            {Object.entries(LOCATIONS).map(([key, loc]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setSelectedLocKey(key)}
+                className="w-full p-4 rounded-2xl bg-white hover:bg-accent-soft/30 border border-accent-soft hover:border-accent text-left flex items-center justify-between transition-all group shadow-xs cursor-pointer"
+              >
+                <div>
+                  <div className="font-extrabold text-sm text-primary">{loc.name}</div>
+                  <div className="text-[11px] text-gray-500">{loc.storeName}</div>
+                </div>
+                <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-accent group-hover:translate-x-1 transition-transform" />
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (submitted) {
     return (

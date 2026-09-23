@@ -287,7 +287,7 @@ const createDirectOffer = async (req, res) => {
       // Insert new offer
       await db.query(
         `INSERT INTO selection_offers (app_no, name, designation, department, notice_period, est_doj, status, created_at, updated_at, remarks, location_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [appNo, c.name, finalDesig, finalDept, null, doj, 'Shortlisted', now, now, remarks || null, c.location_id || 2]
+        [appNo, c.name, finalDesig, finalDept, null, doj, 'Shortlisted', now, now, remarks || null, c.location_id || req.user?.locationId || null]
       );
     }
 

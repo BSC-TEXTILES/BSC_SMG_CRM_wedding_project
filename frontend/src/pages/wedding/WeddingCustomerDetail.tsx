@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import Sidebar from '../../components/Sidebar';
-import Topbar from '../../components/Topbar';
+import DashboardLayout from '../../components/layouts/DashboardLayout';
+import PageContainer from '../../components/ui/PageContainer';
 import ToastContainer, { showToast } from '../../components/Toast';
 import { API, Auth, UserSession } from '../../services/api';
-import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../../utils/sidebarState';
 import WeddingNav from './WeddingNav';
 import {
   WeddingCustomer,
@@ -42,13 +41,6 @@ export default function WeddingCustomerDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [session, setSession] = useState<UserSession | null>(() => Auth.get());
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState<boolean>(getSidebarCollapsed());
-
-  useEffect(() => {
-    return subscribeSidebarCollapsed(setCollapsed);
-  }, []);
-
   const [customer, setCustomer] = useState<WeddingCustomer | null>(null);
   const [callLogs, setCallLogs] = useState<CallLog[]>([]);
   const [notes, setNotes] = useState<any[]>([]);
@@ -261,26 +253,10 @@ export default function WeddingCustomerDetail() {
   const badge = getStatusBadge(customer.customer_status);
 
   return (
-    <div className="min-h-screen bg-[#F6F4EF] flex text-[#182033]">
-      <Sidebar
-        session={session}
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-      />
-
-      <div
-        className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${
-          collapsed ? 'lg:pl-20' : 'lg:pl-64'
-        }`}
-      >
-        <Topbar
-          title={customer ? `Customer Profile: ${customer.customer_name}` : 'Customer Details'}
-          session={session}
-          onMenuClick={() => setSidebarOpen(true)}
-        />
-
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-[1600px] w-full mx-auto space-y-6">
-          <ToastContainer />
+    <DashboardLayout title={customer ? `Customer Profile: ${customer.customer_name}` : 'Customer Details'}>
+      <PageContainer maxWidth="full">
+        <ToastContainer />
+        <div className="space-y-6">
 
           <WeddingNav
             currentPageTitle={customer.customer_name}
@@ -1046,8 +1022,8 @@ export default function WeddingCustomerDetail() {
               </div>
             </div>
           )}
-        </main>
-      </div>
-    </div>
+        </div>
+      </PageContainer>
+    </DashboardLayout>
   );
 }

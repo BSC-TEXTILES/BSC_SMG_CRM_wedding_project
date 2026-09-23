@@ -1,13 +1,31 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { UserCheck, Plus, Minus, KeyRound, Clock, Sparkles, RefreshCw, ShieldCheck, Activity, Users, Store, Zap } from 'lucide-react';
-import { API } from '../services/api';
+import { UserCheck, Plus, Minus, KeyRound, Clock, Sparkles, RefreshCw, ShieldCheck, Activity, Users, Store, Zap, MapPin } from 'lucide-react';
+import { API, Auth } from '../services/api';
 import { showToast } from '../components/Toast';
 import { io } from 'socket.io-client';
+import { useLocationContext } from '../context/LocationContext';
 
 export default function Greeter() {
+  const locCtx = useLocationContext();
+  const session = Auth.get();
+  const roleNorm = (session?.role || '').toLowerCase().replace(/[_\s-]+/g, ' ');
+  const isAdmin = ['admin', 'super admin', 'system administrator'].includes(roleNorm);
+
   const [authenticated, setAuthenticated] = useState<boolean>(false);
   const [pin, setPin] = useState<string>('');
   const [pinError, setPinError] = useState<string | null>(null);
+
+  // Selected store for Kiosk
+  const [kioskLocationId, setKioskLocationId] = useState<string>(() => {
+    if (session?.locationId) return String(session.locationId);
+    if (locCtx.currentLocation && locCtx.currentLocation !== 'ALL') return locCtx.currentLocation;
+    return '1'; // Belagavi default if unspecified
+  });
+
+  const activeStore = useMemo(() => {
+    const found = locCtx.allLocations.find(l => String(l.id) === kioskLocationId);
+    return found || locCtx.allLocations[0] || { id: 1, name: 'Belagavi', code: 'BEL' };
+  }, [kioskLocationId, locCtx.allLocations]);
 
   const [currentSlotCount, setCurrentSlotCount] = useState<number>(0);
   const [activeSlotHour, setActiveSlotHour] = useState<number>(new Date().getHours());
@@ -29,7 +47,7 @@ export default function Greeter() {
       const nowHour = new Date().getHours();
       setActiveSlotHour(nowHour);
 
-      const res = await API.getFootfall(today);
+      const res = await API.getFootfall(today, { location_id: Number(kioskLocationId) });
       if (res && res.entries && Array.isArray(res.entries)) {
         const currentSlotEntry = res.entries.find((e: any) => Number(e.slotHour) === nowHour);
         const countFromDB = Number(currentSlotEntry?.visitors || 0);
@@ -41,7 +59,7 @@ export default function Greeter() {
     } catch (err) {
       console.warn('Greeter footfall fetch error:', err);
     }
-  }, []);
+  }, [kioskLocationId]);
 
   useEffect(() => {
     if (!authenticated) return;
@@ -53,7 +71,7 @@ export default function Greeter() {
     socket.on('footfall:updated', (data: any) => {
       const today = new Date().toISOString().split('T')[0];
       const nowHour = new Date().getHours();
-      if (data && data.entryDate === today && Number(data.slotHour) === nowHour) {
+      if (data && data.entryDate === today && Number(data.slotHour) === nowHour && (!data.location_id || Number(data.location_id) === Number(kioskLocationId))) {
         setCurrentSlotCount(Number(data.visitors) || 0);
       }
     });
@@ -67,7 +85,7 @@ export default function Greeter() {
       socket.disconnect();
       clearInterval(interval);
     };
-  }, [authenticated, fetchCurrentFootfall]);
+  }, [authenticated, fetchCurrentFootfall, kioskLocationId]);
 
   const handleVerifyPin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -119,6 +137,7 @@ export default function Greeter() {
         entryDate: today,
         slotHour: nowHour,
         visitors: newCount,
+        location_id: Number(kioskLocationId),
         remarks: 'Greeter Entrance Kiosk',
         submittedBy: 'Greeter'
       });
@@ -145,11 +164,31 @@ export default function Greeter() {
           </div>
           <div>
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400/10 border border-amber-400/30 text-amber-300 text-[10px] font-black uppercase tracking-widest mb-2">
-              <Store className="w-3 h-3" /> BSC EXCLUSIVE DAVANAGERE
+              <Store className="w-3 h-3" /> BSC EXCLUSIVE · {activeStore.name.toUpperCase()}
             </div>
             <h2 className="text-2xl font-black text-white tracking-tight">Greeter Kiosk Gate</h2>
             <p className="text-white/90 text-xs font-semibold mt-1">Enter 4-digit Greeter PIN to launch entrance clicker tablet</p>
           </div>
+
+          {/* Location selector for Admin/Multi-location before unlocking */}
+          {(isAdmin || locCtx.canSwitch) && (
+            <div className="max-w-xs mx-auto text-left space-y-1">
+              <label className="text-[11px] font-extrabold uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
+                <MapPin className="w-3 h-3" /> Store Location
+              </label>
+              <select
+                value={kioskLocationId}
+                onChange={(e) => setKioskLocationId(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl bg-black/40 border border-white/20 text-white text-xs font-bold focus:outline-none focus:border-accent"
+              >
+                {locCtx.allLocations.map((loc) => (
+                  <option key={loc.id} value={loc.id} className="bg-[#101C36] text-white">
+                    {loc.name} ({loc.code})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <form onSubmit={handleVerifyPin} className="space-y-4">
             <div className="relative max-w-xs mx-auto">
@@ -293,7 +332,7 @@ export default function Greeter() {
 
       {/* Footer Info */}
       <div className="text-center text-[10.5px] text-white/50 font-bold pb-1 relative z-10">
-        <span>BSC EXCLUSIVE DAVANAGERE • ENTERPRISE KIOSK DISPATCH</span>
+        <span>BSC EXCLUSIVE · {activeStore.name.toUpperCase()} • ENTERPRISE KIOSK DISPATCH</span>
       </div>
     </div>
   );

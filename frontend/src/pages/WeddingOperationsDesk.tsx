@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import DashboardLayout from '../components/layouts/DashboardLayout';
+import PageContainer from '../components/ui/PageContainer';
 import MetricCard from '../components/ui/MetricCard';
 import { showToast } from '../components/Toast';
 import { API, Auth, UserSession } from '../services/api';
@@ -343,8 +344,10 @@ export default function WeddingOperationsDesk() {
       title="Wedding Operations Desk"
       subtitle="Real-time wedding customer registrations, follow-up status, visit planning, and operational activity."
     >
-      {/* ── Page Header: Title + Description + Assigned Location Scope + Refresh ── */}
-      <div className="card-glass p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <PageContainer maxWidth="full">
+        <div className="space-y-6">
+          {/* ── Page Header: Title + Description + Assigned Location Scope + Refresh ── */}
+          <div className="card-glass p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-3 flex-wrap">
             <h1 className="text-xl sm:text-2xl font-black text-text-primary tracking-tight">
@@ -443,7 +446,123 @@ export default function WeddingOperationsDesk() {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Mobile Customer Cards (< md) */}
+        <div className="md:hidden divide-y divide-border-soft">
+          {loading ? (
+            <div className="py-12 text-center text-text-secondary">
+              <div className="flex flex-col items-center justify-center space-y-3">
+                <div className="w-8 h-8 border-4 border-border border-t-accent rounded-full animate-spin"></div>
+                <p className="text-sm font-medium">Loading customers...</p>
+              </div>
+            </div>
+          ) : error && customers.length === 0 ? (
+            <div className="p-6 text-center">
+              <p className="text-sm font-medium text-status-danger">{error}</p>
+              <button onClick={loadData} className="text-accent hover:underline text-xs mt-2 font-semibold">
+                Retry
+              </button>
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="p-6 text-center text-text-secondary">
+              <p className="text-base font-bold text-text-primary">0 Records Found</p>
+              <p className="text-xs text-text-secondary mt-1">
+                {customers.length === 0
+                  ? `No wedding customers registered yet for ${locName || 'this location'}.`
+                  : 'No wedding customers match your selected filters.'}
+              </p>
+            </div>
+          ) : (
+            filtered.map((c, idx) => (
+              <div key={c.id} className="p-4 space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-xs font-mono text-text-secondary">#{idx + 1}</span>
+                      <span
+                        className="text-sm font-bold text-text-primary hover:text-accent cursor-pointer"
+                        onClick={() => setDetailCustomer(c)}
+                      >
+                        {c.customerName}
+                      </span>
+                      <span className="text-[10px] font-mono bg-primary/10 text-primary px-1.5 py-0.5 rounded">
+                        {c.registrationId || `CUST-${c.id}`}
+                      </span>
+                    </div>
+                    <div className="text-xs text-text-secondary mt-0.5">
+                      📍 {c.locationName || 'N/A'} {c.locationCode ? `(${c.locationCode})` : ''}
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end gap-1">
+                    {renderStatus(c.status)}
+                    {c.priority && c.priority !== 'Medium' && (
+                      <span className={`badge ${c.priority === 'High' ? 'b-rej' : 'b-info'} text-[9px] uppercase`}>
+                        {c.priority}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-xs bg-background p-2.5 rounded-xl border border-border">
+                  <div>
+                    <span className="text-[10px] text-text-secondary uppercase font-bold block">Mobile</span>
+                    <a href={`tel:${c.mobile}`} className="font-semibold text-text-primary hover:underline">
+                      📱 {c.mobile}
+                    </a>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-text-secondary uppercase font-bold block">Wedding Date</span>
+                    <span className="font-semibold text-rose-700">
+                      {c.weddingDate ? `💍 ${new Date(c.weddingDate).toLocaleDateString('en-IN')}` : 'TBD'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-text-secondary uppercase font-bold block">Telecaller</span>
+                    <span className="font-medium text-text-primary">
+                      {c.assignedTelecallerName || 'Unassigned'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-text-secondary uppercase font-bold block">Follow-up</span>
+                    <span className="font-medium text-text-primary">
+                      {c.nextFollowUp ? new Date(c.nextFollowUp).toLocaleDateString('en-IN') : 'None'}
+                      {c.overdueDays > 0 && (
+                        <span className="ml-1 text-[9px] bg-red-100 text-red-700 px-1 rounded font-bold">
+                          {c.overdueDays}d overdue
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 pt-1">
+                  <button
+                    onClick={() => { setSelectedCustomer(c); setNewStatus(c.status || 'Contacted'); setStatusModalOpen(true); }}
+                    className="flex-1 py-1.5 px-3 rounded-lg text-xs font-bold bg-primary text-white hover:bg-primary-dark transition-colors flex items-center justify-center gap-1.5"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                    <span>Update Status</span>
+                  </button>
+                  <button
+                    onClick={() => setDetailCustomer(c)}
+                    className="py-1.5 px-3 rounded-lg text-xs font-bold bg-background border border-border text-text-primary hover:bg-border/30 transition-colors"
+                  >
+                    Details
+                  </button>
+                  <button
+                    onClick={() => navigate(`/wedding-crm/customers/${c.id}`)}
+                    className="py-1.5 px-3 rounded-lg text-xs font-bold bg-accent/20 text-accent-dark hover:bg-accent/30 transition-colors flex items-center gap-1"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>Profile</span>
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Desktop Table (hidden on < md) */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-[900px]">
             <thead className="bg-primary text-white uppercase text-[10.5px] tracking-wider">
               <tr>
@@ -686,6 +805,8 @@ export default function WeddingOperationsDesk() {
           </div>
         </div>
       )}
+        </div>
+      </PageContainer>
     </DashboardLayout>
   );
 }

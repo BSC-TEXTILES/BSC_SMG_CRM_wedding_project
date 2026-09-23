@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import DashboardLayout from '../components/layouts/DashboardLayout';
+import PageContainer from '../components/ui/PageContainer';
 import { UserCheck, Calendar, Clock, CircleCheck, Search, Filter, Users, UserX, UserMinus, ShieldCheck, Activity, Award, Download } from 'lucide-react';
 import { API } from '../services/api';
 import MetricCard from '../components/ui/MetricCard';
@@ -72,7 +73,8 @@ export default function Attendance() {
 
   return (
     <DashboardLayout title="Attendance & Shift Roster Desk" subtitle="Daily Staff Attendance Tracking & Floor Shift Allocations">
-      <div className="space-y-6">
+      <PageContainer maxWidth="full">
+        <div className="space-y-6">
         
         {/* Top Summary Analytics Cards Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -186,20 +188,62 @@ export default function Attendance() {
           ) : filteredEmployees.length === 0 ? (
             <div className="p-12 text-center text-gray-500 font-bold">No active employees found matching query.</div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs font-semibold border-collapse">
-                <thead className="bg-primary text-white uppercase text-[10px] tracking-wider">
-                  <tr>
-                    <th className="p-4">Employee Code</th>
-                    <th className="p-4">Employee Name</th>
-                    <th className="p-4">Department</th>
-                    <th className="p-4">Designation</th>
-                    <th className="p-4">Shift</th>
-                    <th className="p-4">Status</th>
-                    <th className="p-4">Check In</th>
-                    <th className="p-4">Check Out</th>
-                  </tr>
-                </thead>
+            <>
+              {/* Mobile Attendance Cards (< md) */}
+              <div className="md:hidden divide-y divide-accent-soft/60">
+            {filteredEmployees.map((emp) => (
+              <div key={emp.id || emp.appNo} className="p-4 space-y-2.5">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <button
+                      onClick={() => setSelectedEmployee(emp)}
+                      className="font-extrabold text-sm text-primary hover:text-accent text-left block"
+                    >
+                      {emp.name || emp.fullName || '—'}
+                    </button>
+                    <span className="text-[10px] font-mono text-[#5D4E42]">
+                      {emp.employeeCode || emp.empNo || emp.appNo || `EMP-${emp.id}`}
+                    </span>
+                  </div>
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300/50 inline-flex items-center gap-1">
+                    <CircleCheck className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>PRESENT</span>
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-xs bg-background p-2.5 rounded-xl border border-accent-soft/60">
+                  <div>
+                    <span className="text-[10px] text-[#6B5D50] uppercase font-bold block">Dept</span>
+                    <span className="font-semibold text-[#5D4E42]">{emp.department || 'Retail Sales'}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-[#6B5D50] uppercase font-bold block">Role</span>
+                    <span className="font-bold text-primary">{emp.desig || emp.designation || 'Staff'}</span>
+                  </div>
+                  <div className="col-span-2 flex items-center justify-between text-[11px] pt-1 border-t border-accent-soft/40">
+                    <span className="text-[#6B5D50]">Shift: 10:00 AM - 09:00 PM</span>
+                    <span className="font-semibold text-emerald-700">In: 10:00 AM</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop Table (hidden on < md) */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full text-left text-xs font-semibold border-collapse">
+              <thead className="bg-primary text-white uppercase text-[10px] tracking-wider">
+                <tr>
+                  <th className="p-4">Employee Code</th>
+                  <th className="p-4">Employee Name</th>
+                  <th className="p-4">Department</th>
+                  <th className="p-4">Designation</th>
+                  <th className="p-4">Shift</th>
+                  <th className="p-4">Status</th>
+                  <th className="p-4">Check In</th>
+                  <th className="p-4">Check Out</th>
+                </tr>
+              </thead>
                 <tbody className="divide-y divide-accent-soft/60">
                   {filteredEmployees.map((emp) => (
                     <tr key={emp.id || emp.appNo} className="hover:bg-primary/5 transition-colors font-medium">
@@ -229,7 +273,8 @@ export default function Attendance() {
                 </tbody>
               </table>
             </div>
-          )}
+          </>
+        )}
         </div>
 
         {/* Universal 360 Employee Profile Overview Modal */}
@@ -242,7 +287,8 @@ export default function Attendance() {
             });
           }}
         />
-      </div>
+        </div>
+      </PageContainer>
     </DashboardLayout>
   );
 }

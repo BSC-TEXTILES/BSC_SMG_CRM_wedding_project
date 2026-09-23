@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import DashboardLayout from '../components/layouts/DashboardLayout';
+import PageContainer from '../components/ui/PageContainer';
 import { BarChart3, Clock, Users, Calendar, Save, CircleCheck, CircleAlert, Sparkles, Check, Hourglass, Activity, FileText, Download, TrendingUp, Zap } from 'lucide-react';
 import { API } from '../services/api';
 import { showToast } from '../components/Toast';
@@ -176,7 +177,8 @@ export default function Footfall() {
       title="Hourly Footfall Register" 
       subtitle="Realtime store visitor tracking across floor operating hours (10:00 AM – 10:00 PM)"
     >
-      <div className="space-y-6">
+      <PageContainer maxWidth="full">
+        <div className="space-y-6">
         
         {/* Top Controls: Glass Date Selector + Excel Export Button */}
         <div className="space-y-5">
@@ -443,7 +445,8 @@ export default function Footfall() {
             })}
           </div>
         )}
-      </div>
+        </div>
+      </PageContainer>
     </DashboardLayout>
   );
 }

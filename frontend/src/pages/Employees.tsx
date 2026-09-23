@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Sidebar from '../components/Sidebar';
-import Topbar from '../components/Topbar';
+import DashboardLayout from '../components/layouts/DashboardLayout';
+import PageContainer from '../components/ui/PageContainer';
 import ToastContainer, { showToast } from '../components/Toast';
 import { API, Auth, UserSession } from '../services/api';
-import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../utils/sidebarState';
 import MetricCard from '../components/ui/MetricCard';
 import StatusBadge from '../components/ui/StatusBadge';
 import {
@@ -21,12 +20,6 @@ import EmployeeProfileModal from '../components/ui/EmployeeProfileModal';
 export default function EmployeesPage() {
   const navigate = useNavigate();
   const [session, setSession] = useState<UserSession | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState<boolean>(getSidebarCollapsed());
-
-  useEffect(() => {
-    return subscribeSidebarCollapsed(setCollapsed);
-  }, []);
 
   const [employees, setEmployees] = useState<any[]>([]);
   const [filtered, setFiltered] = useState<any[]>([]);
@@ -434,18 +427,13 @@ export default function EmployeesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex">
-      <ToastContainer />
-      <Sidebar session={session} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-
-      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${collapsed ? 'lg:pl-20' : 'lg:pl-64'}`}>
-        <Topbar
-          title="Employee Master Directory"
-          session={session}
-          onMenuClick={() => setSidebarOpen(true)}
-        />
-
-        <main className="p-4 lg:p-6 space-y-6 flex-1 overflow-y-auto">
+    <DashboardLayout
+      title="Employee Master Directory"
+      breadcrumbs={[{ label: 'HRMS', href: '/dashboard' }, { label: 'Employees' }]}
+    >
+      <PageContainer maxWidth="full">
+        <div className="space-y-6">
+          <ToastContainer />
           {/* Recruitment Analytics & Pipeline Banner */}
           <div className="card-glass p-5 space-y-4 border-2 border-primary/10">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-accent-soft pb-3.5">
@@ -627,7 +615,81 @@ export default function EmployeesPage() {
               </h3>
             </div>
 
-            <div className="overflow-x-auto">
+            {/* Mobile Employee Cards (< md) */}
+            <div className="md:hidden space-y-3">
+              {filtered.map((emp, idx) => (
+                <div
+                  key={emp.appNo || idx}
+                  onClick={() => setDrawerEmp(emp)}
+                  className="p-4 bg-white rounded-2xl border border-accent-soft shadow-xs space-y-3 cursor-pointer hover:border-accent transition-all"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-primary text-white font-black text-xs flex items-center justify-center shrink-0 shadow-xs">
+                        {emp.initials || emp.name?.slice(0, 2).toUpperCase()}
+                      </div>
+                      <div>
+                        <div className="font-extrabold text-sm text-primary">
+                          {formatName(emp.name)}
+                        </div>
+                        <div className="text-[11px] font-mono text-[#5D4E42] mt-0.5">
+                          {emp.appNo || emp.empNo} · <span className="font-semibold text-accent">{emp.section || 'Unassigned'}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <StatusBadge status={emp.status || 'Joined'} size="sm" />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs bg-background p-2.5 rounded-xl border border-accent-soft/60">
+                    <div>
+                      <span className="text-[10px] text-[#6B5D50] uppercase font-bold block">Role</span>
+                      <span className="font-bold text-primary">{emp.desig || emp.designation || 'Staff'}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-[#6B5D50] uppercase font-bold block">Department</span>
+                      <span className="font-semibold text-[#5D4E42]">{emp.department || '—'}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-[#6B5D50] uppercase font-bold block">Mobile</span>
+                      <a href={`tel:${emp.phone}`} onClick={(e) => e.stopPropagation()} className="font-mono text-primary font-semibold hover:underline">
+                        📱 {emp.phone || '—'}
+                      </a>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-[#6B5D50] uppercase font-bold block">Joined</span>
+                      <span className="font-semibold text-primary">{emp.offeredDoj || emp.estDoj || emp.actualDoj || '—'}</span>
+                    </div>
+                  </div>
+
+                  {isAdmin && (
+                    <div className="flex items-center justify-end gap-2 pt-1 border-t border-accent-soft/40" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        onClick={() => handleOpenEdit(emp)}
+                        className="px-3 py-1.5 rounded-lg border border-emerald-600 text-emerald-700 font-bold text-xs hover:bg-emerald-50 transition-colors flex items-center gap-1 shadow-xs"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                        <span>Edit</span>
+                      </button>
+                      <button
+                        onClick={() => handleDeleteEmployee(emp.appNo, emp.name)}
+                        className="px-3 py-1.5 rounded-lg border border-rose-200 text-rose-600 font-bold text-xs hover:bg-rose-50 transition-colors flex items-center gap-1 shadow-xs"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Delete</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+              {filtered.length === 0 && (
+                <div className="py-8 text-center text-xs text-[#6B5D50] font-semibold bg-white rounded-2xl border border-accent-soft">
+                  No employees found matching the filters.
+                </div>
+              )}
+            </div>
+
+            {/* Desktop Table (hidden on < md) */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="border-b border-accent-soft text-[10.5px] font-black uppercase text-primary bg-background/60">
@@ -704,8 +766,8 @@ export default function EmployeesPage() {
               </table>
             </div>
           </div>
-        </main>
-      </div>
+        </div>
+      </PageContainer>
 
       {/* Comprehensive In-Page Complete Employee Edit Modal */}
       {editModal.open && (
@@ -985,6 +1047,6 @@ export default function EmployeesPage() {
         onClose={() => setDrawerEmp(null)}
         onUpdated={loadEmployees}
       />
-    </div>
+    </DashboardLayout>
   );
 }

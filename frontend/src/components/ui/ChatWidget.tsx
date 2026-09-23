@@ -138,13 +138,13 @@ export default function ChatWidget() {
 
   return (
     <>
-      {/* Floating Chat Toggle Button */}
+      {/* Floating Chat Toggle Button: stacked vertically above Quick Actions */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`fixed bottom-6 right-24 z-50 w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 border-2 ${
+        className={`fixed bottom-[72px] right-4 sm:bottom-24 sm:right-6 z-40 w-12 h-12 sm:w-14 sm:h-14 rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 border-2 cursor-pointer ${
           isOpen
             ? 'bg-primary text-white border-primary-light rotate-0'
-            : 'bg-accent text-white border-accent/50 hover:scale-110 hover:shadow-accent/30'
+            : 'bg-accent text-white border-accent/50 hover:scale-105 hover:shadow-accent/30'
         }`}
         title={isOpen ? 'Close Chat' : 'Open AI Chat Assistant'}
       >
@@ -164,7 +164,7 @@ export default function ChatWidget() {
 
       {/* Chat Panel */}
       {isOpen && (
-        <div className="fixed bottom-24 right-6 z-50 w-[380px] max-w-[calc(100vw-3rem)] h-[520px] max-h-[calc(100vh-8rem)] bg-white rounded-2xl shadow-2xl border border-border flex flex-col overflow-hidden animate-slide-up">
+        <div className="fixed bottom-20 sm:bottom-24 right-3 sm:right-6 z-50 w-[380px] max-w-[calc(100vw-1.5rem)] h-[500px] max-h-[calc(100vh-6rem)] bg-white rounded-2xl shadow-2xl border border-border flex flex-col overflow-hidden animate-slide-up">
           {/* Header */}
           <div className="bg-primary-dark text-white px-4 py-3 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-2.5">

@@ -19,9 +19,13 @@
   --color-text-secondary: #687080;   /* Master Secondary / Muted Text */
   --color-border: #DFDDD7;           /* Master Border (Subtle Enterprise Border) */
   --color-success: #16805B;          /* Master Success */
+  --color-success-light: #E8F5EF;    /* Master Success Light */
   --color-warning: #C98218;          /* Master Warning */
+  --color-warning-light: #FFF4DD;    /* Master Warning Light */
   --color-danger: #C7374A;           /* Master Danger */
+  --color-danger-light: #FDEBED;     /* Master Danger Light */
   --color-info: #3567A8;             /* Master Info */
+  --color-info-light: #EAF1FA;       /* Master Info Light */
 
   /* Semantic Contrast System Tokens */
   --text-primary: #182033;
@@ -76,6 +80,17 @@
   --muted: var(--color-text-secondary);
 }
 
+html {
+  box-sizing: border-box;
+  overflow-x: hidden;
+  max-width: 100vw;
+  width: 100%;
+}
+
+*, *:before, *:after {
+  box-sizing: inherit;
+}
+
 body {
   font-family: 'Inter', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   background-color: var(--bg);
@@ -83,6 +98,9 @@ body {
   min-height: 100vh;
   margin: 0;
   padding: 0;
+  overflow-x: hidden;
+  max-width: 100%;
+  width: 100%;
   -webkit-font-smoothing: antialiased;
   -webkit-user-select: text;
   -moz-user-select: text;

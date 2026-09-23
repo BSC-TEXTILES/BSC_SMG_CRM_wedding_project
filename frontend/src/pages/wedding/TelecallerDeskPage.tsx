@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import Sidebar from '../../components/Sidebar';
-import Topbar from '../../components/Topbar';
+import DashboardLayout from '../../components/layouts/DashboardLayout';
+import PageContainer from '../../components/ui/PageContainer';
 import ToastContainer, { showToast } from '../../components/Toast';
 import { toastManager } from '../../utils/toastManager';
 import { useTelecallerQueue } from '../../hooks/useTelecallerQueue';
 import { API, Auth, UserSession } from '../../services/api';
-import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../../utils/sidebarState';
 import WeddingNav from './WeddingNav';
 import {
   WeddingCustomer,
@@ -42,12 +41,6 @@ export default function TelecallerDeskPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [session, setSession] = useState<UserSession | null>(() => Auth.get());
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState<boolean>(getSidebarCollapsed());
-
-  useEffect(() => {
-    return subscribeSidebarCollapsed(setCollapsed);
-  }, []);
 
   const [activeQueue, setActiveQueue] = useState<'dueToday' | 'overdue' | 'callbacks' | 'upcoming' | 'priority' | 'newLeads' | 'myQueue'>(
     (searchParams.get('queue') as any) || 'dueToday'
@@ -198,25 +191,11 @@ export default function TelecallerDeskPage() {
   });
 
   return (
-    <div className="min-h-screen bg-[#F6F4EF] flex text-[#182033]">
-      <Sidebar
-        session={session}
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-      />
-
-      <div
-        className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${
-          collapsed ? 'lg:pl-20' : 'lg:pl-64'
-        }`}
-      >
-        <Topbar
-          title="Telecaller Desk & Queues"
-          session={session}
-          onMenuClick={() => setSidebarOpen(true)}
-        />
-
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-[1600px] w-full mx-auto space-y-6">
+    <DashboardLayout
+      title="Telecaller Desk & Queues"
+      breadcrumbs={[{ label: 'Wedding CRM', href: '/wedding-crm/dashboard' }, { label: 'Telecaller Desk' }]}
+    >
+      <PageContainer maxWidth="full">
           <ToastContainer />
 
           <WeddingNav
@@ -337,8 +316,123 @@ export default function TelecallerDeskPage() {
               </div>
             </div>
 
-            {/* Queue Table */}
-            <div className="overflow-x-auto">
+            {/* Mobile Queue Card View (< md) */}
+            <div className="md:hidden space-y-3">
+              {loading ? (
+                <div className="text-center py-10 bg-white rounded-2xl border border-[#DFDDD7]">
+                  <RefreshCw className="w-5 h-5 animate-spin text-[#C9A45C] mx-auto mb-2" />
+                  <span className="text-xs text-muted">Loading telecaller queue...</span>
+                </div>
+              ) : currentList.length === 0 ? (
+                <div className="text-center py-10 bg-white rounded-2xl border border-[#DFDDD7] p-4">
+                  <CircleCheck className="w-10 h-10 text-[#16805B] mx-auto mb-2" />
+                  <div className="font-bold text-sm text-[#182033]">Queue is currently clear!</div>
+                  <div className="text-xs text-muted mt-0.5">All calls in this queue have been handled.</div>
+                </div>
+              ) : (
+                currentList.map((cust) => {
+                  const badge = getStatusBadge(cust.customer_status);
+                  const isOverdue =
+                    cust.follow_up_date &&
+                    new Date(cust.follow_up_date).getTime() < new Date().setHours(0, 0, 0, 0);
+
+                  return (
+                    <div
+                      key={cust.id}
+                      className="p-4 bg-white rounded-2xl border border-[#DFDDD7] shadow-xs space-y-3"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <Link
+                              to={`/wedding-crm/customers/${cust.id}`}
+                              className="font-bold text-sm text-[#182033] hover:text-[#C98218]"
+                            >
+                              {cust.customer_name}
+                            </Link>
+                            <span className="text-[10px] font-mono text-[#C9A45C] bg-[#101C36] px-1.5 py-0.5 rounded">
+                              {cust.customer_code}
+                            </span>
+                          </div>
+                          <div className="text-[11px] text-muted mt-0.5">
+                            {cust.preferred_shopping_category || 'General Wedding'} · 📍 {cust.location_name || 'Store'}
+                          </div>
+                        </div>
+
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${badge.bg}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${badge.dot}`} />
+                          {cust.customer_status}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 text-xs bg-[#F6F4EF] p-2.5 rounded-xl border border-[#DFDDD7]/60">
+                        <div>
+                          <span className="text-[10px] text-muted uppercase font-bold block">Wedding Date</span>
+                          <span className="font-semibold text-pink-700">
+                            {cust.wedding_date ? `💍 ${new Date(cust.wedding_date).toLocaleDateString()}` : 'TBD'}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-muted uppercase font-bold block">Follow-up</span>
+                          <span className={`font-semibold ${isOverdue ? 'text-[#C7374A]' : 'text-[#182033]'}`}>
+                            {cust.follow_up_date ? new Date(cust.follow_up_date).toLocaleDateString() : 'None'}
+                            {isOverdue && <span className="ml-1 text-[9px] bg-red-100 text-red-700 px-1 rounded font-black">OVERDUE</span>}
+                          </span>
+                        </div>
+                        <div className="col-span-2 flex items-center justify-between text-[11px] pt-1 border-t border-[#DFDDD7]/60">
+                          <span className="text-muted">Assigned: {cust.assigned_telecaller ? `👤 ${cust.assigned_telecaller}` : 'Unassigned'}</span>
+                          <span className="text-blue-900 font-bold">{cust.expected_shopping_date ? `Shop: ${new Date(cust.expected_shopping_date).toLocaleDateString()}` : ''}</span>
+                        </div>
+                      </div>
+
+                      {/* Mobile action buttons */}
+                      <div className="flex items-center gap-2 pt-1 flex-wrap sm:flex-nowrap">
+                        <button
+                          onClick={() => handleOpenCallModal(cust)}
+                          className="flex-1 min-w-[110px] py-2 bg-[#101C36] hover:bg-[#07101F] text-[#C9A45C] font-black rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-xs border border-[#C9A45C]/30"
+                        >
+                          <PhoneCall className="w-3.5 h-3.5" />
+                          <span>Call & Log</span>
+                        </button>
+                        <a
+                          href={`https://wa.me/91${cust.mobile_number.replace(/\D/g, '')}?text=Namaste%20${encodeURIComponent(cust.customer_name)}%2C%20greetings%20from%20BSC%20Exclusive!`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-2 bg-green-600 hover:bg-green-700 text-white rounded-xl text-xs flex items-center justify-center"
+                          title="WhatsApp"
+                        >
+                          <MessageCircle className="w-4 h-4" />
+                        </a>
+                        <button
+                          onClick={() => handleQuickStatus(cust, 'Shopping Confirmed')}
+                          className="p-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-xs border border-blue-200"
+                          title="Confirm Shopping"
+                        >
+                          <Check className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleQuickStatus(cust, 'Won')}
+                          className="p-2 bg-emerald-50 hover:bg-emerald-100 text-[#16805B] rounded-xl text-xs border border-emerald-200"
+                          title="Won"
+                        >
+                          <Award className="w-4 h-4" />
+                        </button>
+                        <Link
+                          to={`/wedding-crm/customers/${cust.id}`}
+                          className="p-2 bg-[#F6F4EF] hover:bg-[#DFDDD7] text-primary rounded-xl text-xs flex items-center justify-center"
+                          title="Profile"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Link>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Desktop Queue Table (hidden on < md) */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left text-xs text-[#182033]">
                 <thead className="bg-[#07101F] text-white uppercase text-[10px] tracking-wider">
                   <tr>
@@ -508,7 +602,7 @@ export default function TelecallerDeskPage() {
           {/* Call Logging Form Modal (Section 14 Specification) */}
           {callModalOpen && activeCustomer && (
             <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-              <div className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-[#DFDDD7] space-y-4 animate-scale-in">
+              <div className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-[#DFDDD7] space-y-4 animate-scale-in max-h-[90vh] overflow-y-auto">
                 <div className="flex items-center justify-between pb-3 border-b border-[#DFDDD7]">
                   <div>
                     <h3 className="text-base font-black text-[#182033]">
@@ -662,8 +756,7 @@ export default function TelecallerDeskPage() {
               </div>
             </div>
           )}
-        </main>
-      </div>
-    </div>
+      </PageContainer>
+    </DashboardLayout>
   );
 }

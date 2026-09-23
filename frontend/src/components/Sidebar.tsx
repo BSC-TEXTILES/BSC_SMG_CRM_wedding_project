@@ -132,26 +132,28 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
     { key: 'telecaller_dashboard', href: '/telecaller-dashboard', label: 'Telecaller Dashboard', icon: BarChart3, section: 'Store Operations' },
     { key: 'wedding_operations', href: '/wedding-operations', label: 'Wedding Operations', icon: FileText, section: 'Store Operations' },
     { key: 'footfall', href: '/footfall', label: 'Hourly Footfall', icon: BarChart3, section: 'Store Operations' },
-    { key: 'feedback_collection', href: '/feedback-collection', label: 'Feedback Collection', icon: FileText, section: 'Store Operations' },
-    { key: 'feedback_list', href: '/feedback-list', label: 'Feedback Call Queue', icon: FileText, section: 'Store Operations' },
-    { key: 'feedback_qr', href: '/feedback-qr-management', label: 'Feedback QR Code', icon: ClipboardList, section: 'Store Operations' },
-    { key: 'divert', href: '/divert', label: 'Sourcing Diverts', icon: Target, section: 'Store Operations' },
-    { key: 'pm_view', href: '/pm-view', label: 'Purchase Manager View', icon: Briefcase, section: 'Store Operations' },
-    { key: 'vm_checklist', href: '/vm-checklist', label: 'VM Checklist', icon: ClipboardList, section: 'Store Operations' },
+
+    // Customer Experience
+    { key: 'feedback_collection', href: '/feedback-collection', label: 'Feedback Collection', icon: FileText, section: 'Customer Experience' },
+    { key: 'feedback_list', href: '/feedback-list', label: 'Feedback Call Queue', icon: PhoneCall, section: 'Customer Experience' },
+    { key: 'feedback_qr', href: '/feedback-qr-management', label: 'Feedback QR Code', icon: ClipboardList, section: 'Customer Experience' },
 
     // Talent
     { key: 'candidates', href: '/candidates', label: 'Candidate CRM', icon: Users, section: 'Talent' },
-    { key: 'offer', href: '/offer-process', label: 'Offer Desk', icon: FileText, section: 'Talent' },
     { key: 'openings', href: '/openings', label: 'Manpower Planning', icon: Briefcase, section: 'Talent' },
+    { key: 'section_allocation', href: '/section-allocation', label: 'Section Allocation', icon: UserCheck, section: 'Talent' },
+    { key: 'offer', href: '/offer-process', label: 'Offer Desk', icon: FileText, section: 'Talent' },
     { key: 'doj_desk', href: '/doj-desk', label: 'DOJ Not Joined Desk', icon: UserCheck, section: 'Talent' },
     { key: 'dept_hiring', href: '/department-hiring', label: 'Department Hiring Status', icon: Briefcase, section: 'Talent' },
-    { key: 'section_allocation', href: '/section-allocation', label: 'Section Allocation', icon: UserCheck, section: 'Talent' },
 
     // Daily Operations
     { key: 'daily_mcheck', href: '/daily-mcheck', label: 'MCheck Store Audit', icon: SquareCheck, section: 'Daily Operations' },
     { key: 'mcheck_reports', href: '/mcheck-reports', label: 'MCheck Reports', icon: BarChart3, section: 'Daily Operations' },
     { key: 'mcheck_history', href: '/mcheck-history', label: 'MCheck History', icon: ClipboardList, section: 'Daily Operations' },
+    { key: 'divert', href: '/divert', label: 'Sourcing Diverts', icon: Target, section: 'Daily Operations' },
     { key: 'batch_plan', href: '/batch-plan', label: 'Batch Plan', icon: FileText, section: 'Daily Operations' },
+    { key: 'pm_view', href: '/pm-view', label: 'Purchase Manager View', icon: Briefcase, section: 'Daily Operations' },
+    { key: 'vm_checklist', href: '/vm-checklist', label: 'VM Checklist', icon: ClipboardList, section: 'Daily Operations' },
 
     // Administration
     { key: 'broadcast', href: '/broadcast-center', label: 'Broadcast Center', icon: Megaphone, section: 'Administration' },
@@ -207,77 +209,92 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
       <aside
         role="navigation"
         aria-label="Main navigation"
-        style={{ width: collapsed ? '72px' : '256px' }}
         className={`
           fixed top-0 left-0 bottom-0 bg-[#101C36] text-white z-50 flex flex-col transition-all duration-300 shadow-2xl border-r border-[#C9A45C]/20 overscroll-contain
+          w-[280px] max-w-[85vw] lg:max-w-none
           ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-          ${collapsed ? 'w-[72px]' : 'w-64'}
+          ${collapsed ? 'lg:w-[72px]' : 'lg:w-64'}
         `}
       >
-        {/* Header: Collapsed shows ONLY 3-lines + logo; Expanded shows Logo + Text + 3-line Toggle */}
-        {collapsed ? (
-          <div className="p-3 border-b border-[#C9A45C]/15 flex flex-col items-center justify-center min-h-[64px] gap-2.5">
-            {/* 3-line hamburger button prominently displayed at top */}
-            <button
-              type="button"
-              onClick={handleToggle}
-              className="p-1.5 rounded-xl text-[#C9A45C] hover:text-white hover:bg-[#07101F] transition-colors flex items-center justify-center cursor-pointer shadow-xs border border-[#C9A45C]/30"
-              title="Expand navigation menu (3 lines)"
-              aria-label="Expand sidebar"
-            >
-              <Menu className="w-5 h-5 text-[#C9A45C]" />
-            </button>
-            {/* ONLY LOGO */}
-            <div 
-              className="w-10 h-9 rounded-xl bg-white p-1 shadow-md border border-[#C9A45C]/40 hover:scale-105 transition-transform cursor-pointer flex items-center justify-center flex-shrink-0"
-              onClick={handleToggle}
-              title="BSC Logo - Click to expand navigation"
-            >
+        {/* Header: Collapsed on Desktop shows ONLY 3-lines + logo; On mobile or Desktop Expanded shows Logo + Text + Close/Toggle */}
+        <div className="p-3 sm:p-3.5 border-b border-[#C9A45C]/15 flex items-center justify-between min-h-[64px] w-full">
+          <div className={`flex items-center gap-2.5 min-w-0 ${collapsed ? 'lg:hidden' : 'flex'}`}>
+            <div className="w-11 h-9 rounded-xl bg-white p-1 shadow-md border border-[#C9A45C]/30 flex items-center justify-center flex-shrink-0">
               <img 
                 src="/logo.png" 
                 alt="BSC Logo" 
-                className="max-h-full max-w-full object-contain"
+                className="max-h-full max-w-full object-contain" 
               />
             </div>
+            <div className="min-w-0">
+              <div className="font-extrabold text-sm text-white tracking-wide leading-tight truncate">BSC EXCLUSIVE</div>
+              <div className="text-[9px] font-bold uppercase tracking-widest mt-0.5 flex items-center gap-1 truncate text-[#E4C982]">
+                {activeLocationLabel ? (
+                  <span className={activeLocationLabel.includes('ALL') ? 'text-[#16805B] font-extrabold truncate' : 'truncate text-[#E4C982]'}>
+                    {activeLocationLabel}
+                  </span>
+                ) : session?.isGlobalAdmin ? (
+                  <span className="text-[#16805B] font-extrabold truncate">🌐 ALL LOCATIONS</span>
+                ) : (
+                  <span className="truncate text-[#E4C982]">📍 {(session?.locationName || locCtx?.activeLocation?.name || 'STORE').toUpperCase()}</span>
+                )}
+              </div>
+            </div>
           </div>
-        ) : (
-          <div className="p-3.5 border-b border-[#C9A45C]/15 flex items-center justify-between min-h-[64px] w-full">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-12 h-10 rounded-xl bg-white p-1 shadow-md border border-[#C9A45C]/30 flex items-center justify-center flex-shrink-0">
+
+          {/* Desktop Collapsed View Only */}
+          {collapsed && (
+            <div className="hidden lg:flex flex-col items-center justify-center w-full gap-2 py-1">
+              <button
+                type="button"
+                onClick={handleToggle}
+                className="p-1.5 rounded-xl text-[#C9A45C] hover:text-white hover:bg-[#07101F] transition-colors flex items-center justify-center cursor-pointer shadow-xs border border-[#C9A45C]/30"
+                title="Expand navigation menu"
+                aria-label="Expand sidebar"
+              >
+                <Menu className="w-5 h-5 text-[#C9A45C]" />
+              </button>
+              <div 
+                className="w-10 h-8 rounded-xl bg-white p-1 shadow-md border border-[#C9A45C]/40 hover:scale-105 transition-transform cursor-pointer flex items-center justify-center flex-shrink-0"
+                onClick={handleToggle}
+                title="BSC Logo - Click to expand navigation"
+              >
                 <img 
                   src="/logo.png" 
                   alt="BSC Logo" 
-                  className="max-h-full max-w-full object-contain" 
+                  className="max-h-full max-w-full object-contain"
                 />
               </div>
-              <div className="min-w-0">
-                <div className="font-extrabold text-sm text-white tracking-wide leading-tight truncate">BSC EXCLUSIVE</div>
-                <div className="text-[9px] font-bold uppercase tracking-widest mt-0.5 flex items-center gap-1 truncate text-[#E4C982]">
-                  {activeLocationLabel ? (
-                    <span className={activeLocationLabel.includes('ALL') ? 'text-[#16805B] font-extrabold truncate' : 'truncate text-[#E4C982]'}>
-                      {activeLocationLabel}
-                    </span>
-                  ) : session?.isGlobalAdmin ? (
-                    <span className="text-[#16805B] font-extrabold truncate">🌐 ALL LOCATIONS</span>
-                  ) : (
-                    <span className="truncate text-[#E4C982]">📍 {session?.locationName?.toUpperCase() || 'DAVANAGERE'}</span>
-                  )}
-                </div>
-              </div>
             </div>
+          )}
 
-            {/* 3-line menu toggle button */}
+          {/* Right Header Action: Close button on mobile; Collapse toggle on desktop */}
+          <div className="flex items-center gap-1">
+            {/* Mobile Close Button */}
             <button
               type="button"
-              onClick={handleToggle}
-              className="p-1.5 rounded-xl text-[#C9A45C] hover:text-white hover:bg-[#07101F] transition-colors flex-shrink-0 cursor-pointer border border-[#C9A45C]/30 shadow-xs"
-              title="Collapse sidebar to logo only (3 lines)"
-              aria-label="Toggle sidebar collapse"
+              onClick={onClose}
+              className="lg:hidden p-1.5 rounded-xl text-[#DFDDD7] hover:text-white hover:bg-white/10 transition-colors"
+              title="Close navigation"
+              aria-label="Close navigation"
             >
-              <Menu className="w-5 h-5 text-[#C9A45C]" />
+              <X className="w-5 h-5" />
             </button>
+
+            {/* Desktop Collapse Toggle (visible only when not collapsed on desktop) */}
+            {!collapsed && (
+              <button
+                type="button"
+                onClick={handleToggle}
+                className="hidden lg:flex p-1.5 rounded-xl text-[#C9A45C] hover:text-white hover:bg-[#07101F] transition-colors flex-shrink-0 cursor-pointer border border-[#C9A45C]/30 shadow-xs"
+                title="Collapse sidebar"
+                aria-label="Collapse sidebar"
+              >
+                <Menu className="w-5 h-5 text-[#C9A45C]" />
+              </button>
+            )}
           </div>
-        )}
+        </div>
 
         {/* User Card */}
         <div className={`mx-2 my-2 rounded-xl bg-[#07101F]/80 border border-[#C9A45C]/25 flex items-center shadow-inner transition-all ${

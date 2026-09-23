@@ -38,22 +38,22 @@ export default function MetricCard({
     <div
       onClick={onClick}
       className={`
-        card-glass card-glass-hover p-5 flex flex-col justify-between transition-all duration-200 border border-border bg-card rounded-2xl
+        card-glass card-glass-hover p-4 sm:p-5 flex flex-col justify-between transition-all duration-200 border border-[#DFDDD7] bg-white rounded-2xl h-full min-w-0
         ${style.border} ${onClick ? 'cursor-pointer' : ''}
       `}
     >
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <span className="text-[11px] font-extrabold uppercase tracking-wider text-text-secondary block mb-1">
+      <div className="flex items-start justify-between gap-3 min-w-0">
+        <div className="min-w-0 flex-1">
+          <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-[#687080] block mb-1 truncate">
             {title}
           </span>
-          <div className="text-2xl lg:text-3xl font-black text-text-primary tracking-tight">
+          <div className="text-xl sm:text-2xl lg:text-3xl font-black text-[#182033] tracking-tight truncate">
             {value}
           </div>
         </div>
 
-        <div className={`p-3 rounded-2xl ${style.iconBg} shadow-xs flex items-center justify-center flex-shrink-0`}>
-          <Icon className="w-5 h-5" />
+        <div className={`p-2.5 sm:p-3 rounded-xl ${style.iconBg} shadow-2xs flex items-center justify-center flex-shrink-0`}>
+          <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
         </div>
       </div>
 

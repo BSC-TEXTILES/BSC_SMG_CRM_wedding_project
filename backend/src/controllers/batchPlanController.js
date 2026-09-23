@@ -153,7 +153,7 @@ exports.getBatchById = async (req, res) => {
 exports.createBatch = async (req, res) => {
   try {
     const { batch_number, batch_name, start_date, target_end_date, status, department, trainer_name, notes } = req.body;
-    const locationId = injectLocationId(req) || 2;
+    const locationId = injectLocationId(req) || (req.user && req.user.locationId) || null;
 
     if (!batch_name || !start_date) {
       return res.status(400).json({ success: false, message: 'Batch Name and Start Date are required' });

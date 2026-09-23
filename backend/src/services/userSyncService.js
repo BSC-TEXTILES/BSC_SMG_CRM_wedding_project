@@ -292,8 +292,8 @@ async function provisionUserForCandidate(appNo, options = {}) {
     const username = await buildUniqueUsername(options.username || cand.phone, appNo);
     const hashedPassword = await bcrypt.hash(options.password || DEFAULT_EMPLOYEE_PASSWORD, 10);
 
-    const locationId = cand.location_id || 2;
-    const locationCode = await resolveLocationCode(locationId);
+    const locationId = cand.location_id || null;
+    const locationCode = locationId ? await resolveLocationCode(locationId) : null;
 
     const [result] = await pool.query(
       `INSERT INTO users
@@ -420,8 +420,8 @@ async function backfillMissingUserAccounts(connection, log = () => {}) {
 
         const username = await buildUniqueUsername(cand.phone, cand.app_no, connection);
         const hashedPassword = await bcrypt.hash(DEFAULT_EMPLOYEE_PASSWORD, 10);
-        const locationId = cand.location_id || 2;
-        const locationCode = await resolveLocationCode(locationId, connection);
+        const locationId = cand.location_id || null;
+        const locationCode = locationId ? await resolveLocationCode(locationId, connection) : null;
 
         const [result] = await connection.query(
           `INSERT INTO users

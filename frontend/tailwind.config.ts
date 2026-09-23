@@ -8,12 +8,12 @@ const config: Config = {
   ],
   theme: {
     screens: {
-      xs: '420px',      // small phones — used by Topbar for the location strip
-      sm: '640px',
-      md: '768px',
-      lg: '1024px',
-      xl: '1280px',
-      '2xl': '1536px'
+      xs: '375px',      // Mobile phones
+      sm: '576px',      // Mobile landscape
+      md: '768px',      // Tablet portrait
+      lg: '992px',      // Tablet landscape / Samsung Tab 12-inch
+      xl: '1200px',     // Large laptop
+      '2xl': '1440px'   // Desktop
     },
     extend: {
       colors: {
@@ -76,9 +76,13 @@ const config: Config = {
         },
         status: {
           success: '#16805B', // Master Success
+          'success-light': '#E8F5EF',
           warning: '#C98218', // Master Warning
+          'warning-light': '#FFF4DD',
           danger: '#C7374A',  // Master Danger
-          info: '#3567A8'     // Master Info
+          'danger-light': '#FDEBED',
+          info: '#3567A8',     // Master Info
+          'info-light': '#EAF1FA'
         }
       },
       textColor: {

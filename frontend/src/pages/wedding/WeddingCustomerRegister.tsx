@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
-import Sidebar from '../../components/Sidebar';
-import Topbar from '../../components/Topbar';
-import ToastContainer, { showToast } from '../../components/Toast';
+import DashboardLayout from '../../components/layouts/DashboardLayout';
+import PageContainer from '../../components/ui/PageContainer';
+import { showToast } from '../../components/Toast';
 import { API, Auth, UserSession } from '../../services/api';
-import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../../utils/sidebarState';
 import WeddingNav from './WeddingNav';
 import {
   WeddingCustomer,
@@ -292,26 +291,11 @@ export default function WeddingCustomerRegister() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F6F4EF] flex text-[#182033]">
-      <Sidebar
-        session={session}
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-      />
-
-      <div
-        className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${
-          collapsed ? 'lg:pl-20' : 'lg:pl-64'
-        }`}
-      >
-        <Topbar
-          title="Wedding Customer Register"
-          session={session}
-          onMenuClick={() => setSidebarOpen(true)}
-        />
-
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-[1600px] w-full mx-auto space-y-6">
-          <ToastContainer />
+    <DashboardLayout
+      title="Wedding Customer Register"
+      breadcrumbs={[{ label: 'Wedding CRM', href: '/wedding-crm/dashboard' }, { label: 'Customer Register' }]}
+    >
+      <PageContainer maxWidth="full">
 
           <WeddingNav
             currentPageTitle="Wedding Customer Register"
@@ -441,9 +425,129 @@ export default function WeddingCustomerRegister() {
             </div>
           </div>
 
-          {/* Customer Table */}
+          {/* Customer Table & Mobile Cards */}
           <div className="bg-white rounded-2xl border border-[#DFDDD7] shadow-xs overflow-hidden">
-            <div className="overflow-x-auto">
+            {/* Mobile Customer Cards (< md) */}
+            <div className="md:hidden divide-y divide-[#DFDDD7]">
+              {loading ? (
+                <div className="text-center py-12 text-muted">
+                  <RefreshCw className="w-5 h-5 animate-spin text-[#C9A45C] mx-auto mb-2" />
+                  <span>Loading customer register...</span>
+                </div>
+              ) : customers.length === 0 ? (
+                <div className="text-center py-12 text-muted p-6">
+                  <Search className="w-8 h-8 mx-auto text-[#687080] mb-2" />
+                  <div className="font-bold text-sm text-[#182033]">No customers match your criteria</div>
+                  <div className="text-xs text-muted mt-1">Try resetting your filters or search keywords.</div>
+                </div>
+              ) : (
+                customers.map((cust) => {
+                  const badge = getStatusBadge(cust.customer_status);
+                  return (
+                    <div
+                      key={cust.id}
+                      className="p-4 space-y-3 hover:bg-[#F6F4EF]/50 transition-colors"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <span className="text-[10px] font-mono font-bold text-[#687080] uppercase tracking-wider block">
+                            {cust.customer_code}
+                          </span>
+                          <Link
+                            to={`/wedding-crm/customers/${cust.id}`}
+                            className="font-black text-sm text-[#182033] hover:text-[#C98218] block"
+                          >
+                            {cust.customer_name}
+                          </Link>
+                          <div className="text-xs font-semibold text-[#182033] mt-0.5">
+                            {cust.mobile_number}
+                          </div>
+                        </div>
+
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${badge.bg}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${badge.dot}`} />
+                          {cust.customer_status}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-1.5 text-xs text-[#687080] pt-2 border-t border-[#DFDDD7]">
+                        <div>
+                          <span className="font-bold text-[#182033]">Location:</span> {cust.location_name || 'Store'}
+                        </div>
+                        <div>
+                          <span className="font-bold text-[#182033]">Wedding:</span>{' '}
+                          {cust.wedding_date ? (
+                            <span className="text-pink-700 font-bold">
+                              {new Date(cust.wedding_date).toLocaleDateString()}
+                            </span>
+                          ) : (
+                            'TBD'
+                          )}
+                        </div>
+                        <div>
+                          <span className="font-bold text-[#182033]">Assigned:</span>{' '}
+                          <span className="text-[#101C36] font-semibold">{cust.assigned_telecaller || 'Unassigned'}</span>
+                        </div>
+                        <div>
+                          <span className="font-bold text-[#182033]">Follow-up:</span>{' '}
+                          {cust.follow_up_date ? new Date(cust.follow_up_date).toLocaleDateString() : 'None'}
+                        </div>
+                      </div>
+
+                      {/* Quick Action Buttons */}
+                      <div className="flex items-center gap-2 pt-2 border-t border-[#DFDDD7]">
+                        <Link
+                          to={`/wedding-crm/customers/${cust.id}`}
+                          className="flex-1 py-2 rounded-xl bg-[#F6F4EF] hover:bg-[#DFDDD7] text-[#182033] font-bold text-xs text-center transition-colors"
+                        >
+                          View
+                        </Link>
+                        <button
+                          onClick={() => {
+                            setActiveCallCustomer(cust);
+                            setCallLogForm({
+                              call_status: 'Completed',
+                              call_outcome: 'Connected',
+                              remarks: '',
+                              customer_response: '',
+                              next_follow_up_date: cust.follow_up_date || '',
+                              next_follow_up_time: cust.preferred_call_time || 'Morning (10 AM - 1 PM)',
+                              expected_shopping_date: cust.expected_shopping_date || ''
+                            });
+                          }}
+                          className="flex-1 py-2 rounded-xl bg-[#101C36] text-[#C9A45C] font-black text-xs flex items-center justify-center gap-1.5 shadow-xs"
+                        >
+                          <PhoneCall className="w-3.5 h-3.5" />
+                          <span>Call</span>
+                        </button>
+                        <a
+                          href={`https://wa.me/91${cust.mobile_number.replace(/\D/g, '')}?text=Namaste%20${encodeURIComponent(cust.customer_name)}%2C%20greetings%20from%20BSC%20Exclusive!`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-2 rounded-xl bg-green-600 hover:bg-green-700 text-white transition-colors"
+                          title="Chat on WhatsApp"
+                        >
+                          <MessageCircle className="w-3.5 h-3.5" />
+                        </a>
+                        <button
+                          onClick={() => {
+                            setAssignCustomer(cust);
+                            setTargetTelecaller(cust.assigned_telecaller || '');
+                          }}
+                          className="p-2 rounded-xl bg-[#F6F4EF] hover:bg-[#DFDDD7] text-[#182033] transition-colors"
+                          title="Assign Telecaller"
+                        >
+                          <UserCheck className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Desktop & Tablet Table (md+) */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left text-xs text-[#182033]">
                 <thead className="bg-[#07101F] text-white uppercase text-[10px] tracking-wider">
                   <tr>
@@ -951,8 +1055,7 @@ export default function WeddingCustomerRegister() {
               </div>
             </div>
           )}
-        </main>
-      </div>
-    </div>
+      </PageContainer>
+    </DashboardLayout>
   );
 }

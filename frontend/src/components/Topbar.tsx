@@ -84,22 +84,34 @@ export default function Topbar({ title, breadcrumbs, hideBreadcrumbs, session, o
             <Menu className="w-5 h-5 text-white" />
           </button>
           <div className="min-w-0">
-            <h1 className="text-xs sm:text-sm md:text-base font-black text-[#182033] tracking-tight leading-none truncate max-w-[80px] sm:max-w-[160px] md:max-w-[200px] lg:max-w-none">
+            <h1 className="text-xs sm:text-sm md:text-base font-black text-[#182033] tracking-tight leading-none truncate max-w-[110px] xs:max-w-[150px] sm:max-w-[200px] md:max-w-[260px] lg:max-w-none">
               {title}
             </h1>
           </div>
         </div>
 
-        {/* ── Center Area: Fixed Search Directory (Ctrl+K) ──────── */}
-        <div className="flex-1 flex items-center justify-center px-1 sm:px-3 min-w-0 mx-auto">
+        {/* ── Center Area: Directory Search ──────── */}
+        <div className="flex items-center justify-center px-1 sm:px-3 min-w-0 mx-auto">
+          {/* Mobile Search Icon Button */}
           <button
             type="button"
             onClick={() => setSearchOpen(true)}
-            className="w-full max-w-[130px] sm:max-w-xs md:max-w-sm lg:max-w-md flex items-center justify-between gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-xl border border-[#DFDDD7] bg-[#F6F4EF] hover:bg-white text-[10px] sm:text-xs font-semibold text-[#182033] hover:border-[#C9A45C] transition-all shadow-2xs group cursor-pointer"
+            className="sm:hidden p-2 rounded-xl border border-[#DFDDD7] bg-[#F6F4EF] hover:bg-white text-[#182033] transition-all flex items-center justify-center shadow-2xs"
+            title="Search directory (Ctrl+K)"
+            aria-label="Search directory"
+          >
+            <Search className="w-4 h-4 text-[#C9A45C]" />
+          </button>
+
+          {/* Desktop/Tablet Full Search Bar */}
+          <button
+            type="button"
+            onClick={() => setSearchOpen(true)}
+            className="hidden sm:flex w-full sm:max-w-xs md:max-w-sm lg:max-w-md items-center justify-between gap-2 px-3 py-1.5 rounded-xl border border-[#DFDDD7] bg-[#F6F4EF] hover:bg-white text-xs font-semibold text-[#182033] hover:border-[#C9A45C] transition-all shadow-2xs group cursor-pointer"
             title="Search directory (Ctrl+K)"
             aria-label="Search directory (Ctrl+K)"
           >
-            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 truncate">
+            <div className="flex items-center gap-2 min-w-0 truncate">
               <Search className="w-3.5 h-3.5 text-[#C9A45C] flex-shrink-0 group-hover:scale-110 transition-transform" />
               <span className="truncate text-[#687080] group-hover:text-[#182033]">Search directory...</span>
             </div>

@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import Sidebar from '../components/Sidebar';
-import Topbar from '../components/Topbar';
+import DashboardLayout from '../components/layouts/DashboardLayout';
+import PageContainer from '../components/ui/PageContainer';
 import { API, Auth, UserSession } from '../services/api';
-import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../utils/sidebarState';
 import { showToast } from '../components/Toast';
 import {
   CircleCheck, Circle, CircleAlert, Clock, CircleX, ChevronDown, ChevronRight,
@@ -49,13 +48,6 @@ const STATUS_OPTIONS = ['PENDING', 'IN_PROGRESS', 'DONE', 'NOT_DONE', 'POSTPONED
 export default function DailyMCheck() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [session, setSession] = useState<UserSession | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState<boolean>(getSidebarCollapsed());
-
-  useEffect(() => {
-    return subscribeSidebarCollapsed(setCollapsed);
-  }, []);
 
   const [selectedDate, setSelectedDate] = useState(() => {
     const urlDate = searchParams.get('date');
@@ -336,12 +328,9 @@ export default function DailyMCheck() {
   const moduleStats: any[] = dashData?.moduleStats || [];
 
   return (
-    <div className="min-h-screen bg-background flex">
-      <Sidebar session={session} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${collapsed ? 'lg:pl-20' : 'lg:pl-64'}`}>
-        <Topbar title="Daily MCheck" session={session} onMenuClick={() => setSidebarOpen(true)} />
-
-        <div className="flex-1 overflow-y-auto px-4 lg:px-6 py-6 space-y-6">
+    <DashboardLayout title="Daily MCheck">
+      <PageContainer maxWidth="full">
+        <div className="space-y-6">
 
           {/* Header Bar */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -892,7 +881,7 @@ export default function DailyMCheck() {
             </div>
           )}
         </div>
-      </div>
+      </PageContainer>
 
       {/* Admin Configuration Modal (Section 19) */}
       {showAdminModal && (
@@ -1130,6 +1119,6 @@ export default function DailyMCheck() {
           </div>
         </div>
       )}
-    </div>
+    </DashboardLayout>
   );
 }

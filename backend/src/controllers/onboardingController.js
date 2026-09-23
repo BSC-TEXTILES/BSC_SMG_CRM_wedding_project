@@ -51,7 +51,7 @@ const createOnboarding = async (req, res) => {
 
     const recordId = 'OB-' + Date.now().toString().slice(-6);
     const jDate = new Date(joiningDate);
-    const locId = getEffectiveLocationId(req) || (req.user && req.user.locationId) || 2;
+    const locId = injectLocationId(req) || getEffectiveLocationId(req) || (req.user && req.user.locationId) || null;
 
     const [resArr] = await db.query(
       `INSERT INTO onboarding_records (record_id, emp_name, designation, joining_date, progress, status, location_id)

@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
-import Sidebar from '../../components/Sidebar';
-import Topbar from '../../components/Topbar';
+import DashboardLayout from '../../components/layouts/DashboardLayout';
+import PageContainer from '../../components/ui/PageContainer';
 import ToastContainer, { showToast } from '../../components/Toast';
 import { API, Auth, UserSession } from '../../services/api';
-import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../../utils/sidebarState';
 import WeddingNav from './WeddingNav';
 import LocationFilterSelect from '../../components/ui/LocationFilterSelect';
 import { CallLog, CALL_OUTCOMES } from './weddingTypes';
@@ -33,12 +32,6 @@ import {
 export default function WeddingCallHistory() {
   const navigate = useNavigate();
   const [session, setSession] = useState<UserSession | null>(() => Auth.get());
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState<boolean>(getSidebarCollapsed());
-
-  useEffect(() => {
-    return subscribeSidebarCollapsed(setCollapsed);
-  }, []);
 
   const [loading, setLoading] = useState(true);
   const [callLogs, setCallLogs] = useState<any[]>([]);
@@ -163,25 +156,12 @@ export default function WeddingCallHistory() {
   const paginatedLogs = filteredLogs.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
-    <div className="min-h-screen bg-[#F6F4EF] flex text-[#182033]">
-      <Sidebar
-        session={session}
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-      />
-
-      <div
-        className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${
-          collapsed ? 'lg:pl-20' : 'lg:pl-64'
-        }`}
-      >
-        <Topbar
-          title="Wedding Call History"
-          session={session}
-          onMenuClick={() => setSidebarOpen(true)}
-        />
-
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-[1600px] w-full mx-auto space-y-6">
+    <DashboardLayout
+      title="Wedding Call History"
+      breadcrumbs={[{ label: 'Wedding CRM', href: '/wedding-crm/dashboard' }, { label: 'Call History' }]}
+    >
+      <PageContainer maxWidth="full">
+        <div className="space-y-6">
           <ToastContainer />
 
           <WeddingNav
@@ -283,8 +263,73 @@ export default function WeddingCallHistory() {
             </div>
           </div>
 
-          {/* Call Logs Table */}
-          <div className="bg-white rounded-2xl border border-[#DFDDD7] shadow-xs overflow-hidden">
+          {/* Mobile Call Logs List (< md) */}
+          <div className="md:hidden space-y-3">
+            {loading ? (
+              <div className="p-8 text-center bg-white rounded-2xl border border-[#DFDDD7]">
+                <RefreshCw className="w-5 h-5 animate-spin text-[#C9A45C] mx-auto mb-2" />
+                <span className="text-xs text-muted">Loading call records...</span>
+              </div>
+            ) : paginatedLogs.length === 0 ? (
+              <div className="p-8 text-center bg-white rounded-2xl border border-[#DFDDD7]">
+                <History className="w-8 h-8 text-muted mx-auto mb-2" />
+                <div className="font-bold text-sm text-[#182033]">No call logs found</div>
+                <div className="text-xs text-muted mt-0.5">Calls logged by telecallers will appear here.</div>
+              </div>
+            ) : (
+              paginatedLogs.map((log: any, idx: number) => (
+                <div key={idx} className="p-4 bg-white rounded-2xl border border-[#DFDDD7] shadow-xs space-y-2.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="font-bold text-sm text-[#182033]">
+                        {log.customer_name || 'Customer'}
+                      </div>
+                      <div className="text-xs text-muted">
+                        📱 {log.customer_mobile || log.mobile_number || '—'}
+                      </div>
+                    </div>
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-blue-50 text-blue-800 border border-blue-200">
+                      {log.call_outcome}
+                    </span>
+                  </div>
+
+                  <div className="text-xs bg-[#F6F4EF] p-2.5 rounded-xl border border-[#DFDDD7]/60 space-y-1">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-muted">📅 {log.call_date} {log.call_time}</span>
+                      <span className="text-primary font-semibold">👤 {log.telecaller_name || 'Staff'}</span>
+                    </div>
+                    {log.remarks && (
+                      <p className="text-gray-700 italic pt-1 border-t border-[#DFDDD7]/60 text-[11px]">
+                        "{log.remarks}"
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1">
+                    <span className="text-[11px] text-muted">
+                      {log.next_follow_up_date ? (
+                        <span className="text-amber-800 font-bold">Next: {new Date(log.next_follow_up_date).toLocaleDateString()}</span>
+                      ) : (
+                        'No follow-up'
+                      )}
+                    </span>
+                    {log.customer_id && (
+                      <Link
+                        to={`/wedding-crm/customers/${log.customer_id}`}
+                        className="px-2.5 py-1 bg-[#101C36] text-[#C9A45C] rounded-lg text-xs font-bold shadow-xs flex items-center gap-1"
+                      >
+                        <Eye className="w-3 h-3" />
+                        <span>Profile</span>
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Desktop Call Logs Table (hidden on < md) */}
+          <div className="hidden md:block bg-white rounded-2xl border border-[#DFDDD7] shadow-xs overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs text-[#182033]">
                 <thead className="bg-[#07101F] text-white uppercase text-[10px] tracking-wider">
@@ -395,8 +440,8 @@ export default function WeddingCallHistory() {
               </div>
             </div>
           </div>
-        </main>
-      </div>
-    </div>
+        </div>
+      </PageContainer>
+    </DashboardLayout>
   );
 }
