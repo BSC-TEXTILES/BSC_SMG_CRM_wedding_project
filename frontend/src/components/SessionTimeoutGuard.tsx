@@ -19,8 +19,16 @@ export default function SessionTimeoutGuard() {
   useEffect(() => {
     const tick = () => {
       const session = Auth.get();
-      if (!session) return; // not signed in - nothing to do
-      const startedAt = session.loginAt || 0;
+      if (!session || !session.id || !session.username || !session.role) return; // not signed in - nothing to do
+      const startedAt = Number(session.loginAt);
+      if (!startedAt || isNaN(startedAt) || startedAt <= 0) {
+        // Auto-heal missing or invalid loginAt timestamp
+        session.loginAt = Date.now();
+        try {
+          localStorage.setItem('bsc_crm_session', JSON.stringify(session));
+        } catch (e) {}
+        return;
+      }
       if (Date.now() - startedAt > SESSION_MS) {
         Auth.logout();
       }

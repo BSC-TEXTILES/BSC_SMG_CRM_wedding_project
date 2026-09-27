@@ -7,8 +7,9 @@ const { decryptField } = require('../utils/crypto');
 const twoFactorService = require('./twoFactorService');
 const emailVerificationService = require('./emailVerificationService');
 
-// Short-lived Access Token: 15 minutes MAX (900 seconds)
-const ACCESS_TOKEN_EXPIRES_IN = process.env.JWT_ACCESS_EXPIRES_IN || '15m';
+// Session lifetime aligned with SESSION_HOURS (default 6h)
+const sessionHours = parseInt(process.env.SESSION_HOURS || '6', 10) || 6;
+const ACCESS_TOKEN_EXPIRES_IN = process.env.JWT_ACCESS_EXPIRES_IN || `${sessionHours}h`;
 // Refresh Token: 7 days MAX (rotated on use)
 const REFRESH_TOKEN_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || '7d';
 

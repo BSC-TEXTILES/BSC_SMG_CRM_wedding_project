@@ -11,8 +11,9 @@ const { blacklistToken } = require('../middleware/auth');
 
 const loginSecurity = require('../utils/loginSecurity');
 
-// Session lifetime: short-lived access token (15m MAX), refresh token (7d MAX)
-const ACCESS_TOKEN_MS = 15 * 60 * 1000;
+// Session lifetime aligned with SESSION_HOURS (default 6h), refresh token (7d MAX)
+const sessionHours = parseInt(process.env.SESSION_HOURS || '6', 10) || 6;
+const ACCESS_TOKEN_MS = sessionHours * 60 * 60 * 1000;
 const REFRESH_TOKEN_MS = 7 * 24 * 60 * 60 * 1000;
 
 // Safe login error messages
@@ -25,9 +26,13 @@ const SAFE_LOGIN_ERRORS = new Set([
 ]);
 
 function shouldSetSecureCookie(req) {
-  if (process.env.COOKIE_SECURE === 'true') return true;
   if (process.env.COOKIE_SECURE === 'false') return false;
-  return Boolean(req.secure || req.headers['x-forwarded-proto'] === 'https');
+  const isHttps = Boolean(req.secure || req.headers['x-forwarded-proto'] === 'https');
+  if (isHttps) return true;
+  // When running locally on HTTP, browsers reject cookies with Secure flag
+  const isLocalhost = req.hostname === 'localhost' || req.hostname === '127.0.0.1';
+  if (isLocalhost) return false;
+  return process.env.COOKIE_SECURE === 'true';
 }
 
 class AuthController {

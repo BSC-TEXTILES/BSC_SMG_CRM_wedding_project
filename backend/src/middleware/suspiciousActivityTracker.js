@@ -47,46 +47,9 @@ function record403Violation(req, res, reason = 'Unauthorized resource access') {
 
   const count = recent.length;
 
-  if (count >= VIOLATION_THRESHOLD) {
-    // Threshold reached: force logout and revoke token
-    const token = req.cookies?.token || 
-      (req.headers.authorization && req.headers.authorization.startsWith('Bearer ') ? req.headers.authorization.split(' ')[1] : null);
-
-    if (token) {
-      try {
-        const authModule = require('./auth');
-        if (typeof authModule.blacklistToken === 'function') {
-          authModule.blacklistToken(token, userId, username, `Repeated unauthorized access attempts (${count} violations in 5m)`).catch(() => {});
-        }
-      } catch (err) {
-        console.warn('[suspiciousActivityTracker] Blacklist error:', err.message);
-      }
-    }
-
-    // Set force logout headers and clear auth cookies
-    res.setHeader('X-Force-Logout', 'true');
-    res.clearCookie('token', { path: '/' });
-    res.clearCookie('refreshToken', { path: '/' });
-
-    // Log high-priority security incident
-    securityLogger.log('SUSPICIOUS_UNAUTHORIZED_ACCESS_LOCKOUT', req, {
-      userId,
-      username,
-      violationCount: count,
-      attemptedUrl: req.originalUrl || req.path,
-      method: req.method,
-      reason: `Force logout triggered: ${count} unauthorized access attempts detected within 5 minutes.`,
-      ip
-    });
-
-    return {
-      forceLogout: true,
-      violationCount: count,
-      message: 'Session expired. Please log in again.'
-    };
-  }
-
-  // Record single 403 violation
+  // 403 Forbidden is an authorization issue (insufficient permission or cross-location restriction),
+  // NEVER an authentication termination event.
+  // Record violation in security audit log for administration review without destroying the user's active session.
   securityLogger.log('UNAUTHORIZED_ACCESS_ATTEMPT', req, {
     userId,
     username,

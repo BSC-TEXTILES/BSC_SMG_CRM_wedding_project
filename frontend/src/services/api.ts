@@ -45,10 +45,15 @@ export const Auth = {
   save(session: UserSession, token?: string | null) {
     try {
       const activeToken = token || session.token || null;
-      if (activeToken && typeof sessionStorage !== 'undefined') {
-        sessionStorage.setItem('bsc_token', activeToken);
+      if (activeToken) {
+        if (typeof sessionStorage !== 'undefined') {
+          sessionStorage.setItem('bsc_token', activeToken);
+        }
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('bsc_token', activeToken);
+        }
       }
-      localStorage.setItem('bsc_crm_session', JSON.stringify({
+      const sessionToStore = {
         id: session.id,
         username: session.username,
         role: session.role,
@@ -64,7 +69,8 @@ export const Auth = {
         modules: session.modules,
         token: activeToken,
         loginAt: Date.now()
-      }));
+      };
+      localStorage.setItem('bsc_crm_session', JSON.stringify(sessionToStore));
       
       // Track login in user tracking system (safe, non-blocking)
       const ipAddress = typeof window !== 'undefined' ? (window as any).ipAddress : undefined;
@@ -81,7 +87,7 @@ export const Auth = {
       }
 
       if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('bsc_auth_changed', { detail: session }));
+        window.dispatchEvent(new CustomEvent('bsc_auth_changed', { detail: sessionToStore }));
       }
     } catch (e) {}
   },
@@ -100,10 +106,18 @@ export const Auth = {
     if (!session || !session.id || !session.username || !session.role) {
       return false;
     }
-    // Absolute session lifetime: 6 hours. Users who never sign out are
-    // logged out automatically (matches the server token + cookie max-age).
+    // Absolute session lifetime: 6 hours
     const SESSION_MS = 6 * 60 * 60 * 1000;
-    if (!session.loginAt || Date.now() - session.loginAt > SESSION_MS) {
+    const loginTime = Number(session.loginAt);
+    if (!loginTime || isNaN(loginTime) || loginTime <= 0) {
+      // Auto-heal missing loginAt timestamp rather than invalidating valid session
+      session.loginAt = Date.now();
+      try {
+        localStorage.setItem('bsc_crm_session', JSON.stringify(session));
+      } catch (e) {}
+      return true;
+    }
+    if (Date.now() - loginTime > SESSION_MS) {
       return false;
     }
     return true;
@@ -130,6 +144,10 @@ export const Auth = {
       const stored = sessionStorage.getItem('bsc_token');
       if (stored) return stored;
     }
+    if (typeof localStorage !== 'undefined') {
+      const stored = localStorage.getItem('bsc_token');
+      if (stored) return stored;
+    }
     const session = this.get();
     return session?.token || null;
   },
@@ -139,12 +157,14 @@ export const Auth = {
       if (typeof sessionStorage !== 'undefined') {
         sessionStorage.removeItem('bsc_token');
       }
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem('bsc_token');
+        localStorage.removeItem('bsc_refresh_token');
+        localStorage.removeItem('bsc_selected_location');
+      }
       const hadSession = !!localStorage.getItem('bsc_crm_session');
       localStorage.removeItem('bsc_crm_session');
 
-      // Notify listeners only when the session actually changed, and only once
-      // per dispatch cycle. Listeners may call Auth.check() -> Auth.clear()
-      // again; the guard + hadSession check terminate that recursion.
       if (hadSession && !authClearDispatching && typeof window !== 'undefined') {
         authClearDispatching = true;
         try {
@@ -208,35 +228,6 @@ export function triggerSecurityLogout(
   }
 }
 
-// ── Global Fetch Interceptor for 401 Session Expiry ──────────────────────────
-if (typeof window !== 'undefined' && !(window as any).__bsc_fetch_interceptor_installed) {
-  (window as any).__bsc_fetch_interceptor_installed = true;
-  const originalFetch = window.fetch;
-  window.fetch = async function(...args) {
-    const res = await originalFetch.apply(this, args);
-    try {
-      const urlStr = typeof args[0] === 'string' ? args[0] : (args[0] && (args[0] as Request).url ? (args[0] as Request).url : '');
-      const isAuthRoute = urlStr.includes('/auth/login') ||
-                          urlStr.includes('/auth/refresh') ||
-                          urlStr.includes('/auth/lock-status') ||
-                          urlStr.includes('/auth/captcha') ||
-                          urlStr.includes('/auth/logout') ||
-                          urlStr.includes('/security/log-event') ||
-                          urlStr.includes('/user-tracking') ||
-                          urlStr.includes('/my-permissions');
-
-      const isForceLogout = res.headers && res.headers.get && res.headers.get('X-Force-Logout') === 'true';
-
-      if (!isAuthRoute && (res.status === 401 || isForceLogout)) {
-        if (!window.location.pathname.startsWith('/login')) {
-          triggerSecurityLogout('Session expired. Please log in again.', window.location.pathname);
-        }
-      }
-    } catch (e) {}
-    return res;
-  };
-}
-
 // ── Silent Refresh State ──────────────────────────────────────────────────────
 let isRefreshingToken = false;
 let refreshPromise: Promise<boolean> | null = null;
@@ -249,15 +240,43 @@ export async function silentRefreshToken(): Promise<boolean> {
   refreshPromise = (async () => {
     try {
       const csrf = getCsrfToken() || '';
+      const token = Auth.getToken();
+      const storedRefresh = typeof localStorage !== 'undefined' ? localStorage.getItem('bsc_refresh_token') : null;
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'x-csrf-token': csrf
+      };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
       const res = await fetch('/api/auth/refresh', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-csrf-token': csrf
-        },
+        headers,
+        body: storedRefresh ? JSON.stringify({ refreshToken: storedRefresh }) : undefined,
         credentials: 'include'
       });
-      return res.ok;
+
+      if (res.ok) {
+        const json = await res.json().catch(() => ({}));
+        const newAuthToken = json?.data?.token || json?.token;
+        if (newAuthToken) {
+          if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('bsc_token', newAuthToken);
+          if (typeof localStorage !== 'undefined') localStorage.setItem('bsc_token', newAuthToken);
+          const current = Auth.get();
+          if (current) {
+            current.token = newAuthToken;
+            current.loginAt = Date.now();
+            try {
+              localStorage.setItem('bsc_crm_session', JSON.stringify(current));
+            } catch (e) {}
+          }
+        }
+        const newRefresh = json?.data?.refreshToken || json?.refreshToken;
+        if (newRefresh && typeof localStorage !== 'undefined') {
+          localStorage.setItem('bsc_refresh_token', newRefresh);
+        }
+        return true;
+      }
+      return false;
     } catch {
       return false;
     } finally {
@@ -268,13 +287,13 @@ export async function silentRefreshToken(): Promise<boolean> {
   return refreshPromise;
 }
 
-// Auto-renew access token 1 min before expiry (every 14 minutes for a 15-minute access token)
+// Background auto-refresh access token every 30 minutes if user session is active
 if (typeof window !== 'undefined') {
   setInterval(() => {
     if (Auth.check()) {
       silentRefreshToken().catch(() => {});
     }
-  }, 14 * 60 * 1000);
+  }, 30 * 60 * 1000);
 }
 
 /**
@@ -359,7 +378,9 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
                         endpoint.includes('/auth/logout') ||
                         endpoint.includes('/security/log-event') ||
                         endpoint.includes('/user-tracking') ||
-                        endpoint.includes('/my-permissions');
+                        endpoint.includes('/my-permissions') ||
+                        endpoint.includes('/consent/') ||
+                        endpoint.includes('/settings/page');
 
     // On 401, attempt silent refresh once and replay request
     if (res.status === 401 && !isAuthRoute) {
@@ -367,6 +388,9 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
       if (refreshed) {
         const newCsrf = getCsrfToken();
         if (newCsrf) headers['x-csrf-token'] = newCsrf;
+        // Update Bearer token from refreshed session
+        const newToken = Auth.getToken();
+        if (newToken) headers['Authorization'] = `Bearer ${newToken}`;
         res = await fetch(url, {
           ...options,
           headers,
@@ -377,7 +401,11 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
 
     if (!res.ok) {
       const isForceLogout = res.headers && res.headers.get && res.headers.get('X-Force-Logout') === 'true';
-      if ((res.status === 401 || isForceLogout) && !isAuthRoute) {
+      const isProfileAuthCheck = endpoint.includes('/auth/me') || endpoint.includes('/auth/profile');
+      
+      // Only execute automatic session termination when the server explicitly confirms
+      // the session is revoked (X-Force-Logout) or the core profile authentication check fails.
+      if ((isForceLogout || (res.status === 401 && isProfileAuthCheck)) && !isAuthRoute) {
         const errorData = await res.json().catch(() => ({}));
         const msg = errorData.message || 'Session expired. Please log in again.';
         triggerSecurityLogout(msg, typeof window !== 'undefined' ? window.location.pathname : '');

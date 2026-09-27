@@ -270,14 +270,9 @@ class SecurityManagerService {
       }).catch(() => {});
     } catch {}
 
-    // 3. Clear ALL localStorage (except we keep nothing sensitive now)
+    // 3. Clear only auth/session storage keys (preserves user preferences)
     try {
-      localStorage.clear();
-    } catch {}
-
-    // 4. Clear ALL sessionStorage
-    try {
-      sessionStorage.clear();
+      Auth.clear();
     } catch {}
 
     // 5. NOTE: HttpOnly cookies cannot be cleared from JavaScript

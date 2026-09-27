@@ -150,31 +150,43 @@ function invalidateUserStatusCache(userId) {
 
 const authenticate = async (req, res, next) => {
   try {
-    let token = null;
-    // Priority: HttpOnly cookie (browser) -> Authorization header (API clients) -> x-auth-token header (legacy)
+    const candidateTokens = [];
     if (req.cookies && req.cookies.token) {
-      token = req.cookies.token;
-    } else if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
-      token = req.headers.authorization.split(' ')[1];
-    } else if (req.headers['x-auth-token']) {
-      token = req.headers['x-auth-token'];
+      candidateTokens.push(req.cookies.token);
     }
-    // NOTE: Query parameter token (?token=) is intentionally NOT supported for security
-    // Tokens in URLs are logged, leaked in referrer headers, and cached in browser history
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
+      const hToken = req.headers.authorization.split(' ')[1];
+      if (hToken && !candidateTokens.includes(hToken)) candidateTokens.push(hToken);
+    }
+    if (req.headers['x-auth-token']) {
+      const xToken = req.headers['x-auth-token'];
+      if (xToken && !candidateTokens.includes(xToken)) candidateTokens.push(xToken);
+    }
 
-    if (!token) {
+    if (candidateTokens.length === 0) {
       return errorRes(res, 'Authentication token required', [], 401);
     }
 
-    const decoded = jwt.verify(token, getJwtSecret());
+    let token = null;
+    let decoded = null;
+    let lastError = null;
 
-    // ── JWT Blacklist check ──────────────────────────────────────────
-    // If the token has been blacklisted (logout / force-logout / password change),
-    // reject immediately — the cookie/header is stale.
-    const blacklisted = await isTokenBlacklisted(token);
-    if (blacklisted) {
-      res.clearCookie('token', { path: '/' });
-      return errorRes(res, 'Session has been invalidated. Please log in again.', [], 401);
+    for (const cand of candidateTokens) {
+      try {
+        const d = jwt.verify(cand, getJwtSecret(), { clockTolerance: 30 });
+        const blacklisted = await isTokenBlacklisted(cand);
+        if (!blacklisted) {
+          token = cand;
+          decoded = d;
+          break;
+        }
+      } catch (err) {
+        lastError = err;
+      }
+    }
+
+    if (!token || !decoded) {
+      return errorRes(res, 'Session has expired or is invalid. Please log in again.', [lastError?.message || 'Invalid token'], 401);
     }
 
     req.user = decoded;
@@ -716,7 +728,7 @@ const optionalAuthenticate = async (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, getJwtSecret());
+    const decoded = jwt.verify(token, getJwtSecret(), { clockTolerance: 30 });
     req.user = decoded;
     return next();
   } catch (err) {
