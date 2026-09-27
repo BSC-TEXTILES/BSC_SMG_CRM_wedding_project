@@ -34,32 +34,67 @@ const DEFAULT_EMPLOYEE_PASSWORD = 'Bsc@123';
 
 /**
  * Role → default module visibility.
- * Mirrors `frontend/src/components/Sidebar.tsx` roleNavMap so the navigation
- * the user sees and the permissions stored in the database always agree.
+ * Mirrors `frontend/src/utils/rbac.ts` ROLE_NAV_MAP so the navigation the user
+ * sees and the permissions stored in the database always agree.
+ * SINGLE SOURCE OF TRUTH: authorizationService (runtime enforcement), the
+ * Access Control Matrix preview and this module's seeding all read this map.
  * Only keys present in the backend MODULE_REGISTRY are listed.
  */
 const ROLE_DEFAULT_MODULES = {
-  'HR': ['dashboard', 'wedding_crm', 'footfall', 'feedback_collection', 'feedback_list', 'feedback_qr',
+  'HR': ['dashboard', 'wedding_crm', 'wedding_registration', 'footfall', 'feedback_collection', 'feedback_list', 'feedback_qr',
          'divert', 'candidates', 'offer', 'openings', 'employees', 'dept_hiring', 'section_allocation',
          'broadcast', 'daily_mcheck', 'mcheck_reports', 'mcheck_history'],
-  'Manager': ['dashboard', 'wedding_crm', 'telecaller_desk', 'telecaller_dashboard', 'footfall', 'feedback_collection', 'feedback_list', 'feedback_qr',
+  'Manager': ['dashboard', 'wedding_crm', 'wedding_registration', 'wedding_operations', 'telecaller_desk', 'telecaller_dashboard',
+              'footfall', 'feedback_collection', 'feedback_list', 'feedback_qr',
               'divert', 'candidates', 'offer', 'openings', 'employees', 'dept_hiring', 'section_allocation',
               'broadcast', 'daily_mcheck', 'mcheck_reports', 'mcheck_history'],
+  'Floor Manager': ['dashboard', 'wedding_crm', 'wedding_registration', 'wedding_operations', 'telecaller_desk', 'telecaller_dashboard',
+                    'footfall', 'feedback_collection', 'feedback_list', 'feedback_qr',
+                    'divert', 'candidates', 'offer', 'openings', 'employees', 'dept_hiring', 'section_allocation',
+                    'broadcast', 'daily_mcheck', 'mcheck_reports', 'mcheck_history'],
+  'Team Lead': ['wedding_crm', 'dashboard', 'wedding_registration', 'employees', 'section_allocation', 'broadcast'],
+  'Wedding Collection Manager': ['wedding_crm', 'wedding_operations', 'dashboard', 'wedding_registration', 'footfall', 'divert', 'broadcast'],
+  'Data Analyst': ['wedding_crm', 'wedding_operations', 'dashboard', 'mcheck_reports', 'regional_analytics'],
   'Telecaller': ['wedding_crm', 'telecaller_desk', 'telecaller_dashboard', 'wedding_registration'],
+  'VM Extension Telecaller': ['wedding_crm', 'telecaller_desk', 'telecaller_dashboard', 'wedding_registration'],
+  'VM': ['vm_checklist', 'dashboard', 'footfall', 'broadcast'],
   'CRM Executive': ['wedding_crm', 'telecaller_desk', 'telecaller_dashboard', 'wedding_registration', 'dashboard', 'footfall'],
-  'CRM Manager': ['wedding_crm', 'telecaller_desk', 'telecaller_dashboard', 'wedding_registration', 'dashboard', 'footfall', 'broadcast'],
-  'Recruiter': ['dashboard', 'wedding_crm', 'candidates', 'broadcast'],
+  'CRM Manager': ['wedding_crm', 'telecaller_desk', 'telecaller_dashboard', 'wedding_registration', 'wedding_operations', 'dashboard', 'footfall', 'broadcast'],
+  'Recruiter': ['dashboard', 'wedding_crm', 'candidates', 'broadcast', 'candidate_apply'],
   'Interviewer': ['candidates'],
-  'Employee': ['dashboard', 'wedding_crm'],
-  'Greeter': ['wedding_crm', 'footfall', 'feedback_collection', 'feedback_list', 'feedback_qr', 'divert'],
-  'Guest': []
+  'Employee': ['dashboard', 'wedding_crm', 'wedding_registration'],
+  'Greeter': ['wedding_crm', 'wedding_registration', 'footfall', 'feedback_collection', 'feedback_list', 'feedback_qr', 'divert', 'tv', 'greeter'],
+  'Guest': ['candidate_apply', 'feedback_public']
 };
 
+/** Exact-key lookup (used by seeding, which must never guess a role). */
 function getRoleDefaultModules(role) {
   if (ADMIN_ROLES.includes(role)) {
-    return Object.values(ROLE_DEFAULT_MODULES).reduce((acc, list) => acc.concat(list), []);
+    return [...new Set(Object.values(ROLE_DEFAULT_MODULES).flat())];
   }
   return ROLE_DEFAULT_MODULES[role] ? [...ROLE_DEFAULT_MODULES[role]] : [];
+}
+
+/**
+ * Normalized lookup used by runtime enforcement: tolerates casing/alias drift
+ * (HR MANAGER → HR, vm-telecaller → …) and falls back to Employee defaults so
+ * an unknown role never silently gains or loses access between the count shown
+ * in User Management and the check performed on an API call.
+ */
+function matchRoleKey(role) {
+  const cleanRole = String(role || '').trim().toLowerCase().replace(/[_\s-]+/g, ' ');
+  return Object.keys(ROLE_DEFAULT_MODULES).find(
+    k => k.toLowerCase().replace(/[_\s-]+/g, ' ') === cleanRole
+  ) || null;
+}
+
+function getDefaultModulesForRole(role) {
+  if (ADMIN_ROLES.includes(role)) {
+    return [...new Set(Object.values(ROLE_DEFAULT_MODULES).flat())];
+  }
+  const key = matchRoleKey(role);
+  const modules = key ? ROLE_DEFAULT_MODULES[key] : ROLE_DEFAULT_MODULES['Employee'];
+  return [...new Set(modules || [])];
 }
 
 // ── Employee ID generator ─────────────────────────────────────────
@@ -463,6 +498,8 @@ module.exports = {
   DEFAULT_EMPLOYEE_PASSWORD,
   ROLE_DEFAULT_MODULES,
   getRoleDefaultModules,
+  matchRoleKey,
+  getDefaultModulesForRole,
   nextEmployeeId,
   ensureEmployeeId,
   resolveLocationCode,

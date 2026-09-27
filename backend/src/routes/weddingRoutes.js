@@ -5,15 +5,25 @@ const { authenticate, authorize } = require('../middleware/auth');
 const { errorRes } = require('../utils/response');
 const multer = require('multer');
 
-// CSV uploads are parsed in-memory (max 2 MB) — nothing touches the disk.
-const csvUpload = multer({
+// Bulk uploads (CSV and XLSX) are parsed in-memory (max 10 MB) — nothing touches the disk.
+const bulkUpload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 2 * 1024 * 1024 },
+  limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    const ok = /\.csv$/i.test(file.originalname) || file.mimetype === 'text/csv';
-    cb(ok ? null : new Error('Only .csv files are allowed'), ok);
+    const isCsv = /\.csv$/i.test(file.originalname) || file.mimetype === 'text/csv' || file.mimetype === 'application/vnd.ms-excel';
+    const isXlsx = /\.xlsx$/i.test(file.originalname) || file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    if (isCsv || isXlsx) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only .csv and .xlsx files are allowed.'), false);
+    }
   }
 });
+
+// ── Public Template Downloads (served before auth so browser downloads always succeed without 401/error pages) ──
+router.get('/template-csv', (req, res, next) => weddingController.downloadCsvTemplate(req, res, next));
+router.get('/template-xlsx', (req, res, next) => weddingController.downloadXlsxTemplate(req, res, next));
+router.get('/template', (req, res, next) => weddingController.downloadCsvTemplate(req, res, next));
 
 // All wedding CRM routes require authentication
 router.use(authenticate);
@@ -37,10 +47,10 @@ router.get('/telecallers', weddingController.getTelecallers);
 // ── Export Data (Excel / CSV / Report data) ────────────────────
 router.get('/export', weddingController.exportData);
 
-// ── Bulk CSV Import (strict validation) ───────────────────────
+// ── Bulk CSV / Excel Import (strict validation) ───────────────
 router.post('/import-csv', (req, res, next) => {
-  csvUpload.single('file')(req, res, (err) => {
-    if (err) return errorRes(res, err.message || 'CSV upload failed', [], 400);
+  bulkUpload.single('file')(req, res, (err) => {
+    if (err) return errorRes(res, err.message || 'File upload failed', [], 400);
     return weddingController.importCsv(req, res, next);
   });
 });

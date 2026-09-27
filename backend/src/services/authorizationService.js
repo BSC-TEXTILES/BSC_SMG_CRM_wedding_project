@@ -9,6 +9,11 @@
  */
 
 const pool = require('../config/db');
+const {
+  ROLE_DEFAULT_MODULES,
+  matchRoleKey,
+  getDefaultModulesForRole
+} = require('./userSyncService');
 
 // Roles that bypass module-level permission checks
 const ADMIN_ROLES = ['Admin', 'Super Admin'];
@@ -74,24 +79,7 @@ async function checkPermission(user, { module = null, action = 'can_view', locat
     }
   }
 
-const ROLE_DEFAULT_MODULES = {
-  'HR': ['dashboard', 'wedding_crm', 'wedding_registration', 'footfall', 'feedback_collection', 'feedback_list', 'feedback_qr',
-         'divert', 'candidates', 'offer', 'openings', 'employees', 'dept_hiring', 'section_allocation',
-         'broadcast', 'daily_mcheck', 'mcheck_reports', 'mcheck_history'],
-  'Manager': ['dashboard', 'wedding_crm', 'wedding_registration', 'telecaller_desk', 'telecaller_dashboard', 'wedding_operations', 'footfall', 'feedback_collection', 'feedback_list', 'feedback_qr',
-              'divert', 'candidates', 'offer', 'openings', 'employees', 'dept_hiring', 'section_allocation',
-              'broadcast', 'daily_mcheck', 'mcheck_reports', 'mcheck_history'],
-  'Telecaller': ['wedding_crm', 'telecaller_desk', 'telecaller_dashboard', 'wedding_registration'],
-  'VM Extension Telecaller': ['wedding_crm', 'telecaller_desk', 'telecaller_dashboard', 'wedding_registration'],
-  'CRM Executive': ['wedding_crm', 'telecaller_desk', 'telecaller_dashboard', 'wedding_registration', 'dashboard', 'footfall'],
-  'CRM Manager': ['wedding_crm', 'telecaller_desk', 'telecaller_dashboard', 'wedding_registration', 'wedding_operations', 'dashboard', 'footfall', 'broadcast'],
-  'Recruiter': ['dashboard', 'wedding_crm', 'candidates', 'broadcast'],
-  'Interviewer': ['candidates'],
-  'Employee': ['dashboard', 'wedding_crm', 'wedding_registration'],
-  'Greeter': ['wedding_crm', 'wedding_registration', 'footfall', 'feedback_collection', 'feedback_list', 'feedback_qr', 'divert', 'tv', 'greeter'],
-  'VM': ['vm_checklist', 'dashboard', 'footfall', 'broadcast'],
-  'Guest': ['candidate_apply', 'feedback_public']
-};
+const ROLE_DEFAULT_MODULES_LOCAL = null; // role defaults live in userSyncService (single source of truth)
 
   // 5. Module + Action permission check
   if (module) {

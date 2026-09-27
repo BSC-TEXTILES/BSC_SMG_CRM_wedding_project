@@ -9,6 +9,7 @@ const { getLocationFilter, injectLocationId } = require('../middleware/auth');
 const realtimeService = require('../services/realtimeService');
 const { encryptField, decryptRows, decryptRow } = require('../utils/crypto');
 const { parseCsv, rowsToObjects } = require('../utils/csv');
+const ExcelJS = require('exceljs');
 const { 
   getCache, setCache, delCache, delCachePattern, 
   acquireLock, releaseLock, bfAdd, bfExists, isReady 
@@ -1895,39 +1896,304 @@ class WeddingController {
   }
 
 
-  // ── 14. Bulk CSV Import (strict validation — only related rows enter) ──
+  // ── Template Download: Valid UTF-8 CSV with BOM and 3 sample rows ──
+  downloadCsvTemplate(req, res) {
+    try {
+      const headers = [
+        'customer_name',
+        'mobile_number',
+        'email',
+        'wedding_date',
+        'store_location',
+        'notes',
+        'alternate_number'
+      ];
+
+      const sampleRows = [
+        ['Ananya Hegde', '9845012345', 'ananya.hegde@example.com', '2025-05-15', 'Shivamogga', 'Interested in bridal Kanjeevaram sarees', '9845099999'],
+        ['Pooja Patil', '9880198765', 'pooja.patil@example.com', '2025-06-10', 'Davanagere', 'Looking for designer lehengas and family sets', ''],
+        ['Kavya Suresh', '9741234567', '', '2025-07-22', 'Belagavi', 'Family wedding shopping for 10 members', '9741234568']
+      ];
+
+      const escapeCell = (val) => {
+        const s = val === null || val === undefined ? '' : String(val);
+        if (/[",\r\n]/.test(s)) {
+          return '"' + s.replace(/"/g, '""') + '"';
+        }
+        return s;
+      };
+
+      const lines = [
+        headers.join(','),
+        ...sampleRows.map(row => row.map(escapeCell).join(','))
+      ];
+
+      // Prepend UTF-8 BOM (\uFEFF) so Excel and editors open it properly
+      const csvData = '\uFEFF' + lines.join('\r\n') + '\r\n';
+
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', 'attachment; filename="wedding_customer_template.csv"');
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      return res.status(200).send(csvData);
+    } catch (err) {
+      console.error('[WeddingController.downloadCsvTemplate Error]', err);
+      return res.status(500).json({ success: false, error: 'Failed to generate CSV template' });
+    }
+  }
+
+  // ── Template Download: Excel (.xlsx) with Color-Coded Headers ──
+  async downloadXlsxTemplate(req, res) {
+    try {
+      const workbook = new ExcelJS.Workbook();
+      workbook.creator = 'BSC Textiles Wedding Concierge';
+      workbook.created = new Date();
+
+      const worksheet = workbook.addWorksheet('Customer Template', {
+        views: [{ showGridLines: true }]
+      });
+
+      worksheet.columns = [
+        { header: 'customer_name', key: 'customer_name', width: 24 },
+        { header: 'mobile_number', key: 'mobile_number', width: 20 },
+        { header: 'email', key: 'email', width: 30 },
+        { header: 'wedding_date', key: 'wedding_date', width: 18 },
+        { header: 'store_location', key: 'store_location', width: 22 },
+        { header: 'notes', key: 'notes', width: 42 },
+        { header: 'alternate_number', key: 'alternate_number', width: 20 }
+      ];
+
+      const headerRow = worksheet.getRow(1);
+      headerRow.height = 32;
+
+      // Color coding:
+      // Required headers (customer_name, mobile_number) in RED/bold
+      // Optional headers (email, wedding_date, store_location, notes, alternate_number) in GREEN/bold
+      for (let col = 1; col <= 7; col++) {
+        const cell = headerRow.getCell(col);
+        const isRequired = (col === 1 || col === 2);
+        cell.font = {
+          name: 'Segoe UI',
+          bold: true,
+          size: 11,
+          color: { argb: 'FFFFFFFF' }
+        };
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: isRequired ? 'FFDC2626' : 'FF059669' }
+        };
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        cell.border = {
+          top: { style: 'medium', color: { argb: isRequired ? 'FF991B1B' : 'FF065F46' } },
+          left: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+          bottom: { style: 'medium', color: { argb: isRequired ? 'FF991B1B' : 'FF065F46' } },
+          right: { style: 'thin', color: { argb: 'FFFFFFFF' } }
+        };
+      }
+
+      // 3 sample rows
+      const sampleRows = [
+        {
+          customer_name: 'Ananya Hegde',
+          mobile_number: '9845012345',
+          email: 'ananya.hegde@example.com',
+          wedding_date: '2025-05-15',
+          store_location: 'Shivamogga',
+          notes: 'Interested in bridal Kanjeevaram sarees',
+          alternate_number: '9845099999'
+        },
+        {
+          customer_name: 'Pooja Patil',
+          mobile_number: '9880198765',
+          email: 'pooja.patil@example.com',
+          wedding_date: '2025-06-10',
+          store_location: 'Davanagere',
+          notes: 'Looking for designer lehengas and family sets',
+          alternate_number: ''
+        },
+        {
+          customer_name: 'Kavya Suresh',
+          mobile_number: '9741234567',
+          email: '',
+          wedding_date: '2025-07-22',
+          store_location: 'Belagavi',
+          notes: 'Family wedding shopping for 10 members',
+          alternate_number: '9741234568'
+        }
+      ];
+
+      sampleRows.forEach((item, idx) => {
+        const row = worksheet.addRow(item);
+        row.height = 24;
+        const isEven = idx % 2 === 0;
+        for (let col = 1; col <= 7; col++) {
+          const cell = row.getCell(col);
+          cell.font = { name: 'Segoe UI', size: 10 };
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: isEven ? 'FFFFFFFF' : 'FFF8FAFC' }
+          };
+          cell.alignment = {
+            vertical: 'middle',
+            horizontal: (col === 2 || col === 4 || col === 7) ? 'center' : 'left'
+          };
+          cell.border = {
+            top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+          };
+        }
+      });
+
+      // Legend rows
+      worksheet.addRow([]);
+      const legendRow = worksheet.addRow([
+        '* RED = REQUIRED (customer_name, mobile_number)',
+        '',
+        '',
+        '* GREEN = OPTIONAL (email, wedding_date, store_location, notes, alternate_number)'
+      ]);
+      legendRow.getCell(1).font = { name: 'Segoe UI', bold: true, color: { argb: 'FFDC2626' }, size: 9 };
+      legendRow.getCell(4).font = { name: 'Segoe UI', bold: true, color: { argb: 'FF059669' }, size: 9 };
+
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', 'attachment; filename="wedding_customer_template.xlsx"');
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+
+      await workbook.xlsx.write(res);
+      res.end();
+    } catch (err) {
+      console.error('[WeddingController.downloadXlsxTemplate Error]', err);
+      if (!res.headersSent) {
+        return res.status(500).json({ success: false, error: 'Failed to generate Excel template' });
+      }
+    }
+  }
+
+  // ── 14. Bulk Customer Import (CSV & XLSX with Robust Validation) ──
   async importCsv(req, res) {
     try {
       await ensureTables();
       if (!req.file || !req.file.buffer) {
-        return errorRes(res, 'No CSV file uploaded. Attach the file in the "file" field.', [], 400);
+        return errorRes(res, 'No file uploaded. Please attach a .csv or .xlsx file.', [], 400);
       }
 
-      // Location: branch users import into their own branch; global admins
-      // may target one via ?location_id.
-      let locationId = req.user ? req.user.locationId : null;
+      // Validate Assign Store Location
+      let locationId = req.body.location_id || req.query.location_id;
+      if (!locationId && req.user?.locationId) {
+        locationId = req.user.locationId;
+      }
       if (!locationId) {
-        const requested = req.query.location_id || req.body.location_id;
-        locationId = requested && !isNaN(parseInt(requested, 10)) ? parseInt(requested, 10) : 2;
+        return errorRes(res, 'Assign Store Location is required before starting import.', [], 400);
       }
-      const [locRows] = await pool.query(`SELECT location_code FROM locations WHERE id = ?`, [locationId]);
-      const locCode = locRows[0]?.location_code || 'BSC';
+      const defaultLocationId = parseInt(locationId, 10);
+      if (isNaN(defaultLocationId)) {
+        return errorRes(res, 'Invalid store location selected. Please select a valid store location.', [], 400);
+      }
 
-      const text = req.file.buffer.toString('utf8');
-      const objects = rowsToObjects(parseCsv(text));
+      // Check file size
+      if (req.file.buffer.length === 0) {
+        return errorRes(res, 'The uploaded file is empty. Please upload a file with customer data.', [], 400);
+      }
+
+      // Determine file type
+      const isXlsx = /\.xlsx$/i.test(req.file.originalname) ||
+                     (req.file.mimetype && req.file.mimetype.includes('openxmlformats'));
+
+      let rows = [];
+
+      if (isXlsx) {
+        try {
+          const workbook = new ExcelJS.Workbook();
+          await workbook.xlsx.load(req.file.buffer);
+          const worksheet = workbook.worksheets[0];
+          if (!worksheet) {
+            return errorRes(res, 'The uploaded Excel file does not contain any worksheets.', [], 400);
+          }
+          worksheet.eachRow((row) => {
+            const rowValues = [];
+            for (let c = 1; c <= worksheet.columnCount; c++) {
+              const cell = row.getCell(c);
+              let val = cell.value;
+              if (val && typeof val === 'object') {
+                if (val.text) val = val.text;
+                else if (val.result) val = val.result;
+                else if (val instanceof Date) {
+                  val = val.toISOString().split('T')[0];
+                } else {
+                  val = String(val);
+                }
+              }
+              rowValues.push(val !== undefined && val !== null ? String(val).trim() : '');
+            }
+            if (rowValues.some(c => c !== '')) {
+              rows.push(rowValues);
+            }
+          });
+        } catch (excelErr) {
+          return errorRes(res, 'Failed to parse Excel file. Please ensure the file is a valid .xlsx file or use the CSV template.', [excelErr.message], 400);
+        }
+      } else {
+        // Validate UTF-8 encoding
+        let text = '';
+        try {
+          text = req.file.buffer.toString('utf8');
+        } catch (utfErr) {
+          return errorRes(res, 'File is not UTF-8 encoded. Please save the CSV file as UTF-8 format.', [], 400);
+        }
+
+        if (!text || text.trim().length === 0) {
+          return errorRes(res, 'The uploaded CSV file is empty. Please download the template and add your customer data.', [], 400);
+        }
+
+        rows = parseCsv(text);
+      }
+
+      if (!rows || rows.length === 0) {
+        return errorRes(res, 'The uploaded file contains no data.', [], 400);
+      }
+
+      // Header row validation
+      const rawHeaders = rows[0].map(h =>
+        String(h).trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '')
+      );
+
+      const hasCustomerName = rawHeaders.some(h => ['customer_name', 'name', 'customer', 'bride_groom_name'].includes(h));
+      const hasMobileNumber = rawHeaders.some(h => ['mobile_number', 'mobile', 'phone', 'contact', 'phone_number'].includes(h));
+
+      if (!hasCustomerName || !hasMobileNumber) {
+        const missing = [];
+        if (!hasCustomerName) missing.push('customer_name (REQUIRED)');
+        if (!hasMobileNumber) missing.push('mobile_number (REQUIRED)');
+        return errorRes(
+          res,
+          `Missing required column headers: ${missing.join(', ')}. The template requires: customer_name, mobile_number, email, wedding_date, store_location, notes, alternate_number. Please download the official template.`,
+          missing,
+          400
+        );
+      }
+
+      const objects = rowsToObjects(rows);
       if (objects.length === 0) {
-        return errorRes(res, 'The CSV file has no data rows (a header row is required).', [], 400);
+        return errorRes(res, 'The file contains a header row but no customer records. Please add at least 1 customer row below the header.', [], 400);
       }
 
-      // ── Header mapping: accept the common column spellings ─────────────
+      // Helper utilities
       const pick = (obj, keys) => {
         for (const k of keys) {
-          if (obj[k] !== undefined && obj[k] !== '') return obj[k];
+          if (obj[k] !== undefined && obj[k] !== null && String(obj[k]).trim() !== '') {
+            return String(obj[k]).trim();
+          }
         }
         return null;
       };
 
-      // Date parsing: accepts YYYY-MM-DD, DD/MM/YYYY, DD-MM-YYYY
       const parseDate = (raw) => {
         if (!raw) return null;
         const v = String(raw).trim();
@@ -1942,7 +2208,6 @@ class WeddingController {
         return null;
       };
 
-      // Mobile normalisation: strip +91 / 91 prefix and separators, keep 10 digits
       const normalizeMobile = (raw) => {
         if (!raw) return null;
         let digits = String(raw).replace(/\D/g, '');
@@ -1952,107 +2217,184 @@ class WeddingController {
         return digits;
       };
 
-      const [yearRows] = await pool.query(
-        `SELECT customer_code FROM wedding_customers WHERE customer_code LIKE ? ORDER BY id DESC LIMIT 1`,
-        [`WED-${locCode}-${new Date().getFullYear()}-%`]
-      );
-      let seq = yearRows[0]
-        ? parseInt(String(yearRows[0].customer_code).slice(-4), 10) || 0
-        : 0;
+      // Fetch locations lookup
+      const [locationsList] = await pool.query(`SELECT id, location_name, location_code FROM locations`);
+      const locationMap = new Map();
+      locationsList.forEach(loc => {
+        locationMap.set(String(loc.id), loc);
+        locationMap.set(loc.location_code.toUpperCase(), loc);
+        locationMap.set(loc.location_name.toLowerCase(), loc);
+        const lName = loc.location_name.toLowerCase();
+        if (lName.includes('shivamogga') || lName.includes('shimoga')) {
+          locationMap.set('shimoga', loc);
+          locationMap.set('shivamogga', loc);
+        }
+        if (lName.includes('davanagere') || lName.includes('davangere')) {
+          locationMap.set('davangere', loc);
+          locationMap.set('davanagere', loc);
+        }
+        if (lName.includes('belagavi') || lName.includes('belgaum')) {
+          locationMap.set('belgaum', loc);
+          locationMap.set('belagavi', loc);
+        }
+      });
 
       const inserted = [];
       const errors = [];
       let imported = 0;
+      let duplicates = 0;
+      const seenInBatch = new Set();
+      const seqByLoc = new Map();
 
       for (let idx = 0; idx < objects.length; idx++) {
         const row = objects[idx];
-        const rowNo = idx + 2; // header offset
+        const rowNo = idx + 2; // header is row 1
+
         const customerName = pick(row, ['customer_name', 'name', 'customer', 'bride_groom_name']);
         const mobile = normalizeMobile(pick(row, ['mobile_number', 'mobile', 'phone', 'contact', 'phone_number']));
         const emailRaw = pick(row, ['email', 'email_id', 'mail']);
-        const email = emailRaw && /@/.test(emailRaw) ? emailRaw : null;
-        const weddingDate = parseDate(pick(row, ['wedding_date', 'marriage_date', 'weddingdate']));
-        const shoppingDate = parseDate(pick(row, ['expected_shopping_date', 'shopping_date', 'expectedshoppingdate']));
-        const followUp = parseDate(pick(row, ['follow_up_date', 'followup_date', 'next_follow_up', 'follow_up'])) ||
-          new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
-        const category = pick(row, ['preferred_shopping_category', 'category', 'shopping_category']) || 'General Wedding Shopping';
-        const familyRaw = parseInt(pick(row, ['estimated_family_size', 'family_size', 'members']) || '1', 10);
-        const familySize = !isNaN(familyRaw) && familyRaw > 0 && familyRaw < 100 ? familyRaw : 1;
-        const notes = pick(row, ['customer_notes', 'notes', 'remarks', 'comments']);
-        const telecaller = pick(row, ['assigned_telecaller', 'telecaller', 'assigned_to']);
+        const email = emailRaw && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailRaw) ? emailRaw.trim() : null;
+        const weddingDateRaw = pick(row, ['wedding_date', 'marriage_date', 'weddingdate']);
+        const weddingDate = parseDate(weddingDateRaw);
+        const storeLocRaw = pick(row, ['store_location', 'location', 'store', 'branch']);
+        const notes = pick(row, ['notes', 'customer_notes', 'remarks', 'comments']);
+        const altNumber = normalizeMobile(pick(row, ['alternate_number', 'alternate_mobile', 'alt_phone', 'alternate_phone', 'alt_mobile']));
 
-        // ── Strict validation: only fully-related rows enter the CRM ──────
+        // Required field validation
         if (!customerName) {
-          errors.push({ row: rowNo, reason: 'Missing customer name — row skipped' });
-          continue;
-        }
-        if (!mobile) {
-          errors.push({ row: rowNo, reason: `Invalid/missing mobile number for "${customerName}" — row skipped` });
-          continue;
-        }
-        if (!shoppingDate) {
-          errors.push({ row: rowNo, reason: `Missing or unparseable expected shopping date for "${customerName}" — row skipped` });
-          continue;
-        }
-        if (shoppingDate > '2100-01-01' || shoppingDate < '2000-01-01') {
-          errors.push({ row: rowNo, reason: `Shopping date out of range for "${customerName}" — row skipped` });
+          errors.push({ row: rowNo, customerName: 'N/A', mobile: mobile || 'N/A', reason: 'Missing required field: customer_name' });
           continue;
         }
 
-        // Duplicate check within this location
+        if (!mobile) {
+          const rawMob = pick(row, ['mobile_number', 'mobile', 'phone', 'contact', 'phone_number']) || '';
+          errors.push({ row: rowNo, customerName, mobile: rawMob, reason: `Invalid mobile number "${rawMob}". Must be a valid 10-digit number starting with 6-9.` });
+          continue;
+        }
+
+        // Duplicate in batch
+        if (seenInBatch.has(mobile)) {
+          duplicates++;
+          errors.push({ row: rowNo, customerName, mobile, reason: `Duplicate mobile ${mobile} appears multiple times in uploaded file` });
+          continue;
+        }
+        seenInBatch.add(mobile);
+
+        // Resolve store location
+        let rowLocation = defaultLocationId;
+        if (storeLocRaw) {
+          const key = String(storeLocRaw).trim().toLowerCase();
+          const matched = locationMap.get(key) || locationMap.get(key.toUpperCase());
+          if (matched) {
+            rowLocation = matched.id;
+          }
+        }
+
+        // Duplicate check in CRM database
         const [dup] = await pool.query(
-          `SELECT customer_code FROM wedding_customers WHERE mobile_number = ? AND location_id = ? AND is_deleted = 0`,
-          [mobile, locationId]
+          `SELECT customer_code FROM wedding_customers WHERE mobile_number = ? AND is_deleted = 0 LIMIT 1`,
+          [mobile]
         );
         if (dup && dup.length > 0) {
-          errors.push({ row: rowNo, reason: `Mobile ${mobile} already exists (${dup[0].customer_code}) — row skipped` });
+          duplicates++;
+          errors.push({ row: rowNo, customerName, mobile, reason: `Mobile ${mobile} already registered in CRM (${dup[0].customer_code})` });
           continue;
         }
 
-        seq += 1;
-        const customerCode = `WED-${locCode}-${new Date().getFullYear()}-${String(seq).padStart(4, '0')}`;
+        // Calculate expected_shopping_date (required in DB)
+        let shoppingDate = null;
+        const rawShopDate = pick(row, ['expected_shopping_date', 'shopping_date']);
+        if (rawShopDate) {
+          shoppingDate = parseDate(rawShopDate);
+        }
+        if (!shoppingDate) {
+          if (weddingDate) {
+            const wDate = new Date(weddingDate);
+            const sDate = new Date(wDate.getTime() - 15 * 24 * 60 * 60 * 1000);
+            const now = new Date();
+            shoppingDate = (sDate > now ? sDate : (wDate > now ? wDate : now)).toISOString().split('T')[0];
+          } else {
+            const defaultDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+            shoppingDate = defaultDate.toISOString().split('T')[0];
+          }
+        }
+
+        const followUp = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+        const category = pick(row, ['preferred_shopping_category', 'category', 'shopping_category']) || 'Wedding Shopping';
+
+        // Customer code generation
+        const locObj = locationMap.get(String(rowLocation));
+        const locCode = locObj?.location_code || 'BSC';
+
+        if (!seqByLoc.has(rowLocation)) {
+          const [yearRows] = await pool.query(
+            `SELECT customer_code FROM wedding_customers WHERE customer_code LIKE ? ORDER BY id DESC LIMIT 1`,
+            [`%WED-${locCode}-${new Date().getFullYear()}-%`]
+          );
+          let s = 0;
+          if (yearRows && yearRows[0]) {
+            const match = String(yearRows[0].customer_code).match(/(\d+)$/);
+            if (match) s = parseInt(match[1], 10) || 0;
+          }
+          seqByLoc.set(rowLocation, s);
+        }
+        const nextSeq = seqByLoc.get(rowLocation) + 1;
+        seqByLoc.set(rowLocation, nextSeq);
+        const customerCode = `WED-${locCode}-${new Date().getFullYear()}-${String(nextSeq).padStart(4, '0')}`;
+
         try {
           await pool.query(
             `INSERT INTO wedding_customers (
-              customer_code, location_id, customer_name, mobile_number, email,
+              customer_code, location_id, customer_name, mobile_number, alternate_mobile, email,
               wedding_date, expected_shopping_date, preferred_shopping_category,
               estimated_family_size, assigned_telecaller, follow_up_date,
               customer_notes, customer_status, call_status, created_by, created_by_user_id
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'New', 'Pending', ?, ?)`,
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NULL, ?, ?, 'New', 'Pending', ?, ?)`,
             [
-              customerCode, locationId, String(customerName).substring(0, 150), mobile, email,
-              weddingDate, shoppingDate, String(category).substring(0, 150),
-              familySize, telecaller ? String(telecaller).substring(0, 150) : null, followUp,
-              encryptField(notes), req.user?.fullName || 'CSV Import', req.user?.id || null
+              customerCode, rowLocation, String(customerName).substring(0, 150).trim(),
+              mobile, altNumber || null, email,
+              weddingDate, shoppingDate, category,
+              followUp, encryptField(notes ? String(notes).trim() : null),
+              req.user?.fullName || 'Bulk Import', req.user?.id || null
             ]
           );
           imported++;
           inserted.push(customerCode);
         } catch (rowErr) {
-          errors.push({ row: rowNo, reason: `DB insert failed for "${customerName}": ${rowErr.message}` });
+          console.error(`[importCsv] Row insert error row ${rowNo}:`, rowErr.message);
+          errors.push({ row: rowNo, customerName, mobile, reason: `Database insert failed: ${rowErr.message}` });
         }
       }
 
-      await pool.query(
-        `INSERT INTO wedding_audit_logs (customer_id, location_id, user_name, action, details)
-         VALUES (NULL, ?, ?, 'CSV Import', ?)`,
-        [locationId, req.user?.fullName || 'CSV Import', `Imported ${imported} rows from ${req.file.originalname}; ${errors.length} skipped`]
-      );
+      // Success summary message as required: "X customers imported, Y duplicates skipped, Z errors."
+      const summary = `${imported} customers imported, ${duplicates} duplicates skipped, ${errors.length} errors.`;
+
+      try {
+        await pool.query(
+          `INSERT INTO wedding_audit_logs (customer_id, location_id, user_name, action, details)
+           VALUES (NULL, ?, ?, 'Bulk Import', ?)`,
+          [defaultLocationId, req.user?.fullName || 'Bulk Import', `${summary} File: ${req.file.originalname}`]
+        );
+      } catch (auditErr) {
+        console.warn('[importCsv] Audit log warning:', auditErr.message);
+      }
 
       return successRes(res, {
-        imported,
-        skipped: errors.length,
+        importedCount: imported,
+        duplicateCount: duplicates,
+        errorCount: errors.length,
         totalRows: objects.length,
         insertedCodes: inserted,
-        errors
-      }, `CSV import complete: ${imported} added, ${errors.length} skipped`);
+        errors,
+        summary
+      }, summary);
     } catch (err) {
       console.error('[WeddingController.importCsv Error]', err);
-      return errorRes(res, 'Failed to import CSV', [err.message], 500);
+      return errorRes(res, 'Failed to import customer records', [err.message], 500);
     }
   }
 
-  // ── 13. Export Data Engine ──────────────────────────────────────────
+    // ── 13. Export Data Engine ──────────────────────────────────────────
   async exportData(req, res) {
     try {
       await ensureTables();

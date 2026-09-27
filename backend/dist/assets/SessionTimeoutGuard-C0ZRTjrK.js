@@ -1,0 +1,1 @@
+import{r as s}from"./vendor-react-CPAYPHpl.js";import{A as e}from"./index-CvnlxNJO.js";import"./vendor-icons-DjUPTLrr.js";const i=360*60*1e3,a=60*1e3;function l(){return s.useEffect(()=>{const t=()=>{const o=e.get();if(!o)return;const n=o.loginAt||0;Date.now()-n>i&&e.logout()};t();const r=window.setInterval(t,a);return()=>window.clearInterval(r)},[]),null}export{l as default};

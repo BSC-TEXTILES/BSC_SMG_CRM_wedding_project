@@ -1181,6 +1181,31 @@ export const API = {
   async importWeddingCsv(formData: FormData) {
     return this.importWeddingCustomers(formData);
   },
+  async downloadWeddingTemplate(format: 'csv' | 'xlsx' = 'csv') {
+    const ext = format === 'xlsx' ? 'xlsx' : 'csv';
+    const endpoint = `/wedding-crm/template-${ext}`;
+    const apiBase = getApiBase();
+    const url = endpoint.startsWith('http') ? endpoint : `${apiBase}${endpoint}`;
+
+    const res = await fetch(url, {
+      method: 'GET',
+      credentials: 'include'
+    });
+
+    if (!res.ok) {
+      throw new Error(`Failed to download template (Status ${res.status})`);
+    }
+
+    const blob = await res.blob();
+    const blobUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = `wedding_customer_template.${ext}`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(blobUrl);
+  },
 
   // ── Wedding CRM: Enhanced Dashboard ──────────────────────────
   async getWeddingEnhancedDashboard(locationId?: number | string) {
