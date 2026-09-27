@@ -25,7 +25,7 @@ export interface UserSession {
   displayName: string;
   name?: string;
   employeeId?: string | number;
-  // Token is stored in HttpOnly cookie, not in localStorage
+  token?: string | null;
   // ── Multi-Location Fields ──
   locationId?: number | null;     // null = Global Admin (all locations)
   locationCode?: string | null;   // 'BEL' | 'DAV' | 'SHI'
@@ -42,10 +42,12 @@ export interface UserSession {
 let authClearDispatching = false;
 
 export const Auth = {
-  save(session: UserSession) {
+  save(session: UserSession, token?: string | null) {
     try {
-      // Store only non-sensitive session data in localStorage (for UI state)
-      // The JWT token is stored in HttpOnly cookie by the backend
+      const activeToken = token || session.token || null;
+      if (activeToken && typeof sessionStorage !== 'undefined') {
+        sessionStorage.setItem('bsc_token', activeToken);
+      }
       localStorage.setItem('bsc_crm_session', JSON.stringify({
         id: session.id,
         username: session.username,
@@ -60,6 +62,7 @@ export const Auth = {
         allowedLocations: session.allowedLocations,
         isGlobalAdmin: session.isGlobalAdmin,
         modules: session.modules,
+        token: activeToken,
         loginAt: Date.now()
       }));
       
@@ -122,13 +125,20 @@ export const Auth = {
     return session?.isGlobalAdmin === true || session?.locationId === null || session?.locationId === undefined;
   },
 
-  // Token is in HttpOnly cookie - not accessible from JavaScript
   getToken(): string | null {
-    return null; // Token not exposed to frontend JavaScript
+    if (typeof sessionStorage !== 'undefined') {
+      const stored = sessionStorage.getItem('bsc_token');
+      if (stored) return stored;
+    }
+    const session = this.get();
+    return session?.token || null;
   },
 
   clear() {
     try {
+      if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.removeItem('bsc_token');
+      }
       const hadSession = !!localStorage.getItem('bsc_crm_session');
       localStorage.removeItem('bsc_crm_session');
 
@@ -283,14 +293,17 @@ function cleanQueryParams(obj: Record<string, any>): Record<string, string> {
 
 export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
   const session = Auth.get();
+  const token = Auth.getToken();
   const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
   const headers: Record<string, string> = {
     ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...(options.headers as Record<string, string>)
   };
 
-  // JWT token is sent automatically via HttpOnly cookie
-  // Do NOT send token in Authorization header or x-auth-token header
+  // Dual-Auth: Attach Bearer token if present alongside credentials: 'include' cookies
+  if (token && !headers['Authorization'] && !headers['authorization']) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
 
   // CSRF Protection
   const csrfToken = getCsrfToken();

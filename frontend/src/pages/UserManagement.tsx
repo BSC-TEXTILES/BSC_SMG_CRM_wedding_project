@@ -54,7 +54,7 @@ interface UserPermission {
   can_edit: boolean;
   can_delete: boolean;
   can_export: boolean;
-  
+  can_approve: boolean;
   granted_by?: string;
   granted_at?: string;
 }
@@ -736,7 +736,7 @@ export default function UserManagementPage() {
             can_edit: !!found.can_edit,
             can_delete: !!found.can_delete,
             can_export: !!found.can_export,
-            
+            can_approve: !!found.can_approve
           };
         } else {
           permMap[m.key] = {
@@ -746,7 +746,7 @@ export default function UserManagementPage() {
             can_edit: false,
             can_delete: false,
             can_export: false,
-            
+            can_approve: false
           };
         }
       });
@@ -767,7 +767,7 @@ export default function UserManagementPage() {
         can_edit: false,
         can_delete: false,
         can_export: false,
-        
+        can_approve: false
       };
 
       const updated = { ...current, [action]: !current[action] };
@@ -782,6 +782,7 @@ export default function UserManagementPage() {
         updated.can_edit = false;
         updated.can_delete = false;
         updated.can_export = false;
+        updated.can_approve = false;
       }
 
       return { ...prev, [moduleKey]: updated };
@@ -792,7 +793,7 @@ export default function UserManagementPage() {
   const handleToggleRow = (moduleKey: string) => {
     setUserPermissions(prev => {
       const current = prev[moduleKey];
-      const allActive = current?.can_view && current?.can_add && current?.can_edit && current?.can_delete && current?.can_export;
+      const allActive = current?.can_view && current?.can_add && current?.can_edit && current?.can_delete && current?.can_export && current?.can_approve;
       const nextVal = !allActive;
       return {
         ...prev,
@@ -802,7 +803,8 @@ export default function UserManagementPage() {
           can_add: nextVal,
           can_edit: nextVal,
           can_delete: nextVal,
-          can_export: nextVal
+          can_export: nextVal,
+          can_approve: nextVal
         }
       };
     });
@@ -813,7 +815,7 @@ export default function UserManagementPage() {
     setUserPermissions(prev => {
       const updated: Record<string, UserPermission> = {};
       modules.forEach(m => {
-        const cur = prev[m.key] || { module: m.key, can_view: false, can_add: false, can_edit: false, can_delete: false, can_export: false,  };
+        const cur = prev[m.key] || { module: m.key, can_view: false, can_add: false, can_edit: false, can_delete: false, can_export: false, can_approve: false };
         updated[m.key] = { ...cur, can_view: true };
       });
       return updated;
@@ -831,7 +833,8 @@ export default function UserManagementPage() {
           can_add: true,
           can_edit: true,
           can_delete: true,
-          can_export: true
+          can_export: true,
+          can_approve: true
         };
       });
       return updated;
@@ -849,7 +852,8 @@ export default function UserManagementPage() {
           can_add: false,
           can_edit: false,
           can_delete: false,
-          can_export: false
+          can_export: false,
+          can_approve: false
         };
       });
       return updated;
@@ -2154,7 +2158,7 @@ export default function UserManagementPage() {
                     <th className="py-2.5 px-2 text-center">Edit</th>
                     <th className="py-2.5 px-2 text-center">Delete</th>
                     <th className="py-2.5 px-2 text-center">Export</th>
-                    
+                    <th className="py-2.5 px-2 text-center">Approve</th>
                     <th className="py-2.5 px-2 text-center">Row Action</th>
                   </tr>
                 </thead>
@@ -2167,10 +2171,10 @@ export default function UserManagementPage() {
                       can_edit: false,
                       can_delete: false,
                       can_export: false,
-                      
+                      can_approve: false
                     };
 
-                    const isAllChecked = perm.can_view && perm.can_add && perm.can_edit && perm.can_delete && perm.can_export ;
+                    const isAllChecked = perm.can_view && perm.can_add && perm.can_edit && perm.can_delete && perm.can_export && perm.can_approve;
 
                     return (
                       <tr key={m.key} className={`hover:bg-accent/5 transition-colors ${perm.can_view ? 'bg-primary/2' : ''}`}>
@@ -2246,6 +2250,20 @@ export default function UserManagementPage() {
                               perm.can_export ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
                             }`}
                             title="Toggle Export access"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
+
+                        {/* Approve */}
+                        <td className="py-2 px-2 text-center">
+                          <button
+                            type="button"
+                            onClick={() => handleToggleCell(m.key, 'can_approve')}
+                            className={`w-6 h-6 rounded-md flex items-center justify-center mx-auto transition-colors cursor-pointer ${
+                              perm.can_approve ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+                            }`}
+                            title="Toggle Approve access"
                           >
                             <Check className="w-3.5 h-3.5" />
                           </button>

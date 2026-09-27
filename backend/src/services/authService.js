@@ -42,6 +42,7 @@ class AuthService {
       [rows] = await pool.query(
         `SELECT
            u.id, u.username, u.password, u.full_name AS fullName, u.role, 
+           u.employee_id AS employeeId,
            (u.active = TRUE OR u.active = 1) AS status,
            COALESCE(u.token_version, 1) AS tokenVersion,
            u.location_id AS locationId,
@@ -219,6 +220,18 @@ class AuthService {
       console.warn('[AuthService] user_permissions query error:', e.message);
     }
 
+    if (!hasCustomModules) {
+      const userSyncService = require('./userSyncService');
+      if (isAdminRole) {
+        userModules = userSyncService.adminModules();
+      } else {
+        const rKey = userSyncService.resolveRoleKey(user.role);
+        userModules = (rKey && userSyncService.ROLE_DEFAULT_MODULES[rKey])
+          ? [...userSyncService.ROLE_DEFAULT_MODULES[rKey]]
+          : ['dashboard'];
+      }
+    }
+
     const token = jwt.sign(
       {
         id: user.id,
@@ -231,7 +244,7 @@ class AuthService {
         locationName,
         isGlobalAdmin,
         allowedLocations: allowedLocationIds,
-        modules: hasCustomModules ? userModules : undefined
+        modules: userModules
       },
       getJwtSecret(),
       { expiresIn: ACCESS_TOKEN_EXPIRES_IN }
@@ -261,12 +274,13 @@ class AuthService {
         role: user.role,
         fullName: user.fullName,
         displayName: user.fullName || user.role,
+        employeeId: user.employeeId || user.employee_id || null,
         locationId,
         locationCode,
         locationName,
         isGlobalAdmin,
         allowedLocations,
-        modules: hasCustomModules ? userModules : undefined
+        modules: userModules
       }
     };
   }
@@ -489,6 +503,18 @@ class AuthService {
       console.warn('[AuthService] user_permissions query error:', e.message);
     }
 
+    if (!hasCustomModules) {
+      const userSyncService = require('./userSyncService');
+      if (isAdminRole) {
+        userModules = userSyncService.adminModules();
+      } else {
+        const rKey = userSyncService.resolveRoleKey(user.role);
+        userModules = (rKey && userSyncService.ROLE_DEFAULT_MODULES[rKey])
+          ? [...userSyncService.ROLE_DEFAULT_MODULES[rKey]]
+          : ['dashboard'];
+      }
+    }
+
     const { getJwtSecret, getJwtRefreshSecret } = require('../utils/secrets');
 
     const token = jwt.sign(
@@ -503,7 +529,7 @@ class AuthService {
         locationName,
         isGlobalAdmin,
         allowedLocations: allowedLocationIds,
-        modules: hasCustomModules ? userModules : undefined
+        modules: userModules
       },
       getJwtSecret(),
       { expiresIn: ACCESS_TOKEN_EXPIRES_IN }
@@ -539,12 +565,13 @@ class AuthService {
         role: user.role,
         fullName: user.fullName,
         displayName: user.fullName || user.role,
+        employeeId: user.employeeId || user.employee_id || null,
         locationId,
         locationCode,
         locationName,
         isGlobalAdmin,
         allowedLocations,
-        modules: hasCustomModules ? userModules : undefined
+        modules: userModules
       }
     };
   }

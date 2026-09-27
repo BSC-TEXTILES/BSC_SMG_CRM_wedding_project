@@ -72,13 +72,8 @@ export default function ConsentGuard({ children }: { children: React.ReactNode }
     setConsentRequired(false);
   };
 
-  // Show nothing while checking (prevents flash of content on protected routes)
-  if (checking) {
-    return null;
-  }
-
-  // If consent is required, show the modal but still render children behind it
-  // (the modal has z-[70] which overlays everything)
+  // If consent is required, show the modal overlay on top of children
+  // (the modal has z-[70] which blocks interaction until accepted)
   return (
     <>
       {children}

@@ -24,6 +24,12 @@ const SAFE_LOGIN_ERRORS = new Set([
   'EMAIL_NOT_VERIFIED'
 ]);
 
+function shouldSetSecureCookie(req) {
+  if (process.env.COOKIE_SECURE === 'true') return true;
+  if (process.env.COOKIE_SECURE === 'false') return false;
+  return Boolean(req.secure || req.headers['x-forwarded-proto'] === 'https');
+}
+
 class AuthController {
   constructor() {
     const proto = Object.getPrototypeOf(this);
@@ -111,7 +117,7 @@ class AuthController {
       const fullResult = await authService.login(username, password, clientIp, userAgent);
       loginSecurity.recordSuccess(username, clientIp);
 
-      const isSecure = process.env.NODE_ENV === 'production' || String(process.env.COOKIE_SECURE || 'false') === 'true';
+      const isSecure = shouldSetSecureCookie(req);
       res.cookie('token', fullResult.token, {
         httpOnly: true,
         sameSite: 'lax',
@@ -192,7 +198,7 @@ class AuthController {
         result.user.locationId
       );
 
-      const isSecure = process.env.NODE_ENV === 'production' || String(process.env.COOKIE_SECURE || 'false') === 'true';
+      const isSecure = shouldSetSecureCookie(req);
       res.cookie('token', result.token, {
         httpOnly: true,
         sameSite: 'lax',
@@ -781,7 +787,7 @@ class AuthController {
 
     try {
       const result = await authService.rotateRefreshToken(rawRefreshToken, clientIp, userAgent);
-      const isSecure = process.env.NODE_ENV === 'production' || String(process.env.COOKIE_SECURE || 'false') === 'true';
+      const isSecure = shouldSetSecureCookie(req);
 
       res.cookie('token', result.token, {
         httpOnly: true,

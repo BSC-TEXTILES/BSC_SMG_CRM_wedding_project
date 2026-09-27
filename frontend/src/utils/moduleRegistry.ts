@@ -324,7 +324,7 @@ export function getDefaultLandingRoute(
  */
 export async function resolvePostLoginRoute(
   user: any,
-  savedRoute?: string | null
+  savedRoute?: string | { pathname: string } | null
 ): Promise<string> {
   try {
     if (!user) {
@@ -341,10 +341,14 @@ export async function resolvePostLoginRoute(
     const userModules = myPerms?.custom && Array.isArray(myPerms.modules) ? myPerms.modules : null;
     const allowed = resolveAllowedPages(user.role, pageSettings, userModules);
 
+    const routeStr = typeof savedRoute === 'object' && savedRoute !== null && 'pathname' in (savedRoute as any)
+      ? (savedRoute as any).pathname
+      : (typeof savedRoute === 'string' ? savedRoute : null);
+
     // If a saved returnUrl exists and is authorized, use it
-    if (savedRoute && savedRoute !== '/' && savedRoute !== '/login' && savedRoute !== '/no-access') {
-      if (canAccessRoute(savedRoute, allowed, user.role)) {
-        return savedRoute;
+    if (routeStr && routeStr !== '/' && routeStr !== '/login' && routeStr !== '/no-access') {
+      if (canAccessRoute(routeStr, allowed, user.role)) {
+        return routeStr;
       }
     }
 

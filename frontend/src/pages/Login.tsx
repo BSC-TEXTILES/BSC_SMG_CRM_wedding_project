@@ -191,20 +191,24 @@ export default function LoginPage() {
         setIsLocked(false);
         setLockRemainingSeconds(0);
 
-        // Save full session including location fields from server JWT
-        // Token is stored in HttpOnly cookie by backend, not in localStorage
+        // Save full session including location fields, allowed modules, and token
+        const authToken = res.data?.token || res.token || null;
         Auth.save({
           id: user.id,
           username: user.username,
           role: user.role,
           fullName: user.fullName,
           displayName: user.displayName || user.fullName || user.role,
+          employeeId: user.employeeId ?? null,
           // Location fields — set by the server from the user's DB record
           locationId: user.locationId ?? null,
           locationCode: user.locationCode ?? null,
           locationName: user.locationName ?? null,
-          isGlobalAdmin: user.isGlobalAdmin === true || user.locationId === null
-        });
+          allowedLocations: user.allowedLocations || [],
+          isGlobalAdmin: user.isGlobalAdmin === true || user.locationId === null,
+          modules: user.modules || [],
+          token: authToken
+        }, authToken);
 
         const locationLabel = user.locationName ? ` — ${user.locationName}` : '';
         showToast(`Welcome back, ${user.fullName || user.username}${locationLabel}`, 'success');
@@ -233,8 +237,11 @@ export default function LoginPage() {
         permissionsCache.clear();
 
         // Check for any intended return path
-        const locState = location.state as { from?: string } | undefined;
-        const intendedRoute = locState?.from || null;
+        const locState = location.state as { from?: string | { pathname: string } } | undefined;
+        let intendedRoute: string | null = null;
+        if (locState?.from) {
+          intendedRoute = typeof locState.from === 'string' ? locState.from : (locState.from.pathname || null);
+        }
 
         // Resolve exact authorized default landing route
         const targetRoute = await resolvePostLoginRoute(user, intendedRoute);
@@ -274,18 +281,22 @@ export default function LoginPage() {
         const user = res.data.user;
         
         // Save full session
-        // Token is stored in HttpOnly cookie by backend, not in localStorage
+        const authToken = res.data?.token || res.token || null;
         Auth.save({
           id: user.id,
           username: user.username,
           role: user.role,
           fullName: user.fullName,
           displayName: user.displayName || user.fullName || user.role,
+          employeeId: user.employeeId ?? null,
           locationId: user.locationId ?? null,
           locationCode: user.locationCode ?? null,
           locationName: user.locationName ?? null,
-          isGlobalAdmin: user.isGlobalAdmin === true || user.locationId === null
-        });
+          allowedLocations: user.allowedLocations || [],
+          isGlobalAdmin: user.isGlobalAdmin === true || user.locationId === null,
+          modules: user.modules || [],
+          token: authToken
+        }, authToken);
 
         // Clear 2FA state
         setShow2fa(false);
@@ -316,8 +327,11 @@ export default function LoginPage() {
         }
         permissionsCache.clear();
 
-        const locState = location.state as { from?: string } | undefined;
-        const intendedRoute = locState?.from || null;
+        const locState = location.state as { from?: string | { pathname: string } } | undefined;
+        let intendedRoute: string | null = null;
+        if (locState?.from) {
+          intendedRoute = typeof locState.from === 'string' ? locState.from : (locState.from.pathname || null);
+        }
         const targetRoute = await resolvePostLoginRoute(user, intendedRoute);
         navigate(targetRoute, { replace: true });
       } else {
