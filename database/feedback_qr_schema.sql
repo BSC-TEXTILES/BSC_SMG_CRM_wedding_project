@@ -89,7 +89,7 @@ SELECT
     {"id": "q2", "question": "Did you find the product you were looking for?", "category": "Product Availability", "options": ["Yes, exactly what I wanted", "Yes, with assistance", "Partially", "No"], "required": true, "position": 2},
     {"id": "q3", "question": "How would you rate the quality & variety of our collection?", "category": "Collection Quality", "options": ["Excellent", "Good", "Average", "Poor"], "required": true, "position": 3},
     {"id": "q4", "question": "How would you rate the behavior and helpfulness of our staff?", "category": "Staff Courtesy", "options": ["Extremely helpful", "Helpful", "Average", "Poor"], "required": true, "position": 4},
-    {"id": "q5", "question": "How likely are you to recommend BSC Exclusive to your friends and family?", "category": "Store Recommendation", "options": ["Definitely recommend", "Probably recommend", "Neutral", "Not recommend"], "required": true, "position": 5}
+    {"id": "q5", "question": "How likely are you to recommend BSC Textiles to your friends and family?", "category": "Store Recommendation", "options": ["Definitely recommend", "Probably recommend", "Neutral", "Not recommend"], "required": true, "position": 5}
   ]',
   1,
   'active',

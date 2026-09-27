@@ -22,9 +22,23 @@ const locationController = require('../controllers/locationController');
 const userMgmtController = require('../controllers/userManagementController');
 const userValidator = require('../validators/userValidator');
 const feedbackQrController = require('../controllers/feedbackQrController');
+const dashboardController = require('../controllers/dashboardController');
+const landingController = require('../controllers/landingController');
+const apiKeyController = require('../controllers/apiKeyController');
+const apiConnectController = require('../controllers/apiConnectController');
+const { checkApiKeyAuth } = require('../middleware/apiKeyAuth');
 
 const { body } = require('express-validator');
 const validate = require('../middleware/validate');
+const {
+  authRateLimiter,
+  publicRegistrationRateLimiter,
+  duplicateCheckRateLimiter,
+  geminiRateLimiter,
+  uploadRateLimiter,
+  kioskPinRateLimiter,
+  adminActionRateLimiter
+} = require('../security/rateLimiters');
 
 // ── Auth Routes ──────────────────────────────────────────────
 router.get('/auth/captcha', authController.captcha);
@@ -35,15 +49,20 @@ const loginValidation = [
   body('password').notEmpty().withMessage('Password is required').isLength({ max: 255 })
 ];
 
-router.post('/auth/login', validate(loginValidation), authController.login);
-router.post('/auth/verify', authController.verifyUser);
+router.post('/auth/login', authRateLimiter, validate(loginValidation), authController.login);
+router.post('/auth/refresh', authRateLimiter, authController.refresh);
+router.post('/auth/verify', authRateLimiter, authController.verifyUser);
 router.post('/auth/logout', authenticate, authController.logout);
 router.get('/auth/me', authenticate, authController.getMe);
 
-// Password reset routes (public)
-router.post('/auth/request-password-reset', authController.requestPasswordReset);
+// Password reset routes (public with rate limiting)
+router.post('/auth/request-password-reset', authRateLimiter, authController.requestPasswordReset);
 router.get('/auth/verify-password-reset-token', authController.verifyPasswordResetToken);
-router.post('/auth/reset-password', authController.resetPassword);
+router.post('/auth/reset-password', authRateLimiter, authController.resetPassword);
+
+// Authenticated password update (Available to ALL ROLES)
+router.post('/auth/change-password', authenticate, authController.changePassword.bind(authController));
+router.post('/auth/update-password', authenticate, authController.changePassword.bind(authController));
 
 // ── Location Routes ───────────────────────────────────────────
 router.get('/locations', locationController.getLocations);
@@ -55,8 +74,8 @@ router.get('/global-stats', authenticate, locationController.getGlobalStats);
 // ── Public Routes (Interview Token & Candidate Entry) ─────────
 router.get('/public/interview', interviewController.getInterviewByToken);
 router.post('/public/interview-score', interviewController.submitInterviewScore);
-router.post('/public/candidate-entry', candidateController.addCandidate);
-router.get('/public/check-duplicate', candidateController.checkDuplicate);
+router.post('/public/candidate-entry', publicRegistrationRateLimiter, candidateController.addCandidate);
+router.get('/public/check-duplicate', duplicateCheckRateLimiter, candidateController.checkDuplicate);
 router.get('/public/designations', settingsController.getDesignations);
 
 router.get('/public/migrate-db', authenticate, authorize('Admin', 'Super Admin'), async (req, res) => {
@@ -88,14 +107,14 @@ router.post('/candidates/add', optionalAuthenticate, candidateController.addCand
 router.put('/candidates/:appNo', authenticate, authorizeLocationAccess(), candidateController.updateCandidate);
 router.post('/candidates/update', authenticate, authorizeLocationAccess(), candidateController.updateCandidate);
 router.delete('/candidates/:appNo', authenticate, authorize('Admin', 'Super Admin'), candidateController.deleteCandidate);
-router.get('/candidates/check-duplicate', candidateController.checkDuplicate);
+router.get('/candidates/check-duplicate', duplicateCheckRateLimiter, candidateController.checkDuplicate);
 router.get('/candidates/next-app-no', candidateController.getNextAppNo);
 router.get('/candidates/kpis', authenticate, authorizeLocationAccess(), candidateController.getKPIs);
 router.get('/candidates/pending-actions', authenticate, authorizeLocationAccess(), candidateController.getPendingActions);
 router.get('/candidates/source-breakdown', authenticate, authorizeLocationAccess(), candidateController.getSourceBreakdown);
 router.get('/candidates/activity-full', authenticate, authorizeLocationAccess(), candidateController.getActivityFull);
-router.post('/candidates/upload-resume', upload.single('resume'), candidateController.uploadResume);
-router.post('/candidates/upload-documents', upload.fields([{ name: 'resume' }, { name: 'photo' }, { name: 'aadhar' }]), candidateController.uploadDocuments);
+router.post('/candidates/upload-resume', uploadRateLimiter, upload.single('resume'), upload.verifyUploadedSignatures, candidateController.uploadResume);
+router.post('/candidates/upload-documents', uploadRateLimiter, upload.fields([{ name: 'resume' }, { name: 'photo' }, { name: 'aadhar' }]), upload.verifyUploadedSignatures, candidateController.uploadDocuments);
 router.get('/candidates/activity', authenticate, authorizeLocationAccess(), candidateController.getSystemActivity);
 router.get('/openings', candidateController.getOpenings);
 router.post('/openings/update', authenticate, authorize('Admin', 'Super Admin'), candidateController.updateOpening);
@@ -148,6 +167,11 @@ router.get('/settings/users', authenticate, settingsController.getUsers);
 router.post('/settings/users/add', authenticate, authorize('Admin', 'Super Admin'), settingsController.addUser);
 router.post('/settings/users/update', authenticate, authorize('Admin', 'Super Admin'), settingsController.updateUser);
 router.delete('/settings/users/:id', authenticate, authorize('Admin', 'Super Admin'), settingsController.deleteUser);
+router.post('/settings/users/:id/reset-password', authenticate, authorize('Admin', 'Super Admin'), userMgmtController.resetPassword);
+router.post('/settings/users/reset-password', authenticate, authorize('Admin', 'Super Admin'), (req, res) => {
+  req.params = { id: req.body.id || req.body.userId };
+  return userMgmtController.resetPassword(req, res);
+});
 router.get('/settings/page-visibility', settingsController.getPageSettings);
 router.post('/settings/page-visibility', authenticate, authorize('Admin', 'Super Admin'), settingsController.savePageSettings);
 router.get('/settings/roles', settingsController.getRoles);
@@ -163,13 +187,13 @@ router.post('/settings/questions/delete', authenticate, authorize('Admin', 'Supe
 // ── CRM Store Operations Routes ──────────────────────────────
 router.get('/crm/settings', authenticate, crmController.getSettings);
 router.post('/crm/settings/update', authenticate, authorize('Admin', 'Super Admin'), crmController.updateSettings);
-router.post('/crm/verify-pin', crmController.verifyPin);
+router.post('/crm/verify-pin', kioskPinRateLimiter, crmController.verifyPin);
 router.get('/crm/sections', authenticate, crmController.getSections);
 
 router.get('/crm/footfall', authenticate, authorizeLocationAccess(), crmController.getFootfall);
 router.post('/crm/footfall/upsert', authenticate, authorizeLocationAccess(), crmController.upsertFootfall);
 
-router.get('/crm/feedback-questions', authenticate, crmController.getFeedbackQuestions);
+router.get('/crm/feedback-questions', optionalAuthenticate, crmController.getFeedbackQuestions);
 router.get('/crm/feedback-stats', authenticate, authorizeLocationAccess(), crmController.getFeedbackStats);
 router.get('/crm/feedbacks', authenticate, authorizeLocationAccess(), crmController.getFeedbacks);
 router.delete('/crm/feedbacks/:id', authenticate, authorizeLocationAccess(), crmController.deleteFeedback);
@@ -199,9 +223,10 @@ router.get('/broadcasts', optionalAuthenticate, broadcastController.getBroadcast
 router.post('/broadcasts', authenticate, authorize('Admin', 'Super Admin'), broadcastController.createBroadcast);
 router.delete('/broadcasts/:id', authenticate, authorize('Admin', 'Super Admin'), broadcastController.deleteBroadcast);
 
-// ── Chat Routes ─────────────────────────────────────────
+// ── Chat Routes (Gemini AI) ─────────────────────────────
+router.get('/chat/status', optionalAuthenticate, crmController.getGeminiStatus);
 router.get('/chat/messages', optionalAuthenticate, crmController.getChatMessages);
-router.post('/chat/send', optionalAuthenticate, crmController.sendChatMessage);
+router.post('/chat/send', optionalAuthenticate, geminiRateLimiter, crmController.sendChatMessage);
 router.delete('/chat/messages', optionalAuthenticate, crmController.clearChatMessages);
 
 // ── Dept Hiring & Section Allocation Routes ───────────────
@@ -226,7 +251,7 @@ router.get('/mcheck/reports', authenticate, authorizeLocationAccess(), mcheckCon
 router.get('/mcheck/history', authenticate, authorizeLocationAccess(), mcheckController.getHistory);
 router.get('/mcheck/trend', authenticate, authorizeLocationAccess(), mcheckController.getTrend);
 router.get('/mcheck/audit', authenticate, authorizeLocationAccess(), mcheckController.getAuditLog);
-router.post('/mcheck/upload-photo', authenticate, upload.single('photo'), mcheckController.uploadPhoto);
+router.post('/mcheck/upload-photo', authenticate, uploadRateLimiter, upload.single('photo'), upload.verifyUploadedSignatures, mcheckController.uploadPhoto);
 router.get('/mcheck/admin/structure', authenticate, authorize('Admin', 'Super Admin'), mcheckController.adminGetStructure);
 router.post('/mcheck/admin/module', authenticate, authorize('Admin', 'Super Admin'), mcheckController.adminSaveModule);
 router.post('/mcheck/admin/checkpoint', authenticate, authorize('Admin', 'Super Admin'), mcheckController.adminSaveCheckpoint);
@@ -241,6 +266,17 @@ router.use('/wedding-crm', weddingRoutes);
 // ── Telecaller Dashboard ─────────────────────────────────────
 const telecallerDashboardRoutes = require('./telecallerDashboardRoutes');
 router.use('/telecaller-dashboard', telecallerDashboardRoutes);
+
+// ── Dedicated Role Dashboards (HR Manager & Store Manager) ───────
+router.get('/dashboard/hr', authenticate, dashboardController.getHRDashboard);
+router.get('/dashboard/manager', authenticate, dashboardController.getManagerDashboard);
+
+// ── Public Landing Page Routes ────────────────────────────────
+router.get('/landing/locations', (req, res) => landingController.getLocations(req, res));
+router.get('/landing/stats', (req, res) => landingController.getStats(req, res));
+router.post('/landing/enquiry', (req, res) => landingController.createEnquiry(req, res));
+router.post('/landing/event', (req, res) => landingController.trackEvent(req, res));
+
 
 // ── Wedding Registration ──────────────────────────────────────
 console.log('[DEBUG] Loading workflow routes...');
@@ -680,7 +716,7 @@ router.post('/admin/users/:id/toggle-status', authenticate, authorize('Admin', '
 router.post('/admin/users/:id/reset-password', authenticate, authorize('Admin', 'Super Admin'), userValidator.validatePasswordChange, userMgmtController.resetPassword);
 
 // ── Diagnostics / DB Fix ──────────────────────────────────────────────
-router.get('/admin/force-db-update', async (req, res) => {
+router.get('/admin/force-db-update', authenticate, authorize('Admin', 'Super Admin'), async (req, res) => {
   try {
     await autoInitializeDatabase(db);
     res.json({ success: true, message: 'Database initialization script ran successfully.' });
@@ -794,7 +830,6 @@ const securityController = require('../controllers/securityController');
 router.get('/security/dashboard', authenticate, authorize('Admin', 'Super Admin'), securityController.getSecurityDashboard);
 router.get('/security/settings', authenticate, authorize('Admin', 'Super Admin'), securityController.getSecuritySettings);
 router.put('/security/settings', authenticate, authorize('Admin', 'Super Admin'), securityController.updateSecuritySettings);
-router.get('/security/login-activity', authenticate, authorize('Admin', 'Super Admin'), securityController.getLoginActivity);
 router.get('/security/audit-logs', authenticate, authorize('Admin', 'Super Admin'), securityController.getAuditLogs);
 router.get('/security/active-sessions', authenticate, authorize('Admin', 'Super Admin'), securityController.getActiveSessions);
 router.post('/security/unlock-account', authenticate, authorize('Admin', 'Super Admin'), securityController.unlockAccount);
@@ -812,7 +847,7 @@ router.get('/user-tracking/activity', authenticate, authorize('Admin', 'Super Ad
 const kioskPinController = require('../controllers/kioskPinController');
 router.get('/kiosk-pins', authenticate, authorize('Admin', 'Super Admin'), kioskPinController.listPins);
 router.post('/kiosk-pins', authenticate, authorize('Admin', 'Super Admin'), kioskPinController.upsertPin);
-router.post('/kiosk-pins/verify', kioskPinController.verifyPin);
+router.post('/kiosk-pins/verify', kioskPinRateLimiter, kioskPinController.verifyPin);
 router.post('/kiosk-pins/:id/revoke', authenticate, authorize('Admin', 'Super Admin'), kioskPinController.revokePin);
 
 // ── Enhanced Designations Routes ─────────────────────────────────────
@@ -833,6 +868,8 @@ router.get('/consent/admin/user-consents', authenticate, authorize('Admin', 'Sup
 // Called by the frontend RouteGuard to confirm a URL is permitted before rendering.
 const ROUTE_TO_MODULE_MAP = [
   { pattern: /^\/dashboard(\/|$)/, module: 'dashboard' },
+  { pattern: /^\/hr-dashboard(\/|$)/, module: 'dashboard' },
+  { pattern: /^\/manager-dashboard(\/|$)/, module: 'dashboard' },
   { pattern: /^\/wedding-crm\/customers\/new(\/|$)/, module: 'wedding_registration' },
   { pattern: /^\/wedding\/customer-registration(\/|$)/, module: 'wedding_registration' },
   { pattern: /^\/wedding-registration(\/|$)/, module: 'wedding_registration' },
@@ -881,7 +918,8 @@ const PUBLIC_ROUTE_PATTERNS = [
   /^\/feedback-qr$/,
   /^\/track/,
   /^\/tv$/,
-  /^\/cash-settlement/
+  /^\/cash-settlement/,
+  /^\/landing/
 ];
 
 router.post('/security/validate-route', authenticate, async (req, res) => {
@@ -1086,5 +1124,97 @@ router.post('/security/force-logout', authenticate, authorize('Admin', 'Super Ad
     return errorRes(res, 'Failed to process force logout', [err.message], 500);
   }
 });
+
+// ==========================================
+// MADT HOUSE ROUTES
+// ==========================================
+const madtRequests = [];
+let madtRefSeq = 1800 + Math.floor(Math.random() * 400);
+
+router.get('/madt/me', (req, res) => {
+  const token = req.cookies?.madt_session;
+  if (!token) return res.status(401).json({ error: 'Sign in required.' });
+  return res.json({ name: 'Floor Desk', role: 'staff', email: 'desk@madt.in' });
+});
+
+router.post('/madt/login', (req, res) => {
+  const { email, password } = req.body || {};
+  if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
+  res.cookie('madt_session', 'madt_token_' + Date.now(), { httpOnly: true, maxAge: 28800000, sameSite: 'lax' });
+  return res.json({ ok: true, role: 'staff', redirect: '/madt/desk' });
+});
+
+router.post('/madt/logout', (req, res) => {
+  res.clearCookie('madt_session');
+  return res.json({ ok: true });
+});
+
+router.get('/madt/requests', (req, res) => {
+  return res.json({ items: [...madtRequests].reverse() });
+});
+
+router.post('/madt/requests', (req, res) => {
+  const data = req.body || {};
+  const kind = data.kind || 'wedding';
+  madtRefSeq++;
+  const prefix = kind === 'wedding' ? 'W' : kind === 'consult' ? 'C' : 'M';
+  const ref = `MADT-${prefix}-${madtRefSeq}`;
+  const row = {
+    id: require('crypto').randomBytes(8).toString('hex'),
+    ref,
+    kind,
+    name: data.name || 'Anonymous',
+    email: data.email || '',
+    phone: data.phone || '',
+    floor: data.floor || '',
+    side: data.side || '',
+    date: data.date || '',
+    day: data.day || '',
+    needs: data.needs || [],
+    note: data.note || data.message || '',
+    status: 'new',
+    created: new Date().toISOString()
+  };
+  madtRequests.push(row);
+  return res.json({ ok: true, ref });
+});
+
+router.post('/madt/requests/:id/noted', (req, res) => {
+  const item = madtRequests.find(r => r.id === req.params.id);
+  if (!item) return res.status(404).json({ error: 'Not found' });
+  item.status = 'noted';
+  return res.json({ ok: true });
+});
+
+// ── Production API Key Management Routes ──────────────────────────────────────
+// User routes (Authenticated)
+router.post('/v1/keys/request', authenticate, apiKeyController.requestKey);
+router.get('/v1/keys/my', authenticate, apiKeyController.listMyKeys);
+router.delete('/v1/keys/:publicId', authenticate, apiKeyController.revokeMyKey);
+router.post('/v1/keys/:publicId/regenerate', authenticate, apiKeyController.regenerateMyKey);
+router.get('/v1/keys/:publicId/docs', authenticate, apiKeyController.getPersonalizedDocs);
+
+// Admin routes (Admin & Super Admin only)
+router.get('/v1/admin/keys', authenticate, authorize('Admin', 'Super Admin'), apiKeyController.listAdminKeys);
+router.post('/v1/admin/keys/:publicId/approve', authenticate, authorize('Admin', 'Super Admin'), apiKeyController.approveKey);
+router.post('/v1/admin/keys/:publicId/reject', authenticate, authorize('Admin', 'Super Admin'), apiKeyController.rejectKey);
+router.post('/v1/admin/keys/:publicId/suspend', authenticate, authorize('Admin', 'Super Admin'), apiKeyController.suspendKey);
+router.post('/v1/admin/keys/:publicId/reauthorize', authenticate, authorize('Admin', 'Super Admin'), apiKeyController.reauthorizeDaily);
+router.post('/v1/admin/keys/bulk-reauthorize', authenticate, authorize('Admin', 'Super Admin'), apiKeyController.bulkReauthorizeDaily);
+router.get('/v1/admin/keys/:publicId/audit', authenticate, authorize('Admin', 'Super Admin'), apiKeyController.getAuditLog);
+router.get('/v1/admin/keys-audit', authenticate, authorize('Admin', 'Super Admin'), apiKeyController.getAuditLog);
+
+// ── Module 6: Cross-Data & Website Connect Routes (Bearer API Key Auth) ────────
+router.get('/v1/connect/data', checkApiKeyAuth('data:read'), apiConnectController.listDatasets);
+router.get('/v1/connect/data/:resource', checkApiKeyAuth('data:read'), apiConnectController.getResourceData);
+router.post('/v1/connect/data/:resource', checkApiKeyAuth('data:write'), apiConnectController.createResourceData);
+router.put('/v1/connect/data/:resource/:id', checkApiKeyAuth('data:write'), apiConnectController.updateResourceData);
+router.delete('/v1/connect/data/:resource/:id', checkApiKeyAuth('data:delete'), apiConnectController.deleteResourceData);
+router.get('/v1/connect/website', checkApiKeyAuth('website:read'), apiConnectController.getWebsiteMetadata);
+router.get('/v1/connect/website/content', checkApiKeyAuth('website:read'), apiConnectController.getWebsiteContent);
+router.post('/v1/connect/website/content', checkApiKeyAuth('website:write'), apiConnectController.updateWebsiteContent);
+router.get('/v1/connect/analytics', checkApiKeyAuth('analytics:read'), apiConnectController.getAnalytics);
+router.get('/v1/connect/export', checkApiKeyAuth('export:data'), apiConnectController.exportData);
+router.post('/v1/connect/cross', checkApiKeyAuth('cross:connect'), apiConnectController.crossConnectBridge);
 
 module.exports = router;

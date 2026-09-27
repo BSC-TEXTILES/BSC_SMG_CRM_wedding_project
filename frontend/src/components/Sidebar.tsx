@@ -1,13 +1,15 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { API, Auth, UserSession } from '../services/api';
-import { BarChart3, Users, Target, FileText, PartyPopper, LogOut, ClipboardList, Settings, DoorOpen, UserCheck, Briefcase, ChevronRight, Sparkles, Megaphone, SquareCheck, Menu, Shield, ShieldAlert, PhoneCall, Heart, Calendar, History, X } from 'lucide-react';
+import { BarChart3, Users, Target, FileText, PartyPopper, LogOut, ClipboardList, Settings, DoorOpen, UserCheck, Briefcase, ChevronRight, Sparkles, Megaphone, SquareCheck, Menu, Shield, ShieldAlert, PhoneCall, Heart, Calendar, History, X, KeyRound } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import ChangePasswordModal from './ui/ChangePasswordModal';
 import { 
   getSidebarCollapsed, 
   setSidebarCollapsed, 
   subscribeSidebarCollapsed 
 } from '../utils/sidebarState';
-import { getDashboardLabelForRole } from '../utils/dashboardRouting';
+import { getDashboardLabelForRole, getDashboardRouteForRole } from '../utils/dashboardRouting';
 import { getRoleNavMap, resolveAllowedPages } from '../utils/rbac';
 import { useLocationContext } from '../context/LocationContext';
 import { permissionsCache } from '../context/PermissionsCache';
@@ -18,10 +20,22 @@ interface SidebarProps {
   onClose: () => void;
 }
 
+interface NavItem {
+  key: string;
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  section: string;
+  isNew?: boolean;
+  hint?: string;
+  target?: string;
+}
+
 export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
   const pathname = useLocation().pathname;
   const role = session?.role || 'HR';
   const [collapsed, setCollapsed] = useState<boolean>(getSidebarCollapsed());
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const navScrollRef = useRef<HTMLDivElement>(null);
 
   const locCtx = useLocationContext();
@@ -118,9 +132,12 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
     'vm extension telecaller', 'vm telecaller'
   ].includes((role || '').trim().toLowerCase().replace(/[_\s-]+/g, ' '));
 
-  const navItems = [
-    // Enterprise (Admin landing module at top)
-    { key: 'dashboard', href: '/dashboard', label: 'Dashboard', icon: BarChart3, section: 'Enterprise' },
+  const dashboardHref = getDashboardRouteForRole(role);
+  const dashboardLabel = getDashboardLabelForRole(role);
+
+  const navItems: NavItem[] = [
+    // Enterprise (Role-specific landing module at top)
+    { key: 'dashboard', href: dashboardHref, label: dashboardLabel, icon: BarChart3, section: 'Enterprise' },
     { key: 'employees', href: '/employees', label: 'Employee & Store Directory', icon: UserCheck, section: 'Enterprise' },
     { key: 'user_management', href: '/user-management', label: 'User Management', icon: Shield, section: 'Enterprise' },
     { key: 'attendance', href: '/attendance', label: 'Attendance & Roster', icon: UserCheck, section: 'Enterprise' },
@@ -131,11 +148,9 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
     { key: 'telecaller_dashboard', href: '/telecaller-dashboard', label: 'Telecaller Dashboard', icon: BarChart3, section: 'Store Operations' },
     { key: 'wedding_operations', href: '/wedding-operations', label: 'Wedding Operations', icon: FileText, section: 'Store Operations' },
     { key: 'footfall', href: '/footfall', label: 'Hourly Footfall', icon: BarChart3, section: 'Store Operations' },
-
-    // Customer Experience
-    { key: 'feedback_collection', href: '/feedback-collection', label: 'Feedback Collection', icon: FileText, section: 'Customer Experience' },
-    { key: 'feedback_list', href: '/feedback-list', label: 'Feedback Call Queue', icon: PhoneCall, section: 'Customer Experience' },
-    { key: 'feedback_qr', href: '/feedback-qr-management', label: 'Feedback QR Code', icon: ClipboardList, section: 'Customer Experience' },
+    { key: 'feedback_collection', href: '/feedback-collection', label: 'Feedback Collection', icon: FileText, section: 'Store Operations', hint: 'View CSAT submissions' },
+    { key: 'feedback_list', href: '/feedback-list', label: 'Feedback Call Queue', icon: PhoneCall, section: 'Store Operations' },
+    { key: 'feedback_qr', href: '/feedback-qr-management', label: 'Feedback QR Code', icon: ClipboardList, section: 'Store Operations' },
 
     // Talent
     { key: 'candidates', href: '/candidates', label: 'Candidate CRM', icon: Users, section: 'Talent' },
@@ -226,7 +241,7 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
               />
             </div>
             <div className="min-w-0">
-              <div className="font-extrabold text-sm text-white tracking-wide leading-tight truncate">BSC EXCLUSIVE</div>
+              <div className="font-extrabold text-sm text-white tracking-wide leading-tight truncate">BSC Textiles</div>
               <div className="text-[9px] font-bold uppercase tracking-widest mt-0.5 flex items-center gap-1 truncate text-[#E4C982]">
                 {activeLocationLabel ? (
                   <span className={activeLocationLabel.includes('ALL') ? 'text-[#16805B] font-extrabold truncate' : 'truncate text-[#E4C982]'}>
@@ -333,15 +348,15 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
                 <div className="space-y-1">
                   {items.map(item => {
                     const Icon = item.icon;
-                    const isActive = pathname === item.href;
+                    const isActive = pathname === item.href || (item.key === 'dashboard' && pathname === dashboardHref);
 
                     return (
                       <Link
                         key={item.key}
                         to={item.href}
-                        target={(item as any).target}
+                        target={item.target}
                         onClick={onClose}
-                        title={item.label}
+                        title={item.hint ? `${item.label} — ${item.hint}` : item.label}
                         data-active={isActive ? 'true' : undefined}
                         className={`
                           flex items-center rounded-xl text-xs font-bold transition-all duration-150 group relative
@@ -357,8 +372,13 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
                           }`} />
                           
                           {!collapsed && (
-                            <span className="truncate">
-                              {item.label}
+                            <span className="min-w-0">
+                              <span className="block truncate">{item.label}</span>
+                              {item.hint && (
+                                <span className="block truncate text-[9px] font-semibold leading-tight opacity-70">
+                                  {item.hint}
+                                </span>
+                              )}
                             </span>
                           )}
 
@@ -381,12 +401,23 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
           })}
         </div>
 
-        {/* Footer Logout */}
-        <div className={`border-t border-[#C9A45C]/15 bg-[#07101F]/90 transition-all ${collapsed ? 'p-2' : 'p-3'}`}>
+        {/* Footer Actions */}
+        <div className={`border-t border-[#C9A45C]/15 bg-[#07101F]/90 transition-all space-y-1.5 ${collapsed ? 'p-2' : 'p-3'}`}>
+          <button
+            onClick={() => setChangePasswordOpen(true)}
+            title="Update Password"
+            className={`w-full flex items-center justify-center rounded-xl text-xs font-bold bg-[#C9A45C]/15 text-[#E4CB92] border border-[#C9A45C]/30 hover:bg-[#C9A45C] hover:text-[#07101F] transition-all shadow-sm cursor-pointer ${
+              collapsed ? 'py-2.5 px-0' : 'py-2 px-3 gap-2'
+            }`}
+          >
+            <KeyRound className="w-4 h-4 flex-shrink-0" />
+            {!collapsed && <span>Update Password</span>}
+          </button>
+
           <button
             onClick={() => Auth.logout()}
             title="Sign Out Session"
-            className={`w-full flex items-center justify-center rounded-xl text-xs font-bold bg-[#C7374A]/15 text-white border border-[#C7374A]/30 hover:bg-[#C7374A] hover:text-white transition-all shadow-sm ${
+            className={`w-full flex items-center justify-center rounded-xl text-xs font-bold bg-[#C7374A]/15 text-white border border-[#C7374A]/30 hover:bg-[#C7374A] hover:text-white transition-all shadow-sm cursor-pointer ${
               collapsed ? 'py-2.5 px-0' : 'py-2.5 px-3 gap-2'
             }`}
           >
@@ -395,11 +426,18 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
           </button>
           {!collapsed && (
             <div className="text-[8.5px] text-white/60 text-center mt-2 font-medium">
-              BSC Exclusive CRM · Enterprise Suite
+              BSC Textiles CRM · Enterprise Suite
             </div>
           )}
         </div>
       </aside>
+
+      {/* Change Password Modal for All Roles */}
+      <ChangePasswordModal
+        isOpen={changePasswordOpen}
+        onClose={() => setChangePasswordOpen(false)}
+        session={session}
+      />
     </>
   );
 }

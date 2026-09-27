@@ -106,7 +106,7 @@ def header_footer(canvas, doc):
     canvas.setStrokeColor(BORDER)
     canvas.setLineWidth(0.5)
     canvas.line(MARGIN, 1.35 * cm, PAGE_W - MARGIN, 1.35 * cm)
-    canvas.drawString(MARGIN, 1.0 * cm, 'BSC EXCLUSIVE · Multi-Location Operations')
+    canvas.drawString(MARGIN, 1.0 * cm, 'BSC Textiles · Multi-Location Operations')
     canvas.drawRightString(PAGE_W - MARGIN, 1.0 * cm, 'Page %d' % doc.page)
     canvas.restoreState()
 
@@ -256,7 +256,7 @@ story.append(PageBreak())
 # ══ 1. INTRODUCTION ══
 h1(story, '1.  Introduction')
 para(story, 'The <b>BSC Enterprise Operations Platform</b> is the internal operating system of '
-     'BSC EXCLUSIVE, a multi-location retail business with three divisions: <b>Belagavi</b>, '
+     'BSC Textiles, a multi-location retail business with three divisions: <b>Belagavi</b>, '
      '<b>Davanagere</b> and <b>Shivamogga</b>. The platform unifies every front-office and '
      'back-office workflow in one place - wedding customer follow-ups, store operations, '
      'recruitment and administration - and enforces strict branch-level data isolation so that '
@@ -594,7 +594,7 @@ para(story, 'For deployment instructions, environment variables and the test sui
      'Administrator or the platform development team.')
 story.append(Spacer(1, 14))
 story.append(HRFlowable(width='100%', thickness=1.0, color=ACCENT, spaceBefore=4, spaceAfter=6))
-story.append(Paragraph('BSC EXCLUSIVE · Enterprise Operations Platform · Complete User Manual · September 2026',
+story.append(Paragraph('BSC Textiles · Enterprise Operations Platform · Complete User Manual · September 2026',
                        ParagraphStyle('End', fontName='Times New Roman', fontSize=9, leading=12,
                                       textColor=TEXT_MUTED, alignment=TA_CENTER)))
 

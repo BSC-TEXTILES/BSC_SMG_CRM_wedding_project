@@ -4,29 +4,46 @@ const path = require('path');
 const userSyncService = require('./userSyncService');
 const { formatISTDate, getISTDateRange, isDateInRange, getBusinessDate } = require('../utils/dateUtils');
 
+let cachedCandidateCols = null;
+
 class CandidateService {
   async generateCandidateCode() {
     const year = new Date().getFullYear();
-    const [rows] = await pool.query(`SELECT id, app_no FROM candidates`);
-
-    if (!rows || rows.length === 0) {
-      return {
-        appNo: `BSC-${year}-0001`
-      };
-    }
+    const prefix = `BSC-${year}-`;
+    const [rows] = await pool.query(
+      `SELECT app_no FROM candidates WHERE app_no LIKE CONCAT(?, '%') ORDER BY id DESC LIMIT 100`,
+      [prefix]
+    );
 
     let maxNum = 0;
     const existing = new Set();
 
-    for (const r of rows) {
-      if (!r.app_no) continue;
-      existing.add(r.app_no);
+    if (rows && rows.length > 0) {
+      for (const r of rows) {
+        if (!r.app_no) continue;
+        existing.add(r.app_no);
 
-      const matches = r.app_no.match(/\d+/g);
-      if (matches && matches.length > 0) {
-        const lastNum = parseInt(matches[matches.length - 1], 10);
-        if (!isNaN(lastNum) && lastNum > maxNum) {
-          maxNum = lastNum;
+        const matches = r.app_no.match(/\d+/g);
+        if (matches && matches.length > 0) {
+          const lastNum = parseInt(matches[matches.length - 1], 10);
+          if (!isNaN(lastNum) && lastNum > maxNum) {
+            maxNum = lastNum;
+          }
+        }
+      }
+    } else {
+      const [recentRows] = await pool.query(`SELECT app_no FROM candidates ORDER BY id DESC LIMIT 50`);
+      if (recentRows && recentRows.length > 0) {
+        for (const r of recentRows) {
+          if (!r.app_no) continue;
+          existing.add(r.app_no);
+          const matches = r.app_no.match(/\d+/g);
+          if (matches && matches.length > 0) {
+            const lastNum = parseInt(matches[matches.length - 1], 10);
+            if (!isNaN(lastNum) && lastNum > maxNum) {
+              maxNum = lastNum;
+            }
+          }
         }
       }
     }
@@ -51,113 +68,112 @@ class CandidateService {
       fromDate, toDate, q, page = 1, limit = 50000, sortDir = 'desc' 
     } = filters;
 
-    // Auto-synchronize candidate status to 'Joined' if offer status is 'Joined'
-    try {
-      await pool.query(`
-        UPDATE candidates c
-        JOIN selection_offers so ON c.app_no = so.app_no
-        SET c.status = 'Joined'
-        WHERE LOWER(TRIM(so.status)) = 'joined' AND LOWER(TRIM(c.status)) != 'joined'
-      `);
-    } catch (e) {}
-
-    try {
-      await pool.query(`
-        CREATE TABLE IF NOT EXISTS employees (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          employee_id VARCHAR(100) NULL UNIQUE,
-          app_no VARCHAR(50) NULL,
-          name VARCHAR(255) NOT NULL,
-          email VARCHAR(150) NULL,
-          phone VARCHAR(20) NULL,
-          department VARCHAR(150) NULL,
-          designation VARCHAR(150) NULL,
-          section VARCHAR(150) NULL,
-          branch VARCHAR(150) NULL,
-          status VARCHAR(50) DEFAULT 'Joined',
-          joining_date DATE NULL,
-          salary DECIMAL(10,2) NULL,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-      `);
-    } catch (e) {}
-
-    let query = `
-      SELECT c.*, 
-             so.status as offer_status,
-             emp.id as employee_id
-      FROM candidates c 
-      LEFT JOIN selection_offers so ON c.app_no = so.app_no 
-      LEFT JOIN employees emp ON (c.app_no = emp.app_no OR (c.phone IS NOT NULL AND c.phone != '' AND c.phone = emp.phone))
-      WHERE 1=1
-    `;
+    let whereClause = 'WHERE 1=1';
     const params = [];
 
     // ── Location isolation (backend-enforced) ──
     if (locationId !== null && locationId !== undefined) {
-      query += ` AND c.location_id = ?`;
+      whereClause += ` AND c.location_id = ?`;
       params.push(locationId);
     }
 
     if (status && status !== 'all') {
-      query += ` AND (LOWER(c.status) = LOWER(?) OR LOWER(so.status) = LOWER(?))`;
+      whereClause += ` AND (LOWER(c.status) = LOWER(?) OR LOWER(so.status) = LOWER(?))`;
       params.push(status, status);
     }
     if (desig) {
-      query += ` AND c.designation = ?`;
+      whereClause += ` AND c.designation = ?`;
       params.push(desig);
     }
     if (source) {
-      query += ` AND c.source = ?`;
+      whereClause += ` AND c.source = ?`;
       params.push(source);
     }
     if (gender) {
-      query += ` AND LOWER(c.gender) = LOWER(?)`;
+      whereClause += ` AND LOWER(c.gender) = LOWER(?)`;
       params.push(gender);
     }
     if (cityState) {
-      query += ` AND LOWER(c.city_state) LIKE ?`;
+      whereClause += ` AND LOWER(c.city_state) LIKE ?`;
       params.push(`%${cityState.toLowerCase()}%`);
     }
     if (minSalary) {
-      query += ` AND c.expected_salary >= ?`;
+      whereClause += ` AND c.expected_salary >= ?`;
       params.push(parseFloat(minSalary));
     }
     if (maxSalary) {
-      query += ` AND c.expected_salary <= ?`;
+      whereClause += ` AND c.expected_salary <= ?`;
       params.push(parseFloat(maxSalary));
     }
     if (fromDate) {
-      query += ` AND c.created_at >= ?`;
+      whereClause += ` AND c.created_at >= ?`;
       params.push(new Date(fromDate));
     }
     if (toDate) {
-      query += ` AND c.created_at <= ?`;
+      whereClause += ` AND c.created_at <= ?`;
       params.push(new Date(new Date(toDate).setHours(23, 59, 59)));
     }
     if (q) {
-      query += ` AND (LOWER(c.name) LIKE ? OR LOWER(c.app_no) LIKE ? OR c.phone LIKE ? OR LOWER(c.email) LIKE ?)`;
+      whereClause += ` AND (LOWER(c.name) LIKE ? OR LOWER(c.app_no) LIKE ? OR c.phone LIKE ? OR LOWER(c.email) LIKE ?)`;
       const term = `%${q.toLowerCase()}%`;
       params.push(term, term, term, term);
     }
     if (filters.appNo) {
-      query += ` AND c.app_no = ?`;
+      whereClause += ` AND c.app_no = ?`;
       params.push(filters.appNo);
     }
 
     const order = sortDir.toLowerCase() === 'desc' ? 'DESC' : 'ASC';
-    query += ` ORDER BY c.created_at ${order}`;
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.max(1, parseInt(limit) || 20);
 
-    const [allRows] = await pool.query(query, params);
-    const total = allRows.length;
+    const fromJoins = `
+      FROM candidates c 
+      LEFT JOIN selection_offers so ON c.app_no = so.app_no 
+      LEFT JOIN employees emp ON (c.app_no = emp.app_no OR (c.phone IS NOT NULL AND c.phone != '' AND c.phone = emp.phone))
+    `;
 
-    const pageNum = parseInt(page);
-    const limitNum = parseInt(limit);
-    const startIndex = (pageNum - 1) * limitNum;
-    const paginated = allRows.slice(startIndex, startIndex + limitNum);
+    let total = 0;
+    let paginated = [];
 
-    const candidates = paginated.map((r) => {
+    if (limitNum >= 5000) {
+      // Direct query when bulk export is requested
+      const selectQuery = `
+        SELECT c.*, so.status as offer_status, emp.id as employee_id
+        ${fromJoins}
+        ${whereClause}
+        ORDER BY c.created_at ${order}
+        LIMIT ?
+      `;
+      const [rows] = await pool.query(selectQuery, [...params, limitNum]);
+      total = rows.length;
+      paginated = rows;
+    } else {
+      // Parallel count and paginated data queries
+      const countQuery = `
+        SELECT COUNT(c.id) as cnt
+        ${fromJoins}
+        ${whereClause}
+      `;
+      const offset = (pageNum - 1) * limitNum;
+      const dataQuery = `
+        SELECT c.*, so.status as offer_status, emp.id as employee_id
+        ${fromJoins}
+        ${whereClause}
+        ORDER BY c.created_at ${order}
+        LIMIT ? OFFSET ?
+      `;
+
+      const [[countRes], [rows]] = await Promise.all([
+        pool.query(countQuery, params),
+        pool.query(dataQuery, [...params, limitNum, offset])
+      ]);
+
+      total = (countRes && countRes[0]) ? Number(countRes[0].cnt) : 0;
+      paginated = rows || [];
+    }
+
+    const formatCandidateRow = (r) => {
       const initials = r.name
         ? r.name
             .split(' ')
@@ -173,11 +189,6 @@ class CandidateService {
       const createdDate = new Date(r.created_at);
       const daysIn = Math.max(0, Math.floor((Date.now() - createdDate.getTime()) / 86400000));
       
-      const isEmp = Boolean(r.employee_id);
-      const osLower = (r.offer_status || '').toLowerCase().trim();
-      const csLower = (r.status || '').toLowerCase().trim();
-
-      // Preserve actual status from DB — never override Shortlisted, Joined, Offer Rejected etc.
       const computedStatus = r.status || 'New';
 
       return {
@@ -237,8 +248,9 @@ class CandidateService {
         createdAt: r.created_at || null,
         updatedAt: r.updated_at || null
       };
-    });
+    };
 
+    const candidates = paginated.map(formatCandidateRow);
     return { candidates, total, page: pageNum };
   }
 
@@ -395,14 +407,16 @@ class CandidateService {
       salary: ['salary', 'salaryOffered', 'offeredSalary', 'baseSalary']
     };
 
-    // Safely query existing columns in candidates table
-    let existingCols = new Set();
-    try {
-      const [colRows] = await pool.query(`SHOW COLUMNS FROM candidates`);
-      colRows.forEach(c => existingCols.add(c.Field));
-    } catch (e) {
-      // Fallback if SHOW COLUMNS fails
+    // Safely query existing columns in candidates table (cached)
+    if (!cachedCandidateCols) {
+      try {
+        const [colRows] = await pool.query(`SHOW COLUMNS FROM candidates`);
+        cachedCandidateCols = new Set(colRows.map(c => c.Field));
+      } catch (e) {
+        cachedCandidateCols = new Set();
+      }
     }
+    const existingCols = cachedCandidateCols;
 
     for (const key of allowed) {
       if (existingCols.size > 0 && !existingCols.has(key)) continue;
@@ -630,40 +644,26 @@ class CandidateService {
 
       const locFilter = locationId ? `AND c.location_id = ${parseInt(locationId)}` : '';
 
-      // Auto-synchronize candidate status to Joined for any candidates marked Joined in selection_offers
-      try {
-        await pool.query(`
-          UPDATE candidates c
-          JOIN selection_offers so ON c.app_no = so.app_no
-          SET c.status = 'Joined'
-          WHERE LOWER(TRIM(so.status)) = 'joined' AND LOWER(TRIM(c.status)) != 'joined'
-        `);
-      } catch (e) {}
+      // Parallel fetch for candidates, offers, and selected candidates
+      const [[candRows], [oRows], [scRows]] = await Promise.all([
+        pool.query(`
+          SELECT c.id, c.app_no, c.gender, c.status, c.created_at, c.updated_at, so.actual_doj, so.status as offer_status
+          FROM candidates c
+          LEFT JOIN selection_offers so ON c.app_no = so.app_no
+          WHERE 1=1 ${locFilter}
+        `),
+        pool.query(`SELECT app_no, status, created_at, actual_doj FROM selection_offers`).catch(() => [[]]),
+        pool.query(`SELECT app_no, candidate_id FROM selected_candidates`).catch(() => [[]])
+      ]);
 
-      const [candRows] = await pool.query(`
-        SELECT c.id, c.app_no, c.gender, c.status, c.created_at, c.updated_at, so.actual_doj, so.status as offer_status
-        FROM candidates c
-        LEFT JOIN selection_offers so ON c.app_no = so.app_no
-        WHERE 1=1 ${locFilter}
-      `);
+      const offerRows = oRows || [];
+      const selectedCandRows = scRows || [];
 
-      const filteredRows = candRows.filter(r => isDateInRange(getBusinessDate(r, 'CRM'), range, fromDate, toDate));
+      const filteredRows = (candRows || []).filter(r => isDateInRange(getBusinessDate(r, 'CRM'), range, fromDate, toDate));
 
       // 1. Total Pipeline = Total registered candidates in selected range (created_at)
       const total = filteredRows.length;
-      const totalCandidatesAll = candRows.length;
-
-      let offerRows = [];
-      try {
-        const [oRows] = await pool.query(`SELECT app_no, status, created_at, actual_doj FROM selection_offers`);
-        offerRows = oRows || [];
-      } catch (e) {}
-
-      let selectedCandRows = [];
-      try {
-        const [scRows] = await pool.query(`SELECT app_no, candidate_id FROM selected_candidates`);
-        selectedCandRows = scRows || [];
-      } catch (e) {}
+      const totalCandidatesAll = (candRows || []).length;
 
       const offerAppNos = new Set(offerRows.map(o => o.app_no).filter(Boolean));
       const selectedAppNos = new Set(selectedCandRows.map(sc => sc.app_no).filter(Boolean));

@@ -72,10 +72,9 @@ export default function OfferProcessPage() {
     setImgError(false);
     setLoadingProfile(true);
     try {
-      const res = await API.getCandidates({ limit: 50000 });
-      if (res?.candidates) {
-        const match = (res.candidates as any[]).find((c: any) => c.appNo === o.appNo);
-        if (match) setCandidateData(match);
+      const res = await API.getCandidates({ appNo: o.appNo, limit: 1 });
+      if (res?.candidates && res.candidates.length > 0) {
+        setCandidateData(res.candidates[0]);
       }
     } catch (e) { }
     setLoadingProfile(false);

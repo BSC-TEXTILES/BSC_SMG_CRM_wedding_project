@@ -21,6 +21,7 @@ const pool = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 20,     // sized for high-concurrency retail usage across 3 locations
   queueLimit: 100,        // bounded queue: shed excess load instead of exhausting memory
+  ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false' } : undefined,
   dateStrings: true,
   connectTimeout: 5000,  // 5s max per connection attempt (was 10s - too slow for Passenger timeout)
   enableKeepAlive: true, // Keep connections alive to prevent stale connection 503s

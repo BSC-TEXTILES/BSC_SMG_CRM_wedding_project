@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { Navigate, useLocation, Link } from 'react-router-dom';
-import { Auth, API } from '../services/api';
+import React, { useEffect, useState, useMemo } from 'react';
+import { Navigate, useLocation, Link, useNavigate } from 'react-router-dom';
+import { Auth } from '../services/api';
 import { getDefaultLandingRoute } from '../utils/moduleRegistry';
 import { getRoleNavMap, resolveAllowedPages } from '../utils/rbac';
 import { permissionsCache } from '../context/PermissionsCache';
@@ -19,7 +19,37 @@ import { Loader2, ShieldAlert, ArrowLeft, Home } from 'lucide-react';
  */
 export default function RouteGuard({ pageKey, children }: { pageKey: string; children: React.ReactNode }) {
   const location = useLocation();
-  const [resolution, setResolution] = useState<'checking' | 'allowed' | 'denied' | 'anonymous'>('checking');
+  const navigate = useNavigate();
+
+  // Lazy-initialize resolution to eliminate loading spinner flicker for pre-authorized sessions
+  const [resolution, setResolution] = useState<'checking' | 'allowed' | 'denied' | 'anonymous'>(() => {
+    const session = Auth.get();
+    if (!Auth.check() || !session) {
+      return 'anonymous';
+    }
+
+    const role = session.role || '';
+    const norm = role.trim().toLowerCase().replace(/[_\s-]+/g, ' ');
+
+    // Admin & Super Admin have full unrestricted access to all routes
+    if (norm === 'admin' || norm === 'super admin' || norm === 'system administrator') {
+      return 'allowed';
+    }
+
+    // Direct token/session module list check
+    if (Array.isArray(session.modules) && session.modules.includes(pageKey)) {
+      return 'allowed';
+    }
+
+    // Base role navigation check
+    const roleKeys = getRoleNavMap(role);
+    if (roleKeys.includes(pageKey)) {
+      return 'allowed';
+    }
+
+    return 'checking';
+  });
+
   const [deniedReason, setDeniedReason] = useState<string>('');
   const [allowedModules, setAllowedModules] = useState<string[]>([]);
 
@@ -58,8 +88,10 @@ export default function RouteGuard({ pageKey, children }: { pageKey: string; chi
 
       setResolution('allowed');
     }).catch(() => {
+      if (cancelled) return;
       // Fallback: check static role navigation map
       const roleKeys = getRoleNavMap(role);
+      setAllowedModules(roleKeys);
       if (roleKeys.includes(pageKey)) {
         setResolution('allowed');
       } else {
@@ -68,8 +100,15 @@ export default function RouteGuard({ pageKey, children }: { pageKey: string; chi
       }
     });
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [pageKey, location.pathname]);
+
+  const returnRoute = useMemo(() => {
+    const session = Auth.get();
+    return getDefaultLandingRoute(session, allowedModules);
+  }, [allowedModules]);
 
   if (resolution === 'checking') {
     return (
@@ -88,7 +127,6 @@ export default function RouteGuard({ pageKey, children }: { pageKey: string; chi
 
   if (resolution === 'denied') {
     const session = Auth.get();
-    const returnRoute = getDefaultLandingRoute(session, allowedModules);
 
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center select-none font-sans">
@@ -103,12 +141,26 @@ export default function RouteGuard({ pageKey, children }: { pageKey: string; chi
             {deniedReason || 'You do not have permission to view this page. Please contact your system administrator if you require access.'}
           </p>
           <div className="flex flex-col sm:flex-row gap-3 w-full">
+            <button
+              type="button"
+              onClick={() => {
+                if (window.history.length > 1) {
+                  navigate(-1);
+                } else {
+                  navigate(returnRoute);
+                }
+              }}
+              className="px-4 py-2.5 text-xs font-bold text-primary/80 bg-white border border-[#DFDDD7] hover:bg-neutral-50 rounded-xl shadow-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Go Back</span>
+            </button>
             <Link
               to={returnRoute}
               className="btn-gold flex-1 py-2.5 text-xs font-black flex items-center justify-center gap-2 rounded-xl shadow-sm"
             >
               <Home className="w-4 h-4" />
-              <span>{returnRoute === '/no-access' ? 'View Account Status' : 'Return to My Workspace'}</span>
+              <span>{returnRoute === '/no-access' ? 'View Account Status' : 'Return to Workspace'}</span>
             </Link>
           </div>
           <div className="mt-4 text-[10px] text-primary/40 font-medium">

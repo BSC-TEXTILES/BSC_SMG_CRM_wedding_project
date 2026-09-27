@@ -1,21 +1,3 @@
-/**
- * devToolsDetector.ts
- * ───────────────────
- * Real-time, continuous Developer Tools Detection Engine.
- *
- * Combines:
- * 1. Industry-standard Viewport Differential Algorithm (for docked side & bottom panels)
- * 2. devtools-detector multi-heuristic engine (for undocked windows, debugger checks, devtools formatters)
- * 3. In-page mobile inspection tool detection (Eruda, vConsole)
- *
- * Key guarantees:
- * - Completely silent: zero console.debug / console.log spam in the user's browser console.
- * - Distinguishes between browser developer tools and external tools:
- *   External apps (VS Code, CMD, PowerShell, Git Bash, Terminal) NEVER trigger false alerts.
- * - Live dynamic transitions: automatically switches between OPEN and CLOSED states live.
- * - Ticking live clock: lastChecked updates continuously so the Admin UI is always responsive.
- */
-
 import { Auth, API } from './api';
 import defaultDetector, { DevtoolsDetectorListener } from 'devtools-detector';
 
@@ -57,7 +39,6 @@ class DevToolsDetectorService {
 
   constructor() {
     this.initLibraryDetector();
-    this.startLiveClock();
   }
 
   private initLibraryDetector() {
@@ -75,21 +56,12 @@ class DevToolsDetectorService {
     }
   }
 
-  private startLiveClock() {
-    if (typeof window === 'undefined') return;
-    this.clockTimer = window.setInterval(() => {
-      this.lastChecked = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
-      // Notify listeners to keep live clock ticking on dashboard
-      this.notify();
-    }, 1000);
-  }
-
   public getState(): DevToolsDetectionState {
     return {
       isOpen: this.isOpen,
       confidence: this.confidence,
       source: this.source,
-      lastChecked: this.lastChecked,
+      lastChecked: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }),
       lastDetection: this.lastDetection,
       armed: this.armed
     };
@@ -286,12 +258,12 @@ class DevToolsDetectorService {
     }
   }
 
-  private reportToServer(event: 'DEVTOOLS_DETECTED' | 'DEVTOOLS_CLOSED', details: any) {
+  private async reportToServer(event: 'DEVTOOLS_DETECTED' | 'DEVTOOLS_CLOSED', details: any) {
     try {
       const session = Auth.get();
-      if (!session || !session.token) return; // Only log for authenticated sessions
+      if (!session) return; // Only log for authenticated sessions
 
-      API.logSecurityEvent(event, {
+      await API.logSecurityEvent(event, {
         ...details,
         timestamp: new Date().toISOString(),
         userId: session.id ?? session.username,

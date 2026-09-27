@@ -6,6 +6,17 @@ const getApiBase = () => {
   return '/api';
 };
 
+/**
+ * Read the double-submit `_csrf` cookie so raw `fetch()` calls that bypass
+ * `apiFetch` (logout, security-event logging, keepalive calls) still satisfy
+ * the backend CSRF middleware. Returns null when the cookie is absent.
+ */
+export function getCsrfToken(): string | null {
+  if (typeof document === 'undefined') return null;
+  const match = document.cookie.match(/(?:^|; )_csrf=([^;]*)/);
+  return match ? match[1] : null;
+}
+
 export interface UserSession {
   id?: number | string;
   username: string;
@@ -14,20 +25,35 @@ export interface UserSession {
   displayName: string;
   name?: string;
   employeeId?: string | number;
-  token?: string;
+  // Token is stored in HttpOnly cookie, not in localStorage
   // ── Multi-Location Fields ──
   locationId?: number | null;     // null = Global Admin (all locations)
   locationCode?: string | null;   // 'BEL' | 'DAV' | 'SHI'
   locationName?: string | null;   // 'Belagavi' | 'Davanagere' | 'Shivamogga'
   allowedLocations?: number[];    // array of location IDs user can access
   isGlobalAdmin?: boolean;        // true if locationId is null
+  modules?: string[];             // assigned ACM modules
 }
 
 export const Auth = {
   save(session: UserSession) {
     try {
+      // Store only non-sensitive session data in localStorage (for UI state)
+      // The JWT token is stored in HttpOnly cookie by the backend
       localStorage.setItem('bsc_crm_session', JSON.stringify({
-        ...session,
+        id: session.id,
+        username: session.username,
+        role: session.role,
+        fullName: session.fullName,
+        displayName: session.displayName,
+        name: session.name,
+        employeeId: session.employeeId,
+        locationId: session.locationId,
+        locationCode: session.locationCode,
+        locationName: session.locationName,
+        allowedLocations: session.allowedLocations,
+        isGlobalAdmin: session.isGlobalAdmin,
+        modules: session.modules,
         loginAt: Date.now()
       }));
       
@@ -60,7 +86,7 @@ export const Auth = {
 
   check(): boolean {
     const session = this.get();
-    if (!session || !session.token) {
+    if (!session) {
       this.clear();
       return false;
     }
@@ -90,9 +116,9 @@ export const Auth = {
     return session?.isGlobalAdmin === true || session?.locationId === null || session?.locationId === undefined;
   },
 
+  // Token is in HttpOnly cookie - not accessible from JavaScript
   getToken(): string | null {
-    const session = this.get();
-    return session?.token ?? null;
+    return null; // Token not exposed to frontend JavaScript
   },
 
   clear() {
@@ -107,20 +133,21 @@ export const Auth = {
   logout() {
     // Best-effort server notification so the sign-out is recorded in the
     // admin's login-activity trail. Never blocks the redirect.
+    // The backend will clear the HttpOnly cookie
     try {
       const session = this.get();
-      if (session && session.token) {
+      if (session) {
         // Track logout
         API.trackUserLogout(session.id, session.username).catch(() => {});
         
-        // Call the backend logout
+        // Call the backend logout (cookie will be sent automatically)
         fetch('/api/auth/logout', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${session.token}`,
-            'x-auth-token': session.token
+            'x-csrf-token': getCsrfToken() || ''
           },
+          credentials: 'include', // Include HttpOnly cookie
           keepalive: true
         }).catch(() => {});
       }
@@ -131,6 +158,46 @@ export const Auth = {
     }
   }
 };
+
+// ── Silent Refresh State ──────────────────────────────────────────────────────
+let isRefreshingToken = false;
+let refreshPromise: Promise<boolean> | null = null;
+
+export async function silentRefreshToken(): Promise<boolean> {
+  if (isRefreshingToken && refreshPromise) {
+    return refreshPromise;
+  }
+  isRefreshingToken = true;
+  refreshPromise = (async () => {
+    try {
+      const csrf = getCsrfToken() || '';
+      const res = await fetch('/api/auth/refresh', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-csrf-token': csrf
+        },
+        credentials: 'include'
+      });
+      return res.ok;
+    } catch {
+      return false;
+    } finally {
+      isRefreshingToken = false;
+      refreshPromise = null;
+    }
+  })();
+  return refreshPromise;
+}
+
+// Auto-renew access token 1 min before expiry (every 14 minutes for a 15-minute access token)
+if (typeof window !== 'undefined') {
+  setInterval(() => {
+    if (Auth.check()) {
+      silentRefreshToken().catch(() => {});
+    }
+  }, 14 * 60 * 1000);
+}
 
 /**
  * Strip undefined/null/empty values before building URLSearchParams.
@@ -154,17 +221,13 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
     ...(options.headers as Record<string, string>)
   };
 
-  if (session && session.token) {
-    headers['Authorization'] = `Bearer ${session.token}`;
-    headers['x-auth-token'] = session.token; // Fallback for Hostinger Apache stripping Authorization header
-  }
+  // JWT token is sent automatically via HttpOnly cookie
+  // Do NOT send token in Authorization header or x-auth-token header
 
   // CSRF Protection
-  if (typeof document !== 'undefined') {
-    const match = document.cookie.match(/(?:^|; )_csrf=([^;]*)/);
-    if (match) {
-      headers['x-csrf-token'] = match[1];
-    }
+  const csrfToken = getCsrfToken();
+  if (csrfToken) {
+    headers['x-csrf-token'] = csrfToken;
   }
 
   // Device ID for anonymous tracking
@@ -179,8 +242,8 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
 
   if (!isGlobal && session?.locationId) {
     // Non-global user: strictly enforce session location unless allowedLocations includes activeLoc
-    const allowed = Array.isArray(session.allowedLocations) && session.allowedLocations.length > 0 
-      ? session.allowedLocations.map(String) 
+    const allowed = Array.isArray(session.allowedLocations) && session.allowedLocations.length > 0
+      ? session.allowedLocations.map(String)
       : [String(session.locationId)];
     if (activeLoc && allowed.includes(activeLoc)) {
       headers['X-Location-Id'] = activeLoc;
@@ -195,11 +258,38 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
   const url = endpoint.startsWith('http') ? endpoint : `${apiBase}${endpoint}`;
 
   try {
-    const res = await fetch(url, {
+    let res = await fetch(url, {
       ...options,
-      headers
+      headers,
+      credentials: 'include' // Include HttpOnly cookies
     });
+
+    const isAuthRoute = endpoint.includes('/auth/login') ||
+                        endpoint.includes('/auth/refresh') ||
+                        endpoint.includes('/auth/verify-2fa') ||
+                        endpoint.includes('/auth/logout');
+
+    // On 401, attempt silent refresh once and replay request
+    if (res.status === 401 && !isAuthRoute) {
+      const refreshed = await silentRefreshToken();
+      if (refreshed) {
+        const newCsrf = getCsrfToken();
+        if (newCsrf) headers['x-csrf-token'] = newCsrf;
+        res = await fetch(url, {
+          ...options,
+          headers,
+          credentials: 'include'
+        });
+      }
+    }
+
     if (!res.ok) {
+      if (res.status === 401 && !isAuthRoute) {
+        Auth.clear();
+        if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+          window.location.replace('/login');
+        }
+      }
       const errorData = await res.json().catch(() => ({}));
       // Provide user-friendly error messages based on status code
       let errorMessage = errorData.message;
@@ -321,10 +411,26 @@ export const API = {
   },
 
   // Auth
-  async verifyUser(username: string, password: string, captchaId?: string, captchaText?: string) {
+  async login(username: string, password: string, captchaId?: string, captchaText?: string) {
     return apiFetch('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ username, password, captchaId, captchaText })
+    });
+  },
+
+  // Step 2: Verify 2FA OTP
+  async verify2fa(userId: number | string, otp: string, partialAuth?: any) {
+    return apiFetch('/auth/verify-2fa', {
+      method: 'POST',
+      body: JSON.stringify({ userId, otp, partialAuth })
+    });
+  },
+
+  // Resend 2FA OTP
+  async resend2fa(userId: number | string) {
+    return apiFetch('/auth/resend-2fa', {
+      method: 'POST',
+      body: JSON.stringify({ userId })
     });
   },
 
@@ -355,6 +461,41 @@ export const API = {
     return apiFetch('/auth/reset-password', {
       method: 'POST',
       body: JSON.stringify({ token, newPassword })
+    });
+  },
+
+  // Authenticated user password update (Available to ALL ROLES)
+  async changePassword(currentPassword: string, newPassword: string, confirmPassword?: string) {
+    return apiFetch('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ currentPassword, newPassword, confirmPassword })
+    });
+  },
+
+  // Administrator reset user password
+  async adminResetUserPassword(userId: number | string, password: string) {
+    return apiFetch(`/settings/users/${userId}/reset-password`, {
+      method: 'POST',
+      body: JSON.stringify({ password })
+    });
+  },
+
+  // Email verification
+  async sendEmailVerification(email: string) {
+    return apiFetch('/auth/send-verification', {
+      method: 'POST',
+      body: JSON.stringify({ email })
+    });
+  },
+
+  async verifyEmail(token: string) {
+    return apiFetch(`/auth/verify-email?token=${encodeURIComponent(token)}`);
+  },
+
+  async resendEmailVerification(email: string) {
+    return apiFetch('/auth/resend-verification', {
+      method: 'POST',
+      body: JSON.stringify({ email })
     });
   },
 
@@ -395,6 +536,28 @@ export const API = {
   },
   async getDashboardStats() {
     return apiFetch('/security/dashboard-stats');
+  },
+  async getHRDashboard(locationId?: number | string) {
+    const q = locationId ? `?locationId=${encodeURIComponent(locationId)}` : '';
+    return apiFetch(`/dashboard/hr${q}`);
+  },
+  async getManagerDashboard(locationId?: number | string) {
+    const q = locationId ? `?locationId=${encodeURIComponent(locationId)}` : '';
+    return apiFetch(`/dashboard/manager${q}`);
+  },
+
+  // ── Public Landing Page APIs ─────────────────────────────────────
+  async getLandingStats() {
+    return apiFetch('/landing/stats');
+  },
+  async getLandingLocations() {
+    return apiFetch('/landing/locations');
+  },
+  async submitLandingEnquiry(data: any) {
+    return apiFetch('/landing/enquiry', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
   },
 
   // ── Server-Side Route Validation ─────────────────────────────────
@@ -480,9 +643,12 @@ export const API = {
   async uploadDocuments(formData: FormData, candName?: string, appNo?: string) {
     const session = Auth.get();
     const headers: Record<string, string> = {};
-    if (session && session.token) {
-      headers['Authorization'] = `Bearer ${session.token}`;
-      headers['x-auth-token'] = session.token;
+    if (session) {
+      // CSRF token
+      const csrfToken = getCsrfToken();
+      if (csrfToken) {
+        headers['x-csrf-token'] = csrfToken;
+      }
     }
     if (candName) {
       headers['x-candidate-name'] = encodeURIComponent(candName);
@@ -492,7 +658,7 @@ export const API = {
     }
     const apiBase = getApiBase();
     const url = `${apiBase}/candidates/upload-documents`;
-    const res = await fetch(url, { method: 'POST', headers, body: formData });
+    const res = await fetch(url, { method: 'POST', headers, body: formData, credentials: 'include' });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return await res.json();
   },
@@ -649,8 +815,12 @@ export const API = {
   async addUser(p: any) { return apiFetch('/settings/users/add', { method: 'POST', body: JSON.stringify(p) }); },
   async updateUser(p: any) { return apiFetch('/settings/users/update', { method: 'POST', body: JSON.stringify(p) }); },
   async deleteUser(identifier: number | string | { id?: number | string; username?: string }) {
-    const payload = typeof identifier === 'object' ? identifier : (!isNaN(Number(identifier)) ? { id: identifier } : { username: identifier });
-    return apiFetch('/settings/users/delete', { method: 'POST', body: JSON.stringify(payload) });
+    const raw = typeof identifier === 'object' ? (identifier.id ?? identifier.username) : identifier;
+    const id = raw === undefined || raw === null ? '' : String(raw);
+    if (!id) {
+      return Promise.reject(new Error('User ID or username is required for deletion'));
+    }
+    return apiFetch(`/settings/users/${encodeURIComponent(id)}`, { method: 'DELETE' });
   },
   async getPageSettings() { 
     return await apiFetch('/settings/page-visibility'); 
@@ -679,8 +849,11 @@ export const API = {
     return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
   },
   async updateAdminUserPermissions(id: number | string, permissions: any[]) { return apiFetch(`/admin/users/${id}/permissions`, { method: 'PUT', body: JSON.stringify({ permissions }) }); },
-  async toggleAdminUserStatus(id: number | string) {
-    const res = await apiFetch(`/admin/users/${id}/toggle-status`, { method: 'POST' });
+  async toggleAdminUserStatus(id: number | string, data?: { duration?: string; customDate?: string; reason?: string }) {
+    const res = await apiFetch(`/admin/users/${id}/toggle-status`, {
+      method: 'POST',
+      body: data ? JSON.stringify(data) : undefined
+    });
     return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
   },
   async resetAdminUserPassword(id: number | string, password: string) {
@@ -780,7 +953,8 @@ export const API = {
   async createVmFloor(payload: any) { return apiFetch('/vm/floors', { method: 'POST', body: JSON.stringify(payload) }); },
   async deleteVmFloor(payload: any) { return apiFetch('/vm/floors/delete', { method: 'POST', body: JSON.stringify(typeof payload === 'object' ? payload : { id: payload }) }); },
 
-  // Chat
+  // Chat (Gemini AI)
+  async getChatStatus() { return apiFetch('/chat/status'); },
   async getChatMessages() { return apiFetch('/chat/messages'); },
   async sendChatMessage(message: string) { return apiFetch('/chat/send', { method: 'POST', body: JSON.stringify({ message }) }); },
   async clearChatMessages() { return apiFetch('/chat/messages', { method: 'DELETE' }); },
@@ -806,12 +980,15 @@ export const API = {
   async uploadMCheckPhoto(formData: FormData) {
     const session = Auth.get();
     const headers: Record<string, string> = {};
-    if (session && session.token) {
-      headers['Authorization'] = `Bearer ${session.token}`;
-      headers['x-auth-token'] = session.token;
+    if (session) {
+      // CSRF token
+      const csrfToken = getCsrfToken();
+      if (csrfToken) {
+        headers['x-csrf-token'] = csrfToken;
+      }
     }
     const apiBase = getApiBase();
-    const res = await fetch(`${apiBase}/mcheck/upload-photo`, { method: 'POST', headers, body: formData });
+    const res = await fetch(`${apiBase}/mcheck/upload-photo`, { method: 'POST', headers, body: formData, credentials: 'include' });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return await res.json();
   },
@@ -821,10 +998,9 @@ export const API = {
   async reorderMCheckCheckpoints(order: any[]) { return apiFetch('/mcheck/admin/reorder', { method: 'POST', body: JSON.stringify({ order }) }); },
   getMCheckExportUrl(type: 'pdf' | 'excel', params?: { date?: string; fromDate?: string; toDate?: string; module_id?: string; status?: string; locationId?: string }) {
     const apiBase = getApiBase();
-    const token = Auth.getToken();
     const activeLoc = typeof localStorage !== 'undefined' ? localStorage.getItem('bsc_selected_location') : null;
     const mergedParams: any = { ...params };
-    if (token) mergedParams.token = token;
+    // Token is in HttpOnly cookie, not in URL
     if (activeLoc && !mergedParams.locationId && activeLoc !== 'ALL') {
       mergedParams.locationId = activeLoc;
     }

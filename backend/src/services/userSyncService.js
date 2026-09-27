@@ -290,7 +290,7 @@ async function provisionUserForCandidate(appNo, options = {}) {
 
     const role = options.role || 'Employee';
     const username = await buildUniqueUsername(options.username || cand.phone, appNo);
-    const hashedPassword = await bcrypt.hash(options.password || DEFAULT_EMPLOYEE_PASSWORD, 10);
+    const plainPassword = String(options.password || DEFAULT_EMPLOYEE_PASSWORD).trim();
 
     const locationId = cand.location_id || null;
     const locationCode = locationId ? await resolveLocationCode(locationId) : null;
@@ -301,7 +301,7 @@ async function provisionUserForCandidate(appNo, options = {}) {
           department, designation, role, active, location_id, location_code)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE, ?, ?)`,
       [
-        username, hashedPassword, cand.name || 'Unknown', appNo, appNo,
+        username, plainPassword, cand.name || 'Unknown', appNo, appNo,
         cand.email || null, cand.phone || null,
         cand.department || 'Store Operations', cand.designation || 'Staff',
         role, locationId, locationCode
@@ -419,7 +419,7 @@ async function backfillMissingUserAccounts(connection, log = () => {}) {
         if (!cand) continue;
 
         const username = await buildUniqueUsername(cand.phone, cand.app_no, connection);
-        const hashedPassword = await bcrypt.hash(DEFAULT_EMPLOYEE_PASSWORD, 10);
+        const plainPassword = String(DEFAULT_EMPLOYEE_PASSWORD).trim();
         const locationId = cand.location_id || null;
         const locationCode = locationId ? await resolveLocationCode(locationId, connection) : null;
 
@@ -429,7 +429,7 @@ async function backfillMissingUserAccounts(connection, log = () => {}) {
               department, designation, role, active, location_id, location_code)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Employee', TRUE, ?, ?)`,
           [
-            username, hashedPassword, cand.name || 'Unknown', cand.app_no, cand.app_no,
+            username, plainPassword, cand.name || 'Unknown', cand.app_no, cand.app_no,
             cand.email || null, cand.phone || null,
             cand.department || 'Store Operations', cand.designation || 'Staff',
             locationId, locationCode

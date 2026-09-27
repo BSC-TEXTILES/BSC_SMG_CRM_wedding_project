@@ -88,28 +88,31 @@ export default function ChatWidget() {
 
     try {
       const res = await API.sendChatMessage(userText);
-      if (res && res.success) {
+      if (res && (res.systemMessage || res.userMessage)) {
         setMessages(prev => {
           const filtered = prev.filter(m => m.id !== tempId);
           return [
             ...filtered,
-            {
+            ...(res.userMessage ? [{
               id: res.userMessage.id,
               text: res.userMessage.message_text,
               sender: 'user' as const,
               timestamp: res.userMessage.created_at,
               status: 'sent' as const
-            },
-            {
+            }] : []),
+            ...(res.systemMessage ? [{
               id: res.systemMessage.id,
               text: res.systemMessage.message_text,
               sender: 'system' as const,
               timestamp: res.systemMessage.created_at
-            }
+            }] : [])
           ];
         });
+        if (res.error) {
+          setError(res.error);
+        }
       } else {
-        throw new Error(res?.message || 'Failed to send message');
+        throw new Error(res?.error || res?.message || 'Failed to send message');
       }
     } catch (err: any) {
       setError(err.message || 'Failed to send message.');

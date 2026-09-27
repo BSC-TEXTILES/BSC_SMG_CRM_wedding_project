@@ -49,7 +49,7 @@ export default function WeddingNav({ currentPageTitle, breadcrumbs, actions }: W
               {currentPageTitle}
             </h1>
             <div className="text-[11px] font-bold text-muted uppercase tracking-widest mt-1">
-              BSC EXCLUSIVE · WEDDING CONCIERGE & CRM
+              BSC Textiles · WEDDING CONCIERGE & CRM
             </div>
           </div>
         </div>

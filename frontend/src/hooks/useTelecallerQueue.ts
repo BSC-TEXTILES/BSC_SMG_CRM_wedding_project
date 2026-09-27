@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { requestManager } from '../utils/requestManager';
 import { toastManager } from '../utils/toastManager';
-import { Auth } from '../services/api';
+import { Auth, apiFetch } from '../services/api';
 
 export function useTelecallerQueue(locationFilter: number | '' = '') {
   const [loading, setLoading] = useState(true);
@@ -32,76 +31,82 @@ export function useTelecallerQueue(locationFilter: number | '' = '') {
     if (!isPolling) setLoading(true);
     try {
       const session = Auth.get();
-      if (!session?.token) return;
+      if (!session) return;
 
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.token}`,
-        'x-auth-token': session.token
-      };
-
-      if (locationFilter !== '') {
-        headers['X-Location-Id'] = String(locationFilter);
-      }
-
+      // Use apiFetch which automatically includes HttpOnly cookie and CSRF token
       const queryParams = new URLSearchParams();
       if (locationFilter !== '') queryParams.append('location_id', String(locationFilter));
       
       const url = `/api/wedding-crm/calling-desk${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
 
-      const res = await requestManager.fetchWithRetry(url, {
-        method: 'GET',
-        headers,
-        maxRetries: 3,
-        baseDelayMs: 1000
+      // Simple retry logic (replacing requestManager.fetchWithRetry)
+      let res: any = null;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          res = await apiFetch(url, {
+            method: 'GET'
+          });
+          break; // Success, exit retry loop
+        } catch (err: any) {
+          if (err.status === 429) {
+            // Rate limited - don't retry
+            toastManager.error('rate-limit', 'Too many requests from this IP, please try again later.', { dedupe: true, maxCount: 1 });
+            throw err;
+          }
+          if (attempt < 2) {
+            await new Promise(r => setTimeout(r, 1000 * (attempt + 1))); // 1s, 2s backoff
+          } else {
+            throw err; // Last attempt failed
+          }
+        }
+      }
+
+      if (!res?.data) return;
+
+      const d = res.data;
+      // Backend returns nested structure: { summary, counts, queues }
+      const q = d.queues || d;
+      const s = d.summary || d.counts || d;
+
+      const dueToday = Array.isArray(q.dueToday) ? q.dueToday : (Array.isArray(q.due_today) ? q.due_today : []);
+      const overdue = Array.isArray(q.overdue) ? q.overdue : [];
+      const callbacks = Array.isArray(q.callbackRequests) ? q.callbackRequests : (Array.isArray(q.callbacks) ? q.callbacks : []);
+      const upcoming = Array.isArray(q.upcoming) ? q.upcoming : [];
+      const priority = Array.isArray(q.priorityCalls) ? q.priorityCalls : (Array.isArray(q.priority) ? q.priority : []);
+      const newLeads = Array.isArray(q.newCustomers) ? q.newCustomers : (Array.isArray(q.new_customers) ? q.new_customers : []);
+
+      const currentUserName = session?.fullName || session?.username || '';
+      const userRole = (session?.role || '').toLowerCase();
+      const isAdminOrManager = userRole.includes('admin') || userRole.includes('manager') || session?.isGlobalAdmin;
+
+      const myQueue = [...dueToday, ...overdue, ...callbacks].filter(
+        (c: any) => c.assigned_telecaller && c.assigned_telecaller.toLowerCase().includes(currentUserName.toLowerCase())
+      );
+
+      setQueueRecords({
+        dueToday,
+        overdue,
+        callbacks,
+        upcoming,
+        priority,
+        newLeads,
+        myQueue: myQueue.length > 0 ? myQueue : (isAdminOrManager ? [...dueToday, ...overdue] : dueToday)
       });
 
-      if (res?.data) {
-        const d = res.data;
-        // Backend returns nested structure: { summary, counts, queues }
-        const q = d.queues || d;
-        const s = d.summary || d.counts || d;
-
-        const dueToday = Array.isArray(q.dueToday) ? q.dueToday : (Array.isArray(q.due_today) ? q.due_today : []);
-        const overdue = Array.isArray(q.overdue) ? q.overdue : [];
-        const callbacks = Array.isArray(q.callbackRequests) ? q.callbackRequests : (Array.isArray(q.callbacks) ? q.callbacks : []);
-        const upcoming = Array.isArray(q.upcoming) ? q.upcoming : [];
-        const priority = Array.isArray(q.priorityCalls) ? q.priorityCalls : (Array.isArray(q.priority) ? q.priority : []);
-        const newLeads = Array.isArray(q.newCustomers) ? q.newCustomers : (Array.isArray(q.new_customers) ? q.new_customers : []);
-
-        const currentUserName = session?.fullName || session?.username || '';
-        const userRole = (session?.role || '').toLowerCase();
-        const isAdminOrManager = userRole.includes('admin') || userRole.includes('manager') || session?.isGlobalAdmin;
-
-        const myQueue = [...dueToday, ...overdue, ...callbacks].filter(
-          (c: any) => c.assigned_telecaller && c.assigned_telecaller.toLowerCase().includes(currentUserName.toLowerCase())
-        );
-
-        setQueueRecords({
-          dueToday,
-          overdue,
-          callbacks,
-          upcoming,
-          priority,
-          newLeads,
-          myQueue: myQueue.length > 0 ? myQueue : (isAdminOrManager ? [...dueToday, ...overdue] : dueToday)
-        });
-
-        const completed = Number(s.completedToday) || Number(s.completed) || 0;
-        const target = 40;
-        setDeskSummary({
-          assignedCalls: Number(s.assignedCalls) || dueToday.length + overdue.length,
-          pendingCalls: Number(s.pendingCalls) || Number(s.pending) || dueToday.length + overdue.length,
-          completedToday: completed,
-          connectedCalls: Number(s.connectedCalls) || 0,
-          callbackCount: Number(s.callbackCount) || callbacks.length,
-          remainingCalls: Math.max(0, target - completed),
-          dailyTarget: target
-        });
-      }
+      const completed = Number(s.completedToday) || Number(s.completed) || 0;
+      const target = 40;
+      setDeskSummary({
+        assignedCalls: Number(s.assignedCalls) || dueToday.length + overdue.length,
+        pendingCalls: Number(s.pendingCalls) || Number(s.pending) || dueToday.length + overdue.length,
+        completedToday: completed,
+        connectedCalls: Number(s.connectedCalls) || 0,
+        callbackCount: Number(s.callbackCount) || callbacks.length,
+        remainingCalls: Math.max(0, target - completed),
+        dailyTarget: target
+      });
     } catch (err: any) {
       if (err.status === 429) {
-        toastManager.error('rate-limit', 'Too many requests from this IP, please try again later.', { dedupe: true, maxCount: 1 });
+        // Already handled in retry loop
       } else {
         toastManager.error('queue-fetch', 'Error loading telecaller queue: ' + err.message, { dedupe: true });
       }

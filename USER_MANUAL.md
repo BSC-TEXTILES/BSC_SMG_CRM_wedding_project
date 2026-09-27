@@ -1,7 +1,7 @@
-# BSC EXCLUSIVE — Enterprise Operations Portal
+# BSC Textiles — Enterprise Operations Portal
 # Complete User Manual
 
-**Project:** BSC EXCLUSIVE — Multi-Location Wedding CRM & Store Operations Platform (BSC v3.0)
+**Project:** BSC Textiles — Multi-Location Wedding CRM & Store Operations Platform (BSC v3.0)
 **Manual Version:** 2.0
 **Date:** 22 September 2026
 **Prepared from:** the actual production code, live screens, and database structure of this project. Every feature, message, and rule documented here was verified against the implementation.
@@ -102,7 +102,7 @@
 
 ## 1. Introduction
 
-BSC EXCLUSIVE is the enterprise operations platform of BSC Textiles, running the company's wedding-shopping customer relationship management (CRM), customer-feedback collection, store-operations auditing, and talent-acquisition workflows across three retail stores. The system is a single integrated portal: one login gives every employee access to exactly the modules their role and store assignment allow, and every action is written to an audit trail.
+BSC Textiles is the enterprise operations platform of BSC Textiles, running the company's wedding-shopping customer relationship management (CRM), customer-feedback collection, store-operations auditing, and talent-acquisition workflows across three retail stores. The system is a single integrated portal: one login gives every employee access to exactly the modules their role and store assignment allow, and every action is written to an audit trail.
 
 The portal is used by store owners, administrators, managers, telecallers, visual merchandisers, greeters, HR staff, and floor staff — from registering a bride's wedding shopping requirement, through phone follow-ups, to confirming a store visit and recording the sale.
 
@@ -496,7 +496,7 @@ Terminal statuses (`Converted/Won, Visited, Not Interested, Cancelled, Closed` i
 - **Search:** *"Search customer name, mobile, reg ID…"*
 - **Filters:** location select · **Status:** (All + the 13) · **Caller:** (All Telecallers / named) · **Shopping Period pills:** `all | today | tomorrow | this week | this month` · reload button. Counter: "Showing N of M records".
 - **Table:** Reg ID · Customer · Mobile · Location · Wedding Date · Expected Shopping · Telecaller · Status · Next Follow-up (overdue rows flagged red **"Overdue"**) · Actions. Reg ID/Customer open the profile.
-- **Row actions:** View profile (eye) · Log Call (phone) · **WhatsApp** (opens `wa.me` prefilled *"Namaste {name}, greetings from BSC Exclusive Textiles!"*) · Assign telecaller · Delete.
+- **Row actions:** View profile (eye) · Log Call (phone) · **WhatsApp** (opens `wa.me` prefilled *"Namaste {name}, greetings from BSC Textiles!"*) · Assign telecaller · Delete.
 - **Header:** **Export Excel** (writes `BSC_Wedding_Customers_YYYY-MM-DD.xlsx`, 14 columns incl. Registration ID, Assigned Telecaller, Total Calls) and **Register Customer**.
 - Pagination 15/page. Empty state: "No customers match your criteria — Try resetting your filters or search keywords."
 - **Delete modal:** "Delete Wedding Customer — This action will archive the customer record." shows Name/Registration ID/Mobile/Store; Confirm Delete → `Customer "{name}" deleted successfully.` **The record is archived (soft delete), never destroyed** — it disappears from lists but remains for audit.
@@ -688,7 +688,7 @@ Location QRs use reserved IDs **QR-BEL / QR-DAV / QR-SHI**; manually created cod
    - q2 *Did you find the product you were looking for?* — Yes, exactly what I wanted / Yes, with assistance / Partially / No
    - q3 *How would you rate the quality & variety of our collection?* — Excellent / Good / Average / Poor
    - q4 *How would you rate the behavior and helpfulness of our staff?* — Extremely helpful / Helpful / Average / Poor
-   - q5 *How likely are you to recommend BSC Exclusive to your friends and family?* — Definitely recommend / Probably recommend / Neutral / Not recommend
+   - q5 *How likely are you to recommend BSC Textiles to your friends and family?* — Definitely recommend / Probably recommend / Neutral / Not recommend
 3. **Voice of Customer Notes (Optional):** "What did you like most…", "What can we improve…", "Any additional comments…".
 
 **Submit Feedback Response** → success screen: "Thank You! Your valuable feedback has been received successfully…" with a **Survey Reference ID** (FB-…) and "Submit Another Survey Response". Toast: `{Store} feedback submitted successfully.` / `'Unable to submit feedback. Please try again.'`

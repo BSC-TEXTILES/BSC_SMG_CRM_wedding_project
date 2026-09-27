@@ -34,6 +34,8 @@ export const ROUTE_LABELS: Record<string, string> = {
   '/footfall': 'Hourly Footfall',
   '/feedback-collection': 'Feedback Collection',
   '/feedback-list': 'Feedback Call Queue',
+  '/telecaller/desk': 'Telecaller Desk',
+  '/telecaller-dashboard': 'Telecaller Dashboard',
   '/feedback-qr': 'Feedback QR Code',
   '/feedback-public': 'Customer Feedback QR',
   '/divert': 'Sourcing Diverts',

@@ -1,6 +1,6 @@
 /**
  * Centralized Enterprise Module Registry & Role-Based Landing Engine
- * BSC EXCLUSIVE CRM
+ * BSC Textiles CRM
  *
  * Rules:
  * 1. Single source of truth for all modules, page keys, and route definitions.
@@ -77,6 +77,8 @@ export const MODULE_REGISTRY: AppModuleDefinition[] = [
 /** Route -> Primary page key mapping */
 export const ROUTE_TO_PAGE_KEY: Record<string, string> = {
   '/dashboard': 'dashboard',
+  '/hr-dashboard': 'dashboard',
+  '/manager-dashboard': 'dashboard',
   '/wedding-crm': 'wedding_crm',
   '/wedding-crm/dashboard': 'wedding_crm',
   '/wedding-crm/customers': 'wedding_crm',
@@ -245,7 +247,7 @@ export function getDefaultLandingRoute(
 
     // HR
     if (norm === 'hr' || norm === 'hr manager' || norm === 'recruiter' || norm === 'interviewer') {
-      if (allowedModules.includes('dashboard')) return '/dashboard?view=hr';
+      if (allowedModules.includes('dashboard')) return '/hr-dashboard';
       if (allowedModules.includes('employees')) return '/employees';
       if (allowedModules.includes('candidates')) return '/candidates';
       if (allowedModules.includes('attendance')) return '/attendance';
@@ -254,7 +256,7 @@ export function getDefaultLandingRoute(
 
     // Manager
     if (norm === 'manager' || norm === 'store manager' || norm === 'floor manager' || norm === 'department manager') {
-      if (allowedModules.includes('dashboard')) return '/dashboard?view=manager';
+      if (allowedModules.includes('dashboard')) return '/manager-dashboard';
       if (allowedModules.includes('footfall')) return '/footfall';
       if (allowedModules.includes('wedding_crm')) return '/wedding-crm/dashboard';
       if (allowedModules.includes('telecaller_desk')) return '/telecaller/desk';
@@ -304,10 +306,10 @@ export function getDefaultLandingRoute(
     return roleKeys.includes('greeter') ? '/greeter' : '/footfall';
   }
   if (norm.includes('hr')) {
-    return '/dashboard?view=hr';
+    return '/hr-dashboard';
   }
   if (norm.includes('manager')) {
-    return '/dashboard?view=manager';
+    return '/manager-dashboard';
   }
   if (norm.includes('analyst')) {
     return roleKeys.includes('wedding_crm') ? '/wedding-crm/reports' : '/mcheck-reports';

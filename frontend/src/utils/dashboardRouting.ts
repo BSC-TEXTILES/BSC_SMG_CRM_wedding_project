@@ -105,9 +105,9 @@ export function getDashboardRouteForRole(role?: string): string {
     case 'admin':
       return '/dashboard';
     case 'manager':
-      return '/dashboard?view=manager';
+      return '/manager-dashboard';
     case 'hr':
-      return '/dashboard?view=hr';
+      return '/hr-dashboard';
     case 'vm':
       return '/vm-checklist';
     case 'greeter':

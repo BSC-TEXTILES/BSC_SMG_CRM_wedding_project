@@ -20,6 +20,11 @@ export default defineConfig({
       '/uploads': {
         target: process.env.VITE_API_URL || 'http://localhost:5000',
         changeOrigin: true,
+      },
+      '/socket.io': {
+        target: process.env.VITE_API_URL || 'http://localhost:5000',
+        changeOrigin: true,
+        ws: true,
       }
     }
   },
@@ -32,9 +37,13 @@ export default defineConfig({
           'vendor-react': ['react', 'react-dom', 'react-router-dom'],
           'vendor-charts': ['recharts'],
           'vendor-icons': ['lucide-react'],
+          'vendor-xlsx': ['xlsx'],
         },
       },
     },
-    chunkSizeWarningLimit: 900,
+    chunkSizeWarningLimit: 600,
+  },
+  esbuild: {
+    drop: process.env.NODE_ENV === 'production' ? ['console', 'debugger'] : [],
   },
 });

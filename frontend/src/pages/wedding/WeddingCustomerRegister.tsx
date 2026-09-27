@@ -140,18 +140,44 @@ export default function WeddingCustomerRegister() {
     }
   };
 
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+
+  // Debounce search input to avoid flooding the API
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setCurrentPage(1);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
+
+  // Load locations once on mount
+  useEffect(() => {
+    API.getLocations()
+      .then(res => { if (res?.locations) setLocations(res.locations); })
+      .catch(() => {});
+  }, []);
+
+  // Compute effective location
+  const sess = Auth.get();
+  const isAdminRole = ['Admin', 'Super Admin', 'system administrator'].includes(sess?.role || '');
+  const isGlobal = isAdminRole && (!sess?.locationId || sess?.isGlobalAdmin === true);
+  const effectiveLoc = !isGlobal ? (sess?.locationId || 3) : (locationFilter !== '' ? locationFilter : undefined);
+
+  // Load telecallers when effective location changes
+  useEffect(() => {
+    API.getWeddingTelecallers(effectiveLoc)
+      .then(res => { if (res?.telecallers) setTelecallers(res.telecallers); })
+      .catch(() => {});
+  }, [effectiveLoc]);
+
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const sess = Auth.get();
-      const isAdminRole = ['Admin', 'Super Admin', 'system administrator'].includes(sess?.role || '');
-      const isGlobal = isAdminRole && (!sess?.locationId || sess?.isGlobalAdmin === true);
-      const effectiveLoc = !isGlobal ? (sess?.locationId || 3) : (locationFilter !== '' ? locationFilter : undefined);
-
       const params: any = {
         limit: pageSize,
         offset: (currentPage - 1) * pageSize,
-        search: searchQuery.trim() || undefined,
+        search: debouncedSearch.trim() || undefined,
         status: statusFilter || undefined,
         location_id: effectiveLoc,
         telecaller_id: telecallerFilter || undefined,
@@ -160,24 +186,18 @@ export default function WeddingCustomerRegister() {
         to_date: toDate || undefined
       };
 
-      const [custRes, locsRes, callersRes] = await Promise.all([
-        API.getWeddingCustomers(params),
-        API.getLocations().catch(() => ({ locations: [] })),
-        API.getWeddingTelecallers(effectiveLoc).catch(() => ({ telecallers: [] }))
-      ]);
+      const custRes = await API.getWeddingCustomers(params);
 
       if (custRes?.customers) {
         setCustomers(custRes.customers);
         setTotalCount(custRes.total || custRes.customers.length);
       }
-      if (locsRes?.locations) setLocations(locsRes.locations);
-      if (callersRes?.telecallers) setTelecallers(callersRes.telecallers);
     } catch (err: any) {
       showToast('Error loading customer register: ' + err.message, 'error');
     } finally {
       setLoading(false);
     }
-  }, [currentPage, pageSize, searchQuery, statusFilter, locationFilter, telecallerFilter, dateFilter, fromDate, toDate]);
+  }, [currentPage, pageSize, debouncedSearch, statusFilter, effectiveLoc, telecallerFilter, dateFilter, fromDate, toDate]);
 
   useEffect(() => {
     if (!Auth.check()) {

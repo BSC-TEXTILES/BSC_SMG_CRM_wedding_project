@@ -35,7 +35,43 @@ function getTransporter() {
   return transporter;
 }
 
-async function sendEmail({ to, subject, html, text }) {
+async function sendEmail({ to, subject, html, text, idempotencyKey, attachments, tags }) {
+  // 1. Resend Node.js SDK
+  if (process.env.RESEND_API_KEY) {
+    const { Resend } = require('resend');
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    const fromName = process.env.RESEND_FROM_NAME || 'BSC Textiles';
+    const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
+    const from = `"${fromName}" <${fromEmail}>`;
+
+    const payload = {
+      from,
+      to: Array.isArray(to) ? to : [to],
+      subject,
+      html,
+      text: text || (html ? html.replace(/<[^>]*>/g, '') : '')
+    };
+
+    if (idempotencyKey) payload.idempotencyKey = idempotencyKey;
+    if (attachments && Array.isArray(attachments) && attachments.length > 0) {
+      payload.attachments = attachments;
+    }
+    if (tags && Array.isArray(tags) && tags.length > 0) {
+      payload.tags = tags;
+    }
+
+    const { data, error } = await resend.emails.send(payload);
+
+    if (error) {
+      console.error('[Email] Resend error:', error);
+      return { success: false, error: error.message };
+    }
+
+    console.log('[Email] Resend email sent successfully:', data.id);
+    return { success: true, messageId: data.id, data };
+  }
+
+  // 2. SMTP Transporter Fallback
   const transport = getTransporter();
   if (!transport) {
     console.warn('[Email] Skipping send - SMTP not configured');
@@ -71,7 +107,7 @@ async function sendWeddingRegistrationConfirmation(registration) {
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
       <div style="background: linear-gradient(135deg, #1a365d 0%, #2c5282 100%); padding: 30px; text-align: center;">
-        <h1 style="color: #d4af37; margin: 0; font-size: 24px;">BSC EXCLUSIVE</h1>
+        <h1 style="color: #d4af37; margin: 0; font-size: 24px;">BSC Textiles Private</h1>
         <p style="color: #e2e8f0; margin: 5px 0 0; font-size: 12px; letter-spacing: 2px;">WEDDING REQUEST SUCCESSFULLY REGISTERED</p>
       </div>
       <div style="padding: 30px;">

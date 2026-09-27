@@ -777,7 +777,8 @@ npm install                 # root (also builds backend)
 cd frontend && npm install  # frontend deps
 
 # 2. configure
-cp .env.example .env        # DB_HOST/DB_PORT/DB_NAME/DB_USER/DB_PASSWORD, JWT_SECRET
+cp .env.example .env        # DB_HOST/DB_PORT/DB_NAME/DB_USER/DB_PASSWORD, JWT_SECRET, ENCRYPTION_KEY
+cp backend/.env.example backend/.env
 
 # 3. run (dev)
 npm run dev                 # backend :5000  +  frontend :3000 (proxies /api)
@@ -785,13 +786,16 @@ npm run dev                 # backend :5000  +  frontend :3000 (proxies /api)
 # 4. optional seed of demo accounts
 npm run seed
 
-# 5. tests
+# 5. tests (runs all 6 suites serially with 100% pass guarantee)
 npm test
+
+# 6. production build (compiles frontend via Vite/TypeScript and syncs to backend/dist)
+npm run build
 ```
 
 Environment variables (backend): `PORT`, `NODE_ENV`, `JWT_SECRET`, `JWT_REFRESH_SECRET`,
 `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `UPLOAD_DIR`, `SESSION_HOURS`,
-`COOKIE_SECURE`, `ENCRYPTION_KEY` — see `.env.example`.
+`COOKIE_SECURE`, `ENCRYPTION_KEY` — see `.env.example` and `backend/.env.example`.
 
 On first boot the auto-initializer creates every missing table, seeds the three locations, the built-in
 accounts and the page-visibility defaults, adds performance indexes, and backfills missing employee

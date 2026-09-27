@@ -21,22 +21,6 @@ const autoProvisionUser = async (appNo, options = {}) => {
 
 const getOffers = async (req, res) => {
   try {
-    // Bidirectional auto-synchronization between selection_offers and candidates for Joined status
-    try {
-      await db.query(`
-        UPDATE selection_offers so
-        JOIN candidates c ON so.app_no = c.app_no
-        SET so.status = 'Joined'
-        WHERE LOWER(TRIM(c.status)) = 'joined' AND LOWER(TRIM(so.status)) != 'joined'
-      `);
-      await db.query(`
-        UPDATE candidates c
-        JOIN selection_offers so ON c.app_no = so.app_no
-        SET c.status = 'Joined'
-        WHERE LOWER(TRIM(so.status)) = 'joined' AND LOWER(TRIM(c.status)) != 'joined'
-      `);
-    } catch (e) {}
-
     const { clause: locClause, params: locParams } = await getLocationFilter(req, 'so');
     const [rows] = await db.query(`
       SELECT 

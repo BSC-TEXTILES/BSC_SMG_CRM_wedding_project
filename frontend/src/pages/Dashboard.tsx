@@ -80,6 +80,15 @@ export default function DashboardPage() {
   const isHRDashboard = (isHRUser && !activeView) || activeView === 'hr';
   const isManagerDashboard = (isManagerUser && !activeView) || activeView === 'manager';
 
+  // Automatically direct HR and Manager users to their dedicated role dashboards
+  useEffect(() => {
+    if (isHRUser && !isAdminUser) {
+      navigate('/hr-dashboard', { replace: true });
+    } else if (isManagerUser && !isAdminUser) {
+      navigate('/manager-dashboard', { replace: true });
+    }
+  }, [isHRUser, isManagerUser, isAdminUser, navigate]);
+
   // Employees & Operational Stats
   const [employees, setEmployees] = useState<any[]>([]);
   const [candidates, setCandidates] = useState<any[]>([]);
@@ -317,7 +326,7 @@ export default function DashboardPage() {
       title={dashboardTitle}
       breadcrumbs={[{ label: 'Dashboard' }]}
     >
-      <PageContainer>
+      <PageContainer maxWidth="full">
         {/* =========================================================================
             SECTION 1: EXECUTIVE OVERVIEW HEADER (Clean Enterprise Style)
         ========================================================================== */}
@@ -326,13 +335,13 @@ export default function DashboardPage() {
             <div className="min-w-0">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#101C36] text-[#C9A45C] text-[10px] font-black uppercase tracking-widest mb-2 border border-[#C9A45C]/30">
                 <Building2 className="w-3.5 h-3.5" />
-                <span>BSC EXCLUSIVE · EXECUTIVE WORKSPACE</span>
+                <span>BSC Textiles · EXECUTIVE WORKSPACE</span>
               </div>
               <h1 className="text-xl sm:text-2xl font-black text-[#182033] tracking-tight leading-tight">
                 ADMIN DASHBOARD
               </h1>
               <p className="text-xs sm:text-sm font-semibold text-[#687080] mt-1">
-                Executive &amp; Workforce Operations — Live overview of BSC Exclusive across authorized locations.
+                Executive &amp; Workforce Operations — Live overview of BSC Textiles across authorized locations.
               </p>
             </div>
 
@@ -351,29 +360,6 @@ export default function DashboardPage() {
                 <span className="hidden sm:inline">Refresh</span>
               </button>
 
-              {/* View Switcher for Admins */}
-              {isAdminUser && (
-                <div className="flex items-center gap-1 bg-[#F6F4EF] p-1 rounded-xl border border-[#DFDDD7]">
-                  <button
-                    onClick={() => navigate('/dashboard?view=admin')}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${isAdminDashboard ? 'bg-[#101C36] text-white shadow-xs' : 'text-[#687080] hover:text-[#182033]'}`}
-                  >
-                    Admin
-                  </button>
-                  <button
-                    onClick={() => navigate('/dashboard?view=hr')}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${isHRDashboard ? 'bg-[#101C36] text-white shadow-xs' : 'text-[#687080] hover:text-[#182033]'}`}
-                  >
-                    HR
-                  </button>
-                  <button
-                    onClick={() => navigate('/dashboard?view=manager')}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${isManagerDashboard ? 'bg-[#101C36] text-white shadow-xs' : 'text-[#687080] hover:text-[#182033]'}`}
-                  >
-                    Manager
-                  </button>
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -472,7 +458,7 @@ export default function DashboardPage() {
                 <span>Store Operations Overview</span>
               </h2>
               <p className="text-xs font-semibold text-[#687080] mt-0.5">
-                Location-specific operational health across all BSC Exclusive branches
+                Location-specific operational health across all BSC Textiles branches
               </p>
             </div>
             <span className="text-[11px] font-bold text-[#687080] bg-[#F6F4EF] px-2.5 py-1 rounded-lg border border-[#DFDDD7]">
@@ -884,104 +870,115 @@ export default function DashboardPage() {
         {/* =========================================================================
             SECTION 7: ACTIVE STORE EMPLOYEES DIRECTORY TABLE
         ========================================================================== */}
-        <div className="bg-white rounded-2xl border border-[#DFDDD7] shadow-xs p-5 sm:p-6 space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#DFDDD7] pb-3">
-            <div>
+        <div className="bg-white rounded-2xl border border-[#DFDDD7] shadow-xs p-5 sm:p-6 mb-6 space-y-5">
+          {/* Section Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#DFDDD7] pb-4">
+            <div className="min-w-0">
               <h2 className="font-black text-sm uppercase tracking-wider text-[#182033] flex items-center gap-2">
                 <UserCheck className="w-4 h-4 text-[#C9A45C]" />
                 <span>Active Store Staff Directory</span>
               </h2>
-              <p className="text-xs font-semibold text-[#687080] mt-0.5">
-                Showing registered employees across {currentLocation === 'ALL' ? 'All Locations' : `BSC Exclusive ${activeLocation.name}`}
+              <p className="text-xs font-semibold text-[#687080] mt-1">
+                Showing registered employees across {currentLocation === 'ALL' ? 'All Locations' : `BSC Textiles ${activeLocation.name}`}
               </p>
             </div>
 
-            <div className="flex items-center gap-3 w-full sm:w-auto">
-              <div className="relative flex-1 sm:flex-initial">
+            <div className="flex items-center gap-3 w-full sm:w-auto flex-wrap">
+              <div className="relative flex-1 min-w-[200px]">
                 <Search className="w-4 h-4 text-[#687080] absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   placeholder="Search staff by name, ID, section..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="input-modern pl-9 pr-4 text-xs py-2 w-full sm:w-64"
+                  className="input-modern pl-9 pr-4 text-xs py-2 w-full"
                 />
               </div>
               <button
                 type="button"
                 onClick={() => navigate('/employees')}
-                className="px-3 py-2 rounded-xl bg-[#101C36] text-white hover:bg-[#07101F] text-xs font-bold transition-all shadow-xs whitespace-nowrap cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-[#101C36] text-white hover:bg-[#07101F] text-xs font-bold transition-all shadow-xs whitespace-nowrap cursor-pointer flex-shrink-0"
               >
                 + Employee Directory
               </button>
             </div>
           </div>
 
-          {/* Desktop/Tablet Table */}
-          <div className="hidden sm:block overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="border-b border-[#DFDDD7] text-[10.5px] font-black uppercase text-[#687080] bg-[#F6F4EF]/60">
-                  <th className="py-3 px-4">Emp ID / App No</th>
-                  <th className="py-3 px-4">Employee Name</th>
-                  <th className="py-3 px-4">Role &amp; Designation</th>
-                  <th className="py-3 px-4">Department</th>
-                  <th className="py-3 px-4">Store Location</th>
-                  <th className="py-3 px-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#DFDDD7]/60">
-                {paginatedEmployees.length > 0 ? (
-                  paginatedEmployees.map((emp) => (
-                    <tr key={emp.id || emp.employeeId || emp.appNo} className="hover:bg-[#F6F4EF]/40 transition-colors">
-                      <td className="py-3 px-4 font-mono font-bold text-[#182033]">
-                        {emp.employeeId || emp.appNo || 'EMP-—'}
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="font-extrabold text-[#182033]">{emp.name || emp.fullName}</div>
-                        <div className="text-[11px] text-[#687080]">{emp.phone || emp.mobile || '—'}</div>
-                      </td>
-                      <td className="py-3 px-4 font-semibold text-[#182033]">
-                        {emp.designation || emp.role || 'Staff'}
-                      </td>
-                      <td className="py-3 px-4 font-semibold text-[#687080]">
-                        {emp.department || 'Store Operations'}
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#101C36]/5 text-[#101C36] border border-[#101C36]/10">
-                          <MapPin className="w-3 h-3 text-[#C9A45C]" />
-                          <span>{emp.locationName || (emp.locationId === 1 ? 'Belagavi' : emp.locationId === 2 ? 'Davanagere' : emp.locationId === 3 ? 'Shivamogga' : 'Assigned Store')}</span>
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        <button
-                          type="button"
-                          onClick={() => setSelectedEmployee(emp)}
-                          className="px-2.5 py-1 text-xs font-bold rounded-lg border border-[#DFDDD7] bg-white hover:bg-[#101C36] hover:text-white transition-colors cursor-pointer"
-                        >
-                          View Profile
-                        </button>
+{/* Desktop/Tablet Table */}
+          <div className="overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[720px] text-left text-xs border-collapse">
+                <colgroup>
+                  <col style={{ width: '120px', minWidth: '100px' }} />
+                  <col style={{ width: '180px', minWidth: '150px' }} />
+                  <col style={{ width: '180px', minWidth: '150px' }} />
+                  <col style={{ width: '140px', minWidth: '120px' }} />
+                  <col style={{ width: '160px', minWidth: '130px' }} />
+                  <col style={{ width: '130px', minWidth: '110px' }} />
+                </colgroup>
+                <thead>
+                  <tr className="border-b border-[#DFDDD7] text-[10.5px] font-black uppercase text-[#687080] bg-[#F6F4EF]">
+                    <th className="py-3 px-4">Emp ID / App No</th>
+                    <th className="py-3 px-4">Employee Name</th>
+                    <th className="py-3 px-4">Role & Designation</th>
+                    <th className="py-3 px-4">Department</th>
+                    <th className="py-3 px-4">Store Location</th>
+                    <th className="py-3 px-4 text-right pr-4">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#DFDDD7]/60">
+                  {paginatedEmployees.length > 0 ? (
+                    paginatedEmployees.map((emp) => (
+                      <tr key={emp.id || emp.employeeId || emp.appNo} className="hover:bg-[#F6F4EF]/40 transition-colors">
+                        <td className="py-3 px-4 font-mono font-bold text-[#182033] whitespace-nowrap">
+                          {emp.employeeId || emp.appNo || 'EMP-—'}
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="font-extrabold text-[#182033] truncate">{emp.name || emp.fullName}</div>
+                          <div className="text-[11px] text-[#687080] truncate">{emp.phone || emp.mobile || '—'}</div>
+                        </td>
+                        <td className="py-3 px-4 font-semibold text-[#182033] truncate">
+                          {emp.designation || emp.role || 'Staff'}
+                        </td>
+                        <td className="py-3 px-4 font-semibold text-[#687080] truncate">
+                          {emp.department || 'Store Operations'}
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#101C36]/5 text-[#101C36] border border-[#101C36]/10 whitespace-nowrap">
+                            <MapPin className="w-3 h-3 text-[#C9A45C] flex-shrink-0" />
+                            <span className="truncate">{emp.locationName || (emp.locationId === 1 ? 'Belagavi' : emp.locationId === 2 ? 'Davanagere' : emp.locationId === 3 ? 'Shivamogga' : 'Assigned Store')}</span>
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-right pr-4">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedEmployee(emp)}
+                            className="px-3 py-1.5 text-xs font-bold rounded-lg border border-[#DFDDD7] bg-white hover:bg-[#101C36] hover:text-white hover:border-[#101C36] transition-colors cursor-pointer whitespace-nowrap"
+                          >
+                            View Profile
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={6} className="py-10 text-center text-xs text-[#687080] font-semibold">
+                        {loading ? 'Loading staff records...' : 'No matching employees found in directory.'}
                       </td>
                     </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={6} className="py-8 text-center text-xs text-[#687080] font-semibold">
-                      {loading ? 'Loading staff records...' : 'No matching employees found in directory.'}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
 
           {/* Mobile Card List */}
           <div className="sm:hidden space-y-3">
             {paginatedEmployees.map((emp) => (
-              <div key={emp.id || emp.employeeId || emp.appNo} className="p-3.5 rounded-xl border border-[#DFDDD7] bg-[#F6F4EF] space-y-2">
+              <div key={emp.id || emp.employeeId || emp.appNo} className="p-4 rounded-xl border border-[#DFDDD7] bg-white space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="font-mono text-xs font-bold text-[#182033]">{emp.employeeId || emp.appNo}</span>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white text-[#101C36] border border-[#DFDDD7]">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#101C36]/5 text-[#101C36] border border-[#101C36]/10">
                     {emp.locationName || (emp.locationId === 1 ? 'Belagavi' : emp.locationId === 2 ? 'Davanagere' : 'Shivamogga')}
                   </span>
                 </div>
@@ -994,7 +991,7 @@ export default function DashboardPage() {
                   <button
                     type="button"
                     onClick={() => setSelectedEmployee(emp)}
-                    className="text-xs font-bold text-[#C9A45C] hover:underline"
+                    className="text-xs font-bold text-[#C9A45C] hover:underline whitespace-nowrap"
                   >
                     View Profile
                   </button>
@@ -1005,25 +1002,25 @@ export default function DashboardPage() {
 
           {/* Pagination Controls */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between pt-3 border-t border-[#DFDDD7] text-xs">
-              <span className="text-[#687080] font-semibold">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-[#DFDDD7] text-xs">
+              <span className="text-[#687080] font-semibold text-center sm:text-left">
                 Showing {Math.min(filteredEmployees.length, (currentPage - 1) * pageSize + 1)} to {Math.min(filteredEmployees.length, currentPage * pageSize)} of {filteredEmployees.length} staff
               </span>
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 justify-center sm:justify-end">
                 <button
                   type="button"
                   onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
-                  className="px-2.5 py-1 rounded-lg border border-[#DFDDD7] bg-white text-[#182033] font-bold disabled:opacity-40 cursor-pointer"
+                  className="px-3 py-1.5 rounded-lg border border-[#DFDDD7] bg-white text-[#182033] font-bold disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer whitespace-nowrap"
                 >
                   Prev
                 </button>
-                <span className="font-bold text-[#182033] px-1">{currentPage} / {totalPages}</span>
+                <span className="font-bold text-[#182033] px-2">{currentPage} / {totalPages}</span>
                 <button
                   type="button"
                   onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                   disabled={currentPage === totalPages}
-                  className="px-2.5 py-1 rounded-lg border border-[#DFDDD7] bg-white text-[#182033] font-bold disabled:opacity-40 cursor-pointer"
+                  className="px-3 py-1.5 rounded-lg border border-[#DFDDD7] bg-white text-[#182033] font-bold disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer whitespace-nowrap"
                 >
                   Next
                 </button>

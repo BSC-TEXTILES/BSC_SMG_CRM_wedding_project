@@ -57,6 +57,10 @@ if (hostPort !== undefined && hostPort !== null && String(hostPort).trim().lengt
   process.env.PORT = hostPort;
 }
 
+// ── Validate Startup Secrets (Fails fast in production on unsafe config) ──────
+const { validateStartupSecrets } = require('./src/security/secretsValidator');
+validateStartupSecrets();
+
 // ── Load modules ──────────────────────────────────────────────────────────────
 const pool = require('./src/config/db');
 const { autoInitializeDatabase } = require('./src/config/dbInitializer');
@@ -67,6 +71,14 @@ const { errorRes } = require('./src/utils/response');
 const { authenticate, authorize } = require('./src/middleware/auth');
 const { setCsrfCookie, csrfProtection } = require('./src/middleware/csrf');
 const feedbackQrController = require('./src/controllers/feedbackQrController');
+
+// ── Application Security & Firewall Layer ─────────────────────────────────────
+const wafMiddleware = require('./src/security/wafMiddleware');
+const { helmetSecurityHeaders, extendedSecurityHeaders } = require('./src/security/headersConfig');
+const { corsMiddleware } = require('./src/security/corsConfig');
+const { inputSanitizer } = require('./src/security/inputSanitizer');
+const { validateContentType } = require('./src/middleware/validateContentType');
+const { globalApiRateLimiter } = require('./src/security/rateLimiters');
 
 // ── Express App ───────────────────────────────────────────────────────────────
 const app = express();
@@ -103,37 +115,36 @@ if (typeof(PhusionPassenger) !== 'undefined' && (!rawPort || String(rawPort).toL
 
 console.log(`[Boot] PORT=${PORT} (${isSocketPort ? 'socket/passenger' : 'network'}) | DB=${process.env.DB_NAME} | ENV=${process.env.NODE_ENV}`);
 
-app.set('trust proxy', 1);
 const isProduction = process.env.NODE_ENV === 'production';
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      imgSrc: ["'self'", "data:", "blob:"],
-      connectSrc: ["'self'", "ws:", "wss:", "http:", "https:"],
-      fontSrc: ["'self'", "data:", "https://fonts.gstatic.com"],
-      objectSrc: ["'none'"],
-      mediaSrc: ["'self'"],
-      frameSrc: ["'none'"],
-      upgradeInsecureRequests: isProduction ? [] : null,
-    },
-  },
-  crossOriginEmbedderPolicy: false,
-  crossOriginResourcePolicy: { policy: "cross-origin" },
-  hsts: isProduction ? {
-    maxAge: 31536000,
-    includeSubDomains: true,
-    preload: true
-  } : false
-}));
-// Gzip every response (SPA bundle + JSON APIs) — typical 60-70% transfer reduction
+
+// Trust first proxy (nginx/Caddy) for correct client IP, secure cookie detection, and rate limiting
+// In production behind reverse proxy, '1' trusts the first hop (the reverse proxy)
+app.set('trust proxy', isProduction ? 1 : false);
+
+// ── Security Headers Layer ───────────────────────────────────────────────────
+app.use(helmetSecurityHeaders);
+app.use(extendedSecurityHeaders);
+
+// ── Compression & Gzip ───────────────────────────────────────────────────────
 app.use(compression({ filter: (req, res) => (req.headers['x-no-compression'] ? false : compression.filter(req, res)) }));
-app.use(cors({ origin: '*', credentials: true }));
+
+// ── Hardened CORS Layer (Restricts to verified origins) ───────────────────────
+app.use(corsMiddleware);
+
+// ── Cookies & Body Parsers with Strict Size Limits ───────────────────────────
 app.use(cookieParser()); // populates req.cookies for the httpOnly session cookie
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: '2mb' })); // Strict 2MB cap for JSON payloads
+app.use(express.urlencoded({ extended: true, limit: '2mb' }));
+app.use(validateContentType);
+
+// ── Web Application Firewall (WAF) Layer ─────────────────────────────────────
+// Inspects incoming requests BEFORE sensitive route execution
+app.use(wafMiddleware);
+
+// ── Input Sanitization Layer ─────────────────────────────────────────────────
+app.use(inputSanitizer);
+
+// ── CSRF Protection Cookie ───────────────────────────────────────────────────
 app.use(setCsrfCookie);
 
 // ── Static Uploads ────────────────────────────────────────────────────────────
@@ -215,33 +226,8 @@ app.get(['/uploads/*', '/candidate-resumes/*', '/candidate-photos/*', '/employee
   next();
 });
 
-// ── Brute-Force Protection on Credential Endpoints ───────────────────────────
-// 50 attempts / 10 min / IP is generous for humans (office NAT with several
-// staff logging in) yet hostile to credential stuffing.
-const { buildResilientLimiter } = require('./src/middleware/rateLimiterFactory');
-
-const authLimiter = buildResilientLimiter({
-  windowMs: 10 * 60 * 1000,
-  max: 50,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { success: false, message: 'Too many login attempts. Please try again in a few minutes.', errors: [] }
-});
-
-const globalLimiter = buildResilientLimiter({
-  windowMs: 15 * 60 * 1000,
-  max: 5000, // Increased to 5000: avoid blocking shared office NATs
-  standardHeaders: true,
-  legacyHeaders: false,
-  skip: (req) => {
-    const url = req.originalUrl || req.url || '';
-    return url.includes('/security/shield-status') || url.includes('/health') || url.includes('/db-status');
-  },
-  message: { success: false, message: 'Too many requests from this IP, please try again later.', errors: [] }
-});
-
-app.use(['/api/auth/login', '/api/auth/verify'], authLimiter);
-app.use('/api', globalLimiter);
+// ── Boundary Rate Limiter on API Endpoints ──────────────────────────────────
+app.use('/api', globalApiRateLimiter);
 
 // ── Health / Diagnostics (Always accessible, zero secrets leaked) ─────────────
 app.get(['/health', '/api/health'], async (req, res) => {
@@ -267,14 +253,14 @@ app.get(['/health', '/api/health'], async (req, res) => {
   });
 });
 
-app.get(['/db-status', '/api/db-status'], async (req, res) => {
+app.get(['/db-status', '/api/db-status'], authenticate, authorize('Admin', 'Super Admin'), async (req, res) => {
   try {
     const conn = await pool.getConnection();
     const [rows] = await conn.query('SHOW TABLES');
     conn.release();
     res.json({ connected: true, tables: rows.length });
   } catch (err) {
-    res.status(500).json({ connected: false, error: err.message });
+    res.status(500).json({ connected: false, error: 'Database service unavailable' });
   }
 });
 
@@ -480,13 +466,7 @@ app.get('/api/feedback-qr/scan/:qrCodeId', feedbackQrController.trackQrScan);
 app.post('/api/feedback-qr/scan/:qrCodeId', feedbackQrController.trackQrScan);
 
 // Apply CSRF protection to all other API routes (auth routes exempted in middleware)
-app.use('/api', function(req, res, next) {
-  console.log('[DEBUG] API request:', req.method, req.path);
-  next();
-}, csrfProtection, function(req, res, next) {
-  console.log('[DEBUG] After CSRF:', req.method, req.path);
-  next();
-}, apiRoutes);
+app.use('/api', csrfProtection, apiRoutes);
 
 // ── Frontend SPA ──────────────────────────────────────────────────────────────
 let distDir = path.join(APP_ROOT, 'dist');
@@ -590,15 +570,18 @@ if (fs.existsSync(distDir)) {
 // ── Error Handlers ────────────────────────────────────────────────────────────
 app.use('/api/*', (req, res) => errorRes(res, `Not found: ${req.originalUrl}`, [], 404));
 app.use((err, req, res, next) => {
-  console.error('[Error]', err.message);
-  
-  if (err.code === 'LIMIT_FILE_SIZE') {
-    return errorRes(res, 'File exceeds the maximum allowed size of 800 KB.', [], 400);
+  console.error(`[Error ${req.method} ${req.path}]`, err.message);
+
+  if (err.message && err.message.includes('CORS Policy')) {
+    return errorRes(res, 'Cross-origin request blocked by security policy.', [], 403);
+  }
+  if (err.type === 'entity.too.large' || err.code === 'LIMIT_FILE_SIZE') {
+    return errorRes(res, 'Request payload exceeds maximum allowed size.', [], 413);
   }
   if (err.code === 'CSRF_ERROR') {
     return errorRes(res, 'Invalid CSRF token.', [], 403);
   }
-  
+
   const msg = process.env.NODE_ENV === 'production' ? 'Internal Server Error' : err.message;
   errorRes(res, msg, [], err.status || 500);
 });
@@ -609,7 +592,10 @@ autoInitializeDatabase(pool)
     console.log('[Boot] DB init complete');
     const { initBloomFilter } = require('./src/config/redisClient');
     await initBloomFilter('wedding_customers_bf', 0.01, 100000).catch(() => {});
-    // Start workflow timeout processor after DB is ready
+    
+    // Initialize API Key security schedulers (15m reauth checks, 1h expiry cleanup, 24h digest)
+    const { initApiKeyJobs } = require('./src/jobs/apiKeyJobs');
+    initApiKeyJobs();
   })
   .catch(err => console.error('[Boot] DB init error:', err.message));
 
@@ -623,10 +609,20 @@ server.headersTimeout = 66000;
 
 if (Server) {
   try {
+    // Use same allowed origins as REST API CORS
+    const { isOriginAllowed } = require('./src/security/corsConfig');
     const io = new Server(server, {
       cors: {
-        origin: '*',
-        methods: ['GET', 'POST', 'PUT', 'DELETE']
+        origin: (origin, callback) => {
+          if (isOriginAllowed(origin)) {
+            callback(null, true);
+          } else {
+            console.warn(`[Socket.IO CORS] Blocked unauthorized origin: ${origin}`);
+            callback(new Error('CORS Policy: Access from origin not permitted.'));
+          }
+        },
+        methods: ['GET', 'POST', 'PUT', 'DELETE'],
+        credentials: true
       }
     });
 
@@ -689,4 +685,5 @@ server.on('error', (err) => {
   process.exit(1);
 });
 
+app.server = server;
 module.exports = app;

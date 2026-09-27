@@ -282,7 +282,7 @@ def make_doc():
     doc = BaseDocTemplate(OUT_PATH, pagesize=A4,
                           leftMargin=MARGIN, rightMargin=MARGIN,
                           topMargin=MARGIN + 0.5 * cm, bottomMargin=MARGIN + 0.4 * cm,
-                          title='BSC EXCLUSIVE - Complete User Manual',
+                          title='BSC Textiles - Complete User Manual',
                           author='BSC Textiles',
                           subject='Wedding CRM, Feedback & QR, Store Operations, Talent - Full User Manual')
     frame = Frame(doc.leftMargin, doc.bottomMargin, doc.width, doc.height, id='body')
@@ -293,7 +293,7 @@ def make_doc():
         canvas.saveState()
         canvas.setFont('TNR', 8)
         canvas.setFillColor(MUTED)
-        canvas.drawString(MARGIN, 1.1 * cm, 'BSC EXCLUSIVE - Complete User Manual (v2.0)')
+        canvas.drawString(MARGIN, 1.1 * cm, 'BSC Textiles - Complete User Manual (v2.0)')
         canvas.drawRightString(PAGE_W - MARGIN, 1.1 * cm, f'Page {canvas.getPageNumber()}')
         canvas.setStrokeColor(BORDER)
         canvas.line(MARGIN, 1.5 * cm, PAGE_W - MARGIN, 1.5 * cm)
@@ -332,7 +332,7 @@ def draw_cover(canvas, _doc):
         pass
     canvas.setFillColor(colors.white)
     canvas.setFont('TNR-Bold', 30)
-    canvas.drawCentredString(PAGE_W / 2, PAGE_H - 14.2 * cm, 'BSC EXCLUSIVE')
+    canvas.drawCentredString(PAGE_W / 2, PAGE_H - 14.2 * cm, 'BSC Textiles')
     canvas.setFont('TNR', 16)
     canvas.drawCentredString(PAGE_W / 2, PAGE_H - 15.6 * cm, 'Complete User Manual')
     canvas.setFillColor(GOLD)

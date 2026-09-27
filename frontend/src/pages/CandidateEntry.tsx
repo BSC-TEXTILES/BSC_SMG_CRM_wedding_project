@@ -288,7 +288,7 @@ export default function CandidateEntryPage() {
             <div>
               <h1 className="font-extrabold text-base sm:text-lg leading-tight tracking-tight">BSC Candidate Registration</h1>
               <div className="text-[10px] text-accent font-bold uppercase tracking-widest mt-0.5">
-                BSC EXCLUSIVE · {selectedLocationId 
+                BSC Textiles · {selectedLocationId 
                   ? (locCtx.allLocations.find(l => String(l.id) === selectedLocationId)?.name || 'STORE').toUpperCase() 
                   : (session?.locationName || (locCtx.activeLocation.id !== 'ALL' ? locCtx.activeLocation.name : 'ALL LOCATIONS')).toUpperCase()}
               </div>

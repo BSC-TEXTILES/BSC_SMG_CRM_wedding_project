@@ -51,7 +51,7 @@ export default function EmployeeProfileModal({ employee, onClose, onUpdated }: E
         desig: employee.desig || employee.designation || '',
         department: employee.department || '',
         section: employee.section || '',
-        branch: employee.branch || 'BSC EXCLUSIVE DAVANAGERE',
+        branch: employee.branch || 'BSC Textiles Davanagere',
         reportingManager: employee.reportingManager || employee.reporting_manager || '',
         status: employee.status || 'Joined',
         salaryBase: salObj.base,
@@ -346,7 +346,7 @@ export default function EmployeeProfileModal({ employee, onClose, onUpdated }: E
                       <div><span className="text-primary block text-[10.5px] font-bold">Floor Section</span><span className="font-extrabold text-amber-700 text-sm">{section}</span></div>
                       <div><span className="text-primary block text-[10.5px] font-bold">Designation Role</span><span className="font-extrabold text-primary">{desig}</span></div>
                       <div><span className="text-primary block text-[10.5px] font-bold">Reporting Manager</span><span className="font-extrabold text-primary">{currentEmp.reportingManager || currentEmp.reporting_manager || 'Store Manager'}</span></div>
-                      <div><span className="text-primary block text-[10.5px] font-bold">Store Branch</span><span className="font-extrabold text-primary">{currentEmp.branch || 'BSC EXCLUSIVE DAVANAGERE'}</span></div>
+                      <div><span className="text-primary block text-[10.5px] font-bold">Store Branch</span><span className="font-extrabold text-primary">{currentEmp.branch || 'BSC Textiles Davanagere'}</span></div>
                       <div><span className="text-primary block text-[10.5px] font-bold">Shift Schedule</span><span className="font-extrabold text-emerald-800">General Shift (10:00 AM – 09:00 PM)</span></div>
                     </div>
                   </div>
@@ -601,7 +601,7 @@ export default function EmployeeProfileModal({ employee, onClose, onUpdated }: E
         {/* Modal Footer */}
         <div className="p-4 bg-background border-t border-accent-soft flex items-center justify-between">
           <div className="text-[11px] text-primary font-bold">
-            BSC EXCLUSIVE HRMS • AUTHORIZED EMPLOYEE REGISTER
+            BSC Textiles HRMS • AUTHORIZED EMPLOYEE REGISTER
           </div>
           
           <div className="flex items-center gap-2">

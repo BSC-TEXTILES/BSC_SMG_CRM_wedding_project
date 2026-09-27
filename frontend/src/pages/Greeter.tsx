@@ -164,7 +164,7 @@ export default function Greeter() {
           </div>
           <div>
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400/10 border border-amber-400/30 text-amber-300 text-[10px] font-black uppercase tracking-widest mb-2">
-              <Store className="w-3 h-3" /> BSC EXCLUSIVE · {activeStore.name.toUpperCase()}
+              <Store className="w-3 h-3" /> BSC Textiles · {activeStore.name.toUpperCase()}
             </div>
             <h2 className="text-2xl font-black text-white tracking-tight">Greeter Kiosk Gate</h2>
             <p className="text-white/90 text-xs font-semibold mt-1">Enter 4-digit Greeter PIN to launch entrance clicker tablet</p>
@@ -225,7 +225,7 @@ export default function Greeter() {
       <div className="text-center pt-2 relative z-10 space-y-2">
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-black/10 backdrop-blur-md text-amber-300 text-xs font-black uppercase tracking-widest border border-amber-300/30 shadow-md">
           <Store className="w-4 h-4 text-amber-300" />
-          <span>BSC EXCLUSIVE • ENTRANCE GREETER</span>
+          <span>BSC Textiles • ENTRANCE GREETER</span>
         </div>
         <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white drop-shadow-sm">Main Entrance Kiosk</h1>
         
@@ -332,7 +332,7 @@ export default function Greeter() {
 
       {/* Footer Info */}
       <div className="text-center text-[10.5px] text-white/50 font-bold pb-1 relative z-10">
-        <span>BSC EXCLUSIVE · {activeStore.name.toUpperCase()} • ENTERPRISE KIOSK DISPATCH</span>
+        <span>BSC Textiles · {activeStore.name.toUpperCase()} • ENTERPRISE KIOSK DISPATCH</span>
       </div>
     </div>
   );

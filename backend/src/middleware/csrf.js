@@ -45,7 +45,10 @@ const csrfProtection = (req, res, next) => {
     path.includes('/wedding-registration/public/') ||
     originalUrl.includes('/wedding-registration/public/') ||
     path.includes('/public/') ||
-    originalUrl.includes('/public/')
+    originalUrl.includes('/public/') ||
+    path.startsWith('/v1/connect') ||
+    originalUrl.startsWith('/api/v1/connect') ||
+    (req.headers.authorization && (req.headers.authorization.startsWith('Bearer LIVE_') || req.headers.authorization.startsWith('Bearer TEST_')))
   ) {
     return next();
   }
@@ -66,7 +69,9 @@ const setCsrfCookie = (req, res, next) => {
   if (!req.cookies['_csrf']) {
     const token = generateCsrfToken();
     res.cookie('_csrf', token, {
-      httpOnly: false, // Must be readable by JS to send in header
+      httpOnly: false, // Must be readable by JS to send in x-csrf-token header (double-submit cookie pattern)
+      // The CSRF token itself is not secret - it's a random value validated by the server
+      // The authentication JWT is in a separate HttpOnly cookie
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'Lax',
       path: '/'

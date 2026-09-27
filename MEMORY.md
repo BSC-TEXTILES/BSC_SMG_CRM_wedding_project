@@ -1,7 +1,7 @@
 # BSC MEMORY FILE
 
 > **Purpose**: Living memory for the BSC Enterprise Operations Platform (Wedding Customer
-> Follow-up CRM + HRMS + Store Operations) for BSC EXCLUSIVE — Belagavi, Davanagere, Shivamogga.
+> Follow-up CRM + HRMS + Store Operations) for BSC Textiles — Belagavi, Davanagere, Shivamogga.
 > **Rule**: READ this file before every change. UPDATE it after every change. Never modify
 > existing modules — only add isolated, documented additions.
 
@@ -17,7 +17,7 @@
 | Database | MySQL 8 / MariaDB. Self-healing initializer: `backend/src/config/dbInitializer.js`. |
 | Auth | JWT + httpOnly cookie, bcrypt, captcha on login, branch-level location isolation (`backend/src/middleware/auth.js`). |
 | Design system | Burgundy `#611427` (primary / "navy" token), hover `#781D33`; Champagne Gold `#B88D42` (accent), hover `#9E742E`, soft `#EFE6DA`; Ivory `#F9F6F0` (background); White surfaces; text `#21181A` / muted `#6B5B5E`; border `#E8DED2`. Status: green `#1F7A54`, amber `#B87B19`, red `#B82837`. Fonts: Inter + Plus Jakarta Sans. Tokens live in `frontend/src/index.css` and `frontend/tailwind.config.ts`. |
-| Brand | **BSC EXCLUSIVE** · Multi-location system. Logo: `frontend/public/logo.png` (also repo-root `Main_logo.png`). Master recovery email domain: `bsctextiles.com`. |
+| Brand | **BSC Textiles** · Multi-location system. Logo: `frontend/public/logo.png` (also repo-root `Main_logo.png`). Master recovery email domain: `bsctextiles.com`. |
 
 ### Key backend routes (DO NOT MODIFY)
 - Mounted in `backend/index.js`: `/api/v1` → `src/routes/v1.js`, `/api` → `src/routes/api.js`.

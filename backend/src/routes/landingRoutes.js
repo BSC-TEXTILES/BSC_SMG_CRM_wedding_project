@@ -9,11 +9,11 @@
 
 const express = require('express');
 const router = express.Router();
-const rateLimit = require('express-rate-limit');
+const { buildResilientLimiter } = require('../middleware/rateLimiterFactory');
 const landingController = require('../controllers/landingController');
 
 // General landing API: 120 requests / 5 min / IP (page loads + events).
-const generalLimiter = rateLimit({
+const generalLimiter = buildResilientLimiter({
   windowMs: 5 * 60 * 1000,
   max: 120,
   standardHeaders: true,
@@ -22,10 +22,10 @@ const generalLimiter = rateLimit({
   message: { success: false, message: 'Too many requests, please slow down.', errors: [] }
 });
 
-// Enquiry submission: 10 per 15 min / IP — generous for humans, hostile to bots.
-const enquiryLimiter = rateLimit({
+// Enquiry submission: 35 per 15 min / IP — generous for humans, hostile to bots.
+const enquiryLimiter = buildResilientLimiter({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: 35,
   standardHeaders: true,
   legacyHeaders: false,
   validate: false,

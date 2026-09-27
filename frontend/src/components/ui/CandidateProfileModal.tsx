@@ -36,7 +36,7 @@ export default function CandidateProfileModal({ candidate, isOpen, onClose, onUp
         salary: candidate.salary || candidate.salaryOffered || candidate.offeredSalary || '',
         incentive: candidate.incentive || candidate.incentiveOffered || '',
         offeredDoj: candidate.offeredDoj || candidate.estDoj || candidate.doj || '',
-        branch: candidate.branch || 'BSC EXCLUSIVE DAVANAGERE',
+        branch: candidate.branch || 'BSC Textiles Davanagere',
         gender: candidate.gender || 'MALE',
         dob: candidate.dob ? candidate.dob.split('T')[0] : '',
         qualification: candidate.qualification || '',
@@ -268,7 +268,7 @@ export default function CandidateProfileModal({ candidate, isOpen, onClose, onUp
                       <div><span className="text-primary block text-[10.5px] font-bold">Designation Role</span><span className="font-extrabold text-primary text-sm">{desig}</span></div>
                       <div><span className="text-primary block text-[10.5px] font-bold">Offered / Expected Salary</span><span className="font-extrabold text-emerald-800 text-sm font-mono">{currentCand.salary || currentCand.expectedSalary ? `₹${currentCand.salary || currentCand.expectedSalary}` : '—'}</span></div>
                       <div><span className="text-primary block text-[10.5px] font-bold">Estimated DOJ</span><span className="font-extrabold text-primary">{currentCand.offeredDoj || currentCand.estDoj || currentCand.doj || '—'}</span></div>
-                      <div><span className="text-primary block text-[10.5px] font-bold">Store Branch</span><span className="font-extrabold text-primary">{currentCand.branch || 'BSC EXCLUSIVE DAVANAGERE'}</span></div>
+                      <div><span className="text-primary block text-[10.5px] font-bold">Store Branch</span><span className="font-extrabold text-primary">{currentCand.branch || 'BSC Textiles Davanagere'}</span></div>
                       <div><span className="text-primary block text-[10.5px] font-bold">Referrer Name</span><span className="font-bold text-primary">{currentCand.referrer ? `${currentCand.referrer} (${currentCand.referrerEmpNo || ''})` : '—'}</span></div>
                       <div><span className="text-primary block text-[10.5px] font-bold">Application Date</span><span className="font-bold text-primary">{currentCand.date || '—'}</span></div>
                     </div>
@@ -592,7 +592,7 @@ export default function CandidateProfileModal({ candidate, isOpen, onClose, onUp
         {/* Modal Footer */}
         <div className="p-4 bg-background border-t border-accent-soft flex items-center justify-between">
           <div className="text-[11px] text-primary font-bold">
-            BSC EXCLUSIVE RECRUITMENT CRM
+            BSC Textiles RECRUITMENT CRM
           </div>
           
           <div className="flex items-center gap-2">

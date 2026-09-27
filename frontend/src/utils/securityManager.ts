@@ -4,14 +4,17 @@
  * When a user manually changes the URL bar to navigate to a page their role
  * is NOT authorized for, this module:
  *   1. Logs the violation to the backend audit_logs table
- *   2. Clears ALL client state (localStorage, sessionStorage, cookies)
- *   3. Redirects to /login?security=unauthorized
+ *   2. Clears ALL client state (localStorage, sessionStorage)
+ *   3. Redirects to /login?security=unauthorized (backend clears HttpOnly cookie)
  *
  * This is the nuclear-option logout — it cannot be bypassed by React state
  * or navigation because it uses window.location.replace() directly.
+ *
+ * NOTE: JWT token is stored in HttpOnly cookie (not accessible from JS).
+ * All fetch calls use credentials: 'include' to send cookie automatically.
  */
 
-import { Auth } from '../services/api';
+import { Auth, getCsrfToken, apiFetch } from '../services/api';
 
 // ── Role → Allowed URL patterns ────────────────────────────────────────
 // Derived from App.tsx route definitions + ROLE_NAV_MAP in rbac.ts.
@@ -162,10 +165,25 @@ class SecurityManagerService {
    * Check if the given pathname is allowed for the user's role.
    * Returns true if the route is UNAUTHORIZED (i.e., is a violation).
    */
-  isUrlManipulation(_role: string | undefined, _pathname: string): boolean {
-    // Route authorization is authoritatively and safely handled by RouteGuard with in-page Access Denied views.
-    // Navigation never triggers destructive force-logouts.
-    return false;
+  isUrlManipulation(role: string | undefined, pathname: string): boolean {
+    if (!role) return true; // No role = unauthorized
+
+    const normalizedRole = this.normalizeRole(role);
+
+    // Admin roles have full access
+    if (ADMIN_ROLES.includes(normalizedRole)) return false;
+
+    // Public routes are always allowed
+    if (PUBLIC_ROUTES.some(pattern => pattern.test(pathname))) return false;
+
+    const allowedPatterns = ROLE_ROUTE_MAP[normalizedRole];
+    if (!allowedPatterns || allowedPatterns.length === 0) {
+      // Unknown role - deny access
+      return true;
+    }
+
+    // Check if pathname matches any allowed pattern
+    return !allowedPatterns.some(pattern => pattern.test(pathname));
   }
 
   /**
@@ -198,11 +216,12 @@ class SecurityManagerService {
   /**
    * Log a URL manipulation violation attempt to the backend.
    * Fire-and-forget — never blocks the logout flow.
+   * Uses apiFetch which automatically includes HttpOnly cookie and CSRF token.
    */
-  logViolation(userId: string | number | undefined, username: string | undefined, role: string | undefined, attemptedPath: string): void {
+  async logViolation(userId: string | number | undefined, username: string | undefined, role: string | undefined, attemptedPath: string): Promise<void> {
     try {
       const session = Auth.get();
-      if (!session?.token) return;
+      if (!session) return;
 
       const payload = {
         event: 'URL_MANIPULATION',
@@ -217,16 +236,11 @@ class SecurityManagerService {
         }
       };
 
-      // Use fetch directly with keepalive so the request survives the page redirect
-      fetch('/api/security/log-event', {
+      // Use apiFetch which handles cookie auth and CSRF automatically
+      await apiFetch('/security/log-event', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.token}`,
-          'x-auth-token': session.token
-        },
         body: JSON.stringify(payload),
-        keepalive: true
+        // keepalive not needed with apiFetch, but we use credentials: 'include' via apiFetch
       }).catch(() => {}); // Silently fail — logging must never block logout
     } catch {
       // Silently fail
@@ -236,8 +250,9 @@ class SecurityManagerService {
   /**
    * Nuclear logout — obliterates ALL client state and redirects to login.
    * This cannot be intercepted by React state or navigation.
+   * Backend will clear the HttpOnly cookie via /api/auth/logout
    */
-  forceLogout(reason: string, attemptedPath: string): void {
+  async forceLogout(reason: string, attemptedPath: string): Promise<void> {
     // Prevent multiple simultaneous logouts
     if (this.isLoggingOut) return;
     this.isLoggingOut = true;
@@ -247,22 +262,15 @@ class SecurityManagerService {
     // 1. Log the violation attempt (fire-and-forget)
     this.logViolation(session?.id, session?.username, session?.role, attemptedPath);
 
-    // 2. Track logout on server (fire-and-forget)
+    // 2. Track logout on server (fire-and-forget) - backend clears HttpOnly cookie
     try {
-      if (session?.token) {
-        fetch('/api/auth/logout', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.token}`,
-            'x-auth-token': session.token
-          },
-          keepalive: true
-        }).catch(() => {});
-      }
+      await apiFetch('/auth/logout', {
+        method: 'POST',
+        // credentials: 'include' is handled by apiFetch automatically
+      }).catch(() => {});
     } catch {}
 
-    // 3. Clear ALL localStorage
+    // 3. Clear ALL localStorage (except we keep nothing sensitive now)
     try {
       localStorage.clear();
     } catch {}
@@ -272,11 +280,15 @@ class SecurityManagerService {
       sessionStorage.clear();
     } catch {}
 
-    // 5. Clear ALL cookies
+    // 5. NOTE: HttpOnly cookies cannot be cleared from JavaScript
+    // They are cleared by the backend via /api/auth/logout
+    // We only clear non-HttpOnly cookies here (like _csrf)
     try {
       const cookies = document.cookie.split(';');
       for (const cookie of cookies) {
         const name = cookie.split('=')[0].trim();
+        // Only clear non-HttpOnly cookies (JavaScript accessible)
+        // HttpOnly cookies (like 'token') are cleared by backend
         document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
         document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname};`;
       }

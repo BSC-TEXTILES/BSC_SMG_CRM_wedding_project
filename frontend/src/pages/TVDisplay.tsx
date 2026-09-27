@@ -32,12 +32,12 @@ export default function TVDisplay() {
   const [currentTime, setCurrentTime] = useState<string>('');
   const [soundMuted, setSoundMuted] = useState<boolean>(false);
   const [liveMessage, setLiveMessage] = useState<string>(
-    `✨ Welcome to BSC EXCLUSIVE · ${activeStore.name.toUpperCase()} · Premium Sarees, Menswear, Women & Kids Wear Collection · Realtime Operations Active ✨`
+    `✨ Welcome to BSC Textiles · ${activeStore.name.toUpperCase()} · Premium Sarees, Menswear, Women & Kids Wear Collection · Realtime Operations Active ✨`
   );
 
   useEffect(() => {
     setLiveMessage(
-      `✨ Welcome to BSC EXCLUSIVE · ${activeStore.name.toUpperCase()} · Premium Sarees, Menswear, Women & Kids Wear Collection · Realtime Operations Active ✨`
+      `✨ Welcome to BSC Textiles · ${activeStore.name.toUpperCase()} · Premium Sarees, Menswear, Women & Kids Wear Collection · Realtime Operations Active ✨`
     );
   }, [activeStore.name]);
 
@@ -118,7 +118,7 @@ export default function TVDisplay() {
         fetchStats();
         playChime();
         if (data && data.message) {
-          setLiveMessage(`🚨 ${data.message} · BSC EXCLUSIVE OPERATIONS DISPATCH`);
+          setLiveMessage(`🚨 ${data.message} · BSC Textiles OPERATIONS DISPATCH`);
         }
       }
     });
@@ -159,7 +159,7 @@ export default function TVDisplay() {
           </div>
           <div>
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent-soft text-primary text-[10px] font-black uppercase tracking-widest mb-2">
-              <Sparkles className="w-3 h-3 text-accent" /> BSC EXCLUSIVE · {activeStore.name.toUpperCase()}
+              <Sparkles className="w-3 h-3 text-accent" /> BSC Textiles · {activeStore.name.toUpperCase()}
             </div>
             <h2 className="text-2xl font-black text-primary">Store TV Display Gate</h2>
             <p className="text-gray-600 text-xs font-semibold mt-1">Enter TV PIN code to launch store monitor mode</p>
@@ -220,7 +220,7 @@ export default function TVDisplay() {
           </div>
           <div>
             <h1 className="text-3xl font-black tracking-tight text-white drop-shadow-md">
-              BSC EXCLUSIVE · {activeStore.name.toUpperCase()}
+              BSC Textiles · {activeStore.name.toUpperCase()}
             </h1>
             <div className="text-xs font-extrabold text-accent uppercase tracking-widest mt-0.5 flex items-center gap-2">
               <Radio className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />

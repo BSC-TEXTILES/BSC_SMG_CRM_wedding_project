@@ -68,8 +68,20 @@ class NotificationEngine {
 
   constructor() {
     this.loadSettings();
-    this.initSocket();
-    this.initAuthListener();
+    if (typeof window !== 'undefined') {
+      const pathname = window.location.pathname;
+      const isPublicPath = pathname === '/' || pathname.startsWith('/madt') || pathname.startsWith('/feedback') || pathname === '/login' || pathname === '/apply';
+      if (!isPublicPath) {
+        this.initSocket();
+      }
+      this.initAuthListener();
+    }
+  }
+
+  public ensureSocket() {
+    if (!this.initialized && typeof window !== 'undefined') {
+      this.initSocket();
+    }
   }
 
   private initAuthListener() {
@@ -87,6 +99,7 @@ class NotificationEngine {
 
   private initSocket() {
     if (this.initialized) return;
+    this.initialized = true;
     
     // @ts-ignore
     const apiBase = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '') : undefined;
@@ -417,6 +430,7 @@ class NotificationEngine {
   }
 
   public onSecurityEvent(listener: (event: any) => void): () => void {
+    this.ensureSocket();
     this.securityEventListeners.add(listener);
     return () => {
       this.securityEventListeners.delete(listener);
@@ -424,6 +438,7 @@ class NotificationEngine {
   }
 
   public onSecurityEventsCleared(listener: () => void): () => void {
+    this.ensureSocket();
     this.securityClearedListeners.add(listener);
     return () => {
       this.securityClearedListeners.delete(listener);
@@ -431,6 +446,7 @@ class NotificationEngine {
   }
 
   public subscribe(listener: (notifications: SystemNotification[]) => void) {
+    this.ensureSocket();
     this.listeners.push(listener);
     listener([...this.notifications]);
     return () => {
@@ -444,6 +460,7 @@ class NotificationEngine {
   }
 
   public subscribeDMs(callback: (dms: DirectMessage[]) => void) {
+    this.ensureSocket();
     this.dmListeners.push(callback);
     callback([...this.directMessages]);
     return () => {

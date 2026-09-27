@@ -21,16 +21,16 @@ null
 backend/null
 .env
 .env*
+.env.*
 !.env.example
 !.env.production.example
+!backend/.env.example
+!backend/.env.production.example
 !frontend/.env.example
-!frontend/.env
-!frontend/.env.production
 
 backend/src/config/.runtime-secrets.json
 server-boot.log
 __pycache__/
 *.pyc 
-b a c k e n d / m y s q l - d a t a / 
- 
- 
+backend/mysql-data/
+*.zip

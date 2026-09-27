@@ -1743,7 +1743,7 @@ export default function FeedbackQRManagement() {
                   ) : (
                     <div className="w-64 h-64 flex items-center justify-center text-gray-400">QR Code not generated</div>
                   )}
-                  <div className="mt-4 font-black text-xs text-primary uppercase tracking-wider">BSC EXCLUSIVE</div>
+                  <div className="mt-4 font-black text-xs text-primary uppercase tracking-wider">BSC Textiles</div>
                 </div>
 
                 <div className="pt-4 border-t space-y-3">

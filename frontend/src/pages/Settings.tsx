@@ -5,15 +5,16 @@ import Topbar from '../components/Topbar';
 import ToastContainer, { showToast } from '../components/Toast';
 import { API, Auth, UserSession, apiFetch } from '../services/api';
 import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../utils/sidebarState';
-import { Settings, Users, Eye, EyeOff, CircleHelp, Tag, Trash2, Shield, ShieldAlert } from 'lucide-react';
+import { Settings, Users, Eye, EyeOff, CircleHelp, Tag, Trash2, Shield, ShieldAlert, Key } from 'lucide-react';
 import DevToolsMonitoringPanel from '../components/DevToolsMonitoringPanel';
+import ApiKeyManagementPanel from '../components/ApiKeyManagementPanel';
 
 export default function SettingsPage() {
   const navigate = useNavigate();
   const [session, setSession] = useState<UserSession | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [collapsed, setCollapsed] = useState<boolean>(getSidebarCollapsed());
-  const [activeTab, setActiveTab] = useState<'users' | 'pins' | 'security' | 'visibility' | 'questions' | 'roles'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'pins' | 'security' | 'apikeys' | 'visibility' | 'questions' | 'roles'>('users');
 
   useEffect(() => {
     return subscribeSidebarCollapsed(setCollapsed);
@@ -112,9 +113,13 @@ export default function SettingsPage() {
     }
   };
 
-  const handleDeleteQuestion = async (id: number) => {
+  const handleDeleteQuestion = async (q: { desig?: string; round?: string | number; text?: string }) => {
+    if (!q?.desig || !q?.round || !q?.text) {
+      showToast('Question is missing its identification data', 'error');
+      return;
+    }
     try {
-      await API.call('deleteInterviewQuestion', { id });
+      await API.call('deleteInterviewQuestion', { desig: q.desig, round: q.round, text: q.text });
       showToast('Question deleted!', 'success');
       loadAll();
     } catch (e: any) {
@@ -168,7 +173,7 @@ export default function SettingsPage() {
       // Save each PIN via the new secure kiosk-pins API
       const locationId = session?.locationId || null;
       for (const [pinType, pin] of Object.entries(payload)) {
-        await apiFetch('/api/kiosk-pins', {
+        await apiFetch('/kiosk-pins', {
           method: 'POST',
           body: JSON.stringify({ pinType, pin, locationId })
         });
@@ -188,6 +193,7 @@ export default function SettingsPage() {
     { key: 'users', label: 'User Accounts & Access', icon: Users },
     { key: 'pins', label: 'Store Kiosk & Cash PINs', icon: Shield },
     { key: 'security', label: 'Security & DevTools Shield', icon: ShieldAlert },
+    { key: 'apikeys', label: 'API Keys & Connect Governance', icon: Key },
     { key: 'visibility', label: 'Page Visibility Matrix', icon: Eye },
     { key: 'questions', label: 'Interview Question Bank', icon: CircleHelp },
     { key: 'roles', label: 'Designations Master', icon: Tag }
@@ -453,13 +459,13 @@ export default function SettingsPage() {
               <div className="card-glass p-5 space-y-4">
                 <h3 className="font-extrabold text-primary text-sm">Active Evaluation Questions</h3>
                 <div className="space-y-2 text-xs">
-                  {questions.map((q) => (
-                    <div key={q.id} className="p-3.5 rounded-xl border border-accent-soft bg-background flex items-center justify-between gap-3">
+                  {questions.map((q, idx) => (
+                    <div key={`${q.desig}-${q.round}-${q.qId ?? idx}`} className="p-3.5 rounded-xl border border-accent-soft bg-background flex items-center justify-between gap-3">
                       <div>
-                        <div className="font-extrabold text-primary">{q.question}</div>
-                        <div className="text-[10px] text-primary font-semibold">{q.designation} · {q.round} · Max Score: {q.max_score || 10}</div>
+                        <div className="font-extrabold text-primary">{q.text}</div>
+                        <div className="text-[10px] text-primary font-semibold">{q.desig} · {q.round} · Max Score: {q.max ?? 10}</div>
                       </div>
-                      <button onClick={() => handleDeleteQuestion(q.id)} className="p-1.5 rounded-lg border border-rose-200 text-rose-600 font-bold hover:bg-rose-50">
+                      <button onClick={() => handleDeleteQuestion(q)} title="Delete question" className="p-1.5 rounded-lg border border-rose-200 text-rose-600 font-bold hover:bg-rose-50">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
@@ -503,6 +509,13 @@ export default function SettingsPage() {
           {activeTab === 'security' && (
             <div className="space-y-6 animate-fade-in">
               <DevToolsMonitoringPanel session={session} />
+            </div>
+          )}
+
+          {/* TAB 6: API KEYS & CONNECT GOVERNANCE */}
+          {activeTab === 'apikeys' && (
+            <div className="space-y-6 animate-fade-in">
+              <ApiKeyManagementPanel session={session} />
             </div>
           )}
         </main>

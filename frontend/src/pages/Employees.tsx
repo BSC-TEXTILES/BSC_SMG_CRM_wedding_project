@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../components/layouts/DashboardLayout';
 import PageContainer from '../components/ui/PageContainer';
 import ToastContainer, { showToast } from '../components/Toast';
-import { API, Auth, UserSession } from '../services/api';
+import { API, Auth, UserSession, apiFetch } from '../services/api';
 import MetricCard from '../components/ui/MetricCard';
 import StatusBadge from '../components/ui/StatusBadge';
 import {
@@ -259,7 +259,7 @@ export default function EmployeesPage() {
       desig: emp.desig || emp.designation || '',
       department: emp.department || '',
       section: emp.section || '',
-      branch: emp.branch || 'BSC EXCLUSIVE DAVANAGERE',
+      branch: emp.branch || 'BSC Textiles Davanagere',
       reportingManager: emp.reportingManager || emp.reporting_manager || '',
       status: emp.status || 'Joined',
       salary: parsedSal.rawBase || (parsedSal.base ? String(parsedSal.base) : ''),
@@ -378,25 +378,18 @@ export default function EmployeesPage() {
           return;
         }
 
-        const res = await fetch('/api/employees/bulk', {
+        const json: any = await apiFetch('/employees/bulk', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session?.token}`,
-            'x-auth-token': session?.token || ''
-          },
           body: JSON.stringify({ employees: data })
         });
-        
-        const json = await res.json();
         if (json.success) {
           showToast(`Successfully imported ${json.addedCount} employees`, 'success');
           loadEmployees();
         } else {
-          showToast(`Failed: ${json.error}`, 'error');
+          showToast(`Failed: ${json.error || json.message || 'Import failed'}`, 'error');
         }
       } catch (err: any) {
-        showToast('Error reading Excel: ' + err.message, 'error');
+        showToast('Import failed: ' + err.message, 'error');
       } finally {
         setSaving(false);
       }

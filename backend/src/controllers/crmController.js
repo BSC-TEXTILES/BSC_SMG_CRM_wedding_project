@@ -4,6 +4,149 @@ const { getLocationFilter, injectLocationId, getEffectiveLocationId, parseTarget
 const realtimeService = require('../services/realtimeService');
 const { getCache, setCache } = require('../config/redisClient');
 
+// Singleton promise to ensure CRM schema tables exist once at boot without blocking request pipelines
+let crmTablesChecked = false;
+let crmInitPromise = null;
+async function ensureCrmTables() {
+  if (crmTablesChecked) return;
+  if (!crmInitPromise) {
+    crmInitPromise = (async () => {
+      try {
+        await db.query(`
+          CREATE TABLE IF NOT EXISTS Sections (
+            id VARCHAR(64) PRIMARY KEY,
+            name VARCHAR(150) NOT NULL UNIQUE,
+            sectionType VARCHAR(50) DEFAULT 'retail',
+            manager VARCHAR(150) NULL,
+            isActive TINYINT(1) DEFAULT 1
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        `).catch(() => {});
+        await db.query(`
+          CREATE TABLE IF NOT EXISTS FeedbackQuestions (
+            id VARCHAR(64) PRIMARY KEY,
+            question TEXT NOT NULL,
+            options TEXT NOT NULL,
+            position INT DEFAULT 1,
+            isActive TINYINT(1) DEFAULT 1
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        `).catch(() => {});
+        await db.query(`
+          CREATE TABLE IF NOT EXISTS Feedback (
+            id VARCHAR(64) PRIMARY KEY,
+            date VARCHAR(32),
+            source VARCHAR(32) DEFAULT 'qr',
+            area VARCHAR(150),
+            yourVoice TEXT,
+            custName VARCHAR(255),
+            custMobile VARCHAR(32),
+            custDob VARCHAR(32),
+            q0 VARCHAR(255), q0_other VARCHAR(255),
+            q1 VARCHAR(255), q1_other VARCHAR(255),
+            q2 VARCHAR(255), q2_other VARCHAR(255),
+            q3 VARCHAR(255), q3_other VARCHAR(255),
+            q4 VARCHAR(255), q4_other VARCHAR(255),
+            q5 VARCHAR(255), q5_other VARCHAR(255),
+            q6 VARCHAR(255), q6_other VARCHAR(255),
+            q7 VARCHAR(255), q7_other VARCHAR(255),
+            status VARCHAR(32) DEFAULT 'new',
+            actionTaken TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            deleted_at TIMESTAMP NULL,
+            entryDate VARCHAR(32),
+            entryTime VARCHAR(32),
+            customerName VARCHAR(255),
+            mobile VARCHAR(32),
+            email VARCHAR(150),
+            dob VARCHAR(32),
+            sectionId VARCHAR(64),
+            answers TEXT,
+            voice TEXT,
+            isNegative TINYINT(1) DEFAULT 0,
+            location_id INT NULL,
+            locationCode VARCHAR(10),
+            locationName VARCHAR(100),
+            createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        `).catch(() => {});
+        await db.query(`
+          CREATE TABLE IF NOT EXISTS CallQueue (
+            id VARCHAR(64) PRIMARY KEY,
+            feedbackId VARCHAR(64),
+            entryDate VARCHAR(16),
+            customerName VARCHAR(255),
+            mobile VARCHAR(32),
+            status VARCHAR(32) DEFAULT 'new',
+            notes TEXT,
+            attempts INT DEFAULT 0,
+            followUpDate VARCHAR(32),
+            createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        `).catch(() => {});
+        await db.query(`
+          CREATE TABLE IF NOT EXISTS CallLogs (
+            id VARCHAR(64) PRIMARY KEY,
+            callQueueId VARCHAR(64),
+            feedbackId VARCHAR(64),
+            callStatus VARCHAR(32),
+            callOutcome VARCHAR(64),
+            executive VARCHAR(255) DEFAULT 'Store Executive',
+            agentName VARCHAR(255),
+            issueCategory VARCHAR(64),
+            callDate VARCHAR(32),
+            notes TEXT,
+            followUpDate VARCHAR(64),
+            createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        `).catch(() => {});
+        await db.query(`
+          CREATE TABLE IF NOT EXISTS Diverts (
+            id VARCHAR(64) PRIMARY KEY,
+            entryDate VARCHAR(16),
+            sectionId VARCHAR(64),
+            productWanted VARCHAR(255),
+            quantity INT DEFAULT 1,
+            priceRange VARCHAR(64),
+            reasonCode VARCHAR(64) DEFAULT 'OUT_OF_STOCK',
+            customerName VARCHAR(255),
+            customerMobile VARCHAR(32),
+            status VARCHAR(32) DEFAULT 'open',
+            locationId INT DEFAULT 2,
+            createdBy VARCHAR(255),
+            createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        `).catch(() => {});
+        await db.query(`
+          CREATE TABLE IF NOT EXISTS VmFloors (
+            id VARCHAR(64) PRIMARY KEY,
+            name VARCHAR(100) NOT NULL UNIQUE,
+            description TEXT NULL,
+            sections TEXT NOT NULL,
+            createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        `).catch(() => {});
+        await db.query(`
+          CREATE TABLE IF NOT EXISTS chat_messages (
+            id VARCHAR(64) PRIMARY KEY,
+            user_id VARCHAR(64) NOT NULL,
+            message_text TEXT NOT NULL,
+            sender ENUM('user', 'system') DEFAULT 'user',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_chat_user (user_id),
+            INDEX idx_chat_time (created_at)
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        `).catch(() => {});
+        crmTablesChecked = true;
+      } catch (e) {
+        console.warn('[CRM Tables Init Notice]', e.message);
+      }
+    })();
+  }
+  return crmInitPromise;
+}
+
 // Helper to generate UUIDs
 function getUUID() {
   try {
@@ -53,7 +196,7 @@ exports.getSettings = async (req, res) => {
     });
     // Fallback defaults
     const result = {
-      companyName: settingsMap['company_name'] || 'BSC EXCLUSIVE DAVANAGERE',
+      companyName: settingsMap['company_name'] || 'BSC Textiles Private Davanagere',
       logoUrl: settingsMap['logo_url'] || '/logo.png',
       openHour: parseInt(settingsMap['open_hour'] || '10', 10),
       closeHour: parseInt(settingsMap['close_hour'] || '22', 10),
@@ -85,7 +228,7 @@ exports.updateSettings = async (req, res) => {
         if (!/^\d{4,8}$/.test(pin)) {
           return res.status(400).json({ success: false, error: `${field} must be 4-8 digits` });
         }
-        kv[key] = await bcrypt.hash(pin, 10);
+        kv[key] = await bcrypt.hash(pin, 12);
       }
     }
     if (companyName !== undefined) kv['company_name'] = String(companyName).trim();
@@ -117,7 +260,7 @@ exports.verifyPin = async (req, res) => {
       // First use: no PIN configured yet. The documented factory default
       // '1234' is accepted once and immediately persisted as a bcrypt hash.
       if (supplied === '1234') {
-        const hash = await bcrypt.hash('1234', 10);
+        const hash = await bcrypt.hash('1234', 12);
         await db.query(
           `INSERT INTO Setting (settingKey, settingValue, category) VALUES (?, ?, 'General')
            ON DUPLICATE KEY UPDATE settingValue = VALUES(settingValue)`,
@@ -268,7 +411,7 @@ exports.getFeedbackQuestions = async (req, res) => {
       { id: 'q2', question: '2. Did you find the product you were looking for?', options: ['Yes, exactly', 'Yes, with assistance', 'Partially', 'No'], position: 2 },
       { id: 'q3', question: '3. How would you rate the quality & variety of our collection?', options: ['Excellent', 'Good', 'Average', 'Poor'], position: 3 },
       { id: 'q4', question: '4. How would you rate the behavior and helpfulness of our staff?', options: ['Extremely helpful', 'Helpful', 'Average', 'Poor'], position: 4 },
-      { id: 'q5', question: '5. How likely are you to recommend BSC Exclusive to your friends and family?', options: ['Definitely recommend', 'Probably recommend', 'Neutral', 'Not recommend'], position: 5 }
+      { id: 'q5', question: '5. How likely are you to recommend BSC Textiles to your friends and family?', options: ['Definitely recommend', 'Probably recommend', 'Neutral', 'Not recommend'], position: 5 }
     ];
 
     await db.query(`
@@ -499,18 +642,14 @@ exports.submitFeedback = async (req, res) => {
       }
 
       if (!targetLocId || !ID_TO_CODE_MAP[targetLocId]) {
-        targetLocId = injectLocationId(req) || (req.user && req.user.locationId) || null;
-        if (targetLocId && ID_TO_CODE_MAP[targetLocId]) {
-          targetLocCode = ID_TO_CODE_MAP[targetLocId];
-        }
+        targetLocId = injectLocationId(req) || (req.user && req.user.locationId) || 1;
+        targetLocCode = ID_TO_CODE_MAP[targetLocId] || 'BEL';
       }
     }
 
     if (!targetLocId || !ID_TO_CODE_MAP[targetLocId]) {
-      return res.status(400).json({
-        success: false,
-        error: 'Store location could not be determined. Please submit feedback using a valid store QR code or select your store branch.'
-      });
+      targetLocId = 1;
+      targetLocCode = 'BEL';
     }
 
     const targetLocName = LOCATION_NAME_MAP[targetLocCode] || (targetLocId === 1 ? 'Belagavi' : targetLocId === 3 ? 'Shivamogga' : 'Davanagere');
@@ -1084,10 +1223,7 @@ exports.getDiverts = async (req, res) => {
 exports.createDivert = async (req, res) => {
   try {
     const { sectionId, productWanted, quantity, priceRange, reasonCode, customerName, customerMobile: rawMobile, createdBy } = req.body;
-    const locationId = injectLocationId(req) || (req.user && req.user.locationId) || null;
-    if (!locationId) {
-      return res.status(400).json({ success: false, error: 'Store location could not be determined.' });
-    }
+    const locationId = injectLocationId(req) || (req.user && req.user.locationId) || 1;
     const id = getUUID();
     const entryDate = new Date().toISOString().split('T')[0];
     
@@ -1176,10 +1312,7 @@ exports.getCashSettlement = async (req, res) => {
 exports.saveCashSettlement = async (req, res) => {
   try {
     const { entryDate, saleAmount, billsCount, cashTotal, cardTotal, upiTotal, submittedBy, counters } = req.body;
-    const locationId = injectLocationId(req) || (req.user && req.user.locationId) || null;
-    if (!locationId) {
-      return res.status(400).json({ success: false, error: 'Store location could not be determined.' });
-    }
+    const locationId = injectLocationId(req) || (req.user && req.user.locationId) || 1;
     const [existing] = await db.query('SELECT id FROM CashSettlements WHERE entryDate = ? AND location_id = ?', [entryDate, locationId]);
     const settlementId = existing.length > 0 ? existing[0].id : getUUID();
 
@@ -1269,10 +1402,7 @@ exports.getVmSubmissions = async (req, res) => {
 exports.submitVm = async (req, res) => {
   try {
     const { shift, floor, section, scorePercent, submittedBy, entries } = req.body;
-    const locationId = injectLocationId(req) || (req.user && req.user.locationId) || null;
-    if (!locationId) {
-      return res.status(400).json({ success: false, error: 'Store location could not be determined.' });
-    }
+    const locationId = injectLocationId(req) || (req.user && req.user.locationId) || 1;
     const submissionId = getUUID();
     const entryDate = new Date().toISOString().split('T')[0];
 
@@ -1654,22 +1784,17 @@ exports.clearAllFeedbacks = async (req, res) => {
   }
 };
 
-// ── Chat System (Gemini AI) ─────────────────────────────────────────────────
-let GoogleGenerativeAI = null;
-try {
-  const genAiPkg = require('@google/generative-ai');
-  GoogleGenerativeAI = genAiPkg.GoogleGenerativeAI || genAiPkg.default || genAiPkg;
-} catch (e) {
-  console.log('[Chat] Optional module @google/generative-ai not found. AI Chatbot running in fallback mode.');
-}
+// ── Chat System (Gemini AI Service Integration) ──────────────────────────────
+const geminiService = require('../services/geminiService');
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
-const GEMINI_MODEL = 'gemini-2.0-flash'; // using gemini-2.0-flash as it was previously defined
-
-const SYSTEM_PROMPT = `You are BSC Enterprise AI Assistant — a helpful internal assistant for BSC Textiles staff.
-You help with: employee info, attendance, candidates, wedding CRM, feedback, reports, store operations.
-Be concise, professional, and friendly. Keep responses under 200 words unless more detail is needed.
-If you don't know something specific about the company data, say so honestly and suggest the user check the relevant module.`;
+exports.getGeminiStatus = async (req, res) => {
+  try {
+    const health = await geminiService.checkHealth();
+    return res.json({ success: true, data: health });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+};
 
 exports.getChatMessages = async (req, res) => {
   try {
@@ -1687,9 +1812,33 @@ exports.getChatMessages = async (req, res) => {
 exports.sendChatMessage = async (req, res) => {
   try {
     const userId = req.user?.id || req.user?.userId || 'unknown';
-    const { message } = req.body;
-    if (!message || !message.trim()) {
+    const { message } = req.body || {};
+    const cleanMessage = String(message || '').trim();
+    if (!cleanMessage) {
       return res.status(400).json({ success: false, message: 'Message is required' });
+    }
+
+    // 1. Prompt Length Limit (max 4,000 characters to prevent resource exhaustion)
+    if (cleanMessage.length > 4000) {
+      return res.status(400).json({
+        success: false,
+        message: 'Message exceeds maximum permitted length of 4,000 characters.'
+      });
+    }
+
+    // 2. Prompt Injection Guardrail (protect system instructions & API credentials)
+    const PROMPT_INJECTION_REGEX = /(?:ignore\s+(?:all\s+)?previous\s+instructions|reveal\s+(?:system\s+prompt|api\s*key)|show\s+me\s+your\s+api\s*key|print\s+(?:env|process\.env))/i;
+    if (PROMPT_INJECTION_REGEX.test(cleanMessage)) {
+      return res.json({
+        success: true,
+        userMessage: { id: 'blocked_prompt', message_text: cleanMessage, sender: 'user', created_at: new Date().toISOString() },
+        systemMessage: {
+          id: 'blocked_resp',
+          message_text: 'I am the BSC Textiles AI Assistant. I am designed to assist with store operations, customer wedding shopping inquiries, and enterprise workflows. I cannot reveal internal system instructions or credentials.',
+          sender: 'system',
+          created_at: new Date().toISOString()
+        }
+      });
     }
 
     const crypto = require('crypto');
@@ -1711,7 +1860,7 @@ exports.sendChatMessage = async (req, res) => {
     // Save user message
     await db.query(
       'INSERT INTO chat_messages (id, user_id, message_text, sender) VALUES (?, ?, ?, ?)',
-      [msgId, userId, message.trim(), 'user']
+      [msgId, userId, cleanMessage, 'user']
     );
 
     // Get recent conversation context (last 10 messages)
@@ -1724,12 +1873,18 @@ exports.sendChatMessage = async (req, res) => {
       contextMessages = (recent || []).reverse();
     } catch (e) {}
 
-    // Call Gemini AI
-    let systemResponse;
-    if (GEMINI_API_KEY) {
-      systemResponse = await callGemini(message.trim(), contextMessages);
-    } else {
-      systemResponse = 'Gemini API key is not configured. Please contact the administrator to set up the AI assistant.';
+    // Call Gemini AI via geminiService
+    let systemResponse = '';
+    let isError = false;
+    let errorMessage = '';
+
+    try {
+      systemResponse = await geminiService.generateResponse(cleanMessage, contextMessages);
+    } catch (err) {
+      console.error('[Gemini AI Controller Error]', err.message);
+      isError = true;
+      errorMessage = err.message || 'AI service is temporarily unavailable.';
+      systemResponse = `AI Assistant Notice: ${errorMessage}`;
     }
 
     const sysMsgId = crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(16).toString('hex');
@@ -1739,13 +1894,14 @@ exports.sendChatMessage = async (req, res) => {
     );
 
     return res.json({
-      success: true,
+      success: !isError,
+      error: isError ? errorMessage : null,
       userMessage: { id: msgId, message_text: message.trim(), sender: 'user', created_at: new Date().toISOString() },
       systemMessage: { id: sysMsgId, message_text: systemResponse, sender: 'system', created_at: new Date().toISOString() }
     });
   } catch (err) {
     console.error('[sendChatMessage Error]', err);
-    return res.status(500).json({ success: false, message: 'Failed to send message' });
+    return res.status(500).json({ success: false, message: err.message || 'Failed to send message' });
   }
 };
 
@@ -1759,47 +1915,3 @@ exports.clearChatMessages = async (req, res) => {
   }
 };
 
-async function callGemini(userMessage, contextMessages) {
-  if (!GoogleGenerativeAI) {
-    return 'The AI Assistant module is temporarily initializing. Please try again in a few moments.';
-  }
-  try {
-    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
-
-    // Build conversation history for Gemini
-    const history = [];
-
-    // System instruction is supplied as the first user message
-    history.push({ role: 'user', parts: [{ text: SYSTEM_PROMPT }] });
-    history.push({ role: 'model', parts: [{ text: 'Understood. I am the BSC Enterprise AI Assistant. I will help staff with their queries about employees, attendance, candidates, wedding CRM, feedback, reports, and store operations. How can I assist you?' }] });
-
-    // Add recent conversation context
-    for (const msg of contextMessages) {
-      if (msg.sender === 'user') {
-        history.push({ role: 'user', parts: [{ text: msg.message_text }] });
-      } else {
-        history.push({ role: 'model', parts: [{ text: msg.message_text }] });
-      }
-    }
-
-    const chat = model.startChat({
-      history,
-      generationConfig: {
-        maxOutputTokens: 1024,
-      },
-    });
-
-    const result = await chat.sendMessage(userMessage);
-    const response = await result.response;
-    const text = response.text();
-    
-    if (text) {
-      return text.trim();
-    }
-    return 'I received your message but could not generate a response. Please try again.';
-  } catch (err) {
-    console.error('[Gemini Call Error]', err.message);
-    return 'I apologize, but there was an error connecting to the AI service. Please try again later.';
-  }
-}

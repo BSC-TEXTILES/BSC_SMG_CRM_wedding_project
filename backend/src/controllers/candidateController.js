@@ -11,7 +11,11 @@ class CandidateController {
     try {
       // Pass authoritative locationId to service layer
       const locationId = getEffectiveLocationId(req);
-      const result = await candidateService.getCandidates(req.query, locationId);
+      // Accept filters from either the query string or the JSON body: the
+      // legacy `/legacy` dispatcher forwards params in req.body while the REST
+      // route forwards them in req.query.
+      const bodyFilters = (req.body && typeof req.body === 'object' && !Array.isArray(req.body)) ? req.body : {};
+      const result = await candidateService.getCandidates({ ...bodyFilters, ...req.query }, locationId);
       return res.json(result);
     } catch (err) {
       console.error('getCandidates ERROR:', err);
@@ -32,7 +36,7 @@ class CandidateController {
         locationId = req.user.locationId;
       }
       if (!locationId) {
-        return errorRes(res, 'Store location could not be determined. Please specify a valid store location.', ['locationId missing'], 400);
+        locationId = 1;
       }
       const locCodeMap = { 1: 'BEL', 2: 'DAV', 3: 'SHI' };
       const locationCode = (req.user && req.user.locationCode) ? req.user.locationCode : (locCodeMap[locationId] || 'BEL');

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#F3EEE7">
+  <title>Register for wedding shopping — MADT</title>
+  <meta name="description" content="Register a wedding shopping list with MADT in Hubballi. Trousseau cloth, the groom’s suit, jewellery, the wedding party and home linen.">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/fonts.css">
+  <link rel="stylesheet" href="/css/site.css">
+  <script>try{if(sessionStorage.getItem("madt_booted"))document.documentElement.classList.add("booted");}catch(e){}</script>
+</head>
+<body data-page="wedding">
+  <a class="skip" href="#main">Skip to content</a>
+  <div id="loader" role="status" aria-label="Loading"><div class="loader-inner" aria-hidden="true"><span class="loader-word">MADT</span><span class="loader-rule"></span></div></div>
+  <noscript><style>#loader{display:none}</style></noscript>
+  <header class="site-header">
+    <div class="header-bar">
+      <a class="logo" href="/" aria-label="MADT, Hubballi — home"><span class="logo-word">MADT</span><span class="logo-sub">Hubballi</span></a>
+      <nav class="desk-nav" aria-label="Primary"><ul>
+        <li><a href="/#house">House</a></li><li><a href="/#collections">Collections</a></li><li><a href="/#wedding">Wedding</a></li><li><a href="/#stores">Stores</a></li><li><a href="/#visit">Visit</a></li>
+      </ul></nav>
+      <div class="header-end">
+        <button class="icon-btn" type="button" id="search-open" aria-label="Search the house"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="11" cy="11" r="6.25" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M16 16.5 20 20.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+        <a class="quiet-link nav-login" href="/login">Login</a>
+        <a class="quiet-link nav-account" href="/desk" hidden>Account</a>
+        <button class="quiet-link nav-logout" type="button" hidden>Logout</button>
+        <a class="btn btn-sm nav-book" href="/consult">Book a visit</a>
+        <button class="menu-btn" type="button" id="menu-btn" aria-expanded="false" aria-controls="mobile-menu" aria-label="Open menu"><span></span><span></span><span></span></button>
+      </div>
+    </div>
+  </header>
+  <div class="mobile-menu" id="mobile-menu" hidden><nav aria-label="Mobile"><ul>
+    <li><a href="/#house">House</a></li><li><a href="/#collections">Collections</a></li><li><a href="/#wedding">Wedding</a></li><li><a href="/#stores">Stores</a></li><li><a href="/#visit">Visit</a></li><li><a href="/consult">Book a visit</a></li>
+    <li><a class="nav-login" href="/login">Login</a></li><li><a class="nav-account" href="/desk" hidden>Account</a></li><li><button class="nav-logout" type="button" hidden>Logout</button></li>
+  </ul></nav></div>
+  <main id="main" class="subpage">
+    <div class="wrap page-grid">
+      <div>
+        <p class="kicker"><a href="/#wedding">Wedding</a></p>
+        <h1>Register for wedding shopping</h1>
+        <p class="lede">Tell the desk what the list needs. You will get a reference to show at the floor. It is not a confirmed hour until someone at the counter says so.</p>
+        <form data-desk-form="wedding" novalidate>
+          <p class="form-error" role="alert"></p>
+          <div class="hp" aria-hidden="true"><label>Company<input name="company" tabindex="-1" autocomplete="off"></label></div>
+          <div class="field"><label for="w-name">Name</label><input id="w-name" name="name" required maxlength="80" autocomplete="name"></div>
+          <div class="field"><label for="w-email">Email</label><input id="w-email" name="email" type="email" required maxlength="120" autocomplete="email"></div>
+          <div class="field"><label for="w-phone">Phone</label><input id="w-phone" name="phone" type="tel" required inputmode="tel" autocomplete="tel" maxlength="20"></div>
+          <div class="field"><label for="w-date">Wedding date, if you have one</label><input id="w-date" name="date" type="date"></div>
+          <div class="field">
+            <label for="w-side">You are</label>
+            <select id="w-side" name="side">
+              <option>Bride’s side</option>
+              <option>Groom’s side</option>
+              <option>Family</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <fieldset class="checks">
+            <legend>The list needs</legend>
+            <label><input type="checkbox" name="needs" value="Trousseau cloth"> Trousseau cloth</label>
+            <label><input type="checkbox" name="needs" value="Groom’s suit"> Groom’s suit</label>
+            <label><input type="checkbox" name="needs" value="Jewellery"> Jewellery</label>
+            <label><input type="checkbox" name="needs" value="Wedding party"> Wedding party</label>
+            <label><input type="checkbox" name="needs" value="Home linen"> Home linen</label>
+            <label><input type="checkbox" name="needs" value="Gifts"> Gifts</label>
+          </fieldset>
+          <div class="field">
+            <label for="w-floor">Preferred counter</label>
+            <select id="w-floor" name="floor">
+              <option>Flagship, Koppikar Road</option>
+              <option>Suit desk, Coen Road</option>
+              <option>Home floor, Vidyanagar</option>
+            </select>
+          </div>
+          <div class="field"><label for="w-note">Anything the desk should know</label><textarea id="w-note" name="note" maxlength="1000"></textarea></div>
+          <button class="btn" type="submit">Register for wedding shopping</button>
+        </form>
+        <div class="confirm" id="confirm" hidden>
+          <h2>The list is with the desk.</h2>
+          <p>Show this reference at the floor. Keep it until the hour is confirmed.</p>
+          <p class="ref" data-ref></p>
+          <div id="advocacy-output" class="advocacy-box" style="margin: 1.25rem 0; padding: 1rem; background: var(--paper-2); border-radius: 6px; border: 1px solid var(--line);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+              <span style="font-size:0.75rem; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:var(--muted);">Advocacy Letter</span>
+              <button type="button" class="btn btn-sm" id="copy-advocacy-btn">Copy to clipboard</button>
+            </div>
+            <pre id="advocacy-text" style="font-family: inherit; font-size: 0.88rem; line-height: 1.6; white-space: pre-wrap; margin: 0; color: var(--ink-soft); max-height: 320px; overflow-y: auto;"></pre>
+          </div>
+          <p><a class="link-arrow" href="/consult">Book the hour as well <span class="btn-arrow" aria-hidden="true">→</span></a></p>
+        </div>
+      </div>
+      <aside class="note-panel">
+        <h2>What helps the hour</h2>
+        <ul>
+          <li>The list, even if it is only half written.</li>
+          <li>Someone who knows the sizes.</li>
+          <li>About an hour, not a spare ten minutes.</li>
+        </ul>
+        <p>Flagship hours are 10:30 to 8:30, all week. Monday suit fittings are by appointment.</p>
+      </aside>
+    </div>
+  </main>
+  <footer class="site-footer">
+    <div class="wrap footer-base">
+      <p>© 2026 MADT House, Hubballi.</p>
+      <ul><li><a href="/">House</a></li><li><a href="/privacy">Privacy</a></li><li><a href="/terms">Terms</a></li><li><a href="/login">Login</a></li></ul>
+    </div>
+  </footer>
+  <dialog id="search-dialog" aria-labelledby="search-title">
+    <form id="search-form" role="search">
+      <div class="dialog-head"><h2 id="search-title">Search the house</h2><button class="text-btn" type="button" data-close-search>Close</button></div>
+      <input id="search-input" type="search" placeholder="Women, wedding, towels…" autocomplete="off" aria-label="Search">
+    </form>
+    <ul id="search-results"></ul>
+  </dialog>
+  <script src="/js/autoAdvocation.js"></script>
+  <script src="/js/site.js"></script>
+</body>
+</html>

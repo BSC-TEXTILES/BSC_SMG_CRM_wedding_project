@@ -5,6 +5,7 @@ const { logAction } = require('../utils/logger');
 const userSyncService = require('../services/userSyncService');
 const { invalidateUserStatusCache } = require('../middleware/auth');
 const realtimeService = require('../services/realtimeService');
+const { encryptField, decryptField } = require('../utils/crypto');
 
 /**
  * Parses the `id:name` pairs produced by GROUP_CONCAT in listUsers.
@@ -95,11 +96,23 @@ const MODULE_REGISTRY = [
 // ── List all users with their permission counts ───────────────────
 const listUsers = async (req, res) => {
   try {
+    // Auto-reactivate accounts whose temporary deactivation has expired
+    try {
+      await db.query(`
+        UPDATE users 
+        SET active = 1, deactivated_until = NULL, deactivation_reason = NULL
+        WHERE active = 0 AND deactivated_until IS NOT NULL AND deactivated_until <= NOW()
+      `);
+    } catch (autoReactivateErr) {
+      console.warn('[UserMgmt] Auto-reactivation check:', autoReactivateErr.message);
+    }
+
     const [rawUsers] = await db.query(`
       SELECT
-        u.id, u.username, u.full_name AS fullName, u.email, u.phone,
+        u.id, u.username, u.password, u.full_name AS fullName, u.email, u.phone,
         u.employee_id AS employeeId,
         u.department, u.designation, u.role, u.active,
+        u.deactivated_until, u.deactivation_reason,
         u.location_id, u.location_code, u.max_modules,
         u.last_login_at, u.created_at, u.updated_at,
         l.location_name,
@@ -115,7 +128,11 @@ const listUsers = async (req, res) => {
 
     const users = rawUsers.map(u => {
       const { assigned_location_pairs, ...rest } = u;
-      return { ...rest, assigned_locations: _parseLocationPairs(assigned_location_pairs, rest) };
+      return {
+        ...rest,
+        password: decryptField(rest.password),
+        assigned_locations: _parseLocationPairs(assigned_location_pairs, rest)
+      };
     });
 
     return successRes(res, { users }, 'Users retrieved');
@@ -124,7 +141,7 @@ const listUsers = async (req, res) => {
     try {
       const [rawUsers] = await db.query(`
         SELECT
-          u.id, u.username, u.full_name AS fullName, u.email, u.phone,
+          u.id, u.username, u.password, u.full_name AS fullName, u.email, u.phone,
           u.employee_id AS employeeId,
           u.department, u.designation, u.role, u.active,
           u.location_id, u.location_code,
@@ -142,7 +159,11 @@ const listUsers = async (req, res) => {
 
       const users = rawUsers.map(u => {
         const { assigned_location_pairs, ...rest } = u;
-        return { ...rest, assigned_locations: _parseLocationPairs(assigned_location_pairs, rest) };
+        return {
+          ...rest,
+          password: decryptField(rest.password),
+          assigned_locations: _parseLocationPairs(assigned_location_pairs, rest)
+        };
       });
 
       return successRes(res, { users }, 'Users retrieved (no permissions table yet)');
@@ -158,9 +179,10 @@ const getUser = async (req, res) => {
     const { id } = req.params;
     const [[user]] = await db.query(`
       SELECT
-        u.id, u.username, u.full_name AS fullName, u.email, u.phone,
+        u.id, u.username, u.password, u.full_name AS fullName, u.email, u.phone,
         u.employee_id AS employeeId,
         u.department, u.designation, u.role, u.active,
+        u.deactivated_until, u.deactivation_reason,
         u.location_id, u.location_code, u.max_modules,
         u.last_login_at, u.created_at, u.updated_at,
         l.location_name
@@ -172,6 +194,8 @@ const getUser = async (req, res) => {
     if (!user) {
       return errorRes(res, 'User not found', [], 404);
     }
+
+    user.password = decryptField(user.password);
 
     // Fetch assigned locations from user_locations
     let assignedLocations = [];
@@ -305,13 +329,14 @@ async function _insertUser(req, res, { username, password, role, fullName, email
       }
     }
 
-    const hashedPassword = await bcrypt.hash(password.trim(), 10);
+    const cleanPassword = password.trim();
+    const encryptedPassword = encryptField(cleanPassword);
 
     const [result] = await db.query(
       `INSERT INTO users (username, password, role, full_name, email, phone, department, designation,
                           employee_id, section, joining_date, active, location_id, location_code, max_modules)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE, ?, ?, ?)`,
-      [username.trim(), hashedPassword, role, fullName || role, email || null, phone || null,
+      [username.trim(), encryptedPassword, role, fullName || role, email || null, phone || null,
        department || null, designation || null, employeeId || null,
        section || null, joiningDate || null,
        resolvedLocationId, locationCode, maxModules || null]
@@ -422,6 +447,10 @@ const updateUser = async (req, res) => {
     if (maxModules !== undefined) { updates.push('max_modules = ?'); params.push(maxModules); }
     if (section !== undefined) { updates.push('section = ?'); params.push(section || null); }
     if (joiningDate !== undefined) { updates.push('joining_date = ?'); params.push(joiningDate || null); }
+    if (req.body.password && String(req.body.password).trim().length >= 6) {
+      updates.push('password = ?');
+      params.push(encryptField(String(req.body.password).trim()));
+    }
 
     // Employee ID is unique — reject a value already owned by someone else
     if (employeeId !== undefined) {
@@ -672,12 +701,13 @@ const updatePermissions = async (req, res) => {
   }
 };
 
-// ── Toggle user active status ─────────────────────────────────────
+// ── Toggle user active status / Deactivate with Duration ───────────
 const toggleStatus = async (req, res) => {
   try {
     const { id } = req.params;
+    const { duration, customDate, reason } = req.body || {};
 
-    const [[user]] = await db.query(`SELECT id, username, active FROM users WHERE id = ?`, [id]);
+    const [[user]] = await db.query(`SELECT id, username, active, deactivated_until FROM users WHERE id = ?`, [id]);
     if (!user) {
       return errorRes(res, 'User not found', [], 404);
     }
@@ -687,19 +717,58 @@ const toggleStatus = async (req, res) => {
       return errorRes(res, 'Cannot deactivate the built-in system administrator account', [], 403);
     }
 
+    // Determine target status
+    // If currently inactive, reactivate it (active = 1, deactivated_until = null)
+    // If currently active, deactivate it (active = 0) with optional duration
     const newStatus = user.active ? 0 : 1;
-    await db.query(`UPDATE users SET active = ? WHERE id = ?`, [newStatus, id]);
+    let deactivatedUntil = null;
+    let deactivationReason = reason ? String(reason).trim() : null;
 
-    // A deactivated account must lose access on live sessions immediately, and
-    // a reactivated one must regain it — refresh the status cache used by the
-    // auth middleware.
+    if (newStatus === 0) {
+      const now = new Date();
+      if (duration === '1_day') {
+        deactivatedUntil = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+      } else if (duration === '7_days' || duration === '1_week') {
+        deactivatedUntil = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+      } else if (duration === '30_days' || duration === '1_month') {
+        deactivatedUntil = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+      } else if (duration === '6_months') {
+        deactivatedUntil = new Date(now.getTime() + 180 * 24 * 60 * 60 * 1000);
+      } else if (duration === 'custom' && customDate) {
+        deactivatedUntil = new Date(customDate);
+      }
+      // If duration === 'indefinite', deactivatedUntil remains null
+    }
+
+    await db.query(
+      `UPDATE users SET active = ?, deactivated_until = ?, deactivation_reason = ? WHERE id = ?`,
+      [newStatus, deactivatedUntil, newStatus === 0 ? deactivationReason : null, id]
+    );
+
     invalidateUserStatusCache(id);
 
-    await _audit(req, newStatus ? 'ACTIVATE_USER' : 'DEACTIVATE_USER', { userId: id, username: user.username });
+    await _audit(req, newStatus ? 'ACTIVATE_USER' : 'DEACTIVATE_USER', {
+      userId: id,
+      username: user.username,
+      duration: newStatus === 0 ? (duration || 'indefinite') : undefined,
+      deactivatedUntil: deactivatedUntil ? deactivatedUntil.toISOString() : null,
+      reason: deactivationReason
+    });
 
-    realtimeService.emitUserChange('STATUS', { id, username: user.username, active: !!newStatus });
+    realtimeService.emitUserChange('STATUS', {
+      id,
+      username: user.username,
+      active: !!newStatus,
+      deactivated_until: deactivatedUntil,
+      deactivation_reason: deactivationReason
+    });
 
-    return successRes(res, { id, active: !!newStatus }, `User ${newStatus ? 'activated' : 'deactivated'} successfully`);
+    return successRes(res, {
+      id,
+      active: !!newStatus,
+      deactivated_until: deactivatedUntil,
+      deactivation_reason: deactivationReason
+    }, `User ${newStatus ? 'activated' : 'deactivated'} successfully`);
   } catch (err) {
     return errorRes(res, 'Failed to toggle user status', [err.message], 500);
   }
@@ -720,12 +789,13 @@ const resetPassword = async (req, res) => {
       return errorRes(res, 'User not found', [], 404);
     }
 
-    const hashedPassword = await bcrypt.hash(password.trim(), 10);
-    await db.query(`UPDATE users SET password = ? WHERE id = ?`, [hashedPassword, id]);
+    const cleanPassword = password.trim();
+    const encryptedPassword = encryptField(cleanPassword);
+    await db.query(`UPDATE users SET password = ? WHERE id = ?`, [encryptedPassword, id]);
 
     await _audit(req, 'RESET_PASSWORD', { userId: id, username: user.username });
 
-    return successRes(res, { id }, 'Password reset successfully');
+    return successRes(res, { id, password: cleanPassword }, 'Password reset successfully');
   } catch (err) {
     return errorRes(res, 'Failed to reset password', [err.message], 500);
   }

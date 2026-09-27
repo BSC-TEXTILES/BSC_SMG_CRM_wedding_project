@@ -1,69 +1,94 @@
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
-import Home from './pages/Home';
-import Login from './pages/Login';
-import ForgotPassword from './pages/ForgotPassword';
-import Dashboard from './pages/Dashboard';
-import WeddingRegistration from './pages/WeddingRegistration';
-import Candidates from './pages/Candidates';
-import OfferProcess from './pages/OfferProcess';
-import WeddingOperationsDesk from './pages/WeddingOperationsDesk';
-import Employees from './pages/Employees';
-import Openings from './pages/Openings';
-import Settings from './pages/Settings';
-import BroadcastCenter from './pages/BroadcastCenter';
-import UserManagement from './pages/UserManagement';
-import DepartmentHiring from './pages/DepartmentHiring';
-import SectionAllocation from './pages/SectionAllocation';
-import Footfall from './pages/Footfall';
-import PublicFeedback from './pages/PublicFeedback';
-import FeedbackQR from './pages/FeedbackQR';
-import FeedbackList from './pages/FeedbackList';
-import FeedbackCollection from './pages/FeedbackCollection';
-import FeedbackQRManagement from './pages/FeedbackQRManagement';
-import Divert from './pages/Divert';
-import PMView from './pages/PMView';
-import CashSettlement from './pages/CashSettlement';
-import VmChecklist from './pages/VmChecklist';
-import TVDisplay from './pages/TVDisplay';
-import Greeter from './pages/Greeter';
-import Attendance from './pages/Attendance';
-import DailyMCheck from './pages/DailyMCheck';
-import MCheckReports from './pages/MCheckReports';
-import MCheckHistory from './pages/MCheckHistory';
-import WeddingCRM from './pages/WeddingCRM';
-import TelecallerDashboard from './pages/TelecallerDashboard';
-import WeddingTracking from './pages/WeddingTracking';
-import SystemAdmin from './pages/SystemAdmin';
-import BatchPlan from './pages/BatchPlan';
-import DojDesk from './pages/DojDesk';
-import CandidateEntry from './pages/CandidateEntry';
-import ChatDashboard from './pages/ChatDashboard';
-import WeddingCrmDashboard from './pages/wedding/WeddingCrmDashboard';
-import WeddingCustomerRegister from './pages/wedding/WeddingCustomerRegister';
-import WeddingCustomerDetail from './pages/wedding/WeddingCustomerDetail';
-import WeddingCustomerCreate from './pages/wedding/WeddingCustomerCreate';
-import TelecallerDeskPage from './pages/wedding/TelecallerDeskPage';
-import WeddingCallHistory from './pages/wedding/WeddingCallHistory';
-import WeddingFollowUpCalendar from './pages/wedding/WeddingFollowUpCalendar';
-import WeddingStatusBoard from './pages/wedding/WeddingStatusBoard';
-import WeddingReports from './pages/wedding/WeddingReports';
-import WeddingImport from './pages/wedding/WeddingImport';
-import NoAccess from './pages/NoAccess';
+const Home = lazy(() => import('./pages/Home'));
+const Login = lazy(() => import('./pages/Login'));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
+const VerifyEmail = lazy(() => import('./pages/VerifyEmail'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const HRDashboard = lazy(() => import('./pages/HRDashboard'));
+const ManagerDashboard = lazy(() => import('./pages/ManagerDashboard'));
+const WeddingRegistration = lazy(() => import('./pages/WeddingRegistration'));
+const Candidates = lazy(() => import('./pages/Candidates'));
+const OfferProcess = lazy(() => import('./pages/OfferProcess'));
+const WeddingOperationsDesk = lazy(() => import('./pages/WeddingOperationsDesk'));
+const Employees = lazy(() => import('./pages/Employees'));
+const Openings = lazy(() => import('./pages/Openings'));
+const Settings = lazy(() => import('./pages/Settings'));
+const BroadcastCenter = lazy(() => import('./pages/BroadcastCenter'));
+const UserManagement = lazy(() => import('./pages/UserManagement'));
+const DepartmentHiring = lazy(() => import('./pages/DepartmentHiring'));
+const SectionAllocation = lazy(() => import('./pages/SectionAllocation'));
+const Footfall = lazy(() => import('./pages/Footfall'));
+const PublicFeedback = lazy(() => import('./pages/PublicFeedback'));
+const FeedbackQR = lazy(() => import('./pages/FeedbackQR'));
+const FeedbackList = lazy(() => import('./pages/FeedbackList'));
+const FeedbackCollection = lazy(() => import('./pages/FeedbackCollection'));
+const FeedbackQRManagement = lazy(() => import('./pages/FeedbackQRManagement'));
+const Divert = lazy(() => import('./pages/Divert'));
+const PMView = lazy(() => import('./pages/PMView'));
+const CashSettlement = lazy(() => import('./pages/CashSettlement'));
+const VmChecklist = lazy(() => import('./pages/VmChecklist'));
+const TVDisplay = lazy(() => import('./pages/TVDisplay'));
+const Greeter = lazy(() => import('./pages/Greeter'));
+const Attendance = lazy(() => import('./pages/Attendance'));
+const DailyMCheck = lazy(() => import('./pages/DailyMCheck'));
+const MCheckReports = lazy(() => import('./pages/MCheckReports'));
+const MCheckHistory = lazy(() => import('./pages/MCheckHistory'));
+const WeddingCRM = lazy(() => import('./pages/WeddingCRM'));
+const TelecallerDashboard = lazy(() => import('./pages/TelecallerDashboard'));
+const WeddingTracking = lazy(() => import('./pages/WeddingTracking'));
+const SystemAdmin = lazy(() => import('./pages/SystemAdmin'));
+const BatchPlan = lazy(() => import('./pages/BatchPlan'));
+const DojDesk = lazy(() => import('./pages/DojDesk'));
+const CandidateEntry = lazy(() => import('./pages/CandidateEntry'));
+const ChatDashboard = lazy(() => import('./pages/ChatDashboard'));
+const WeddingCrmDashboard = lazy(() => import('./pages/wedding/WeddingCrmDashboard'));
+const WeddingCustomerRegister = lazy(() => import('./pages/wedding/WeddingCustomerRegister'));
+const WeddingCustomerDetail = lazy(() => import('./pages/wedding/WeddingCustomerDetail'));
+const WeddingCustomerCreate = lazy(() => import('./pages/wedding/WeddingCustomerCreate'));
+const TelecallerDeskPage = lazy(() => import('./pages/wedding/TelecallerDeskPage'));
+const WeddingCallHistory = lazy(() => import('./pages/wedding/WeddingCallHistory'));
+const WeddingFollowUpCalendar = lazy(() => import('./pages/wedding/WeddingFollowUpCalendar'));
+const WeddingStatusBoard = lazy(() => import('./pages/wedding/WeddingStatusBoard'));
+const WeddingReports = lazy(() => import('./pages/wedding/WeddingReports'));
+const WeddingImport = lazy(() => import('./pages/wedding/WeddingImport'));
+const NoAccess = lazy(() => import('./pages/NoAccess'));
+const MadtHome = lazy(() => import('./pages/madt/MadtHome'));
+const MadtWedding = lazy(() => import('./pages/madt/MadtWedding'));
+const MadtConsult = lazy(() => import('./pages/madt/MadtConsult'));
+const MadtContact = lazy(() => import('./pages/madt/MadtContact'));
+const MadtDesk = lazy(() => import('./pages/madt/MadtDesk'));
+const MadtLogin = lazy(() => import('./pages/madt/MadtLogin'));
+const MadtPrivacy = lazy(() => import('./pages/madt/MadtPrivacy'));
+const MadtTerms = lazy(() => import('./pages/madt/MadtTerms'));
 import ToastContainer from './components/Toast';
 import { LocationProvider } from './context/LocationContext';
-import QuickActionCenter from './components/ui/QuickActionCenter';
-import ChatWidget from './components/ui/ChatWidget';
 import RouteGuard from './components/RouteGuard';
 import UserTracker from './components/UserTracker';
-import DevToolsGuard from './components/DevToolsGuard';
 import ConnectivityBanner from './components/ConnectivityBanner';
 import ErrorBoundary from './components/ErrorBoundary';
-import SessionTimeoutGuard from './components/SessionTimeoutGuard';
-import DesktopModeWarning from './components/DesktopModeWarning';
 import ConsentGuard from './components/ConsentGuard';
 import { useUrlGuard } from './hooks/useUrlGuard';
 import { Auth } from './services/api';
+
+const QuickActionCenter = lazy(() => import('./components/ui/QuickActionCenter'));
+const ChatWidget = lazy(() => import('./components/ui/ChatWidget'));
+const DevToolsGuard = lazy(() => import('./components/DevToolsGuard'));
+const SessionTimeoutGuard = lazy(() => import('./components/SessionTimeoutGuard'));
+const DesktopModeWarning = lazy(() => import('./components/DesktopModeWarning'));
+
+/** Lightweight Suspense spinner that matches the project theme */
+function RouteSuspenseFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="flex items-center gap-2 text-xs font-bold text-primary">
+        <div className="w-5 h-5 border-2 border-primary/20 border-t-accent rounded-full animate-spin" />
+        <span>Loading...</span>
+      </div>
+    </div>
+  );
+}
 
 /** Monitors every URL change for unauthorized access — triggers force-logout on violation. */
 function UrlGuardMonitor() {
@@ -80,18 +105,22 @@ export default function App() {
   return (
     <ErrorBoundary>
     <LocationProvider>
-    <Router>
+    <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <ToastContainer />
       <ConnectivityBanner />
       <UserTracker />
       <UrlGuardMonitor />
       <ConsentGuard>
+      <Suspense fallback={<RouteSuspenseFallback />}>
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/no-access" element={<NoAccess />} />
         <Route path="/dashboard" element={<RouteGuard pageKey="dashboard"><Dashboard /></RouteGuard>} />
+        <Route path="/hr-dashboard" element={<RouteGuard pageKey="dashboard"><HRDashboard /></RouteGuard>} />
+        <Route path="/manager-dashboard" element={<RouteGuard pageKey="dashboard"><ManagerDashboard /></RouteGuard>} />
         <Route path="/wedding-crm" element={<RouteGuard pageKey="wedding_crm"><WeddingCRM /></RouteGuard>} />
         <Route path="/wedding-crm/dashboard" element={<RouteGuard pageKey="wedding_crm"><WeddingCrmDashboard /></RouteGuard>} />
         <Route path="/wedding-crm/customers" element={<RouteGuard pageKey="wedding_crm"><WeddingCustomerRegister /></RouteGuard>} />
@@ -116,6 +145,7 @@ export default function App() {
         {/* Job Applicant Public Portals (Distinct from Wedding Customer Registration) */}
         <Route path="/apply" element={<CandidateEntry />} />
         <Route path="/applicants/register" element={<CandidateEntry />} />
+        <Route path="/candidate-entry" element={<CandidateEntry />} />
         <Route path="/candidate-registration" element={<Navigate to="/apply" replace />} />
 
         <Route path="/footfall" element={<RouteGuard pageKey="footfall"><Footfall /></RouteGuard>} />
@@ -161,14 +191,28 @@ export default function App() {
         <Route path="/settings" element={<RouteGuard pageKey="settings"><Settings /></RouteGuard>} />
         <Route path="/system-admin" element={<RouteGuard pageKey="system_admin"><SystemAdmin /></RouteGuard>} />
         <Route path="/chat-dashboard" element={<RouteGuard pageKey="dashboard"><ChatDashboard /></RouteGuard>} />
+
+        {/* MADT House Dedicated Routes */}
+        <Route path="/madt" element={<MadtHome />} />
+        <Route path="/madt/wedding" element={<MadtWedding />} />
+        <Route path="/madt/consult" element={<MadtConsult />} />
+        <Route path="/madt/contact" element={<MadtContact />} />
+        <Route path="/madt/desk" element={<MadtDesk />} />
+        <Route path="/madt/login" element={<MadtLogin />} />
+        <Route path="/madt/privacy" element={<MadtPrivacy />} />
+        <Route path="/madt/terms" element={<MadtTerms />} />
+
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </Suspense>
       </ConsentGuard>
-      <QuickActionCenter />
-      <AuthChatWidget />
-      <SessionTimeoutGuard />
-      <DevToolsGuard />
-      <DesktopModeWarning />
+      <Suspense fallback={null}>
+        <QuickActionCenter />
+        <AuthChatWidget />
+        <SessionTimeoutGuard />
+        <DevToolsGuard />
+        <DesktopModeWarning />
+      </Suspense>
     </Router>
     </LocationProvider>
     </ErrorBoundary>

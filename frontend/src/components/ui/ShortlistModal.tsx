@@ -31,7 +31,7 @@ export default function ShortlistModal({ candidate, isOpen, onClose, onShortlist
   const [department, setDepartment] = useState<string>('Mens');
   const [section, setSection] = useState<string>('');
   const [desig, setDesig] = useState<string>('');
-  const [branch, setBranch] = useState<string>('BSC EXCLUSIVE DAVANAGERE');
+  const [branch, setBranch] = useState<string>('BSC Textiles Davanagere');
   const [remarks, setRemarks] = useState<string>('');
 
   useEffect(() => {

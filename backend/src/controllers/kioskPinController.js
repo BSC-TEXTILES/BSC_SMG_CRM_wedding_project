@@ -42,7 +42,7 @@ const upsertPin = async (req, res) => {
     }
 
     const resolvedLocationId = locationId || null;
-    const hashedPin = await bcrypt.hash(pin, 10);
+    const hashedPin = await bcrypt.hash(pin, 12);
     const changedBy = req.user?.username || 'Admin';
 
     // Check if exists

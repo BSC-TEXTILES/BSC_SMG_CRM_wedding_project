@@ -39,3 +39,10 @@ CREATE INDEX IF NOT EXISTS `idx_session_token` ON `UserSession` (`token`);
 CREATE INDEX IF NOT EXISTS `idx_audit_user` ON `AuditLog` (`username`);
 CREATE INDEX IF NOT EXISTS `idx_audit_module` ON `AuditLog` (`module`);
 CREATE INDEX IF NOT EXISTS `idx_audit_created` ON `AuditLog` (`createdAt`);
+
+-- Selection Offers & Candidate Join Indexes
+CREATE INDEX IF NOT EXISTS `idx_so_app_no` ON `selection_offers` (`app_no`);
+CREATE INDEX IF NOT EXISTS `idx_so_status` ON `selection_offers` (`status`);
+CREATE INDEX IF NOT EXISTS `idx_cand_created_at` ON `candidates` (`created_at`);
+CREATE INDEX IF NOT EXISTS `idx_cand_app_no` ON `candidates` (`app_no`);
+CREATE INDEX IF NOT EXISTS `idx_cand_loc` ON `candidates` (`location_id`);

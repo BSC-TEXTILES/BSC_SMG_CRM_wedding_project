@@ -114,10 +114,13 @@ function resolveLocFilter(req, tableAlias = 'w') {
 }
 
 let tablesChecked = false;
+let tablesInitPromise = null;
 async function ensureTables() {
   if (tablesChecked) return;
-  try {
-    await pool.query(`
+  if (!tablesInitPromise) {
+    tablesInitPromise = (async () => {
+      try {
+        await pool.query(`
       CREATE TABLE IF NOT EXISTS \`wedding_customers\` (
         \`id\` INT AUTO_INCREMENT PRIMARY KEY,
         \`customer_code\` VARCHAR(50) NOT NULL UNIQUE,
@@ -448,10 +451,13 @@ async function ensureTables() {
       `);
     }
 
-    tablesChecked = true;
-  } catch (err) {
-    console.error('[WeddingController.ensureTables Error]', err.message);
+        tablesChecked = true;
+      } catch (err) {
+        console.error('[WeddingController.ensureTables Error]', err.message);
+      }
+    })();
   }
+  return tablesInitPromise;
 }
 
 class WeddingController {
@@ -469,45 +475,10 @@ class WeddingController {
         params.push(req.user.id, req.user.fullName || req.user.username || '');
       }
 
-      const [rows] = await pool.query(`
-        SELECT
-          COUNT(*) AS totalCustomers,
-          SUM(CASE WHEN DATE(w.created_at) = CURDATE() THEN 1 ELSE 0 END) AS todayNewCustomers,
-          SUM(CASE WHEN w.customer_status = 'New' THEN 1 ELSE 0 END) AS newRequests,
-          SUM(CASE WHEN w.customer_status IN ('New', 'Contacted', 'Interested', 'Follow-up Pending', 'Shopping Date Confirmed') THEN 1 ELSE 0 END) AS activeLeads,
-          SUM(CASE WHEN w.customer_status = 'Interested' THEN 1 ELSE 0 END) AS interestedCustomers,
-          SUM(CASE WHEN w.follow_up_date = CURDATE() AND w.customer_status NOT IN ('Converted', 'Visited Store', 'Not Interested', 'Cancelled', 'Closed') THEN 1 ELSE 0 END) AS todayFollowUps,
-          SUM(CASE WHEN w.follow_up_date < CURDATE() AND w.customer_status NOT IN ('Converted', 'Visited Store', 'Not Interested', 'Cancelled', 'Closed') THEN 1 ELSE 0 END) AS overdueFollowUps,
-          SUM(CASE WHEN w.call_status IN ('Pending', 'Call Back Requested', 'No Answer', 'Busy') THEN 1 ELSE 0 END) AS callsPending,
-          SUM(CASE WHEN w.call_status = 'Completed' THEN 1 ELSE 0 END) AS callsCompleted,
-          SUM(CASE WHEN w.call_status = 'Connected' THEN 1 ELSE 0 END) AS connectedCalls,
-          SUM(CASE WHEN w.call_status IN ('No Answer', 'Busy', 'Switched Off') THEN 1 ELSE 0 END) AS missedCalls,
-          SUM(CASE WHEN w.call_status = 'Call Back Requested' THEN 1 ELSE 0 END) AS callbackRequests,
-          SUM(CASE WHEN w.customer_status = 'Shopping Date Confirmed' THEN 1 ELSE 0 END) AS shoppingConfirmed,
-          SUM(CASE WHEN w.customer_status IN ('Visited Store', 'Converted') THEN 1 ELSE 0 END) AS visitedConverted,
-          SUM(CASE WHEN w.customer_status = 'Converted' THEN 1 ELSE 0 END) AS convertedCustomers,
-          SUM(CASE WHEN w.customer_status IN ('Not Interested', 'Cancelled', 'Closed') THEN 1 ELSE 0 END) AS lostCustomers,
-          SUM(CASE WHEN w.customer_status = 'Not Interested' THEN 1 ELSE 0 END) AS notInterested
-        FROM wedding_customers w
-        WHERE w.is_deleted = 0 ${clause}
-      `, params);
-
-      // Appointments counts
+      // Appointments filter
       const { clause: apptLocClause, params: apptLocParams } = resolveLocFilter(req, 'a');
-      const [apptRows] = await pool.query(`
-        SELECT
-          SUM(CASE WHEN a.appointment_date = CURDATE() THEN 1 ELSE 0 END) AS todayAppointments,
-          SUM(CASE WHEN a.appointment_date > CURDATE() THEN 1 ELSE 0 END) AS upcomingAppointments,
-          SUM(CASE WHEN a.appointment_status = 'Completed' THEN 1 ELSE 0 END) AS completedAppointments,
-          SUM(CASE WHEN a.appointment_status = 'Cancelled' THEN 1 ELSE 0 END) AS cancelledAppointments
-        FROM wedding_appointments a
-        WHERE 1=1 ${apptLocClause}
-      `, apptLocParams);
 
-      const rawAppts = apptRows[0] || {};
-      const raw = rows[0] || {};
-
-      // Calls logged today count
+      // Calls logged today filter
       const { clause: clLocClause, params: clLocParams } = resolveLocFilter(req, 'cl');
       let callLogWhere = `WHERE cl.call_date = CURDATE() ${clLocClause}`;
       let callLogParams = [...clLocParams];
@@ -515,9 +486,79 @@ class WeddingController {
         callLogWhere += ' AND (cl.telecaller_id = ? OR cl.telecaller_name = ?)';
         callLogParams.push(req.user.id, req.user.fullName || req.user.username || '');
       }
-      const [callTodayRows] = await pool.query(`
-        SELECT COUNT(*) as callsToday FROM wedding_call_logs cl ${callLogWhere}
-      `, callLogParams);
+
+      // Location breakdown filter
+      const rawParam = req.query?.locationId || req.query?.location_id || req.headers?.['x-location-id'] || req.body?.locationId || req.body?.location_id;
+      const requestedLoc = parseTargetLocation(rawParam);
+      const activeLocId = requestedLoc || req.user?.locationId;
+
+      let locQueryWhere = '';
+      let locQueryParams = [];
+      if (activeLocId) {
+        locQueryWhere = 'WHERE l.id = ?';
+        locQueryParams.push(activeLocId);
+      }
+
+      // Execute all 4 queries in parallel
+      const [
+        [rows],
+        [apptRows],
+        [callTodayRows],
+        [locRows]
+      ] = await Promise.all([
+        pool.query(`
+          SELECT
+            COUNT(*) AS totalCustomers,
+            SUM(CASE WHEN DATE(w.created_at) = CURDATE() THEN 1 ELSE 0 END) AS todayNewCustomers,
+            SUM(CASE WHEN w.customer_status = 'New' THEN 1 ELSE 0 END) AS newRequests,
+            SUM(CASE WHEN w.customer_status IN ('New', 'Contacted', 'Interested', 'Follow-up Pending', 'Shopping Date Confirmed') THEN 1 ELSE 0 END) AS activeLeads,
+            SUM(CASE WHEN w.customer_status = 'Interested' THEN 1 ELSE 0 END) AS interestedCustomers,
+            SUM(CASE WHEN w.follow_up_date = CURDATE() AND w.customer_status NOT IN ('Converted', 'Visited Store', 'Not Interested', 'Cancelled', 'Closed') THEN 1 ELSE 0 END) AS todayFollowUps,
+            SUM(CASE WHEN w.follow_up_date < CURDATE() AND w.customer_status NOT IN ('Converted', 'Visited Store', 'Not Interested', 'Cancelled', 'Closed') THEN 1 ELSE 0 END) AS overdueFollowUps,
+            SUM(CASE WHEN w.call_status IN ('Pending', 'Call Back Requested', 'No Answer', 'Busy') THEN 1 ELSE 0 END) AS callsPending,
+            SUM(CASE WHEN w.call_status = 'Completed' THEN 1 ELSE 0 END) AS callsCompleted,
+            SUM(CASE WHEN w.call_status = 'Connected' THEN 1 ELSE 0 END) AS connectedCalls,
+            SUM(CASE WHEN w.call_status IN ('No Answer', 'Busy', 'Switched Off') THEN 1 ELSE 0 END) AS missedCalls,
+            SUM(CASE WHEN w.call_status = 'Call Back Requested' THEN 1 ELSE 0 END) AS callbackRequests,
+            SUM(CASE WHEN w.customer_status = 'Shopping Date Confirmed' THEN 1 ELSE 0 END) AS shoppingConfirmed,
+            SUM(CASE WHEN w.customer_status IN ('Visited Store', 'Converted') THEN 1 ELSE 0 END) AS visitedConverted,
+            SUM(CASE WHEN w.customer_status = 'Converted' THEN 1 ELSE 0 END) AS convertedCustomers,
+            SUM(CASE WHEN w.customer_status IN ('Not Interested', 'Cancelled', 'Closed') THEN 1 ELSE 0 END) AS lostCustomers,
+            SUM(CASE WHEN w.customer_status = 'Not Interested' THEN 1 ELSE 0 END) AS notInterested
+          FROM wedding_customers w
+          WHERE w.is_deleted = 0 ${clause}
+        `, params),
+        pool.query(`
+          SELECT
+            SUM(CASE WHEN a.appointment_date = CURDATE() THEN 1 ELSE 0 END) AS todayAppointments,
+            SUM(CASE WHEN a.appointment_date > CURDATE() THEN 1 ELSE 0 END) AS upcomingAppointments,
+            SUM(CASE WHEN a.appointment_status = 'Completed' THEN 1 ELSE 0 END) AS completedAppointments,
+            SUM(CASE WHEN a.appointment_status = 'Cancelled' THEN 1 ELSE 0 END) AS cancelledAppointments
+          FROM wedding_appointments a
+          WHERE 1=1 ${apptLocClause}
+        `, apptLocParams),
+        pool.query(`
+          SELECT COUNT(*) as callsToday FROM wedding_call_logs cl ${callLogWhere}
+        `, callLogParams),
+        pool.query(`
+          SELECT 
+            l.id AS location_id,
+            l.location_code,
+            l.location_name,
+            COUNT(w.id) AS total_customers,
+            SUM(CASE WHEN w.follow_up_date = CURDATE() THEN 1 ELSE 0 END) AS today_follow_ups,
+            SUM(CASE WHEN w.follow_up_date < CURDATE() AND w.customer_status NOT IN ('Converted', 'Visited Store', 'Not Interested', 'Cancelled', 'Closed') THEN 1 ELSE 0 END) AS overdue_follow_ups
+          FROM locations l
+          LEFT JOIN wedding_customers w ON w.location_id = l.id AND w.is_deleted = 0
+          ${locQueryWhere}
+          GROUP BY l.id, l.location_code, l.location_name
+          ORDER BY l.sort_order ASC
+        `, locQueryParams)
+      ]);
+
+      const rawAppts = apptRows[0] || {};
+      const raw = rows[0] || {};
+      const locationStats = locRows || [];
 
       const stats = {
         totalCustomers: Number(raw.totalCustomers) || 0,
@@ -555,34 +596,6 @@ class WeddingController {
         unassignedLeads: Number(raw.callsPending) || 0,
         convertedThisMonth: Number(raw.convertedCustomers) || 0
       };
-
-      // Location breakdown (scoped if specific location selected/assigned)
-      const rawParam = req.query?.locationId || req.query?.location_id || req.headers?.['x-location-id'] || req.body?.locationId || req.body?.location_id;
-      const requestedLoc = parseTargetLocation(rawParam);
-      const activeLocId = requestedLoc || req.user?.locationId;
-
-      let locQueryWhere = '';
-      let locQueryParams = [];
-      if (activeLocId) {
-        locQueryWhere = 'WHERE l.id = ?';
-        locQueryParams.push(activeLocId);
-      }
-
-      const [locRows] = await pool.query(`
-        SELECT 
-          l.id AS location_id,
-          l.location_code,
-          l.location_name,
-          COUNT(w.id) AS total_customers,
-          SUM(CASE WHEN w.follow_up_date = CURDATE() THEN 1 ELSE 0 END) AS today_follow_ups,
-          SUM(CASE WHEN w.follow_up_date < CURDATE() AND w.customer_status NOT IN ('Converted', 'Visited Store', 'Not Interested', 'Cancelled', 'Closed') THEN 1 ELSE 0 END) AS overdue_follow_ups
-        FROM locations l
-        LEFT JOIN wedding_customers w ON w.location_id = l.id AND w.is_deleted = 0
-        ${locQueryWhere}
-        GROUP BY l.id, l.location_code, l.location_name
-        ORDER BY l.sort_order ASC
-      `, locQueryParams);
-      const locationStats = locRows || [];
 
       return successRes(res, {
         stats,
@@ -673,37 +686,39 @@ class WeddingController {
 
       const whereSql = whereClauses.join(' AND ');
 
-      // Total count
-      const [countResult] = await pool.query(
-        `SELECT COUNT(*) as total FROM wedding_customers w WHERE ${whereSql}`,
-        queryParams
-      );
-      const total = countResult[0]?.total || 0;
-
       // Pagination (guard against non-numeric input — LIMIT ? must bind an integer)
       const pageNum = Math.max(1, parseInt(page, 10) || 1);
       const limitNum = Math.min(5000, Math.max(1, parseInt(limit, 10) || 50));
       const offset = (pageNum - 1) * limitNum;
 
-      const [customers] = await pool.query(`
-        SELECT 
-          w.*,
-          l.location_code,
-          l.location_name,
-          CASE 
-            WHEN w.follow_up_date < CURDATE() AND w.customer_status NOT IN ('Converted', 'Visited Store', 'Not Interested', 'Cancelled', 'Closed')
-            THEN DATEDIFF(CURDATE(), w.follow_up_date)
-            ELSE 0 
-          END AS overdue_days
-        FROM wedding_customers w
-        LEFT JOIN locations l ON l.id = w.location_id
-        WHERE ${whereSql}
-        ORDER BY 
-          CASE WHEN w.follow_up_date < CURDATE() AND w.customer_status NOT IN ('Converted', 'Visited Store', 'Not Interested', 'Cancelled', 'Closed') THEN 0 ELSE 1 END,
-          w.follow_up_date ASC,
-          w.id DESC
-        LIMIT ? OFFSET ?
-      `, [...queryParams, limitNum, offset]);
+      // Parallelize total count and paginated rows queries
+      const [[countResult], [customers]] = await Promise.all([
+        pool.query(
+          `SELECT COUNT(*) as total FROM wedding_customers w WHERE ${whereSql}`,
+          queryParams
+        ),
+        pool.query(`
+          SELECT 
+            w.*,
+            l.location_code,
+            l.location_name,
+            CASE 
+              WHEN w.follow_up_date < CURDATE() AND w.customer_status NOT IN ('Converted', 'Visited Store', 'Not Interested', 'Cancelled', 'Closed')
+              THEN DATEDIFF(CURDATE(), w.follow_up_date)
+              ELSE 0 
+            END AS overdue_days
+          FROM wedding_customers w
+          LEFT JOIN locations l ON l.id = w.location_id
+          WHERE ${whereSql}
+          ORDER BY 
+            CASE WHEN w.follow_up_date < CURDATE() AND w.customer_status NOT IN ('Converted', 'Visited Store', 'Not Interested', 'Cancelled', 'Closed') THEN 0 ELSE 1 END,
+            w.follow_up_date ASC,
+            w.id DESC
+          LIMIT ? OFFSET ?
+        `, [...queryParams, limitNum, offset])
+      ]);
+
+      const total = countResult[0]?.total || 0;
 
       decryptRows(customers, ENCRYPTED_FIELDS);
 
@@ -1520,20 +1535,6 @@ class WeddingController {
         return res.json(cached.data);
       }
 
-      // Overall desk counters
-      const [counterRows] = await pool.query(`
-        SELECT 
-          COUNT(*) AS assignedCalls,
-          SUM(CASE WHEN w.follow_up_date = CURDATE() AND w.call_status IN ('Pending', 'Call Back Requested', 'No Answer', 'Busy') THEN 1 ELSE 0 END) AS pendingCalls,
-          SUM(CASE WHEN w.last_call_date >= CURDATE() THEN 1 ELSE 0 END) AS completedToday,
-          SUM(CASE WHEN w.call_status = 'Connected' THEN 1 ELSE 0 END) AS connectedCalls,
-          SUM(CASE WHEN w.call_status = 'No Answer' AND w.follow_up_date <= CURDATE() THEN 1 ELSE 0 END) AS noAnswerCount,
-          SUM(CASE WHEN w.call_status = 'Call Back Requested' THEN 1 ELSE 0 END) AS callbackCount,
-          SUM(CASE WHEN w.follow_up_date <= CURDATE() AND w.customer_status NOT IN ('Converted', 'Visited Store', 'Not Interested', 'Cancelled', 'Closed') THEN 1 ELSE 0 END) AS remainingCalls
-        FROM wedding_customers w
-        WHERE w.is_deleted = 0 ${clause}
-      `, params);
-
       const baseSelect = `
         SELECT 
           w.*,
@@ -1548,76 +1549,88 @@ class WeddingController {
         WHERE w.is_deleted = 0 ${clause}
       `;
 
-      // 1. Overdue (< CURDATE() and open)
-      const [overdue] = await pool.query(`
-        ${baseSelect}
-        AND w.follow_up_date < CURDATE() 
-        AND w.customer_status NOT IN ('Converted', 'Visited Store', 'Not Interested', 'Cancelled', 'Closed')
-        ORDER BY w.follow_up_date ASC, w.id ASC
-        LIMIT 60
-      `, params);
-
-      // 2. Due Today (= CURDATE())
-      const [dueToday] = await pool.query(`
-        ${baseSelect}
-        AND w.follow_up_date = CURDATE()
-        AND w.customer_status NOT IN ('Converted', 'Visited Store', 'Not Interested', 'Cancelled', 'Closed')
-        ORDER BY 
-          CASE WHEN w.call_status = 'Call Back Requested' THEN 0 WHEN w.call_status = 'Pending' THEN 1 ELSE 2 END,
-          w.id ASC
-        LIMIT 60
-      `, params);
-
-      // 3. Callback Requests (any date open)
-      const [callbackRequests] = await pool.query(`
-        ${baseSelect}
-        AND w.call_status = 'Call Back Requested'
-        AND w.customer_status NOT IN ('Converted', 'Visited Store', 'Not Interested', 'Cancelled', 'Closed')
-        ORDER BY w.follow_up_date ASC, w.id ASC
-        LIMIT 40
-      `, params);
-
-      // 4. Upcoming (next 7 days)
-      const [upcoming] = await pool.query(`
-        ${baseSelect}
-        AND w.follow_up_date > CURDATE() AND w.follow_up_date <= DATE_ADD(CURDATE(), INTERVAL 7 DAY)
-        AND w.customer_status NOT IN ('Converted', 'Visited Store', 'Not Interested', 'Cancelled', 'Closed')
-        ORDER BY w.follow_up_date ASC, w.id ASC
-        LIMIT 60
-      `, params);
-
-      // 5. Priority Calls (High/Urgent)
-      const [priorityCalls] = await pool.query(`
-        ${baseSelect}
-        AND w.customer_status = 'Shopping Date Confirmed'
-        AND w.customer_status NOT IN ('Converted', 'Visited Store', 'Not Interested', 'Cancelled', 'Closed')
-        ORDER BY w.follow_up_date ASC, w.id ASC
-        LIMIT 40
-      `, params);
-
-      // 6. New Customers
-      const [newCustomers] = await pool.query(`
-        ${baseSelect}
-        AND w.customer_status = 'New'
-        ORDER BY w.created_at DESC, w.id DESC
-        LIMIT 40
-      `, params);
-
-      // 7. Today's Appointments
       let apptWhere = '';
       let apptParams = [];
       if (req.user && req.user.locationId) {
         apptWhere += ' AND a.location_id = ?';
         apptParams.push(req.user.locationId);
       }
-      const [todayAppointments] = await pool.query(`
-        SELECT a.*, w.customer_name, w.mobile_number, w.customer_code
-        FROM wedding_appointments a
-        LEFT JOIN wedding_customers w ON w.id = a.customer_id
-        WHERE a.appointment_date = CURDATE() ${apptWhere}
-        ORDER BY a.appointment_time ASC
-        LIMIT 30
-      `, apptParams);
+
+      // Parallelize counters and all 7 desk queues concurrently
+      const [
+        [counterRows],
+        [overdue],
+        [dueToday],
+        [callbackRequests],
+        [upcoming],
+        [priorityCalls],
+        [newCustomers],
+        [todayAppointments]
+      ] = await Promise.all([
+        pool.query(`
+          SELECT 
+            COUNT(*) AS assignedCalls,
+            SUM(CASE WHEN w.follow_up_date = CURDATE() AND w.call_status IN ('Pending', 'Call Back Requested', 'No Answer', 'Busy') THEN 1 ELSE 0 END) AS pendingCalls,
+            SUM(CASE WHEN w.last_call_date >= CURDATE() THEN 1 ELSE 0 END) AS completedToday,
+            SUM(CASE WHEN w.call_status = 'Connected' THEN 1 ELSE 0 END) AS connectedCalls,
+            SUM(CASE WHEN w.call_status = 'No Answer' AND w.follow_up_date <= CURDATE() THEN 1 ELSE 0 END) AS noAnswerCount,
+            SUM(CASE WHEN w.call_status = 'Call Back Requested' THEN 1 ELSE 0 END) AS callbackCount,
+            SUM(CASE WHEN w.follow_up_date <= CURDATE() AND w.customer_status NOT IN ('Converted', 'Visited Store', 'Not Interested', 'Cancelled', 'Closed') THEN 1 ELSE 0 END) AS remainingCalls
+          FROM wedding_customers w
+          WHERE w.is_deleted = 0 ${clause}
+        `, params),
+        pool.query(`
+          ${baseSelect}
+          AND w.follow_up_date < CURDATE() 
+          AND w.customer_status NOT IN ('Converted', 'Visited Store', 'Not Interested', 'Cancelled', 'Closed')
+          ORDER BY w.follow_up_date ASC, w.id ASC
+          LIMIT 60
+        `, params),
+        pool.query(`
+          ${baseSelect}
+          AND w.follow_up_date = CURDATE()
+          AND w.customer_status NOT IN ('Converted', 'Visited Store', 'Not Interested', 'Cancelled', 'Closed')
+          ORDER BY 
+            CASE WHEN w.call_status = 'Call Back Requested' THEN 0 WHEN w.call_status = 'Pending' THEN 1 ELSE 2 END,
+            w.id ASC
+          LIMIT 60
+        `, params),
+        pool.query(`
+          ${baseSelect}
+          AND w.call_status = 'Call Back Requested'
+          AND w.customer_status NOT IN ('Converted', 'Visited Store', 'Not Interested', 'Cancelled', 'Closed')
+          ORDER BY w.follow_up_date ASC, w.id ASC
+          LIMIT 40
+        `, params),
+        pool.query(`
+          ${baseSelect}
+          AND w.follow_up_date > CURDATE() AND w.follow_up_date <= DATE_ADD(CURDATE(), INTERVAL 7 DAY)
+          AND w.customer_status NOT IN ('Converted', 'Visited Store', 'Not Interested', 'Cancelled', 'Closed')
+          ORDER BY w.follow_up_date ASC, w.id ASC
+          LIMIT 60
+        `, params),
+        pool.query(`
+          ${baseSelect}
+          AND w.customer_status = 'Shopping Date Confirmed'
+          AND w.customer_status NOT IN ('Converted', 'Visited Store', 'Not Interested', 'Cancelled', 'Closed')
+          ORDER BY w.follow_up_date ASC, w.id ASC
+          LIMIT 40
+        `, params),
+        pool.query(`
+          ${baseSelect}
+          AND w.customer_status = 'New'
+          ORDER BY w.created_at DESC, w.id DESC
+          LIMIT 40
+        `, params),
+        pool.query(`
+          SELECT a.*, w.customer_name, w.mobile_number, w.customer_code
+          FROM wedding_appointments a
+          LEFT JOIN wedding_customers w ON w.id = a.customer_id
+          WHERE a.appointment_date = CURDATE() ${apptWhere}
+          ORDER BY a.appointment_time ASC
+          LIMIT 30
+        `, apptParams)
+      ]);
 
       const sum = counterRows[0] || {};
 
@@ -2183,7 +2196,7 @@ class WeddingController {
       const { clause: locClause, params: locParams } = resolveLocFilter(req, 'w');
 
       const [existing] = await pool.query(
-        `SELECT id, location_id FROM wedding_customers WHERE id = ? AND is_deleted = 0 ${locClause}`,
+        `SELECT id, location_id FROM wedding_customers w WHERE w.id = ? AND w.is_deleted = 0 ${locClause}`,
         [customerId, ...locParams]
       );
       if (!existing || existing.length === 0) return errorRes(res, 'Customer not found', [], 404);
@@ -2278,7 +2291,7 @@ class WeddingController {
       const { clause: locClause, params: locParams } = resolveLocFilter(req, 'w');
 
       const [existing] = await pool.query(
-        `SELECT id, location_id FROM wedding_customers WHERE id = ? AND is_deleted = 0 ${locClause}`,
+        `SELECT id, location_id FROM wedding_customers w WHERE w.id = ? AND w.is_deleted = 0 ${locClause}`,
         [customerId, ...locParams]
       );
       if (!existing || existing.length === 0) return errorRes(res, 'Customer not found', [], 404);
@@ -2372,7 +2385,7 @@ class WeddingController {
       const { clause: locClause, params: locParams } = resolveLocFilter(req, 'w');
 
       const [existing] = await pool.query(
-        `SELECT id, location_id FROM wedding_customers WHERE id = ? AND is_deleted = 0 ${locClause}`,
+        `SELECT id, location_id FROM wedding_customers w WHERE w.id = ? AND w.is_deleted = 0 ${locClause}`,
         [customerId, ...locParams]
       );
       if (!existing || existing.length === 0) return errorRes(res, 'Customer not found', [], 404);
@@ -2467,7 +2480,7 @@ class WeddingController {
       const { clause: locClause, params: locParams } = resolveLocFilter(req, 'w');
 
       const [existing] = await pool.query(
-        `SELECT id, location_id FROM wedding_customers WHERE id = ? AND is_deleted = 0 ${locClause}`,
+        `SELECT id, location_id FROM wedding_customers w WHERE w.id = ? AND w.is_deleted = 0 ${locClause}`,
         [customerId, ...locParams]
       );
       if (!existing || existing.length === 0) return errorRes(res, 'Customer not found', [], 404);
@@ -2520,7 +2533,7 @@ class WeddingController {
       const { clause: locClause, params: locParams } = resolveLocFilter(req, 'w');
 
       const [existing] = await pool.query(
-        `SELECT id, location_id FROM wedding_customers WHERE id = ? AND is_deleted = 0 ${locClause}`,
+        `SELECT id, location_id FROM wedding_customers w WHERE w.id = ? AND w.is_deleted = 0 ${locClause}`,
         [customerId, ...locParams]
       );
       if (!existing || existing.length === 0) return errorRes(res, 'Customer not found', [], 404);
@@ -2575,7 +2588,7 @@ class WeddingController {
       const { clause: locClause, params: locParams } = resolveLocFilter(req, 'w');
 
       const [existing] = await pool.query(
-        `SELECT * FROM wedding_customers WHERE id = ? AND is_deleted = 0 ${locClause}`,
+        `SELECT * FROM wedding_customers w WHERE w.id = ? AND w.is_deleted = 0 ${locClause}`,
         [customerId, ...locParams]
       );
       if (!existing || existing.length === 0) return errorRes(res, 'Customer not found', [], 404);
@@ -2648,45 +2661,46 @@ class WeddingController {
       const { clause: locClause, params } = resolveLocFilter(req, 'w');
       const istToday = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
 
-      const [mainStats] = await pool.query(`
-        SELECT
-          COUNT(*) AS totalCustomers,
-          SUM(CASE WHEN DATE(w.created_at) = CURDATE() THEN 1 ELSE 0 END) AS todayRegistrations,
-          SUM(CASE WHEN w.follow_up_date = CURDATE() AND w.customer_status NOT IN ('Converted','Visited Store','Not Interested','Cancelled','Closed') THEN 1 ELSE 0 END) AS todayFollowUps,
-          SUM(CASE WHEN w.follow_up_date < CURDATE() AND w.customer_status NOT IN ('Converted','Visited Store','Not Interested','Cancelled','Closed') THEN 1 ELSE 0 END) AS overdueFollowUps,
-          SUM(CASE WHEN w.wedding_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY) THEN 1 ELSE 0 END) AS upcomingWeddings30,
-          SUM(CASE WHEN w.wedding_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY) THEN 1 ELSE 0 END) AS upcomingWeddings7,
-          SUM(CASE WHEN w.customer_status = 'Shopping Date Confirmed' THEN 1 ELSE 0 END) AS shoppingConfirmed,
-          SUM(CASE WHEN w.customer_status IN ('Visited Store') THEN 1 ELSE 0 END) AS storeVisitsDone,
-          SUM(CASE WHEN w.customer_status = 'Converted' THEN 1 ELSE 0 END) AS purchaseCompleted,
-          SUM(CASE WHEN w.customer_status = 'Not Interested' THEN 1 ELSE 0 END) AS notInterested,
-          SUM(CASE WHEN w.customer_status IN ('Cancelled','Closed') THEN 1 ELSE 0 END) AS cancelledClosed
-        FROM wedding_customers w
-        WHERE w.is_deleted = 0 ${locClause}
-      `, params);
-
-      let todayVisits = 0;
-      let todayAppointments = 0;
-      try {
-        const [visitRows] = await pool.query(
+      // Parallelize mainStats, visitRows, and apptRows queries
+      const [
+        [mainStats],
+        visitResult,
+        apptResult
+      ] = await Promise.all([
+        pool.query(`
+          SELECT
+            COUNT(*) AS totalCustomers,
+            SUM(CASE WHEN DATE(w.created_at) = CURDATE() THEN 1 ELSE 0 END) AS todayRegistrations,
+            SUM(CASE WHEN w.follow_up_date = CURDATE() AND w.customer_status NOT IN ('Converted','Visited Store','Not Interested','Cancelled','Closed') THEN 1 ELSE 0 END) AS todayFollowUps,
+            SUM(CASE WHEN w.follow_up_date < CURDATE() AND w.customer_status NOT IN ('Converted','Visited Store','Not Interested','Cancelled','Closed') THEN 1 ELSE 0 END) AS overdueFollowUps,
+            SUM(CASE WHEN w.wedding_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY) THEN 1 ELSE 0 END) AS upcomingWeddings30,
+            SUM(CASE WHEN w.wedding_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY) THEN 1 ELSE 0 END) AS upcomingWeddings7,
+            SUM(CASE WHEN w.customer_status = 'Shopping Date Confirmed' THEN 1 ELSE 0 END) AS shoppingConfirmed,
+            SUM(CASE WHEN w.customer_status IN ('Visited Store') THEN 1 ELSE 0 END) AS storeVisitsDone,
+            SUM(CASE WHEN w.customer_status = 'Converted' THEN 1 ELSE 0 END) AS purchaseCompleted,
+            SUM(CASE WHEN w.customer_status = 'Not Interested' THEN 1 ELSE 0 END) AS notInterested,
+            SUM(CASE WHEN w.customer_status IN ('Cancelled','Closed') THEN 1 ELSE 0 END) AS cancelledClosed
+          FROM wedding_customers w
+          WHERE w.is_deleted = 0 ${locClause}
+        `, params),
+        pool.query(
           `SELECT COUNT(*) AS count FROM wedding_visits v WHERE v.visit_date = CURDATE() ${locClause.replace(/w\./g, 'v.')}`,
           params
-        );
-        todayVisits = Number(visitRows[0]?.count) || 0;
-      } catch (vErr) {
-        console.warn('[getEnhancedDashboardStats visits count fallback]', vErr.message);
-      }
-
-      try {
-        const [apptRows] = await pool.query(
+        ).catch(vErr => {
+          console.warn('[getEnhancedDashboardStats visits count fallback]', vErr.message);
+          return [[{ count: 0 }]];
+        }),
+        pool.query(
           `SELECT COUNT(*) AS count FROM wedding_appointments a WHERE a.appointment_date = CURDATE() ${locClause.replace(/w\./g, 'a.')}`,
           params
-        );
-        todayAppointments = Number(apptRows[0]?.count) || 0;
-      } catch (aErr) {
-        console.warn('[getEnhancedDashboardStats appts count fallback]', aErr.message);
-      }
+        ).catch(aErr => {
+          console.warn('[getEnhancedDashboardStats appts count fallback]', aErr.message);
+          return [[{ count: 0 }]];
+        })
+      ]);
 
+      const todayVisits = Number(visitResult?.[0]?.[0]?.count) || 0;
+      const todayAppointments = Number(apptResult?.[0]?.[0]?.count) || 0;
       const main = mainStats[0] || {};
       const stats = {
         totalCustomers: Number(main.totalCustomers) || 0,
@@ -2868,7 +2882,7 @@ class WeddingController {
       if (!new_status) return errorRes(res, 'new_status is required', [], 400);
 
       const placeholders = customer_ids.map(() => '?').join(',');
-      const { clause: locClause, params: locParams } = resolveLocFilter(req, 'w');
+      const { clause: locClause, params: locParams } = resolveLocFilter(req, '');
 
       await pool.query(
         `UPDATE wedding_customers SET customer_status = ? WHERE id IN (${placeholders}) AND is_deleted = 0 ${locClause}`,
@@ -2903,7 +2917,7 @@ class WeddingController {
       if (!assigned_telecaller) return errorRes(res, 'assigned_telecaller is required', [], 400);
 
       const placeholders = customer_ids.map(() => '?').join(',');
-      const { clause: locClause, params: locParams } = resolveLocFilter(req, 'w');
+      const { clause: locClause, params: locParams } = resolveLocFilter(req, '');
 
       await pool.query(
         `UPDATE wedding_customers SET assigned_telecaller = ?, assigned_telecaller_id = ? WHERE id IN (${placeholders}) AND is_deleted = 0 ${locClause}`,
@@ -2937,12 +2951,12 @@ class WeddingController {
         const [overview] = await pool.query(`
           SELECT
             COUNT(*) AS total_customers,
-            SUM(CASE WHEN DATE(created_at) = CURDATE() THEN 1 ELSE 0 END) AS today_new,
-            SUM(CASE WHEN customer_status = 'Converted' THEN 1 ELSE 0 END) AS converted,
-            SUM(CASE WHEN customer_status = 'Not Interested' THEN 1 ELSE 0 END) AS not_interested,
-            SUM(CASE WHEN customer_status IN ('Cancelled','Closed') THEN 1 ELSE 0 END) AS closed,
-            AVG(total_calls_count) AS avg_calls_per_customer
-          FROM wedding_customers WHERE is_deleted = 0 ${locClause}
+            SUM(CASE WHEN DATE(w.created_at) = CURDATE() THEN 1 ELSE 0 END) AS today_new,
+            SUM(CASE WHEN w.customer_status = 'Converted' THEN 1 ELSE 0 END) AS converted,
+            SUM(CASE WHEN w.customer_status = 'Not Interested' THEN 1 ELSE 0 END) AS not_interested,
+            SUM(CASE WHEN w.customer_status IN ('Cancelled','Closed') THEN 1 ELSE 0 END) AS closed,
+            AVG(w.total_calls_count) AS avg_calls_per_customer
+          FROM wedding_customers w WHERE w.is_deleted = 0 ${locClause}
         `, params);
         data.overview = overview[0] || {};
       }
@@ -3244,33 +3258,37 @@ class WeddingController {
       const endYear = targetMonth === 12 ? targetYear + 1 : targetYear;
       const end = `${endYear}-${String(endMonth).padStart(2,'0')}-01`;
 
-      const [followups] = await pool.query(`
-        SELECT w.id, w.customer_name, w.follow_up_date AS date, 'followup' AS event_type, w.customer_status, w.assigned_telecaller
-        FROM wedding_customers w
-        WHERE w.is_deleted=0 AND w.follow_up_date >= ? AND w.follow_up_date < ? ${locClause}
-        ORDER BY w.follow_up_date
-      `, [start, end, ...params]);
-
-      const [weddings] = await pool.query(`
-        SELECT w.id, w.customer_name, w.wedding_date AS date, 'wedding' AS event_type, w.bride_name, w.groom_name
-        FROM wedding_customers w
-        WHERE w.is_deleted=0 AND w.wedding_date IS NOT NULL AND w.wedding_date >= ? AND w.wedding_date < ? ${locClause}
-        ORDER BY w.wedding_date
-      `, [start, end, ...params]);
-
-      const [appts] = await pool.query(`
-        SELECT a.id, a.customer_id, a.appointment_date AS date, a.appointment_time AS time, 'appointment' AS event_type, a.purpose, a.appointment_status
-        FROM wedding_appointments a
-        WHERE a.appointment_date >= ? AND a.appointment_date < ? ${locClause.replace('w.','a.')}
-        ORDER BY a.appointment_date
-      `, [start, end, ...params]);
-
-      const [visits] = await pool.query(`
-        SELECT v.id, v.customer_id, v.visit_date AS date, v.visit_time AS time, 'visit' AS event_type, v.purpose, v.visit_status
-        FROM wedding_visits v
-        WHERE v.visit_date >= ? AND v.visit_date < ? ${locClause.replace('w.','v.')}
-        ORDER BY v.visit_date
-      `, [start, end, ...params]);
+      const [
+        [followups],
+        [weddings],
+        [appts],
+        [visits]
+      ] = await Promise.all([
+        pool.query(`
+          SELECT w.id, w.customer_name, w.follow_up_date AS date, 'followup' AS event_type, w.customer_status, w.assigned_telecaller
+          FROM wedding_customers w
+          WHERE w.is_deleted=0 AND w.follow_up_date >= ? AND w.follow_up_date < ? ${locClause}
+          ORDER BY w.follow_up_date
+        `, [start, end, ...params]),
+        pool.query(`
+          SELECT w.id, w.customer_name, w.wedding_date AS date, 'wedding' AS event_type, w.bride_name, w.groom_name
+          FROM wedding_customers w
+          WHERE w.is_deleted=0 AND w.wedding_date IS NOT NULL AND w.wedding_date >= ? AND w.wedding_date < ? ${locClause}
+          ORDER BY w.wedding_date
+        `, [start, end, ...params]),
+        pool.query(`
+          SELECT a.id, a.customer_id, a.appointment_date AS date, a.appointment_time AS time, 'appointment' AS event_type, a.purpose, a.appointment_status
+          FROM wedding_appointments a
+          WHERE a.appointment_date >= ? AND a.appointment_date < ? ${locClause.replace('w.','a.')}
+          ORDER BY a.appointment_date
+        `, [start, end, ...params]),
+        pool.query(`
+          SELECT v.id, v.customer_id, v.visit_date AS date, v.visit_time AS time, 'visit' AS event_type, v.purpose, v.visit_status
+          FROM wedding_visits v
+          WHERE v.visit_date >= ? AND v.visit_date < ? ${locClause.replace('w.','v.')}
+          ORDER BY v.visit_date
+        `, [start, end, ...params])
+      ]);
 
       const events = [
         ...(followups || []).map(e => ({ ...e, start: e.date, title: `Follow-up: ${e.customer_name}` })),

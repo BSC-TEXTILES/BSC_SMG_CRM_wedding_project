@@ -17,7 +17,7 @@ interface PageContainerProps {
 export default function PageContainer({
   children,
   className = '',
-  maxWidth = '7xl'
+  maxWidth = 'full'
 }: PageContainerProps) {
   const maxWidthClasses = {
     full: 'max-w-full',

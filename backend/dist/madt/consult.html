@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#F3EEE7">
+  <title>Book a consultation — MADT</title>
+  <meta name="description" content="Book a consultation at MADT, Hubballi. An hour for cloth, a suit fitting, jewellery or a wedding list.">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/fonts.css">
+  <link rel="stylesheet" href="/css/site.css">
+  <script>try{if(sessionStorage.getItem("madt_booted"))document.documentElement.classList.add("booted");}catch(e){}</script>
+</head>
+<body data-page="consult">
+  <a class="skip" href="#main">Skip to content</a>
+  <div id="loader" role="status" aria-label="Loading"><div class="loader-inner" aria-hidden="true"><span class="loader-word">MADT</span><span class="loader-rule"></span></div></div>
+  <noscript><style>#loader{display:none}</style></noscript>
+  <header class="site-header">
+    <div class="header-bar">
+      <a class="logo" href="/" aria-label="MADT, Hubballi — home"><span class="logo-word">MADT</span><span class="logo-sub">Hubballi</span></a>
+      <nav class="desk-nav" aria-label="Primary"><ul>
+        <li><a href="/#house">House</a></li><li><a href="/#collections">Collections</a></li><li><a href="/#wedding">Wedding</a></li><li><a href="/#stores">Stores</a></li><li><a href="/#visit">Visit</a></li>
+      </ul></nav>
+      <div class="header-end">
+        <button class="icon-btn" type="button" id="search-open" aria-label="Search the house"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="11" cy="11" r="6.25" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M16 16.5 20 20.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+        <a class="quiet-link nav-login" href="/login">Login</a>
+        <a class="quiet-link nav-account" href="/desk" hidden>Account</a>
+        <button class="quiet-link nav-logout" type="button" hidden>Logout</button>
+        <a class="btn btn-sm nav-book" href="/consult" aria-current="page">Book a visit</a>
+        <button class="menu-btn" type="button" id="menu-btn" aria-expanded="false" aria-controls="mobile-menu" aria-label="Open menu"><span></span><span></span><span></span></button>
+      </div>
+    </div>
+  </header>
+  <div class="mobile-menu" id="mobile-menu" hidden><nav aria-label="Mobile"><ul>
+    <li><a href="/#house">House</a></li><li><a href="/#collections">Collections</a></li><li><a href="/#wedding">Wedding</a></li><li><a href="/#stores">Stores</a></li><li><a href="/#visit">Visit</a></li><li><a href="/consult">Book a visit</a></li>
+    <li><a class="nav-login" href="/login">Login</a></li><li><a class="nav-account" href="/desk" hidden>Account</a></li><li><button class="nav-logout" type="button" hidden>Logout</button></li>
+  </ul></nav></div>
+  <main id="main" class="subpage">
+    <div class="wrap page-grid">
+      <div>
+        <p class="kicker">Visit</p>
+        <h1>Book a consultation</h1>
+        <p class="lede">Ask for an hour on a particular floor. The desk keeps the note. Come only after the floor has confirmed the time.</p>
+        <form data-desk-form="consult" novalidate>
+          <p class="form-error" role="alert"></p>
+          <div class="hp" aria-hidden="true"><label>Company<input name="company" tabindex="-1" autocomplete="off"></label></div>
+          <div class="field"><label for="c-name">Name</label><input id="c-name" name="name" required maxlength="80" autocomplete="name"></div>
+          <div class="field"><label for="c-email">Email</label><input id="c-email" name="email" type="email" required maxlength="120" autocomplete="email"></div>
+          <div class="field"><label for="c-phone">Phone</label><input id="c-phone" name="phone" type="tel" required inputmode="tel" autocomplete="tel" maxlength="20"></div>
+          <div class="field">
+            <label for="c-floor">Floor</label>
+            <select id="c-floor" name="floor">
+              <option>Flagship, Koppikar Road</option>
+              <option>Suit desk, Coen Road</option>
+              <option>Home floor, Vidyanagar</option>
+              <option>Wedding room</option>
+              <option>Jewellery room</option>
+            </select>
+          </div>
+          <div class="field"><label for="c-day">Preferred day</label><input id="c-day" name="day" maxlength="40" placeholder="Thursday afternoon"></div>
+          <div class="field"><label for="c-note">What you want to see</label><textarea id="c-note" name="note" maxlength="1000"></textarea></div>
+          <button class="btn" type="submit">Book consultation</button>
+        </form>
+        <div class="confirm" id="confirm" hidden>
+          <h2>The desk has the request.</h2>
+          <p>This reference is for your visit. It is not a confirmed booking yet.</p>
+          <p class="ref" data-ref></p>
+          <div id="advocacy-output" class="advocacy-box" style="margin: 1.25rem 0; padding: 1rem; background: var(--paper-2); border-radius: 6px; border: 1px solid var(--line);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+              <span style="font-size:0.75rem; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:var(--muted);">Advocacy Letter</span>
+              <button type="button" class="btn btn-sm" id="copy-advocacy-btn">Copy to clipboard</button>
+            </div>
+            <pre id="advocacy-text" style="font-family: inherit; font-size: 0.88rem; line-height: 1.6; white-space: pre-wrap; margin: 0; color: var(--ink-soft); max-height: 320px; overflow-y: auto;"></pre>
+          </div>
+          <p><a href="/#stores">See the counters</a></p>
+        </div>
+      </div>
+      <aside class="note-panel">
+        <h2>Hours</h2>
+        <p>Flagship, Koppikar Road: 10:30–20:30, all week.</p>
+        <p>Home floor, Vidyanagar: 10:30–20:00, all week.</p>
+        <p>Suit desk, Coen Road: 11:00–20:00, Tuesday to Sunday. Monday by appointment.</p>
+      </aside>
+    </div>
+  </main>
+  <footer class="site-footer">
+    <div class="wrap footer-base">
+      <p>© 2026 MADT House, Hubballi.</p>
+      <ul><li><a href="/">House</a></li><li><a href="/privacy">Privacy</a></li><li><a href="/terms">Terms</a></li><li><a href="/login">Login</a></li></ul>
+    </div>
+  </footer>
+  <dialog id="search-dialog" aria-labelledby="search-title">
+    <form id="search-form" role="search">
+      <div class="dialog-head"><h2 id="search-title">Search the house</h2><button class="text-btn" type="button" data-close-search>Close</button></div>
+      <input id="search-input" type="search" placeholder="Women, wedding, towels…" autocomplete="off" aria-label="Search">
+    </form>
+    <ul id="search-results"></ul>
+  </dialog>
+  <script src="/js/autoAdvocation.js"></script>
+  <script src="/js/site.js"></script>
+</body>
+</html>

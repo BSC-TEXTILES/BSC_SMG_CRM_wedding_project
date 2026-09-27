@@ -1,48 +1,83 @@
 @echo off
 setlocal enabledelayedexpansion
-title BSC Enterprise HRMS - Local Launcher
+title BSC Enterprise HRMS & Wedding CRM - System Launcher
 
 echo ===============================================================================
-echo            BSC ENTERPRISE HRMS ^& CRM - LOCAL SYSTEM LAUNCHER
+echo            BSC ENTERPRISE HRMS ^& WEDDING CRM - SYSTEM LAUNCHER
 echo ===============================================================================
 echo.
 
 cd /d "%~dp0"
 
-:: 1. Check and start MySQL service if stopped
-echo [1/4] Checking MySQL Database Service...
+:: 1. Check Node.js and npm installation
+echo [1/5] Checking Node.js environment...
+where node >nul 2>nul
+if %errorlevel% neq 0 (
+    echo [ERROR] Node.js is not found in PATH!
+    echo Please install Node.js v18 or higher from https://nodejs.org/
+    pause
+    exit /b 1
+)
+
+where npm >nul 2>nul
+if %errorlevel% neq 0 (
+    echo [ERROR] npm is not found in PATH!
+    pause
+    exit /b 1
+)
+
+:: 2. Check dependencies
+echo [2/5] Verifying project dependencies...
+if not exist "node_modules" (
+    echo [INFO] Root node_modules not found. Installing dependencies...
+    call npm install
+)
+
+if not exist "frontend\node_modules" (
+    echo [INFO] Frontend node_modules not found. Installing frontend dependencies...
+    pushd frontend
+    call npm install
+    popd
+)
+
+:: 3. Check and start MySQL service if stopped
+echo [3/5] Checking MySQL Database Service...
 sc query "MySQL80" 2>nul | find /i "RUNNING" >nul
 if %errorlevel% neq 0 (
-    echo [INFO] MySQL80 service is not running. Attempting to start...
+    echo [INFO] Attempting to start MySQL Windows service...
     net start MySQL80 >nul 2>&1
     if %errorlevel% neq 0 (
         net start MySQL >nul 2>&1
     )
 )
 
-:: 2. Verify and initialize database if needed
-echo [2/4] Verifying and connecting to local database...
+:: 4. Verify and initialize database if needed
+echo [4/5] Verifying database connectivity and schema...
 node backend/src/scripts/init_local_db.js
 if %errorlevel% neq 0 (
-    echo [ERROR] Could not connect to local MySQL database.
-    echo Please make sure your MySQL service is running on port 3306.
-    pause
-    exit /b 1
+    echo [WARNING] Direct MySQL service check had an issue.
+    echo If MySQL is running via XAMPP, Docker, or another port, proceeding to launch...
 )
 
-:: 3. Inform user of access URLs
+:: 5. Display Access URLs & Credentials
 echo.
-echo [3/4] Preparing to launch application...
-echo -------------------------------------------------------------------------------
-echo   Frontend Web App : http://localhost:3000
-echo   Backend API      : http://localhost:5000
-echo   Default Admin    : admin@bsctextiles.com / admin@2026
-echo -------------------------------------------------------------------------------
+echo [5/5] Launching Application Services...
+echo ===============================================================================
+echo   * Public Website     : http://localhost:3000
+echo   * Portal Login       : http://localhost:3000/login
+echo   * Wedding Registry   : http://localhost:3000/wedding/register
+echo   * Backend REST API   : http://localhost:5000/api
+echo   * Admin Credentials  : admin@bsctextiles.com / admin@2026
+echo ===============================================================================
 echo.
 
-:: 4. Automatically open the default browser after 3 seconds
-echo [4/4] Opening browser at http://localhost:3000 ...
+:: Automatically open default browser after 3 seconds
 start "" cmd /c "timeout /t 3 /nobreak >nul & start http://localhost:3000"
 
 :: Start Frontend and Backend servers concurrently
-npm run dev
+call npm run dev
+if %errorlevel% neq 0 (
+    echo.
+    echo [ERROR] Server encountered an error and stopped.
+    pause
+)

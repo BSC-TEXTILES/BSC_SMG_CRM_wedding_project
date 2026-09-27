@@ -5,22 +5,19 @@ const weddingRegistrationController = require('../controllers/weddingRegistratio
 const { authenticate, authorize } = require('../middleware/auth');
 const { errorRes } = require('../utils/response');
 
-// Rate limiter for public tracking (prevent brute-force)
-const trackingLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 30,
-  message: { success: false, message: 'Too many tracking attempts. Please try again after 15 minutes.' },
-  standardHeaders: true,
-  legacyHeaders: false
-});
+const {
+  publicRegistrationRateLimiter,
+  duplicateCheckRateLimiter,
+  publicTrackingRateLimiter
+} = require('../security/rateLimiters');
 
-// Public registration route (no auth required for customer registration)
-router.post('/public/wedding-registration', weddingRegistrationController.createRegistration);
-router.get('/public/wedding-registration/next-id', weddingRegistrationController.getNextRegistrationId);
-router.post('/public/wedding-registration/check-duplicate', weddingRegistrationController.checkDuplicate);
+// Public registration routes (no auth required for customer registration, strictly rate-limited)
+router.post('/public/wedding-registration', publicRegistrationRateLimiter, weddingRegistrationController.createRegistration);
+router.get('/public/wedding-registration/next-id', duplicateCheckRateLimiter, weddingRegistrationController.getNextRegistrationId);
+router.post('/public/wedding-registration/check-duplicate', duplicateCheckRateLimiter, weddingRegistrationController.checkDuplicate);
 
 // Public tracking route (no auth, rate-limited)
-router.post('/public/wedding-registration/track', trackingLimiter, weddingRegistrationController.trackRegistration);
+router.post('/public/wedding-registration/track', publicTrackingRateLimiter, weddingRegistrationController.trackRegistration);
 
 // All other routes require authentication
 router.use(authenticate);

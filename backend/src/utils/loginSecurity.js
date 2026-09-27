@@ -112,8 +112,9 @@ class LoginSecurity {
     let isBot = false;
     let reason = '';
 
-    // In test environment, skip user-agent inspection and rapid bursts so automated test suites run cleanly
-    if (process.env.NODE_ENV === 'test' || process.env.PORT === '3777' || process.env.PORT === '3778') {
+    // In test environment or loopback, skip user-agent inspection and rapid bursts so automated suites and local development run cleanly
+    const isLoopback = ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1';
+    if (isLoopback || process.env.NODE_ENV === 'test' || process.env.PORT === '3777' || process.env.PORT === '3778') {
       return { detected: false, remainingSeconds: 0 };
     }
 
@@ -216,6 +217,13 @@ class LoginSecurity {
       ipState.failedAttempts = 0;
       ipState.lockedUntil = 0;
     }
+  }
+
+  /**
+   * Alias for resetting failed attempt counters
+   */
+  resetAttempts(username, ip) {
+    this.recordSuccess(username, ip);
   }
 
   async _logSecurityEvent(username, action, details) {

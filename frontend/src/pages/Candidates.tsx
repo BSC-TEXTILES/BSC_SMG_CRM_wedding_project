@@ -710,7 +710,7 @@ export default function CandidatesPage() {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={9} className="py-12 text-center text-xs text-primary font-semibold">
+                      <td colSpan={10} className="py-12 text-center text-xs text-primary font-semibold">
                         No candidates found matching criteria.
                       </td>
                     </tr>

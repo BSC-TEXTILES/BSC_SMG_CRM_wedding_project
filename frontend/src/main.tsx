@@ -3,6 +3,13 @@ import ReactDOM from 'react-dom/client'
 import App from './App'
 import './index.css'
 
+// Disable React DevTools in production
+if (import.meta.env.PROD || process.env.NODE_ENV === 'production') {
+  if (typeof window !== 'undefined') {
+    (window as any).__REACT_DEVTOOLS_GLOBAL_HOOK__ = { isDisabled: true };
+  }
+}
+
 // Suppress benign third-party library errors
 if (typeof window !== 'undefined') {
   const originalError = window.console.error;

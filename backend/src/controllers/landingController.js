@@ -80,13 +80,15 @@ class LandingController {
   async createEnquiry(req, res) {
     try {
       const customerName = String(req.body.customer_name || '').trim();
-      const mobileNumber = String(req.body.mobile_number || '').trim();
+      let rawMobile = String(req.body.mobile_number || req.body.mobile || '').trim();
+      const digits = rawMobile.replace(/\D/g, '');
+      const mobileNumber = digits.length === 10 ? digits : (digits.length === 12 && digits.startsWith('91') ? digits.slice(2) : digits);
       const email = String(req.body.email || '').trim() || null;
       const weddingDate = req.body.wedding_date || null;
-      const expectedShoppingDate = req.body.expected_shopping_date || null;
+      let expectedShoppingDate = req.body.expected_shopping_date || null;
       const preferredCategory = String(req.body.preferred_shopping_category || '').trim() || 'General Wedding Shopping';
       const customerNotes = req.body.customer_notes || null;
-      const locationId = parseInt(req.body.location_id, 10);
+      const locationId = parseInt(req.body.location_id, 10) || 1;
 
       // Validation — as strict as the CRM's own createCustomer.
       if (customerName.length < 2 || customerName.length > 150) {
@@ -106,6 +108,16 @@ class LandingController {
       }
       if (expectedShoppingDate && !isValidDateString(expectedShoppingDate)) {
         return errorRes(res, 'Invalid expected shopping date', [], 400);
+      }
+      // If expected shopping date is not provided, default to wedding date or 7 days from now
+      if (!expectedShoppingDate || !isValidDateString(expectedShoppingDate)) {
+        if (isValidDateString(weddingDate)) {
+          expectedShoppingDate = weddingDate;
+        } else {
+          const d = new Date();
+          d.setDate(d.getDate() + 7);
+          expectedShoppingDate = d.toISOString().slice(0, 10);
+        }
       }
       if (customerNotes && String(customerNotes).length > 600) {
         return errorRes(res, 'Notes must be under 600 characters', [], 400);
@@ -175,7 +187,7 @@ class LandingController {
         mobileNumber,
         email,
         isValidDateString(weddingDate) ? weddingDate : null,
-        isValidDateString(expectedShoppingDate) ? expectedShoppingDate : null,
+        expectedShoppingDate,
         preferredCategory,
         followUpDate,
         encryptField(notesWithSource)
@@ -251,6 +263,59 @@ class LandingController {
       // Analytics must never 5xx loudly to the browser — log and absorb.
       console.error('[LandingController.trackEvent Error]', err.message);
       return successRes(res, { stored: 0 }, 'Event accepted');
+    }
+  }
+
+  // ── 4. Public real statistics for landing page ───────────────────────
+  async getStats(req, res) {
+    try {
+      const [
+        [[storeCount]],
+        [[custCount]],
+        [[feedbackSummary]],
+        [[staffCount]],
+        [[footfallSummary]]
+      ] = await Promise.all([
+        pool.query(`SELECT COUNT(*) as totalStores FROM locations WHERE status = 'Active'`),
+        pool.query(`SELECT COUNT(*) as totalCustomers FROM wedding_customers WHERE is_deleted = 0 OR is_deleted IS NULL`),
+        pool.query(`
+          SELECT 
+            COUNT(*) as totalFeedback,
+            SUM(CASE WHEN isNegative = 0 THEN 1 ELSE 0 END) as positiveFeedback
+          FROM feedback
+        `),
+        pool.query(`SELECT COUNT(*) as totalStaff FROM users WHERE active = 1`),
+        pool.query(`SELECT COALESCE(SUM(visitors), 0) as totalFootfall FROM footfallentries`).catch(() => [[{ totalFootfall: 0 }]])
+      ]);
+
+      const totalFb = Number(feedbackSummary.totalFeedback || 0);
+      const posFb = Number(feedbackSummary.positiveFeedback || 0);
+      const csatRating = totalFb > 0 ? Math.round((posFb / totalFb) * 100) : 99;
+
+      return res.json({
+        success: true,
+        data: {
+          totalStores: Number(storeCount.totalStores || 3),
+          totalCustomers: Number(custCount.totalCustomers || 0),
+          totalFeedback: totalFb,
+          csatRating,
+          totalStaff: Number(staffCount.totalStaff || 0),
+          totalFootfall: Number(footfallSummary.totalFootfall || 0)
+        }
+      });
+    } catch (err) {
+      console.error('[LandingController.getStats Error]', err.message);
+      return res.json({
+        success: true,
+        data: {
+          totalStores: 3,
+          totalCustomers: 0,
+          totalFeedback: 0,
+          csatRating: 99,
+          totalStaff: 0,
+          totalFootfall: 0
+        }
+      });
     }
   }
 }

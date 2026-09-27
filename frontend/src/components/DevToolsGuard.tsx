@@ -40,6 +40,12 @@ export default function DevToolsGuard() {
 
   // Synchronize shield armed state from server (on mount, window focus, interval, and Socket.IO push)
   useEffect(() => {
+    const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+    const isPublicPage = currentPath === '/' || currentPath.startsWith('/madt') || currentPath.startsWith('/feedback') || currentPath === '/login' || currentPath === '/apply';
+    if (isPublicPage) {
+      return;
+    }
+
     let disposed = false;
 
     const fetchStatus = async () => {
@@ -91,8 +97,14 @@ export default function DevToolsGuard() {
 
   // Subscribe to live DevToolsDetector state
   useEffect(() => {
+    const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+    const isPublicPage = currentPath === '/' || currentPath.startsWith('/madt') || currentPath.startsWith('/feedback') || currentPath === '/login' || currentPath === '/apply';
+    if (isPublicPage) {
+      return;
+    }
+
     const unsub = DevToolsDetector.subscribe((state) => {
-      setIsOpen(state.isOpen);
+      setIsOpen(prev => prev !== state.isOpen ? state.isOpen : prev);
     });
     return unsub;
   }, []);

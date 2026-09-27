@@ -34,7 +34,8 @@ class RealtimeClient {
         : window.location.origin;
 
       const session = Auth.get();
-      const token = session?.token;
+      // Token is in HttpOnly cookie - passed via query param for Socket.IO handshake
+      // Server validates cookie on connection
 
       this.socket = io(apiBase, {
         autoConnect: true,
@@ -43,7 +44,10 @@ class RealtimeClient {
         reconnectionDelay: 2000,
         timeout: 10000,
         auth: {
-          token
+          // Token is sent via HttpOnly cookie automatically with credentials: true
+          // but Socket.IO needs it in auth for initial handshake
+          sessionId: session?.id,
+          locationId: session?.locationId || ''
         },
         query: {
           locationId: session?.locationId || ''

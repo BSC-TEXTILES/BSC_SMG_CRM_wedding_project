@@ -34,7 +34,7 @@ const defaultQuestions = [
   { id: 'q2', question: 'Did you find the product you were looking for?', category: 'Product Availability', options: ['Yes, exactly what I wanted', 'Yes, with assistance', 'Partially', 'No'] },
   { id: 'q3', question: 'How would you rate the quality & variety of our collection?', category: 'Collection Quality', options: ['Excellent', 'Good', 'Average', 'Poor'] },
   { id: 'q4', question: 'How would you rate the behavior and helpfulness of our staff?', category: 'Staff Courtesy', options: ['Extremely helpful', 'Helpful', 'Average', 'Poor'] },
-  { id: 'q5', question: 'How likely are you to recommend BSC Exclusive to your friends and family?', category: 'Store Recommendation', options: ['Definitely recommend', 'Probably recommend', 'Neutral', 'Not recommend'] }
+  { id: 'q5', question: 'How likely are you to recommend BSC Textiles to your friends and family?', category: 'Store Recommendation', options: ['Definitely recommend', 'Probably recommend', 'Neutral', 'Not recommend'] }
 ];
 
 // Location codes for the 3 standard locations
@@ -154,7 +154,7 @@ export default function PublicFeedback() {
           <div>
             <h2 className="text-2xl font-black text-primary">BSC Customer Feedback</h2>
             <p className="text-gray-600 text-xs font-semibold mt-1">
-              Please select the BSC Exclusive store you visited today to start your feedback:
+              Please select the BSC Textiles store you visited today to start your feedback:
             </p>
           </div>
           <div className="space-y-3">
@@ -222,7 +222,7 @@ export default function PublicFeedback() {
           </button>
 
           <div className="text-[10.5px] text-white/50 font-bold">
-            BSC EXCLUSIVE • LUXURY STORE KIOSK FEEDBACK SYSTEM
+            BSC Textiles • LUXURY STORE KIOSK FEEDBACK SYSTEM
           </div>
         </div>
       </div>

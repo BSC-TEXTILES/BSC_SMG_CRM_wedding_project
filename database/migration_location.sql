@@ -49,7 +49,7 @@ WHERE u.location_id IS NOT NULL;
 -- 6. Add location_id to candidates table
 ALTER TABLE `candidates` ADD COLUMN `location_id` INT NOT NULL DEFAULT 2;
 ALTER TABLE `candidates` ADD COLUMN `location_code` VARCHAR(10) NOT NULL DEFAULT 'DAV';
-CREATE INDEX IF NOT EXISTS `idx_candidates_location` ON `candidates`(`location_id`);
+ALTER TABLE `candidates` ADD INDEX `idx_candidates_location` (`location_id`);
 
 -- Update existing candidates to Davanagere
 UPDATE `candidates` SET `location_id` = 2, `location_code` = 'DAV' 
@@ -89,7 +89,7 @@ UPDATE `exit_records` SET `location_id` = 2 WHERE `location_id` = 0;
 
 -- 15. Add location_id to mcheck_responses
 ALTER TABLE `mcheck_responses` ADD COLUMN `location_id` INT NOT NULL DEFAULT 2;
-CREATE INDEX IF NOT EXISTS `idx_mcheck_resp_location` ON `mcheck_responses`(`location_id`, `response_date`);
+ALTER TABLE `mcheck_responses` ADD INDEX `idx_mcheck_resp_location` (`location_id`, `response_date`);
 UPDATE `mcheck_responses` SET `location_id` = 2 WHERE `location_id` = 0;
 
 -- 16. Add location_id to mcheck_audit_log (if exists)
@@ -98,7 +98,7 @@ UPDATE `mcheck_audit_log` SET `location_id` = 2 WHERE `location_id` = 0;
 
 -- 17. Add location_id to department_hiring_targets
 ALTER TABLE `department_hiring_targets` ADD COLUMN `location_id` INT NOT NULL DEFAULT 2;
-CREATE INDEX IF NOT EXISTS `idx_dept_hiring_location` ON `department_hiring_targets`(`location_id`);
+ALTER TABLE `department_hiring_targets` ADD INDEX `idx_dept_hiring_location` (`location_id`);
 UPDATE `department_hiring_targets` SET `location_id` = 2 WHERE `location_id` = 0;
 
 -- 18. Add location_id to section_allocations (if table exists)

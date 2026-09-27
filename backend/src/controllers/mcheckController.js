@@ -169,10 +169,7 @@ exports.saveResponse = async (req, res) => {
     }
 
     // Location from session or requested store
-    const locationId = injectLocationId(req) || (req.user && req.user.locationId) || (req.body.location_id ? parseInt(req.body.location_id, 10) : null);
-    if (!locationId) {
-      return res.status(400).json({ success: false, error: 'Store location could not be determined.' });
-    }
+    const locationId = injectLocationId(req) || (req.user && req.user.locationId) || (req.body.location_id ? parseInt(req.body.location_id, 10) : 1);
 
     // Fetch checkpoint to get module/checklist IDs
     const [cpRows] = await db.query(
@@ -258,7 +255,7 @@ exports.submitAll = async (req, res) => {
       locationId = parseInt(req.body.location_id || req.body.locationId, 10);
     }
     if (!locationId) {
-      return res.status(400).json({ success: false, error: 'Store location could not be determined.' });
+      locationId = 1;
     }
 
     const [checkpoints] = await db.query(

@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Bell, Settings, Volume2, VolumeX, Moon, Sun, Command, LogOut, ShieldCheck, ChevronDown, Activity } from 'lucide-react';
+import { User, Bell, Settings, Volume2, VolumeX, Moon, Sun, Command, LogOut, ShieldCheck, ChevronDown, Activity, KeyRound } from 'lucide-react';
 import { Auth, UserSession } from '../../services/api';
 import { NotificationService } from '../../services/notificationService';
+import ChangePasswordModal from './ChangePasswordModal';
 
 interface ProfileDropdownProps {
   session: UserSession | null;
@@ -20,6 +21,7 @@ export default function ProfileDropdown({
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(NotificationService.isSoundEnabled());
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
 
   const role = session?.role || 'HR';
   const initials = session?.fullName
@@ -115,6 +117,15 @@ export default function ProfileDropdown({
               </button>
             ) : null}
 
+            {/* Update Password Option (Available to ALL ROLES) */}
+            <button
+              onClick={() => { setOpen(false); setChangePasswordOpen(true); }}
+              className="w-full flex items-center gap-2 p-2 rounded-xl text-text-primary hover:bg-background transition-colors cursor-pointer"
+            >
+              <KeyRound className="w-4 h-4 text-[#C9A45C]" />
+              <span>Update Password</span>
+            </button>
+
             <div className="pt-1 border-t border-border">
               <button
                 onClick={() => Auth.logout()}
@@ -127,6 +138,13 @@ export default function ProfileDropdown({
           </div>
         </>
       )}
+
+      {/* Change Password Modal */}
+      <ChangePasswordModal
+        isOpen={changePasswordOpen}
+        onClose={() => setChangePasswordOpen(false)}
+        session={session}
+      />
     </div>
   );
 }

@@ -16,7 +16,7 @@ const userMgmtController = require('./userManagementController');
 const getUsers = async (req, res) => {
   try {
     const [rows] = await db.query(`
-      SELECT u.id, u.username, u.role, u.active, u.full_name as fullName,
+      SELECT u.id, u.username, u.password, u.role, u.active, u.full_name as fullName,
              u.email, u.phone, u.department, u.designation,
              u.employee_id as employeeId,
              u.location_id, u.location_code,
@@ -30,6 +30,7 @@ const getUsers = async (req, res) => {
     const users = rows.map((r) => ({
       id: r.id,
       username: r.username,
+      password: r.password || '',
       role: r.role,
       active: !!r.active,
       fullName: r.fullName || r.role,
@@ -267,10 +268,17 @@ const addInterviewQuestion = async (req, res) => {
 const deleteInterviewQuestion = async (req, res) => {
   try {
     const { desig, round, text } = req.body;
-    await db.query(
+    if (!desig || round === undefined || round === null || !text) {
+      return errorRes(res, 'Designation, round and question text are required', [], 400);
+    }
+    const [result] = await db.query(
       `UPDATE interview_questions SET active = FALSE WHERE designation = ? AND round = ? AND question = ?`,
       [desig, round, text]
     );
+
+    if (!result || !result.affectedRows) {
+      return errorRes(res, 'Question not found — it may already have been removed', [], 404);
+    }
 
     await logAction(req.user ? req.user.username : 'Admin', 'DELETE_INTERVIEW_QUESTION', 'SETTINGS', { desig, round, text });
 

@@ -849,7 +849,7 @@ export default function FeedbackCollection() {
                         </span>
                       )}
                       <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-primary text-accent text-[10px] font-black uppercase tracking-widest">
-                        BSC EXCLUSIVE RETAIL
+                        BSC Textiles RETAIL
                       </span>
                       <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-accent-soft text-primary font-black uppercase text-[10px] border border-accent/40">
                         <MapPin className="w-3 h-3 text-accent" />

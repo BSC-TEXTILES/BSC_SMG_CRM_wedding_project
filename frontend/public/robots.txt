@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /dashboard
+Disallow: /hr-dashboard
+Disallow: /manager-dashboard
+Disallow: /settings
+
+Sitemap: https://bsctextiles.in/sitemap.xml

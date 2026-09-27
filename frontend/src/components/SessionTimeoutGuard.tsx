@@ -19,7 +19,7 @@ export default function SessionTimeoutGuard() {
   useEffect(() => {
     const tick = () => {
       const session = Auth.get();
-      if (!session || !session.token) return; // not signed in - nothing to do
+      if (!session) return; // not signed in - nothing to do
       const startedAt = session.loginAt || 0;
       if (Date.now() - startedAt > SESSION_MS) {
         Auth.logout();

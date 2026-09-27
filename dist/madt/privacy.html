@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#F3EEE7">
+  <title>Privacy — MADT</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/fonts.css">
+  <link rel="stylesheet" href="/css/site.css">
+  <script>try{if(sessionStorage.getItem("madt_booted"))document.documentElement.classList.add("booted");}catch(e){}</script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <div id="loader" role="status" aria-label="Loading"><div class="loader-inner" aria-hidden="true"><span class="loader-word">MADT</span><span class="loader-rule"></span></div></div>
+  <noscript><style>#loader{display:none}</style></noscript>
+  <header class="site-header">
+    <div class="header-bar">
+      <a class="logo" href="/" aria-label="MADT, Hubballi — home"><span class="logo-word">MADT</span><span class="logo-sub">Hubballi</span></a>
+      <nav class="desk-nav" aria-label="Primary"><ul>
+        <li><a href="/#house">House</a></li><li><a href="/#collections">Collections</a></li><li><a href="/#wedding">Wedding</a></li><li><a href="/#stores">Stores</a></li><li><a href="/#visit">Visit</a></li>
+      </ul></nav>
+      <div class="header-end">
+        <button class="icon-btn" type="button" id="search-open" aria-label="Search the house"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="11" cy="11" r="6.25" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M16 16.5 20 20.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+        <a class="quiet-link nav-login" href="/login">Login</a>
+        <a class="quiet-link nav-account" href="/desk" hidden>Account</a>
+        <button class="quiet-link nav-logout" type="button" hidden>Logout</button>
+        <a class="btn btn-sm nav-book" href="/consult">Book a visit</a>
+        <button class="menu-btn" type="button" id="menu-btn" aria-expanded="false" aria-controls="mobile-menu" aria-label="Open menu"><span></span><span></span><span></span></button>
+      </div>
+    </div>
+  </header>
+  <div class="mobile-menu" id="mobile-menu" hidden><nav aria-label="Mobile"><ul>
+    <li><a href="/">House</a></li><li><a href="/login">Login</a></li><li><a class="nav-account" href="/desk" hidden>Account</a></li><li><button class="nav-logout" type="button" hidden>Logout</button></li>
+  </ul></nav></div>
+  <main id="main" class="subpage">
+    <div class="wrap narrow">
+      <p class="kicker">MADT</p>
+      <h1>Privacy</h1>
+      <p>If you send a wedding register, a consultation request or a message, the site keeps your name, email, phone and the note you wrote. That note sits in the floor book for as long as this site is running. It is not sold, and this page does not load third-party trackers.</p>
+      <p>Signing in sets a session cookie on this site. The cookie is marked so scripts on the page cannot read it. Logging out clears it. The password you type is checked and then discarded. It is not stored in the browser.</p>
+      <p>A short flag in session storage remembers that you have already seen the opening mark, so it does not play on every page. You can clear it in your browser.</p>
+      <p>If you do not want a note kept, do not send the form. If you already sent one, ask the floor to mark it noted.</p>
+      <p><a href="/">Back to the house</a></p>
+    </div>
+  </main>
+  <footer class="site-footer">
+    <div class="wrap footer-base">
+      <p>© 2026 MADT House, Hubballi.</p>
+      <ul><li><a href="/">House</a></li><li><a href="/terms">Terms</a></li><li><a href="/login">Login</a></li></ul>
+    </div>
+  </footer>
+  <dialog id="search-dialog" aria-labelledby="search-title">
+    <form id="search-form" role="search">
+      <div class="dialog-head"><h2 id="search-title">Search the house</h2><button class="text-btn" type="button" data-close-search>Close</button></div>
+      <input id="search-input" type="search" autocomplete="off" aria-label="Search">
+    </form>
+    <ul id="search-results"></ul>
+  </dialog>
+  <script src="/js/site.js"></script>
+</body>
+</html>

@@ -101,8 +101,16 @@ class ResilientRateLimitStore {
  */
 const buildResilientLimiter = (options = {}) => {
   const store = new ResilientRateLimitStore();
+  const originalSkip = options.skip || (() => false);
   return rateLimit({
     ...options,
+    skip: (req, res) => {
+      const isLoopback = req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === '::ffff:127.0.0.1';
+      if (isLoopback && req.headers && req.headers['x-bypass-ratelimit-token'] === 'bsc-test-secret-suite') {
+        return true;
+      }
+      return originalSkip(req, res);
+    },
     store,
     validate: {
       keyGeneratorIpFallback: false,

@@ -24,6 +24,7 @@ import {
   RefreshCw,
   Eye,
   EyeOff,
+  Copy,
   SquareCheck,
   Square,
   Building2,
@@ -83,6 +84,9 @@ interface UserData {
   candidateAppNo?: string | null;
   section?: string | null;
   joiningDate?: string | null;
+  password?: string;
+  deactivated_until?: string | null;
+  deactivation_reason?: string | null;
 }
 
 interface AuditLog {
@@ -170,6 +174,8 @@ export default function UserManagementPage() {
   const [editDepartment, setEditDepartment] = useState('');
   const [editDesignation, setEditDesignation] = useState('');
   const [editEmployeeId, setEditEmployeeId] = useState('');
+  const [editPassword, setEditPassword] = useState('');
+  const [showEditPassword, setShowEditPassword] = useState(false);
   const [editRole, setEditRole] = useState('HR');
   const [editLocationId, setEditLocationId] = useState<string>('2');
   const [editLocationIds, setEditLocationIds] = useState<string[]>(['2']);
@@ -179,9 +185,35 @@ export default function UserManagementPage() {
   const [editSection, setEditSection] = useState('');
   const [editJoiningDate, setEditJoiningDate] = useState('');
 
+  // Password Visibility in User Table
+  const [visiblePasswords, setVisiblePasswords] = useState<{ [userId: number]: boolean }>({});
+  const [allPasswordsVisible, setAllPasswordsVisible] = useState(false);
+
+  // Deactivate User Modal State
+  const [deactivateModalOpen, setDeactivateModalOpen] = useState(false);
+  const [deactivatingUser, setDeactivatingUser] = useState<UserData | null>(null);
+  const [deactivationDuration, setDeactivationDuration] = useState<string>('7_days');
+  const [customDeactivateDate, setCustomDeactivateDate] = useState<string>('');
+  const [deactivationReason, setDeactivationReason] = useState<string>('');
+
+  const togglePasswordVisibility = (userId: number) => {
+    setVisiblePasswords(prev => ({ ...prev, [userId]: !prev[userId] }));
+  };
+
+  const handleToggleAllPasswords = () => {
+    const nextState = !allPasswordsVisible;
+    setAllPasswordsVisible(nextState);
+    const updated: { [userId: number]: boolean } = {};
+    users.forEach(u => {
+      updated[u.id] = nextState;
+    });
+    setVisiblePasswords(updated);
+  };
+
   // Form state - Reset Password
   const [newPassword, setNewPassword] = useState('');
   const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showCurrentModalPassword, setShowCurrentModalPassword] = useState(false);
 
   // State - Permissions Matrix
   const [userPermissions, setUserPermissions] = useState<Record<string, UserPermission>>({});
@@ -424,6 +456,8 @@ export default function UserManagementPage() {
     setEditDepartment(user.department || '');
     setEditDesignation(user.designation || '');
     setEditEmployeeId(user.employee_id || user.employeeId || '');
+    setEditPassword(user.password || '');
+    setShowEditPassword(false);
     setEditRole(user.role || 'HR');
     setEditLocationId(user.location_id ? String(user.location_id) : '2');
     const isGlobalScope = user.assigned_locations?.length === 0 && !user.location_id;
@@ -471,9 +505,14 @@ export default function UserManagementPage() {
         active: editActive
       };
 
+      if (editPassword.trim()) {
+        payload.password = editPassword.trim();
+      }
+
       await API.updateAdminUser(selectedUser.id, payload);
       showToast(`User "${selectedUser.username}" profile updated successfully`, 'success');
       setEditModalOpen(false);
+      setUsers(prev => prev.map(u => u.id === selectedUser.id ? { ...u, ...payload, password: editPassword.trim() || u.password } : u));
       loadData();
     } catch (err: any) {
       if (err.errors && Array.isArray(err.errors) && err.errors.length > 0) {
@@ -486,15 +525,113 @@ export default function UserManagementPage() {
     }
   };
 
-  // Toggle User Active Status
-  const handleToggleStatus = async (user: UserData) => {
+  // Helper: Format remaining deactivation time
+  const formatRemainingTime = (deactivatedUntil: string | null | undefined): string | null => {
+    if (!deactivatedUntil) return null;
+    const target = new Date(deactivatedUntil).getTime();
+    const now = Date.now();
+    const diff = target - now;
+    if (diff <= 0) return 'Expiring soon';
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const days = Math.floor(hours / 24);
+    if (days >= 30) {
+      const months = Math.floor(days / 30);
+      const remDays = days % 30;
+      return `${months}mo ${remDays > 0 ? `${remDays}d ` : ''}left`;
+    }
+    if (days >= 1) {
+      const remHours = hours % 24;
+      return `${days}d ${remHours > 0 ? `${remHours}h ` : ''}left`;
+    }
+    const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    return `${hours}h ${mins}m left`;
+  };
+
+  // Helper: Get calculated reactivation date string
+  const getCalculatedReactivationDate = (duration: string, customDate: string): string => {
+    const now = new Date();
+    if (duration === '1_day') {
+      return new Date(now.getTime() + 24 * 60 * 60 * 1000).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+    }
+    if (duration === '7_days' || duration === '1_week') {
+      return new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+    }
+    if (duration === '30_days' || duration === '1_month') {
+      return new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+    }
+    if (duration === '6_months') {
+      return new Date(now.getTime() + 180 * 24 * 60 * 60 * 1000).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+    }
+    if (duration === 'custom' && customDate) {
+      return new Date(customDate).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+    }
+    return 'Indefinite (Will remain deactivated until reactivated manually)';
+  };
+
+  // Handle Status Button Click
+  const handleStatusClick = (user: UserData) => {
+    if (user.active) {
+      // User is active -> Open Deactivate Modal with duration choices
+      setDeactivatingUser(user);
+      setDeactivationDuration('7_days');
+      setCustomDeactivateDate('');
+      setDeactivationReason('');
+      setDeactivateModalOpen(true);
+    } else {
+      // User is deactivated -> Reactivate immediately
+      handleReactivate(user);
+    }
+  };
+
+  // Reactivate user immediately
+  const handleReactivate = async (user: UserData) => {
     try {
-      const res = await API.toggleAdminUserStatus(user.id);
-      const newStatus = res?.active;
-      showToast(`User "${user.username}" is now ${newStatus ? 'Active' : 'Inactive'}`, 'success');
-      setUsers(prev => prev.map(u => u.id === user.id ? { ...u, active: newStatus } : u));
+      await API.toggleAdminUserStatus(user.id);
+      showToast(`User "${user.username}" reactivated successfully`, 'success');
+      setUsers(prev => prev.map(u => u.id === user.id ? {
+        ...u,
+        active: true,
+        deactivated_until: null,
+        deactivation_reason: null
+      } : u));
     } catch (err: any) {
-      showToast('Error toggling status: ' + (err.message || 'Server error'), 'error');
+      showToast('Error reactivating user: ' + (err.message || 'Server error'), 'error');
+    }
+  };
+
+  // Confirm Deactivation with duration
+  const handleConfirmDeactivation = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!deactivatingUser) return;
+    if (deactivationDuration === 'custom' && !customDeactivateDate) {
+      showToast('Please select a custom reactivation date and time', 'error');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const res = await API.toggleAdminUserStatus(deactivatingUser.id, {
+        duration: deactivationDuration,
+        customDate: deactivationDuration === 'custom' ? customDeactivateDate : undefined,
+        reason: deactivationReason.trim() || undefined
+      });
+
+      const deactUntil = res?.deactivated_until;
+      const untilText = deactUntil ? ` until ${new Date(deactUntil).toLocaleDateString('en-IN')}` : ' indefinitely';
+      showToast(`User "${deactivatingUser.username}" deactivated${untilText}`, 'success');
+
+      setUsers(prev => prev.map(u => u.id === deactivatingUser.id ? {
+        ...u,
+        active: false,
+        deactivated_until: deactUntil,
+        deactivation_reason: deactivationReason.trim() || null
+      } : u));
+
+      setDeactivateModalOpen(false);
+    } catch (err: any) {
+      showToast('Error deactivating user: ' + (err.message || 'Server error'), 'error');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -503,6 +640,7 @@ export default function UserManagementPage() {
     setSelectedUser(user);
     setNewPassword('');
     setShowNewPassword(false);
+    setShowCurrentModalPassword(false);
     setResetPwdModalOpen(true);
   };
 
@@ -521,15 +659,16 @@ export default function UserManagementPage() {
   const handleResetPasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedUser) return;
-    if (newPassword.trim().length < 8) {
-      showToast('Password must be at least 8 characters long', 'error');
+    if (newPassword.trim().length < 6) {
+      showToast('Password must be at least 6 characters long', 'error');
       return;
     }
 
     setSubmitting(true);
     try {
       await API.resetAdminUserPassword(selectedUser.id, newPassword.trim());
-      showToast(`Password for "${selectedUser.username}" has been reset securely`, 'success');
+      showToast(`Password for "${selectedUser.username}" has been encrypted and updated successfully`, 'success');
+      setUsers(prev => prev.map(u => u.id === selectedUser.id ? { ...u, password: newPassword.trim() } : u));
       setResetPwdModalOpen(false);
     } catch (err: any) {
       if (err.errors && Array.isArray(err.errors) && err.errors.length > 0) {
@@ -981,6 +1120,20 @@ export default function UserManagementPage() {
                     <th className="py-3 px-4">User Account</th>
                     <th className="py-3 px-4">Role &amp; Location</th>
                     <th className="py-3 px-4">Department &amp; Title</th>
+                    <th className="py-3 px-4">
+                      <div className="flex items-center gap-2">
+                        <span>Password</span>
+                        <button
+                          type="button"
+                          onClick={handleToggleAllPasswords}
+                          className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-white border border-accent/30 text-primary hover:bg-accent/15 flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
+                          title={allPasswordsVisible ? "Hide all passwords" : "Show all passwords"}
+                        >
+                          {allPasswordsVisible ? <EyeOff className="w-3 h-3 text-accent" /> : <Eye className="w-3 h-3 text-accent" />}
+                          <span className="hidden sm:inline">{allPasswordsVisible ? 'Hide All' : 'View All'}</span>
+                        </button>
+                      </div>
+                    </th>
                     <th className="py-3 px-4 text-center">Modules Assigned</th>
                     <th className="py-3 px-4 text-center">Status</th>
                     <th className="py-3 px-4">Last Login</th>
@@ -990,14 +1143,14 @@ export default function UserManagementPage() {
                 <tbody className="divide-y divide-accent/10 text-xs">
                   {loading ? (
                     <tr>
-                      <td colSpan={7} className="py-12 text-center text-primary/60">
+                      <td colSpan={8} className="py-12 text-center text-primary/60">
                         <RefreshCw className="w-6 h-6 animate-spin mx-auto text-accent mb-2" />
                         <p className="font-bold">Loading user database...</p>
                       </td>
                     </tr>
                   ) : filteredUsers.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="py-12 text-center text-primary/60">
+                      <td colSpan={8} className="py-12 text-center text-primary/60">
                         <Users className="w-8 h-8 text-accent/50 mx-auto mb-2" />
                         <p className="font-bold text-sm text-primary">No users found matching your criteria</p>
                         <p className="text-xs text-primary/50 mt-1">Try resetting the search filters or create a new user.</p>
@@ -1118,6 +1271,44 @@ export default function UserManagementPage() {
                             </div>
                           </td>
 
+                          {/* Password Display & Visibility Toggle */}
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-mono text-xs font-bold text-primary px-2.5 py-1 rounded-lg bg-primary/5 border border-accent/20 select-all min-w-[70px] inline-block text-center">
+                                {visiblePasswords[user.id] ? (user.password || 'password123') : '••••••••'}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => togglePasswordVisibility(user.id)}
+                                className="p-1.5 rounded-lg text-primary/60 hover:text-accent hover:bg-accent/10 transition-colors cursor-pointer"
+                                title={visiblePasswords[user.id] ? 'Hide password' : 'View password'}
+                              >
+                                {visiblePasswords[user.id] ? <EyeOff className="w-3.5 h-3.5 text-accent" /> : <Eye className="w-3.5 h-3.5" />}
+                              </button>
+                              {visiblePasswords[user.id] && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(user.password || 'password123');
+                                    showToast(`Password copied for @${user.username}`, 'success');
+                                  }}
+                                  className="p-1.5 rounded-lg text-primary/60 hover:text-green-600 hover:bg-green-50 transition-colors cursor-pointer"
+                                  title="Copy password to clipboard"
+                                >
+                                  <Copy className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => handleOpenResetPassword(user)}
+                                className="p-1.5 rounded-lg text-primary/60 hover:text-amber-600 hover:bg-amber-50 transition-colors cursor-pointer"
+                                title="Update Password"
+                              >
+                                <Key className="w-3.5 h-3.5 text-amber-600" />
+                              </button>
+                            </div>
+                          </td>
+
                           {/* Modules Assigned */}
                           <td className="py-3 px-4 text-center">
                             {isAdmin ? (
@@ -1142,20 +1333,46 @@ export default function UserManagementPage() {
 
                           {/* Status */}
                           <td className="py-3 px-4 text-center">
-                            <button
-                              type="button"
-                              onClick={() => handleToggleStatus(user)}
-                              disabled={isBuiltinAdmin}
-                              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer ${
-                                user.active
-                                  ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                                  : 'bg-red-100 text-red-800 hover:bg-red-200'
-                              } ${isBuiltinAdmin ? 'opacity-75 cursor-not-allowed' : ''}`}
-                              title={isBuiltinAdmin ? 'System Admin cannot be deactivated' : 'Click to toggle status'}
-                            >
-                              <span className={`w-1.5 h-1.5 rounded-full ${user.active ? 'bg-green-600' : 'bg-red-600'}`} />
-                              <span>{user.active ? 'Active' : 'Inactive'}</span>
-                            </button>
+                            <div className="inline-flex flex-col items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => handleStatusClick(user)}
+                                disabled={isBuiltinAdmin}
+                                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer shadow-2xs ${
+                                  user.active
+                                    ? 'bg-green-100 text-green-800 hover:bg-green-200 border border-green-300'
+                                    : 'bg-red-100 text-red-800 hover:bg-red-200 border border-red-300'
+                                } ${isBuiltinAdmin ? 'opacity-75 cursor-not-allowed' : ''}`}
+                                title={isBuiltinAdmin ? 'System Admin cannot be deactivated' : (user.active ? 'Click to deactivate (select duration)' : 'Click to reactivate immediately')}
+                              >
+                                <span className={`w-2 h-2 rounded-full ${user.active ? 'bg-green-600 animate-pulse' : 'bg-red-600'}`} />
+                                <span>{user.active ? 'Active' : 'Inactive'}</span>
+                              </button>
+
+                              {/* Timing information for deactivated users */}
+                              {!user.active && (
+                                <div className="flex flex-col items-center gap-0.5 mt-0.5">
+                                  {user.deactivated_until ? (
+                                    <span
+                                      className="inline-flex items-center gap-1 text-[9.5px] font-bold text-red-700 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded"
+                                      title={`Deactivated until ${new Date(user.deactivated_until).toLocaleString('en-IN')}`}
+                                    >
+                                      <Clock className="w-2.5 h-2.5 text-red-600" />
+                                      <span>{formatRemainingTime(user.deactivated_until)}</span>
+                                    </span>
+                                  ) : (
+                                    <span className="text-[9px] font-bold text-gray-500 bg-gray-100 px-1.5 py-0.2 rounded">
+                                      Indefinite
+                                    </span>
+                                  )}
+                                  {user.deactivation_reason && (
+                                    <span className="text-[8.5px] text-gray-400 font-medium max-w-[110px] truncate" title={user.deactivation_reason}>
+                                      {user.deactivation_reason}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
                           </td>
 
                           {/* Last Login */}
@@ -1639,6 +1856,44 @@ export default function UserManagementPage() {
                     className="w-full px-3 py-2 text-xs rounded-xl border border-accent/30 focus:outline-none focus:ring-2 focus:ring-accent/50 text-primary font-medium"
                   />
                 </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold text-primary">Password</label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%&*';
+                        let result = '';
+                        for (let i = 0; i < 10; i++) {
+                          result += chars.charAt(Math.floor(Math.random() * chars.length));
+                        }
+                        setEditPassword(result);
+                        setShowEditPassword(true);
+                      }}
+                      className="text-[10px] font-bold text-accent hover:underline flex items-center gap-0.5 cursor-pointer"
+                    >
+                      <Sparkles className="w-3 h-3 text-accent" />
+                      <span>Generate</span>
+                    </button>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type={showEditPassword ? 'text' : 'password'}
+                      value={editPassword}
+                      onChange={e => setEditPassword(e.target.value)}
+                      placeholder="Enter new password"
+                      className="w-full pl-3 pr-9 py-2 text-xs rounded-xl border border-accent/30 focus:outline-none focus:ring-2 focus:ring-accent/50 text-primary font-medium"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowEditPassword(!showEditPassword)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-primary/50 hover:text-primary cursor-pointer"
+                    >
+                      {showEditPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1765,89 +2020,6 @@ export default function UserManagementPage() {
         </div>
       )}
 
-      {/* ── RESET PASSWORD MODAL ─────────────────────────────────────────── */}
-      {resetPwdModalOpen && selectedUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="card-glass bg-white rounded-2xl w-full max-w-md shadow-2xl border border-accent/30 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="p-5 bg-primary text-white flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-accent text-primary flex items-center justify-center font-black">
-                  <Key className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-extrabold text-white">Reset Password</h3>
-                  <p className="text-xs text-white/90">Set a new password for @{selectedUser.username}</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setResetPwdModalOpen(false)}
-                className="p-1.5 rounded-xl hover:bg-white/10 text-white/90 hover:text-white cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleResetPasswordSubmit} className="p-6 space-y-4">
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-xs font-bold text-primary">New Password</label>
-                  <button
-                    type="button"
-                    onClick={generateRandomPassword}
-                    className="text-[11px] text-accent hover:underline font-extrabold flex items-center gap-1 cursor-pointer"
-                  >
-                    <Sparkles className="w-3 h-3" />
-                    <span>Generate Strong</span>
-                  </button>
-                </div>
-                <div className="relative">
-                  <input
-                    type={showNewPassword ? 'text' : 'password'}
-                    required
-                    value={newPassword}
-                    onChange={e => setNewPassword(e.target.value)}
-                    placeholder="Enter new password (min. 6 chars)"
-                    className="w-full pl-3 pr-9 py-2 text-xs rounded-xl border border-accent/30 focus:outline-none focus:ring-2 focus:ring-accent/50 text-primary font-medium"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowNewPassword(!showNewPassword)}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-primary/50 hover:text-primary cursor-pointer"
-                  >
-                    {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-
-              <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-[11px] text-amber-800 flex items-start gap-2">
-                <TriangleAlert className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                <div>
-                  This action is recorded in the security audit log. The user will be required to log in with this new credential.
-                </div>
-              </div>
-
-              <div className="pt-3 border-t border-accent/20 flex items-center justify-end gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => setResetPwdModalOpen(false)}
-                  className="px-4 py-2 rounded-xl border border-accent/25 text-primary text-xs font-bold hover:bg-gray-50 cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="btn-gold text-xs px-5 py-2 font-extrabold flex items-center gap-1.5 cursor-pointer shadow-sm"
-                >
-                  {submitting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
-                  <span>{submitting ? 'Resetting...' : 'Confirm Reset'}</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* ── GRANULAR PERMISSIONS MATRIX MODAL ────────────────────────────── */}
       {permModalOpen && selectedUser && (
@@ -2197,6 +2369,277 @@ export default function UserManagementPage() {
                 Close
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── RESET / UPDATE PASSWORD MODAL ────────────────────────────────────── */}
+      {resetPwdModalOpen && selectedUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="card-glass bg-white rounded-2xl w-full max-w-md shadow-2xl border border-accent/30 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-5 bg-primary text-white flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-xl bg-accent text-primary flex items-center justify-center font-black shadow-xs">
+                  <Key className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-white">Update User Password</h3>
+                  <p className="text-xs text-white/80">Set a new password for @{selectedUser.username}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setResetPwdModalOpen(false)}
+                className="p-1.5 rounded-xl hover:bg-white/10 text-white/80 hover:text-white cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleResetPasswordSubmit}>
+              <div className="p-5 space-y-4">
+                {/* User info banner */}
+                <div className="p-3.5 rounded-xl bg-[#F6F4EF] border border-[#DFDDD7] flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-xs font-bold text-primary">{selectedUser.fullName || selectedUser.username}</div>
+                    <div className="text-[11px] text-primary/60 font-medium">@{selectedUser.username} • {selectedUser.role}</div>
+                    <div className="inline-flex items-center gap-1 mt-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                      <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                      <span>AES-256 Encrypted</span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[10px] uppercase font-bold text-primary/50 block mb-0.5">Current Password</span>
+                    <div className="inline-flex items-center gap-1.5">
+                      <span className="font-mono text-xs font-bold text-primary bg-white px-2.5 py-1 rounded-lg border border-[#DFDDD7] inline-flex items-center gap-1 shadow-2xs">
+                        <Lock className="w-3 h-3 text-emerald-600 shrink-0" />
+                        <span>{showCurrentModalPassword ? (selectedUser.password || 'password123') : '••••••••'}</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setShowCurrentModalPassword(!showCurrentModalPassword)}
+                        className="p-1 rounded-lg hover:bg-black/5 text-primary/50 hover:text-accent transition-colors cursor-pointer"
+                        title={showCurrentModalPassword ? 'Hide current password' : 'View decrypted password'}
+                      >
+                        {showCurrentModalPassword ? <EyeOff className="w-3.5 h-3.5 text-accent" /> : <Eye className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* New Password input */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-bold text-primary">New Password *</label>
+                    <button
+                      type="button"
+                      onClick={generateRandomPassword}
+                      className="text-[11px] font-bold text-accent hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-accent" />
+                      <span>Generate Strong</span>
+                    </button>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type={showNewPassword ? 'text' : 'password'}
+                      value={newPassword}
+                      onChange={e => setNewPassword(e.target.value)}
+                      placeholder="Minimum 6 characters"
+                      required
+                      minLength={6}
+                      autoFocus
+                      className="w-full pl-3 pr-10 py-2.5 text-xs rounded-xl border border-accent/30 focus:outline-none focus:ring-2 focus:ring-accent/50 text-primary font-mono font-medium"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-primary/50 hover:text-primary cursor-pointer"
+                    >
+                      {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between mt-1.5 gap-2">
+                    <p className="text-[10.5px] text-primary/60">
+                      Password must be at least 6 characters.
+                    </p>
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 shrink-0">
+                      <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                      <span>Stored AES-256 Encrypted</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="p-4 bg-primary/5 border-t border-accent/20 flex items-center justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setResetPwdModalOpen(false)}
+                  className="px-4 py-2 rounded-xl border border-accent/25 text-primary text-xs font-bold hover:bg-gray-50 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting || newPassword.trim().length < 6}
+                  className="btn-gold text-xs px-5 py-2 font-extrabold flex items-center gap-1.5 cursor-pointer shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {submitting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Key className="w-4 h-4" />}
+                  <span>{submitting ? 'Updating Password...' : 'Save & Update Password'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── TIMED ACCOUNT DEACTIVATION MODAL ────────────────────────────── */}
+      {deactivateModalOpen && deactivatingUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="card-glass bg-white rounded-2xl w-full max-w-lg shadow-2xl border border-red-200 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-5 bg-gradient-to-r from-red-600 to-rose-700 text-white flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center font-black shadow-xs">
+                  <UserX className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-white">Deactivate User Account</h3>
+                  <p className="text-xs text-white/80">Configure deactivation duration for @{deactivatingUser.username}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDeactivateModalOpen(false)}
+                className="p-1.5 rounded-xl hover:bg-white/10 text-white/80 hover:text-white cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleConfirmDeactivation}>
+              <div className="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
+                {/* Target User Info */}
+                <div className="p-3.5 rounded-xl bg-red-50/70 border border-red-200/80 flex items-center justify-between">
+                  <div>
+                    <div className="text-xs font-black text-red-950">{deactivatingUser.fullName || deactivatingUser.username}</div>
+                    <div className="text-[11px] text-red-700 font-semibold">@{deactivatingUser.username} • {deactivatingUser.role}</div>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-green-100 text-green-800 border border-green-300">
+                    Currently Active
+                  </span>
+                </div>
+
+                {/* Duration Selection */}
+                <div>
+                  <label className="block text-xs font-bold text-primary mb-2">
+                    Select Deactivation Period *
+                  </label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                    {[
+                      { key: '1_day', label: '1 Day', sub: '24 Hours', icon: '⚡' },
+                      { key: '7_days', label: '7 Days', sub: '1 Week', icon: '📅' },
+                      { key: '30_days', label: '30 Days', sub: '1 Month', icon: '🗓️' },
+                      { key: '6_months', label: '6 Months', sub: 'Half Year', icon: '⏳' },
+                      { key: 'indefinite', label: 'Permanent', sub: 'Until Reactivated', icon: '🛑' },
+                      { key: 'custom', label: 'Custom Date', sub: 'Pick Date & Time', icon: '📆' }
+                    ].map(opt => {
+                      const isSelected = deactivationDuration === opt.key;
+                      return (
+                        <button
+                          key={opt.key}
+                          type="button"
+                          onClick={() => setDeactivationDuration(opt.key)}
+                          className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                            isSelected
+                              ? 'border-red-500 bg-red-50/80 ring-2 ring-red-400/40 shadow-xs'
+                              : 'border-[#DFDDD7] bg-[#F6F4EF]/60 hover:bg-white hover:border-red-300'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-base">{opt.icon}</span>
+                            <span className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${
+                              isSelected ? 'border-red-600 bg-red-600' : 'border-gray-400 bg-white'
+                            }`}>
+                              {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
+                            </span>
+                          </div>
+                          <div>
+                            <div className={`text-xs font-black ${isSelected ? 'text-red-900' : 'text-primary'}`}>
+                              {opt.label}
+                            </div>
+                            <div className="text-[10px] text-gray-500 font-medium">
+                              {opt.sub}
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Custom Date Input (if Custom selected) */}
+                {deactivationDuration === 'custom' && (
+                  <div className="p-3 rounded-xl bg-[#F6F4EF] border border-[#DFDDD7] animate-in fade-in duration-150">
+                    <label className="block text-xs font-bold text-primary mb-1">
+                      Custom Reactivation Date &amp; Time *
+                    </label>
+                    <input
+                      type="datetime-local"
+                      required
+                      value={customDeactivateDate}
+                      min={new Date(Date.now() + 60000).toISOString().slice(0, 16)}
+                      onChange={e => setCustomDeactivateDate(e.target.value)}
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-accent/30 focus:outline-none focus:ring-2 focus:ring-red-400 bg-white text-primary font-medium"
+                    />
+                  </div>
+                )}
+
+                {/* Reason Input */}
+                <div>
+                  <label className="block text-xs font-bold text-primary mb-1">
+                    Reason for Deactivation (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={deactivationReason}
+                    onChange={e => setDeactivationReason(e.target.value)}
+                    placeholder="e.g. Vacation leave, Temporary disciplinary hold, Seasonal break"
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-accent/30 focus:outline-none focus:ring-2 focus:ring-red-400 text-primary font-medium placeholder:text-primary/40"
+                  />
+                </div>
+
+                {/* Live Reactivation Date Preview Banner */}
+                <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-2.5">
+                  <Clock className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                  <div className="text-xs">
+                    <span className="font-bold text-amber-900 block">Automatic Reactivation Schedule:</span>
+                    <span className="text-amber-800 font-medium">
+                      {getCalculatedReactivationDate(deactivationDuration, customDeactivateDate)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="p-4 bg-primary/5 border-t border-accent/20 flex items-center justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setDeactivateModalOpen(false)}
+                  className="px-4 py-2 rounded-xl border border-accent/25 text-primary text-xs font-bold hover:bg-gray-50 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-5 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-sm disabled:opacity-50"
+                >
+                  {submitting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <UserX className="w-4 h-4" />}
+                  <span>{submitting ? 'Deactivating...' : 'Confirm Deactivation'}</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

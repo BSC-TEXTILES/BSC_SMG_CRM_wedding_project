@@ -1,13 +1,14 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, Suspense, lazy } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Auth, API } from '../services/api';
-import ConsentModal from './ui/ConsentModal';
+
+const ConsentModal = lazy(() => import('./ui/ConsentModal'));
 
 // Public routes that don't require consent
 const PUBLIC_ROUTES = [
   '/login', '/forgot-password', '/', '/apply', '/applicants/register',
   '/wedding-registration', '/track', '/feedback-public', '/feedback-qr',
-  '/cash-settlement', '/tv', '/greeter', '/footfall'
+  '/cash-settlement', '/tv', '/greeter', '/footfall', '/madt'
 ];
 
 /**
@@ -26,12 +27,11 @@ const PUBLIC_ROUTES = [
  */
 export default function ConsentGuard({ children }: { children: React.ReactNode }) {
   const location = useLocation();
-  const [consentRequired, setConsentRequired] = useState(false);
-  const [checking, setChecking] = useState(true);
-
   const isPublicRoute = PUBLIC_ROUTES.some(p =>
-    location.pathname === p || location.pathname.startsWith(p + '/')
+    location.pathname === p || (p !== '/' && location.pathname.startsWith(p + '/'))
   );
+  const [consentRequired, setConsentRequired] = useState(false);
+  const [checking, setChecking] = useState(() => !isPublicRoute && Auth.check());
 
   const checkConsent = useCallback(async () => {
     const session = Auth.get();
@@ -62,7 +62,7 @@ export default function ConsentGuard({ children }: { children: React.ReactNode }
     } finally {
       setChecking(false);
     }
-  }, [location.pathname, isPublicRoute]);
+  }, [isPublicRoute]);
 
   useEffect(() => {
     checkConsent();
@@ -72,7 +72,7 @@ export default function ConsentGuard({ children }: { children: React.ReactNode }
     setConsentRequired(false);
   };
 
-  // Show nothing while checking (prevents flash of content)
+  // Show nothing while checking (prevents flash of content on protected routes)
   if (checking) {
     return null;
   }
@@ -82,10 +82,14 @@ export default function ConsentGuard({ children }: { children: React.ReactNode }
   return (
     <>
       {children}
-      <ConsentModal
-        isOpen={consentRequired}
-        onConsentComplete={handleConsentComplete}
-      />
+      {consentRequired && (
+        <Suspense fallback={null}>
+          <ConsentModal
+            isOpen={consentRequired}
+            onConsentComplete={handleConsentComplete}
+          />
+        </Suspense>
+      )}
     </>
   );
 }

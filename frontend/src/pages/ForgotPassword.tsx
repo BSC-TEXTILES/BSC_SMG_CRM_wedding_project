@@ -48,7 +48,7 @@ export default function ForgotPasswordPage() {
             <div className="min-w-0 flex-1">
               <h2 className="text-lg font-black text-white leading-tight tracking-tight truncate">Password Reset</h2>
               <div className="text-[11px] text-[#E5C378] font-extrabold uppercase tracking-wider mt-0.5 truncate">
-                BSC EXCLUSIVE · MULTI-LOCATION SYSTEM
+                BSC Textiles · MULTI-LOCATION SYSTEM
               </div>
             </div>
           </div>
@@ -96,7 +96,7 @@ export default function ForgotPasswordPage() {
           <div className="min-w-0 flex-1">
             <h2 className="text-lg font-black text-white leading-tight tracking-tight truncate">Password Reset</h2>
             <div className="text-[11px] text-[#E5C378] font-extrabold uppercase tracking-wider mt-0.5 truncate">
-              BSC EXCLUSIVE · MULTI-LOCATION SYSTEM
+              BSC Textiles · MULTI-LOCATION SYSTEM
             </div>
           </div>
         </div>
