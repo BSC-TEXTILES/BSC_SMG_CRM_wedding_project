@@ -555,35 +555,30 @@ input[class*="pr-12"], select[class*="pr-12"], .input-modern[class*="pr-12"] { p
   color: rgba(255, 255, 255, 0.85);
 }
 
-/* ── Custom Visible Luxury Scrollbar (Bared Page) ────────────────── */
-html {
-  scrollbar-width: thin;
-  scrollbar-color: #C9A45C #0B1220;
+/* ── Global Scrollbar Removal (Clean Edge-to-Edge UI) ── */
+* {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+*::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+html, body, #root {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
   scroll-behavior: smooth;
 }
 
-::-webkit-scrollbar {
-  width: 12px;
-  height: 12px;
-}
-
-::-webkit-scrollbar-track {
-  background: #0B1220;
-  border-left: 1px solid rgba(201, 164, 92, 0.2);
-}
-
-::-webkit-scrollbar-thumb {
-  background: #C9A45C;
-  border-radius: 6px;
-  border: 3px solid #0B1220;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #E4CB92;
-}
-
-::-webkit-scrollbar-corner {
-  background: #0B1220;
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+#root::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 

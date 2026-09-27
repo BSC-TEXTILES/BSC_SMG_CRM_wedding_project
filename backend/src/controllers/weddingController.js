@@ -1946,17 +1946,21 @@ class WeddingController {
         'mobile_number',
         'email',
         'wedding_date',
-        'shopping_date',
+        'expected_date',
+        'preferred_shopping_category',
+        'estimated_family_size',
+        'budget',
+        'assigned_telecaller',
+        'customer_notes',
         'followup_call_date',
         'store_location',
-        'notes',
         'alternate_number'
       ];
 
       const sampleRows = [
-        ['Ananya Hegde', '9845012345', 'ananya.hegde@example.com', '2025-05-15', '2025-04-20', '2025-03-30', 'Shivamogga', 'Interested in bridal Kanjeevaram sarees', '9845099999'],
-        ['Pooja Patil', '9880198765', 'pooja.patil@example.com', '2025-06-10', '2025-05-15', '2025-04-10', 'Davanagere', 'Looking for designer lehengas and family sets', ''],
-        ['Kavya Suresh', '9741234567', '', '2025-07-22', '2025-06-25', '2025-05-20', 'Belagavi', 'Family wedding shopping for 10 members', '9741234568']
+        ['Ananya Hegde', '9845012345', 'ananya.hegde@example.com', '2025-05-15', '2025-04-20', 'Bridal Kanjeevaram Silk Sarees', '4', '75,000 - 1,50,000', 'Ananya R', 'Interested in pure zari wedding collection', '2025-03-30', 'Shivamogga', '9845099999'],
+        ['Pooja Patil', '9880198765', 'pooja.patil@example.com', '2025-06-10', '2025-05-15', 'Designer Lehengas & Sherwanis', '6', '1,00,000 - 2,50,000', 'Gagan K', 'Looking for matching bride & groom sets', '2025-04-10', 'Davanagere', ''],
+        ['Kavya Suresh', '9741234567', '', '2025-07-22', '2025-06-25', 'Family Silk & Festive Wear', '8', '50,000 - 1,00,000', '', 'Family shopping for 10 members', '2025-05-20', 'Belagavi', '9741234568']
       ];
 
       const escapeCell = (val) => {
@@ -2001,12 +2005,16 @@ class WeddingController {
       worksheet.columns = [
         { header: 'customer_name', key: 'customer_name', width: 24 },
         { header: 'mobile_number', key: 'mobile_number', width: 20 },
-        { header: 'email', key: 'email', width: 30 },
-        { header: 'wedding_date', key: 'wedding_date', width: 18 },
-        { header: 'shopping_date', key: 'shopping_date', width: 18 },
+        { header: 'email', key: 'email', width: 28 },
+        { header: 'wedding_date', key: 'wedding_date', width: 16 },
+        { header: 'expected_date', key: 'expected_date', width: 18 },
+        { header: 'preferred_shopping_category', key: 'preferred_shopping_category', width: 30 },
+        { header: 'estimated_family_size', key: 'estimated_family_size', width: 22 },
+        { header: 'budget', key: 'budget', width: 20 },
+        { header: 'assigned_telecaller', key: 'assigned_telecaller', width: 24 },
+        { header: 'customer_notes', key: 'customer_notes', width: 44 },
         { header: 'followup_call_date', key: 'followup_call_date', width: 20 },
         { header: 'store_location', key: 'store_location', width: 22 },
-        { header: 'notes', key: 'notes', width: 42 },
         { header: 'alternate_number', key: 'alternate_number', width: 20 }
       ];
 
@@ -2015,8 +2023,8 @@ class WeddingController {
 
       // Color coding:
       // Required headers (customer_name, mobile_number) in RED/bold
-      // Optional headers (email, wedding_date, shopping_date, followup_call_date, store_location, notes, alternate_number) in GREEN/bold
-      for (let col = 1; col <= 9; col++) {
+      // Optional headers (email, wedding_date, expected_date, preferred_shopping_category, estimated_family_size, budget, assigned_telecaller, customer_notes, followup_call_date, store_location, alternate_number) in GREEN/bold
+      for (let col = 1; col <= 13; col++) {
         const cell = headerRow.getCell(col);
         const isRequired = (col === 1 || col === 2);
         cell.font = {
@@ -2046,10 +2054,14 @@ class WeddingController {
           mobile_number: '9845012345',
           email: 'ananya.hegde@example.com',
           wedding_date: '2025-05-15',
-          shopping_date: '2025-04-20',
+          expected_date: '2025-04-20',
+          preferred_shopping_category: 'Bridal Kanjeevaram Silk Sarees',
+          estimated_family_size: 4,
+          budget: '75,000 - 1,50,000',
+          assigned_telecaller: 'Ananya R',
+          customer_notes: 'Interested in pure zari wedding collection',
           followup_call_date: '2025-03-30',
           store_location: 'Shivamogga',
-          notes: 'Interested in bridal Kanjeevaram sarees',
           alternate_number: '9845099999'
         },
         {
@@ -2057,10 +2069,14 @@ class WeddingController {
           mobile_number: '9880198765',
           email: 'pooja.patil@example.com',
           wedding_date: '2025-06-10',
-          shopping_date: '2025-05-15',
+          expected_date: '2025-05-15',
+          preferred_shopping_category: 'Designer Lehengas & Sherwanis',
+          estimated_family_size: 6,
+          budget: '1,00,000 - 2,50,000',
+          assigned_telecaller: 'Gagan K',
+          customer_notes: 'Looking for matching bride & groom sets',
           followup_call_date: '2025-04-10',
           store_location: 'Davanagere',
-          notes: 'Looking for designer lehengas and family sets',
           alternate_number: ''
         },
         {
@@ -2068,10 +2084,14 @@ class WeddingController {
           mobile_number: '9741234567',
           email: '',
           wedding_date: '2025-07-22',
-          shopping_date: '2025-06-25',
+          expected_date: '2025-06-25',
+          preferred_shopping_category: 'Family Silk & Festive Wear',
+          estimated_family_size: 8,
+          budget: '50,000 - 1,00,000',
+          assigned_telecaller: '',
+          customer_notes: 'Family wedding shopping for 10 members',
           followup_call_date: '2025-05-20',
           store_location: 'Belagavi',
-          notes: 'Family wedding shopping for 10 members',
           alternate_number: '9741234568'
         }
       ];
@@ -2080,7 +2100,7 @@ class WeddingController {
         const row = worksheet.addRow(item);
         row.height = 24;
         const isEven = idx % 2 === 0;
-        for (let col = 1; col <= 9; col++) {
+        for (let col = 1; col <= 13; col++) {
           const cell = row.getCell(col);
           cell.font = { name: 'Segoe UI', size: 10 };
           cell.fill = {
@@ -2090,7 +2110,7 @@ class WeddingController {
           };
           cell.alignment = {
             vertical: 'middle',
-            horizontal: (col === 2 || col === 4 || col === 5 || col === 6 || col === 9) ? 'center' : 'left'
+            horizontal: [2, 4, 5, 7, 11, 13].includes(col) ? 'center' : 'left'
           };
           cell.border = {
             top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
@@ -2107,10 +2127,11 @@ class WeddingController {
         '* RED = REQUIRED (customer_name, mobile_number)',
         '',
         '',
-        '* GREEN = OPTIONAL (email, wedding_date, shopping_date, followup_call_date, store_location, notes, alternate_number)'
+        '',
+        '* GREEN = OPTIONAL (wedding_date, expected_date, preferred_shopping_category, estimated_family_size, budget, assigned_telecaller, customer_notes, followup_call_date, store_location, email, alternate_number)'
       ]);
       legendRow.getCell(1).font = { name: 'Segoe UI', bold: true, color: { argb: 'FFDC2626' }, size: 9 };
-      legendRow.getCell(4).font = { name: 'Segoe UI', bold: true, color: { argb: 'FF059669' }, size: 9 };
+      legendRow.getCell(5).font = { name: 'Segoe UI', bold: true, color: { argb: 'FF059669' }, size: 9 };
 
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       res.setHeader('Content-Disposition', 'attachment; filename="wedding_customer_template.xlsx"');
@@ -2216,8 +2237,8 @@ class WeddingController {
         String(h).trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '')
       );
 
-      const hasCustomerName = rawHeaders.some(h => ['customer_name', 'name', 'customer', 'bride_groom_name'].includes(h));
-      const hasMobileNumber = rawHeaders.some(h => ['mobile_number', 'mobile', 'phone', 'contact', 'phone_number'].includes(h));
+      const hasCustomerName = rawHeaders.some(h => ['customer_name', 'name', 'customer', 'bride_groom_name', 'customername'].includes(h));
+      const hasMobileNumber = rawHeaders.some(h => ['mobile_number', 'mobile', 'phone', 'contact', 'phone_number', 'moble_number'].includes(h));
 
       if (!hasCustomerName || !hasMobileNumber) {
         const missing = [];
@@ -2225,7 +2246,7 @@ class WeddingController {
         if (!hasMobileNumber) missing.push('mobile_number (REQUIRED)');
         return errorRes(
           res,
-          `Missing required column headers: ${missing.join(', ')}. The template requires: customer_name, mobile_number, email, wedding_date, shopping_date, followup_call_date, store_location, notes, alternate_number. Please download the official template.`,
+          `Missing required column headers: ${missing.join(', ')}. The template requires: customer_name, mobile_number, email, wedding_date, expected_date, preferred_shopping_category, estimated_family_size, budget, assigned_telecaller, customer_notes, followup_call_date, store_location, alternate_number. Please download the official template.`,
           missing,
           400
         );
@@ -2302,14 +2323,14 @@ class WeddingController {
         const row = objects[idx];
         const rowNo = idx + 2; // header is row 1
 
-        const customerName = pick(row, ['customer_name', 'name', 'customer', 'bride_groom_name']);
-        const mobile = normalizeMobile(pick(row, ['mobile_number', 'mobile', 'phone', 'contact', 'phone_number']));
+        const customerName = pick(row, ['customer_name', 'name', 'customer', 'bride_groom_name', 'customername']);
+        const mobile = normalizeMobile(pick(row, ['mobile_number', 'mobile', 'phone', 'contact', 'phone_number', 'moble_number']));
         const emailRaw = pick(row, ['email', 'email_id', 'mail']);
         const email = emailRaw && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailRaw) ? emailRaw.trim() : null;
-        const weddingDateRaw = pick(row, ['wedding_date', 'marriage_date', 'weddingdate']);
+        const weddingDateRaw = pick(row, ['wedding_date', 'marriage_date', 'weddingdate', 'wedding']);
         const weddingDate = parseDate(weddingDateRaw);
         const storeLocRaw = pick(row, ['store_location', 'location', 'store', 'branch']);
-        const notes = pick(row, ['notes', 'customer_notes', 'remarks', 'comments']);
+        const notes = pick(row, ['customer_notes', 'notes', 'remarks', 'comments', 'customernotes']);
         const altNumber = normalizeMobile(pick(row, ['alternate_number', 'alternate_mobile', 'alt_phone', 'alternate_phone', 'alt_mobile']));
 
         // Required field validation
@@ -2319,7 +2340,7 @@ class WeddingController {
         }
 
         if (!mobile) {
-          const rawMob = pick(row, ['mobile_number', 'mobile', 'phone', 'contact', 'phone_number']) || '';
+          const rawMob = pick(row, ['mobile_number', 'mobile', 'phone', 'contact', 'phone_number', 'moble_number']) || '';
           errors.push({ row: rowNo, customerName, mobile: rawMob, reason: `Invalid mobile number "${rawMob}". Must be a valid 10-digit number starting with 6-9.` });
           continue;
         }
@@ -2353,9 +2374,9 @@ class WeddingController {
           continue;
         }
 
-        // Calculate expected_shopping_date (from file shopping_date / expected_shopping_date or derived from wedding_date)
+        // Calculate expected_shopping_date (from file expected_date / shopping_date or derived from wedding_date)
         let shoppingDate = null;
-        const rawShopDate = pick(row, ['shopping_date', 'expected_shopping_date', 'shop_date', 'shopeing_date', 'shoppingdate', 'expected_shopping']);
+        const rawShopDate = pick(row, ['expected_date', 'expected_shopping_date', 'shopping_date', 'shop_date', 'shopeing_date', 'shoppingdate', 'expected_shopping']);
         if (rawShopDate) {
           shoppingDate = parseDate(rawShopDate);
         }
@@ -2392,7 +2413,10 @@ class WeddingController {
           followUp = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
         }
 
-        const category = pick(row, ['preferred_shopping_category', 'category', 'shopping_category']) || 'Wedding Shopping';
+        const category = pick(row, ['preferred_shopping_category', 'category', 'shopping_category', 'preferred_category']) || 'General Wedding Shopping';
+        const familySize = parseInt(pick(row, ['estimated_family_size', 'family_size', 'estimated_family', 'familysize']) || '1', 10) || 1;
+        const budget = pick(row, ['budget', 'budget_range', 'shopping_budget']) || null;
+        const assignedTelecaller = pick(row, ['assigned_telecaller', 'telecaller', 'assigned_to', 'caller']) || null;
 
         // Customer code generation
         const locObj = locationMap.get(String(rowLocation));
@@ -2419,13 +2443,14 @@ class WeddingController {
             `INSERT INTO wedding_customers (
               customer_code, location_id, customer_name, mobile_number, alternate_mobile, email,
               wedding_date, expected_shopping_date, preferred_shopping_category,
-              estimated_family_size, assigned_telecaller, follow_up_date,
+              estimated_family_size, budget, assigned_telecaller, follow_up_date,
               customer_notes, customer_status, call_status, created_by, created_by_user_id
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NULL, ?, ?, 'New', 'Pending', ?, ?)`,
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'New', 'Pending', ?, ?)`,
             [
               customerCode, rowLocation, String(customerName).substring(0, 150).trim(),
               mobile, altNumber || null, email,
               weddingDate, shoppingDate, category,
+              familySize, budget, assignedTelecaller,
               followUp, encryptField(notes ? String(notes).trim() : null),
               req.user?.fullName || 'Bulk Import', req.user?.id || null
             ]
@@ -2544,8 +2569,9 @@ class WeddingController {
           l.location_name AS 'Location',
           COALESCE(DATE_FORMAT(w.wedding_date, '%d/%m/%Y'), '-') AS 'Wedding Date',
           DATE_FORMAT(w.expected_shopping_date, '%d/%m/%Y') AS 'Expected Shopping Date',
-          w.preferred_shopping_category AS 'Shopping Category',
-          w.estimated_family_size AS 'Family Size',
+          w.preferred_shopping_category AS 'Preferred Shopping Category',
+          w.estimated_family_size AS 'Estimated Family Size',
+          COALESCE(w.budget_range, w.budget, '-') AS 'Budget',
           COALESCE(w.assigned_telecaller, 'Unassigned') AS 'Assigned Telecaller',
           DATE_FORMAT(w.follow_up_date, '%d/%m/%Y') AS 'Next Follow-up Date',
           w.preferred_call_time AS 'Preferred Call Time',
@@ -2554,7 +2580,7 @@ class WeddingController {
           w.total_calls_count AS 'Total Calls',
           COALESCE(DATE_FORMAT(w.last_call_date, '%d/%m/%Y %H:%i'), '-') AS 'Last Call Date',
           COALESCE(w.last_call_outcome, '-') AS 'Last Call Result',
-          COALESCE(w.customer_notes, '-') AS 'Remarks',
+          COALESCE(w.customer_notes, '-') AS 'Customer Notes',
           DATE_FORMAT(w.created_at, '%d/%m/%Y') AS 'Added On'
         FROM wedding_customers w
         LEFT JOIN locations l ON l.id = w.location_id

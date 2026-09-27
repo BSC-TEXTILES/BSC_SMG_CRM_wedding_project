@@ -46,6 +46,8 @@ router.get('/telecallers', weddingController.getTelecallers);
 
 // ── Export Data (Excel / CSV / Report data) ────────────────────
 router.get('/export', weddingController.exportData);
+router.get('/export-customers-csv', weddingController.exportCustomersCsv);
+router.get('/export-csv', weddingController.exportCustomersCsv);
 
 // ── Bulk CSV / Excel Import (strict validation) ───────────────
 router.post('/import-csv', (req, res, next) => {

@@ -78,10 +78,10 @@ export default function WeddingImport() {
   // Client-side fallback template generator if server is offline
   const generateFallbackCsv = () => {
     const csvContent =
-      '\uFEFFcustomer_name,mobile_number,email,wedding_date,shopping_date,followup_call_date,store_location,notes,alternate_number\r\n' +
-      'Ananya Hegde,9845012345,ananya.hegde@example.com,2025-05-15,2025-04-20,2025-03-30,Shivamogga,Interested in bridal Kanjeevaram sarees,9845099999\r\n' +
-      'Pooja Patil,9880198765,pooja.patil@example.com,2025-06-10,2025-05-15,2025-04-10,Davanagere,Looking for designer lehengas and family sets,\r\n' +
-      'Kavya Suresh,9741234567,,2025-07-22,2025-06-25,2025-05-20,Belagavi,Family wedding shopping for 10 members,9741234568\r\n';
+      '\uFEFFcustomer_name,mobile_number,email,wedding_date,expected_date,preferred_shopping_category,estimated_family_size,budget,assigned_telecaller,customer_notes,followup_call_date,store_location,alternate_number\r\n' +
+      'Ananya Hegde,9845012345,ananya.hegde@example.com,2025-05-15,2025-04-20,Bridal Saree,8,75000,Priya Sharma,Interested in premium bridal Kanjeevaram sarees,2025-03-30,Shivamogga,9845099999\r\n' +
+      'Pooja Patil,9880198765,pooja.patil@example.com,2025-06-10,2025-05-15,Designer Lehengas,5,120000,Rajesh Kumar,Looking for designer lehengas and family sets,2025-04-10,Davanagere,\r\n' +
+      'Kavya Suresh,9741234567,,2025-07-22,2025-06-25,Silk Sarees & Men Wear,12,150000,Anita Rao,Full family wedding shopping for 12 members,2025-05-20,Belagavi,9741234568\r\n';
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -346,7 +346,7 @@ export default function WeddingImport() {
                 <span className="text-[11px] font-medium text-muted">Exact Row 1 Headers Required</span>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-2.5 text-xs">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-2.5 text-xs">
                 {/* customer_name */}
                 <div className="p-2.5 rounded-xl bg-red-50 border border-red-200 space-y-1">
                   <div className="flex items-center justify-between">
@@ -387,14 +387,64 @@ export default function WeddingImport() {
                   <p className="text-[10px] text-emerald-600 font-mono italic">e.g. 2025-05-15</p>
                 </div>
 
-                {/* shopping_date */}
+                {/* expected_date */}
                 <div className="p-2.5 rounded-xl bg-emerald-50/70 border border-emerald-200 space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-emerald-900 font-mono text-[11px]">shopping_date</span>
+                    <span className="font-bold text-emerald-900 font-mono text-[11px]">expected_date</span>
                     <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-emerald-100 text-emerald-800">Optional</span>
                   </div>
-                  <p className="text-[11px] text-emerald-800">Shopping Date (YYYY-MM-DD)</p>
+                  <p className="text-[11px] text-emerald-800">Expected Shopping Date (YYYY-MM-DD)</p>
                   <p className="text-[10px] text-emerald-600 font-mono italic">e.g. 2025-04-20</p>
+                </div>
+
+                {/* preferred_shopping_category */}
+                <div className="p-2.5 rounded-xl bg-emerald-50/70 border border-emerald-200 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-emerald-900 font-mono text-[11px]">preferred_shopping_category</span>
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-emerald-100 text-emerald-800">Optional</span>
+                  </div>
+                  <p className="text-[11px] text-emerald-800">Bridal Saree / Lehengas / Silk / Suit</p>
+                  <p className="text-[10px] text-emerald-600 font-mono italic">e.g. Bridal Saree</p>
+                </div>
+
+                {/* estimated_family_size */}
+                <div className="p-2.5 rounded-xl bg-emerald-50/70 border border-emerald-200 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-emerald-900 font-mono text-[11px]">estimated_family_size</span>
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-emerald-100 text-emerald-800">Optional</span>
+                  </div>
+                  <p className="text-[11px] text-emerald-800">Estimated family members shopping</p>
+                  <p className="text-[10px] text-emerald-600 font-mono italic">e.g. 8</p>
+                </div>
+
+                {/* budget */}
+                <div className="p-2.5 rounded-xl bg-emerald-50/70 border border-emerald-200 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-emerald-900 font-mono text-[11px]">budget</span>
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-emerald-100 text-emerald-800">Optional</span>
+                  </div>
+                  <p className="text-[11px] text-emerald-800">Approx budget in INR</p>
+                  <p className="text-[10px] text-emerald-600 font-mono italic">e.g. 75000</p>
+                </div>
+
+                {/* assigned_telecaller */}
+                <div className="p-2.5 rounded-xl bg-emerald-50/70 border border-emerald-200 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-emerald-900 font-mono text-[11px]">assigned_telecaller</span>
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-emerald-100 text-emerald-800">Optional</span>
+                  </div>
+                  <p className="text-[11px] text-emerald-800">Staff name for follow-ups</p>
+                  <p className="text-[10px] text-emerald-600 font-mono italic">e.g. Priya Sharma</p>
+                </div>
+
+                {/* customer_notes */}
+                <div className="p-2.5 rounded-xl bg-emerald-50/70 border border-emerald-200 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-emerald-900 font-mono text-[11px]">customer_notes</span>
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-emerald-100 text-emerald-800">Optional</span>
+                  </div>
+                  <p className="text-[11px] text-emerald-800">Special requests / notes</p>
+                  <p className="text-[10px] text-emerald-600 font-mono italic">Premium Kanjeevaram enquiry</p>
                 </div>
 
                 {/* followup_call_date */}
@@ -415,16 +465,6 @@ export default function WeddingImport() {
                   </div>
                   <p className="text-[11px] text-emerald-800">Branch name or code</p>
                   <p className="text-[10px] text-emerald-600 font-mono italic">Shivamogga / DAV / BEL</p>
-                </div>
-
-                {/* notes */}
-                <div className="p-2.5 rounded-xl bg-emerald-50/70 border border-emerald-200 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-emerald-900 font-mono text-[11px]">notes</span>
-                    <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-emerald-100 text-emerald-800">Optional</span>
-                  </div>
-                  <p className="text-[11px] text-emerald-800">Customer remarks / wishes</p>
-                  <p className="text-[10px] text-emerald-600 font-mono italic">Kanjeevaram enquiry</p>
                 </div>
 
                 {/* alternate_number */}
