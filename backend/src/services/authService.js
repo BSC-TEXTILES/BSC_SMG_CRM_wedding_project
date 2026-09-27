@@ -744,7 +744,55 @@ class AuthService {
     const locationCode = isGlobalAdmin ? null : (user.locationCode || null);
     const locationName = isGlobalAdmin ? null : (user.locationName || null);
 
-    // Re-issue short-lived access token (15m) + new rotated refresh token (7d)
+    // Retrieve user's accessible locations
+    let allowedLocations = [];
+    if (isGlobalAdmin) {
+      try {
+        const [allLocs] = await pool.query(
+          `SELECT id, location_code AS code, location_name AS name FROM locations WHERE status = 'Active' ORDER BY sort_order ASC`
+        );
+        allowedLocations = allLocs || [];
+      } catch (e) {}
+    } else if (locationId) {
+      const locNum = Number(locationId);
+      allowedLocations = [{
+        id: locNum,
+        code: locationCode || (locNum === 1 ? 'BEL' : locNum === 3 ? 'SHI' : 'DAV'),
+        name: locationName || (locNum === 1 ? 'Belagavi' : locNum === 3 ? 'Shivamogga' : 'Davanagere')
+      }];
+    }
+    const allowedLocationIds = allowedLocations.map(l => l.id);
+
+    // Retrieve user's explicitly assigned modules from user_permissions
+    let userModules = [];
+    let hasCustomModules = false;
+    try {
+      const [permRows] = await pool.query(
+        'SELECT module FROM user_permissions WHERE user_id = ? AND can_view = TRUE',
+        [user.id]
+      );
+      if (permRows && permRows.length > 0) {
+        userModules = permRows.map(r => r.module);
+        hasCustomModules = true;
+      }
+    } catch (e) {
+      console.warn('[rotateRefreshToken] user_permissions query error:', e.message);
+    }
+
+    if (!hasCustomModules) {
+      const userSyncService = require('./userSyncService');
+      const isAdminRole = ['Admin', 'Super Admin'].includes(user.role);
+      if (isAdminRole) {
+        userModules = userSyncService.adminModules();
+      } else {
+        const rKey = userSyncService.resolveRoleKey(user.role);
+        userModules = (rKey && userSyncService.ROLE_DEFAULT_MODULES[rKey])
+          ? [...userSyncService.ROLE_DEFAULT_MODULES[rKey]]
+          : ['dashboard'];
+      }
+    }
+
+    // Re-issue access token + rotated refresh token with full user context
     const token = jwt.sign(
       {
         id: user.id,
@@ -755,7 +803,9 @@ class AuthService {
         locationId,
         locationCode,
         locationName,
-        isGlobalAdmin
+        isGlobalAdmin,
+        allowedLocations: allowedLocationIds,
+        modules: userModules
       },
       getJwtSecret(),
       { expiresIn: ACCESS_TOKEN_EXPIRES_IN }
@@ -786,7 +836,9 @@ class AuthService {
         locationId,
         locationCode,
         locationName,
-        isGlobalAdmin
+        isGlobalAdmin,
+        allowedLocations: allowedLocationIds,
+        modules: userModules
       }
     };
   }

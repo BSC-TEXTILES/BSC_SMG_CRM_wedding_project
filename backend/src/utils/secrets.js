@@ -36,6 +36,8 @@ function loadSecretsFile() {
 
 function persistSecretsFile(secrets) {
   try {
+    const dir = path.dirname(SECRETS_FILE);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(SECRETS_FILE, JSON.stringify(secrets, null, 2), { mode: 0o600 });
   } catch (e) {
     // Read-only filesystem (some PaaS) — secrets regenerate per boot, still secure

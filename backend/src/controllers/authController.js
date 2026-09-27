@@ -782,7 +782,11 @@ class AuthController {
    * POST /api/auth/refresh
    */
   async refresh(req, res) {
-    const rawRefreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
+    let rawRefreshToken = req.cookies?.refreshToken || req.body?.refreshToken || req.headers['x-refresh-token'];
+    if (!rawRefreshToken && req.headers.cookie) {
+      const match = req.headers.cookie.match(/(?:^|; )refreshToken=([^;]*)/);
+      if (match && match[1]) rawRefreshToken = decodeURIComponent(match[1]);
+    }
     const clientIp = req.ip;
     const userAgent = req.headers['user-agent'];
 

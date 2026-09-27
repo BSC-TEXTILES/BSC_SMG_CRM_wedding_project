@@ -154,13 +154,21 @@ const authenticate = async (req, res, next) => {
     if (req.cookies && req.cookies.token) {
       candidateTokens.push(req.cookies.token);
     }
-    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
-      const hToken = req.headers.authorization.split(' ')[1];
+    // Fallback: extract token cookie directly from raw Cookie header if req.cookies is missing
+    if (!candidateTokens.length && req.headers.cookie) {
+      const match = req.headers.cookie.match(/(?:^|; )token=([^;]*)/);
+      if (match && match[1]) {
+        candidateTokens.push(decodeURIComponent(match[1]));
+      }
+    }
+    const authHeader = req.headers.authorization || req.headers.Authorization;
+    if (authHeader && authHeader.toLowerCase().startsWith('bearer ')) {
+      const hToken = authHeader.slice(7).trim();
       if (hToken && !candidateTokens.includes(hToken)) candidateTokens.push(hToken);
     }
-    if (req.headers['x-auth-token']) {
-      const xToken = req.headers['x-auth-token'];
-      if (xToken && !candidateTokens.includes(xToken)) candidateTokens.push(xToken);
+    const xToken = req.headers['x-auth-token'] || req.headers['X-Auth-Token'];
+    if (xToken && !candidateTokens.includes(xToken)) {
+      candidateTokens.push(xToken);
     }
 
     if (candidateTokens.length === 0) {

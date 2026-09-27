@@ -40,10 +40,12 @@ export interface UserSession {
 // Without this flag a missing/expired session would loop forever:
 // clear() -> 'bsc_auth_changed' -> Auth.check() -> clear() -> ... RangeError.
 let authClearDispatching = false;
+let isLoggingOut = false;
 
 export const Auth = {
-  save(session: UserSession, token?: string | null) {
+  save(session: UserSession, token?: string | null, refreshToken?: string | null) {
     try {
+      isLoggingOut = false;
       const activeToken = token || session.token || null;
       if (activeToken) {
         if (typeof sessionStorage !== 'undefined') {
@@ -52,6 +54,9 @@ export const Auth = {
         if (typeof localStorage !== 'undefined') {
           localStorage.setItem('bsc_token', activeToken);
         }
+      }
+      if (refreshToken && typeof localStorage !== 'undefined') {
+        localStorage.setItem('bsc_refresh_token', refreshToken);
       }
       const sessionToStore = {
         id: session.id,
@@ -213,10 +218,13 @@ export function triggerSecurityLogout(
   reason: string = 'Session expired. Please log in again.',
   violationPath: string = ''
 ) {
+  if (isLoggingOut) return;
+  isLoggingOut = true;
   try {
     Auth.clear();
     if (typeof localStorage !== 'undefined') {
       localStorage.removeItem('bsc_selected_location');
+      localStorage.setItem('bsc_logout_reason', reason);
     }
   } catch (e) {}
 
@@ -246,9 +254,15 @@ export async function silentRefreshToken(): Promise<boolean> {
         'Content-Type': 'application/json',
         'x-csrf-token': csrf
       };
-      if (token) headers['Authorization'] = `Bearer ${token}`;
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+        headers['x-auth-token'] = token;
+      }
 
-      const res = await fetch('/api/auth/refresh', {
+      const apiBase = getApiBase();
+      const refreshUrl = `${apiBase}/auth/refresh`;
+
+      const res = await fetch(refreshUrl, {
         method: 'POST',
         headers,
         body: storedRefresh ? JSON.stringify({ refreshToken: storedRefresh }) : undefined,
@@ -380,10 +394,11 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
                         endpoint.includes('/auth/refresh') ||
                         endpoint.includes('/auth/verify-2fa') ||
                         endpoint.includes('/auth/logout') ||
+                        endpoint.includes('/auth/lock-status') ||
+                        endpoint.includes('/auth/captcha') ||
                         endpoint.includes('/security/log-event') ||
                         endpoint.includes('/user-tracking') ||
                         endpoint.includes('/my-permissions') ||
-                        endpoint.includes('/consent/') ||
                         endpoint.includes('/settings/page');
 
     // On 401, attempt silent refresh once and replay request
@@ -392,9 +407,12 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
       if (refreshed) {
         const newCsrf = getCsrfToken();
         if (newCsrf) headers['x-csrf-token'] = newCsrf;
-        // Update Bearer token from refreshed session
+        // Update Bearer token and fallback header from refreshed session
         const newToken = Auth.getToken();
-        if (newToken) headers['Authorization'] = `Bearer ${newToken}`;
+        if (newToken) {
+          headers['Authorization'] = `Bearer ${newToken}`;
+          headers['x-auth-token'] = newToken;
+        }
         res = await fetch(url, {
           ...options,
           headers,
@@ -405,11 +423,11 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
 
     if (!res.ok) {
       const isForceLogout = res.headers && res.headers.get && res.headers.get('X-Force-Logout') === 'true';
-      const isProfileAuthCheck = endpoint.includes('/auth/me') || endpoint.includes('/auth/profile');
       
-      // Only execute automatic session termination when the server explicitly confirms
-      // the session is revoked (X-Force-Logout) or the core profile authentication check fails.
-      if ((isForceLogout || (res.status === 401 && isProfileAuthCheck)) && !isAuthRoute) {
+      // If server explicitly confirmed session is revoked (X-Force-Logout)
+      // or if an authenticated business route is STILL 401 after refresh failed,
+      // terminate the dead session cleanly and bring the user to /login with reason.
+      if ((isForceLogout || res.status === 401) && !isAuthRoute) {
         const errorData = await res.json().catch(() => ({}));
         const msg = errorData.message || 'Session expired. Please log in again.';
         triggerSecurityLogout(msg, typeof window !== 'undefined' ? window.location.pathname : '');

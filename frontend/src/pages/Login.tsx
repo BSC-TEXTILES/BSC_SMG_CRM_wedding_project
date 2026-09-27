@@ -69,6 +69,13 @@ export default function LoginPage() {
   // Initial check on mount
   useEffect(() => {
     checkServerLock();
+    try {
+      const logoutReason = localStorage.getItem('bsc_logout_reason');
+      if (logoutReason) {
+        localStorage.removeItem('bsc_logout_reason');
+        showToast(logoutReason, 'info');
+      }
+    } catch (e) {}
   }, [checkServerLock]);
 
   // 1-second countdown interval for the 10-minute lockout timer
@@ -193,6 +200,7 @@ export default function LoginPage() {
 
         // Save full session including location fields, allowed modules, and token
         const authToken = res.data?.token || res.token || null;
+        const refreshToken = res.data?.refreshToken || res.refreshToken || null;
         Auth.save({
           id: user.id,
           username: user.username,
@@ -208,7 +216,7 @@ export default function LoginPage() {
           isGlobalAdmin: user.isGlobalAdmin === true || user.locationId === null,
           modules: user.modules || [],
           token: authToken
-        }, authToken);
+        }, authToken, refreshToken);
 
         const locationLabel = user.locationName ? ` — ${user.locationName}` : '';
         showToast(`Welcome back, ${user.fullName || user.username}${locationLabel}`, 'success');
@@ -282,6 +290,7 @@ export default function LoginPage() {
         
         // Save full session
         const authToken = res.data?.token || res.token || null;
+        const refreshToken = res.data?.refreshToken || res.refreshToken || null;
         Auth.save({
           id: user.id,
           username: user.username,
@@ -296,7 +305,7 @@ export default function LoginPage() {
           isGlobalAdmin: user.isGlobalAdmin === true || user.locationId === null,
           modules: user.modules || [],
           token: authToken
-        }, authToken);
+        }, authToken, refreshToken);
 
         // Clear 2FA state
         setShow2fa(false);
