@@ -323,6 +323,10 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
   if (token && !headers['Authorization'] && !headers['authorization']) {
     headers['Authorization'] = `Bearer ${token}`;
   }
+  // Belt-and-suspenders: also send x-auth-token for backend fallback extraction
+  if (token) {
+    headers['x-auth-token'] = token;
+  }
 
   // CSRF Protection
   const csrfToken = getCsrfToken();

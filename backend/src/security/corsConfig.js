@@ -84,6 +84,7 @@ const corsOptions = {
     'X-Location-Id',
     'X-App-No',
     'X-Candidate-Name',
+    'x-auth-token',
     'Accept',
     'Origin'
   ],
@@ -91,7 +92,8 @@ const corsOptions = {
     'Content-Range',
     'X-Content-Range',
     'X-WAF-Protection',
-    'X-Correlation-ID'
+    'X-Correlation-ID',
+    'X-Force-Logout'
   ],
   maxAge: 86400 // Cache preflight requests for 24 hours
 };
