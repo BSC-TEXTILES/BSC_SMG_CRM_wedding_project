@@ -17,7 +17,10 @@ import {
   Award,
   RefreshCw,
   PhoneCall,
-  CircleCheck
+  CircleCheck,
+  History,
+  FileText,
+  Loader2
 } from 'lucide-react';
 
 export default function WeddingReports() {
@@ -44,6 +47,22 @@ export default function WeddingReports() {
 
   const [reportData, setReportData] = useState<any>(null);
   const [telecallerPerf, setTelecallerPerf] = useState<any[]>([]);
+  const [importLogs, setImportLogs] = useState<any[]>([]);
+  const [logsLoading, setLogsLoading] = useState(false);
+
+  const loadImportLogs = useCallback(async () => {
+    if (!API.getWeddingImportLogs) return;
+    setLogsLoading(true);
+    try {
+      const res = await API.getWeddingImportLogs(20);
+      const list = res?.imports || res?.data?.imports || [];
+      if (Array.isArray(list)) setImportLogs(list);
+    } catch (err: any) {
+      console.warn('Failed to load import history', err?.message || err);
+    } finally {
+      setLogsLoading(false);
+    }
+  }, []);
 
   const loadReport = useCallback(async () => {
     setLoading(true);
@@ -75,7 +94,8 @@ export default function WeddingReports() {
       setLocationFilter(sess.locationId);
     }
     loadReport();
-  }, [loadReport, navigate]);
+    loadImportLogs();
+  }, [loadReport, loadImportLogs, navigate]);
 
   const handleExport = () => {
     if (!telecallerPerf || telecallerPerf.length === 0) {
@@ -214,6 +234,93 @@ export default function WeddingReports() {
                 </tbody>
               </table>
             </div>
+          </div>
+
+          {/* Import History */}
+          <div className="bg-white rounded-3xl border border-[#DFDDD7] shadow-xs p-5 sm:p-6 space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-[#DFDDD7]">
+              <h3 className="text-sm font-black text-[#182033] flex items-center gap-2">
+                <History className="w-4.5 h-4.5 text-[#C98218]" />
+                <span>Bulk Import History</span>
+              </h3>
+              <div className="flex items-center gap-2">
+                <Link
+                  to="/wedding-crm/import"
+                  className="text-[11px] font-black text-[#101C36] hover:text-[#C98218] inline-flex items-center gap-1.5 underline"
+                >
+                  <FileText className="w-3 h-3" />
+                  New Import
+                </Link>
+                <button
+                  type="button"
+                  onClick={loadImportLogs}
+                  disabled={logsLoading}
+                  className="text-[11px] font-bold text-[#101C36] hover:text-[#C98218] inline-flex items-center gap-1.5 underline disabled:opacity-60"
+                >
+                  {logsLoading && <Loader2 className="w-3 h-3 animate-spin" />}
+                  Refresh
+                </button>
+              </div>
+            </div>
+
+            {importLogs.length === 0 ? (
+              <p className="text-xs text-muted py-3">
+                No bulk imports recorded for your stores yet.
+              </p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-[#DFDDD7] text-[#182033] font-black text-[11px]">
+                      <th className="py-2 pr-3">When</th>
+                      <th className="py-2 px-3">File</th>
+                      <th className="py-2 px-3">Store</th>
+                      <th className="py-2 px-3">Uploaded By</th>
+                      <th className="py-2 px-3 text-right">Rows</th>
+                      <th className="py-2 px-3 text-right">Imported</th>
+                      <th className="py-2 px-3 text-right">Duplicates</th>
+                      <th className="py-2 px-3 text-right">Errors</th>
+                      <th className="py-2 pl-3">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#EFEEE9] text-[#3a4160]">
+                    {importLogs.map((log: any) => (
+                      <tr key={log.id} className="hover:bg-[#F6F4EF]/70 transition-colors">
+                        <td className="py-2.5 pr-3 font-mono whitespace-nowrap">
+                          {log.created_at ? new Date(log.created_at).toLocaleString() : '—'}
+                        </td>
+                        <td className="py-2.5 px-3 font-medium max-w-[200px] truncate" title={log.file_name}>
+                          {log.file_name || '—'}
+                        </td>
+                        <td className="py-2.5 px-3">{log.location_name || (log.location_id ? `#${log.location_id}` : 'All')}</td>
+                        <td className="py-2.5 px-3">{log.user_name || '—'}</td>
+                        <td className="py-2.5 px-3 text-right font-mono">{log.total_rows ?? 0}</td>
+                        <td className="py-2.5 px-3 text-right font-mono font-bold text-emerald-700">{log.imported_count ?? 0}</td>
+                        <td className="py-2.5 px-3 text-right font-mono text-amber-700">{log.duplicate_count ?? 0}</td>
+                        <td className="py-2.5 px-3 text-right font-mono font-bold text-red-700">{log.error_count ?? 0}</td>
+                        <td className="py-2.5 pl-3">
+                          <span
+                            className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase ${
+                              String(log.status || '').toLowerCase().replace(/[\s-]+/g, '_') === 'completed_with_errors'
+                                ? 'bg-amber-100 text-amber-800'
+                                : String(log.status || '').toLowerCase().replace(/[\s-]+/g, '_') === 'failed'
+                                ? 'bg-red-100 text-red-800'
+                                : 'bg-emerald-100 text-emerald-800'
+                            }`}
+                          >
+                            {String(log.status || 'Completed').replace(/[\s-]+/g, ' ')}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <p className="text-[10px] text-muted">
+              Every CSV / Excel upload into the customer register is logged here with its user, store and row counts.
+            </p>
           </div>
         </div>
       </PageContainer>

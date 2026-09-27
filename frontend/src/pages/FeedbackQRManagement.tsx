@@ -693,50 +693,60 @@ export default function FeedbackQRManagement() {
   // Active view tab
   const [activeTab, setActiveTab] = useState<'all' | 'locations' | 'analytics'>('all');
 
-  // Filter location QR codes based on global location selector
+  // Filter location QR codes based on selected location filter (or global location selector)
   const displayLocationQrCodes = useMemo(() => {
-    if (isGlobalAdmin && currentLocation !== 'ALL') {
-      return locationQrCodes.filter(loc => String(loc.locationId) === currentLocation);
-    }
-    if (!isGlobalAdmin) {
-      const targetLoc = currentLocation && currentLocation !== 'ALL'
-        ? currentLocation
-        : (availableLocations[0] ? String(availableLocations[0].id) : '1');
-      return locationQrCodes.filter(loc => String(loc.locationId) === targetLoc);
+    const activeLoc = (locationFilter && locationFilter !== 'all') ? locationFilter : (currentLocation && currentLocation !== 'ALL' ? currentLocation : null);
+    if (activeLoc) {
+      return locationQrCodes.filter(loc => String(loc.locationId) === String(activeLoc) || String(loc.locationCode) === String(activeLoc));
     }
     return locationQrCodes;
-  }, [locationQrCodes, currentLocation, isGlobalAdmin, availableLocations]);
+  }, [locationQrCodes, currentLocation, locationFilter]);
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (overrides?: {
+    location?: string;
+    floor?: string;
+    status?: string;
+    search?: string;
+    page?: number;
+  }) => {
     setLoading(true);
     setLocationsLoading(true);
     setLocationQrLoading(true);
     try {
-      const effectiveLocId = (currentLocation && currentLocation !== 'ALL') ? currentLocation : (locationFilter || undefined);
+      const activeLoc = overrides?.location !== undefined ? overrides.location : locationFilter;
+      const activeFloor = overrides?.floor !== undefined ? overrides.floor : floorFilter;
+      const activeStatus = overrides?.status !== undefined ? overrides.status : statusFilter;
+      const activeSearch = overrides?.search !== undefined ? overrides.search : search;
+      const activePage = overrides?.page !== undefined ? overrides.page : currentPage;
+
+      // When activeLoc is empty or 'all', explicitly request 'all' so all QR codes load
+      const apiLocationId = (activeLoc && activeLoc !== 'all') ? activeLoc : 'all';
+      const apiFloor = (activeFloor && activeFloor !== 'all') ? activeFloor : undefined;
+      const apiStatus = (activeStatus && activeStatus !== 'all') ? activeStatus : undefined;
+
       const params = {
-        page: currentPage,
+        page: activePage,
         limit: pageSize,
-        search: search || undefined,
-        status: statusFilter !== 'all' ? statusFilter : undefined,
-        locationId: effectiveLocId,
-        floor: floorFilter !== 'all' ? floorFilter : undefined,
+        search: activeSearch || undefined,
+        status: apiStatus,
+        locationId: apiLocationId,
+        floor: apiFloor,
         sortBy,
         sortOrder
       };
-      // For stats, also consider global location selector for global admins
-      const statsLocationId = effectiveLocId;
+      const statsLocationId = apiLocationId;
       const [qrRes, statsRes, locRes, masterLocRes, secRes, formRes, locQrRes] = await Promise.allSettled([
         API.getQrCodes(params),
         API.getQrCodeStats({ 
-          status: statusFilter !== 'all' ? statusFilter : undefined, 
+          status: apiStatus, 
           locationId: statsLocationId,
-          floor: floorFilter !== 'all' ? floorFilter : undefined 
+          floor: apiFloor 
         }),
         API.getLocationsForQr(),
         API.getLocations(),
-        API.getSectionsForQr(effectiveLocId),
+        API.getSectionsForQr(apiLocationId !== 'all' ? apiLocationId : undefined),
         API.getFeedbackForms(),
-        API.getLocationQrCodes(statsLocationId)
+        API.getLocationQrCodes(apiLocationId !== 'all' ? apiLocationId : undefined)
       ]);
 
       if (qrRes.status === 'fulfilled' && qrRes.value?.success) {
@@ -800,7 +810,7 @@ export default function FeedbackQRManagement() {
       setLocationsLoading(false);
       setLocationQrLoading(false);
     }
-  }, [currentPage, pageSize, search, statusFilter, locationFilter, floorFilter, sortBy, sortOrder, currentLocation]);
+  }, [currentPage, pageSize, search, statusFilter, locationFilter, floorFilter, sortBy, sortOrder]);
 
   useEffect(() => {
     if (!Auth.check()) {
@@ -821,6 +831,21 @@ export default function FeedbackQRManagement() {
     else if (key === 'location') setLocationFilter(value);
     else if (key === 'floor') setFloorFilter(value);
     setCurrentPage(1);
+  };
+
+  const handleRefresh = () => {
+    setLocationFilter('');
+    setFloorFilter('all');
+    setStatusFilter('all');
+    setSearch('');
+    setCurrentPage(1);
+    loadData({
+      location: '',
+      floor: 'all',
+      status: 'all',
+      search: '',
+      page: 1
+    });
   };
 
   const handleSort = (field: string) => {
@@ -1108,6 +1133,68 @@ export default function FeedbackQRManagement() {
     }
   };
 
+  const getEmptyStateMessage = () => {
+    const hasLocation = Boolean(locationFilter && locationFilter !== 'all' && locationFilter !== '');
+    const hasFloor = Boolean(floorFilter && floorFilter !== 'all' && floorFilter !== '');
+
+    let locName = '';
+    if (hasLocation) {
+      const found = locations.find(l => String(l.id) === String(locationFilter) || l.locationCode === locationFilter);
+      locName = found ? found.locationName : locationFilter;
+    }
+
+    if (hasLocation && hasFloor) {
+      return {
+        title: `No QR codes available for ${locName} - ${floorFilter}`,
+        subtitle: `No QR codes available for ${locName} on ${floorFilter}.`
+      };
+    }
+    if (hasLocation) {
+      return {
+        title: `No QR codes available for ${locName}`,
+        subtitle: `No QR codes available for the selected location.`
+      };
+    }
+    if (hasFloor) {
+      return {
+        title: `No QR codes available on ${floorFilter}`,
+        subtitle: `No QR codes available on the selected floor.`
+      };
+    }
+    return {
+      title: 'No QR codes found',
+      subtitle: 'Create your first QR code to start collecting customer feedback.'
+    };
+  };
+
+  const renderEmptyState = () => {
+    const emptyState = getEmptyStateMessage();
+    const hasActiveFilters = Boolean(
+      (locationFilter && locationFilter !== 'all' && locationFilter !== '') ||
+      (floorFilter && floorFilter !== 'all' && floorFilter !== '') ||
+      (statusFilter && statusFilter !== 'all') ||
+      search.trim()
+    );
+
+    return (
+      <div className="py-12 px-4 text-center text-gray-500 font-bold text-xs space-y-2">
+        <QrCode className="w-10 h-10 text-gray-300 mx-auto" />
+        <div className="text-sm text-primary font-black">{emptyState.title}</div>
+        <p className="text-gray-400 font-medium max-w-md mx-auto">{emptyState.subtitle}</p>
+        <div className="flex flex-wrap items-center justify-center gap-2 pt-3">
+          {hasActiveFilters && (
+            <ActionButton onClick={handleRefresh} variant="secondary" icon={<RefreshCw className="w-3.5 h-3.5" />}>
+              Reset Filters
+            </ActionButton>
+          )}
+          <ActionButton onClick={openCreateModal} variant="gold" icon={<Plus className="w-3.5 h-3.5" />}>
+            Create QR Code
+          </ActionButton>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <DashboardLayout 
       title="Feedback QR Code Management" 
@@ -1156,7 +1243,7 @@ export default function FeedbackQRManagement() {
                 </select>
               </div>
               <div className="flex items-center gap-1.5 ml-auto">
-                <ActionButton onClick={loadData} icon={<RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />} title="Refresh all data" variant="secondary" size="sm">Refresh</ActionButton>
+                <ActionButton onClick={handleRefresh} icon={<RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />} title="Refresh and reset all filters" variant="secondary" size="sm">Refresh</ActionButton>
               </div>
             </div>
           </div>
@@ -1323,12 +1410,7 @@ export default function FeedbackQRManagement() {
                   <span>Loading QR codes...</span>
                 </div>
               ) : qrCodes.length === 0 ? (
-                <div className="py-12 text-center text-gray-500 font-bold text-xs space-y-2">
-                  <QrCode className="w-10 h-10 text-gray-300 mx-auto" />
-                  <div className="text-sm text-primary font-black">No QR Codes Found</div>
-                  <p className="text-gray-400 font-medium">Create your first QR code to start collecting customer feedback.</p>
-                  <ActionButton onClick={openCreateModal} variant="gold" className="mt-4" icon={<Plus className="w-3.5 h-3.5" />}>Create QR Code</ActionButton>
-                </div>
+                renderEmptyState()
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs font-semibold border-collapse">
@@ -1446,7 +1528,15 @@ export default function FeedbackQRManagement() {
             </div>
           ) : (
             <div className="p-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {loading ? (
+                <div className="py-12 text-center text-gray-500 font-bold text-xs flex flex-col items-center gap-2">
+                  <RefreshCw className="w-6 h-6 animate-spin text-accent" />
+                  <span>Loading QR codes...</span>
+                </div>
+              ) : qrCodes.length === 0 ? (
+                renderEmptyState()
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {qrCodes.map((qr) => (
                   <div key={qr.id} className="card-glass p-4 space-y-3 border border-accent-soft hover:border-primary/50 transition-colors">
                     <div className="flex items-start justify-between">
@@ -1480,31 +1570,32 @@ export default function FeedbackQRManagement() {
                   </div>
                 ))}
               </div>
-              {totalPages > 1 && (
-                <div className="p-4 border-t border-accent-soft flex items-center justify-center gap-1">
-                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                    let pageNum;
-                    if (totalPages <= 5) pageNum = i + 1;
-                    else if (currentPage <= 3) pageNum = i + 1;
-                    else if (currentPage >= totalPages - 2) pageNum = totalPages - 4 + i;
-                    else pageNum = currentPage - 2 + i;
-                    return (
-                      <ActionButton 
-                        key={pageNum}
-                        onClick={() => setCurrentPage(pageNum)}
-                        variant={currentPage === pageNum ? 'primary' : 'ghost'}
-                        size="xs"
-                        className="w-8 h-8"
-                      >
-                        {pageNum}
-                      </ActionButton>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+            )}
+            {totalPages > 1 && !loading && qrCodes.length > 0 && (
+              <div className="p-4 border-t border-accent-soft flex items-center justify-center gap-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum;
+                  if (totalPages <= 5) pageNum = i + 1;
+                  else if (currentPage <= 3) pageNum = i + 1;
+                  else if (currentPage >= totalPages - 2) pageNum = totalPages - 4 + i;
+                  else pageNum = currentPage - 2 + i;
+                  return (
+                    <ActionButton 
+                      key={pageNum}
+                      onClick={() => setCurrentPage(pageNum)}
+                      variant={currentPage === pageNum ? 'primary' : 'ghost'}
+                      size="xs"
+                      className="w-8 h-8"
+                    >
+                      {pageNum}
+                    </ActionButton>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
         {/* Create/Edit Modal */}
         {showCreateModal && (

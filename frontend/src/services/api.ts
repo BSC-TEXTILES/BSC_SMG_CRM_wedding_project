@@ -1272,11 +1272,57 @@ export const API = {
     const blobUrl = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = blobUrl;
-    link.download = `wedding_customer_template.${ext}`;
+    link.download = `BSC_Wedding_Customers_Template.${ext}`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     window.URL.revokeObjectURL(blobUrl);
+  },
+
+  /**
+   * Server-generated .xlsx error report for a failed import run.
+   * Every cell is sanitized against spreadsheet formula injection.
+   */
+  async downloadWeddingErrorReport(payload: {
+    fileName: string;
+    summary: string;
+    counts?: Record<string, number>;
+    errors: Array<{ row: number; customerName?: string; mobile?: string; reason: string }>;
+  }) {
+    const apiBase = getApiBase();
+    const res = await fetch(`${apiBase}/wedding-crm/import-error-report`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-csrf-token': getCsrfToken() || ''
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      let message = `Failed to generate the error report (Status ${res.status})`;
+      try {
+        const body = await res.json();
+        if (body && body.message) message = body.message;
+      } catch (e) { /* non-JSON error body */ }
+      throw new Error(message);
+    }
+
+    const blob = await res.blob();
+    const blobUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = 'BSC_Wedding_Import_Errors.xlsx';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(blobUrl);
+  },
+
+  async getWeddingImportLogs(limit = 50) {
+    const res = await apiFetch(`/wedding-crm/import-logs?limit=${limit}`);
+    return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
   },
 
   // ── Wedding CRM: Enhanced Dashboard ──────────────────────────
@@ -1585,6 +1631,7 @@ export const API = {
     search?: string;
     status?: string;
     locationId?: number | string;
+    floor?: string;
     sortBy?: string;
     sortOrder?: string;
   }) {
@@ -1696,7 +1743,7 @@ export const API = {
     return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
   },
 
-  async exportQrCodes(params?: { format?: string; status?: string; locationId?: number | string }) {
+  async exportQrCodes(params?: { format?: string; status?: string; locationId?: number | string; floor?: string }) {
     const q = params ? new URLSearchParams(cleanQueryParams(params)).toString() : '';
     const res = await apiFetch(`/feedback-qr/export${q ? `?${q}` : ''}`);
     return (res && res.data !== undefined) ? { ...res, ...res.data } : res;

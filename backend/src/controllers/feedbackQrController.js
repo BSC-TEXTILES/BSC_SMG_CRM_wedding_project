@@ -1,5 +1,5 @@
 const db = require('../config/db');
-const { getEffectiveLocationId, getLocationFilter } = require('../middleware/auth');
+const { getEffectiveLocationId, getLocationFilter, parseTargetLocation } = require('../middleware/auth');
 let QRCode = null;
 try {
   QRCode = require('qrcode');
@@ -171,16 +171,31 @@ exports.getQrCodes = async (req, res) => {
     `;
     const params = [];
 
-    // Strict location scoping: restricted users locked to their branch; Global Admin filters if selected
-    const effectiveLoc = getEffectiveLocationId(req);
-    if (effectiveLoc) {
+    // Location filtering: restricted users locked to their branch; Global Admin filters if selected
+    if (!isGlobalAdmin && userLocationId) {
       sql += ' AND fqc.locationId = ?';
-      params.push(effectiveLoc);
+      params.push(userLocationId);
+    } else if (locationId && locationId !== 'all' && locationId !== 'ALL') {
+      const parsedLoc = (typeof parseTargetLocation === 'function') ? parseTargetLocation(locationId) : null;
+      if (parsedLoc) {
+        sql += ' AND (fqc.locationId = ? OR fqc.locationCode = ?)';
+        params.push(parsedLoc, String(parsedLoc).toUpperCase());
+      } else {
+        const parsedInt = parseInt(locationId, 10);
+        if (!isNaN(parsedInt) && parsedInt > 0) {
+          sql += ' AND fqc.locationId = ?';
+          params.push(parsedInt);
+        } else {
+          sql += ' AND (fqc.locationCode = ? OR fqc.locationName LIKE ?)';
+          params.push(String(locationId).toUpperCase(), `%${locationId}%`);
+        }
+      }
     }
 
-    if (floor && floor !== 'all') {
-      sql += ' AND fqc.floor = ?';
-      params.push(floor);
+    // Floor filtering: case-insensitive trimmed match
+    if (floor && floor !== 'all' && floor !== 'ALL') {
+      sql += ' AND (fqc.floor = ? OR LOWER(TRIM(fqc.floor)) = LOWER(TRIM(?)))';
+      params.push(floor, floor);
     }
 
     if (search) {
@@ -189,7 +204,7 @@ exports.getQrCodes = async (req, res) => {
       params.push(s, s, s, s);
     }
 
-    if (status) {
+    if (status && status !== 'all' && status !== 'ALL') {
       sql += ' AND fqc.status = ?';
       params.push(status);
     }
@@ -642,62 +657,83 @@ exports.getQrCodeStats = async (req, res) => {
     const userLocationId = session?.locationId;
 
     // Accept optional filter params from frontend
-    const rawLoc = req.query.locationId || req.headers['x-location-id'];
-    const { status, floor } = req.query;
+    const { status, floor, locationId } = req.query;
 
     let locationFilter = '';
-    const params = [];
+    const locParams = [];
 
     // Strict location scoping: restricted users locked to assigned branch; Admin filters if selected
-    const effectiveLoc = getEffectiveLocationId(req);
-    if (effectiveLoc) {
+    if (!isGlobalAdmin && userLocationId) {
       locationFilter = ' AND fqc.locationId = ?';
-      params.push(effectiveLoc);
-    }
-
-    // Status filter
-    let statusFilter = '';
-    if (status && status !== 'all') {
-      statusFilter = ' AND fqc.status = ?';
-      params.push(status);
+      locParams.push(userLocationId);
+    } else if (locationId && locationId !== 'all' && locationId !== 'ALL') {
+      const parsedLoc = (typeof parseTargetLocation === 'function') ? parseTargetLocation(locationId) : null;
+      if (parsedLoc) {
+        locationFilter = ' AND (fqc.locationId = ? OR fqc.locationCode = ?)';
+        locParams.push(parsedLoc, String(parsedLoc).toUpperCase());
+      } else {
+        const parsedInt = parseInt(locationId, 10);
+        if (!isNaN(parsedInt) && parsedInt > 0) {
+          locationFilter = ' AND fqc.locationId = ?';
+          locParams.push(parsedInt);
+        } else {
+          locationFilter = ' AND (fqc.locationCode = ? OR fqc.locationName LIKE ?)';
+          locParams.push(String(locationId).toUpperCase(), `%${locationId}%`);
+        }
+      }
     }
 
     // Floor filter (if floor column exists in FeedbackQrCode)
     let floorFilter = '';
-    if (floor && floor !== 'all') {
-      floorFilter = ' AND fqc.floor = ?';
-      params.push(floor);
+    const floorParams = [];
+    if (floor && floor !== 'all' && floor !== 'ALL') {
+      floorFilter = ' AND (fqc.floor = ? OR LOWER(TRIM(fqc.floor)) = LOWER(TRIM(?)))';
+      floorParams.push(floor, floor);
     }
+
+    // Status filter
+    let statusFilter = '';
+    const statusParams = [];
+    if (status && status !== 'all' && status !== 'ALL') {
+      statusFilter = ' AND fqc.status = ?';
+      statusParams.push(status);
+    }
+
+    const baseFilter = `${locationFilter} ${floorFilter}`;
+    const baseParams = [...locParams, ...floorParams];
 
     // Total QR Codes
     const [totalRows] = await db.query(`
-      SELECT COUNT(*) as total FROM FeedbackQrCode fqc WHERE fqc.deletedAt IS NULL ${locationFilter} ${statusFilter} ${floorFilter}
-    `, params);
+      SELECT COUNT(*) as total FROM FeedbackQrCode fqc WHERE fqc.deletedAt IS NULL ${baseFilter} ${statusFilter}
+    `, [...baseParams, ...statusParams]);
 
     // Active QR Codes
     const [activeRows] = await db.query(`
-      SELECT COUNT(*) as total FROM FeedbackQrCode fqc WHERE fqc.deletedAt IS NULL AND fqc.status = 'active' ${locationFilter} ${statusFilter} ${floorFilter}
-    `, params);
+      SELECT COUNT(*) as total FROM FeedbackQrCode fqc WHERE fqc.deletedAt IS NULL AND fqc.status = 'active' ${baseFilter}
+    `, baseParams);
 
     // Inactive QR Codes
     const [inactiveRows] = await db.query(`
-      SELECT COUNT(*) as total FROM FeedbackQrCode fqc WHERE fqc.deletedAt IS NULL AND fqc.status = 'inactive' ${locationFilter} ${statusFilter} ${floorFilter}
-    `, params);
+      SELECT COUNT(*) as total FROM FeedbackQrCode fqc WHERE fqc.deletedAt IS NULL AND fqc.status = 'inactive' ${baseFilter}
+    `, baseParams);
 
     // Total Scans
     let scanSql = `
       SELECT COUNT(*) as total FROM FeedbackQrScan fqs
       JOIN FeedbackQrCode fqc ON (fqs.qrCodeRefId = fqc.qrCodeId OR fqs.qrCodeId = fqc.qrCodeId)
-      WHERE fqc.deletedAt IS NULL ${locationFilter} ${statusFilter} ${floorFilter}
+      WHERE fqc.deletedAt IS NULL ${baseFilter} ${statusFilter}
     `;
-    const [scanRows] = await db.query(scanSql, params);
+    const [scanRows] = await db.query(scanSql, [...baseParams, ...statusParams]);
 
     // Total Feedback directly from Feedback table
     let fbLocFilter = '';
     const fbParams = [];
-    if (effectiveLoc) {
-      fbLocFilter = ' AND f.location_id = ?';
-      fbParams.push(effectiveLoc);
+    if (floorFilter) {
+      fbLocFilter = ` AND f.qrCodeId IN (SELECT qrCodeId FROM FeedbackQrCode fqc WHERE fqc.deletedAt IS NULL ${baseFilter})`;
+      fbParams.push(...baseParams);
+    } else if (locParams.length > 0) {
+      fbLocFilter = ' AND (f.location_id = ? OR f.locationCode = ?)';
+      fbParams.push(locParams[0], String(locParams[0]).toUpperCase());
     }
     const [feedbackRows] = await db.query(`SELECT COUNT(*) as total FROM Feedback f WHERE 1=1 ${fbLocFilter}`, fbParams);
 
@@ -734,9 +770,9 @@ exports.getQrCodeStats = async (req, res) => {
       const [dayScanRows] = await db.query(`
         SELECT COUNT(*) as total FROM FeedbackQrScan fqs
         JOIN FeedbackQrCode fqc ON (fqs.qrCodeRefId = fqc.qrCodeId OR fqs.qrCodeId = fqc.qrCodeId)
-        WHERE fqc.deletedAt IS NULL ${locationFilter} ${statusFilter} ${floorFilter}
+        WHERE fqc.deletedAt IS NULL ${baseFilter} ${statusFilter}
         AND DATE(fqs.scannedAt) = ?
-      `, [...params, dateStr]);
+      `, [...baseParams, ...statusParams, dateStr]);
       
       scansByDay.push({ date: dateStr, scans: dayScanRows[0]?.total || 0 });
     }
@@ -1515,7 +1551,7 @@ exports.trackQrScan = async (req, res) => {
 // ── Export QR Codes ──────────────────────────────────────────────
 exports.exportQrCodes = async (req, res) => {
   try {
-    const { format = 'csv', status, locationId } = req.query;
+    const { format = 'csv', status, locationId, floor } = req.query;
     const session = req.user;
     const isGlobalAdmin = checkIsGlobalAdmin(session);
     const userLocationId = session?.locationId;
@@ -1530,7 +1566,7 @@ exports.exportQrCodes = async (req, res) => {
         fqc.floor,
         fqc.status,
         fqc.scanCount,
-        fqc.feedbackCount,
+        (SELECT COUNT(*) FROM Feedback WHERE qrCodeId = fqc.qrCodeId) as feedbackCount,
         fqc.lastScannedAt,
         fqc.createdAt,
         COALESCE(u.full_name, u.username, fqc.createdByName, 'Admin') as createdByName
@@ -1540,14 +1576,33 @@ exports.exportQrCodes = async (req, res) => {
     `;
     const params = [];
 
-    // Strict location scoping for export
-    const effectiveLoc = getEffectiveLocationId(req);
-    if (effectiveLoc) {
+    // Location filtering
+    if (!isGlobalAdmin && userLocationId) {
       sql += ' AND fqc.locationId = ?';
-      params.push(effectiveLoc);
+      params.push(userLocationId);
+    } else if (locationId && locationId !== 'all' && locationId !== 'ALL') {
+      const parsedLoc = (typeof parseTargetLocation === 'function') ? parseTargetLocation(locationId) : null;
+      if (parsedLoc) {
+        sql += ' AND (fqc.locationId = ? OR fqc.locationCode = ?)';
+        params.push(parsedLoc, String(parsedLoc).toUpperCase());
+      } else {
+        const parsedInt = parseInt(locationId, 10);
+        if (!isNaN(parsedInt) && parsedInt > 0) {
+          sql += ' AND fqc.locationId = ?';
+          params.push(parsedInt);
+        } else {
+          sql += ' AND (fqc.locationCode = ? OR fqc.locationName LIKE ?)';
+          params.push(String(locationId).toUpperCase(), `%${locationId}%`);
+        }
+      }
     }
 
-    if (status) {
+    if (floor && floor !== 'all' && floor !== 'ALL') {
+      sql += ' AND (fqc.floor = ? OR LOWER(TRIM(fqc.floor)) = LOWER(TRIM(?)))';
+      params.push(floor, floor);
+    }
+
+    if (status && status !== 'all' && status !== 'ALL') {
       sql += ' AND fqc.status = ?';
       params.push(status);
     }
