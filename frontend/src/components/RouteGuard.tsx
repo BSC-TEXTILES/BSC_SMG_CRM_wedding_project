@@ -51,7 +51,6 @@ export default function RouteGuard({ pageKey, children }: { pageKey: string; chi
   useEffect(() => {
     const session = Auth.get();
     if (!Auth.check() || !session || !session.id || !session.username || !session.role) {
-      triggerSecurityLogout('Session expired or unauthorized access detected. Please log in again.', location.pathname);
       setResolution('anonymous');
       return;
     }
@@ -75,7 +74,6 @@ export default function RouteGuard({ pageKey, children }: { pageKey: string; chi
 
       // Check if pageKey is authorized
       if (!allowed.includes(pageKey)) {
-        triggerSecurityLogout('Session expired or unauthorized access detected. Please log in again.', location.pathname);
         setResolution('denied');
         return;
       }
@@ -87,7 +85,6 @@ export default function RouteGuard({ pageKey, children }: { pageKey: string; chi
       if (roleKeys.includes(pageKey)) {
         setResolution('allowed');
       } else {
-        triggerSecurityLogout('Session expired or unauthorized access detected. Please log in again.', location.pathname);
         setResolution('denied');
       }
     });
@@ -102,19 +99,18 @@ export default function RouteGuard({ pageKey, children }: { pageKey: string; chi
       <div className="min-h-screen flex items-center justify-center bg-[#F6F4EF]">
         <div className="flex items-center gap-2 text-xs font-bold text-[#101C36]">
           <Loader2 className="w-4 h-4 animate-spin text-[#C98218]" />
-          <span>Verifying security credentials…</span>
+          <span>Verifying permissions…</span>
         </div>
       </div>
     );
   }
 
-  if (resolution === 'anonymous' || resolution === 'denied') {
-    return (
-      <Navigate
-        to={`/login?security=unauthorized&reason=${encodeURIComponent('Session expired or unauthorized access detected. Please log in again.')}&path=${encodeURIComponent(location.pathname)}`}
-        replace
-      />
-    );
+  if (resolution === 'anonymous') {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  if (resolution === 'denied') {
+    return <Navigate to="/no-access" replace />;
   }
 
   return <>{children}</>;

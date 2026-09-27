@@ -35,6 +35,12 @@ export interface UserSession {
   modules?: string[];             // assigned ACM modules
 }
 
+// Re-entrancy guard: Auth.clear() notifies listeners synchronously, and a
+// listener may call Auth.check() which can call Auth.clear() again.
+// Without this flag a missing/expired session would loop forever:
+// clear() -> 'bsc_auth_changed' -> Auth.check() -> clear() -> ... RangeError.
+let authClearDispatching = false;
+
 export const Auth = {
   save(session: UserSession) {
     try {
@@ -87,14 +93,12 @@ export const Auth = {
   check(): boolean {
     const session = this.get();
     if (!session || !session.id || !session.username || !session.role) {
-      this.clear();
       return false;
     }
     // Absolute session lifetime: 6 hours. Users who never sign out are
     // logged out automatically (matches the server token + cookie max-age).
-    const SESSION_MS = parseInt(String(6 * 60 * 60 * 1000), 10);
+    const SESSION_MS = 6 * 60 * 60 * 1000;
     if (!session.loginAt || Date.now() - session.loginAt > SESSION_MS) {
-      this.clear();
       return false;
     }
     return true;
@@ -123,9 +127,19 @@ export const Auth = {
 
   clear() {
     try {
+      const hadSession = !!localStorage.getItem('bsc_crm_session');
       localStorage.removeItem('bsc_crm_session');
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new Event('bsc_auth_changed'));
+
+      // Notify listeners only when the session actually changed, and only once
+      // per dispatch cycle. Listeners may call Auth.check() -> Auth.clear()
+      // again; the guard + hadSession check terminate that recursion.
+      if (hadSession && !authClearDispatching && typeof window !== 'undefined') {
+        authClearDispatching = true;
+        try {
+          window.dispatchEvent(new Event('bsc_auth_changed'));
+        } finally {
+          authClearDispatching = false;
+        }
       }
     } catch (e) {}
   },
@@ -164,12 +178,11 @@ export const Auth = {
  * Clears local session, storage flags, and redirects to /login with security notice.
  */
 export function triggerSecurityLogout(
-  reason: string = 'Session expired or unauthorized access detected. Please log in again.',
+  reason: string = 'Session expired. Please log in again.',
   violationPath: string = ''
 ) {
   try {
     Auth.clear();
-    sessionStorage.setItem('bsc_login_notice', reason);
     if (typeof localStorage !== 'undefined') {
       localStorage.removeItem('bsc_selected_location');
     }
@@ -178,16 +191,12 @@ export function triggerSecurityLogout(
   if (typeof window !== 'undefined') {
     const currentPath = window.location.pathname;
     if (!currentPath.startsWith('/login')) {
-      const pathParam = violationPath || currentPath;
-      const target = `/login?security=unauthorized&reason=${encodeURIComponent(reason)}${
-        pathParam ? '&path=' + encodeURIComponent(pathParam) : ''
-      }`;
-      window.location.replace(target);
+      window.location.replace('/login');
     }
   }
 }
 
-// ── Global Fetch Interceptor for 401/403 Security Auto-Logout ──────────────────
+// ── Global Fetch Interceptor for 401 Session Expiry ──────────────────────────
 if (typeof window !== 'undefined' && !(window as any).__bsc_fetch_interceptor_installed) {
   (window as any).__bsc_fetch_interceptor_installed = true;
   const originalFetch = window.fetch;
@@ -203,12 +212,9 @@ if (typeof window !== 'undefined' && !(window as any).__bsc_fetch_interceptor_in
 
       const isForceLogout = res.headers && res.headers.get && res.headers.get('X-Force-Logout') === 'true';
 
-      if (!isAuthRoute && (res.status === 401 || res.status === 403 || isForceLogout)) {
+      if (!isAuthRoute && (res.status === 401 || isForceLogout)) {
         if (!window.location.pathname.startsWith('/login')) {
-          const msg = res.status === 403
-            ? 'Session expired or unauthorized access detected. Please log in again.'
-            : 'Session expired or unauthorized access detected. Please log in again.';
-          triggerSecurityLogout(msg, window.location.pathname);
+          triggerSecurityLogout('Session expired. Please log in again.', window.location.pathname);
         }
       }
     } catch (e) {}
@@ -350,12 +356,9 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
 
     if (!res.ok) {
       const isForceLogout = res.headers && res.headers.get && res.headers.get('X-Force-Logout') === 'true';
-      if ((res.status === 401 || res.status === 403 || isForceLogout) && !isAuthRoute) {
+      if ((res.status === 401 || isForceLogout) && !isAuthRoute) {
         const errorData = await res.json().catch(() => ({}));
-        const defaultMsg = res.status === 403
-          ? 'Session expired or unauthorized access detected. Please log in again.'
-          : 'Session expired or unauthorized access detected. Please log in again.';
-        const msg = errorData.message || defaultMsg;
+        const msg = errorData.message || 'Session expired. Please log in again.';
         triggerSecurityLogout(msg, typeof window !== 'undefined' ? window.location.pathname : '');
         const error: any = new Error(msg);
         error.status = res.status;

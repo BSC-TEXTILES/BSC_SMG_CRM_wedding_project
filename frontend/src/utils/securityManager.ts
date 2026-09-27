@@ -297,7 +297,7 @@ class SecurityManagerService {
     // 6. Redirect to login with security warning
     // Using window.location.replace — this cannot be intercepted by React Router
     console.warn(`[SecurityManager] Force logout: ${reason} | Attempted: ${attemptedPath}`);
-    window.location.replace(`/login?security=unauthorized&path=${encodeURIComponent(attemptedPath)}`);
+    window.location.replace('/login');
   }
 }
 

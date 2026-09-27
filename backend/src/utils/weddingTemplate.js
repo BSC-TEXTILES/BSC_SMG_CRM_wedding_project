@@ -245,7 +245,7 @@ function sampleRows(telecallers = []) {
       email: 'pooja.patil@example.com',
       wedding_date: new Date(2025, 5, 10),
       expected_shopping_date: new Date(2025, 4, 15),
-      preferred_shopping_category: 'Designer Lehengas & Sherwanis',
+      preferred_shopping_category: 'Bridal Lehengas',
       estimated_family_size: 6,
       budget_min: 100000,
       budget_max: 250000,

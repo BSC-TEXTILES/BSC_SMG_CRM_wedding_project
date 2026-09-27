@@ -87,11 +87,17 @@ class NotificationEngine {
   private initAuthListener() {
     if (typeof window !== 'undefined') {
       window.addEventListener('bsc_auth_changed', () => {
-        if (Auth.check()) {
-          this.fetchInitialBroadcasts();
-        } else {
-          this.notifications = [];
-          this.notifyListeners();
+        // Runs synchronously inside Auth.clear()/Auth.save(), so it must never
+        // throw or re-trigger another auth event.
+        try {
+          if (Auth.check()) {
+            this.fetchInitialBroadcasts().catch(() => {});
+          } else {
+            this.notifications = [];
+            this.notifyListeners();
+          }
+        } catch (e) {
+          console.warn('[NotificationService] auth listener error:', e);
         }
       });
     }

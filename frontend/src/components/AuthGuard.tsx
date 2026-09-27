@@ -25,7 +25,7 @@ export interface AuthGuardProps {
 export function AuthGuard({ children, pageKey, allowedRoles }: AuthGuardProps) {
   const location = useLocation();
 
-  const [status, setStatus] = useState<'checking' | 'allowed' | 'denied'>(() => {
+  const [status, setStatus] = useState<'checking' | 'allowed' | 'denied' | 'unauthorized'>(() => {
     // 1. Session Existence & Expiry Check
     if (!Auth.check()) {
       return 'denied';
@@ -46,7 +46,7 @@ export function AuthGuard({ children, pageKey, allowedRoles }: AuthGuardProps) {
     // Role check if allowedRoles provided
     if (allowedRoles && allowedRoles.length > 0) {
       const match = allowedRoles.some(r => r.trim().toLowerCase() === role);
-      if (!match) return 'denied';
+      if (!match) return 'unauthorized';
     }
 
     // Module check if pageKey provided
@@ -68,14 +68,12 @@ export function AuthGuard({ children, pageKey, allowedRoles }: AuthGuardProps) {
   useEffect(() => {
     // Re-verify on location change
     if (!Auth.check()) {
-      triggerSecurityLogout('Session expired or unauthorized access detected. Please log in again.', location.pathname);
       setStatus('denied');
       return;
     }
 
     const session = Auth.get();
     if (!session || !session.id || !session.username || !session.role) {
-      triggerSecurityLogout('Session token is invalid or has been tampered with. Please log in again.', location.pathname);
       setStatus('denied');
       return;
     }
@@ -89,8 +87,7 @@ export function AuthGuard({ children, pageKey, allowedRoles }: AuthGuardProps) {
     if (allowedRoles && allowedRoles.length > 0) {
       const match = allowedRoles.some(r => r.trim().toLowerCase() === role);
       if (!match) {
-        triggerSecurityLogout(`Access restricted: role '${session.role}' is not authorized to access this route.`, location.pathname);
-        setStatus('denied');
+        setStatus('unauthorized');
         return;
       }
     }
@@ -102,8 +99,7 @@ export function AuthGuard({ children, pageKey, allowedRoles }: AuthGuardProps) {
         const userModules = myPerms?.custom && Array.isArray(myPerms.modules) ? myPerms.modules : null;
         const allowed = resolveAllowedPages(session.role, pageSettings, userModules);
         if (!allowed.includes(pageKey)) {
-          triggerSecurityLogout(`Session expired or unauthorized access detected. Please log in again.`, location.pathname);
-          setStatus('denied');
+          setStatus('unauthorized');
         } else {
           setStatus('allowed');
         }
@@ -113,8 +109,7 @@ export function AuthGuard({ children, pageKey, allowedRoles }: AuthGuardProps) {
         if (roleKeys.includes(pageKey)) {
           setStatus('allowed');
         } else {
-          triggerSecurityLogout(`Session expired or unauthorized access detected. Please log in again.`, location.pathname);
-          setStatus('denied');
+          setStatus('unauthorized');
         }
       });
 
@@ -131,14 +126,18 @@ export function AuthGuard({ children, pageKey, allowedRoles }: AuthGuardProps) {
       <div className="min-h-screen flex items-center justify-center bg-[#F6F4EF]">
         <div className="flex items-center gap-2 text-xs font-bold text-[#101C36]">
           <Loader2 className="w-4 h-4 animate-spin text-[#C98218]" />
-          <span>Verifying security credentials…</span>
+          <span>Verifying permissions…</span>
         </div>
       </div>
     );
   }
 
   if (status === 'denied') {
-    return <Navigate to={`/login?security=unauthorized&reason=${encodeURIComponent('Session expired or unauthorized access detected. Please log in again.')}&path=${encodeURIComponent(location.pathname)}`} replace />;
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  if (status === 'unauthorized') {
+    return <Navigate to="/no-access" replace />;
   }
 
   return <>{children}</>;

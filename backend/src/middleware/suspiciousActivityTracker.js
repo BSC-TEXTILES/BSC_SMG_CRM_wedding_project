@@ -82,7 +82,7 @@ function record403Violation(req, res, reason = 'Unauthorized resource access') {
     return {
       forceLogout: true,
       violationCount: count,
-      message: 'Session expired or unauthorized access detected. Your session has been terminated for security.'
+      message: 'Session expired. Please log in again.'
     };
   }
 

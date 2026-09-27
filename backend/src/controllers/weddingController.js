@@ -1168,7 +1168,7 @@ class WeddingController {
           const { record403Violation } = require('../middleware/suspiciousActivityTracker');
           const violation = record403Violation(req, res, `Cross-store URL tampering: user tried accessing customer #${id} from another location`);
           const msg = violation.forceLogout
-            ? 'Session expired or unauthorized access detected. Please log in again.'
+            ? 'Session expired. Please log in again.'
             : 'Access denied: You do not have permission to view customer records from other store locations.';
           return res.status(403).json({
             success: false,
@@ -1248,7 +1248,7 @@ class WeddingController {
           const { record403Violation } = require('../middleware/suspiciousActivityTracker');
           const violation = record403Violation(req, res, `Cross-store URL tampering: user tried modifying customer #${id} from another location`);
           const msg = violation.forceLogout
-            ? 'Session expired or unauthorized access detected. Please log in again.'
+            ? 'Session expired. Please log in again.'
             : 'Access denied: You do not have permission to update customer records from other store locations.';
           return res.status(403).json({
             success: false,
@@ -1397,7 +1397,7 @@ class WeddingController {
           const { record403Violation } = require('../middleware/suspiciousActivityTracker');
           const violation = record403Violation(req, res, `Cross-store URL tampering: user tried deleting customer #${id} from another location`);
           const msg = violation.forceLogout
-            ? 'Session expired or unauthorized access detected. Please log in again.'
+            ? 'Session expired. Please log in again.'
             : 'Access denied: You do not have permission to delete customer records from other store locations.';
           return res.status(403).json({
             success: false,
@@ -2354,7 +2354,7 @@ class WeddingController {
         let m = v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
         if (m) return toIsoDate(m[1], m[2], m[3]);
         m = v.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
-        if (m) return toIsoDate(m[4], m[3], m[2]);
+        if (m) return toIsoDate(m[3], m[2], m[1]); // dd-mm-yyyy
         const d = new Date(v);
         if (!isNaN(d.getTime())) {
           return toIsoDate(d.getFullYear(), d.getMonth() + 1, d.getDate());
@@ -2758,7 +2758,9 @@ class WeddingController {
             imported,
             duplicates,
             errors.length,
-            errors.length > 0 && imported === 0 ? 'Failed' : 'Completed',
+            errors.length > 0
+              ? (imported === 0 ? 'Failed' : 'Completed with Errors')
+              : 'Completed',
             summary
           ]
         );
@@ -4014,7 +4016,7 @@ class WeddingController {
           const { record403Violation } = require('../middleware/suspiciousActivityTracker');
           const violation = record403Violation(req, res, `Cross-store URL tampering: user tried accessing profile #${id} from another location`);
           const msg = violation.forceLogout
-            ? 'Session expired or unauthorized access detected. Please log in again.'
+            ? 'Session expired. Please log in again.'
             : 'Access denied: You do not have permission to view customer records from other store locations.';
           return res.status(403).json({
             success: false,

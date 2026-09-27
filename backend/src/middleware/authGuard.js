@@ -47,7 +47,7 @@ const requireRoles = (...roles) => {
       );
 
       const statusMsg = violation.forceLogout
-        ? 'Session expired or unauthorized access detected. Please log in again.'
+        ? 'Session expired. Please log in again.'
         : `Forbidden: your role (${req.user.role}) does not have access to this resource.`;
 
       return res.status(403).json({

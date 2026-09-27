@@ -12,9 +12,6 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
-  const securityViolation = searchParams.get('security') === 'unauthorized';
-  const securityReason = searchParams.get('reason') || '';
-  const violationPath = searchParams.get('path') || '';
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -154,16 +151,10 @@ export default function LoginPage() {
     }
   }, [navigate]);
 
-  // Display security toast notice on redirect
+  // Clear any residual notices on mount
   useEffect(() => {
-    const notice = sessionStorage.getItem('bsc_login_notice');
-    if (notice) {
-      sessionStorage.removeItem('bsc_login_notice');
-      showToast(notice, 'error');
-    } else if (securityViolation) {
-      showToast(securityReason || 'Session expired or unauthorized access detected. Please log in again.', 'error');
-    }
-  }, [securityViolation, securityReason]);
+    sessionStorage.removeItem('bsc_login_notice');
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -420,23 +411,6 @@ export default function LoginPage() {
             <p className="text-xs text-text-secondary font-medium mt-1">Sign in with your authorized system credentials. Your location will be loaded automatically.</p>
           </div>
 
-          {/* Security Violation Alert */}
-          {securityViolation && (
-            <div className="p-4 rounded-2xl bg-[#FDE8E8] border-2 border-[#E74C3C] text-[#C0392B] space-y-2 animate-scale-in">
-              <div className="flex items-center gap-2 font-black text-xs uppercase tracking-wider">
-                <ShieldAlert className="w-4 h-4 text-[#E74C3C]" />
-                <span>Security Alert</span>
-              </div>
-              <p className="text-xs font-semibold leading-relaxed">
-                {securityReason || 'Session expired or unauthorized access detected. Please log in again.'}
-                {violationPath ? ` (${violationPath})` : ''}
-              </p>
-              <div className="flex items-center gap-1.5 pt-1.5 border-t border-[#F5B7B7]/60 text-[10px] font-bold text-[#C0392B]/80">
-                <Lock className="w-3 h-3" />
-                <span>Please sign in again with authorized credentials. This event has been recorded in the security audit log.</span>
-              </div>
-            </div>
-          )}
 
           {/* 10-Minute Lockout Countdown Alert */}
           {isLocked && lockRemainingSeconds > 0 && (

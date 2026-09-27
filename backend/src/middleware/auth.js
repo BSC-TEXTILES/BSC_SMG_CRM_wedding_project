@@ -420,7 +420,7 @@ const authorize = (...roles) => {
     const { record403Violation } = require('./suspiciousActivityTracker');
     const violation = record403Violation(req, res, `Unauthorized access attempt to ${req.originalUrl || req.path} by role ${req.user?.role}`);
     const statusMsg = violation.forceLogout
-      ? 'Session expired or unauthorized access detected. Please log in again.'
+      ? 'Session expired. Please log in again.'
       : 'Forbidden: insufficient permissions';
     return res.status(403).json({
       success: false,
