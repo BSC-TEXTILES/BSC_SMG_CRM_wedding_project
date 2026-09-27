@@ -16,6 +16,7 @@ const SERVER_DIR = path.join(APP_ROOT, 'server');
 
 // ── Global Crash Handlers (Mounted immediately before any other requires) ────
 process.on('uncaughtException', (err) => {
+  if (err?.code === 'EPIPE') return; // Ignore benign broken pipe on stdout/stderr
   const msg = `[CRITICAL uncaughtException] ${new Date().toISOString()} ${err?.code || ''} ${err?.message || err}\n${err?.stack || ''}\n`;
   console.error(msg);
   try { fs.appendFileSync(path.join(APP_ROOT, 'crash.log'), msg); } catch(e) {}

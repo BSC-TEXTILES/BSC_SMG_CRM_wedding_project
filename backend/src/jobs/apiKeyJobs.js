@@ -6,6 +6,7 @@
  * - rotateEncryptionKeys: Envelope DEK re-encryption under a new KEK version
  */
 
+const crypto = require('crypto');
 const pool = require('../config/db');
 const { getMasterKEK, encryptDEK, decryptDEK } = require('../security/apiKeyCrypto');
 
@@ -37,20 +38,22 @@ async function dailyReauthCheck() {
       );
 
       // Create a pending reauth request if one doesn't exist
+      const reauthId = crypto.randomUUID();
       await pool.query(
-        `INSERT INTO api_key_reauth_requests (key_public_id, requested_at, status)
-         SELECT ?, NOW(), 'PENDING'
+        `INSERT INTO api_key_reauth_requests (id, key_public_id, requested_at, status)
+         SELECT ?, ?, NOW(), 'PENDING'
          WHERE NOT EXISTS (
            SELECT 1 FROM api_key_reauth_requests WHERE key_public_id = ? AND status = 'PENDING'
          )`,
-        [key.public_id, key.public_id]
+        [reauthId, key.public_id, key.public_id]
       );
 
       // Audit log entry
+      const auditId = crypto.randomUUID();
       await pool.query(
-        `INSERT INTO api_key_audit_log (key_public_id, event_type, user_id, result, metadata)
-         VALUES (?, 'SUSPENDED', ?, 'DAILY_AUTH_EXPIRED', ?)`,
-        [key.public_id, key.user_id, JSON.stringify({ reason: 'Daily 24h approval expired. Status changed to NEEDS_REAUTH.' })]
+        `INSERT INTO api_key_audit_log (id, key_public_id, event_type, user_id, result, metadata)
+         VALUES (?, ?, 'SUSPENDED', ?, 'DAILY_AUTH_EXPIRED', ?)`,
+        [auditId, key.public_id, key.user_id, JSON.stringify({ reason: 'Daily 24h approval expired. Status changed to NEEDS_REAUTH.' })]
       );
 
       console.warn(`[ApiKeyJob] Key ${key.public_id} (${key.name}) daily auth expired. Status updated to NEEDS_REAUTH.`);
@@ -92,10 +95,11 @@ async function keyExpiryCleanup() {
         [key.id]
       );
 
+      const auditId = crypto.randomUUID();
       await pool.query(
-        `INSERT INTO api_key_audit_log (key_public_id, event_type, user_id, result, metadata)
-         VALUES (?, 'REVOKED', ?, 'HARD_EXPIRY_REACHED', ?)`,
-        [key.public_id, key.user_id, JSON.stringify({ reason: 'Hard expiration date reached. Status marked EXPIRED.' })]
+        `INSERT INTO api_key_audit_log (id, key_public_id, event_type, user_id, result, metadata)
+         VALUES (?, ?, 'REVOKED', ?, 'HARD_EXPIRY_REACHED', ?)`,
+        [auditId, key.public_id, key.user_id, JSON.stringify({ reason: 'Hard expiration date reached. Status marked EXPIRED.' })]
       );
 
       console.info(`[ApiKeyJob] Key ${key.public_id} reached hard expiry.`);
