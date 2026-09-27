@@ -226,6 +226,14 @@ app.get(['/uploads/*', '/candidate-resumes/*', '/candidate-photos/*', '/employee
   next();
 });
 
+// ── Accidental /api/api URL Normalization ────────────────────────────────────
+app.use((req, res, next) => {
+  if (req.url.startsWith('/api/api/')) {
+    req.url = req.url.replace(/^\/api\/api\//, '/api/');
+  }
+  next();
+});
+
 // ── Boundary Rate Limiter on API Endpoints ──────────────────────────────────
 app.use('/api', globalApiRateLimiter);
 

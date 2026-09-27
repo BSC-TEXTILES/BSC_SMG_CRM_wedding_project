@@ -312,7 +312,15 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
   }
 
   const apiBase = getApiBase();
-  const url = endpoint.startsWith('http') ? endpoint : `${apiBase}${endpoint}`;
+  let normalizedEndpoint = endpoint;
+  if (normalizedEndpoint.startsWith('/api/')) {
+    normalizedEndpoint = normalizedEndpoint.slice(4);
+  } else if (normalizedEndpoint === '/api') {
+    normalizedEndpoint = '';
+  }
+  const url = normalizedEndpoint.startsWith('http') 
+    ? normalizedEndpoint 
+    : `${apiBase}${normalizedEndpoint.startsWith('/') ? normalizedEndpoint : `/${normalizedEndpoint}`}`;
 
   try {
     let res = await fetch(url, {

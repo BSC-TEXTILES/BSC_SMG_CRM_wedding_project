@@ -9,6 +9,17 @@ const { getLocationFilter, injectLocationId } = require('../middleware/auth');
 const realtimeService = require('../services/realtimeService');
 const { encryptField, decryptRows, decryptRow } = require('../utils/crypto');
 const { parseCsv, rowsToObjects } = require('../utils/csv');
+const {
+  buildTemplateWorkbook,
+  buildTemplateCsv,
+  buildErrorReportWorkbook,
+  HEADER_ALIASES,
+  MAX_IMPORT_ROWS,
+  TEMPLATE_FILENAME,
+  TEMPLATE_FILENAME_CSV,
+  ERROR_REPORT_FILENAME
+} = require('../utils/weddingTemplate');
+const { record403Violation } = require('../middleware/suspiciousActivityTracker');
 const ExcelJS = require('exceljs');
 const { 
   getCache, setCache, delCache, delCachePattern, 
@@ -452,6 +463,33 @@ async function ensureTables() {
       `);
     }
 
+    // Import history — one row per bulk import run (Task: Import History / audit)
+    try {
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS wedding_import_logs (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          file_name VARCHAR(255) NULL,
+          file_type VARCHAR(20) NULL,
+          location_id INT NULL,
+          location_name VARCHAR(150) NULL,
+          user_id INT NULL,
+          user_name VARCHAR(150) NULL,
+          total_rows INT DEFAULT 0,
+          imported_count INT DEFAULT 0,
+          duplicate_count INT DEFAULT 0,
+          error_count INT DEFAULT 0,
+          status VARCHAR(30) DEFAULT 'Completed',
+          summary VARCHAR(255) NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          INDEX idx_wil_created (created_at),
+          INDEX idx_wil_location (location_id),
+          INDEX idx_wil_user (user_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      `);
+    } catch (e) {
+      console.warn('[ensureTables] wedding_import_logs:', e.message);
+    }
+
         tablesChecked = true;
       } catch (err) {
         console.error('[WeddingController.ensureTables Error]', err.message);
@@ -459,6 +497,88 @@ async function ensureTables() {
     })();
   }
   return tablesInitPromise;
+}
+
+// ── Shared helpers for the bulk import / template feature ─────────────────────
+const IMPORT_ADMIN_ROLES = ['Admin', 'Super Admin', 'system administrator'];
+const TELECALLER_ROLES = ['Telecaller', 'CRM Executive', 'VM Extension Telecaller', 'VM Telecaller', 'Team Lead'];
+
+/** Global admins may target any store; everyone else is pinned to their own. */
+function isGlobalImportUser(user) {
+  if (!user) return false;
+  const isAdminRole = IMPORT_ADMIN_ROLES.includes(user.role);
+  return (isAdminRole && (!user.locationId || user.isGlobalAdmin)) || (!user.locationId && !!user.isGlobalAdmin);
+}
+
+/**
+ * Store-level RBAC: a user may only import into stores they are allowed to use.
+ * Returns { allowed, reason } and records a 403 violation on denial.
+ */
+async function assertStoreAccess(req, res, locationId) {
+  const user = req.user || {};
+  const targetId = parseInt(locationId, 10);
+  if (isNaN(targetId)) return { allowed: false, reason: 'Invalid store location selected.' };
+
+  if (isGlobalImportUser(user)) return { allowed: true, reason: 'Global admin' };
+  if (user.locationId && parseInt(user.locationId, 10) === targetId) return { allowed: true, reason: 'Own store' };
+  if (Array.isArray(user.allowedLocations) && user.allowedLocations.map(Number).includes(targetId)) {
+    return { allowed: true, reason: 'Allowed store' };
+  }
+
+  try {
+    const [rows] = await pool.query(
+      'SELECT 1 FROM user_locations WHERE user_id = ? AND location_id = ? LIMIT 1',
+      [user.id, targetId]
+    );
+    if (rows && rows.length > 0) return { allowed: true, reason: 'Allowed store' };
+  } catch (err) {
+    console.warn('[importCsv] user_locations lookup failed:', err.message);
+  }
+
+  record403Violation(req, res, `Cross-store import attempt: store ${targetId}`);
+  return { allowed: false, reason: 'You are not allowed to import customers into this store.' };
+}
+
+/** Distinct collections already present in the CRM (template drop-down source). */
+async function getTemplateCategories() {
+  try {
+    const [rows] = await pool.query(
+      `SELECT DISTINCT preferred_shopping_category AS v
+         FROM wedding_customers
+        WHERE is_deleted = 0
+          AND preferred_shopping_category IS NOT NULL
+          AND preferred_shopping_category <> ''
+        ORDER BY 1
+        LIMIT 60`
+    );
+    return (rows || []).map((r) => r.v);
+  } catch (err) {
+    console.warn('[template] category lookup failed:', err.message);
+    return [];
+  }
+}
+
+/** Active telecallers (template drop-down source). */
+async function getTemplateTelecallers() {
+  try {
+    const [rows] = await pool.query(
+      `SELECT DISTINCT COALESCE(NULLIF(TRIM(u.full_name), ''), u.username) AS v
+         FROM users u
+        WHERE u.active = TRUE
+          AND u.role IN (?)
+        ORDER BY 1
+        LIMIT 100`,
+      [TELECALLER_ROLES]
+    );
+    return (rows || []).map((r) => r.v).filter(Boolean);
+  } catch (err) {
+    console.warn('[template] telecaller lookup failed:', err.message);
+    return [];
+  }
+}
+
+function formatRupees(n) {
+  return Number(n).toLocaleString('en-IN');
 }
 
 class WeddingController {
@@ -1939,202 +2059,36 @@ class WeddingController {
 
 
   // ── Template Download: Valid UTF-8 CSV with BOM and 3 sample rows ──
-  downloadCsvTemplate(req, res) {
+  async downloadCsvTemplate(req, res) {
     try {
-      const headers = [
-        'customer_name',
-        'mobile_number',
-        'email',
-        'wedding_date',
-        'expected_date',
-        'preferred_shopping_category',
-        'estimated_family_size',
-        'budget',
-        'assigned_telecaller',
-        'customer_notes',
-        'followup_call_date',
-        'store_location',
-        'alternate_number'
-      ];
-
-      const sampleRows = [
-        ['Ananya Hegde', '9845012345', 'ananya.hegde@example.com', '2025-05-15', '2025-04-20', 'Bridal Kanjeevaram Silk Sarees', '4', '75,000 - 1,50,000', 'Ananya R', 'Interested in pure zari wedding collection', '2025-03-30', 'Shivamogga', '9845099999'],
-        ['Pooja Patil', '9880198765', 'pooja.patil@example.com', '2025-06-10', '2025-05-15', 'Designer Lehengas & Sherwanis', '6', '1,00,000 - 2,50,000', 'Gagan K', 'Looking for matching bride & groom sets', '2025-04-10', 'Davanagere', ''],
-        ['Kavya Suresh', '9741234567', '', '2025-07-22', '2025-06-25', 'Family Silk & Festive Wear', '8', '50,000 - 1,00,000', '', 'Family shopping for 10 members', '2025-05-20', 'Belagavi', '9741234568']
-      ];
-
-      const escapeCell = (val) => {
-        const s = val === null || val === undefined ? '' : String(val);
-        if (/[",\r\n]/.test(s)) {
-          return '"' + s.replace(/"/g, '""') + '"';
-        }
-        return s;
-      };
-
-      const lines = [
-        headers.join(','),
-        ...sampleRows.map(row => row.map(escapeCell).join(','))
-      ];
-
-      // Prepend UTF-8 BOM (\uFEFF) so Excel and editors open it properly
-      const csvData = '\uFEFF' + lines.join('\r\n') + '\r\n';
+      const csvData = buildTemplateCsv();
 
       res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-      res.setHeader('Content-Disposition', 'attachment; filename="wedding_customer_template.csv"');
+      res.setHeader('Content-Disposition', `attachment; filename="${TEMPLATE_FILENAME_CSV}"`);
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
       res.setHeader('Pragma', 'no-cache');
       res.setHeader('Expires', '0');
       return res.status(200).send(csvData);
     } catch (err) {
       console.error('[WeddingController.downloadCsvTemplate Error]', err);
-      return res.status(500).json({ success: false, error: 'Failed to generate CSV template' });
+      if (!res.headersSent) {
+        return res.status(500).json({ success: false, error: 'Failed to generate CSV template' });
+      }
     }
   }
 
-  // ── Template Download: Excel (.xlsx) with Color-Coded Headers ──
+  // ── Template Download: Excel (.xlsx) — styled, validated, 2 sheets ──
   async downloadXlsxTemplate(req, res) {
     try {
-      const workbook = new ExcelJS.Workbook();
-      workbook.creator = 'BSC Textiles Wedding Concierge';
-      workbook.created = new Date();
-
-      const worksheet = workbook.addWorksheet('Customer Template', {
-        views: [{ showGridLines: true }]
-      });
-
-      worksheet.columns = [
-        { header: 'customer_name', key: 'customer_name', width: 24 },
-        { header: 'mobile_number', key: 'mobile_number', width: 20 },
-        { header: 'email', key: 'email', width: 28 },
-        { header: 'wedding_date', key: 'wedding_date', width: 16 },
-        { header: 'expected_date', key: 'expected_date', width: 18 },
-        { header: 'preferred_shopping_category', key: 'preferred_shopping_category', width: 30 },
-        { header: 'estimated_family_size', key: 'estimated_family_size', width: 22 },
-        { header: 'budget', key: 'budget', width: 20 },
-        { header: 'assigned_telecaller', key: 'assigned_telecaller', width: 24 },
-        { header: 'customer_notes', key: 'customer_notes', width: 44 },
-        { header: 'followup_call_date', key: 'followup_call_date', width: 20 },
-        { header: 'store_location', key: 'store_location', width: 22 },
-        { header: 'alternate_number', key: 'alternate_number', width: 20 }
-      ];
-
-      const headerRow = worksheet.getRow(1);
-      headerRow.height = 32;
-
-      // Color coding:
-      // Required headers (customer_name, mobile_number) in RED/bold
-      // Optional headers (email, wedding_date, expected_date, preferred_shopping_category, estimated_family_size, budget, assigned_telecaller, customer_notes, followup_call_date, store_location, alternate_number) in GREEN/bold
-      for (let col = 1; col <= 13; col++) {
-        const cell = headerRow.getCell(col);
-        const isRequired = (col === 1 || col === 2);
-        cell.font = {
-          name: 'Segoe UI',
-          bold: true,
-          size: 11,
-          color: { argb: 'FFFFFFFF' }
-        };
-        cell.fill = {
-          type: 'pattern',
-          pattern: 'solid',
-          fgColor: { argb: isRequired ? 'FFDC2626' : 'FF059669' }
-        };
-        cell.alignment = { vertical: 'middle', horizontal: 'center' };
-        cell.border = {
-          top: { style: 'medium', color: { argb: isRequired ? 'FF991B1B' : 'FF065F46' } },
-          left: { style: 'thin', color: { argb: 'FFFFFFFF' } },
-          bottom: { style: 'medium', color: { argb: isRequired ? 'FF991B1B' : 'FF065F46' } },
-          right: { style: 'thin', color: { argb: 'FFFFFFFF' } }
-        };
-      }
-
-      // 3 sample rows
-      const sampleRows = [
-        {
-          customer_name: 'Ananya Hegde',
-          mobile_number: '9845012345',
-          email: 'ananya.hegde@example.com',
-          wedding_date: '2025-05-15',
-          expected_date: '2025-04-20',
-          preferred_shopping_category: 'Bridal Kanjeevaram Silk Sarees',
-          estimated_family_size: 4,
-          budget: '75,000 - 1,50,000',
-          assigned_telecaller: 'Ananya R',
-          customer_notes: 'Interested in pure zari wedding collection',
-          followup_call_date: '2025-03-30',
-          store_location: 'Shivamogga',
-          alternate_number: '9845099999'
-        },
-        {
-          customer_name: 'Pooja Patil',
-          mobile_number: '9880198765',
-          email: 'pooja.patil@example.com',
-          wedding_date: '2025-06-10',
-          expected_date: '2025-05-15',
-          preferred_shopping_category: 'Designer Lehengas & Sherwanis',
-          estimated_family_size: 6,
-          budget: '1,00,000 - 2,50,000',
-          assigned_telecaller: 'Gagan K',
-          customer_notes: 'Looking for matching bride & groom sets',
-          followup_call_date: '2025-04-10',
-          store_location: 'Davanagere',
-          alternate_number: ''
-        },
-        {
-          customer_name: 'Kavya Suresh',
-          mobile_number: '9741234567',
-          email: '',
-          wedding_date: '2025-07-22',
-          expected_date: '2025-06-25',
-          preferred_shopping_category: 'Family Silk & Festive Wear',
-          estimated_family_size: 8,
-          budget: '50,000 - 1,00,000',
-          assigned_telecaller: '',
-          customer_notes: 'Family wedding shopping for 10 members',
-          followup_call_date: '2025-05-20',
-          store_location: 'Belagavi',
-          alternate_number: '9741234568'
-        }
-      ];
-
-      sampleRows.forEach((item, idx) => {
-        const row = worksheet.addRow(item);
-        row.height = 24;
-        const isEven = idx % 2 === 0;
-        for (let col = 1; col <= 13; col++) {
-          const cell = row.getCell(col);
-          cell.font = { name: 'Segoe UI', size: 10 };
-          cell.fill = {
-            type: 'pattern',
-            pattern: 'solid',
-            fgColor: { argb: isEven ? 'FFFFFFFF' : 'FFF8FAFC' }
-          };
-          cell.alignment = {
-            vertical: 'middle',
-            horizontal: [2, 4, 5, 7, 11, 13].includes(col) ? 'center' : 'left'
-          };
-          cell.border = {
-            top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-            left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-            bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-            right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
-          };
-        }
-      });
-
-      // Legend rows
-      worksheet.addRow([]);
-      const legendRow = worksheet.addRow([
-        '* RED = REQUIRED (customer_name, mobile_number)',
-        '',
-        '',
-        '',
-        '* GREEN = OPTIONAL (wedding_date, expected_date, preferred_shopping_category, estimated_family_size, budget, assigned_telecaller, customer_notes, followup_call_date, store_location, email, alternate_number)'
+      const [categories, telecallers] = await Promise.all([
+        getTemplateCategories(),
+        getTemplateTelecallers()
       ]);
-      legendRow.getCell(1).font = { name: 'Segoe UI', bold: true, color: { argb: 'FFDC2626' }, size: 9 };
-      legendRow.getCell(5).font = { name: 'Segoe UI', bold: true, color: { argb: 'FF059669' }, size: 9 };
+
+      const workbook = await buildTemplateWorkbook({ categories, telecallers });
 
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      res.setHeader('Content-Disposition', 'attachment; filename="wedding_customer_template.xlsx"');
+      res.setHeader('Content-Disposition', `attachment; filename="${TEMPLATE_FILENAME}"`);
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
       res.setHeader('Pragma', 'no-cache');
       res.setHeader('Expires', '0');
@@ -2149,15 +2103,92 @@ class WeddingController {
     }
   }
 
-  // ── 14. Bulk Customer Import (CSV & XLSX with Robust Validation) ──
-  async importCsv(req, res) {
+  // ── Import Error Report (.xlsx) returned for the failed rows ────
+  async downloadErrorReport(req, res) {
+    try {
+      const body = req.body || {};
+      const errors = Array.isArray(body.errors) ? body.errors : [];
+
+      if (errors.length > MAX_IMPORT_ROWS) {
+        return errorRes(
+          res,
+          `Too many rows in the error report (maximum ${MAX_IMPORT_ROWS}). Download the report for the first ${MAX_IMPORT_ROWS} rows.`,
+          [], 400
+        );
+      }
+
+      const workbook = buildErrorReportWorkbook({
+        fileName: String(body.fileName || '').slice(0, 255),
+        summary: String(body.summary || '').slice(0, 255),
+        counts: body.counts && typeof body.counts === 'object' ? body.counts : {},
+        errors
+      });
+
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename="${ERROR_REPORT_FILENAME}"`);
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+
+      await workbook.xlsx.write(res);
+      res.end();
+    } catch (err) {
+      console.error('[WeddingController.downloadErrorReport Error]', err);
+      if (!res.headersSent) {
+        return errorRes(res, 'Failed to generate the error report', [err.message], 500);
+      }
+    }
+  }
+
+  // ── Import History (audit trail of every bulk import run) ──────
+  async getImportLogs(req, res) {
     try {
       await ensureTables();
+
+      const user = req.user || {};
+      const params = [];
+      let sql = `
+        SELECT l.id, l.file_name, l.file_type, l.location_id, l.location_name,
+               l.user_id, l.user_name, l.total_rows, l.imported_count,
+               l.duplicate_count, l.error_count, l.status, l.summary, l.created_at
+          FROM wedding_import_logs l
+         WHERE 1 = 1`;
+
+      if (!isGlobalImportUser(user)) {
+        if (user.locationId) {
+          sql += ' AND (l.location_id = ? OR l.location_id IS NULL)';
+          params.push(user.locationId);
+        }
+        sql += ' AND l.user_id = ?';
+        params.push(user.id);
+      }
+
+      const limit = Math.min(parseInt(req.query.limit, 10) || 50, 200);
+      sql += ' ORDER BY l.id DESC LIMIT ?';
+      params.push(limit);
+
+      const [rows] = await pool.query(sql, params);
+      return successRes(res, { imports: rows }, 'Import history fetched successfully.');
+    } catch (err) {
+      console.error('[WeddingController.getImportLogs Error]', err);
+      return errorRes(res, 'Failed to load import history', [err.message], 500);
+    }
+  }
+
+// ── 14. Bulk Customer Import (CSV & XLSX with Robust Validation) ──
+  async importCsv(req, res) {
+    let conn = null;
+    try {
+      await ensureTables();
+
       if (!req.file || !req.file.buffer) {
         return errorRes(res, 'No file uploaded. Please attach a .csv or .xlsx file.', [], 400);
       }
+      if (req.file.buffer.length === 0) {
+        return errorRes(res, 'The uploaded file is empty. Please upload a file with customer data.', [], 400);
+      }
 
-      // Validate Assign Store Location
+      // ── Store location: required + store-level RBAC ──────────────
       let locationId = req.body.location_id || req.query.location_id;
       if (!locationId && req.user?.locationId) {
         locationId = req.user.locationId;
@@ -2170,12 +2201,14 @@ class WeddingController {
         return errorRes(res, 'Invalid store location selected. Please select a valid store location.', [], 400);
       }
 
-      // Check file size
-      if (req.file.buffer.length === 0) {
-        return errorRes(res, 'The uploaded file is empty. Please upload a file with customer data.', [], 400);
+      const storeAccess = await assertStoreAccess(req, res, defaultLocationId);
+      if (!storeAccess.allowed) {
+        return errorRes(res, storeAccess.reason, ['STORE_ACCESS_DENIED'], 403);
       }
+      // Only unrestricted (global) users may split rows across branches via store_location
+      const allowRowLocations = isGlobalImportUser(req.user);
 
-      // Determine file type
+      // ── Parse the file ───────────────────────────────────────────
       const isXlsx = /\.xlsx$/i.test(req.file.originalname) ||
                      (req.file.mimetype && req.file.mimetype.includes('openxmlformats'));
 
@@ -2195,17 +2228,20 @@ class WeddingController {
               const cell = row.getCell(c);
               let val = cell.value;
               if (val && typeof val === 'object') {
-                if (val.text) val = val.text;
-                else if (val.result) val = val.result;
-                else if (val instanceof Date) {
-                  val = val.toISOString().split('T')[0];
+                if (val instanceof Date) {
+                  // Local calendar day — toISOString() would shift IST dates back one day
+                  val = `${val.getFullYear()}-${String(val.getMonth() + 1).padStart(2, '0')}-${String(val.getDate()).padStart(2, '0')}`;
+                } else if (val.text) {
+                  val = val.text;
+                } else if (val.result !== undefined && val.result !== null) {
+                  val = val.result;
                 } else {
                   val = String(val);
                 }
               }
               rowValues.push(val !== undefined && val !== null ? String(val).trim() : '');
             }
-            if (rowValues.some(c => c !== '')) {
+            if (rowValues.some((c) => c !== '')) {
               rows.push(rowValues);
             }
           });
@@ -2213,7 +2249,6 @@ class WeddingController {
           return errorRes(res, 'Failed to parse Excel file. Please ensure the file is a valid .xlsx file or use the CSV template.', [excelErr.message], 400);
         }
       } else {
-        // Validate UTF-8 encoding
         let text = '';
         try {
           text = req.file.buffer.toString('utf8');
@@ -2232,13 +2267,21 @@ class WeddingController {
         return errorRes(res, 'The uploaded file contains no data.', [], 400);
       }
 
-      // Header row validation
-      const rawHeaders = rows[0].map(h =>
-        String(h).trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '')
-      );
+      // ── Header row: must resolve to customer_name + mobile_number ─
+      const normalizeHeader = (h) =>
+        String(h).trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
 
-      const hasCustomerName = rawHeaders.some(h => ['customer_name', 'name', 'customer', 'bride_groom_name', 'customername'].includes(h));
-      const hasMobileNumber = rawHeaders.some(h => ['mobile_number', 'mobile', 'phone', 'contact', 'phone_number', 'moble_number'].includes(h));
+      const canonicalFor = (key) => {
+        const canonicalKeys = Object.keys(HEADER_ALIASES);
+        for (let i = 0; i < canonicalKeys.length; i++) {
+          if (HEADER_ALIASES[canonicalKeys[i]].includes(key)) return canonicalKeys[i];
+        }
+        return key;
+      };
+
+      const canonicalHeaders = rows[0].map((h) => canonicalFor(normalizeHeader(h)));
+      const hasCustomerName = canonicalHeaders.includes('customer_name');
+      const hasMobileNumber = canonicalHeaders.includes('mobile_number');
 
       if (!hasCustomerName || !hasMobileNumber) {
         const missing = [];
@@ -2246,18 +2289,36 @@ class WeddingController {
         if (!hasMobileNumber) missing.push('mobile_number (REQUIRED)');
         return errorRes(
           res,
-          `Missing required column headers: ${missing.join(', ')}. The template requires: customer_name, mobile_number, email, wedding_date, expected_date, preferred_shopping_category, estimated_family_size, budget, assigned_telecaller, customer_notes, followup_call_date, store_location, alternate_number. Please download the official template.`,
+          `Missing required column headers: ${missing.join(', ')}. Required headers: customer_name, mobile_number. Optional headers: alternate_mobile, email, wedding_date, expected_shopping_date, preferred_shopping_category, estimated_family_size, budget_min, budget_max, assigned_telecaller, customer_notes. Please download the official template.`,
           missing,
           400
         );
       }
 
-      const objects = rowsToObjects(rows);
+      // ── Rows → objects keyed by canonical header ─────────────────
+      const objects = [];
+      for (let r = 1; r < rows.length; r++) {
+        const obj = {};
+        canonicalHeaders.forEach((key, idx) => {
+          if (!key) return;
+          const raw = rows[r][idx] !== undefined ? String(rows[r][idx]).trim() : '';
+          if (raw !== '' && (obj[key] === undefined || obj[key] === '')) obj[key] = raw;
+        });
+        objects.push(obj);
+      }
+
       if (objects.length === 0) {
         return errorRes(res, 'The file contains a header row but no customer records. Please add at least 1 customer row below the header.', [], 400);
       }
+      if (objects.length > MAX_IMPORT_ROWS) {
+        return errorRes(
+          res,
+          `The file contains ${objects.length} rows. The maximum allowed per import is ${MAX_IMPORT_ROWS}. Please split the file into smaller batches.`,
+          [], 400
+        );
+      }
 
-      // Helper utilities
+      // ── Field helpers ────────────────────────────────────────────
       const pick = (obj, keys) => {
         for (const k of keys) {
           if (obj[k] !== undefined && obj[k] !== null && String(obj[k]).trim() !== '') {
@@ -2265,6 +2326,14 @@ class WeddingController {
           }
         }
         return null;
+      };
+
+      // Excel/CSV cells written as ="9845012345" come back as that literal string
+      const unwrapFormulaText = (value) => {
+        if (value === null || value === undefined) return value;
+        const s = String(value);
+        const m = s.match(/^="([^"]*)"$/) || s.match(/^='([^']*)'$/);
+        return m ? m[1] : s;
       };
 
       const parseDate = (raw) => {
@@ -2290,10 +2359,17 @@ class WeddingController {
         return digits;
       };
 
-      // Fetch locations lookup
+      const parseNumber = (raw) => {
+        if (raw === null || raw === undefined) return null;
+        const cleaned = String(raw).replace(/[,\s₹]/g, '').replace(/\/-$/, '');
+        if (cleaned === '' || !/^-?\d+(\.\d+)?$/.test(cleaned)) return NaN;
+        return Number(cleaned);
+      };
+
+      // Locations lookup (store_location column in older templates)
       const [locationsList] = await pool.query(`SELECT id, location_name, location_code FROM locations`);
       const locationMap = new Map();
-      locationsList.forEach(loc => {
+      locationsList.forEach((loc) => {
         locationMap.set(String(loc.id), loc);
         locationMap.set(loc.location_code.toUpperCase(), loc);
         locationMap.set(loc.location_name.toLowerCase(), loc);
@@ -2312,40 +2388,72 @@ class WeddingController {
         }
       });
 
-      const inserted = [];
+      // Telecaller name → id resolution
+      const telecallerMap = new Map();
+      try {
+        const [tcRows] = await pool.query(
+          `SELECT u.id, COALESCE(NULLIF(TRIM(u.full_name), ''), u.username) AS display_name, u.username
+             FROM users u
+            WHERE u.active = TRUE AND u.role IN (?)`,
+          [TELECALLER_ROLES]
+        );
+        (tcRows || []).forEach((u) => {
+          if (u.display_name) telecallerMap.set(u.display_name.toLowerCase(), u.id);
+          if (u.username) telecallerMap.set(String(u.username).toLowerCase(), u.id);
+        });
+      } catch (tcErr) {
+        console.warn('[importCsv] telecaller lookup failed:', tcErr.message);
+      }
+
+      const TEMPLATE_SAMPLE_ROWS = new Map([
+        ['9845012345', 'ananya hegde'],
+        ['9880198765', 'pooja patil'],
+        ['9741234567', 'kavya suresh']
+      ]);
+
       const errors = [];
-      let imported = 0;
+      const warnings = [];
+      const candidates = [];
       let duplicates = 0;
       const seenInBatch = new Set();
-      const seqByLoc = new Map();
 
+      // ── Phase A: per-row validation ──────────────────────────────
       for (let idx = 0; idx < objects.length; idx++) {
         const row = objects[idx];
         const rowNo = idx + 2; // header is row 1
 
-        const customerName = pick(row, ['customer_name', 'name', 'customer', 'bride_groom_name', 'customername']);
-        const mobile = normalizeMobile(pick(row, ['mobile_number', 'mobile', 'phone', 'contact', 'phone_number', 'moble_number']));
-        const emailRaw = pick(row, ['email', 'email_id', 'mail']);
-        const email = emailRaw && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailRaw) ? emailRaw.trim() : null;
-        const weddingDateRaw = pick(row, ['wedding_date', 'marriage_date', 'weddingdate', 'wedding']);
-        const weddingDate = parseDate(weddingDateRaw);
-        const storeLocRaw = pick(row, ['store_location', 'location', 'store', 'branch']);
-        const notes = pick(row, ['customer_notes', 'notes', 'remarks', 'comments', 'customernotes']);
-        const altNumber = normalizeMobile(pick(row, ['alternate_number', 'alternate_mobile', 'alt_phone', 'alternate_phone', 'alt_mobile']));
+        const customerName = unwrapFormulaText(pick(row, ['customer_name']));
+        const rawMobile = pick(row, ['mobile_number']);
+        const mobile = normalizeMobile(rawMobile);
+        const mobileForReport = mobile || unwrapFormulaText(rawMobile) || '';
 
-        // Required field validation
         if (!customerName) {
-          errors.push({ row: rowNo, customerName: 'N/A', mobile: mobile || 'N/A', reason: 'Missing required field: customer_name' });
+          errors.push({ row: rowNo, customerName: 'N/A', mobile: mobileForReport || 'N/A', reason: 'Missing required field: customer_name' });
           continue;
         }
 
         if (!mobile) {
-          const rawMob = pick(row, ['mobile_number', 'mobile', 'phone', 'contact', 'phone_number', 'moble_number']) || '';
-          errors.push({ row: rowNo, customerName, mobile: rawMob, reason: `Invalid mobile number "${rawMob}". Must be a valid 10-digit number starting with 6-9.` });
+          errors.push({
+            row: rowNo,
+            customerName,
+            mobile: mobileForReport,
+            reason: `Invalid mobile number "${mobileForReport || ''}". Must be a valid 10-digit number starting with 6-9.`
+          });
           continue;
         }
 
-        // Duplicate in batch
+        // Unmodified template file — the grey sample rows must be deleted first
+        if (TEMPLATE_SAMPLE_ROWS.has(mobile) &&
+            TEMPLATE_SAMPLE_ROWS.get(mobile) === String(customerName).trim().toLowerCase()) {
+          errors.push({
+            row: rowNo,
+            customerName,
+            mobile,
+            reason: 'Template sample row — delete the grey sample rows from the template before importing.'
+          });
+          continue;
+        }
+
         if (seenInBatch.has(mobile)) {
           duplicates++;
           errors.push({ row: rowNo, customerName, mobile, reason: `Duplicate mobile ${mobile} appears multiple times in uploaded file` });
@@ -2353,72 +2461,152 @@ class WeddingController {
         }
         seenInBatch.add(mobile);
 
-        // Resolve store location
-        let rowLocation = defaultLocationId;
-        if (storeLocRaw) {
-          const key = String(storeLocRaw).trim().toLowerCase();
-          const matched = locationMap.get(key) || locationMap.get(key.toUpperCase());
-          if (matched) {
-            rowLocation = matched.id;
+        // e-mail (warning only — never blocks the row)
+        const emailRaw = unwrapFormulaText(pick(row, ['email']));
+        let email = null;
+        if (emailRaw) {
+          if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailRaw)) {
+            email = emailRaw.trim();
+          } else {
+            warnings.push({ row: rowNo, customerName, mobile, reason: `Invalid e-mail "${emailRaw}" ignored — the customer was imported without an e-mail address.` });
           }
         }
 
-        // Duplicate check in CRM database
-        const [dup] = await pool.query(
-          `SELECT customer_code FROM wedding_customers WHERE mobile_number = ? AND is_deleted = 0 LIMIT 1`,
-          [mobile]
-        );
-        if (dup && dup.length > 0) {
-          duplicates++;
-          errors.push({ row: rowNo, customerName, mobile, reason: `Mobile ${mobile} already registered in CRM (${dup[0].customer_code})` });
+        // wedding date
+        const weddingDateRaw = pick(row, ['wedding_date']);
+        const weddingDate = parseDate(weddingDateRaw);
+        if (weddingDateRaw && !weddingDate) {
+          errors.push({ row: rowNo, customerName, mobile, reason: `Invalid wedding_date "${weddingDateRaw}" — use dd-mm-yyyy (e.g. 15-05-2025).` });
           continue;
         }
 
-        // Calculate expected_shopping_date (from file expected_date / shopping_date or derived from wedding_date)
-        let shoppingDate = null;
-        const rawShopDate = pick(row, ['expected_date', 'expected_shopping_date', 'shopping_date', 'shop_date', 'shopeing_date', 'shoppingdate', 'expected_shopping']);
-        if (rawShopDate) {
-          shoppingDate = parseDate(rawShopDate);
+        // expected shopping date
+        const shoppingRaw = pick(row, ['expected_shopping_date']);
+        const parsedShopping = parseDate(shoppingRaw);
+        if (shoppingRaw && !parsedShopping) {
+          errors.push({ row: rowNo, customerName, mobile, reason: `Invalid expected_shopping_date "${shoppingRaw}" — use dd-mm-yyyy (e.g. 20-04-2025).` });
+          continue;
         }
+
+        // family size
+        const familyRaw = pick(row, ['estimated_family_size']);
+        let familySize = 1;
+        if (familyRaw !== null) {
+          const parsedSize = Number(String(familyRaw).replace(/[^\d]/g, ''));
+          if (!parsedSize || parsedSize < 1 || parsedSize > 50) {
+            errors.push({ row: rowNo, customerName, mobile, reason: `Invalid estimated_family_size "${familyRaw}" — enter a whole number between 1 and 50.` });
+            continue;
+          }
+          familySize = parsedSize;
+        }
+
+        // budget (min / max, or the legacy free-text budget column)
+        const budgetMinRaw = pick(row, ['budget_min']);
+        const budgetMaxRaw = pick(row, ['budget_max']);
+        const legacyBudget = pick(row, ['budget']);
+        let budget = null;
+        if (budgetMinRaw !== null || budgetMaxRaw !== null) {
+          const bMin = budgetMinRaw !== null ? parseNumber(budgetMinRaw) : null;
+          const bMax = budgetMaxRaw !== null ? parseNumber(budgetMaxRaw) : null;
+          if ((bMin !== null && (isNaN(bMin) || bMin < 0)) || (bMax !== null && (isNaN(bMax) || bMax < 0))) {
+            errors.push({ row: rowNo, customerName, mobile, reason: `Invalid budget — budget_min/budget_max must be amounts in digits only (e.g. 75000). Received "${budgetMinRaw || ''}" / "${budgetMaxRaw || ''}".` });
+            continue;
+          }
+          if (bMin !== null && bMax !== null && bMax < bMin) {
+            errors.push({ row: rowNo, customerName, mobile, reason: `budget_max (${formatRupees(bMax)}) must not be smaller than budget_min (${formatRupees(bMin)}).` });
+            continue;
+          }
+          if (bMin !== null && bMax !== null) budget = `${formatRupees(bMin)} - ${formatRupees(bMax)}`;
+          else budget = formatRupees(bMin !== null ? bMin : bMax);
+        } else if (legacyBudget) {
+          budget = String(legacyBudget).substring(0, 100);
+        }
+
+        candidates.push({
+          rowNo,
+          customerName: String(customerName).substring(0, 150).trim(),
+          mobile,
+          rawMobile: mobileForReport,
+          altNumber: normalizeMobile(unwrapFormulaText(pick(row, ['alternate_mobile']))),
+          email,
+          weddingDate,
+          shoppingDateRaw: shoppingRaw,
+          parsedShopping,
+          category: unwrapFormulaText(pick(row, ['preferred_shopping_category'])) || 'General Wedding Shopping',
+          familySize,
+          budget,
+          telecallerName: unwrapFormulaText(pick(row, ['assigned_telecaller'])),
+          notes: unwrapFormulaText(pick(row, ['customer_notes'])),
+          followUp: (() => {
+            const rawFollowUp = pick(row, ['followup_call_date']);
+            return parseDate(rawFollowUp) || new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+          })(),
+          storeKey: allowRowLocations ? pick(row, ['store_location']) : null
+        });
+      }
+
+      // ── Phase B: duplicate lookup against the CRM (batched) ─────
+      const existingByMobile = new Map();
+      const candidateMobiles = candidates.map((c) => c.mobile);
+      for (let i = 0; i < candidateMobiles.length; i += 800) {
+        const chunk = candidateMobiles.slice(i, i + 800);
+        if (chunk.length === 0) continue;
+        const [dupRows] = await pool.query(
+          `SELECT mobile_number, customer_code FROM wedding_customers WHERE mobile_number IN (?) AND is_deleted = 0`,
+          [chunk]
+        );
+        (dupRows || []).forEach((r) => existingByMobile.set(r.mobile_number, r.customer_code));
+      }
+
+      const ready = [];
+      candidates.forEach((c) => {
+        const existingCode = existingByMobile.get(c.mobile);
+        if (existingCode) {
+          duplicates++;
+          errors.push({
+            row: c.rowNo,
+            customerName: c.customerName,
+            mobile: c.mobile,
+            reason: `Mobile ${c.mobile} already registered in CRM (${existingCode})`
+          });
+        } else {
+          ready.push(c);
+        }
+      });
+
+      // ── Phase C: resolve store + customer code ───────────────────
+      const seqByLoc = new Map();
+      const insertRows = [];
+
+      for (const c of ready) {
+        let rowLocation = defaultLocationId;
+        if (c.storeKey) {
+          const key = String(c.storeKey).trim().toLowerCase();
+          const matched = locationMap.get(key) || locationMap.get(key.toUpperCase());
+          if (matched) {
+            rowLocation = matched.id;
+          } else {
+            warnings.push({
+              row: c.rowNo,
+              customerName: c.customerName,
+              mobile: c.mobile,
+              reason: `Store "${c.storeKey}" not recognised — imported into the selected store instead.`
+            });
+          }
+        }
+
+        let shoppingDate = c.parsedShopping;
         if (!shoppingDate) {
-          if (weddingDate) {
-            const wDate = new Date(weddingDate);
+          if (c.weddingDate) {
+            const wDate = new Date(c.weddingDate);
             const sDate = new Date(wDate.getTime() - 15 * 24 * 60 * 60 * 1000);
             const now = new Date();
             shoppingDate = (sDate > now ? sDate : (wDate > now ? wDate : now)).toISOString().split('T')[0];
           } else {
-            const defaultDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
-            shoppingDate = defaultDate.toISOString().split('T')[0];
+            shoppingDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
           }
         }
 
-        // Calculate follow_up_date (from file followup_call_date / follow_up_date or default to today's date)
-        let followUp = null;
-        const rawFollowUp = pick(row, [
-          'followup_call_date',
-          'follow_up_call_date',
-          'follwup_call_date',
-          'follwup_date',
-          'follow_up_date',
-          'followup_date',
-          'next_follow_up_date',
-          'next_followup_date',
-          'follow_up',
-          'call_date'
-        ]);
-        if (rawFollowUp) {
-          followUp = parseDate(rawFollowUp);
-        }
-        if (!followUp) {
-          followUp = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
-        }
-
-        const category = pick(row, ['preferred_shopping_category', 'category', 'shopping_category', 'preferred_category']) || 'General Wedding Shopping';
-        const familySize = parseInt(pick(row, ['estimated_family_size', 'family_size', 'estimated_family', 'familysize']) || '1', 10) || 1;
-        const budget = pick(row, ['budget', 'budget_range', 'shopping_budget']) || null;
-        const assignedTelecaller = pick(row, ['assigned_telecaller', 'telecaller', 'assigned_to', 'caller']) || null;
-
-        // Customer code generation
         const locObj = locationMap.get(String(rowLocation));
         const locCode = locObj?.location_code || 'BSC';
 
@@ -2438,32 +2626,95 @@ class WeddingController {
         seqByLoc.set(rowLocation, nextSeq);
         const customerCode = `WED-${locCode}-${new Date().getFullYear()}-${String(nextSeq).padStart(4, '0')}`;
 
-        try {
-          await pool.query(
-            `INSERT INTO wedding_customers (
-              customer_code, location_id, customer_name, mobile_number, alternate_mobile, email,
-              wedding_date, expected_shopping_date, preferred_shopping_category,
-              estimated_family_size, budget, assigned_telecaller, follow_up_date,
-              customer_notes, customer_status, call_status, created_by, created_by_user_id
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'New', 'Pending', ?, ?)`,
-            [
-              customerCode, rowLocation, String(customerName).substring(0, 150).trim(),
-              mobile, altNumber || null, email,
-              weddingDate, shoppingDate, category,
-              familySize, budget, assignedTelecaller,
-              followUp, encryptField(notes ? String(notes).trim() : null),
-              req.user?.fullName || 'Bulk Import', req.user?.id || null
-            ]
-          );
-          imported++;
-          inserted.push(customerCode);
-        } catch (rowErr) {
-          console.error(`[importCsv] Row insert error row ${rowNo}:`, rowErr.message);
-          errors.push({ row: rowNo, customerName, mobile, reason: `Database insert failed: ${rowErr.message}` });
+        let telecallerId = null;
+        if (c.telecallerName) {
+          telecallerId = telecallerMap.get(String(c.telecallerName).toLowerCase()) || null;
+          if (!telecallerId) {
+            warnings.push({
+              row: c.rowNo,
+              customerName: c.customerName,
+              mobile: c.mobile,
+              reason: `Telecaller "${c.telecallerName}" is not an active CRM user — imported with the name only.`
+            });
+          }
         }
+
+        insertRows.push({
+          rowNo: c.rowNo,
+          customerName: c.customerName,
+          mobile: c.mobile,
+          customerCode,
+          params: [
+            customerCode,
+            rowLocation,
+            c.customerName,
+            c.mobile,
+            c.altNumber || null,
+            c.email,
+            c.weddingDate,
+            shoppingDate,
+            String(c.category).substring(0, 150),
+            c.familySize,
+            c.budget,
+            c.telecallerName ? String(c.telecallerName).substring(0, 150) : null,
+            telecallerId,
+            c.followUp,
+            encryptField(c.notes ? String(c.notes).substring(0, 5000).trim() : null),
+            'New',
+            'Pending',
+            req.user?.fullName || 'Bulk Import',
+            req.user?.id || null
+          ]
+        });
       }
 
-      // Success summary message as required: "X customers imported, Y duplicates skipped, Z errors."
+      // ── Phase D: insert (transaction + bulk chunks) ──────────────
+      let imported = 0;
+      const inserted = [];
+
+      if (insertRows.length > 0) {
+        const INSERT_SQL = `
+          INSERT INTO wedding_customers (
+            customer_code, location_id, customer_name, mobile_number, alternate_mobile, email,
+            wedding_date, expected_shopping_date, preferred_shopping_category,
+            estimated_family_size, budget, assigned_telecaller, assigned_telecaller_id, follow_up_date,
+            customer_notes, customer_status, call_status, created_by, created_by_user_id
+          ) VALUES ?`;
+
+        conn = await pool.getConnection();
+        await conn.beginTransaction();
+
+        const CHUNK = 150;
+        for (let i = 0; i < insertRows.length; i += CHUNK) {
+          const slice = insertRows.slice(i, i + CHUNK);
+          try {
+            await conn.query(INSERT_SQL, [slice.map((r) => r.params)]);
+            imported += slice.length;
+            slice.forEach((r) => inserted.push(r.customerCode));
+          } catch (chunkErr) {
+            // Retry row-by-row so the failing row is reported precisely
+            for (const r of slice) {
+              try {
+                await conn.query(INSERT_SQL, [[r.params]]);
+                imported++;
+                inserted.push(r.customerCode);
+              } catch (rowErr) {
+                console.error(`[importCsv] Row insert error row ${r.rowNo}:`, rowErr.message);
+                errors.push({
+                  row: r.rowNo,
+                  customerName: r.customerName,
+                  mobile: r.mobile,
+                  reason: `Database insert failed: ${rowErr.message}`
+                });
+              }
+            }
+          }
+        }
+
+        await conn.commit();
+      }
+
+      // ── Summary + audit + import history ─────────────────────────
       const summary = `${imported} customers imported, ${duplicates} duplicates skipped, ${errors.length} errors.`;
 
       try {
@@ -2476,18 +2727,56 @@ class WeddingController {
         console.warn('[importCsv] Audit log warning:', auditErr.message);
       }
 
+      let importId = null;
+      try {
+        const [locRow] = await pool.query('SELECT location_name FROM locations WHERE id = ?', [defaultLocationId]);
+        const [logRes] = await pool.query(
+          `INSERT INTO wedding_import_logs
+             (file_name, file_type, location_id, location_name, user_id, user_name,
+              total_rows, imported_count, duplicate_count, error_count, status, summary)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            String(req.file.originalname || '').substring(0, 255),
+            isXlsx ? 'xlsx' : 'csv',
+            defaultLocationId,
+            locRow && locRow[0] ? locRow[0].location_name : null,
+            req.user?.id || null,
+            req.user?.fullName || req.user?.username || null,
+            objects.length,
+            imported,
+            duplicates,
+            errors.length,
+            errors.length > 0 && imported === 0 ? 'Failed' : 'Completed',
+            summary
+          ]
+        );
+        importId = logRes.insertId;
+      } catch (logErr) {
+        console.warn('[importCsv] import log warning:', logErr.message);
+      }
+
       return successRes(res, {
         importedCount: imported,
         duplicateCount: duplicates,
         errorCount: errors.length,
+        warningCount: warnings.length,
         totalRows: objects.length,
-        insertedCodes: inserted,
+        insertedCodes: inserted.slice(0, 100),
         errors,
+        warnings,
+        importId,
         summary
       }, summary);
     } catch (err) {
+      if (conn) {
+        try { await conn.rollback(); } catch (rbErr) { /* connection already released */ }
+      }
       console.error('[WeddingController.importCsv Error]', err);
       return errorRes(res, 'Failed to import customer records', [err.message], 500);
+    } finally {
+      if (conn) {
+        try { conn.release(); } catch (relErr) { /* ignore */ }
+      }
     }
   }
 

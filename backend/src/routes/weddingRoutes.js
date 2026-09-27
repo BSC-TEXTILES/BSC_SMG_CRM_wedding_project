@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const weddingController = require('../controllers/weddingController');
 const { authenticate, authorize } = require('../middleware/auth');
+const { requireModuleAction } = require('../middleware/moduleGuard');
 const { errorRes } = require('../utils/response');
 const multer = require('multer');
 
@@ -10,6 +11,9 @@ const bulkUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
+    if (/\.xls$/i.test(file.originalname)) {
+      return cb(new Error('Legacy .xls files are not supported. Open the file and save it as .xlsx (File > Save As > Excel Workbook), then upload it again.'), false);
+    }
     const isCsv = /\.csv$/i.test(file.originalname) || file.mimetype === 'text/csv' || file.mimetype === 'application/vnd.ms-excel';
     const isXlsx = /\.xlsx$/i.test(file.originalname) || file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
     if (isCsv || isXlsx) {
@@ -20,13 +24,17 @@ const bulkUpload = multer({
   }
 });
 
-// ── Public Template Downloads (served before auth so browser downloads always succeed without 401/error pages) ──
-router.get('/template-csv', (req, res, next) => weddingController.downloadCsvTemplate(req, res, next));
-router.get('/template-xlsx', (req, res, next) => weddingController.downloadXlsxTemplate(req, res, next));
-router.get('/template', (req, res, next) => weddingController.downloadCsvTemplate(req, res, next));
-
 // All wedding CRM routes require authentication
 router.use(authenticate);
+
+// Module-level RBAC (Access Control Matrix → role defaults) + audit + force logout
+const canViewWedding = requireModuleAction('wedding_crm', 'can_view');
+const canAddWedding = requireModuleAction('wedding_crm', 'can_add');
+
+// ── Template Downloads (authenticated + wedding_crm view permission) ──
+router.get('/template-csv', canViewWedding, (req, res, next) => weddingController.downloadCsvTemplate(req, res, next));
+router.get('/template-xlsx', canViewWedding, (req, res, next) => weddingController.downloadXlsxTemplate(req, res, next));
+router.get('/template', canViewWedding, (req, res, next) => weddingController.downloadCsvTemplate(req, res, next));
 
 // ── Dashboard & Stats ─────────────────────────────────────────
 router.get('/stats', weddingController.getDashboardStats);
@@ -49,13 +57,17 @@ router.get('/export', weddingController.exportData);
 router.get('/export-customers-csv', weddingController.exportCustomersCsv);
 router.get('/export-csv', weddingController.exportCustomersCsv);
 
-// ── Bulk CSV / Excel Import (strict validation) ───────────────
-router.post('/import-csv', (req, res, next) => {
+// ── Bulk CSV / Excel Import (authenticated + wedding_crm add permission) ──
+router.post('/import-csv', canAddWedding, (req, res, next) => {
   bulkUpload.single('file')(req, res, (err) => {
     if (err) return errorRes(res, err.message || 'File upload failed', [], 400);
     return weddingController.importCsv(req, res, next);
   });
 });
+
+// ── Import Error Report (.xlsx) + Import History ──────────────
+router.post('/import-error-report', canViewWedding, weddingController.downloadErrorReport);
+router.get('/import-logs', canViewWedding, weddingController.getImportLogs);
 
 // ── Duplicate Phone Check ─────────────────────────────────────
 router.post('/check-duplicate', weddingController.checkDuplicate);

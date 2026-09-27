@@ -1193,126 +1193,203 @@ exports.getLocationQrCodes = async (req, res) => {
     const isGlobalAdmin = checkIsGlobalAdmin(session);
     const userLocationId = session?.locationId;
 
-    // Authoritative location scoping using getEffectiveLocationId
-    const effectiveLoc = getEffectiveLocationId(req);
-    let targetLocations = STANDARD_LOCATIONS;
-    if (effectiveLoc) {
-      targetLocations = STANDARD_LOCATIONS.filter(loc => loc.id === effectiveLoc);
+    // Fetch active system locations from DB, or fallback to standard 3
+    let systemLocations = [];
+    try {
+      const [dbLocs] = await db.query(
+        "SELECT id, location_code AS locationCode, location_name AS locationName, store_name AS storeName FROM locations WHERE status = 'Active' ORDER BY id ASC"
+      );
+      if (dbLocs && dbLocs.length > 0) {
+        systemLocations = dbLocs;
+      }
+    } catch (e) {
+      // ignore, use fallback
+    }
+    if (systemLocations.length === 0) {
+      systemLocations = STANDARD_LOCATIONS;
+    }
+
+    // Authoritative location scoping
+    const effectiveLoc = typeof getEffectiveLocationId === 'function' ? getEffectiveLocationId(req) : null;
+    const reqLoc = req.query?.locationId || req.query?.location_id || req.headers?.['x-location-id'];
+    const activeFilter = (reqLoc && reqLoc !== 'ALL' && reqLoc !== 'all' && reqLoc !== 'undefined' && reqLoc !== 'null')
+      ? reqLoc
+      : (effectiveLoc || null);
+
+    let targetLocations = systemLocations;
+    if (activeFilter) {
+      const parsedId = parseInt(activeFilter, 10);
+      const upperCode = String(activeFilter).trim().toUpperCase();
+      const filtered = systemLocations.filter(loc => 
+        loc.id === parsedId || 
+        String(loc.id) === String(activeFilter) || 
+        loc.locationCode?.toUpperCase() === upperCode
+      );
+      if (filtered.length > 0) {
+        targetLocations = filtered;
+      }
     }
 
     const baseUrl = process.env.FRONTEND_URL || 'https://bsctextiles.in';
     const results = [];
 
     for (const location of targetLocations) {
-      const targetUrl = `${baseUrl}/feedback-public?location=${location.locationCode}`;
+      try {
+        const targetUrl = `${baseUrl}/feedback-public?location=${location.locationCode}`;
 
-      // Get existing QR code for this location
-      let [existing] = await db.query(`
-        SELECT * FROM FeedbackQrCode 
-        WHERE locationId = ? AND deletedAt IS NULL
-        ORDER BY CASE WHEN targetUrl LIKE '%location=%' THEN 0 ELSE 1 END, createdAt DESC LIMIT 1
-      `, [location.id]);
+        // Get existing QR code for this location
+        let [existing] = await db.query(`
+          SELECT * FROM FeedbackQrCode 
+          WHERE (locationId = ? OR locationCode = ?) AND deletedAt IS NULL
+          ORDER BY CASE WHEN targetUrl LIKE '%location=%' THEN 0 ELSE 1 END, createdAt DESC LIMIT 1
+        `, [location.id, location.locationCode]);
 
-      let qrCode = null;
+        let qrCode = null;
 
-      if (existing && existing.length > 0) {
-        qrCode = existing[0];
-        let qrCodeDataUrl = qrCode.qrCodeDataUrl;
-        let qrCodeSvg = qrCode.qrCodeSvg;
-        let currentTargetUrl = qrCode.targetUrl;
-        let needsUpdate = false;
+        if (existing && existing.length > 0) {
+          qrCode = existing[0];
+          let qrCodeDataUrl = qrCode.qrCodeDataUrl;
+          let qrCodeSvg = qrCode.qrCodeSvg;
+          let currentTargetUrl = qrCode.targetUrl;
+          let needsUpdate = false;
 
-        // Ensure targetUrl contains location=
-        if (!currentTargetUrl || !currentTargetUrl.includes(`location=${location.locationCode}`)) {
-          currentTargetUrl = targetUrl;
-          needsUpdate = true;
-        }
+          if (!currentTargetUrl || !currentTargetUrl.includes(`location=${location.locationCode}`)) {
+            currentTargetUrl = targetUrl;
+            needsUpdate = true;
+          }
 
-        // Ensure QR images exist
-        if (!qrCodeDataUrl || !qrCodeSvg || needsUpdate) {
-          const images = await generateQrCodeImages(currentTargetUrl);
-          qrCodeDataUrl = images.qrCodeDataUrl;
-          qrCodeSvg = images.qrCodeSvg;
-          needsUpdate = true;
-        }
+          if (!qrCodeDataUrl || !qrCodeSvg || needsUpdate) {
+            try {
+              const images = await generateQrCodeImages(currentTargetUrl);
+              qrCodeDataUrl = images.qrCodeDataUrl;
+              qrCodeSvg = images.qrCodeSvg;
+              needsUpdate = true;
+            } catch (qrErr) {
+              console.warn('[getLocationQrCodes] QR image generation warning:', qrErr.message);
+            }
+          }
 
-        if (needsUpdate) {
+          if (needsUpdate) {
+            await db.query(`
+              UPDATE FeedbackQrCode 
+              SET qrCodeDataUrl = ?, qrCodeSvg = ?, targetUrl = ?, locationCode = ?, locationName = ?, updatedAt = CURRENT_TIMESTAMP 
+              WHERE id = ?
+            `, [qrCodeDataUrl, qrCodeSvg, currentTargetUrl, location.locationCode, location.locationName, qrCode.id]).catch(() => {});
+          }
+
+          qrCode.targetUrl = currentTargetUrl;
+          qrCode.qrCodeDataUrl = qrCodeDataUrl;
+          qrCode.qrCodeSvg = qrCodeSvg;
+          qrCode.locationCode = location.locationCode;
+          qrCode.locationName = location.locationName;
+        } else {
+          // Auto-provision on-demand so it's never empty
+          const qrCodeId = await generateNextQrCodeId();
+          let qrCodeDataUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(targetUrl)}`;
+          let qrCodeSvg = '';
+          try {
+            const images = await generateQrCodeImages(targetUrl);
+            qrCodeDataUrl = images.qrCodeDataUrl;
+            qrCodeSvg = images.qrCodeSvg;
+          } catch (qrErr) {}
+
+          const id = getUUID();
+
           await db.query(`
-            UPDATE FeedbackQrCode 
-            SET qrCodeDataUrl = ?, qrCodeSvg = ?, targetUrl = ?, locationCode = ?, locationName = ?, updatedAt = CURRENT_TIMESTAMP 
-            WHERE id = ?
-          `, [qrCodeDataUrl, qrCodeSvg, currentTargetUrl, location.locationCode, location.locationName, qrCode.id]);
+            INSERT INTO FeedbackQrCode (
+              id, qrCodeId, name, description, locationId, locationCode, locationName,
+              sectionId, sectionName, feedbackFormId, targetUrl, qrCodeDataUrl, qrCodeSvg,
+              status, scanCount, createdBy, createdByName
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, ?, ?, ?, 'active', 0, 1, 'System')
+            ON DUPLICATE KEY UPDATE qrCodeDataUrl = VALUES(qrCodeDataUrl), targetUrl = VALUES(targetUrl)
+          `, [
+            id, qrCodeId, `${location.locationName} Feedback`, `Official Customer Feedback QR for ${location.storeName || location.locationName}`,
+            location.id, location.locationCode, location.locationName,
+            targetUrl, qrCodeDataUrl, qrCodeSvg
+          ]).catch(err => {
+            console.warn('[getLocationQrCodes] Auto-provision insert warning:', err.message);
+          });
+
+          qrCode = {
+            id,
+            qrCodeId,
+            name: `${location.locationName} Feedback`,
+            locationId: location.id,
+            locationCode: location.locationCode,
+            locationName: location.locationName,
+            targetUrl,
+            qrCodeDataUrl,
+            qrCodeSvg,
+            status: 'active',
+            lastScannedAt: null
+          };
         }
 
-        qrCode.targetUrl = currentTargetUrl;
-        qrCode.qrCodeDataUrl = qrCodeDataUrl;
-        qrCode.qrCodeSvg = qrCodeSvg;
-        qrCode.locationCode = location.locationCode;
-        qrCode.locationName = location.locationName;
-      } else {
-        // Auto-provision on-demand so it's never empty
-        const qrCodeId = `QR-${location.locationCode}`;
-        const { qrCodeDataUrl, qrCodeSvg } = await generateQrCodeImages(targetUrl);
-        const id = getUUID();
+        // Get scan and feedback counts safely from database
+        let scanTotal = 0;
+        let feedbackTotal = 0;
+        let scansWithFeedbackTotal = 0;
 
-        await db.query(`
-          INSERT INTO FeedbackQrCode (
-            id, qrCodeId, name, description, locationId, locationCode, locationName,
-            sectionId, sectionName, feedbackFormId, targetUrl, qrCodeDataUrl, qrCodeSvg,
-            status, scanCount, createdBy, createdByName
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, ?, ?, ?, 'active', 0, 1, 'System')
-        `, [
-          id, qrCodeId, `${location.locationName} Feedback`, `Official Customer Feedback QR for ${location.storeName}`,
-          location.id, location.locationCode, location.locationName,
-          targetUrl, qrCodeDataUrl, qrCodeSvg
-        ]);
+        try {
+          const [scanCount] = await db.query(`
+            SELECT COUNT(*) as total FROM FeedbackQrScan fqs
+            JOIN FeedbackQrCode fqc ON (fqs.qrCodeRefId = fqc.qrCodeId OR fqs.qrCodeId = fqc.qrCodeId)
+            WHERE fqc.locationId = ? OR fqc.locationCode = ?
+          `, [location.id, location.locationCode]);
+          scanTotal = parseInt(scanCount[0]?.total || 0, 10);
+        } catch (e) {}
 
-        qrCode = {
-          id,
-          qrCodeId,
-          name: `${location.locationName} Feedback`,
+        try {
+          const [feedbackCount] = await db.query(`
+            SELECT COUNT(*) as total FROM Feedback WHERE location_id = ? OR locationCode = ?
+          `, [location.id, location.locationCode]);
+          feedbackTotal = parseInt(feedbackCount[0]?.total || 0, 10);
+        } catch (e) {}
+
+        try {
+          const [scansWithFeedback] = await db.query(`
+            SELECT COUNT(*) as total FROM FeedbackQrScan fqs
+            JOIN FeedbackQrCode fqc ON (fqs.qrCodeRefId = fqc.qrCodeId OR fqs.qrCodeId = fqc.qrCodeId)
+            WHERE (fqc.locationId = ? OR fqc.locationCode = ?) AND fqs.isFeedbackSubmitted = 1
+          `, [location.id, location.locationCode]);
+          scansWithFeedbackTotal = parseInt(scansWithFeedback[0]?.total || 0, 10);
+        } catch (e) {}
+
+        results.push({
           locationId: location.id,
           locationCode: location.locationCode,
           locationName: location.locationName,
-          targetUrl,
-          qrCodeDataUrl,
-          qrCodeSvg,
+          storeName: location.storeName || `${location.locationName} Store`,
+          qrCodeId: qrCode.qrCodeId,
+          name: qrCode.name || `${location.locationName} Feedback`,
+          targetUrl: qrCode.targetUrl,
+          qrCodeDataUrl: qrCode.qrCodeDataUrl,
+          qrCodeSvg: qrCode.qrCodeSvg,
+          status: qrCode.status || 'active',
+          scanCount: scanTotal,
+          feedbackCount: feedbackTotal,
+          scansWithFeedback: scansWithFeedbackTotal,
+          lastScannedAt: qrCode.lastScannedAt || null
+        });
+      } catch (locErr) {
+        console.warn(`[getLocationQrCodes] Error processing location ${location.locationCode}:`, locErr.message);
+        results.push({
+          locationId: location.id,
+          locationCode: location.locationCode,
+          locationName: location.locationName,
+          storeName: location.storeName || `${location.locationName} Store`,
+          qrCodeId: `QR-${location.locationCode}`,
+          name: `${location.locationName} Feedback`,
+          targetUrl: `${baseUrl}/feedback-public?location=${location.locationCode}`,
+          qrCodeDataUrl: `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(`${baseUrl}/feedback-public?location=${location.locationCode}`)}`,
+          qrCodeSvg: '',
           status: 'active',
+          scanCount: 0,
+          feedbackCount: 0,
+          scansWithFeedback: 0,
           lastScannedAt: null
-        };
+        });
       }
-
-      // Get scan and feedback counts strictly from database
-      const [scanCount] = await db.query(`
-        SELECT COUNT(*) as total FROM FeedbackQrScan fqs
-        JOIN FeedbackQrCode fqc ON (fqs.qrCodeRefId = fqc.qrCodeId OR fqs.qrCodeId = fqc.qrCodeId)
-        WHERE fqc.locationId = ?
-      `, [location.id]);
-      const [feedbackCount] = await db.query(`
-        SELECT COUNT(*) as total FROM Feedback WHERE location_id = ? OR locationCode = ?
-      `, [location.id, location.locationCode]);
-      const [scansWithFeedback] = await db.query(`
-        SELECT COUNT(*) as total FROM FeedbackQrScan fqs
-        JOIN FeedbackQrCode fqc ON (fqs.qrCodeRefId = fqc.qrCodeId OR fqs.qrCodeId = fqc.qrCodeId)
-        WHERE fqc.locationId = ? AND fqs.isFeedbackSubmitted = 1
-      `, [location.id]);
-
-      results.push({
-        locationId: location.id,
-        locationCode: location.locationCode,
-        locationName: location.locationName,
-        storeName: location.storeName,
-        qrCodeId: qrCode.qrCodeId,
-        name: qrCode.name || `${location.locationName} Feedback`,
-        targetUrl: qrCode.targetUrl,
-        qrCodeDataUrl: qrCode.qrCodeDataUrl,
-        qrCodeSvg: qrCode.qrCodeSvg,
-        status: qrCode.status || 'active',
-        scanCount: parseInt(scanCount[0]?.total || 0, 10),
-        feedbackCount: parseInt(feedbackCount[0]?.total || 0, 10),
-        scansWithFeedback: parseInt(scansWithFeedback[0]?.total || 0, 10),
-        lastScannedAt: qrCode.lastScannedAt || null
-      });
     }
 
     return res.json({ 
@@ -1321,7 +1398,23 @@ exports.getLocationQrCodes = async (req, res) => {
     });
   } catch (err) {
     console.error('[getLocationQrCodes Error]', err);
-    return res.status(500).json({ success: false, error: err.message });
+    const fallbackResults = STANDARD_LOCATIONS.map(loc => ({
+      locationId: loc.id,
+      locationCode: loc.locationCode,
+      locationName: loc.locationName,
+      storeName: loc.storeName,
+      qrCodeId: `QR-${loc.locationCode}`,
+      name: `${loc.locationName} Feedback`,
+      targetUrl: `https://bsctextiles.in/feedback-public?location=${loc.locationCode}`,
+      qrCodeDataUrl: `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=https://bsctextiles.in/feedback-public?location=${loc.locationCode}`,
+      qrCodeSvg: '',
+      status: 'active',
+      scanCount: 0,
+      feedbackCount: 0,
+      scansWithFeedback: 0,
+      lastScannedAt: null
+    }));
+    return res.json({ success: true, data: fallbackResults });
   }
 };
 

@@ -1,1 +1,0 @@
-import{r as s}from"./vendor-react-C2ltAuY4.js";import{A as e}from"./index-Ch0Hi-hA.js";import"./vendor-icons-C1FNiEDC.js";const i=360*60*1e3,a=60*1e3;function l(){return s.useEffect(()=>{const t=()=>{const o=e.get();if(!o)return;const n=o.loginAt||0;Date.now()-n>i&&e.logout()};t();const r=window.setInterval(t,a);return()=>window.clearInterval(r)},[]),null}export{l as default};
