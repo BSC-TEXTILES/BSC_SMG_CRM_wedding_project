@@ -654,6 +654,7 @@ module.exports = {
   getLocationFilter,
   injectLocationId,
   getEffectiveLocationId,
+  parseTargetLocation,
   invalidateUserStatusCache,
   blacklistToken,
   logSessionActivity,

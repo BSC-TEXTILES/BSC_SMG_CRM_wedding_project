@@ -2,6 +2,9 @@ const pool = require('../config/db');
 
 exports.getBroadcasts = async (req, res) => {
   try {
+    if (!req.user || req.user.role === 'Guest' || req.user.id === 'anonymous') {
+      return res.json({ success: true, broadcasts: [] });
+    }
     const [rows] = await pool.query('SELECT * FROM broadcast_messages ORDER BY created_at DESC');
     res.json({ success: true, broadcasts: rows });
   } catch (err) {

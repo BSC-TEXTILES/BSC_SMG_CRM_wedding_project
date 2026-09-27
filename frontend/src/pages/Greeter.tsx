@@ -137,7 +137,7 @@ export default function Greeter() {
         entryDate: today,
         slotHour: nowHour,
         visitors: newCount,
-        location_id: Number(kioskLocationId),
+        location_id: Number(kioskLocationId) || 1,
         remarks: 'Greeter Entrance Kiosk',
         submittedBy: 'Greeter'
       });

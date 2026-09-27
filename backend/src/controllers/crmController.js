@@ -1,6 +1,6 @@
 const db = require('../config/db');
 const bcrypt = require('bcryptjs');
-const { getLocationFilter, injectLocationId, getEffectiveLocationId } = require('../middleware/auth');
+const { getLocationFilter, injectLocationId, getEffectiveLocationId, parseTargetLocation } = require('../middleware/auth');
 const realtimeService = require('../services/realtimeService');
 const { getCache, setCache } = require('../config/redisClient');
 
@@ -184,6 +184,16 @@ exports.getSections = async (req, res) => {
 exports.getFootfall = async (req, res) => {
   try {
     const date = req.query.date || new Date().toISOString().split('T')[0];
+    const requestedLoc = parseTargetLocation(req.query.locationId || req.query.location_id || req.headers['x-location-id']);
+
+    if (requestedLoc) {
+      const [rows] = await db.query(
+        `SELECT * FROM FootfallEntries WHERE entryDate = ? AND location_id = ? ORDER BY slotHour ASC`,
+        [date, requestedLoc]
+      );
+      return res.json({ success: true, date, entries: rows, locationId: requestedLoc });
+    }
+
     const { clause: locClause, params: locParams } = await getLocationFilter(req, 'FootfallEntries');
     const [rows] = await db.query(
       `SELECT * FROM FootfallEntries WHERE entryDate = ? ${locClause} ORDER BY slotHour ASC`,
@@ -205,29 +215,46 @@ exports.upsertFootfall = async (req, res) => {
     if (!locationId && req.user && req.user.locationId) {
       locationId = req.user.locationId;
     }
+    // Fallback: If user has allowedLocations, use the first one, or fetch the first active store from DB or fallback to 1
     if (!locationId) {
-      return res.status(400).json({ success: false, error: 'Store location could not be determined. Please specify a valid store location.' });
+      if (Array.isArray(req.user?.allowedLocations) && req.user.allowedLocations.length > 0) {
+        locationId = Number(req.user.allowedLocations[0]) || 1;
+      } else {
+        try {
+          const [locRows] = await db.query('SELECT id FROM locations WHERE active = 1 ORDER BY id ASC LIMIT 1');
+          locationId = (locRows && locRows.length > 0) ? locRows[0].id : 1;
+        } catch {
+          locationId = 1;
+        }
+      }
     }
+
+    const targetDate = entryDate || new Date().toISOString().split('T')[0];
+    const targetHour = (slotHour !== undefined && slotHour !== null && !isNaN(Number(slotHour))) ? Number(slotHour) : new Date().getHours();
+    const targetVisitors = Math.max(0, Number(visitors) || 0);
+    const targetRemarks = String(remarks || '').trim();
+    const targetSubmittedBy = String(submittedBy || req.user?.fullName || req.user?.username || 'Staff').trim();
+
     const id = getUUID();
     await db.query(`
       INSERT INTO FootfallEntries (id, location_id, entryDate, slotHour, visitors, remarks, submittedBy)
       VALUES (?, ?, ?, ?, ?, ?, ?)
       ON DUPLICATE KEY UPDATE visitors = VALUES(visitors), remarks = VALUES(remarks), submittedBy = VALUES(submittedBy), updatedAt = CURRENT_TIMESTAMP
-    `, [id, locationId, entryDate, slotHour, visitors || 0, remarks || '', submittedBy || 'Staff']);
+    `, [id, locationId, targetDate, targetHour, targetVisitors, targetRemarks, targetSubmittedBy]);
 
     // Emit Socket.IO push event for zero-latency screen updates
     const io = req.app.get('io');
     if (io) {
-      io.emit('footfall:updated', { location_id: locationId, entryDate, slotHour, visitors: Number(visitors) || 0, remarks, submittedBy });
+      io.emit('footfall:updated', { location_id: locationId, entryDate: targetDate, slotHour: targetHour, visitors: targetVisitors, remarks: targetRemarks, submittedBy: targetSubmittedBy });
     }
     realtimeService.emitEntityChange({
       entity: 'FOOTFALL',
       action: 'UPDATE',
       locationId,
-      meta: { entryDate, slotHour, visitors: Number(visitors) || 0 }
+      meta: { entryDate: targetDate, slotHour: targetHour, visitors: targetVisitors }
     });
 
-    return res.json({ success: true, message: 'Footfall slot updated successfully' });
+    return res.json({ success: true, message: 'Footfall slot updated successfully', location_id: locationId });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
   }

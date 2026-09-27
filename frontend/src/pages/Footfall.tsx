@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import DashboardLayout from '../components/layouts/DashboardLayout';
 import PageContainer from '../components/ui/PageContainer';
-import { BarChart3, Clock, Users, Calendar, Save, CircleCheck, CircleAlert, Sparkles, Check, Hourglass, Activity, FileText, Download, TrendingUp, Zap } from 'lucide-react';
-import { API } from '../services/api';
+import { BarChart3, Clock, Users, Calendar, Save, CircleCheck, CircleAlert, Sparkles, Check, Hourglass, Activity, FileText, Download, TrendingUp, Zap, Store, MapPin } from 'lucide-react';
+import { API, Auth } from '../services/api';
+import { useLocationContext } from '../context/LocationContext';
 import { showToast } from '../components/Toast';
 import MetricCard from '../components/ui/MetricCard';
 import * as XLSX from 'xlsx';
@@ -10,7 +11,25 @@ import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianG
 import { io } from 'socket.io-client';
 
 export default function Footfall() {
+  const { currentLocation, allLocations, isGlobalAdmin, canSwitch } = useLocationContext();
+  const session = Auth.get();
+
   const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [selectedStoreId, setSelectedStoreId] = useState<string>(() => {
+    if (session?.locationId) return String(session.locationId);
+    if (currentLocation && currentLocation !== 'ALL') return currentLocation;
+    return '1'; // Default Belagavi
+  });
+
+  const effectiveLocationId = useMemo(() => {
+    if (currentLocation && currentLocation !== 'ALL') return currentLocation;
+    return selectedStoreId || '1';
+  }, [currentLocation, selectedStoreId]);
+
+  const activeStore = useMemo(() => {
+    return allLocations.find(l => String(l.id) === String(effectiveLocationId)) || allLocations[0] || { id: 1, name: 'Belagavi', code: 'BEL' };
+  }, [allLocations, effectiveLocationId]);
+
   const [slots, setSlots] = useState<Record<number, { visitors: number; remarks: string }>>({});
   const [loading, setLoading] = useState<boolean>(true);
   const [savingSlot, setSavingSlot] = useState<number | null>(null);
@@ -18,9 +37,9 @@ export default function Footfall() {
 
   const slotHours = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21];
 
-  const fetchFootfall = async (selectedDate: string) => {
+  const fetchFootfall = async (selectedDate: string, storeId: string | number) => {
     try {
-      const res = await API.getFootfall(selectedDate);
+      const res = await API.getFootfall(selectedDate, Number(storeId));
       const map: Record<number, { visitors: number; remarks: string }> = {};
       if (res && res.entries && Array.isArray(res.entries)) {
         res.entries.forEach((e: any) => {
@@ -38,12 +57,12 @@ export default function Footfall() {
   useEffect(() => {
     setLoading(true);
     localOverridesRef.current = {};
-    fetchFootfall(date);
+    fetchFootfall(date, effectiveLocationId);
 
     // Socket.IO Push Listener for 0ms latency synchronization
     const socket = io({ path: '/socket.io', autoConnect: true });
     socket.on('footfall:updated', (data: any) => {
-      if (data && data.entryDate === date) {
+      if (data && data.entryDate === date && (!data.location_id || Number(data.location_id) === Number(effectiveLocationId))) {
         setSlots(prev => {
           // Preserve locally modified values
           if (localOverridesRef.current[data.slotHour]) {
@@ -59,7 +78,7 @@ export default function Footfall() {
 
     // Realtime polling fallback every 5 seconds
     const interval = setInterval(() => {
-      API.getFootfall(date)
+      API.getFootfall(date, Number(effectiveLocationId))
         .then((res: any) => {
           if (res && res.entries && Array.isArray(res.entries)) {
             setSlots(prev => {
@@ -86,7 +105,7 @@ export default function Footfall() {
       socket.disconnect();
       clearInterval(interval);
     };
-  }, [date]);
+  }, [date, effectiveLocationId]);
 
   const handleSaveSlot = async (hour: number) => {
     setSavingSlot(hour);
@@ -95,14 +114,15 @@ export default function Footfall() {
       await API.upsertFootfall({
         entryDate: date,
         slotHour: hour,
-        visitors: Number(slotData.visitors),
-        remarks: slotData.remarks,
-        submittedBy: 'Floor Manager'
+        visitors: Number(slotData.visitors) || 0,
+        remarks: slotData.remarks || '',
+        submittedBy: session?.fullName || session?.username || 'Floor Manager',
+        location_id: Number(effectiveLocationId)
       });
       // Clear local override after successful save
       delete localOverridesRef.current[hour];
       const formatHour = hour > 12 ? `${hour - 12}:00 PM` : hour === 12 ? '12:00 PM' : `${hour}:00 AM`;
-      showToast(`Footfall slot for ${formatHour} saved successfully.`, 'success');
+      showToast(`Footfall slot for ${formatHour} (${activeStore.name}) saved successfully.`, 'success');
     } catch (err: any) {
       console.error(err);
       showToast(err.message || 'Failed to save footfall slot entry.', 'error');
@@ -118,6 +138,7 @@ export default function Footfall() {
       const formatEndHour = (hour + 1) > 12 ? `${(hour + 1) - 12}:00 PM` : (hour + 1) === 12 ? '12:00 PM' : `${hour + 1}:00 AM`;
       return {
         'Date': date,
+        'Store': activeStore.name,
         'Slot': `Slot ${hour - 9}`,
         'Time Operating Window': `${formatHour} - ${formatEndHour}`,
         'Visitors Count': Number(slot.visitors) || 0,
@@ -128,7 +149,7 @@ export default function Footfall() {
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Hourly Footfall');
-    XLSX.writeFile(workbook, `BSC_Hourly_Footfall_${date}.xlsx`);
+    XLSX.writeFile(workbook, `BSC_Hourly_Footfall_${activeStore.name}_${date}.xlsx`);
   };
 
   const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
@@ -182,60 +203,97 @@ export default function Footfall() {
         
         {/* Top Controls: Glass Date Selector + Excel Export Button */}
         <div className="space-y-5">
-          <div className="card-glass p-5 lg:p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border border-accent-soft/80 bg-white/70 backdrop-blur-xl shadow-md rounded-2xl">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-primary text-accent flex items-center justify-center shadow-lg shrink-0">
-                <Calendar className="w-6 h-6" />
-              </div>
-              <div>
-                <label className="block text-[10.5px] font-black uppercase text-primary tracking-widest mb-1">
-                  Store Log Register Date
-                </label>
-                <div className="flex flex-wrap items-center gap-2">
-                  <input
-                    type="date"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    className="px-3.5 py-2 rounded-xl border border-accent-soft bg-white/90 font-extrabold text-xs text-primary outline-none shadow-xs focus:ring-2 focus:ring-accent/40 transition-all"
-                  />
-                  <button
-                    onClick={() => setDate(todayStr)}
-                    className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all ${
-                      isTodaySelected 
-                        ? 'bg-primary text-accent shadow-md ring-1 ring-accent/30' 
-                        : 'bg-background border border-accent-soft text-[#5D4E42] hover:bg-white'
-                    }`}
-                  >
-                    Today
-                  </button>
-                  <button
-                    onClick={() => {
-                      const d = new Date();
-                      d.setDate(d.getDate() - 1);
-                      setDate(d.toISOString().split('T')[0]);
-                    }}
-                    className="px-3.5 py-2 rounded-xl text-xs font-black bg-background border border-accent-soft text-[#5D4E42] hover:bg-white transition-all"
-                  >
-                    Yesterday
-                  </button>
+          <div className="card-glass p-5 lg:p-6 flex flex-col gap-4 border border-accent-soft/80 bg-white/70 backdrop-blur-xl shadow-md rounded-2xl">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-primary text-accent flex items-center justify-center shadow-lg shrink-0">
+                  <Calendar className="w-6 h-6" />
+                </div>
+                <div>
+                  <label className="block text-[10.5px] font-black uppercase text-primary tracking-widest mb-1">
+                    Store Log Register Date
+                  </label>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <input
+                      type="date"
+                      value={date}
+                      onChange={(e) => setDate(e.target.value)}
+                      className="px-3.5 py-2 rounded-xl border border-accent-soft bg-white/90 font-extrabold text-xs text-primary outline-none shadow-xs focus:ring-2 focus:ring-accent/40 transition-all"
+                    />
+                    <button
+                      onClick={() => setDate(todayStr)}
+                      className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all ${
+                        isTodaySelected 
+                          ? 'bg-primary text-accent shadow-md ring-1 ring-accent/30' 
+                          : 'bg-background border border-accent-soft text-[#5D4E42] hover:bg-white'
+                      }`}
+                    >
+                      Today
+                    </button>
+                    <button
+                      onClick={() => {
+                        const d = new Date();
+                        d.setDate(d.getDate() - 1);
+                        setDate(d.toISOString().split('T')[0]);
+                      }}
+                      className="px-3.5 py-2 rounded-xl text-xs font-black bg-background border border-accent-soft text-[#5D4E42] hover:bg-white transition-all"
+                    >
+                      Yesterday
+                    </button>
+                  </div>
                 </div>
               </div>
+
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="px-3.5 py-2 rounded-xl bg-emerald-100/80 border border-emerald-300/50 text-emerald-800 text-xs font-black flex items-center gap-1.5 shadow-2xs">
+                  <Zap className="w-4 h-4 text-emerald-600 animate-pulse" />
+                  <span>Socket Push Sync Active</span>
+                </span>
+
+                <button
+                  onClick={handleExportExcel}
+                  className="btn-gold px-4 py-2 text-xs font-black flex items-center gap-2 shadow-sm rounded-xl"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Export Register (.xlsx)</span>
+                </button>
+              </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="px-3.5 py-2 rounded-xl bg-emerald-100/80 border border-emerald-300/50 text-emerald-800 text-xs font-black flex items-center gap-1.5 shadow-2xs">
-                <Zap className="w-4 h-4 text-emerald-600 animate-pulse" />
-                <span>Socket Push Sync Active</span>
-              </span>
-
-              <button
-                onClick={handleExportExcel}
-                className="btn-gold px-4 py-2 text-xs font-black flex items-center gap-2 shadow-sm rounded-xl"
-              >
-                <Download className="w-4 h-4" />
-                <span>Export Register (.xlsx)</span>
-              </button>
-            </div>
+            {/* Store Location Tabs (for Admins / Multi-store users) */}
+            {(isGlobalAdmin || canSwitch || allLocations.length > 1) && (
+              <div className="w-full flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-accent-soft/80">
+                <div className="flex items-center gap-2">
+                  <Store className="w-4 h-4 text-accent" />
+                  <span className="text-[10.5px] font-black uppercase text-primary tracking-widest">
+                    Active Store Location:
+                  </span>
+                  <span className="text-xs font-bold text-accent px-2 py-0.5 rounded-lg bg-primary">
+                    {activeStore.name} ({activeStore.code})
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {allLocations.map((loc) => {
+                    const isSelected = String(loc.id) === String(effectiveLocationId);
+                    return (
+                      <button
+                        key={loc.id}
+                        type="button"
+                        onClick={() => setSelectedStoreId(String(loc.id))}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer ${
+                          isSelected
+                            ? 'bg-primary text-accent ring-2 ring-accent/40 shadow-sm'
+                            : 'bg-white border border-accent-soft text-[#5D4E42] hover:bg-[#F6F4EF]'
+                        }`}
+                      >
+                        <MapPin className={`w-3.5 h-3.5 ${isSelected ? 'text-accent' : 'text-primary/60'}`} />
+                        <span>{loc.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* 4 Summary Analytics Cards */}

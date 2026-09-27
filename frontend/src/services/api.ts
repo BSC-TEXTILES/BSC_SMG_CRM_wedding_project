@@ -42,6 +42,10 @@ export const Auth = {
         session.locationId,
         session.locationName
       ).catch(() => {}); // Don't block login on tracking failure
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('bsc_auth_changed', { detail: session }));
+      }
     } catch (e) {}
   },
 
@@ -94,6 +98,9 @@ export const Auth = {
   clear() {
     try {
       localStorage.removeItem('bsc_crm_session');
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('bsc_auth_changed'));
+      }
     } catch (e) {}
   },
 
@@ -722,7 +729,21 @@ export const API = {
     const q = new URLSearchParams(cleanQueryParams(p)).toString();
     return apiFetch(`/crm/footfall${q ? `?${q}` : ''}`);
   },
-  async upsertFootfall(payload: any) { return apiFetch('/crm/footfall/upsert', { method: 'POST', body: JSON.stringify(payload) }); },
+  async upsertFootfall(payload: any) {
+    const bodyPayload = { ...payload };
+    if (!bodyPayload.location_id && !bodyPayload.locationId) {
+      const activeLoc = typeof localStorage !== 'undefined' ? localStorage.getItem('bsc_selected_location') : null;
+      if (activeLoc && activeLoc !== 'ALL') {
+        const parsed = parseInt(activeLoc, 10);
+        if (!isNaN(parsed) && parsed > 0) bodyPayload.location_id = parsed;
+      }
+      if (!bodyPayload.location_id) {
+        const sess = Auth.get();
+        if (sess?.locationId) bodyPayload.location_id = sess.locationId;
+      }
+    }
+    return apiFetch('/crm/footfall/upsert', { method: 'POST', body: JSON.stringify(bodyPayload) });
+  },
   async getFeedbackQuestions() { return apiFetch('/crm/feedback-questions'); },
   async getFeedbackStats(params?: { location_id?: string | number; locationId?: string | number }) {
     const q = params ? new URLSearchParams(params as any).toString() : '';

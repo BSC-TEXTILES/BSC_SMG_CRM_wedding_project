@@ -195,7 +195,7 @@ router.post('/vm/floors/delete', authenticate, authorize('Admin', 'Super Admin')
 router.delete('/vm/floors/:id', authenticate, authorize('Admin', 'Super Admin'), crmController.deleteVmFloor);
 
 // ── Broadcast Routes ─────────────────────────────────────────
-router.get('/broadcasts', authenticate, broadcastController.getBroadcasts);
+router.get('/broadcasts', optionalAuthenticate, broadcastController.getBroadcasts);
 router.post('/broadcasts', authenticate, authorize('Admin', 'Super Admin'), broadcastController.createBroadcast);
 router.delete('/broadcasts/:id', authenticate, authorize('Admin', 'Super Admin'), broadcastController.deleteBroadcast);
 

@@ -69,6 +69,20 @@ class NotificationEngine {
   constructor() {
     this.loadSettings();
     this.initSocket();
+    this.initAuthListener();
+  }
+
+  private initAuthListener() {
+    if (typeof window !== 'undefined') {
+      window.addEventListener('bsc_auth_changed', () => {
+        if (Auth.check()) {
+          this.fetchInitialBroadcasts();
+        } else {
+          this.notifications = [];
+          this.notifyListeners();
+        }
+      });
+    }
   }
 
   private initSocket() {
@@ -89,7 +103,9 @@ class NotificationEngine {
 
     this.socket.on('connect', () => {
       console.log('[NotificationService] Connected to real-time notification socket');
-      this.fetchInitialBroadcasts();
+      if (Auth.check()) {
+        this.fetchInitialBroadcasts();
+      }
     });
 
     this.socket.on('NEW_BROADCAST', (broadcast: any) => {
@@ -163,7 +179,10 @@ class NotificationEngine {
     this.initialized = true;
   }
 
-  private async fetchInitialBroadcasts() {
+  public async fetchInitialBroadcasts() {
+    if (!Auth.check()) {
+      return;
+    }
     try {
       const res = await API.getBroadcasts();
       if (res && res.broadcasts) {
@@ -186,8 +205,11 @@ class NotificationEngine {
         this.restoreReadStates();
         this.notifyListeners();
       }
-    } catch (e) {
-      console.error('[NotificationService] Error fetching initial broadcasts:', e);
+    } catch (e: any) {
+      if (e?.status === 401) {
+        return; // Silently ignore expired or invalid session
+      }
+      console.warn('[NotificationService] Broadcasts fetch notice:', e?.message || e);
     }
   }
 
