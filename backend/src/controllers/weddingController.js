@@ -2336,16 +2336,28 @@ class WeddingController {
         return m ? m[1] : s;
       };
 
+      // Rejects impossible dates such as 31-02-2026 (the regex alone would accept them)
+      const toIsoDate = (y, mo, d) => {
+        const year = parseInt(y, 10);
+        const month = parseInt(mo, 10);
+        const day = parseInt(d, 10);
+        const probe = new Date(year, month - 1, day);
+        if (probe.getFullYear() !== year || probe.getMonth() !== month - 1 || probe.getDate() !== day) {
+          return null;
+        }
+        return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      };
+
       const parseDate = (raw) => {
         if (!raw) return null;
         const v = String(raw).trim();
         let m = v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
-        if (m) return `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`;
+        if (m) return toIsoDate(m[1], m[2], m[3]);
         m = v.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
-        if (m) return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+        if (m) return toIsoDate(m[4], m[3], m[2]);
         const d = new Date(v);
         if (!isNaN(d.getTime())) {
-          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+          return toIsoDate(d.getFullYear(), d.getMonth() + 1, d.getDate());
         }
         return null;
       };
@@ -2762,8 +2774,8 @@ class WeddingController {
         warningCount: warnings.length,
         totalRows: objects.length,
         insertedCodes: inserted.slice(0, 100),
-        errors,
-        warnings,
+        errors: errors.sort((a, b) => (a.row || 0) - (b.row || 0)),
+        warnings: warnings.sort((a, b) => (a.row || 0) - (b.row || 0)),
         importId,
         summary
       }, summary);
