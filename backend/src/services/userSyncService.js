@@ -27,7 +27,7 @@ const pool = require('../config/db');
 const bcrypt = require('bcryptjs');
 
 // ── Roles that bypass module-level permission checks ──────────────
-const ADMIN_ROLES = ['Admin', 'Super Admin'];
+const ADMIN_ROLES = ['Admin', 'Super Admin', 'system administrator'];
 
 // ── Default password for auto-provisioned (joined candidate) accounts
 const DEFAULT_EMPLOYEE_PASSWORD = 'Bsc@123';
@@ -67,32 +67,60 @@ const ROLE_DEFAULT_MODULES = {
   'Guest': ['candidate_apply', 'feedback_public']
 };
 
-/** Exact-key lookup (used by seeding, which must never guess a role). */
-function getRoleDefaultModules(role) {
-  if (ADMIN_ROLES.includes(role)) {
-    return [...new Set(Object.values(ROLE_DEFAULT_MODULES).flat())];
-  }
-  return ROLE_DEFAULT_MODULES[role] ? [...ROLE_DEFAULT_MODULES[role]] : [];
+/** Alternate spellings found in older accounts → canonical ROLE_DEFAULT_MODULES key. */
+const ROLE_ALIASES = {
+  'store manager': 'Manager',
+  'department manager': 'Manager',
+  'hr manager': 'HR',
+  'crm exec': 'CRM Executive',
+  'visual merchandiser': 'VM',
+  'vm telecaller': 'VM Extension Telecaller',
+  'tele caller': 'Telecaller',
+  'caller': 'Telecaller',
+  'wedding manager': 'Wedding Collection Manager',
+  'analyst': 'Data Analyst'
+};
+
+function normalizeRole(role) {
+  return String(role || '').trim().toLowerCase().replace(/[_\s-]+/g, ' ');
+}
+
+function adminModules() {
+  return [...new Set(Object.values(ROLE_DEFAULT_MODULES).flat())];
 }
 
 /**
- * Normalized lookup used by runtime enforcement: tolerates casing/alias drift
- * (HR MANAGER → HR, vm-telecaller → …) and falls back to Employee defaults so
- * an unknown role never silently gains or loses access between the count shown
- * in User Management and the check performed on an API call.
+ * Resolves a role to its canonical ROLE_DEFAULT_MODULES key, tolerating casing
+ * drift ('HR MANAGER' → HR) and legacy aliases ('Store Manager' → Manager).
+ * Returns null when nothing matches — callers decide whether to guess.
  */
-function matchRoleKey(role) {
-  const cleanRole = String(role || '').trim().toLowerCase().replace(/[_\s-]+/g, ' ');
-  return Object.keys(ROLE_DEFAULT_MODULES).find(
-    k => k.toLowerCase().replace(/[_\s-]+/g, ' ') === cleanRole
-  ) || null;
+function resolveRoleKey(role) {
+  const normalized = normalizeRole(role);
+  const exact = Object.keys(ROLE_DEFAULT_MODULES).find(k => normalizeRole(k) === normalized);
+  if (exact) return exact;
+  return ROLE_ALIASES[normalized] || null;
 }
 
+/** Exact-role lookup (used by seeding, which must never guess a role). */
+function getRoleDefaultModules(role) {
+  if (ADMIN_ROLES.includes(role)) return adminModules();
+  const key = resolveRoleKey(role);
+  return key ? [...new Set(ROLE_DEFAULT_MODULES[key])] : [];
+}
+
+/** Normalized lookup used by runtime enforcement (alias-aware). */
+function matchRoleKey(role) {
+  return resolveRoleKey(role);
+}
+
+/**
+ * Modules a role can actually reach: exact match, alias match, otherwise the
+ * Employee defaults — so an unknown role never silently gains or loses access
+ * between the count shown in User Management and the check made on an API call.
+ */
 function getDefaultModulesForRole(role) {
-  if (ADMIN_ROLES.includes(role)) {
-    return [...new Set(Object.values(ROLE_DEFAULT_MODULES).flat())];
-  }
-  const key = matchRoleKey(role);
+  if (ADMIN_ROLES.includes(role)) return adminModules();
+  const key = resolveRoleKey(role);
   const modules = key ? ROLE_DEFAULT_MODULES[key] : ROLE_DEFAULT_MODULES['Employee'];
   return [...new Set(modules || [])];
 }

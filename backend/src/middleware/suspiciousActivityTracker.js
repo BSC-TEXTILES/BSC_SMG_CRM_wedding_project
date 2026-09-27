@@ -1,0 +1,111 @@
+/**
+ * Suspicious Activity Tracker & IDOR Defense
+ * ───────────────────────────────────────────
+ * Tracks 403 Forbidden violations per user / IP in a sliding time window.
+ * If 3 or more unauthorized access attempts occur within 5 minutes:
+ * 1. Automatically revokes & blacklists the user's JWT session.
+ * 2. Writes a high-priority incident into the security audit_logs table.
+ * 3. Sets X-Force-Logout header to instruct the frontend to terminate immediately.
+ */
+
+const securityLogger = require('../security/securityLogger');
+const { blacklistToken } = require('./auth');
+
+// In-memory sliding window: key -> Array of timestamps (ms)
+const violationsMap = new Map();
+const WINDOW_MS = 5 * 60 * 1000; // 5 minutes
+const VIOLATION_THRESHOLD = 3;   // 3 attempts triggers force-logout
+
+/**
+ * Clean up entries older than WINDOW_MS
+ */
+function pruneOldViolations(timestamps, now) {
+  return timestamps.filter(ts => now - ts < WINDOW_MS);
+}
+
+/**
+ * Record a 403 violation and determine if force-logout threshold is reached.
+ *
+ * @param {object} req - Express request
+ * @param {object} res - Express response
+ * @param {string} reason - Description of violation (e.g. 'Cross-store IDOR attempt')
+ * @returns {object} { forceLogout: boolean, violationCount: number, message: string }
+ */
+function record403Violation(req, res, reason = 'Unauthorized resource access') {
+  const now = Date.now();
+  const userId = req.user?.id || null;
+  const username = req.user?.username || 'anonymous';
+  const ip = req.ip || req.connection?.remoteAddress || 'unknown';
+  
+  // Track by userId if authenticated, otherwise by IP
+  const trackerKey = userId ? `user_${userId}` : `ip_${ip}`;
+
+  const currentHistory = violationsMap.get(trackerKey) || [];
+  const recent = pruneOldViolations(currentHistory, now);
+  recent.push(now);
+  violationsMap.set(trackerKey, recent);
+
+  const count = recent.length;
+
+  if (count >= VIOLATION_THRESHOLD) {
+    // Threshold reached: force logout and revoke token
+    const token = req.cookies?.token || 
+      (req.headers.authorization && req.headers.authorization.startsWith('Bearer ') ? req.headers.authorization.split(' ')[1] : null);
+
+    if (token) {
+      try {
+        const authModule = require('./auth');
+        if (typeof authModule.blacklistToken === 'function') {
+          authModule.blacklistToken(token, userId, username, `Repeated unauthorized access attempts (${count} violations in 5m)`).catch(() => {});
+        }
+      } catch (err) {
+        console.warn('[suspiciousActivityTracker] Blacklist error:', err.message);
+      }
+    }
+
+    // Set force logout headers and clear auth cookies
+    res.setHeader('X-Force-Logout', 'true');
+    res.clearCookie('token', { path: '/' });
+    res.clearCookie('refreshToken', { path: '/' });
+
+    // Log high-priority security incident
+    securityLogger.log('SUSPICIOUS_UNAUTHORIZED_ACCESS_LOCKOUT', req, {
+      userId,
+      username,
+      violationCount: count,
+      attemptedUrl: req.originalUrl || req.path,
+      method: req.method,
+      reason: `Force logout triggered: ${count} unauthorized access attempts detected within 5 minutes.`,
+      ip
+    });
+
+    return {
+      forceLogout: true,
+      violationCount: count,
+      message: 'Session expired or unauthorized access detected. Your session has been terminated for security.'
+    };
+  }
+
+  // Record single 403 violation
+  securityLogger.log('UNAUTHORIZED_ACCESS_ATTEMPT', req, {
+    userId,
+    username,
+    violationCount: count,
+    attemptedUrl: req.originalUrl || req.path,
+    method: req.method,
+    reason,
+    ip
+  });
+
+  return {
+    forceLogout: false,
+    violationCount: count,
+    message: reason
+  };
+}
+
+module.exports = {
+  record403Violation,
+  VIOLATION_THRESHOLD,
+  WINDOW_MS
+};

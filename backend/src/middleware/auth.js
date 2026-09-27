@@ -55,6 +55,9 @@ async function blacklistToken(token, userId, username, reason = 'logout') {
   try {
     const decoded = jwt.decode(token);
     const tokenHash = hashToken(token);
+    // Add immediately to in-memory set to ensure instantaneous blocking across concurrent requests
+    BLACKLIST_CACHE.add(tokenHash);
+
     const expiresAt = decoded?.exp ? new Date(decoded.exp * 1000) : new Date(Date.now() + 6 * 60 * 60 * 1000);
 
     if (isReady()) {
@@ -66,7 +69,6 @@ async function blacklistToken(token, userId, username, reason = 'logout') {
       `INSERT IGNORE INTO jwt_blacklist (token_jti, user_id, username, reason, expires_at) VALUES (?, ?, ?, ?, ?)`,
       [tokenHash, userId || null, username || null, reason, expiresAt]
     );
-    BLACKLIST_CACHE.add(tokenHash);
   } catch (err) {
     console.warn('[blacklistToken] Failed to blacklist token:', err.message);
   }
@@ -415,7 +417,17 @@ const authorize = (...roles) => {
       // Fall through to 403
     }
 
-    return errorRes(res, 'Forbidden: insufficient permissions', [], 403);
+    const { record403Violation } = require('./suspiciousActivityTracker');
+    const violation = record403Violation(req, res, `Unauthorized access attempt to ${req.originalUrl || req.path} by role ${req.user?.role}`);
+    const statusMsg = violation.forceLogout
+      ? 'Session expired or unauthorized access detected. Please log in again.'
+      : 'Forbidden: insufficient permissions';
+    return res.status(403).json({
+      success: false,
+      message: statusMsg,
+      forceLogout: violation.forceLogout,
+      violationCount: violation.violationCount
+    });
   };
 };
 

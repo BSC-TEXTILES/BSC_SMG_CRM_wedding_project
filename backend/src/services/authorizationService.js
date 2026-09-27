@@ -10,13 +10,12 @@
 
 const pool = require('../config/db');
 const {
-  ROLE_DEFAULT_MODULES,
   matchRoleKey,
   getDefaultModulesForRole
 } = require('./userSyncService');
 
 // Roles that bypass module-level permission checks
-const ADMIN_ROLES = ['Admin', 'Super Admin'];
+const ADMIN_ROLES = ['Admin', 'Super Admin', 'system administrator'];
 
 // Valid permission actions
 const VALID_ACTIONS = ['can_view', 'can_add', 'can_edit', 'can_delete', 'can_export', 'can_approve'];
@@ -79,8 +78,6 @@ async function checkPermission(user, { module = null, action = 'can_view', locat
     }
   }
 
-const ROLE_DEFAULT_MODULES_LOCAL = null; // role defaults live in userSyncService (single source of truth)
-
   // 5. Module + Action permission check
   if (module) {
     const safeAction = VALID_ACTIONS.includes(action) ? action : 'can_view';
@@ -115,35 +112,17 @@ const ROLE_DEFAULT_MODULES_LOCAL = null; // role defaults live in userSyncServic
       }
 
       // Fall back to role defaults if user has no custom matrix records
-      const cleanRole = (role || '').trim().toLowerCase().replace(/[_\s-]+/g, ' ');
-      const matchedRoleKey = Object.keys(ROLE_DEFAULT_MODULES).find(
-        k => k.toLowerCase().replace(/[_\s-]+/g, ' ') === cleanRole
-      );
-      const roleModules = matchedRoleKey ? ROLE_DEFAULT_MODULES[matchedRoleKey] : (ROLE_DEFAULT_MODULES['Employee'] || []);
+      const roleDefaultRow = resolveRoleDefaultPermissions(role).find(p => p.module === module);
 
-      if (!roleModules.includes(module)) {
+      if (!roleDefaultRow) {
         return { allowed: false, reason: `Role ${role} does not have access to module: ${module}` };
       }
 
-      // If action is can_view, allow
-      if (safeAction === 'can_view') {
-        return { allowed: true, reason: 'Role default view permitted' };
+      if (!roleDefaultRow[safeAction]) {
+        return { allowed: false, reason: `Action ${safeAction.replace('can_', '')} not permitted for role: ${role}` };
       }
 
-      // Check role default mutation rights
-      if (['Manager', 'CRM Manager', 'Floor Manager'].includes(matchedRoleKey || '')) {
-        return { allowed: true, reason: 'Manager mutation permitted' };
-      }
-      if (matchedRoleKey === 'HR' && safeAction !== 'can_delete') {
-        return { allowed: true, reason: 'HR mutation permitted' };
-      }
-      if (['Telecaller', 'CRM Executive', 'VM Extension Telecaller'].includes(matchedRoleKey || '')) {
-        if (['can_add', 'can_edit'].includes(safeAction)) {
-          return { allowed: true, reason: 'Telecaller mutation permitted' };
-        }
-      }
-
-      return { allowed: false, reason: `Action ${safeAction.replace('can_', '')} not permitted for role: ${role}` };
+      return { allowed: true, reason: 'Role default permitted' };
     } catch (err) {
       console.warn('[AuthzService] Permission check failed, falling back:', err.message);
       return { allowed: true, reason: 'Permission table unavailable, falling back to role-based access' };
@@ -151,6 +130,35 @@ const ROLE_DEFAULT_MODULES_LOCAL = null; // role defaults live in userSyncServic
   }
 
   return { allowed: true, reason: 'Permission granted' };
+}
+
+/**
+ * Effective matrix a role receives while the account still has no custom
+ * `user_permissions` rows — i.e. exactly what checkPermission() falls back to.
+ * Used by User Management so the module count and the Access Control Matrix
+ * preview always show the access that is really enforced.
+ *
+ * @param {string} role
+ * @returns {Array<{module:string, can_view:boolean, can_add:boolean, can_edit:boolean,
+ *                  can_delete:boolean, can_export:boolean, can_approve:boolean}>}
+ */
+function resolveRoleDefaultPermissions(role) {
+  if (!role || ADMIN_ROLES.includes(role)) return [];
+
+  const matchedRoleKey = matchRoleKey(role);
+  const fullControl = ['Manager', 'CRM Manager', 'Floor Manager'].includes(matchedRoleKey || '');
+  const hrRights = matchedRoleKey === 'HR';
+  const teleRights = ['Telecaller', 'CRM Executive', 'VM Extension Telecaller'].includes(matchedRoleKey || '');
+
+  return getDefaultModulesForRole(role).map(module => ({
+    module,
+    can_view: true,
+    can_add: fullControl || hrRights || teleRights,
+    can_edit: fullControl || hrRights || teleRights,
+    can_delete: fullControl,
+    can_export: fullControl || hrRights,
+    can_approve: fullControl || hrRights
+  }));
 }
 
 const LOCATION_CODE_MAP = {
@@ -351,6 +359,7 @@ module.exports = {
   checkLocationAccess,
   getUserLocations,
   getUserPermissions,
+  resolveRoleDefaultPermissions,
   authorizeAction,
   authorizeLocationAccess,
   ADMIN_ROLES,

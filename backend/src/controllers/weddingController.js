@@ -1042,7 +1042,21 @@ class WeddingController {
 
       if (!rows || rows.length === 0) {
         if (lockAcquired) await releaseLock(lockKey);
-        // Do NOT cache negative result
+        // IDOR URL-tampering check: does customer exist under another store?
+        const [anyCust] = await pool.query(`SELECT id, location_id FROM wedding_customers WHERE id = ? AND is_deleted = 0 LIMIT 1`, [id]);
+        if (anyCust && anyCust.length > 0) {
+          const { record403Violation } = require('../middleware/suspiciousActivityTracker');
+          const violation = record403Violation(req, res, `Cross-store URL tampering: user tried accessing customer #${id} from another location`);
+          const msg = violation.forceLogout
+            ? 'Session expired or unauthorized access detected. Please log in again.'
+            : 'Access denied: You do not have permission to view customer records from other store locations.';
+          return res.status(403).json({
+            success: false,
+            message: msg,
+            forceLogout: violation.forceLogout,
+            violationCount: violation.violationCount
+          });
+        }
         return errorRes(res, 'Customer not found or access denied', [], 404);
       }
 
@@ -1109,6 +1123,20 @@ class WeddingController {
       `, [id, ...locParams]);
 
       if (!existing || existing.length === 0) {
+        const [anyCust] = await pool.query(`SELECT id, location_id FROM wedding_customers WHERE id = ? AND is_deleted = 0 LIMIT 1`, [id]);
+        if (anyCust && anyCust.length > 0) {
+          const { record403Violation } = require('../middleware/suspiciousActivityTracker');
+          const violation = record403Violation(req, res, `Cross-store URL tampering: user tried modifying customer #${id} from another location`);
+          const msg = violation.forceLogout
+            ? 'Session expired or unauthorized access detected. Please log in again.'
+            : 'Access denied: You do not have permission to update customer records from other store locations.';
+          return res.status(403).json({
+            success: false,
+            message: msg,
+            forceLogout: violation.forceLogout,
+            violationCount: violation.violationCount
+          });
+        }
         return errorRes(res, 'Customer not found or unauthorized', [], 404);
       }
 
@@ -1244,6 +1272,20 @@ class WeddingController {
       `, [id, ...params]);
 
       if (!existing || existing.length === 0) {
+        const [anyCust] = await pool.query(`SELECT id, location_id FROM wedding_customers WHERE id = ? AND is_deleted = 0 LIMIT 1`, [id]);
+        if (anyCust && anyCust.length > 0) {
+          const { record403Violation } = require('../middleware/suspiciousActivityTracker');
+          const violation = record403Violation(req, res, `Cross-store URL tampering: user tried deleting customer #${id} from another location`);
+          const msg = violation.forceLogout
+            ? 'Session expired or unauthorized access detected. Please log in again.'
+            : 'Access denied: You do not have permission to delete customer records from other store locations.';
+          return res.status(403).json({
+            success: false,
+            message: msg,
+            forceLogout: violation.forceLogout,
+            violationCount: violation.violationCount
+          });
+        }
         return errorRes(res, 'Customer not found or unauthorized', [], 404);
       }
 
@@ -2505,6 +2547,226 @@ class WeddingController {
     }
   }
 
+  // ── 13B. Export All Customer Details (CSV with Complete Fields) ──────
+  async exportCustomersCsv(req, res) {
+    try {
+      await ensureTables();
+
+      // Check cookie for token if hitting directly via browser link
+      if (!req.user && req.cookies && req.cookies.token) {
+        try {
+          const { getJwtSecret } = require('../utils/secrets');
+          req.user = jwt.verify(req.cookies.token, getJwtSecret());
+        } catch (e) {}
+      }
+
+      const { clause: locClause, params } = resolveLocFilter(req, 'w');
+
+      const [rows] = await pool.query(`
+        SELECT 
+          w.id,
+          w.customer_code,
+          w.customer_name,
+          w.mobile_number,
+          w.alternate_mobile,
+          w.email,
+          l.location_name,
+          l.location_code,
+          w.wedding_date,
+          w.expected_shopping_date,
+          w.preferred_shopping_category,
+          w.estimated_family_size,
+          w.assigned_telecaller,
+          w.customer_status,
+          w.call_status,
+          w.follow_up_date,
+          w.preferred_call_time,
+          w.total_calls_count,
+          w.last_call_date,
+          w.last_call_outcome,
+          w.customer_notes,
+          w.bride_name,
+          w.bride_age,
+          w.bride_contact,
+          w.bride_shopping_required,
+          w.groom_name,
+          w.groom_age,
+          w.groom_contact,
+          w.groom_shopping_required,
+          w.wedding_venue,
+          w.wedding_city,
+          w.wedding_type,
+          w.wedding_date_flexibility,
+          w.guest_count,
+          COALESCE(w.budget_range, w.budget) AS budget_range,
+          w.preferred_shopping_date,
+          w.preferred_shopping_time,
+          w.expected_visitors,
+          w.existing_customer,
+          w.existing_customer_id,
+          w.previous_store,
+          w.preferred_contact_method,
+          w.preferred_followup_time,
+          w.priority,
+          w.lead_source,
+          w.tracking_id,
+          w.created_by,
+          w.created_at,
+          w.updated_at
+        FROM wedding_customers w
+        LEFT JOIN locations l ON l.id = w.location_id
+        WHERE w.is_deleted = 0 ${locClause}
+        ORDER BY w.id DESC
+      `, params);
+
+      decryptRows(rows, ['customer_notes']);
+
+      const headers = [
+        'Customer Code',
+        'Customer Name',
+        'Mobile Number',
+        'Alternate Number',
+        'Email',
+        'Store Location',
+        'Store Code',
+        'Wedding Date',
+        'Expected Shopping Date',
+        'Preferred Shopping Category',
+        'Family Size',
+        'Assigned Telecaller',
+        'Customer Status',
+        'Call Status',
+        'Follow-up Date',
+        'Preferred Call Time',
+        'Total Calls',
+        'Last Call Date',
+        'Last Call Outcome',
+        'Customer Notes',
+        'Bride Name',
+        'Bride Age',
+        'Bride Contact',
+        'Bride Shopping Required',
+        'Groom Name',
+        'Groom Age',
+        'Groom Contact',
+        'Groom Shopping Required',
+        'Wedding Venue',
+        'Wedding City',
+        'Wedding Type',
+        'Wedding Date Flexibility',
+        'Guest Count',
+        'Budget Range',
+        'Preferred Shopping Date',
+        'Preferred Shopping Time',
+        'Expected Visitors',
+        'Existing Customer',
+        'Existing Customer ID',
+        'Previous Store',
+        'Preferred Contact Method',
+        'Preferred Followup Time',
+        'Priority',
+        'Lead Source',
+        'Tracking ID',
+        'Created By',
+        'Registration Date',
+        'Last Updated'
+      ];
+
+      const formatDate = (d) => {
+        if (!d) return '';
+        const dt = new Date(d);
+        if (isNaN(dt.getTime())) return String(d);
+        return dt.toISOString().split('T')[0];
+      };
+
+      const formatDateTime = (dt) => {
+        if (!dt) return '';
+        const d = new Date(dt);
+        if (isNaN(d.getTime())) return String(dt);
+        return d.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+      };
+
+      const escapeCell = (val) => {
+        if (val === null || val === undefined) return '';
+        const s = String(val);
+        if (/[",\r\n]/.test(s)) {
+          return '"' + s.replace(/"/g, '""') + '"';
+        }
+        return s;
+      };
+
+      const csvLines = [headers.join(',')];
+
+      for (const r of rows) {
+        const rowVals = [
+          r.customer_code || '',
+          r.customer_name || '',
+          r.mobile_number || '',
+          r.alternate_mobile || '',
+          r.email || '',
+          r.location_name || '',
+          r.location_code || '',
+          formatDate(r.wedding_date),
+          formatDate(r.expected_shopping_date),
+          r.preferred_shopping_category || '',
+          r.estimated_family_size || '',
+          r.assigned_telecaller || '',
+          r.customer_status || '',
+          r.call_status || '',
+          formatDate(r.follow_up_date),
+          r.preferred_call_time || '',
+          r.total_calls_count || 0,
+          formatDateTime(r.last_call_date),
+          r.last_call_outcome || '',
+          r.customer_notes || '',
+          r.bride_name || '',
+          r.bride_age || '',
+          r.bride_contact || '',
+          r.bride_shopping_required ? 'Yes' : 'No',
+          r.groom_name || '',
+          r.groom_age || '',
+          r.groom_contact || '',
+          r.groom_shopping_required ? 'Yes' : 'No',
+          r.wedding_venue || '',
+          r.wedding_city || '',
+          r.wedding_type || '',
+          r.wedding_date_flexibility || '',
+          r.guest_count || '',
+          r.budget_range || '',
+          formatDate(r.preferred_shopping_date),
+          r.preferred_shopping_time || '',
+          r.expected_visitors || '',
+          r.existing_customer || '',
+          r.existing_customer_id || '',
+          r.previous_store || '',
+          r.preferred_contact_method || '',
+          r.preferred_followup_time || '',
+          r.priority || '',
+          r.lead_source || '',
+          r.tracking_id || '',
+          r.created_by || '',
+          formatDateTime(r.created_at),
+          formatDateTime(r.updated_at)
+        ];
+        csvLines.push(rowVals.map(escapeCell).join(','));
+      }
+
+      // Prepend UTF-8 BOM so Excel opens with proper encoding
+      const csvContent = '\uFEFF' + csvLines.join('\r\n') + '\r\n';
+
+      const dateStr = new Date().toISOString().split('T')[0];
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="wedding_customers_details_${dateStr}.csv"`);
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      return res.status(200).send(csvContent);
+    } catch (err) {
+      console.error('[WeddingController.exportCustomersCsv Error]', err);
+      return errorRes(res, 'Failed to export customer details', [err.message], 500);
+    }
+  }
+
   // ═══════════════════════════════════════════════════════════════════
   // VISITS
   // ═══════════════════════════════════════════════════════════════════
@@ -3389,7 +3651,23 @@ class WeddingController {
         FROM wedding_customers w LEFT JOIN locations l ON l.id = w.location_id
         WHERE w.id = ? AND w.is_deleted = 0 ${locClause}
       `, [id, ...params]);
-      if (!custRows?.length) return errorRes(res, 'Customer not found', [], 404);
+      if (!custRows?.length) {
+        const [anyCust] = await pool.query(`SELECT id, location_id FROM wedding_customers WHERE id = ? AND is_deleted = 0 LIMIT 1`, [id]);
+        if (anyCust && anyCust.length > 0) {
+          const { record403Violation } = require('../middleware/suspiciousActivityTracker');
+          const violation = record403Violation(req, res, `Cross-store URL tampering: user tried accessing profile #${id} from another location`);
+          const msg = violation.forceLogout
+            ? 'Session expired or unauthorized access detected. Please log in again.'
+            : 'Access denied: You do not have permission to view customer records from other store locations.';
+          return res.status(403).json({
+            success: false,
+            message: msg,
+            forceLogout: violation.forceLogout,
+            violationCount: violation.violationCount
+          });
+        }
+        return errorRes(res, 'Customer not found', [], 404);
+      }
 
       const customer = custRows[0];
       decryptRow(customer, ENCRYPTED_FIELDS);

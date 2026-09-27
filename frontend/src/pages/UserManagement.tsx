@@ -74,6 +74,8 @@ interface UserData {
   location_name?: string | null;
   max_modules: number | null;
   modules_assigned: number;
+  permission_source?: 'bypass' | 'custom' | 'role_default';
+  module_keys?: string[];
   last_login_at: string | null;
   created_at: string;
   updated_at?: string;
@@ -98,6 +100,8 @@ interface AuditLog {
 }
 
 
+
+const ADMIN_ROLE_LIST = ['Admin', 'Super Admin', 'system administrator'];
 
 const DEFAULT_SYSTEM_ROLES = [
   'Super Admin',
@@ -219,6 +223,9 @@ export default function UserManagementPage() {
   const [userPermissions, setUserPermissions] = useState<Record<string, UserPermission>>({});
   const [savingPermissions, setSavingPermissions] = useState(false);
   const [permSearch, setPermSearch] = useState('');
+  // 'role_default' = the account has no saved matrix yet, so the grid shows the
+  // modules the role grants by default (what the backend actually enforces).
+  const [permSource, setPermSource] = useState<'custom' | 'role_default' | 'bypass'>('custom');
 
   // State - User Activity
   const [userActivity, setUserActivity] = useState<AuditLog[]>([]);
@@ -238,7 +245,7 @@ export default function UserManagementPage() {
       return;
     }
     setSession(s);
-    if (!['Admin', 'Super Admin'].includes(s.role)) {
+    if (!ADMIN_ROLE_LIST.includes(s.role)) {
       showToast('Access Denied: Administrator role required', 'error');
       navigate('/dashboard');
       return;
@@ -372,7 +379,7 @@ export default function UserManagementPage() {
     const total = users.length;
     const active = users.filter(u => u.active).length;
     const inactive = total - active;
-    const adminCount = users.filter(u => ['Admin', 'Super Admin'].includes(u.role)).length;
+    const adminCount = users.filter(u => ADMIN_ROLE_LIST.includes(u.role)).length;
     return { total, active, inactive, adminCount };
   }, [users]);
 
@@ -708,11 +715,16 @@ export default function UserManagementPage() {
   const handleOpenPermissions = async (user: UserData) => {
     setSelectedUser(user);
     setPermSearch('');
+    setPermSource(user.permission_source === 'role_default' ? 'role_default' : 'custom');
     setPermModalOpen(true);
     try {
       const res = await API.getAdminUserPermissions(user.id);
       const permsList: UserPermission[] = res?.permissions || [];
       const permMap: Record<string, UserPermission> = {};
+
+      if (res?.permission_source) {
+        setPermSource(res.permission_source);
+      }
 
       modules.forEach(m => {
         const found = permsList.find(p => p.module === m.key);
@@ -944,6 +956,19 @@ export default function UserManagementPage() {
     return Object.values(userPermissions).filter(p => p.can_view).length;
   }, [userPermissions]);
 
+  // Human-readable list of the modules an account can actually open — used as
+  // the hover tooltip of the "Modules Assigned" cell.
+  const describeUserModules = (user: UserData): string => {
+    if (user.permission_source === 'bypass') return 'Admin role — full access to every module';
+    const keys = user.module_keys || [];
+    if (keys.length === 0) return 'No modules assigned to this account';
+    const labels = keys.map(k => modules.find(m => m.key === k)?.label || k);
+    const origin = user.permission_source === 'role_default'
+      ? `Granted by the ${user.role} role default (not yet locked in the Access Control Matrix):`
+      : 'Configured in the Access Control Matrix:';
+    return `${labels.length} module(s) — ${origin}\n${labels.join('\n')}`;
+  };
+
   return (
     <div className="min-h-screen bg-background flex">
       <ToastContainer />
@@ -1165,7 +1190,7 @@ export default function UserManagementPage() {
                         .join('')
                         .toUpperCase();
 
-                      const isAdmin = ['Admin', 'Super Admin'].includes(user.role);
+                      const isAdmin = ADMIN_ROLE_LIST.includes(user.role);
                       const isBuiltinAdmin = ['admin', 'admin@bsctextiles.com'].includes(user.username.toLowerCase());
 
                       return (
@@ -1317,13 +1342,16 @@ export default function UserManagementPage() {
                                 <span>All Modules (Bypass)</span>
                               </span>
                             ) : (
-                              <div className="inline-flex flex-col items-center">
+                              <div className="inline-flex flex-col items-center" title={describeUserModules(user)}>
                                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-black bg-primary/10 text-primary">
                                   <SquareCheck className="w-3.5 h-3.5 text-accent" />
                                   <span>{user.modules_assigned || 0} Modules</span>
                                 </span>
+                                <span className={`text-[10px] font-bold mt-0.5 ${user.permission_source === 'role_default' ? 'text-amber-600' : 'text-primary/50'}`}>
+                                  {user.permission_source === 'role_default' ? 'Role Default' : 'Custom Matrix'}
+                                </span>
                                 {user.max_modules && (
-                                  <span className="text-[10px] text-primary/50 font-bold mt-0.5">
+                                  <span className="text-[10px] text-primary/50 font-bold">
                                     Limit: {user.max_modules} max
                                   </span>
                                 )}
@@ -2101,6 +2129,18 @@ export default function UserManagementPage() {
                 </div>
               </div>
             </div>
+
+            {/* Role-default notice */}
+            {permSource === 'role_default' && (
+              <div className="px-4 py-2 bg-amber-50 border-b border-amber-200 text-[11px] font-semibold text-amber-800 flex items-start gap-2 shrink-0">
+                <Shield className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                <span>
+                  <strong>@{selectedUser.username}</strong> has no saved matrix yet — the ticks below are the
+                  modules the <strong>{selectedUser.role}</strong> role grants by default, which is exactly what
+                  the backend enforces. Saving locks these in as a custom matrix.
+                </span>
+              </div>
+            )}
 
             {/* Matrix Table */}
             <div className="flex-1 overflow-y-auto p-4">

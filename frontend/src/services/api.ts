@@ -86,14 +86,14 @@ export const Auth = {
 
   check(): boolean {
     const session = this.get();
-    if (!session) {
+    if (!session || !session.id || !session.username || !session.role) {
       this.clear();
       return false;
     }
     // Absolute session lifetime: 6 hours. Users who never sign out are
     // logged out automatically (matches the server token + cookie max-age).
     const SESSION_MS = parseInt(String(6 * 60 * 60 * 1000), 10);
-    if (Date.now() - session.loginAt > SESSION_MS) {
+    if (!session.loginAt || Date.now() - session.loginAt > SESSION_MS) {
       this.clear();
       return false;
     }
@@ -158,6 +158,63 @@ export const Auth = {
     }
   }
 };
+
+/**
+ * triggerSecurityLogout — Centralized immediate security force-logout.
+ * Clears local session, storage flags, and redirects to /login with security notice.
+ */
+export function triggerSecurityLogout(
+  reason: string = 'Session expired or unauthorized access detected. Please log in again.',
+  violationPath: string = ''
+) {
+  try {
+    Auth.clear();
+    sessionStorage.setItem('bsc_login_notice', reason);
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem('bsc_selected_location');
+    }
+  } catch (e) {}
+
+  if (typeof window !== 'undefined') {
+    const currentPath = window.location.pathname;
+    if (!currentPath.startsWith('/login')) {
+      const pathParam = violationPath || currentPath;
+      const target = `/login?security=unauthorized&reason=${encodeURIComponent(reason)}${
+        pathParam ? '&path=' + encodeURIComponent(pathParam) : ''
+      }`;
+      window.location.replace(target);
+    }
+  }
+}
+
+// ── Global Fetch Interceptor for 401/403 Security Auto-Logout ──────────────────
+if (typeof window !== 'undefined' && !(window as any).__bsc_fetch_interceptor_installed) {
+  (window as any).__bsc_fetch_interceptor_installed = true;
+  const originalFetch = window.fetch;
+  window.fetch = async function(...args) {
+    const res = await originalFetch.apply(this, args);
+    try {
+      const urlStr = typeof args[0] === 'string' ? args[0] : (args[0] && (args[0] as Request).url ? (args[0] as Request).url : '');
+      const isAuthRoute = urlStr.includes('/auth/login') ||
+                          urlStr.includes('/auth/refresh') ||
+                          urlStr.includes('/auth/lock-status') ||
+                          urlStr.includes('/auth/captcha') ||
+                          urlStr.includes('/auth/logout');
+
+      const isForceLogout = res.headers && res.headers.get && res.headers.get('X-Force-Logout') === 'true';
+
+      if (!isAuthRoute && (res.status === 401 || res.status === 403 || isForceLogout)) {
+        if (!window.location.pathname.startsWith('/login')) {
+          const msg = res.status === 403
+            ? 'Session expired or unauthorized access detected. Please log in again.'
+            : 'Session expired or unauthorized access detected. Please log in again.';
+          triggerSecurityLogout(msg, window.location.pathname);
+        }
+      }
+    } catch (e) {}
+    return res;
+  };
+}
 
 // ── Silent Refresh State ──────────────────────────────────────────────────────
 let isRefreshingToken = false;
@@ -284,11 +341,18 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
     }
 
     if (!res.ok) {
-      if (res.status === 401 && !isAuthRoute) {
-        Auth.clear();
-        if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
-          window.location.replace('/login');
-        }
+      const isForceLogout = res.headers && res.headers.get && res.headers.get('X-Force-Logout') === 'true';
+      if ((res.status === 401 || res.status === 403 || isForceLogout) && !isAuthRoute) {
+        const errorData = await res.json().catch(() => ({}));
+        const defaultMsg = res.status === 403
+          ? 'Session expired or unauthorized access detected. Please log in again.'
+          : 'Session expired or unauthorized access detected. Please log in again.';
+        const msg = errorData.message || defaultMsg;
+        triggerSecurityLogout(msg, typeof window !== 'undefined' ? window.location.pathname : '');
+        const error: any = new Error(msg);
+        error.status = res.status;
+        error.errors = errorData.errors || [];
+        throw error;
       }
       const errorData = await res.json().catch(() => ({}));
       // Provide user-friendly error messages based on status code

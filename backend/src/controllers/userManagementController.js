@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const { successRes, errorRes } = require('../utils/response');
 const { logAction } = require('../utils/logger');
 const userSyncService = require('../services/userSyncService');
+const authorizationService = require('../services/authorizationService');
 const { invalidateUserStatusCache } = require('../middleware/auth');
 const realtimeService = require('../services/realtimeService');
 const { encryptField, decryptField } = require('../utils/crypto');
@@ -116,8 +117,7 @@ const listUsers = async (req, res) => {
         u.location_id, u.location_code, u.max_modules,
         u.last_login_at, u.created_at, u.updated_at,
         l.location_name,
-        GROUP_CONCAT(DISTINCT CONCAT(ul.location_id, ':', COALESCE(l2.location_name, ''))) AS assigned_location_pairs,
-        (SELECT COUNT(*) FROM user_permissions up WHERE up.user_id = u.id AND up.can_view = TRUE) AS modules_assigned
+        GROUP_CONCAT(DISTINCT CONCAT(ul.location_id, ':', COALESCE(l2.location_name, ''))) AS assigned_location_pairs
       FROM users u
       LEFT JOIN locations l ON l.id = u.location_id
       LEFT JOIN user_locations ul ON ul.user_id = u.id
@@ -126,10 +126,42 @@ const listUsers = async (req, res) => {
       ORDER BY u.created_at ASC
     `);
 
+    // Every stored matrix row, so the list can tell an explicitly configured
+    // account apart from one that is still running on its role defaults.
+    let permissionRows = [];
+    try {
+      const [rows] = await db.query('SELECT user_id, module, can_view FROM user_permissions');
+      permissionRows = rows;
+    } catch (permErr) {
+      console.warn('[UserMgmt] user_permissions unreadable:', permErr.message);
+    }
+
+    const permsByUser = new Map();
+    for (const row of permissionRows) {
+      if (!permsByUser.has(row.user_id)) permsByUser.set(row.user_id, []);
+      permsByUser.get(row.user_id).push(row);
+    }
+
     const users = rawUsers.map(u => {
       const { assigned_location_pairs, ...rest } = u;
+      const storedRows = permsByUser.get(rest.id) || [];
+      const explicitKeys = storedRows.filter(r => r.can_view).map(r => r.module);
+
+      // Role-default accounts still receive the modules their role grants —
+      // authorizationService falls back to them whenever no rows exist, so the
+      // count shown here must match what is actually enforced.
+      const permission_source = userSyncService.ADMIN_ROLES.includes(rest.role)
+        ? 'bypass'
+        : (storedRows.length > 0 ? 'custom' : 'role_default');
+      const module_keys = permission_source === 'role_default'
+        ? authorizationService.resolveRoleDefaultPermissions(rest.role).map(p => p.module)
+        : explicitKeys;
+
       return {
         ...rest,
+        modules_assigned: module_keys.length,
+        permission_source,
+        module_keys,
         password: decryptField(rest.password),
         assigned_locations: _parseLocationPairs(assigned_location_pairs, rest)
       };
@@ -147,8 +179,7 @@ const listUsers = async (req, res) => {
           u.location_id, u.location_code,
           u.last_login_at, u.created_at,
           l.location_name,
-          GROUP_CONCAT(DISTINCT CONCAT(ul.location_id, ':', COALESCE(l2.location_name, ''))) AS assigned_location_pairs,
-          0 AS modules_assigned
+          GROUP_CONCAT(DISTINCT CONCAT(ul.location_id, ':', COALESCE(l2.location_name, ''))) AS assigned_location_pairs
         FROM users u
         LEFT JOIN locations l ON l.id = u.location_id
         LEFT JOIN user_locations ul ON ul.user_id = u.id
@@ -159,8 +190,15 @@ const listUsers = async (req, res) => {
 
       const users = rawUsers.map(u => {
         const { assigned_location_pairs, ...rest } = u;
+        const permission_source = userSyncService.ADMIN_ROLES.includes(rest.role) ? 'bypass' : 'role_default';
+        const module_keys = permission_source === 'bypass'
+          ? []
+          : authorizationService.resolveRoleDefaultPermissions(rest.role).map(p => p.module);
         return {
           ...rest,
+          modules_assigned: permission_source === 'bypass' ? 0 : module_keys.length,
+          permission_source,
+          module_keys,
           password: decryptField(rest.password),
           assigned_locations: _parseLocationPairs(assigned_location_pairs, rest)
         };
@@ -638,7 +676,30 @@ const getUserPermissions = async (req, res) => {
       [id]
     );
 
-    return successRes(res, { permissions, modules: MODULE_REGISTRY }, 'Permissions retrieved');
+    if (permissions && permissions.length > 0) {
+      return successRes(res, { permissions, modules: MODULE_REGISTRY, permission_source: 'custom' }, 'Permissions retrieved');
+    }
+
+    // No stored matrix — the account runs on its role defaults, so preview the
+    // access that authorizationService actually enforces instead of an empty grid.
+    let role = null;
+    try {
+      const [[user]] = await db.query(`SELECT id, role FROM users WHERE id = ?`, [id]);
+      role = user ? user.role : null;
+    } catch (userErr) {
+      console.warn('[UserMgmt] Role lookup for permissions failed:', userErr.message);
+    }
+
+    const roleDefaults = authorizationService.resolveRoleDefaultPermissions(role);
+    if (roleDefaults.length > 0) {
+      return successRes(
+        res,
+        { permissions: roleDefaults, modules: MODULE_REGISTRY, permission_source: 'role_default' },
+        'Permissions retrieved (role defaults)'
+      );
+    }
+
+    return successRes(res, { permissions: [], modules: MODULE_REGISTRY, permission_source: 'custom' }, 'Permissions retrieved (empty)');
   } catch (err) {
     // If table doesn't exist yet, return empty
     return successRes(res, { permissions: [], modules: MODULE_REGISTRY }, 'Permissions retrieved (empty)');
@@ -816,7 +877,7 @@ const getMyPermissions = async (req, res) => {
       return errorRes(res, 'Authentication required', [], 401);
     }
 
-    if (['Admin', 'Super Admin'].includes(role)) {
+    if (userSyncService.ADMIN_ROLES.includes(role)) {
       return successRes(res, {
         isAdmin: true,
         custom: true,
