@@ -1946,15 +1946,17 @@ class WeddingController {
         'mobile_number',
         'email',
         'wedding_date',
+        'shopping_date',
+        'followup_call_date',
         'store_location',
         'notes',
         'alternate_number'
       ];
 
       const sampleRows = [
-        ['Ananya Hegde', '9845012345', 'ananya.hegde@example.com', '2025-05-15', 'Shivamogga', 'Interested in bridal Kanjeevaram sarees', '9845099999'],
-        ['Pooja Patil', '9880198765', 'pooja.patil@example.com', '2025-06-10', 'Davanagere', 'Looking for designer lehengas and family sets', ''],
-        ['Kavya Suresh', '9741234567', '', '2025-07-22', 'Belagavi', 'Family wedding shopping for 10 members', '9741234568']
+        ['Ananya Hegde', '9845012345', 'ananya.hegde@example.com', '2025-05-15', '2025-04-20', '2025-03-30', 'Shivamogga', 'Interested in bridal Kanjeevaram sarees', '9845099999'],
+        ['Pooja Patil', '9880198765', 'pooja.patil@example.com', '2025-06-10', '2025-05-15', '2025-04-10', 'Davanagere', 'Looking for designer lehengas and family sets', ''],
+        ['Kavya Suresh', '9741234567', '', '2025-07-22', '2025-06-25', '2025-05-20', 'Belagavi', 'Family wedding shopping for 10 members', '9741234568']
       ];
 
       const escapeCell = (val) => {
@@ -2001,6 +2003,8 @@ class WeddingController {
         { header: 'mobile_number', key: 'mobile_number', width: 20 },
         { header: 'email', key: 'email', width: 30 },
         { header: 'wedding_date', key: 'wedding_date', width: 18 },
+        { header: 'shopping_date', key: 'shopping_date', width: 18 },
+        { header: 'followup_call_date', key: 'followup_call_date', width: 20 },
         { header: 'store_location', key: 'store_location', width: 22 },
         { header: 'notes', key: 'notes', width: 42 },
         { header: 'alternate_number', key: 'alternate_number', width: 20 }
@@ -2011,8 +2015,8 @@ class WeddingController {
 
       // Color coding:
       // Required headers (customer_name, mobile_number) in RED/bold
-      // Optional headers (email, wedding_date, store_location, notes, alternate_number) in GREEN/bold
-      for (let col = 1; col <= 7; col++) {
+      // Optional headers (email, wedding_date, shopping_date, followup_call_date, store_location, notes, alternate_number) in GREEN/bold
+      for (let col = 1; col <= 9; col++) {
         const cell = headerRow.getCell(col);
         const isRequired = (col === 1 || col === 2);
         cell.font = {
@@ -2042,6 +2046,8 @@ class WeddingController {
           mobile_number: '9845012345',
           email: 'ananya.hegde@example.com',
           wedding_date: '2025-05-15',
+          shopping_date: '2025-04-20',
+          followup_call_date: '2025-03-30',
           store_location: 'Shivamogga',
           notes: 'Interested in bridal Kanjeevaram sarees',
           alternate_number: '9845099999'
@@ -2051,6 +2057,8 @@ class WeddingController {
           mobile_number: '9880198765',
           email: 'pooja.patil@example.com',
           wedding_date: '2025-06-10',
+          shopping_date: '2025-05-15',
+          followup_call_date: '2025-04-10',
           store_location: 'Davanagere',
           notes: 'Looking for designer lehengas and family sets',
           alternate_number: ''
@@ -2060,6 +2068,8 @@ class WeddingController {
           mobile_number: '9741234567',
           email: '',
           wedding_date: '2025-07-22',
+          shopping_date: '2025-06-25',
+          followup_call_date: '2025-05-20',
           store_location: 'Belagavi',
           notes: 'Family wedding shopping for 10 members',
           alternate_number: '9741234568'
@@ -2070,7 +2080,7 @@ class WeddingController {
         const row = worksheet.addRow(item);
         row.height = 24;
         const isEven = idx % 2 === 0;
-        for (let col = 1; col <= 7; col++) {
+        for (let col = 1; col <= 9; col++) {
           const cell = row.getCell(col);
           cell.font = { name: 'Segoe UI', size: 10 };
           cell.fill = {
@@ -2080,7 +2090,7 @@ class WeddingController {
           };
           cell.alignment = {
             vertical: 'middle',
-            horizontal: (col === 2 || col === 4 || col === 7) ? 'center' : 'left'
+            horizontal: (col === 2 || col === 4 || col === 5 || col === 6 || col === 9) ? 'center' : 'left'
           };
           cell.border = {
             top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
@@ -2097,7 +2107,7 @@ class WeddingController {
         '* RED = REQUIRED (customer_name, mobile_number)',
         '',
         '',
-        '* GREEN = OPTIONAL (email, wedding_date, store_location, notes, alternate_number)'
+        '* GREEN = OPTIONAL (email, wedding_date, shopping_date, followup_call_date, store_location, notes, alternate_number)'
       ]);
       legendRow.getCell(1).font = { name: 'Segoe UI', bold: true, color: { argb: 'FFDC2626' }, size: 9 };
       legendRow.getCell(4).font = { name: 'Segoe UI', bold: true, color: { argb: 'FF059669' }, size: 9 };
@@ -2215,7 +2225,7 @@ class WeddingController {
         if (!hasMobileNumber) missing.push('mobile_number (REQUIRED)');
         return errorRes(
           res,
-          `Missing required column headers: ${missing.join(', ')}. The template requires: customer_name, mobile_number, email, wedding_date, store_location, notes, alternate_number. Please download the official template.`,
+          `Missing required column headers: ${missing.join(', ')}. The template requires: customer_name, mobile_number, email, wedding_date, shopping_date, followup_call_date, store_location, notes, alternate_number. Please download the official template.`,
           missing,
           400
         );
@@ -2343,9 +2353,9 @@ class WeddingController {
           continue;
         }
 
-        // Calculate expected_shopping_date (required in DB)
+        // Calculate expected_shopping_date (from file shopping_date / expected_shopping_date or derived from wedding_date)
         let shoppingDate = null;
-        const rawShopDate = pick(row, ['expected_shopping_date', 'shopping_date']);
+        const rawShopDate = pick(row, ['shopping_date', 'expected_shopping_date', 'shop_date', 'shopeing_date', 'shoppingdate', 'expected_shopping']);
         if (rawShopDate) {
           shoppingDate = parseDate(rawShopDate);
         }
@@ -2361,7 +2371,27 @@ class WeddingController {
           }
         }
 
-        const followUp = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+        // Calculate follow_up_date (from file followup_call_date / follow_up_date or default to today's date)
+        let followUp = null;
+        const rawFollowUp = pick(row, [
+          'followup_call_date',
+          'follow_up_call_date',
+          'follwup_call_date',
+          'follwup_date',
+          'follow_up_date',
+          'followup_date',
+          'next_follow_up_date',
+          'next_followup_date',
+          'follow_up',
+          'call_date'
+        ]);
+        if (rawFollowUp) {
+          followUp = parseDate(rawFollowUp);
+        }
+        if (!followUp) {
+          followUp = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+        }
+
         const category = pick(row, ['preferred_shopping_category', 'category', 'shopping_category']) || 'Wedding Shopping';
 
         // Customer code generation

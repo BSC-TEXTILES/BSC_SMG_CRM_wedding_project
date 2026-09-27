@@ -78,10 +78,10 @@ export default function WeddingImport() {
   // Client-side fallback template generator if server is offline
   const generateFallbackCsv = () => {
     const csvContent =
-      '\uFEFFcustomer_name,mobile_number,email,wedding_date,store_location,notes,alternate_number\r\n' +
-      'Ananya Hegde,9845012345,ananya.hegde@example.com,2025-05-15,Shivamogga,Interested in bridal Kanjeevaram sarees,9845099999\r\n' +
-      'Pooja Patil,9880198765,pooja.patil@example.com,2025-06-10,Davanagere,Looking for designer lehengas and family sets,\r\n' +
-      'Kavya Suresh,9741234567,,2025-07-22,Belagavi,Family wedding shopping for 10 members,9741234568\r\n';
+      '\uFEFFcustomer_name,mobile_number,email,wedding_date,shopping_date,followup_call_date,store_location,notes,alternate_number\r\n' +
+      'Ananya Hegde,9845012345,ananya.hegde@example.com,2025-05-15,2025-04-20,2025-03-30,Shivamogga,Interested in bridal Kanjeevaram sarees,9845099999\r\n' +
+      'Pooja Patil,9880198765,pooja.patil@example.com,2025-06-10,2025-05-15,2025-04-10,Davanagere,Looking for designer lehengas and family sets,\r\n' +
+      'Kavya Suresh,9741234567,,2025-07-22,2025-06-25,2025-05-20,Belagavi,Family wedding shopping for 10 members,9741234568\r\n';
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -383,8 +383,28 @@ export default function WeddingImport() {
                     <span className="font-bold text-emerald-900 font-mono text-[11px]">wedding_date</span>
                     <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-emerald-100 text-emerald-800">Optional</span>
                   </div>
-                  <p className="text-[11px] text-emerald-800">Date format YYYY-MM-DD</p>
+                  <p className="text-[11px] text-emerald-800">Wedding Date (YYYY-MM-DD)</p>
                   <p className="text-[10px] text-emerald-600 font-mono italic">e.g. 2025-05-15</p>
+                </div>
+
+                {/* shopping_date */}
+                <div className="p-2.5 rounded-xl bg-emerald-50/70 border border-emerald-200 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-emerald-900 font-mono text-[11px]">shopping_date</span>
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-emerald-100 text-emerald-800">Optional</span>
+                  </div>
+                  <p className="text-[11px] text-emerald-800">Shopping Date (YYYY-MM-DD)</p>
+                  <p className="text-[10px] text-emerald-600 font-mono italic">e.g. 2025-04-20</p>
+                </div>
+
+                {/* followup_call_date */}
+                <div className="p-2.5 rounded-xl bg-emerald-50/70 border border-emerald-200 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-emerald-900 font-mono text-[11px]">followup_call_date</span>
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-emerald-100 text-emerald-800">Optional</span>
+                  </div>
+                  <p className="text-[11px] text-emerald-800">Follow-up Call Date (YYYY-MM-DD)</p>
+                  <p className="text-[10px] text-emerald-600 font-mono italic">e.g. 2025-03-30</p>
                 </div>
 
                 {/* store_location */}
