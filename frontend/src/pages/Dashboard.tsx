@@ -46,6 +46,7 @@ import {
 } from 'lucide-react';
 import EmployeeProfileModal from '../components/ui/EmployeeProfileModal';
 import { getRoleNavMap } from '../utils/rbac';
+import { getDefaultLandingRoute } from '../utils/moduleRegistry';
 import { useLocationContext } from '../context/LocationContext';
 
 export default function DashboardPage() {
@@ -80,14 +81,21 @@ export default function DashboardPage() {
   const isHRDashboard = (isHRUser && !activeView) || activeView === 'hr';
   const isManagerDashboard = (isManagerUser && !activeView) || activeView === 'manager';
 
-  // Automatically direct HR and Manager users to their dedicated role dashboards
+  // Automatically direct non-admin users to their dedicated role dashboards
   useEffect(() => {
-    if (isHRUser && !isAdminUser) {
-      navigate('/hr-dashboard', { replace: true });
-    } else if (isManagerUser && !isAdminUser) {
-      navigate('/manager-dashboard', { replace: true });
+    if (!isAdminUser && session) {
+      if (isHRUser) {
+        navigate('/hr-dashboard', { replace: true });
+      } else if (isManagerUser) {
+        navigate('/manager-dashboard', { replace: true });
+      } else {
+        const target = getDefaultLandingRoute(session, allowed);
+        if (target && target !== '/dashboard' && target !== '/no-access') {
+          navigate(target, { replace: true });
+        }
+      }
     }
-  }, [isHRUser, isManagerUser, isAdminUser, navigate]);
+  }, [isHRUser, isManagerUser, isAdminUser, session, allowed, navigate]);
 
   // Employees & Operational Stats
   const [employees, setEmployees] = useState<any[]>([]);

@@ -46,7 +46,7 @@ export const ROLE_NAV_MAP: Record<string, string[]> = {
     'vm_checklist', 'dashboard', 'footfall', 'broadcast'
   ],
   'Greeter': [
-    'footfall', 'greeter', 'wedding_registration', 'feedback_collection', 'feedback_list', 'feedback_qr', 'feedback_public', 'tv'
+    'dashboard', 'footfall', 'greeter', 'wedding_registration', 'feedback_collection', 'feedback_list', 'feedback_qr', 'feedback_public', 'tv'
   ],
   'CRM Executive': [
     'wedding_crm', 'wedding_registration', 'wedding_operations', 'telecaller_desk', 'telecaller_dashboard', 'dashboard', 'footfall'
@@ -58,10 +58,10 @@ export const ROLE_NAV_MAP: Record<string, string[]> = {
     'wedding_crm', 'wedding_operations', 'dashboard', 'mcheck_reports', 'regional_analytics'
   ],
   'Telecaller': [
-    'wedding_crm', 'telecaller_dashboard', 'telecaller_desk', 'wedding_registration'
+    'dashboard', 'wedding_crm', 'telecaller_dashboard', 'telecaller_desk', 'wedding_registration'
   ],
   'VM Extension Telecaller': [
-    'wedding_crm', 'telecaller_dashboard', 'telecaller_desk', 'wedding_registration'
+    'dashboard', 'wedding_crm', 'telecaller_dashboard', 'telecaller_desk', 'wedding_registration'
   ],
   'Floor Manager': [
     'wedding_crm', 'wedding_operations', 'wedding_registration', 'telecaller_desk', 'telecaller_dashboard', 'candidate_apply', 'footfall', 
@@ -78,6 +78,8 @@ export const ROLE_NAV_MAP: Record<string, string[]> = {
   'Recruiter': ['candidates', 'dashboard', 'broadcast', 'candidate_apply'],
   'Interviewer': ['candidates'],
   'Employee': ['wedding_crm', 'wedding_registration', 'dashboard'],
+  'Staff': ['wedding_crm', 'wedding_registration', 'dashboard'],
+  'Customer': ['wedding_crm', 'wedding_registration', 'dashboard'],
   'Guest': ['wedding_registration', 'candidate_apply']
 };
 
