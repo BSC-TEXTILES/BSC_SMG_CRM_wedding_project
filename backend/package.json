@@ -4,7 +4,7 @@
   "private": true,
   "main": "index.js",
   "scripts": {
-    "dev": "cd client && npm run dev",
+    "dev": "cd ../frontend && npm run dev",
     "build": "node build.js",
     "start": "node index.js",
     "postinstall": "node build.js || (echo 'Build failed' && exit 1)"
