@@ -83,12 +83,18 @@ async function autoInitializeDatabase() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 
-    // Ensure token_version column exists on existing deployments
+    // Ensure token_version, deactivated_until, and deactivation_reason columns exist on existing deployments
     try {
       const [uCols] = await pool.query('DESCRIBE users');
       const uColNames = uCols.map(c => c.Field);
       if (!uColNames.includes('token_version')) {
         await pool.query('ALTER TABLE users ADD COLUMN token_version INT DEFAULT 1');
+      }
+      if (!uColNames.includes('deactivated_until')) {
+        await pool.query('ALTER TABLE users ADD COLUMN deactivated_until DATETIME NULL');
+      }
+      if (!uColNames.includes('deactivation_reason')) {
+        await pool.query('ALTER TABLE users ADD COLUMN deactivation_reason TEXT NULL');
       }
     } catch (_uErr) {}
 
