@@ -408,7 +408,7 @@ router.post('/security/shield-toggle', authenticate, authorize('Admin', 'Super A
 const SECURITY_EVENT_MIN_INTERVAL_MS = 5_000;
 const lastSecurityEventAt = new Map();
 
-router.post('/security/log-event', authenticate, async (req, res) => {
+router.post('/security/log-event', optionalAuthenticate, async (req, res) => {
   try {
     const { event, details } = req.body || {};
     if (!event || !SECURITY_EVENT_TYPES.has(event)) {
@@ -724,7 +724,7 @@ router.get('/admin/force-db-update', authenticate, authorize('Admin', 'Super Adm
     res.status(500).json({ success: false, error: err.message, stack: err.stack });
   }
 });
-router.get('/my-permissions', authenticate, userMgmtController.getMyPermissions);
+router.get('/my-permissions', optionalAuthenticate, userMgmtController.getMyPermissions);
 
 // ── System Administrator Endpoints ──────────────────────────────────────
 
@@ -836,9 +836,9 @@ router.post('/security/unlock-account', authenticate, authorize('Admin', 'Super 
 
 // ── User Tracking Routes ─────────────────────────────────────────
 const userTrackingController = require('../controllers/userTrackingController');
-router.post('/user-tracking/login', authenticate, userTrackingController.trackLogin);
-router.post('/user-tracking/logout', authenticate, userTrackingController.trackLogout);
-router.post('/user-tracking/activity', authenticate, userTrackingController.trackActivity);
+router.post('/user-tracking/login', optionalAuthenticate, userTrackingController.trackLogin);
+router.post('/user-tracking/logout', optionalAuthenticate, userTrackingController.trackLogout);
+router.post('/user-tracking/activity', optionalAuthenticate, userTrackingController.trackActivity);
 router.get('/user-tracking/active', authenticate, authorize('Admin', 'Super Admin', 'Manager'), userTrackingController.getActiveUsers);
 router.get('/user-tracking/stats', authenticate, authorize('Admin', 'Super Admin', 'Manager'), userTrackingController.getUserTrackingStats);
 router.get('/user-tracking/activity', authenticate, authorize('Admin', 'Super Admin', 'Manager'), userTrackingController.getUserActivity);

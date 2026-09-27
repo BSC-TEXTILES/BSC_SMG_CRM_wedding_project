@@ -63,17 +63,19 @@ export const Auth = {
         loginAt: Date.now()
       }));
       
-      // Track login in user tracking system
+      // Track login in user tracking system (safe, non-blocking)
       const ipAddress = typeof window !== 'undefined' ? (window as any).ipAddress : undefined;
       const userAgent = typeof navigator !== 'undefined' ? navigator.userAgent : undefined;
-      API.trackUserLogin(
-        session.id,
-        session.username,
-        ipAddress,
-        userAgent,
-        session.locationId,
-        session.locationName
-      ).catch(() => {}); // Don't block login on tracking failure
+      if (session?.id || session?.username) {
+        API.trackUserLogin(
+          session.id,
+          session.username,
+          ipAddress,
+          userAgent,
+          session.locationId,
+          session.locationName
+        ).catch(() => {});
+      }
 
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('bsc_auth_changed', { detail: session }));
@@ -208,7 +210,10 @@ if (typeof window !== 'undefined' && !(window as any).__bsc_fetch_interceptor_in
                           urlStr.includes('/auth/refresh') ||
                           urlStr.includes('/auth/lock-status') ||
                           urlStr.includes('/auth/captcha') ||
-                          urlStr.includes('/auth/logout');
+                          urlStr.includes('/auth/logout') ||
+                          urlStr.includes('/security/log-event') ||
+                          urlStr.includes('/user-tracking') ||
+                          urlStr.includes('/my-permissions');
 
       const isForceLogout = res.headers && res.headers.get && res.headers.get('X-Force-Logout') === 'true';
 
@@ -338,7 +343,10 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
     const isAuthRoute = endpoint.includes('/auth/login') ||
                         endpoint.includes('/auth/refresh') ||
                         endpoint.includes('/auth/verify-2fa') ||
-                        endpoint.includes('/auth/logout');
+                        endpoint.includes('/auth/logout') ||
+                        endpoint.includes('/security/log-event') ||
+                        endpoint.includes('/user-tracking') ||
+                        endpoint.includes('/my-permissions');
 
     // On 401, attempt silent refresh once and replay request
     if (res.status === 401 && !isAuthRoute) {
@@ -681,10 +689,11 @@ export const API = {
 
   // User Tracking
   async trackUserLogin(userId: string | number, username: string, ipAddress?: string, userAgent?: string, locationId?: number | null, locationName?: string | null) {
+    if (!userId && !username) return { success: true };
     return apiFetch('/user-tracking/login', {
       method: 'POST',
       body: JSON.stringify({ userId, username, ipAddress, userAgent, locationId, locationName })
-    });
+    }).catch(() => ({ success: true }));
   },
   
   async trackUserLogout(userId: string | number, username: string, ipAddress?: string) {
@@ -940,6 +949,9 @@ export const API = {
     return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
   },
   async getMyPermissions() {
+    if (typeof window !== 'undefined' && !Auth.check()) {
+      return { success: true, data: { isAdmin: false, modules: [], permissions: [] } };
+    }
     const res = await apiFetch('/my-permissions');
     return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
   },

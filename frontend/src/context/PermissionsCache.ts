@@ -13,7 +13,7 @@
  *   const canEdit = permissionsCache.canAction('wedding_crm', 'can_edit', role);
  */
 
-import { API } from '../services/api';
+import { API, Auth } from '../services/api';
 
 export interface ActionPermission {
   module: string;
@@ -56,6 +56,9 @@ class PermissionsCacheService {
    * fetch share a single in-flight Promise.
    */
   async get(forceRefresh = false): Promise<CachedPermissions> {
+    if (typeof window !== 'undefined' && !Auth.check()) {
+      return { myPerms: null, pageSettings: null };
+    }
     if (forceRefresh) {
       this.invalidate();
     }

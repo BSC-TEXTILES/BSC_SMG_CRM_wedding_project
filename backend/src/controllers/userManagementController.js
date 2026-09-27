@@ -873,8 +873,13 @@ const getMyPermissions = async (req, res) => {
     const userId = req.user?.id;
     const role = req.user?.role;
 
-    if (!userId) {
-      return errorRes(res, 'Authentication required', [], 401);
+    if (!userId || req.user?.role === 'Guest') {
+      return successRes(res, {
+        isAdmin: false,
+        custom: false,
+        modules: [],
+        permissions: []
+      }, 'Guest default permissions');
     }
 
     if (userSyncService.ADMIN_ROLES.includes(role)) {

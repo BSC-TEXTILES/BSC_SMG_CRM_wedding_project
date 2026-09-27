@@ -26,6 +26,14 @@ const CSRF_EXEMPT_PATHS = new Set([
   '/api/landing/event',
   '/feedback-qr/scan',
   '/api/feedback-qr/scan',
+  '/security/log-event',
+  '/api/security/log-event',
+  '/user-tracking/login',
+  '/api/user-tracking/login',
+  '/user-tracking/logout',
+  '/api/user-tracking/logout',
+  '/user-tracking/activity',
+  '/api/user-tracking/activity',
 ]);
 
 const csrfProtection = (req, res, next) => {
