@@ -1,31 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import {
-  Sparkles,
-  CircleCheck,
-  Send,
-  MessageSquare,
-  Heart,
-  TrendingUp,
-  CircleHelp,
-  User,
-  Phone,
-  ThumbsUp,
-  ThumbsDown,
-  Smile,
-  Meh,
-  Frown,
-  Clock,
-  Store,
-  Star,
-  Zap,
-  ShieldCheck,
-  Check,
-  Award,
-  ShoppingBag,
-  ChevronRight,
-  Lock
-} from 'lucide-react';
+import { Sparkles, CircleCheck, Send, MessageSquare, CircleHelp, User, Phone, ThumbsUp, Smile, Meh, Frown, Clock, Store, Star, ShieldCheck, Check, ShoppingBag, ChevronRight, Lock } from 'lucide-react';
 import { API } from '../services/api';
 import { showToast } from '../components/Toast';
 
@@ -48,7 +23,7 @@ export default function PublicFeedback() {
   const [searchParams] = useSearchParams();
   const qrCodeId = searchParams.get('qr'); // Legacy support
   const locationCode = searchParams.get('location'); // New location-based parameter
-  
+
   // Determine the effective location without hardcoded fallback
   const [selectedLocKey, setSelectedLocKey] = useState<string>(() => {
     const raw = (locationCode || qrCodeId || '').toUpperCase();

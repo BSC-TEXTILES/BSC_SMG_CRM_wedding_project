@@ -1,43 +1,13 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../components/layouts/DashboardLayout';
 import PageContainer from '../components/ui/PageContainer';
 import ToastContainer, { showToast } from '../components/Toast';
 import ModalPortal from '../components/ui/ModalPortal';
-import { API, Auth, UserSession } from '../services/api';
-import { useLocationContext, LocationItem } from '../context/LocationContext';
+import { API, Auth } from '../services/api';
+import { useLocationContext } from '../context/LocationContext';
 import { useRealtimeSection } from '../hooks/useRealtimeSection';
-import {
-  MessageSquare,
-  Search,
-  Filter,
-  Download,
-  RefreshCw,
-  ThumbsUp,
-  ThumbsDown,
-  Star,
-  Calendar,
-  TrendingUp,
-  Phone,
-  User,
-  X,
-  Eye,
-  CircleAlert,
-  CheckCircle,
-  Sparkles,
-  ArrowUpRight,
-  TriangleAlert,
-  CircleCheck,
-  Clock,
-  Hash,
-  ShieldAlert,
-  FileText,
-  Send,
-  UserCheck,
-  MapPin,
-  Globe,
-  Trash2
-} from 'lucide-react';
+import { MessageSquare, Search, Filter, Download, RefreshCw, ThumbsUp, ThumbsDown, Star, Calendar, TrendingUp, Phone, User, X, Eye, CircleAlert, Sparkles, ArrowUpRight, TriangleAlert, CircleCheck, Clock, Hash, ShieldAlert, FileText, Send, UserCheck, MapPin, Trash2 } from 'lucide-react';
 
 export default function FeedbackCollection() {
   const navigate = useNavigate();

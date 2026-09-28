@@ -1,9 +1,8 @@
-import React, { Suspense, lazy, useState, useEffect } from 'react';
+import { Suspense, lazy, useEffect } from 'react';
 import { forceResetBodyScroll } from './components/ui/ModalPortal';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { createQueryClient, useRealtimeInvalidation } from './hooks/useApi';
-
 const Home = lazy(() => import('./pages/Home'));
 
 // Create QueryClient instance outside component to prevent recreation on re-renders
@@ -77,8 +76,7 @@ import ConnectivityBanner from './components/ConnectivityBanner';
 import ErrorBoundary from './components/ErrorBoundary';
 import ConsentGuard from './components/ConsentGuard';
 import { useUrlGuard } from './hooks/useUrlGuard';
-import { Auth } from './services/api';
-
+import './services/api';
 const QuickActionCenter = lazy(() => import('./components/ui/QuickActionCenter'));
 const ChatWidget = lazy(() => import('./components/ui/ChatWidget'));
 const DevToolsGuard = lazy(() => import('./components/DevToolsGuard'));
@@ -130,12 +128,12 @@ function AuthChatWidget() {
 /** Sets up real-time event listeners for automatic query invalidation */
 function RealtimeInvalidationSetup() {
   const { setupListeners } = useRealtimeInvalidation(queryClient);
-  
+
   useEffect(() => {
     const cleanup = setupListeners();
     return cleanup;
   }, []);
-  
+
   return null;
 }
 

@@ -1,35 +1,11 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../components/layouts/DashboardLayout';
 import PageContainer from '../components/ui/PageContainer';
 import { API, Auth, UserSession } from '../services/api';
 import MetricCard from '../components/ui/MetricCard';
 import GlobalLocationSelector from '../components/ui/GlobalLocationSelector';
-import {
-  Users,
-  UserCheck,
-  Footprints,
-  Target,
-  Heart,
-  PhoneCall,
-  Clock,
-  Sparkles,
-  MessageSquare,
-  SquareCheck,
-  Building2,
-  Calendar,
-  Layers,
-  Search,
-  RefreshCw,
-  ArrowRight,
-  MapPin,
-  AlertTriangle,
-  CheckCircle,
-  FileText,
-  Store,
-  ChevronRight,
-  ClipboardList
-} from 'lucide-react';
+import { Users, UserCheck, Footprints, Target, Heart, Clock, Sparkles, MessageSquare, SquareCheck, Layers, Search, RefreshCw, ArrowRight, MapPin, AlertTriangle, CheckCircle, FileText, Store, ClipboardList } from 'lucide-react';
 import { useLocationContext } from '../context/LocationContext';
 
 export default function ManagerDashboard() {

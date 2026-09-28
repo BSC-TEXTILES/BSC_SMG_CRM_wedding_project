@@ -2,19 +2,7 @@ import React, { useState, useEffect } from 'react';
 import AdminLayout from './AdminLayout';
 import { ProfileApi } from '../api';
 import { ProjectItem } from '../types';
-import {
-  Plus,
-  Edit2,
-  Trash2,
-  CheckCircle2,
-  AlertCircle,
-  X,
-  Search,
-  Upload,
-  ExternalLink,
-  Eye,
-  EyeOff
-} from 'lucide-react';
+import { Plus, Edit2, Trash2, CheckCircle2, AlertCircle, X, Search, Upload, Eye, EyeOff } from 'lucide-react';
 
 export const AdminProjects: React.FC = () => {
   const [projects, setProjects] = useState<ProjectItem[]>([]);

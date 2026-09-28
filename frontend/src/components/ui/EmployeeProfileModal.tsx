@@ -1,11 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import {
-  X, Phone, Mail, MapPin, Calendar, Briefcase, DollarSign, FileText,
-  UserCheck, ShieldCheck, ExternalLink, Award, User, Heart, Layers,
-  Building, Edit3, Save, RotateCcw, Camera, Upload, Download, Eye,
-  Trash2, RefreshCw, ZoomIn, ZoomOut, Maximize2, FileCheck,
-  AlertCircle, CheckCircle2, AlertTriangle, Shield
-} from 'lucide-react';
+import { X, Phone, Mail, MapPin, Briefcase, DollarSign, FileText, User, Layers, Building, Edit3, Save, RotateCcw, Camera, Upload, Download, Eye, Trash2, RefreshCw, ZoomIn, ZoomOut, Maximize2, FileCheck, AlertCircle, CheckCircle2, AlertTriangle } from 'lucide-react';
 import StatusBadge from './StatusBadge';
 import ModalPortal from './ModalPortal';
 import { API } from '../../services/api';
@@ -413,7 +407,7 @@ export default function EmployeeProfileModal({ employee, onClose, onUpdated }: E
         ariaLabel={`Employee Profile - ${empName}`}
       >
         <div className="relative w-full max-w-4xl max-h-[92vh] bg-background rounded-3xl shadow-2xl flex flex-col z-10 overflow-hidden border-2 border-accent/50 select-text">
-        
+
         {/* Top Header Banner */}
         <div className="bg-gradient-to-r from-primary via-primary to-[#3D2B1F] text-white p-5 sm:p-6 border-b-2 border-accent/40 relative">
           {/* Action Buttons Header Top Right */}
@@ -591,7 +585,7 @@ export default function EmployeeProfileModal({ employee, onClose, onUpdated }: E
 
         {/* Scrollable Content Body */}
         <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-5 text-xs">
-          
+
           {/* VIEW MODE */}
           {!isEditing ? (
             <>
@@ -1005,7 +999,7 @@ export default function EmployeeProfileModal({ employee, onClose, onUpdated }: E
           <div className="text-[11px] text-primary font-bold">
             BSC Textiles HRMS • AUTHORIZED EMPLOYEE REGISTER
           </div>
-          
+
           <div className="flex items-center gap-2">
             {isEditing ? (
               <>

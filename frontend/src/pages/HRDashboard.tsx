@@ -1,39 +1,11 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../components/layouts/DashboardLayout';
 import PageContainer from '../components/ui/PageContainer';
 import { API, Auth, UserSession } from '../services/api';
 import MetricCard from '../components/ui/MetricCard';
 import GlobalLocationSelector from '../components/ui/GlobalLocationSelector';
-import {
-  Users,
-  UserCheck,
-  UserX,
-  UserPlus,
-  Clock,
-  Calendar,
-  CalendarCheck,
-  Building2,
-  FileCheck,
-  FileText,
-  Briefcase,
-  Search,
-  Filter,
-  RefreshCw,
-  ArrowRight,
-  Sparkles,
-  TrendingUp,
-  MapPin,
-  CheckCircle,
-  AlertCircle,
-  XCircle,
-  Layers,
-  ChevronRight,
-  ShieldCheck,
-  UserCog,
-  ClipboardList,
-  Eye
-} from 'lucide-react';
+import { Users, UserCheck, UserX, UserPlus, Clock, Calendar, CalendarCheck, Building2, FileCheck, Briefcase, Search, RefreshCw, ArrowRight, Sparkles, TrendingUp, MapPin, CheckCircle, AlertCircle, Layers, ShieldCheck, UserCog } from 'lucide-react';
 import EmployeeProfileModal from '../components/ui/EmployeeProfileModal';
 import { useLocationContext } from '../context/LocationContext';
 

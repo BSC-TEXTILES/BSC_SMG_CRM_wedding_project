@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { X, FileText, ChevronDown } from 'lucide-react';
 import ModalPortal from './ModalPortal';
 
@@ -118,7 +118,7 @@ export default function TermsAndConditionsModal({ isOpen, onClose, onAccept }: T
             <p className="text-primary/80 mb-2">
               You are responsible for keeping your password, and any one-time codes we send you, safe. Please do not share them with anyone. Whatever happens through your account is treated as your activity, so if someone else uses your login, you are responsible for what they do.
             </p>
-            
+
             <p className="text-primary/80 mb-1 font-bold">Give us the correct details.</p>
             <p className="text-primary/80 mb-2">
               When you register, please give us information that is true, complete, and up to date, and update it if it changes. If we find, or have good reason to believe, that your details are false, outdated, or incomplete, or that you have broken these Terms, we may suspend, block, or close your account and refuse you access to the Platform.

@@ -1,13 +1,13 @@
-import React, { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { API, Auth, UserSession } from '../services/api';
-import { BarChart3, Users, Target, FileText, PartyPopper, LogOut, ClipboardList, Settings, DoorOpen, UserCheck, Briefcase, ChevronRight, Sparkles, Megaphone, SquareCheck, Menu, Shield, ShieldAlert, PhoneCall, Heart, Calendar, History, X, KeyRound } from 'lucide-react';
+import { Auth, UserSession } from '../services/api';
+import { BarChart3, Users, Target, FileText, LogOut, ClipboardList, Settings, UserCheck, Briefcase, ChevronRight, Sparkles, Megaphone, SquareCheck, Menu, Shield, ShieldAlert, PhoneCall, Heart, X, KeyRound } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import ChangePasswordModal from './ui/ChangePasswordModal';
-import { 
-  getSidebarCollapsed, 
-  setSidebarCollapsed, 
-  subscribeSidebarCollapsed 
+import {
+  getSidebarCollapsed,
+  setSidebarCollapsed,
+  subscribeSidebarCollapsed
 } from '../utils/sidebarState';
 import { getDashboardLabelForRole, getDashboardRouteForRole } from '../utils/dashboardRouting';
 import { getRoleNavMap, resolveAllowedPages } from '../utils/rbac';
@@ -214,7 +214,7 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
     <>
       {/* Mobile Backdrop */}
       {isOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-[#351027]/60 z-40 lg:hidden transition-opacity"
           onClick={onClose}
           aria-hidden="true"
@@ -235,10 +235,10 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
         <div className="p-3 sm:p-3.5 border-b border-[#B76E79]/20 flex items-center justify-between min-h-[64px] w-full bg-[#351027]/40">
           <div className={`flex items-center gap-2.5 min-w-0 ${collapsed ? 'lg:hidden' : 'flex'}`}>
             <div className="w-11 h-9 rounded-xl bg-white p-1 shadow-md border border-[#B76E79]/30 flex items-center justify-center flex-shrink-0">
-              <img 
-                src="/logo.png" 
-                alt="BSC Logo" 
-                className="max-h-full max-w-full object-contain" 
+              <img
+                src="/logo.png"
+                alt="BSC Logo"
+                className="max-h-full max-w-full object-contain"
               />
             </div>
             <div className="min-w-0">
@@ -269,15 +269,15 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
               >
                 <Menu className="w-5 h-5 text-[#B76E79]" />
               </button>
-              <div 
+              <div
                 className="w-10 h-8 rounded-xl bg-white p-1 shadow-md border border-[#B76E79]/40 hover:scale-105 transition-transform cursor-pointer flex items-center justify-center flex-shrink-0"
                 onClick={handleToggle}
                 title="BSC Logo - Click to expand navigation"
               >
-                <img 
-                  src="/logo.png" 
-                  alt="BSC Logo" 
-                  className="max-h-full max-w-full object-contain" 
+                <img
+                  src="/logo.png"
+                  alt="BSC Logo"
+                  className="max-h-full max-w-full object-contain"
                 />
               </div>
             </div>
@@ -315,7 +315,7 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
         <div className={`mx-2 my-2 rounded-xl bg-[#351027]/80 border border-[#B76E79]/25 flex items-center shadow-inner transition-all ${
           collapsed ? 'p-1 justify-center' : 'p-2.5 gap-2.5'
         }`}>
-          <div 
+          <div
             className="w-8 h-8 rounded-lg bg-[#B76E79] text-white font-black flex items-center justify-center text-xs shadow-md border border-[#D89AA3] flex-shrink-0"
             title={`${session?.fullName || 'User'} (${role})`}
           >
@@ -362,8 +362,8 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
                         className={`
                           flex items-center rounded-xl text-xs font-bold transition-all duration-150 group relative
                           ${collapsed ? 'justify-center px-0 py-2.5' : 'px-3 py-2.5 justify-between'}
-                          ${isActive 
-                            ? 'bg-[#B76E79] text-white shadow-md shadow-[#B76E79]/25 font-black border-l-4 border-[#351027]' 
+                          ${isActive
+                            ? 'bg-[#B76E79] text-white shadow-md shadow-[#B76E79]/25 font-black border-l-4 border-[#351027]'
                             : 'text-white/85 hover:bg-[#6A2853] hover:text-white'}
                         `}
                       >
@@ -371,7 +371,7 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
                           <Icon className={`w-4 h-4 transition-transform group-hover:scale-110 flex-shrink-0 ${
                             isActive ? 'text-white' : item.key === 'wedding_crm' ? 'text-[#E8C7A8]' : 'text-[#B76E79] group-hover:text-white'
                           }`} />
-                          
+
                           {!collapsed && (
                             <span className="min-w-0">
                               <span className="block truncate">{item.label}</span>

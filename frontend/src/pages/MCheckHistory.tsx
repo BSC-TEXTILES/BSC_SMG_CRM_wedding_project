@@ -1,15 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import Topbar from '../components/Topbar';
 import { API, Auth, UserSession } from '../services/api';
 import { showToast } from '../components/Toast';
 import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../utils/sidebarState';
-import {
-  History, Calendar, ChevronRight, CircleCheck, CircleX, Clock,
-  CircleAlert, Circle, TrendingUp, TrendingDown, Minus, RefreshCw,
-  FileSpreadsheet, Download, Search, BarChart3, Eye
-} from 'lucide-react';
+import { History, Calendar, TrendingUp, TrendingDown, Minus, RefreshCw, FileSpreadsheet, Download, Search, BarChart3, Eye } from 'lucide-react';
 
 
 

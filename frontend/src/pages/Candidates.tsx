@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import Topbar from '../components/Topbar';
@@ -6,14 +6,11 @@ import ToastContainer, { showToast } from '../components/Toast';
 import { API, Auth, UserSession } from '../services/api';
 import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../utils/sidebarState';
 import StatusBadge from '../components/ui/StatusBadge';
-import { getBusinessDate } from '../utils/dateUtils';
+import '../utils/dateUtils';
 import { formatName } from '../utils/formatName';
-import PageHeader from '../components/ui/PageHeader';
-import EmptyState from '../components/ui/EmptyState';
-import {
-  Users, Search, Filter, Phone, Mail, Calendar, MapPin, Briefcase,
-  FileText, CheckCircle, CircleX, Plus, Clock, ExternalLink, MessageSquare, ChevronRight, X, Trash2, Edit3, ShieldAlert, FileCheck, Image as ImageIcon, UserCheck, DollarSign, TrendingUp
-} from 'lucide-react';
+import '../components/ui/PageHeader';
+import '../components/ui/EmptyState';
+import { Search, CheckCircle, CircleX, Plus, ChevronRight, X, Trash2, Edit3, FileCheck, TrendingUp } from 'lucide-react';
 import ShortlistModal from '../components/ui/ShortlistModal';
 import CandidateProfileModal from '../components/ui/CandidateProfileModal';
 import ModalPortal from '../components/ui/ModalPortal';

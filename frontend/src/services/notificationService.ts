@@ -559,12 +559,6 @@ class NotificationEngine {
 
   async sendDM(toUserId: string, content: string) {
     // Legacy stub or future implementation
-    console.log('Sending DM to', toUserId, content);
-  }
-
-  async markDmAsRead(dmId: string | number) {
-    // Legacy stub or future implementation
-    console.log('Marking DM as read', dmId);
   }
 
   public playNotificationSound(priority: 'low' | 'normal' | 'high' | 'critical' = 'normal') {

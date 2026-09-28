@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import AdminLayout from './AdminLayout';
 import { ProfileApi } from '../api';
 import { AchievementItem } from '../types';
-import { Plus, Edit2, Trash2, CheckCircle2, AlertCircle, X, Award, ExternalLink } from 'lucide-react';
+import { Plus, Edit2, Trash2, CheckCircle2, AlertCircle, X, ExternalLink } from 'lucide-react';
 
 export const AdminAchievements: React.FC = () => {
   const [achievements, setAchievements] = useState<AchievementItem[]>([]);

@@ -5,11 +5,7 @@ import Topbar from '../components/Topbar';
 import ToastContainer, { showToast } from '../components/Toast';
 import { API, Auth, UserSession } from '../services/api';
 import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../utils/sidebarState';
-import { 
-  CalendarClock, Users, TriangleAlert, CheckCircle, Clock, 
-  Search, Phone, Calendar, ArrowRight, UserCheck, CircleX, 
-  Store, Building, RefreshCw, X, ShieldAlert
-} from 'lucide-react';
+import { CalendarClock, TriangleAlert, CheckCircle, Clock, Search, Phone, Calendar, UserCheck, CircleX, Store, RefreshCw, X } from 'lucide-react';
 import ModalPortal from '../components/ui/ModalPortal';
 
 interface NotJoinedCandidate {
@@ -190,9 +186,9 @@ export default function DojDesk() {
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} session={session} />
 
       <div className={`flex-1 flex flex-col min-w-0 overflow-y-auto transition-all duration-300 ${collapsed ? 'lg:pl-[72px]' : 'lg:pl-64'}`}>
-        <Topbar 
-          title="DOJ Desk & Joined Store Directory" 
-          session={session} 
+        <Topbar
+          title="DOJ Desk & Joined Store Directory"
+          session={session}
           onMenuClick={() => setSidebarOpen(true)}
           breadcrumbs={[{ label: 'DOJ & Not Joined Desk' }]}
         />
@@ -279,8 +275,8 @@ export default function DojDesk() {
                   type="button"
                   onClick={() => setOverdueOnly(!overdueOnly)}
                   className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
-                    overdueOnly 
-                      ? 'bg-red-50 text-red-700 border-red-200' 
+                    overdueOnly
+                      ? 'bg-red-50 text-red-700 border-red-200'
                       : 'bg-background text-primary border-accent-soft hover:border-accent'
                   }`}
                 >
@@ -360,7 +356,7 @@ export default function DojDesk() {
                             <div className="flex items-center gap-1.5 font-bold text-primary">
                               <Calendar className="w-3.5 h-3.5 text-accent" />
                               <span>
-                                {cand.scheduled_doj 
+                                {cand.scheduled_doj
                                   ? new Date(cand.scheduled_doj).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
                                   : 'Not Set'}
                               </span>
@@ -371,7 +367,7 @@ export default function DojDesk() {
                           </td>
                           <td className="py-3.5 px-4">
                             <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold ${
-                              cand.doj_urgency === 'Overdue' 
+                              cand.doj_urgency === 'Overdue'
                                 ? 'bg-red-100 text-red-800' :
                               cand.doj_urgency === 'Joining Today'
                                 ? 'bg-orange-100 text-orange-800' :
@@ -471,7 +467,7 @@ export default function DojDesk() {
                             </span>
                           </td>
                           <td className="py-3.5 px-4 font-semibold text-primary">
-                            {emp.joined_date 
+                            {emp.joined_date
                               ? new Date(emp.joined_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
                               : '—'}
                           </td>

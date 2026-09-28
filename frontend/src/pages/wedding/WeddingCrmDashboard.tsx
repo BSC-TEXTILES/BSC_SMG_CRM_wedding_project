@@ -4,34 +4,12 @@ import DashboardLayout from '../../components/layouts/DashboardLayout';
 import PageContainer from '../../components/ui/PageContainer';
 import { API, Auth, UserSession } from '../../services/api';
 import WeddingNav from './WeddingNav';
-import { WeddingStats, getStatusBadge } from './weddingTypes';
+import { getStatusBadge } from './weddingTypes';
 import LocationFilterSelect from '../../components/ui/LocationFilterSelect';
 import { useLocationContext } from '../../context/LocationContext';
 import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../../utils/sidebarState';
 import ToastContainer, { showToast } from '../../components/Toast';
-import {
-  Users,
-  UserPlus,
-  PhoneCall,
-  Calendar,
-  Sparkles,
-  TrendingUp,
-  MapPin,
-  Clock,
-  PhoneForwarded,
-  CircleCheck,
-  CircleX,
-  CircleAlert,
-  TriangleAlert,
-  Award,
-  ArrowRight,
-  ChevronRight,
-  ShoppingBag,
-  Store,
-  RefreshCw,
-  Eye,
-  Plus
-} from 'lucide-react';
+import { Users, UserPlus, PhoneCall, Calendar, Sparkles, TrendingUp, MapPin, Clock, PhoneForwarded, CircleCheck, TriangleAlert, Award, ArrowRight, ChevronRight, ShoppingBag, RefreshCw } from 'lucide-react';
 
 export default function WeddingCrmDashboard() {
   const navigate = useNavigate();

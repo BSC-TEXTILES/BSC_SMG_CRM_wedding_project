@@ -5,39 +5,7 @@ import PageContainer from '../../components/ui/PageContainer';
 import ToastContainer, { showToast } from '../../components/Toast';
 import { API, Auth, UserSession } from '../../services/api';
 import WeddingNav from './WeddingNav';
-import {
-  FileSpreadsheet,
-  Upload,
-  Download,
-  CircleAlert,
-  CircleCheck,
-  AlertTriangle,
-  FileText,
-  MapPin,
-  Sparkles,
-  Loader2,
-  CheckCircle2,
-  XCircle,
-  Info,
-  ChevronDown,
-  ChevronUp,
-  History,
-  FileDown,
-  RefreshCw,
-  Trash2,
-  ExternalLink,
-  Search,
-  Check,
-  Globe,
-  Settings,
-  X,
-  Layers,
-  Link2,
-  ShieldCheck,
-  Lock,
-  ArrowRight,
-  Table
-} from 'lucide-react';
+import { FileSpreadsheet, Upload, Download, CircleAlert, CircleCheck, AlertTriangle, Sparkles, Loader2, CheckCircle2, XCircle, Info, ChevronDown, ChevronUp, History, FileDown, RefreshCw, Trash2, ExternalLink, Search, Check, Globe, Settings, X, Link2, Lock, Table } from 'lucide-react';
 
 interface ValidationError {
   row: number;
@@ -52,6 +20,7 @@ interface ImportSummaryResult {
   duplicateCount?: number;
   duplicates?: number;
   errorCount?: number;
+  failed?: number;
   skipped?: number;
   warningCount?: number;
   totalRows?: number;

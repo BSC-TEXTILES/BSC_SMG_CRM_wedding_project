@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import AdminLayout from './AdminLayout';
 import { ProfileApi } from '../api';
 import { GalleryItem } from '../types';
-import { Plus, Edit2, Trash2, CheckCircle2, AlertCircle, X, Upload, Image as ImageIcon } from 'lucide-react';
+import { Plus, Edit2, Trash2, CheckCircle2, AlertCircle, X, Upload } from 'lucide-react';
 
 export const AdminGallery: React.FC = () => {
   const [gallery, setGallery] = useState<GalleryItem[]>([]);

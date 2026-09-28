@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import Topbar from '../components/Topbar';
@@ -9,45 +9,8 @@ import MetricCard from '../components/ui/MetricCard';
 import StatusBadge from '../components/ui/StatusBadge';
 import ManageSectionsModal from '../components/ManageSectionsModal';
 import { BSC_DEPARTMENT_SECTIONS, BSC_DEPARTMENTS } from '../utils/bscDepartments';
-import { 
-  Building2, 
-  Search, 
-  Filter, 
-  Edit3, 
-  Save, 
-  X, 
-  BarChart3, 
-  PieChart as PieIcon, 
-  TrendingUp, 
-  Users, 
-  CircleCheck, 
-  Clock, 
-  TriangleAlert,
-  ChevronDown,
-  ChevronRight,
-  Folder,
-  FolderOpen,
-  FolderPlus,
-  Layers,
-  Sparkles,
-  ArrowRight,
-  Maximize2,
-  Minimize2,
-  UserCheck,
-  CheckCircle,
-  Briefcase
-} from 'lucide-react';
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer, 
-  Legend,
-  Cell
-} from 'recharts';
+import { Building2, Search, Filter, Edit3, Save, X, BarChart3, TrendingUp, Clock, TriangleAlert, ChevronDown, ChevronRight, FolderOpen, Layers, ArrowRight, Maximize2, Minimize2, UserCheck, CheckCircle, Briefcase } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 interface SectionHiringData {
   department: string;
@@ -223,10 +186,10 @@ export default function DepartmentHiringPage() {
       if (!desig) return;
 
       // Strictly check for Sales Executive roles
-      const isSalesExec = desig.includes('sales executive') || 
-                          desig.includes('sales staff') || 
-                          desig.includes('sales exec') || 
-                          desig === 'sales executive' || 
+      const isSalesExec = desig.includes('sales executive') ||
+                          desig.includes('sales staff') ||
+                          desig.includes('sales exec') ||
+                          desig === 'sales executive' ||
                           desig === 'sales';
       if (!isSalesExec) return;
 
@@ -471,15 +434,15 @@ export default function DepartmentHiringPage() {
     <div className="min-h-screen bg-background flex">
       <ToastContainer />
 
-      <Sidebar 
-        session={session} 
-        isOpen={sidebarOpen} 
-        onClose={() => setSidebarOpen(false)} 
+      <Sidebar
+        session={session}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
       />
 
       <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${collapsed ? 'lg:pl-[72px]' : 'lg:pl-64'}`}>
-        <Topbar 
-          title="Department Hiring Status" 
+        <Topbar
+          title="Department Hiring Status"
           session={session}
           onMenuClick={() => setSidebarOpen(true)}
         />
@@ -679,12 +642,12 @@ export default function DepartmentHiringPage() {
                   else if (deptNode.status === 'Vacant') deptBadgeColor = 'red';
 
                   return (
-                    <div 
-                      key={deptNode.department} 
+                    <div
+                      key={deptNode.department}
                       className="border border-accent-soft rounded-2xl bg-white/80 overflow-hidden shadow-xs transition-all"
                     >
                       {/* Department Root Row */}
-                      <div 
+                      <div
                         onClick={() => toggleExpandDept(deptNode.department)}
                         className="p-4 bg-background hover:bg-background/60 cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-accent-soft/80"
                       >
@@ -727,7 +690,7 @@ export default function DepartmentHiringPage() {
                               <span>{deptNode.percentage}%</span>
                             </div>
                             <div className="w-full h-2.5 bg-accent-soft rounded-full overflow-hidden shadow-inner">
-                              <div 
+                              <div
                                 className={`h-full rounded-full transition-all duration-500 ${
                                   deptNode.percentage >= 100 ? 'bg-emerald-600' :
                                   deptNode.percentage >= 75 ? 'bg-accent' :
@@ -752,7 +715,7 @@ export default function DepartmentHiringPage() {
                             else if (secNode.status === 'Vacant') secBadgeColor = 'red';
 
                             return (
-                              <div 
+                              <div
                                 key={secNode.section}
                                 className="p-3.5 pl-6 sm:pl-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-background/80 transition-colors font-medium border-l-4 border-l-accent/40 ml-3 sm:ml-6 my-1"
                               >
@@ -792,7 +755,7 @@ export default function DepartmentHiringPage() {
                                       <span>{secNode.percentage}%</span>
                                     </div>
                                     <div className="w-full h-2 bg-accent-soft rounded-full overflow-hidden">
-                                      <div 
+                                      <div
                                         className={`h-full rounded-full transition-all duration-500 ${
                                           secNode.percentage >= 100 ? 'bg-emerald-600' :
                                           secNode.percentage >= 75 ? 'bg-accent' :
@@ -921,7 +884,7 @@ export default function DepartmentHiringPage() {
                   {editModal.department} · {editModal.section}
                 </p>
               </div>
-              <button 
+              <button
                 onClick={() => setEditModal(prev => ({ ...prev, open: false }))}
                 className="w-8 h-8 rounded-full bg-primary/10 hover:bg-primary hover:text-white text-primary flex items-center justify-center transition-colors"
               >

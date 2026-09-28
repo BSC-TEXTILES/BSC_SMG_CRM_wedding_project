@@ -1,40 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '../components/layouts/DashboardLayout';
-import {
-  ClipboardList,
-  CheckCircle,
-  CircleX,
-  CircleMinus,
-  Save,
-  ArrowLeft,
-  Store,
-  Check,
-  Building2,
-  ChevronRight,
-  RotateCcw,
-  Sparkles,
-  Plus,
-  FolderPlus,
-  Tag,
-  MapPin,
-  Trash2,
-  TriangleAlert,
-  X,
-  Camera,
-  Image as ImageIcon,
-  ZoomIn,
-  ZoomOut,
-  Maximize2,
-  ChevronLeft,
-  Download,
-  Eye,
-  UploadCloud,
-  Calendar,
-  User,
-  Filter,
-  Layers,
-  FileText
-} from 'lucide-react';
+import { ClipboardList, CheckCircle, CircleX, CircleMinus, Save, ArrowLeft, Store, Check, Building2, ChevronRight, RotateCcw, Sparkles, Plus, FolderPlus, Tag, MapPin, Trash2, TriangleAlert, X, Camera, Image as ImageIcon, ZoomIn, ZoomOut, ChevronLeft, Download, Eye } from 'lucide-react';
 import { API, Auth } from '../services/api';
 import { showToast } from '../components/Toast';
 import {
@@ -660,8 +626,8 @@ export default function VmChecklist() {
     }
     if (searchQuery) {
       const sq = searchQuery.toLowerCase();
-      if (!sub.floor?.toLowerCase().includes(sq) && 
-          !sub.section?.toLowerCase().includes(sq) && 
+      if (!sub.floor?.toLowerCase().includes(sq) &&
+          !sub.section?.toLowerCase().includes(sq) &&
           !sub.submittedBy?.toLowerCase().includes(sq)) {
         return false;
       }
@@ -786,7 +752,7 @@ export default function VmChecklist() {
       subtitle="Store Floor Styling & Display Standards Audit Desk"
     >
       <div className="space-y-6">
-        
+
         {/* Navigation Tabs */}
         <div className="flex items-center gap-2 border-b border-accent-soft/60 pb-3 flex-wrap">
           <button
@@ -1215,7 +1181,7 @@ export default function VmChecklist() {
                     Attach photos of inspected displays, racks, mannequins, folding, and signage. JPG, JPEG, PNG up to 5MB (max 5 photos per section).
                   </p>
                 </div>
-                
+
                 {canManagePhotos ? (
                   <div className="flex items-center gap-2 flex-wrap">
                     {/* In-Page Device Camera Modal Trigger */}
@@ -1545,7 +1511,7 @@ export default function VmChecklist() {
                 const d = new Date(sub.entryDate || sub.createdAt).toLocaleDateString();
                 const totalQ = sub.entries ? sub.entries.length : 11;
                 const passedQ = sub.entries ? sub.entries.filter((e: any) => e.score === 'Pass').length : Math.round((subScore / 100) * 11);
-                
+
                 return (
                   <div
                     key={sub.id}

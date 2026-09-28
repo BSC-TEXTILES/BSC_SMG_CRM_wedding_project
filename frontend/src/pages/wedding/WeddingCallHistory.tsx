@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import DashboardLayout from '../../components/layouts/DashboardLayout';
@@ -7,27 +7,8 @@ import ToastContainer, { showToast } from '../../components/Toast';
 import { API, Auth, UserSession } from '../../services/api';
 import WeddingNav from './WeddingNav';
 import LocationFilterSelect from '../../components/ui/LocationFilterSelect';
-import { CallLog, CALL_OUTCOMES } from './weddingTypes';
-import {
-  History,
-  PhoneCall,
-  Search,
-  Filter,
-  Download,
-  Calendar,
-  MapPin,
-  RefreshCw,
-  Eye,
-  ChevronLeft,
-  ChevronRight,
-  User,
-  Clock,
-  Sparkles,
-  CircleCheck,
-  CircleX,
-  PhoneOff,
-  PhoneMissed
-} from 'lucide-react';
+import { CALL_OUTCOMES } from './weddingTypes';
+import { History, Search, Download, RefreshCw, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function WeddingCallHistory() {
   const navigate = useNavigate();
@@ -83,12 +64,12 @@ export default function WeddingCallHistory() {
       if (locsRes?.locations) setLocations(locsRes.locations);
       if (callersRes?.telecallers) setTelecallers(callersRes.telecallers);
 
-      const rawLogs = Array.isArray(exportRes) 
-        ? exportRes 
-        : (Array.isArray(exportRes?.data) 
-            ? exportRes.data 
-            : (Array.isArray(exportRes?.logs) 
-                ? exportRes.logs 
+      const rawLogs = Array.isArray(exportRes)
+        ? exportRes
+        : (Array.isArray(exportRes?.data)
+            ? exportRes.data
+            : (Array.isArray(exportRes?.logs)
+                ? exportRes.logs
                 : (Array.isArray(exportRes?.records) ? exportRes.records : [])));
       setCallLogs(rawLogs);
       setTotalCount(rawLogs.length);

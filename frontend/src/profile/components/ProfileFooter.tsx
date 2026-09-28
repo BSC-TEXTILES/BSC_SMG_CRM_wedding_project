@@ -1,15 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import {
-  ArrowUp,
-  MapPin,
-  Phone,
-  Mail,
-  ShieldCheck,
-  CheckCircle2,
-  ExternalLink,
-  X
-} from 'lucide-react';
+import { ArrowUp, MapPin, Phone, Mail, ShieldCheck, X } from 'lucide-react';
 
 export const ProfileFooter: React.FC = () => {
   const [cookieModalOpen, setCookieModalOpen] = useState(false);

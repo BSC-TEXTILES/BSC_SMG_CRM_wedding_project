@@ -4,17 +4,7 @@ import { ProfileFooter } from '../components/ProfileFooter';
 import { ServiceInquiryModal } from '../components/ServiceInquiryModal';
 import { ProfileApi } from '../api';
 import { ServiceItem } from '../types';
-import {
-  Crown,
-  Sparkles,
-  Scissors,
-  Gift,
-  Store,
-  ShieldCheck,
-  CheckCircle2,
-  ArrowRight,
-  Clock
-} from 'lucide-react';
+import { Crown, Sparkles, Scissors, Gift, Store, ShieldCheck, CheckCircle2, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const ICON_MAP: Record<string, React.ReactNode> = {

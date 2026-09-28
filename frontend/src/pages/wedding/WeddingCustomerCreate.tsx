@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import DashboardLayout from '../../components/layouts/DashboardLayout';
 import PageContainer from '../../components/ui/PageContainer';
@@ -10,24 +10,7 @@ import {
   BUDGET_RANGES,
   CALL_TIME_OPTIONS
 } from './weddingTypes';
-import {
-  User,
-  Phone,
-  Mail,
-  MapPin,
-  Calendar,
-  Heart,
-  ShoppingBag,
-  Sparkles,
-  ArrowLeft,
-  CircleCheck,
-  Clock,
-  UserCheck,
-  FileText,
-  CircleAlert,
-  Save,
-  Info
-} from 'lucide-react';
+import { User, MapPin, Heart, ShoppingBag, ArrowLeft, CircleCheck, Clock, Save, Info } from 'lucide-react';
 
 export default function WeddingCustomerCreate() {
   const navigate = useNavigate();

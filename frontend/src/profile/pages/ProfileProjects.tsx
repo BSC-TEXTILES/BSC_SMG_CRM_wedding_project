@@ -4,16 +4,7 @@ import { ProfileFooter } from '../components/ProfileFooter';
 import { ProjectDetailModal } from '../components/ProjectDetailModal';
 import { ProfileApi } from '../api';
 import { ProjectItem } from '../types';
-import {
-  Search,
-  ArrowRight,
-  Filter,
-  SlidersHorizontal,
-  ExternalLink,
-  Tag,
-  CheckCircle2,
-  Calendar
-} from 'lucide-react';
+import { Search, ArrowRight } from 'lucide-react';
 
 export const ProfileProjects: React.FC = () => {
   const [projects, setProjects] = useState<ProjectItem[]>([]);

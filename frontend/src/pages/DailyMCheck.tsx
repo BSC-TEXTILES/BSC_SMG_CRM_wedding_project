@@ -1,15 +1,10 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import DashboardLayout from '../components/layouts/DashboardLayout';
 import PageContainer from '../components/ui/PageContainer';
-import { API, Auth, UserSession } from '../services/api';
+import { API, Auth } from '../services/api';
 import { showToast } from '../components/Toast';
-import {
-  CircleCheck, Circle, CircleAlert, Clock, CircleX, ChevronDown, ChevronRight,
-  ChevronUp, Calendar, RefreshCw, Send, Save, Upload, X, Eye, FileText,
-  ClipboardList, BarChart3, Zap, Target, TriangleAlert, Camera, Image,
-  Settings, ArrowLeft, ArrowUp, ArrowDown, Plus, Edit2, Check, SquareCheck
-} from 'lucide-react';
+import { CircleCheck, Circle, CircleAlert, Clock, CircleX, ChevronDown, ChevronRight, ChevronUp, Calendar, RefreshCw, Send, Save, X, FileText, ClipboardList, BarChart3, Zap, Target, Camera, Settings, ArrowLeft, ArrowUp, ArrowDown, Plus, Edit2, SquareCheck } from 'lucide-react';
 
 const STATUS_COLORS: Record<string, { bg: string; text: string; border: string; icon: React.FC<any> }> = {
   DONE:        { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-300', icon: CircleCheck },

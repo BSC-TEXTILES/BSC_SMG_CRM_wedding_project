@@ -5,10 +5,7 @@ import Topbar from '../components/Topbar';
 import ToastContainer, { showToast } from '../components/Toast';
 import { API, Auth, UserSession } from '../services/api';
 import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../utils/sidebarState';
-import { 
-  Layers, Plus, Search, Calendar, User, Users, CircleCheck, 
-  Clock, CircleAlert, Trash2, Edit3, ChevronRight, ChevronDown, UserPlus, X, Award
-} from 'lucide-react';
+import { Layers, Plus, Search, Calendar, User, Users, CircleAlert, ChevronRight, ChevronDown, UserPlus, X, Award } from 'lucide-react';
 
 interface BatchMember {
   id: number;
@@ -239,9 +236,9 @@ export default function BatchPlan() {
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} session={session} />
 
       <div className={`flex-1 flex flex-col min-w-0 overflow-y-auto transition-all duration-300 ${collapsed ? 'lg:pl-[72px]' : 'lg:pl-64'}`}>
-        <Topbar 
-          title="Batch Plan & Weaving Operations" 
-          session={session} 
+        <Topbar
+          title="Batch Plan & Weaving Operations"
+          session={session}
           onMenuClick={() => setSidebarOpen(true)}
           breadcrumbs={[{ label: 'Batch Plan' }]}
         />
@@ -362,12 +359,12 @@ export default function BatchPlan() {
               {batches.map(batch => {
                 const isExpanded = expandedBatchId === batch.id;
                 return (
-                  <div 
-                    key={batch.id} 
+                  <div
+                    key={batch.id}
                     className="bg-white rounded-2xl border border-accent-soft shadow-xs overflow-hidden transition-all hover:border-accent/60"
                   >
                     {/* Batch Summary Row */}
-                    <div 
+                    <div
                       onClick={() => handleToggleExpand(batch.id)}
                       className="p-4 sm:p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 cursor-pointer hover:bg-background/40 transition-colors"
                     >

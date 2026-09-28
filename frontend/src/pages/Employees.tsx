@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../components/layouts/DashboardLayout';
 import PageContainer from '../components/ui/PageContainer';
@@ -7,45 +7,7 @@ import { API, Auth, UserSession } from '../services/api';
 import MetricCard from '../components/ui/MetricCard';
 import StatusBadge from '../components/ui/StatusBadge';
 import { useRealtimeSection } from '../hooks/useRealtimeSection';
-import {
-  Users,
-  Search,
-  Filter,
-  Building2,
-  ChevronRight,
-  Download,
-  FileSpreadsheet,
-  RotateCcw,
-  ShieldCheck,
-  ShieldAlert,
-  Lock,
-  Clock,
-  Sparkles,
-  Layers,
-  ArrowRight,
-  CheckCircle2,
-  FileText,
-  User,
-  MapPin,
-  Briefcase,
-  Calendar,
-  Shield,
-  UserCheck,
-  UserPlus,
-  UserMinus,
-  MoreVertical,
-  Eye,
-  Edit3,
-  Trash2,
-  RefreshCcw,
-  Building,
-  Upload,
-  FileUp,
-  AlertCircle,
-  Check,
-  X,
-  HelpCircle,
-} from 'lucide-react';
+import { Users, Search, Filter, Building2, ChevronRight, FileSpreadsheet, RotateCcw, ShieldCheck, ShieldAlert, Lock, Clock, Layers, User, Briefcase, UserCheck, UserMinus, Upload } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import EmployeeProfileModal from '../components/ui/EmployeeProfileModal';
 import EmployeeImportModal from '../components/ui/EmployeeImportModal';

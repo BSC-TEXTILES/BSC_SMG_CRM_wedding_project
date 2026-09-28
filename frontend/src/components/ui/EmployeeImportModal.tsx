@@ -1,17 +1,5 @@
 import React, { useState, useRef } from 'react';
-import {
-  Upload,
-  FileSpreadsheet,
-  FileText,
-  CheckCircle2,
-  AlertCircle,
-  X,
-  Download,
-  Users,
-  Check,
-  Building2,
-  RotateCcw
-} from 'lucide-react';
+import { Upload, FileSpreadsheet, CheckCircle2, AlertCircle, X, Download, Check, RotateCcw } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import ModalPortal from './ModalPortal';
 import { API } from '../../services/api';

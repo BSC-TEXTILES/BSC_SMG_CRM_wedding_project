@@ -2,11 +2,34 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { API, Auth } from '../services/api';
 import ToastContainer, { showToast } from '../components/Toast';
-import { ShieldCheck, ShieldAlert, Lock, User, ArrowRight, ArrowLeft, MapPin, RefreshCw, Hash, Eye, EyeOff, Sparkles, Search, Home } from 'lucide-react';
+import { ShieldCheck, Lock, User, ArrowRight, ArrowLeft, MapPin, RefreshCw, Hash, Eye, EyeOff, Sparkles, Search, Home } from 'lucide-react';
 import PrivacyPolicyModal from '../components/ui/PrivacyPolicyModal';
 import TermsAndConditionsModal from '../components/ui/TermsAndConditionsModal';
 import { resolvePostLoginRoute } from '../utils/moduleRegistry';
 import { permissionsCache } from '../context/PermissionsCache';
+
+/**
+ * Infrastructure failures reach the UI as raw browser/CORS/server text. Those are
+ * diagnostics, not instructions, so they are logged for devtools and replaced with
+ * something a user can act on. Genuine auth responses (bad credentials, wrong
+ * security code, lockout) are already human-readable and pass through untouched.
+ */
+const INFRA_ERROR_COPY: Array<[RegExp, string]> = [
+  [/cross-origin|cors|security policy/i, 'Unable to reach the authentication service. Please check your connection and try again.'],
+  [/failed to fetch|networkerror|load failed|err_connection|err_network/i, 'Unable to connect. Please check your internet connection and try again.'],
+  [/temporarily unavailable|service unavailable|econnrefused|gateway/i, 'The authentication service is temporarily unavailable. Please try again shortly.'],
+  [/timeout|timed out|abort/i, 'The request timed out. Please try again.']
+];
+
+function describeSignInFailure(raw?: string): string {
+  const text = (raw || '').trim();
+  const match = INFRA_ERROR_COPY.find(([re]) => re.test(text));
+  if (match) {
+    console.warn('[Login] infrastructure failure:', text);
+    return match[1];
+  }
+  return text || 'Sign-in failed. Please check your details and the security code.';
+}
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -175,7 +198,7 @@ export default function LoginPage() {
 
     try {
       const res = await API.login(username.trim(), password, captchaId, captchaText);
-      
+
       if (res.success && res.data) {
         // Check if 2FA is required
         if (res.requires2fa) {
@@ -259,13 +282,13 @@ export default function LoginPage() {
           setIsLocked(true);
           setLockRemainingSeconds(res.remainingSeconds || 600);
         }
-        setErrorMsg(res.message || 'Sign-in failed. Please check your details and the captcha.');
+        setErrorMsg(describeSignInFailure(res.message));
         loadCaptcha(true);
       }
     } catch (err: any) {
       // If error message indicates lockout, check server lock status
       checkServerLock();
-      setErrorMsg(err.message || 'Sign-in failed. Please try again.');
+      setErrorMsg(describeSignInFailure(err.message));
       loadCaptcha(true);
     } finally {
       setLoading(false);
@@ -284,10 +307,10 @@ export default function LoginPage() {
 
     try {
       const res = await API.verify2fa(partialAuth?.userId, otp, partialAuth);
-      
+
       if (res.success && res.data) {
         const user = res.data.user;
-        
+
         // Save full session
         const authToken = res.data?.token || res.token || null;
         const refreshToken = res.data?.refreshToken || res.refreshToken || null;
@@ -361,7 +384,7 @@ export default function LoginPage() {
 
   const handleResend2fa = async () => {
     if (resendCooldown > 0) return;
-    
+
     setResendCooldown(60);
     const timer = setInterval(() => {
       setResendCooldown(prev => {
@@ -396,11 +419,11 @@ export default function LoginPage() {
 
 
   return (
-    <div className="relative min-h-screen bg-[#FFF7F2] flex flex-col items-center justify-center p-4 sm:p-6">
+    <div className="login-shell relative h-dvh overflow-y-auto overscroll-contain bg-[#FFF7F2] flex flex-col items-center px-4 py-5 sm:px-6 sm:py-7">
       <ToastContainer />
 
-      {/* Top Left Section: Back to Home Page */}
-      <div className="absolute top-4 left-4 sm:top-6 sm:left-6 z-20">
+      {/* Top Left Section: Back to Home Page — in flow so it can never overlap the card */}
+      <div className="self-start shrink-0">
         <button
           type="button"
           onClick={() => navigate('/')}
@@ -412,9 +435,9 @@ export default function LoginPage() {
         </button>
       </div>
 
-      <div className="w-full max-w-md bg-[#FFFDFC] rounded-3xl overflow-hidden shadow-2xl border border-[#E8D9D4] animate-fade-in">
+      <div className="login-card my-auto shrink-0 w-full max-w-md bg-[#FFFDFC] rounded-3xl overflow-hidden shadow-2xl border border-[#E8D9D4] animate-fade-in">
         {/* Card Header */}
-        <div className="bg-[#4A173A] p-5 sm:p-6 flex items-center gap-3.5 border-b border-[#E8C7A8]/30 shadow-sm">
+        <div className="login-card-header bg-[#4A173A] p-5 sm:p-6 flex items-center gap-3.5 border-b border-[#E8C7A8]/30 shadow-sm">
           <div className="w-14 h-12 rounded-2xl bg-white p-1 shadow-md border border-[#E8C7A8]/30 flex items-center justify-center flex-shrink-0">
             <img src="/logo.png" alt="BSC Logo" className="max-h-full max-w-full object-contain" />
           </div>
@@ -428,7 +451,7 @@ export default function LoginPage() {
 
         {/* Card Body */}
         {!show2fa ? (
-          <form onSubmit={handleLogin} className="p-7 space-y-5">
+          <form onSubmit={handleLogin} className="login-form p-6 sm:p-7 space-y-4 sm:space-y-5">
           <div>
             <h3 className="text-xl font-black text-[#4A173A] tracking-tight">Welcome Back</h3>
             <p className="text-xs text-[#6F5963] font-medium mt-1">Sign in with your authorized system credentials. Your location will be loaded automatically.</p>
@@ -513,13 +536,15 @@ export default function LoginPage() {
             <label className="block text-[11px] font-bold uppercase tracking-wider text-text-primary">
               Security Code
             </label>
-            <div className="flex items-center gap-2.5">
-              <div className="relative flex-1">
+            <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
+              <div className="relative flex-1 min-w-0">
                 <Hash className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-secondary pointer-events-none" />
                 <input
                   type="text"
                   name="captcha"
                   autoComplete="off"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   maxLength={codeLength}
                   value={captchaText}
                   disabled={isLocked && lockRemainingSeconds > 0}
@@ -528,34 +553,34 @@ export default function LoginPage() {
                     setCaptchaText(digits);
                   }}
                   placeholder={`Enter ${codeLength} digits`}
-                  inputMode="numeric"
-                  className="input-modern w-full !pl-10 pr-3 text-xs font-bold tracking-widest"
+                  aria-describedby="captcha-hint"
+                  className="input-modern w-full !h-11 !pl-10 !pr-3 text-sm font-bold tracking-[0.3em]"
                   required
                 />
               </div>
-              <div className="flex items-center gap-1 flex-shrink-0">
+              <div className="flex items-center gap-2 shrink-0">
                 {captchaSvg ? (
                   <img
                     src={captchaSvg}
                     alt={`Security captcha - ${codeLength} digit numeric code`}
-                    className="h-[42px] w-[120px] rounded-lg border border-accent-soft bg-white shadow-xs select-none"
+                    className="h-11 w-[150px] rounded-lg border border-accent-soft bg-white object-contain shadow-xs select-none"
                     draggable={false}
                   />
                 ) : (
-                  <div className="h-[42px] w-[120px] rounded-lg border border-accent-soft bg-white animate-pulse" />
+                  <div className="h-11 w-[150px] rounded-lg border border-accent-soft bg-white animate-pulse" />
                 )}
                 <button
                   type="button"
                   onClick={() => { loadCaptcha(true); setCountdown(30); }}
-                  className="btn-secondary p-2"
+                  className="btn-secondary !h-11 !w-11 shrink-0 grid place-items-center p-0"
                   title="Load a new security code"
-                  aria-label="Refresh captcha"
+                  aria-label="Load a new security code"
                 >
                   <RefreshCw className={`w-4 h-4 ${captchaLoading ? 'animate-spin' : ''}`} />
                 </button>
               </div>
             </div>
-            <p className="text-[11px] text-text-secondary font-medium">Refreshes automatically in {countdown}s for your security.</p>
+            <p id="captcha-hint" className="text-[11px] text-text-secondary font-medium">Refreshes automatically in {countdown}s for your security.</p>
           </div>
 
           <div className="flex justify-between items-center">

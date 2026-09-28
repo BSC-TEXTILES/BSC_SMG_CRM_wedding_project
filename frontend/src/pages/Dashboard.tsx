@@ -1,49 +1,11 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import DashboardLayout from '../components/layouts/DashboardLayout';
 import PageContainer from '../components/ui/PageContainer';
 import { API, Auth, UserSession } from '../services/api';
 import MetricCard from '../components/ui/MetricCard';
 import GlobalLocationSelector from '../components/ui/GlobalLocationSelector';
-import {
-  Users,
-  UserCheck,
-  CheckCircle,
-  UserPlus,
-  Clock,
-  Calendar,
-  TriangleAlert,
-  ArrowRight,
-  Search,
-  Filter,
-  BarChart3,
-  Sparkles,
-  TrendingUp,
-  CalendarCheck,
-  Building2,
-  FileCheck,
-  Target,
-  DollarSign,
-  Footprints,
-  MessageSquare,
-  PhoneCall,
-  QrCode,
-  ShieldCheck,
-  ShieldAlert,
-  FileText,
-  SquareCheck,
-  Heart,
-  Settings,
-  MapPin,
-  Lock,
-  RefreshCw,
-  PhoneForwarded,
-  Briefcase,
-  Store,
-  ChevronRight,
-  Kanban,
-  Tv
-} from 'lucide-react';
+import { Users, UserCheck, UserPlus, Clock, TriangleAlert, ArrowRight, Search, Sparkles, CalendarCheck, Building2, Footprints, MessageSquare, PhoneCall, SquareCheck, Heart, MapPin, RefreshCw, PhoneForwarded, Store, ChevronRight, Tv } from 'lucide-react';
 import EmployeeProfileModal from '../components/ui/EmployeeProfileModal';
 import { getRoleNavMap } from '../utils/rbac';
 import { getDefaultLandingRoute } from '../utils/moduleRegistry';
@@ -52,14 +14,14 @@ import { useLocationContext } from '../context/LocationContext';
 export default function DashboardPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { 
-    currentLocation, 
-    currentLocationLabel, 
-    activeLocation, 
-    isGlobalAdmin, 
-    canSwitch, 
+  const {
+    currentLocation,
+    currentLocationLabel,
+    activeLocation,
+    isGlobalAdmin,
+    canSwitch,
     setCurrentLocation,
-    allLocations 
+    allLocations
   } = useLocationContext();
 
   const [session, setSession] = useState<UserSession | null>(() => Auth.get());

@@ -2,22 +2,7 @@ import React, { useState, useEffect } from 'react';
 import AdminLayout from './AdminLayout';
 import { ProfileApi } from '../api';
 import { ContactMessage } from '../types';
-import {
-  Inbox,
-  Search,
-  CheckCircle2,
-  AlertCircle,
-  Trash2,
-  Mail,
-  Phone,
-  Building,
-  Calendar,
-  MessageSquare,
-  X,
-  Save,
-  Archive,
-  Check
-} from 'lucide-react';
+import { Search, CheckCircle2, AlertCircle, Trash2, X, Save } from 'lucide-react';
 
 export const AdminMessages: React.FC = () => {
   const [messages, setMessages] = useState<ContactMessage[]>([]);

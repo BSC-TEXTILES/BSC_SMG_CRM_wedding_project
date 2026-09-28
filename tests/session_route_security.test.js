@@ -4,10 +4,77 @@ const path = require('path');
 const jwt = require('jsonwebtoken');
 require('dotenv').config({ path: path.join(__dirname, '../backend/.env') });
 
+const { getJwtSecret } = require('../backend/src/utils/secrets');
+const pool = require('../backend/src/config/db');
+
 const baseUrl = 'http://localhost:5000';
-const JWT_SECRET = process.env.JWT_SECRET || 'bsc_jwt_production_secret_key_2026_super_secure';
+// Must be the same resolver the running server uses. JWT_SECRET is normally
+// auto-generated at boot and stored in .runtime-secrets.json, so any hardcoded
+// fallback produces tokens the server rejects with 401.
+const JWT_SECRET = getJwtSecret();
+
+// Accounts are resolved by role from the database rather than pinned ids, which
+// only exist in whichever database the suite was originally written against.
+async function findUserByRole(roles) {
+  const [rows] = await pool.query(
+    `SELECT id, username, role, location_id, token_version
+     FROM users
+     WHERE active = 1 AND role IN (?)
+     ORDER BY id LIMIT 1`,
+    [roles]
+  );
+  if (!rows.length) {
+    throw new Error(`No active user found for role(s): ${roles.join(', ')}`);
+  }
+  return rows[0];
+}
+
+function tokenFor(user, extra = {}) {
+  return jwt.sign(
+    {
+      id: user.id,
+      username: user.username,
+      role: user.role,
+      tokenVersion: user.token_version || 1,
+      locationId: user.location_id,
+      location_id: user.location_id,
+      store_location_id: user.location_id,
+      ...extra
+    },
+    JWT_SECRET,
+    { expiresIn: '1h' }
+  );
+}
+
+// The 403-violation tracker is in-memory and keyed by user id, so a lockout test
+// must not borrow a real employee account - tripping the threshold would leave
+// that person's counter poisoned (returning 401) for the rest of the window and
+// on every re-run. Throwaway accounts are created per run and deleted after.
+const tempUsernames = [];
+
+async function createTempUser(role, locationId) {
+  const username = `sec-suite-${String(role).toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`;
+  await pool.query(
+    `INSERT INTO users (username, password, full_name, role, active, location_id, token_version)
+     VALUES (?, ?, ?, ?, 1, ?, 1)`,
+    [username, 'not-a-valid-login-credential', 'Security Suite Test User', role, locationId]
+  );
+  tempUsernames.push(username);
+  const [rows] = await pool.query(
+    'SELECT id, username, role, location_id, token_version FROM users WHERE username = ?',
+    [username]
+  );
+  return rows[0];
+}
 
 test('Session & Route-Level Security Test Suite', async (t) => {
+  t.after(async () => {
+    for (const username of tempUsernames) {
+      try { await pool.query('DELETE FROM users WHERE username = ?', [username]); } catch (e) {}
+    }
+    try { await pool.end(); } catch (e) {}
+  });
+
   // Check server health
   let serverReady = false;
   try {
@@ -86,19 +153,10 @@ test('Session & Route-Level Security Test Suite', async (t) => {
   });
 
   await t.test('3. RBAC role validation blocks unauthorized endpoints with 403', async () => {
-    // Generate valid token for existing user with limited permissions (telecaller id: 732)
-    const telecallerToken = jwt.sign(
-      {
-        id: 732,
-        username: 'telecaller',
-        role: 'Telecaller',
-        store_location_id: 1,
-        location_id: 1,
-        location_name: 'Main Store'
-      },
-      JWT_SECRET,
-      { expiresIn: '1h' }
-    );
+    // Throwaway limited-permission account; each run records a violation against
+    // this id, so a real Telecaller would eventually be force-logged out by this suite
+    const telecallerUser = await createTempUser('Telecaller', 1);
+    const telecallerToken = tokenFor(telecallerUser);
 
     // Telecaller trying to access admin-only user management endpoint
     const resForbidden = await fetch(`${baseUrl}/api/admin/users`, {
@@ -114,19 +172,10 @@ test('Session & Route-Level Security Test Suite', async (t) => {
   });
 
   await t.test('4. Suspicious Activity Lockout: 3 consecutive 403s trigger auto-lockout & X-Force-Logout', async () => {
-    // Use an existing user (id: 728 Greeter) with a fresh random token so it doesn't share count with subtest 3
-    const suspiciousToken = jwt.sign(
-      {
-        id: 728,
-        username: 'greeter@bsctextiles.com',
-        role: 'Greeter',
-        nonce: 'suspicious_' + Date.now(),
-        store_location_id: 1,
-        location_id: 1
-      },
-      JWT_SECRET,
-      { expiresIn: '1h' }
-    );
+    // Use a throwaway Greeter account so the forced lockout cannot affect a real
+    // employee or a previous run of this suite
+    const suspiciousUser = await createTempUser('Greeter', 1);
+    const suspiciousToken = tokenFor(suspiciousUser, { nonce: 'suspicious_' + Date.now() });
 
     const headers = {
       'Authorization': `Bearer ${suspiciousToken}`,
@@ -164,33 +213,47 @@ test('Session & Route-Level Security Test Suite', async (t) => {
   });
 
   await t.test('5. IDOR Protection: URL parameter tampering across store locations returns 403', async () => {
-    // Branch user assigned strictly to Davanagere (location_id: 2)
-    const branchToken = jwt.sign(
-      {
-        id: 727,
-        username: 'manager',
-        role: 'Manager',
-        store_location_id: 2,
-        location_id: 2,
-        location_code: 'DAV'
-      },
-      JWT_SECRET,
-      { expiresIn: '1h' }
+    // Two locations that actually hold customers, discovered live
+    const [locs] = await pool.query(
+      `SELECT location_id, COUNT(*) AS n FROM wedding_customers
+       WHERE location_id IS NOT NULL GROUP BY location_id HAVING n > 0 ORDER BY location_id LIMIT 2`
     );
+    assert.ok(locs.length >= 2, 'Need customers in at least two locations to test cross-branch isolation');
+    const homeLocationId = locs[0].location_id;
+    const foreignLocationId = locs[1].location_id;
+
+    // Throwaway branch manager, so accumulated violations cannot affect a real
+    // account or a previous run of this suite
+    const managerUser = await createTempUser('Manager', homeLocationId);
+    const branchToken = tokenFor(managerUser);
 
     const headers = {
       'Authorization': `Bearer ${branchToken}`,
       'x-test-bypass': 'bsc-test-secret-suite'
     };
 
-    // Customer 17 belongs to location_id: 2 -> Should be accessible (200)
-    const resAllowed = await fetch(`${baseUrl}/api/wedding-crm/customers/17`, { headers });
-    assert.strictEqual(resAllowed.status, 200, 'User should be allowed to view their own branch customer');
-    console.log('✓ Authorized branch customer access succeeds -> 200');
+    // Pick a customer inside the user's branch and one outside it, so the test
+    // does not depend on a particular id existing in this database
+    const [ownRows] = await pool.query(
+      'SELECT id FROM wedding_customers WHERE location_id = ? ORDER BY id LIMIT 1',
+      [homeLocationId]
+    );
+    const [otherRows] = await pool.query(
+      'SELECT id FROM wedding_customers WHERE location_id = ? ORDER BY id LIMIT 1',
+      [foreignLocationId]
+    );
+    assert.ok(ownRows.length, `No wedding customer found in location ${homeLocationId}`);
+    assert.ok(otherRows.length, `No wedding customer found in location ${foreignLocationId}`);
+    const ownCustomerId = ownRows[0].id;
+    const foreignCustomerId = otherRows[0].id;
 
-    // Customer 16 belongs to location_id: 1 (Belagavi)
-    // Simulating user tampering with URL parameter: /customers/17 -> /customers/16
-    const resTampered = await fetch(`${baseUrl}/api/wedding-crm/customers/16`, { headers });
+    // Customer inside the user's own branch -> Should be accessible (200)
+    const resAllowed = await fetch(`${baseUrl}/api/wedding-crm/customers/${ownCustomerId}`, { headers });
+    assert.strictEqual(resAllowed.status, 200, 'User should be allowed to view their own branch customer');
+    console.log(`✓ Authorized branch customer access succeeds -> 200 (customer ${ownCustomerId})`);
+
+    // Simulating user tampering with the URL parameter to reach another branch
+    const resTampered = await fetch(`${baseUrl}/api/wedding-crm/customers/${foreignCustomerId}`, { headers });
     assert.strictEqual(
       resTampered.status,
       403,
@@ -203,18 +266,9 @@ test('Session & Route-Level Security Test Suite', async (t) => {
   });
 
   await t.test('6. Safe normal navigation (valid token) succeeds without logout', async () => {
-    // Generate valid admin token
-    const adminToken = jwt.sign(
-      {
-        id: 1,
-        username: 'admin@bsctextiles.com',
-        role: 'Super Admin',
-        store_location_id: 1,
-        location_id: 1
-      },
-      JWT_SECRET,
-      { expiresIn: '1h' }
-    );
+    // Generate valid token for a real Administrator account in this database
+    const adminUser = await findUserByRole(['Admin', 'Super Admin']);
+    const adminToken = tokenFor(adminUser);
 
     const headers = {
       'Authorization': `Bearer ${adminToken}`,

@@ -3,15 +3,7 @@ import { ProfileHeader } from '../components/ProfileHeader';
 import { ProfileFooter } from '../components/ProfileFooter';
 import { ProfileApi } from '../api';
 import { TestimonialItem } from '../types';
-import {
-  Star,
-  Quote,
-  ChevronLeft,
-  ChevronRight,
-  ShieldCheck,
-  Heart,
-  ArrowRight
-} from 'lucide-react';
+import { Star, Quote, ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const ProfileTestimonials: React.FC = () => {

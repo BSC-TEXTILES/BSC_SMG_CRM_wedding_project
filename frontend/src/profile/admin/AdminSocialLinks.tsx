@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import AdminLayout from './AdminLayout';
 import { ProfileApi } from '../api';
 import { SocialLink } from '../types';
-import { Plus, Trash2, Save, CheckCircle2, AlertCircle, ExternalLink } from 'lucide-react';
+import { Plus, Trash2, Save, CheckCircle2, AlertCircle } from 'lucide-react';
 
 export const AdminSocialLinks: React.FC = () => {
   const [links, setLinks] = useState<SocialLink[]>([]);

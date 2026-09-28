@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { X, Phone, Mail, MapPin, Calendar, Briefcase, DollarSign, FileText, UserCheck, ExternalLink, Building, Edit3, Save, RotateCcw, Image as ImageIcon, FileCheck, CheckCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { X, Phone, Mail, MapPin, Briefcase, FileText, UserCheck, Building, Edit3, Save, RotateCcw, Image as ImageIcon, FileCheck } from 'lucide-react';
 import StatusBadge from './StatusBadge';
 import ModalPortal from './ModalPortal';
 import { API } from '../../services/api';
@@ -127,7 +127,7 @@ export default function CandidateProfileModal({ candidate, isOpen, onClose, onUp
       ariaLabel={`Candidate Profile - ${currentCand?.name || 'Applicant'}`}
     >
       <div className="relative w-full max-w-4xl max-h-[92vh] bg-background rounded-3xl shadow-2xl flex flex-col z-10 overflow-hidden border-2 border-accent/50 select-text">
-        
+
         {/* Top Header Banner */}
         <div className="bg-gradient-to-r from-primary via-primary to-[#3D2B1F] text-white p-5 sm:p-6 border-b-2 border-accent/40 relative">
           <div className="absolute top-4 right-4 flex items-center gap-2">
@@ -240,7 +240,7 @@ export default function CandidateProfileModal({ candidate, isOpen, onClose, onUp
 
         {/* Scrollable Body */}
         <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-5 text-xs">
-          
+
           {!isEditing ? (
             /* VIEW MODE */
             <>
@@ -599,7 +599,7 @@ export default function CandidateProfileModal({ candidate, isOpen, onClose, onUp
           <div className="text-[11px] text-primary font-bold">
             BSC Textiles RECRUITMENT CRM
           </div>
-          
+
           <div className="flex items-center gap-2">
             {isEditing ? (
               <>

@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import DashboardLayout from '../components/layouts/DashboardLayout';
 import PageContainer from '../components/ui/PageContainer';
-import { BarChart3, Clock, Users, Calendar, Save, CircleCheck, CircleAlert, Sparkles, Check, Hourglass, Activity, FileText, Download, TrendingUp, Zap, Store, MapPin } from 'lucide-react';
+import { BarChart3, Clock, Users, Calendar, Save, CircleCheck, Sparkles, Check, Activity, FileText, Download, TrendingUp, Zap, Store, MapPin } from 'lucide-react';
 import { API, Auth } from '../services/api';
 import { useLocationContext } from '../context/LocationContext';
 import { showToast } from '../components/Toast';
@@ -194,13 +194,13 @@ export default function Footfall() {
   }, [slots]);
 
   return (
-    <DashboardLayout 
-      title="Hourly Footfall Register" 
+    <DashboardLayout
+      title="Hourly Footfall Register"
       subtitle="Realtime store visitor tracking across floor operating hours (10:00 AM – 10:00 PM)"
     >
       <PageContainer maxWidth="full">
         <div className="space-y-6">
-        
+
         {/* Top Controls: Glass Date Selector + Excel Export Button */}
         <div className="space-y-5">
           <div className="card-glass p-5 lg:p-6 flex flex-col gap-4 border border-accent-soft/80 bg-white/70 backdrop-blur-xl shadow-md rounded-2xl">
@@ -223,8 +223,8 @@ export default function Footfall() {
                     <button
                       onClick={() => setDate(todayStr)}
                       className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all ${
-                        isTodaySelected 
-                          ? 'bg-primary text-accent shadow-md ring-1 ring-accent/30' 
+                        isTodaySelected
+                          ? 'bg-primary text-accent shadow-md ring-1 ring-accent/30'
                           : 'bg-background border border-accent-soft text-[#5D4E42] hover:bg-white'
                       }`}
                     >
@@ -355,7 +355,7 @@ export default function Footfall() {
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-accent-soft)" />
                 <XAxis dataKey="time" stroke="var(--color-primary)" fontSize={11} tickLine={false} />
                 <YAxis stroke="var(--color-primary)" fontSize={11} tickLine={false} axisLine={false} />
-                <Tooltip 
+                <Tooltip
                   contentStyle={{ backgroundColor: 'var(--color-primary)', borderRadius: '12px', border: 'none', color: '#000', fontSize: '12px', fontWeight: 'bold' }}
                   itemStyle={{ color: 'var(--color-accent)' }}
                 />
@@ -389,13 +389,13 @@ export default function Footfall() {
               const slot = slots[hour] || { visitors: 0, remarks: '' };
               const formatHour = hour > 12 ? `${hour - 12}:00 PM` : hour === 12 ? '12:00 PM' : `${hour}:00 AM`;
               const formatEndHour = (hour + 1) > 12 ? `${(hour + 1) - 12}:00 PM` : (hour + 1) === 12 ? '12:00 PM' : `${hour + 1}:00 AM`;
-              
+
               const isCurrentSlot = isTodaySelected && currentHourNow === hour;
               const isSaved = (slot.visitors || 0) > 0;
 
               return (
-                <div 
-                  key={hour} 
+                <div
+                  key={hour}
                   className={`card-glass p-5 flex flex-col justify-between transition-all duration-200 relative group hover:-translate-y-1 hover:shadow-xl rounded-2xl ${
                     isCurrentSlot
                       ? 'border-2 border-accent shadow-xl ring-4 ring-accent/15 bg-gradient-to-br from-amber-50/60 to-amber-100/30'

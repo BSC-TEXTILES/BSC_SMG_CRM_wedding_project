@@ -1,7 +1,7 @@
-import React, { useEffect, useState, useMemo } from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { Auth, triggerSecurityLogout } from '../services/api';
-import { getDefaultLandingRoute } from '../utils/moduleRegistry';
+import React, { useEffect, useState } from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
+import { Auth } from '../services/api';
+import '../utils/moduleRegistry';
 import { getRoleNavMap, resolveAllowedPages } from '../utils/rbac';
 import { permissionsCache } from '../context/PermissionsCache';
 import { Loader2 } from 'lucide-react';

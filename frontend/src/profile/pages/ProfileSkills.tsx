@@ -3,7 +3,7 @@ import { ProfileHeader } from '../components/ProfileHeader';
 import { ProfileFooter } from '../components/ProfileFooter';
 import { ProfileApi } from '../api';
 import { SkillItem } from '../types';
-import { Sparkles, Layers, Award, ArrowRight } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const ProfileSkills: React.FC = () => {

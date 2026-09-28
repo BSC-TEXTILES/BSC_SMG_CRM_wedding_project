@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ServiceItem } from '../types';
 import { ProfileApi } from '../api';
-import { X, CheckCircle2, Clock, Sparkles, AlertCircle } from 'lucide-react';
+import { X, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
 
 interface ServiceInquiryModalProps {
   service: ServiceItem | null;

@@ -1,18 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import {
-  LayoutDashboard,
-  Users,
-  UserPlus,
-  PhoneCall,
-  History,
-  Calendar,
-  Kanban,
-  BarChart3,
-  FileSpreadsheet,
-  Sparkles,
-  ChevronRight
-} from 'lucide-react';
+import { LayoutDashboard, Users, UserPlus, PhoneCall, History, Calendar, Kanban, BarChart3, FileSpreadsheet, Sparkles } from 'lucide-react';
 
 interface WeddingNavProps {
   currentPageTitle: string;

@@ -4,7 +4,7 @@ import { ProfileFooter } from '../components/ProfileFooter';
 import { GalleryLightboxModal } from '../components/GalleryLightboxModal';
 import { ProfileApi } from '../api';
 import { GalleryItem } from '../types';
-import { Eye, Image as ImageIcon } from 'lucide-react';
+import { Eye } from 'lucide-react';
 
 export const ProfileGallery: React.FC = () => {
   const [gallery, setGallery] = useState<GalleryItem[]>([]);

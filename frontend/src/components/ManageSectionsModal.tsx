@@ -3,7 +3,7 @@ import { API } from '../services/api';
 import { showToast } from './Toast';
 import ModalPortal from './ui/ModalPortal';
 import { BSC_DEPARTMENTS, getUniqueDepartments } from '../utils/bscDepartments';
-import { Layers, Plus, Edit3, Trash2, X, Save, Check } from 'lucide-react';
+import { Layers, Plus, Edit3, Trash2, X } from 'lucide-react';
 
 interface ManageSectionsModalProps {
   isOpen: boolean;
@@ -146,7 +146,7 @@ export default function ManageSectionsModal({ isOpen, onClose, onSectionsUpdated
               Add, edit or remove floor sections stored directly in the database.
             </p>
           </div>
-          <button 
+          <button
             onClick={onClose}
             className="w-8 h-8 rounded-full bg-primary/10 hover:bg-primary hover:text-white text-primary flex items-center justify-center transition-colors"
           >

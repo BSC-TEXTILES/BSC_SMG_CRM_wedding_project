@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import Topbar from '../components/Topbar';
@@ -7,7 +7,7 @@ import { Auth, UserSession } from '../services/api';
 import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../utils/sidebarState';
 import { NotificationService, SystemNotification } from '../services/notificationService';
 import MetricCard from '../components/ui/MetricCard';
-import { Send, Megaphone, Users, Calendar, TriangleAlert, Trash2, CircleCheck, Shield, Plus, Clock, Filter, Eye, CheckCheck, FileText, Lock, MessageSquare, RefreshCw } from 'lucide-react';
+import { Send, Megaphone, Trash2, CircleCheck, Clock, Eye, RefreshCw } from 'lucide-react';
 
 export default function BroadcastCenterPage() {
   const navigate = useNavigate();

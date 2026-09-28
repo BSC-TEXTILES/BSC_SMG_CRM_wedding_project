@@ -4,21 +4,7 @@ import { ProfileHeader } from '../components/ProfileHeader';
 import { ProfileFooter } from '../components/ProfileFooter';
 import { ProfileApi } from '../api';
 import { ProfileData, SocialLink } from '../types';
-import {
-  MapPin,
-  Clock,
-  Mail,
-  Phone,
-  Globe,
-  Download,
-  CheckCircle2,
-  ShieldCheck,
-  Target,
-  Compass,
-  Award,
-  ArrowRight,
-  ExternalLink
-} from 'lucide-react';
+import { MapPin, Mail, Phone, Globe, Download, CheckCircle2, Target, Compass, Award, ArrowRight, ExternalLink } from 'lucide-react';
 
 export const ProfileAbout: React.FC = () => {
   const [profile, setProfile] = useState<ProfileData | null>(null);

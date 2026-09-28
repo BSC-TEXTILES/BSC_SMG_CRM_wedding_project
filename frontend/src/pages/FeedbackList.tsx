@@ -1,24 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '../components/layouts/DashboardLayout';
-import {
-  PhoneCall,
-  TriangleAlert,
-  CircleCheck,
-  Clock,
-  Filter,
-  MessageSquare,
-  Search,
-  Calendar,
-  RefreshCw,
-  ShieldAlert,
-  User,
-  Phone,
-  History,
-  FileText,
-  Tag,
-  X,
-  Send
-} from 'lucide-react';
+import { PhoneCall, TriangleAlert, CircleCheck, Clock, Filter, Search, Calendar, RefreshCw, ShieldAlert, User, Phone, History, X, Send } from 'lucide-react';
 import { API } from '../services/api';
 import { io } from 'socket.io-client';
 import { showToast } from '../components/Toast';

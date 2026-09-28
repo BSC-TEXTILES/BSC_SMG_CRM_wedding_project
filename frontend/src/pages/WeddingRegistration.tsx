@@ -1,13 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { API } from '../services/api';
 import ToastContainer, { showToast } from '../components/Toast';
-import {
-  User, Phone, Mail, MapPin, Calendar, Heart,
-  ShoppingBag, Building2, CircleCheck,
-  ArrowRight, ArrowLeft, Star, Clock, DollarSign,
-  CreditCard, Sparkles, Building, Home, Package,
-  Search, X, ChevronDown, Check, CircleAlert, Loader2
-} from 'lucide-react';
+import { User, Phone, MapPin, Heart, ShoppingBag, Building2, CircleCheck, ArrowRight, ArrowLeft, Star, Clock, Sparkles, Package, Search, Check, CircleAlert, Loader2 } from 'lucide-react';
 
 const GENDERS = ['Male', 'Female', 'Other', 'Prefer not to say'];
 const WEDDING_TYPES = ['Hindu Wedding', 'Muslim Wedding', 'Christian Wedding', 'Jain Wedding', 'Sikh Wedding', 'Other'];

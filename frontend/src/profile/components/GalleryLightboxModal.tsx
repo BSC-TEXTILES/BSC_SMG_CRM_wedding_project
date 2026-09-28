@@ -1,6 +1,6 @@
 import React from 'react';
 import { GalleryItem } from '../types';
-import { X, ChevronLeft, ChevronRight, Tag } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface GalleryLightboxModalProps {
   item: GalleryItem | null;

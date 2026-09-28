@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { X, Bell, Pin, CheckCheck, Trash2, Search, Volume2, VolumeX, MessageSquare, Sliders, CircleCheck, Archive, TriangleAlert, Check, ShieldAlert } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { X, Bell, Pin, CheckCheck, Trash2, Search, Volume2, VolumeX, MessageSquare, Sliders, CircleCheck, Archive, Check, ShieldAlert } from 'lucide-react';
 import { NotificationService, SystemNotification } from '../../services/notificationService';
 import NotificationPreferencesModal from './NotificationPreferencesModal';
 import DirectMessagingModal from './DirectMessagingModal';

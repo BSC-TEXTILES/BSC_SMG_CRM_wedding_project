@@ -1,17 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useProfileTheme } from '../themeContext';
-import {
-  Menu,
-  X,
-  Sun,
-  Moon,
-  Shield,
-  ArrowRight,
-  PhoneCall,
-  Calendar,
-  Sparkles
-} from 'lucide-react';
+import { Menu, X, Sun, Moon, Shield, ArrowRight } from 'lucide-react';
 
 interface NavItem {
   label: string;

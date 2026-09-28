@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Bell, Settings, Volume2, VolumeX, Moon, Sun, Command, LogOut, ShieldCheck, ChevronDown, Activity, KeyRound } from 'lucide-react';
+import { Bell, Settings, Volume2, VolumeX, Command, LogOut, ChevronDown, Activity, KeyRound } from 'lucide-react';
 import { Auth, UserSession } from '../../services/api';
 import { NotificationService } from '../../services/notificationService';
 import ChangePasswordModal from './ChangePasswordModal';

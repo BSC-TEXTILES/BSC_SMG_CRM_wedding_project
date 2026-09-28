@@ -580,6 +580,7 @@ exports.adminReorderCheckpoints = async (req, res) => {
 
 // ── Export PDF ───────────────────────────────────────────────────
 exports.exportPdf = async (req, res) => {
+  let doc = null;
   try {
     const PDFDocument = require('pdfkit');
     const { date, fromDate, toDate, module_id, status } = req.query;
@@ -615,7 +616,9 @@ exports.exportPdf = async (req, res) => {
       else pending++;
     }
 
-    const doc = new PDFDocument({ margin: 40, size: 'A4' });
+    // bufferPages keeps every page in the buffer so the footer pass can
+    // switchToPage() across the whole document instead of only the live page.
+    doc = new PDFDocument({ margin: 40, size: 'A4', bufferPages: true });
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="mcheck-report-${reportDate}.pdf"`);
     doc.pipe(res);
@@ -752,8 +755,11 @@ exports.exportPdf = async (req, res) => {
     }
 
     // Footer on last page
-    const pageCount = doc.bufferedPageRange().count;
-    for (let i = 0; i < pageCount; i++) {
+    // Footer on every page — bufferedPageRange() reports the first buffered
+    // page index, so the loop must walk start..start+count, not 0..count.
+    const range = doc.bufferedPageRange();
+    const pageCount = range.start + range.count;
+    for (let i = range.start; i < pageCount; i++) {
       doc.switchToPage(i);
       doc.fillColor(gray).fontSize(7).text(`BSC Textiles Pvt Ltd · Daily MCheck Report · Page ${i + 1} of ${pageCount} · CONFIDENTIAL`, 40, doc.page.height - 25, { align: 'center' });
     }
@@ -761,6 +767,10 @@ exports.exportPdf = async (req, res) => {
     doc.end();
   } catch (err) {
     console.error('[MCheck PDF Export Error]', err.message);
+    // The doc is still piped into res. If it is left alive after a failure its
+    // stream keeps pushing data into an already-ended response, which raises
+    // ERR_STREAM_WRITE_AFTER_END and takes down the whole process.
+    if (doc) { try { doc.destroy(); } catch (_e) {} }
     if (!res.headersSent) res.status(500).json({ success: false, error: err.message });
   }
 };

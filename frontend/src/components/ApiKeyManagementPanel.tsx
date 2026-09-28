@@ -1,27 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { apiFetch, UserSession } from '../services/api';
 import { showToast } from './Toast';
-import {
-  Key,
-  Shield,
-  ShieldAlert,
-  ShieldCheck,
-  Plus,
-  Copy,
-  Check,
-  RefreshCw,
-  Trash2,
-  Clock,
-  AlertTriangle,
-  Lock,
-  ExternalLink,
-  CheckCircle,
-  XCircle,
-  FileCode,
-  Globe,
-  Database,
-  Filter
-} from 'lucide-react';
+import { Key, ShieldAlert, ShieldCheck, Plus, Copy, Check, RefreshCw, Trash2, Clock, AlertTriangle, Lock, CheckCircle, FileCode, Filter } from 'lucide-react';
 
 interface ApiKeyItem {
   id: string;

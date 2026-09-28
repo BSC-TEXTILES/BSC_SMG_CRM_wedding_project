@@ -1,7 +1,6 @@
-import React from 'react';
-import { 
-  Sparkles, Clock, Calendar, CircleCheck, 
-  Send, CircleAlert, CircleX, UserCheck, Shield 
+import {
+  Sparkles, Clock, Calendar, CircleCheck,
+  Send, CircleAlert, CircleX, UserCheck, Shield
 } from 'lucide-react';
 
 interface StatusBadgeProps {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { UserCheck, Plus, Minus, KeyRound, Clock, Sparkles, RefreshCw, ShieldCheck, Activity, Users, Store, Zap, MapPin } from 'lucide-react';
+import { UserCheck, Plus, Minus, KeyRound, Clock, Sparkles, RefreshCw, Store, Zap, MapPin } from 'lucide-react';
 import { API, Auth } from '../services/api';
 import { showToast } from '../components/Toast';
 import { io } from 'socket.io-client';
@@ -228,7 +228,7 @@ export default function Greeter() {
           <span>BSC Textiles • ENTRANCE GREETER</span>
         </div>
         <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white drop-shadow-sm">Main Entrance Kiosk</h1>
-        
+
         <div className="inline-flex items-center justify-center gap-2 px-4 py-1 rounded-full bg-black/5 border border-black/10 text-xs text-white font-bold">
           <Clock className="w-3.5 h-3.5 text-amber-300 shrink-0" />
           <span>Current Active Hour: <strong className="text-amber-300 font-extrabold">{formatHourRange(activeSlotHour)}</strong></span>
@@ -258,7 +258,7 @@ export default function Greeter() {
         <div className="text-6xl sm:text-7xl font-black my-2 tracking-tight text-white font-mono drop-shadow-lg">
           {currentSlotCount}
         </div>
-        
+
         <div className="text-xs text-amber-200 font-extrabold uppercase tracking-wider">
           Visitors Logged for {formatHourRange(activeSlotHour)}
         </div>

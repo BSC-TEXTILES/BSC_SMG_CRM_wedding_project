@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { API } from '../services/api';
-import { ShieldCheck, ShieldAlert, Mail, ArrowLeft, RefreshCw, CheckCircle, AlertCircle, Loader2, Home, Sparkles } from 'lucide-react';
+import { ShieldCheck, Mail, ArrowLeft, RefreshCw, CheckCircle, AlertCircle, Loader2, Home, Sparkles } from 'lucide-react';
 import { showToast } from '../components/Toast';
 
 export default function VerifyEmailPage() {

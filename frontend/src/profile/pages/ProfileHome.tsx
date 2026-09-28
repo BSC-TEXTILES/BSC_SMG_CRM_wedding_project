@@ -12,22 +12,7 @@ import {
   TestimonialItem,
   AchievementItem
 } from '../types';
-import {
-  ArrowRight,
-  ShieldCheck,
-  Star,
-  MapPin,
-  Clock,
-  Crown,
-  Sparkles,
-  Scissors,
-  CheckCircle2,
-  Calendar,
-  ExternalLink,
-  Phone,
-  Store,
-  ChevronRight
-} from 'lucide-react';
+import { ArrowRight, ShieldCheck, Star, MapPin, Clock, Sparkles, CheckCircle2, ChevronRight } from 'lucide-react';
 
 export const ProfileHome: React.FC = () => {
   const [profile, setProfile] = useState<ProfileData | null>(null);

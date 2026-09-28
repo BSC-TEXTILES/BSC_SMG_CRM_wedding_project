@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MessageSquare, Send, X, RefreshCw, Minimize2, Maximize2, Trash2 } from 'lucide-react';
+import { MessageSquare, Send, X, RefreshCw, Minimize2, Trash2 } from 'lucide-react';
 import { API } from '../../services/api';
 
 interface ChatMessage {

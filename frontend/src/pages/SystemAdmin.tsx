@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import Topbar from '../components/Topbar';
@@ -7,29 +7,7 @@ import { Auth, UserSession, apiFetch } from '../services/api';
 import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../utils/sidebarState';
 import { NotificationService } from '../services/notificationService';
 import DevToolsMonitoringPanel from '../components/DevToolsMonitoringPanel';
-import {
-  Shield,
-  ShieldAlert,
-  ShieldCheck,
-  Users,
-  Activity,
-  FileText,
-  Clock,
-  RefreshCw,
-  Search,
-  Filter,
-  Trash2,
-  CircleCheck,
-  CircleX,
-  TriangleAlert,
-  Laptop,
-  LogIn,
-  LogOut,
-  Eye,
-  ChevronRight,
-  BarChart3,
-  Loader2
-} from 'lucide-react';
+import { Shield, ShieldAlert, ShieldCheck, Activity, FileText, Clock, RefreshCw, Search, Trash2, CircleCheck, CircleX, TriangleAlert, LogIn, Eye, Loader2 } from 'lucide-react';
 
 // ── IST formatting helper ────────────────────────────────────────────────
 function formatIST(dateStr: string | null | undefined): string {

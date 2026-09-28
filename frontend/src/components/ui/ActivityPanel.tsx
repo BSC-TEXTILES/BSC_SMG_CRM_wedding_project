@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Activity, X, Calendar, Clock, CircleCheck, TriangleAlert, ShieldCheck, Sparkles, User, LogIn, LogOut } from 'lucide-react';
-import { API, Auth } from '../../services/api';
+import { useState, useEffect } from 'react';
+import { Activity, X, LogIn, LogOut } from 'lucide-react';
+import { API } from '../../services/api';
 
 interface ActivityPanelProps {
   isOpen: boolean;
@@ -13,7 +13,7 @@ export default function ActivityPanel({ isOpen, onClose }: ActivityPanelProps) {
 
   useEffect(() => {
     if (!isOpen) return;
-    
+
     const fetchActivity = () => {
       // Try to get user tracking stats and activity
       API.getUserTrackingStats().then(res => {
@@ -86,7 +86,7 @@ export default function ActivityPanel({ isOpen, onClose }: ActivityPanelProps) {
                   // Determine icon based on action
                   let Icon = Activity;
                   let colorClass = 'text-primary';
-                  
+
                   if (act.action === 'USER_LOGIN') {
                     Icon = LogIn;
                     colorClass = 'text-emerald-600';
