@@ -24,12 +24,27 @@ const bulkUpload = multer({
   }
 });
 
+const googleSheetsController = require('../controllers/googleSheetsController');
+
+// ── Google OAuth Callback (Must be before authenticate as it is called directly by Google redirect) ──
+router.get('/google/callback', (req, res, next) => googleSheetsController.handleCallback(req, res, next));
+
 // All wedding CRM routes require authentication
 router.use(authenticate);
 
 // Module-level RBAC (Access Control Matrix → role defaults) + audit + force logout
 const canViewWedding = requireModuleAction('wedding_crm', 'can_view');
 const canAddWedding = requireModuleAction('wedding_crm', 'can_add');
+
+// ── Google Sheets Integration Routes (authenticated + module guarded) ──
+router.get('/google/status', canViewWedding, (req, res, next) => googleSheetsController.getStatus(req, res, next));
+router.get('/google/auth-url', canViewWedding, (req, res, next) => googleSheetsController.getAuthUrl(req, res, next));
+router.post('/google/disconnect', canViewWedding, (req, res, next) => googleSheetsController.disconnect(req, res, next));
+router.post('/google/config', canAddWedding, (req, res, next) => googleSheetsController.saveConfig(req, res, next));
+router.get('/google/sheets', canViewWedding, (req, res, next) => googleSheetsController.listSpreadsheets(req, res, next));
+router.get('/google/sheets/:id', canViewWedding, (req, res, next) => googleSheetsController.getSpreadsheetDetails(req, res, next));
+router.get('/google/sheets/:id/preview', canViewWedding, (req, res, next) => googleSheetsController.previewWorksheet(req, res, next));
+router.post('/google/import', canAddWedding, (req, res, next) => googleSheetsController.importSheet(req, res, next));
 
 // ── Template Downloads (authenticated + wedding_crm view permission) ──
 router.get('/template-csv', canViewWedding, (req, res, next) => weddingController.downloadCsvTemplate(req, res, next));

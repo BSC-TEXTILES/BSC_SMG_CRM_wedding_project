@@ -1645,6 +1645,48 @@ export const API = {
     return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
   },
 
+  // ── Wedding CRM: Google Sheets Integration ───────────────────
+  async getGoogleSheetsStatus() {
+    const res = await apiFetch('/wedding-crm/google/status');
+    return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
+  },
+  async getGoogleAuthUrl() {
+    const res = await apiFetch('/wedding-crm/google/auth-url');
+    return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
+  },
+  async disconnectGoogleAccount() {
+    const res = await apiFetch('/wedding-crm/google/disconnect', { method: 'POST' });
+    return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
+  },
+  async saveGoogleConfig(clientId: string, clientSecret: string) {
+    const res = await apiFetch('/wedding-crm/google/config', {
+      method: 'POST',
+      body: JSON.stringify({ clientId, clientSecret })
+    });
+    return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
+  },
+  async getGoogleSpreadsheets(search?: string) {
+    const q = search ? `?search=${encodeURIComponent(search)}` : '';
+    const res = await apiFetch(`/wedding-crm/google/sheets${q}`);
+    return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
+  },
+  async getGoogleSpreadsheetDetails(spreadsheetId: string) {
+    const res = await apiFetch(`/wedding-crm/google/sheets/${encodeURIComponent(spreadsheetId)}`);
+    return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
+  },
+  async previewGoogleSheet(spreadsheetId: string, sheetName: string) {
+    const q = `?sheetName=${encodeURIComponent(sheetName)}`;
+    const res = await apiFetch(`/wedding-crm/google/sheets/${encodeURIComponent(spreadsheetId)}/preview${q}`);
+    return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
+  },
+  async importGoogleSheet(payload: { spreadsheetId: string; sheetName: string; locationId: number | string }) {
+    const res = await apiFetch('/wedding-crm/google/import', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+    return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
+  },
+
   // ── Wedding CRM: Enhanced Dashboard ──────────────────────────
   async getWeddingEnhancedDashboard(locationId?: number | string) {
     const q = locationId ? `?location_id=${locationId}` : '';
