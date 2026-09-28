@@ -1,7 +1,7 @@
 require('dotenv').config();
 const http = require('http');
 const jwt = require('jsonwebtoken');
-const { getJwtSecret } = require('./src/utils/secrets');
+const { getJwtSecret } = require('../backend/src/utils/secrets');
 
 const JWT_SECRET = getJwtSecret();
 

@@ -301,56 +301,61 @@ function authorizeAction(moduleName, action = 'can_view') {
  */
 function authorizeLocationAccess(paramName = 'locationId') {
   return async (req, res, next) => {
-    const rawVal = req.params[paramName] 
-      || req.params['location_id']
-      || req.body[paramName] 
-      || req.body['location_id']
-      || req.body['locationId']
-      || req.query[paramName]
-      || req.query['location_id']
-      || req.query['locationId']
-      || req.headers['x-location-id'];
+    try {
+      const rawVal = req.params?.[paramName] 
+        || req.params?.['location_id']
+        || req.body?.[paramName] 
+        || req.body?.['location_id']
+        || req.body?.['locationId']
+        || req.query?.[paramName]
+        || req.query?.['location_id']
+        || req.query?.['locationId']
+        || req.headers?.['x-location-id'];
 
-    const isGlobal = !req.user?.locationId || req.user?.isGlobalAdmin || ['Admin', 'Super Admin'].includes(req.user?.role);
+      const isGlobal = !req.user?.locationId || req.user?.isGlobalAdmin || ['Admin', 'Super Admin'].includes(req.user?.role);
 
-    if (rawVal === undefined || rawVal === null || rawVal === '') {
-      return next(); // No specific location specified — let the controller handle filtering
-    }
+      if (rawVal === undefined || rawVal === null || rawVal === '') {
+        return next(); // No specific location specified — let the controller handle filtering
+      }
 
-    if (String(rawVal).trim().toLowerCase() === 'all') {
-      if (isGlobal) return next();
-      return res.status(403).json({
-        success: false,
-        error: {
-          code: 'LOCATION_ACCESS_DENIED',
+      if (String(rawVal).trim().toLowerCase() === 'all') {
+        if (isGlobal) return next();
+        return res.status(403).json({
+          success: false,
+          error: {
+            code: 'LOCATION_ACCESS_DENIED',
+            message: 'Access denied: You are restricted to your assigned store location.',
+            details: { requestedLocation: rawVal }
+          },
           message: 'Access denied: You are restricted to your assigned store location.',
-          details: { requestedLocation: rawVal }
-        },
-        message: 'Access denied: You are restricted to your assigned store location.',
-        errors: ['Single-location accounts cannot access All Locations data.']
-      });
-    }
+          errors: ['Single-location accounts cannot access All Locations data.']
+        });
+      }
 
-    // Public / unauthenticated requests (e.g., customer feedback submission) are not scoped to a logged-in user
-    if (!req.user || !req.user.id || req.user.role === 'Guest' || req.user.id === 'anonymous') {
-      return next();
-    }
+      // Public / unauthenticated requests (e.g., customer feedback submission) are not scoped to a logged-in user
+      if (!req.user || !req.user.id || req.user.role === 'Guest' || req.user.id === 'anonymous') {
+        return next();
+      }
 
-    const allowed = await checkLocationAccess(req.user, rawVal);
-    if (!allowed) {
-      return res.status(403).json({
-        success: false,
-        error: {
-          code: 'LOCATION_ACCESS_DENIED',
+      const allowed = await checkLocationAccess(req.user, rawVal);
+      if (!allowed) {
+        return res.status(403).json({
+          success: false,
+          error: {
+            code: 'LOCATION_ACCESS_DENIED',
+            message: 'Access denied: you do not have permission to access data for this location',
+            details: { requestedLocation: rawVal }
+          },
           message: 'Access denied: you do not have permission to access data for this location',
-          details: { requestedLocation: rawVal }
-        },
-        message: 'Access denied: you do not have permission to access data for this location',
-        errors: ['You do not have permission to access data for this location']
-      });
-    }
+          errors: ['You do not have permission to access data for this location']
+        });
+      }
 
-    next();
+      next();
+    } catch (err) {
+      console.warn('[authorizeLocationAccess] Fallback on error:', err.message);
+      next();
+    }
   };
 }
 

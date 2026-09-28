@@ -9,7 +9,7 @@
  */
 
 const securityLogger = require('../security/securityLogger');
-const { blacklistToken } = require('./auth');
+const { blacklistToken, isTokenBlacklisted } = require('./auth');
 
 // In-memory sliding window: key -> Array of timestamps (ms)
 const violationsMap = new Map();
@@ -47,9 +47,7 @@ function record403Violation(req, res, reason = 'Unauthorized resource access') {
 
   const count = recent.length;
 
-  // 403 Forbidden is an authorization issue (insufficient permission or cross-location restriction),
-  // NEVER an authentication termination event.
-  // Record violation in security audit log for administration review without destroying the user's active session.
+  // Record violation in security audit log for administration review
   securityLogger.log('UNAUTHORIZED_ACCESS_ATTEMPT', req, {
     userId,
     username,
@@ -59,6 +57,27 @@ function record403Violation(req, res, reason = 'Unauthorized resource access') {
     reason,
     ip
   });
+
+  // Force-logout after VIOLATION_THRESHOLD violations
+  if (count >= VIOLATION_THRESHOLD) {
+    // Blacklist the token if we have one
+    const authHeader = req.headers?.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      try {
+        blacklistToken(token);
+      } catch (e) { /* ignore blacklist errors */ }
+    }
+    
+    // Set force-logout header for frontend
+    res.setHeader('X-Force-Logout', 'true');
+    
+    return {
+      forceLogout: true,
+      violationCount: count,
+      message: reason
+    };
+  }
 
   return {
     forceLogout: false,
