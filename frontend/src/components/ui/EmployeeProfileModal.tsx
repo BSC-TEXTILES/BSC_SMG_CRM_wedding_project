@@ -7,6 +7,7 @@ import {
   AlertCircle, CheckCircle2, AlertTriangle, Shield
 } from 'lucide-react';
 import StatusBadge from './StatusBadge';
+import ModalPortal from './ModalPortal';
 import { API } from '../../services/api';
 import { showToast } from '../Toast';
 import { formatName } from '../../utils/formatName';
@@ -401,8 +402,13 @@ export default function EmployeeProfileModal({ employee, onClose, onUpdated }: E
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-primary/70 backdrop-blur-md transition-all animate-fade-in select-text">
-      <div className="relative w-full max-w-4xl max-h-[92vh] bg-background rounded-3xl shadow-2xl flex flex-col z-10 overflow-hidden border-2 border-accent/50">
+    <>
+      <ModalPortal
+        isOpen={!!currentEmp}
+        onClose={onClose}
+        ariaLabel={`Employee Profile - ${empName}`}
+      >
+        <div className="relative w-full max-w-4xl max-h-[92vh] bg-background rounded-3xl shadow-2xl flex flex-col z-10 overflow-hidden border-2 border-accent/50 select-text">
         
         {/* Top Header Banner */}
         <div className="bg-gradient-to-r from-primary via-primary to-[#3D2B1F] text-white p-5 sm:p-6 border-b-2 border-accent/40 relative">
@@ -1025,10 +1031,16 @@ export default function EmployeeProfileModal({ employee, onClose, onUpdated }: E
           </div>
         </div>
       </div>
+      </ModalPortal>
 
       {/* ── PHOTO PREVIEW MODAL ──────────────────────────────────────────────── */}
-      {isPhotoPreviewOpen && photo && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+      <ModalPortal
+        isOpen={isPhotoPreviewOpen && !!photo}
+        onClose={() => setIsPhotoPreviewOpen(false)}
+        zIndex={1200}
+        ariaLabel="Employee Profile Photo"
+      >
+        {photo && (
           <div className="relative max-w-xl w-full bg-white rounded-3xl p-5 border-2 border-accent/40 shadow-2xl flex flex-col items-center">
             <button
               onClick={() => setIsPhotoPreviewOpen(false)}
@@ -1047,87 +1059,95 @@ export default function EmployeeProfileModal({ employee, onClose, onUpdated }: E
               <div className="text-xs text-[#6B5D50]">{empCode} • {desig}</div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </ModalPortal>
 
       {/* ── UPLOAD DOCUMENT MODAL ────────────────────────────────────────────── */}
-      {isUploadDocModalOpen && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
-          <div className="relative w-full max-w-md bg-white rounded-3xl p-6 border-2 border-accent shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-accent-soft pb-3">
-              <h3 className="font-black text-primary text-base flex items-center gap-2">
-                <Upload className="w-4 h-4 text-accent" />
-                <span>Upload Employee Document</span>
-              </h3>
+      <ModalPortal
+        isOpen={isUploadDocModalOpen}
+        onClose={() => { setIsUploadDocModalOpen(false); setDocFileToUpload(null); }}
+        zIndex={1200}
+        ariaLabel="Upload Employee Document"
+      >
+        <div className="relative w-full max-w-md bg-white rounded-3xl p-6 border-2 border-accent shadow-2xl space-y-4">
+          <div className="flex items-center justify-between border-b border-accent-soft pb-3">
+            <h3 className="font-black text-primary text-base flex items-center gap-2">
+              <Upload className="w-4 h-4 text-accent" />
+              <span>Upload Employee Document</span>
+            </h3>
+            <button
+              type="button"
+              onClick={() => { setIsUploadDocModalOpen(false); setDocFileToUpload(null); }}
+              className="p-1.5 rounded-full hover:bg-gray-100 text-gray-600"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          <form onSubmit={handleUploadDocumentSubmit} className="space-y-4">
+            <div>
+              <label className="block text-[11px] font-black text-primary uppercase mb-1">
+                Document Type
+              </label>
+              <select
+                value={selectedDocType}
+                onChange={(e) => setSelectedDocType(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border border-accent-soft text-xs font-bold text-primary outline-none focus:ring-2 focus:ring-accent/40 bg-white"
+              >
+                {STANDARD_DOCUMENT_TYPES.map(type => (
+                  <option key={type} value={type}>{type}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-black text-primary uppercase mb-1">
+                Select File (PDF, Images, DOCX - Max 15MB)
+              </label>
+              <input
+                ref={docFileInputRef}
+                type="file"
+                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp"
+                onChange={(e) => setDocFileToUpload(e.target.files?.[0] || null)}
+                className="w-full px-3 py-2 rounded-xl border border-accent-soft text-xs text-primary file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-black file:bg-primary file:text-white hover:file:bg-primary-hover cursor-pointer"
+              />
+              {docFileToUpload && (
+                <div className="mt-2 text-xs font-bold text-emerald-700 flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Selected: {docFileToUpload.name} ({formatFileSize(docFileToUpload.size)})</span>
+                </div>
+              )}
+            </div>
+
+            <div className="pt-2 flex items-center justify-end gap-2 border-t border-accent-soft">
               <button
                 type="button"
                 onClick={() => { setIsUploadDocModalOpen(false); setDocFileToUpload(null); }}
-                className="p-1.5 rounded-full hover:bg-gray-100 text-gray-600"
+                className="px-4 py-2 rounded-xl border border-accent-soft text-xs font-bold text-[#5D4E42] hover:bg-gray-100"
               >
-                <X className="w-4 h-4" />
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={uploadingDoc || !docFileToUpload}
+                className="btn-gold px-5 py-2 text-xs font-black rounded-xl shadow-md flex items-center gap-1.5 disabled:opacity-50"
+              >
+                <Upload className="w-3.5 h-3.5" />
+                <span>{uploadingDoc ? 'Uploading...' : 'Confirm Upload'}</span>
               </button>
             </div>
-
-            <form onSubmit={handleUploadDocumentSubmit} className="space-y-4">
-              <div>
-                <label className="block text-[11px] font-black text-primary uppercase mb-1">
-                  Document Type
-                </label>
-                <select
-                  value={selectedDocType}
-                  onChange={(e) => setSelectedDocType(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-accent-soft text-xs font-bold text-primary outline-none focus:ring-2 focus:ring-accent/40 bg-white"
-                >
-                  {STANDARD_DOCUMENT_TYPES.map(type => (
-                    <option key={type} value={type}>{type}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-black text-primary uppercase mb-1">
-                  Select File (PDF, Images, DOCX - Max 15MB)
-                </label>
-                <input
-                  ref={docFileInputRef}
-                  type="file"
-                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp"
-                  onChange={(e) => setDocFileToUpload(e.target.files?.[0] || null)}
-                  className="w-full px-3 py-2 rounded-xl border border-accent-soft text-xs text-primary file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-black file:bg-primary file:text-white hover:file:bg-primary-hover cursor-pointer"
-                />
-                {docFileToUpload && (
-                  <div className="mt-2 text-xs font-bold text-emerald-700 flex items-center gap-1.5">
-                    <CheckCircle2 className="w-4 h-4" />
-                    <span>Selected: {docFileToUpload.name} ({formatFileSize(docFileToUpload.size)})</span>
-                  </div>
-                )}
-              </div>
-
-              <div className="pt-2 flex items-center justify-end gap-2 border-t border-accent-soft">
-                <button
-                  type="button"
-                  onClick={() => { setIsUploadDocModalOpen(false); setDocFileToUpload(null); }}
-                  className="px-4 py-2 rounded-xl border border-accent-soft text-xs font-bold text-[#5D4E42] hover:bg-gray-100"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={uploadingDoc || !docFileToUpload}
-                  className="btn-gold px-5 py-2 text-xs font-black rounded-xl shadow-md flex items-center gap-1.5 disabled:opacity-50"
-                >
-                  <Upload className="w-3.5 h-3.5" />
-                  <span>{uploadingDoc ? 'Uploading...' : 'Confirm Upload'}</span>
-                </button>
-              </div>
-            </form>
-          </div>
+          </form>
         </div>
-      )}
+      </ModalPortal>
 
       {/* ── REPLACE DOCUMENT MODAL ───────────────────────────────────────────── */}
-      {isReplaceDocOpen && docToReplace && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
+      <ModalPortal
+        isOpen={isReplaceDocOpen && !!docToReplace}
+        onClose={() => { setIsReplaceDocOpen(false); setDocToReplace(null); setReplaceFile(null); }}
+        zIndex={1200}
+        ariaLabel="Replace Document"
+      >
+        {docToReplace && (
           <div className="relative w-full max-w-md bg-white rounded-3xl p-6 border-2 border-accent shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b border-accent-soft pb-3">
               <h3 className="font-black text-primary text-base flex items-center gap-2">
@@ -1187,12 +1207,17 @@ export default function EmployeeProfileModal({ employee, onClose, onUpdated }: E
               </div>
             </form>
           </div>
-        </div>
-      )}
+        )}
+      </ModalPortal>
 
       {/* ── VIEW DOCUMENT PREVIEW MODAL ───────────────────────────────────────── */}
-      {isViewModalOpen && docToView && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md animate-fade-in">
+      <ModalPortal
+        isOpen={isViewModalOpen && !!docToView}
+        onClose={() => { setIsViewModalOpen(false); setDocToView(null); }}
+        zIndex={1200}
+        ariaLabel="Document Preview"
+      >
+        {docToView && (
           <div className="relative w-full max-w-4xl max-h-[92vh] bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden border-2 border-accent">
             {/* Header */}
             <div className="p-4 bg-primary text-white flex items-center justify-between border-b border-accent/40">
@@ -1288,12 +1313,17 @@ export default function EmployeeProfileModal({ employee, onClose, onUpdated }: E
               )}
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </ModalPortal>
 
       {/* ── DELETE CONFIRMATION DIALOG ───────────────────────────────────────── */}
-      {isDeleteConfirmOpen && itemToDelete && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
+      <ModalPortal
+        isOpen={isDeleteConfirmOpen && !!itemToDelete}
+        onClose={() => { setIsDeleteConfirmOpen(false); setItemToDelete(null); }}
+        zIndex={1200}
+        ariaLabel="Delete Confirmation"
+      >
+        {itemToDelete && (
           <div className="relative w-full max-w-sm bg-white rounded-3xl p-6 border-2 border-rose-300 shadow-2xl space-y-4 text-center">
             <div className="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
               <AlertTriangle className="w-6 h-6" />
@@ -1324,9 +1354,8 @@ export default function EmployeeProfileModal({ employee, onClose, onUpdated }: E
               </button>
             </div>
           </div>
-        </div>
-      )}
-
-    </div>
+        )}
+      </ModalPortal>
+    </>
   );
 }

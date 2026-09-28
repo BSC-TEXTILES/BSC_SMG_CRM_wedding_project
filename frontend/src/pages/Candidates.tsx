@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import ShortlistModal from '../components/ui/ShortlistModal';
 import CandidateProfileModal from '../components/ui/CandidateProfileModal';
+import ModalPortal from '../components/ui/ModalPortal';
 import { BSC_DEPARTMENTS, getSectionsForDepartment } from '../utils/bscDepartments';
 
 export default function CandidatesPage() {
@@ -392,8 +393,11 @@ export default function CandidatesPage() {
     <div className="min-h-screen bg-background flex">
 
       {/* Professional Status Change Confirmation Modal */}
-      {confirmStatusModal.open && confirmStatusModal.candidate && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-primary/60 backdrop-blur-xs animate-fade-in">
+      <ModalPortal
+        isOpen={Boolean(confirmStatusModal.open && confirmStatusModal.candidate)}
+        onClose={() => setConfirmStatusModal({ open: false, candidate: null, newStatus: '' })}
+      >
+        {confirmStatusModal.candidate && (
           <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl border border-accent-soft space-y-5 animate-scale-in">
             <div className="flex items-center justify-between border-b border-accent-soft pb-3">
               <div className="flex items-center gap-3">
@@ -440,8 +444,8 @@ export default function CandidatesPage() {
               </button>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </ModalPortal>
 
       <ToastContainer />
 
@@ -790,8 +794,11 @@ export default function CandidatesPage() {
       />
 
       {/* Direct Shortlisting & Wedding Operations Modal */}
-      {directOfferModal.open && directOfferModal.candidate && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-primary/70 backdrop-blur-md transition-all animate-fade-in">
+      <ModalPortal
+        isOpen={Boolean(directOfferModal.open && directOfferModal.candidate)}
+        onClose={() => setDirectOfferModal({ open: false, candidate: null })}
+      >
+        {directOfferModal.candidate && (
           <div className="w-full max-w-lg bg-background rounded-3xl p-6 space-y-4 shadow-2xl animate-fade-in border-2 border-accent/50">
             <div className="flex items-center justify-between border-b border-accent/30 pb-3">
               <div>
@@ -877,8 +884,8 @@ export default function CandidatesPage() {
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </ModalPortal>
 
       {/* Candidate Shortlisting & Screening Questions Modal */}
       <ShortlistModal

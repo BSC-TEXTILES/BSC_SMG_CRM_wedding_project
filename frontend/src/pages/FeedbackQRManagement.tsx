@@ -216,6 +216,7 @@ import {
 } from 'lucide-react';
 import { API, Auth } from '../services/api';
 import { showToast } from '../components/Toast';
+import ModalPortal from '../components/ui/ModalPortal';
 import { format } from 'date-fns';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -1598,9 +1599,12 @@ export default function FeedbackQRManagement() {
       </div>
 
         {/* Create/Edit Modal */}
-        {showCreateModal && (
-          <div className="fixed inset-0 bg-primary/70 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fade-in">
-            <div className="card-glass max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-scale-in shadow-2xl rounded-3xl border border-white/40 bg-white text-primary">
+        <ModalPortal
+          isOpen={showCreateModal}
+          onClose={() => { setShowCreateModal(false); resetForm(); }}
+          ariaLabel={editingQrCode ? 'Edit QR Code' : 'Create New QR Code'}
+        >
+          <div className="card-glass max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl rounded-3xl border border-white/40 bg-white text-primary">
               <div className="p-6 border-b border-accent-soft flex items-center justify-between">
                 <h3 className="text-lg font-black text-primary flex items-center gap-2">
                   <QrCode className="w-5 h-5 text-accent" />
@@ -1792,13 +1796,16 @@ export default function FeedbackQRManagement() {
                 </div>
               </form>
             </div>
-          </div>
-        )}
+        </ModalPortal>
 
         {/* Preview Modal */}
-        {previewQrCode && (
-          <div className="fixed inset-0 bg-primary/70 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fade-in">
-            <div className="card-glass max-w-lg w-full max-h-[90vh] overflow-y-auto animate-scale-in shadow-2xl rounded-3xl border border-white/40 bg-white text-primary">
+        <ModalPortal
+          isOpen={!!previewQrCode}
+          onClose={() => setPreviewQrCode(null)}
+          ariaLabel="QR Code Preview"
+        >
+          {previewQrCode && (
+            <div className="card-glass max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl rounded-3xl border border-white/40 bg-white text-primary">
               <div className="p-6 border-b border-accent-soft flex items-center justify-between">
                 <h3 className="text-lg font-black text-primary flex items-center gap-2">
                   <QrCode className="w-5 h-5 text-accent" />
@@ -1858,13 +1865,17 @@ export default function FeedbackQRManagement() {
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </ModalPortal>
 
         {/* Scan History Modal */}
-        {scanHistoryQrCode && (
-          <div className="fixed inset-0 bg-primary/70 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fade-in">
-            <div className="card-glass max-w-4xl w-full max-h-[90vh] overflow-y-auto animate-scale-in shadow-2xl rounded-3xl border border-white/40 bg-white text-primary">
+        <ModalPortal
+          isOpen={!!scanHistoryQrCode}
+          onClose={() => setScanHistoryQrCode(null)}
+          ariaLabel="Scan History"
+        >
+          {scanHistoryQrCode && (
+            <div className="card-glass max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl rounded-3xl border border-white/40 bg-white text-primary">
               <div className="p-6 border-b border-accent-soft flex items-center justify-between">
                 <div>
                   <h3 className="text-lg font-black text-primary flex items-center gap-2">
@@ -1924,8 +1935,8 @@ export default function FeedbackQRManagement() {
                 )}
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </ModalPortal>
       </div>
     </DashboardLayout>
   );

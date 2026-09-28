@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { X, ShieldCheck, FileText, ChevronDown, Lock } from 'lucide-react';
 import PrivacyPolicyModal from './PrivacyPolicyModal';
 import TermsAndConditionsModal from './TermsAndConditionsModal';
+import ModalPortal from './ModalPortal';
 import { API } from '../../services/api';
 
 interface ConsentModalProps {
@@ -105,8 +106,13 @@ export default function ConsentModal({ isOpen, onConsentComplete }: ConsentModal
   }
 
   return (
-    <div className="fixed inset-0 z-[70] bg-primary/80 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
-      <div className="bg-white rounded-3xl shadow-2xl border border-accent-soft w-full max-w-lg max-h-[90vh] flex flex-col animate-scale-in overflow-hidden">
+    <ModalPortal
+      isOpen={isOpen}
+      closeOnBackdropClick={false}
+      closeOnEsc={false}
+      ariaLabel="Required Consent"
+    >
+      <div className="bg-white rounded-3xl shadow-2xl border border-accent-soft w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
 
         {/* Header */}
         <div className="bg-primary px-6 py-4 flex items-center justify-between border-b border-accent/30 flex-shrink-0">
@@ -264,6 +270,6 @@ export default function ConsentModal({ isOpen, onConsentComplete }: ConsentModal
           )}
         </div>
       </div>
-    </div>
+    </ModalPortal>
   );
 }

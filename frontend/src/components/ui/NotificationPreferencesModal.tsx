@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Volume2, VolumeX, Bell, Sliders, ShieldCheck } from 'lucide-react';
 import { NotificationService, NotificationSettings } from '../../services/notificationService';
 import { showToast } from '../Toast';
+import ModalPortal from './ModalPortal';
 
 interface NotificationPreferencesModalProps {
   isOpen: boolean;
@@ -24,8 +25,12 @@ export default function NotificationPreferencesModal({ isOpen, onClose }: Notifi
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
-      <div className="w-full max-w-md bg-white rounded-3xl p-6 space-y-5 shadow-2xl border border-accent-soft animate-fade-in">
+    <ModalPortal
+      isOpen={isOpen}
+      onClose={onClose}
+      ariaLabel="Notification & Audio Preferences"
+    >
+      <div className="w-full max-w-md bg-white rounded-3xl p-6 space-y-5 shadow-2xl border border-accent-soft">
         <div className="flex items-center justify-between border-b border-accent-soft pb-3">
           <div className="flex items-center gap-2.5">
             <Sliders className="w-5 h-5 text-accent" />
@@ -130,6 +135,6 @@ export default function NotificationPreferencesModal({ isOpen, onClose }: Notifi
           </button>
         </div>
       </div>
-    </div>
+    </ModalPortal>
   );
 }

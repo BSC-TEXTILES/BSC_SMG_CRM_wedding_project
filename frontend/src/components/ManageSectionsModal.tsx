@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { API } from '../services/api';
 import { showToast } from './Toast';
+import ModalPortal from './ui/ModalPortal';
 import { BSC_DEPARTMENTS, getUniqueDepartments } from '../utils/bscDepartments';
 import { Layers, Plus, Edit3, Trash2, X, Save, Check } from 'lucide-react';
 
@@ -128,8 +129,12 @@ export default function ManageSectionsModal({ isOpen, onClose, onSectionsUpdated
   const filtered = sections.filter(s => filterDept === 'All' || s.department === filterDept);
 
   return (
-    <div className="fixed inset-0 z-50 bg-primary/70 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-background rounded-3xl border border-accent-soft shadow-2xl w-full max-w-3xl p-6 space-y-5 max-h-[90vh] overflow-y-auto relative animate-scale-in">
+    <ModalPortal
+      isOpen={isOpen}
+      onClose={onClose}
+      ariaLabel="Manage Department Sections"
+    >
+      <div className="bg-background rounded-3xl border border-accent-soft shadow-2xl w-full max-w-3xl p-6 space-y-5 max-h-[90vh] overflow-y-auto relative">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-accent-soft pb-3.5">
           <div>
@@ -347,6 +352,6 @@ export default function ManageSectionsModal({ isOpen, onClose, onSectionsUpdated
           </button>
         </div>
       </div>
-    </div>
+    </ModalPortal>
   );
 }

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Phone, Mail, MapPin, Calendar, Briefcase, DollarSign, FileText, UserCheck, ExternalLink, Building, Edit3, Save, RotateCcw, Image as ImageIcon, FileCheck, CheckCircle } from 'lucide-react';
 import StatusBadge from './StatusBadge';
+import ModalPortal from './ModalPortal';
 import { API } from '../../services/api';
 import { showToast } from '../Toast';
 import { formatName } from '../../utils/formatName';
@@ -120,8 +121,12 @@ export default function CandidateProfileModal({ candidate, isOpen, onClose, onUp
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-primary/70 backdrop-blur-md transition-all animate-fade-in select-text">
-      <div className="relative w-full max-w-4xl max-h-[92vh] bg-background rounded-3xl shadow-2xl flex flex-col z-10 overflow-hidden border-2 border-accent/50">
+    <ModalPortal
+      isOpen={isOpen && !!currentCand}
+      onClose={onClose}
+      ariaLabel={`Candidate Profile - ${currentCand?.name || 'Applicant'}`}
+    >
+      <div className="relative w-full max-w-4xl max-h-[92vh] bg-background rounded-3xl shadow-2xl flex flex-col z-10 overflow-hidden border-2 border-accent/50 select-text">
         
         {/* Top Header Banner */}
         <div className="bg-gradient-to-r from-primary via-primary to-[#3D2B1F] text-white p-5 sm:p-6 border-b-2 border-accent/40 relative">
@@ -624,6 +629,6 @@ export default function CandidateProfileModal({ candidate, isOpen, onClose, onUp
           </div>
         </div>
       </div>
-    </div>
+    </ModalPortal>
   );
 }

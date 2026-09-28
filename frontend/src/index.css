@@ -722,3 +722,95 @@ body::-webkit-scrollbar,
   width: 0 !important;
   height: 0 !important;
 }
+
+/* ==================================================
+   BSC PORTAL — FULL PAGE BACKGROUND BLUR FOR MODALS
+   ================================================== */
+.bsc-modal-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 1000 !important;
+  background-color: rgba(25, 10, 20, 0.25) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 1rem !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  animation: bscBackdropFadeIn 220ms cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+}
+
+@supports not (backdrop-filter: blur(12px)) {
+  .bsc-modal-backdrop {
+    background-color: rgba(25, 10, 20, 0.70) !important;
+  }
+}
+
+@keyframes bscBackdropFadeIn {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+    -webkit-backdrop-filter: blur(0px);
+  }
+  to {
+    opacity: 1;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+}
+
+.bsc-modal-card {
+  position: relative !important;
+  z-index: 1100 !important;
+  animation: bscModalScaleIn 220ms cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+  max-width: 100%;
+}
+
+@keyframes bscModalScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bsc-modal-backdrop,
+  .bsc-modal-card {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Universal backdrop blur rules for all overlay elements across the entire BSC Portal */
+.fixed.inset-0[class*="backdrop-blur"]:not(aside):not(nav),
+.fixed.inset-0.bg-black\/40,
+.fixed.inset-0.bg-black\/50,
+.fixed.inset-0.bg-black\/60,
+.fixed.inset-0.bg-black\/70,
+.fixed.inset-0.bg-black\/75,
+.fixed.inset-0.bg-black\/80,
+.fixed.inset-0.bg-black\/85,
+.fixed.inset-0.bg-primary\/40,
+.fixed.inset-0.bg-primary\/50,
+.fixed.inset-0.bg-primary\/60,
+.fixed.inset-0.bg-primary\/70,
+.fixed.inset-0.bg-primary\/80 {
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  background-color: rgba(25, 10, 20, 0.25) !important;
+  z-index: 1000;
+}
+
+

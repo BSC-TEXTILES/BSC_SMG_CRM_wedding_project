@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, CheckCircle, Award, Briefcase, DollarSign, Calendar, Sparkles, UserCheck, Layers, Building, CircleHelp, Star, ShieldCheck } from 'lucide-react';
 import { API } from '../../services/api';
 import { showToast } from '../Toast';
+import ModalPortal from './ModalPortal';
 import { BSC_DEPARTMENTS, getSectionsForDepartment } from '../../utils/bscDepartments';
 
 interface ShortlistModalProps {
@@ -91,8 +92,12 @@ export default function ShortlistModal({ candidate, isOpen, onClose, onShortlist
   const photo = fileUrl(candidate.photoUrl);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-primary/70 backdrop-blur-md transition-all animate-fade-in select-text">
-      <div className="relative w-full max-w-3xl max-h-[92vh] bg-background rounded-3xl shadow-2xl flex flex-col z-10 overflow-hidden border-2 border-accent/50">
+    <ModalPortal
+      isOpen={isOpen && !!candidate}
+      onClose={onClose}
+      ariaLabel={`Shortlist Candidate - ${candidate?.name || 'Applicant'}`}
+    >
+      <div className="relative w-full max-w-3xl max-h-[92vh] bg-background rounded-3xl shadow-2xl flex flex-col z-10 overflow-hidden border-2 border-accent/50 select-text">
         
         {/* Modal Header */}
         <div className="bg-gradient-to-r from-primary via-primary to-[#3D2B1F] text-white p-5 sm:p-6 border-b-2 border-accent/40 relative">
@@ -325,6 +330,6 @@ export default function ShortlistModal({ candidate, isOpen, onClose, onShortlist
           </div>
         </form>
       </div>
-    </div>
+    </ModalPortal>
   );
 }

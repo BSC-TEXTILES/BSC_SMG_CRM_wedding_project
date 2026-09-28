@@ -155,7 +155,11 @@ function invalidateUserStatusCache(userId) {
 const authenticate = async (req, res, next) => {
   try {
     // Test bypass for integration tests running from localhost
-    const isTestBypass = req.headers && req.headers['x-test-bypass'] === 'bsc-test-secret-suite';
+    // Only applies when NO Authorization header is present (for public endpoint tests)
+    const authHeaderEarly = req.headers.authorization || req.headers.Authorization;
+    const hasAuthHeader = authHeaderEarly && authHeaderEarly.toLowerCase().startsWith('bearer ');
+    const isTestBypass = !hasAuthHeader && req.headers && req.headers['x-test-bypass'] === 'bsc-test-secret-suite';
+    
     if (isTestBypass) {
       req.user = { id: 1, username: 'admin@bsctextiles.com', role: 'Admin', fullName: 'System Admin', isGlobalAdmin: true, tokenVersion: 22, locationId: null };
       req.correlationId = `req_test_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;

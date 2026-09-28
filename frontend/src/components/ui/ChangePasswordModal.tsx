@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { API, UserSession } from '../../services/api';
 import { showToast } from '../Toast';
+import ModalPortal from './ModalPortal';
 
 interface ChangePasswordModalProps {
   isOpen: boolean;
@@ -115,9 +116,13 @@ export default function ChangePasswordModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
+    <ModalPortal
+      isOpen={isOpen}
+      onClose={onClose}
+      ariaLabel="Update Password"
+    >
       <div 
-        className="w-full max-w-md bg-[#FFFDFC] rounded-3xl shadow-2xl border border-[#E8D9D4] overflow-hidden transform transition-all"
+        className="w-full max-w-md bg-[#FFFDFC] rounded-3xl shadow-2xl border border-[#E8D9D4] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -315,6 +320,6 @@ export default function ChangePasswordModal({
           </div>
         </form>
       </div>
-    </div>
+    </ModalPortal>
   );
 }

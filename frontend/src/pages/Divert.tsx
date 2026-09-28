@@ -8,6 +8,7 @@ import {
 import { API } from '../services/api';
 import { showToast } from '../components/Toast';
 import MetricCard from '../components/ui/MetricCard';
+import ModalPortal from '../components/ui/ModalPortal';
 import * as XLSX from 'xlsx';
 
 export default function Divert() {
@@ -459,9 +460,12 @@ export default function Divert() {
         </div>
 
         {/* Raise New Sourcing Divert Modal */}
-        {showRaiseModal && (
-          <div className="fixed inset-0 bg-primary/60 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-fade-in">
-            <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden border border-accent/40 animate-scale-in">
+        <ModalPortal
+          isOpen={showRaiseModal}
+          onClose={() => setShowRaiseModal(false)}
+          ariaLabel="Raise New Sourcing Divert"
+        >
+          <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden border border-accent/40 flex flex-col">
               <div className="bg-primary text-white p-5 flex items-center justify-between border-b border-accent/30">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-accent text-white font-black text-lg flex items-center justify-center shadow-md">
@@ -602,13 +606,16 @@ export default function Divert() {
                 </div>
               </form>
             </div>
-          </div>
-        )}
+        </ModalPortal>
 
         {/* Centered Details Popup Modal Card */}
-        {selectedDivert && (
-          <div className="fixed inset-0 bg-primary/60 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-fade-in">
-            <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full overflow-hidden border border-accent/40 animate-scale-in flex flex-col max-h-[90vh]">
+        <ModalPortal
+          isOpen={!!selectedDivert}
+          onClose={() => setSelectedDivert(null)}
+          ariaLabel="Sourcing Request Details"
+        >
+          {selectedDivert && (
+            <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full overflow-hidden border border-accent/40 flex flex-col max-h-[90vh]">
               {/* Header */}
               <div className="bg-primary text-white p-5 flex items-center justify-between border-b border-accent/30">
                 <div className="flex items-center gap-3">
@@ -746,8 +753,8 @@ export default function Divert() {
                 </button>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </ModalPortal>
 
       </div>
     </DashboardLayout>

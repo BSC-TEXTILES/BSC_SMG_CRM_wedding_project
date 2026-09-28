@@ -23,6 +23,7 @@ import { API } from '../services/api';
 import { io } from 'socket.io-client';
 import { showToast } from '../components/Toast';
 import { useLocationContext } from '../context/LocationContext';
+import ModalPortal from '../components/ui/ModalPortal';
 
 export default function FeedbackList() {
   const { currentLocation } = useLocationContext();
@@ -435,9 +436,13 @@ export default function FeedbackList() {
         </div>
 
         {/* Structured Call Outcome Logging Modal */}
-        {selectedItem && (
-          <div className="fixed inset-0 bg-primary/70 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-fade-in">
-            <div className="card-glass p-6 sm:p-8 max-w-lg w-full space-y-5 animate-scale-in shadow-2xl rounded-3xl border border-white/40 bg-white text-primary max-h-[90vh] overflow-y-auto">
+        <ModalPortal
+          isOpen={!!selectedItem}
+          onClose={() => setSelectedItem(null)}
+          ariaLabel="Log Telecaller Call Outcome"
+        >
+          {selectedItem && (
+            <div className="card-glass p-6 sm:p-8 max-w-lg w-full space-y-5 shadow-2xl rounded-3xl border border-white/40 bg-white text-primary max-h-[90vh] overflow-y-auto">
 
               <div className="flex items-center justify-between border-b border-accent-soft pb-3">
                 <h3 className="text-lg font-black text-primary flex items-center gap-2">
@@ -588,8 +593,8 @@ export default function FeedbackList() {
 
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </ModalPortal>
 
       </div>
     </DashboardLayout>

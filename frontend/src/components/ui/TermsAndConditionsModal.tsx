@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, FileText, ChevronDown } from 'lucide-react';
+import ModalPortal from './ModalPortal';
 
 interface TermsAndConditionsModalProps {
   isOpen: boolean;
@@ -37,8 +38,12 @@ export default function TermsAndConditionsModal({ isOpen, onClose, onAccept }: T
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] bg-primary/70 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
-      <div className="bg-white rounded-3xl shadow-2xl border border-accent-soft w-full max-w-2xl max-h-[90vh] flex flex-col animate-scale-in overflow-hidden">
+    <ModalPortal
+      isOpen={isOpen}
+      onClose={onClose}
+      ariaLabel="Terms and Conditions"
+    >
+      <div className="bg-white rounded-3xl shadow-2xl border border-accent-soft w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
         {/* Header */}
         <div className="bg-primary px-6 py-4 flex items-center justify-between border-b border-accent/30 flex-shrink-0">
           <div className="flex items-center gap-3">
@@ -412,6 +417,6 @@ export default function TermsAndConditionsModal({ isOpen, onClose, onAccept }: T
           </div>
         </div>
       </div>
-    </div>
+    </ModalPortal>
   );
 }

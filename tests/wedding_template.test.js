@@ -1,9 +1,21 @@
 const http = require('http');
 const ExcelJS = require('exceljs');
 
+const TEST_BYPASS_HEADERS = {
+  'x-test-bypass': 'bsc-test-secret-suite'
+};
+
 function get(url) {
   return new Promise((resolve, reject) => {
-    http.get(url, (res) => {
+    const options = new URL(url);
+    const reqOptions = {
+      hostname: options.hostname,
+      port: options.port,
+      path: options.pathname + options.search,
+      method: 'GET',
+      headers: TEST_BYPASS_HEADERS
+    };
+    http.get(reqOptions, (res) => {
       const chunks = [];
       res.on('data', chunk => chunks.push(chunk));
       res.on('end', () => {
@@ -34,7 +46,7 @@ async function runTests() {
 
   const lines = rawText.replace(/^\uFEFF/, '').trim().split(/\r?\n/);
   console.log('Row 1 Header:', lines[0]);
-  const expectedHeader = 'customer_name,mobile_number,email,wedding_date,store_location,notes,alternate_number';
+  const expectedHeader = 'customer_name,mobile_number,alternate_mobile,email,wedding_date,expected_shopping_date,preferred_shopping_category,estimated_family_size,budget_min,budget_max,assigned_telecaller,customer_notes';
   if (lines[0] !== expectedHeader) {
     throw new Error(`Header mismatch! Expected: ${expectedHeader}, got: ${lines[0]}`);
   }
@@ -60,7 +72,7 @@ async function runTests() {
   console.log('Worksheet name:', worksheet.name);
 
   const row1Values = [];
-  for (let c = 1; c <= 7; c++) {
+  for (let c = 1; c <= 12; c++) {
     row1Values.push(worksheet.getRow(1).getCell(c).value);
   }
   console.log('Excel Row 1 Headers:', row1Values.join(', '));
@@ -70,7 +82,7 @@ async function runTests() {
 
   // Check color fills
   const reqCell = worksheet.getRow(1).getCell(1); // customer_name (Required)
-  const optCell = worksheet.getRow(1).getCell(3); // email (Optional)
+  const optCell = worksheet.getRow(1).getCell(3); // alternate_mobile (Optional)
   console.log('Required cell fill color:', reqCell.fill?.fgColor?.argb);
   console.log('Optional cell fill color:', optCell.fill?.fgColor?.argb);
 

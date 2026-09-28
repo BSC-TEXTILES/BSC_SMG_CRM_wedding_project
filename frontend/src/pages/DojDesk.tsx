@@ -10,6 +10,7 @@ import {
   Search, Phone, Calendar, ArrowRight, UserCheck, CircleX, 
   Store, Building, RefreshCw, X, ShieldAlert
 } from 'lucide-react';
+import ModalPortal from '../components/ui/ModalPortal';
 
 interface NotJoinedCandidate {
   app_no: string;
@@ -494,113 +495,115 @@ export default function DojDesk() {
       </div>
 
       {/* ── RESCHEDULE MODAL ──────────────────────────────────────── */}
-      {rescheduleModal.open && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-accent-soft space-y-4">
-            <div className="flex items-center justify-between border-b border-accent-soft pb-3">
-              <h3 className="text-sm font-extrabold text-primary">Reschedule Date of Joining (DOJ)</h3>
-              <button onClick={() => setRescheduleModal({ open: false, appNo: '', name: '', currentDoj: '' })} className="text-primary/60 hover:text-primary">
-                <X className="w-5 h-5" />
-              </button>
+      <ModalPortal
+        isOpen={Boolean(rescheduleModal.open)}
+        onClose={() => setRescheduleModal({ open: false, appNo: '', name: '', currentDoj: '' })}
+      >
+        <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-accent-soft space-y-4">
+          <div className="flex items-center justify-between border-b border-accent-soft pb-3">
+            <h3 className="text-sm font-extrabold text-primary">Reschedule Date of Joining (DOJ)</h3>
+            <button onClick={() => setRescheduleModal({ open: false, appNo: '', name: '', currentDoj: '' })} className="text-primary/60 hover:text-primary">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          <p className="text-xs text-primary/70">
+            Rescheduling joining date for <strong className="text-primary">{rescheduleModal.name}</strong> ({rescheduleModal.appNo}).
+          </p>
+
+          <form onSubmit={handleReschedule} className="space-y-3">
+            <div>
+              <label className="block text-xs font-bold text-primary mb-1">New Date of Joining *</label>
+              <input
+                type="date"
+                required
+                value={newDoj}
+                onChange={e => setNewDoj(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border border-accent-soft bg-background text-xs font-medium focus:ring-2 focus:ring-accent outline-none"
+              />
             </div>
 
-            <p className="text-xs text-primary/70">
-              Rescheduling joining date for <strong className="text-primary">{rescheduleModal.name}</strong> ({rescheduleModal.appNo}).
-            </p>
+            <div>
+              <label className="block text-xs font-bold text-primary mb-1">Reason for Rescheduling</label>
+              <textarea
+                rows={2}
+                required
+                placeholder="e.g. Candidate requested 1 extra week for relocation..."
+                value={rescheduleReason}
+                onChange={e => setRescheduleReason(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border border-accent-soft bg-background text-xs font-medium focus:ring-2 focus:ring-accent outline-none"
+              />
+            </div>
 
-            <form onSubmit={handleReschedule} className="space-y-3">
-              <div>
-                <label className="block text-xs font-bold text-primary mb-1">New Date of Joining *</label>
-                <input
-                  type="date"
-                  required
-                  value={newDoj}
-                  onChange={e => setNewDoj(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-accent-soft bg-background text-xs font-medium focus:ring-2 focus:ring-accent outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-primary mb-1">Reason for Rescheduling</label>
-                <textarea
-                  rows={2}
-                  required
-                  placeholder="e.g. Candidate requested 1 extra week for relocation..."
-                  value={rescheduleReason}
-                  onChange={e => setRescheduleReason(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-accent-soft bg-background text-xs font-medium focus:ring-2 focus:ring-accent outline-none"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setRescheduleModal({ open: false, appNo: '', name: '', currentDoj: '' })}
-                  className="px-4 py-2 rounded-xl border border-accent-soft text-xs font-bold text-primary hover:bg-background"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary-hover shadow-xs"
-                >
-                  Save New DOJ
-                </button>
-              </div>
-            </form>
-          </div>
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setRescheduleModal({ open: false, appNo: '', name: '', currentDoj: '' })}
+                className="px-4 py-2 rounded-xl border border-accent-soft text-xs font-bold text-primary hover:bg-background"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary-hover shadow-xs"
+              >
+                Save New DOJ
+              </button>
+            </div>
+          </form>
         </div>
-      )}
+      </ModalPortal>
 
       {/* ── NOT JOINING / DROP MODAL ──────────────────────────────── */}
-      {dropModal.open && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-accent-soft space-y-4">
-            <div className="flex items-center justify-between border-b border-accent-soft pb-3">
-              <h3 className="text-sm font-extrabold text-[#C0392B] flex items-center gap-1.5">
-                <TriangleAlert className="w-4 h-4" /> Mark Candidate Not Joining
-              </h3>
-              <button onClick={() => setDropModal({ open: false, appNo: '', name: '' })} className="text-primary/60 hover:text-primary">
-                <X className="w-5 h-5" />
-              </button>
+      <ModalPortal
+        isOpen={Boolean(dropModal.open)}
+        onClose={() => setDropModal({ open: false, appNo: '', name: '' })}
+      >
+        <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-accent-soft space-y-4">
+          <div className="flex items-center justify-between border-b border-accent-soft pb-3">
+            <h3 className="text-sm font-extrabold text-[#C0392B] flex items-center gap-1.5">
+              <TriangleAlert className="w-4 h-4" /> Mark Candidate Not Joining
+            </h3>
+            <button onClick={() => setDropModal({ open: false, appNo: '', name: '' })} className="text-primary/60 hover:text-primary">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          <p className="text-xs text-primary/70">
+            Confirm that <strong className="text-primary">{dropModal.name}</strong> will not be joining BSC Textiles.
+          </p>
+
+          <form onSubmit={handleDropCandidate} className="space-y-3">
+            <div>
+              <label className="block text-xs font-bold text-primary mb-1">Reason / Feedback *</label>
+              <textarea
+                rows={3}
+                required
+                placeholder="e.g. Accepted another offer / Unreachable / Personal reasons..."
+                value={dropReason}
+                onChange={e => setDropReason(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border border-accent-soft bg-background text-xs font-medium focus:ring-2 focus:ring-accent outline-none"
+              />
             </div>
 
-            <p className="text-xs text-primary/70">
-              Confirm that <strong className="text-primary">{dropModal.name}</strong> will not be joining BSC Textiles.
-            </p>
-
-            <form onSubmit={handleDropCandidate} className="space-y-3">
-              <div>
-                <label className="block text-xs font-bold text-primary mb-1">Reason / Feedback *</label>
-                <textarea
-                  rows={3}
-                  required
-                  placeholder="e.g. Accepted another offer / Unreachable / Personal reasons..."
-                  value={dropReason}
-                  onChange={e => setDropReason(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-accent-soft bg-background text-xs font-medium focus:ring-2 focus:ring-accent outline-none"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setDropModal({ open: false, appNo: '', name: '' })}
-                  className="px-4 py-2 rounded-xl border border-accent-soft text-xs font-bold text-primary hover:bg-background"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 rounded-xl bg-[#C0392B] text-white text-xs font-bold hover:bg-red-700 shadow-xs"
-                >
-                  Confirm Not Joining
-                </button>
-              </div>
-            </form>
-          </div>
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setDropModal({ open: false, appNo: '', name: '' })}
+                className="px-4 py-2 rounded-xl border border-accent-soft text-xs font-bold text-primary hover:bg-background"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 rounded-xl bg-[#C0392B] text-white text-xs font-bold hover:bg-red-700 shadow-xs"
+              >
+                Confirm Not Joining
+              </button>
+            </div>
+          </form>
         </div>
-      )}
+      </ModalPortal>
     </div>
   );
 }

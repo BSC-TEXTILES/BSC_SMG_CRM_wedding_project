@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, X, Users, UserCheck, Briefcase, FileText, Settings, ArrowRight } from 'lucide-react';
+import ModalPortal from './ModalPortal';
 import { API } from '../../services/api';
 
 interface GlobalSearchModalProps {
@@ -87,8 +88,13 @@ export default function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModal
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-24 p-4 bg-black/50 backdrop-blur-xs">
-      <div className="w-full max-w-xl bg-card rounded-3xl overflow-hidden shadow-2xl border border-border animate-fade-in">
+    <ModalPortal
+      isOpen={isOpen}
+      onClose={onClose}
+      ariaLabel="Global Directory Search"
+      className="items-start pt-16 sm:pt-24"
+    >
+      <div className="w-full max-w-xl bg-card rounded-3xl overflow-hidden shadow-2xl border border-border">
         {/* Search Bar Input */}
         <div className="p-4 border-b border-border flex items-center gap-3 bg-background">
           <Search className="w-5 h-5 text-accent" />
@@ -157,6 +163,6 @@ export default function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModal
           )}
         </div>
       </div>
-    </div>
+    </ModalPortal>
   );
 }

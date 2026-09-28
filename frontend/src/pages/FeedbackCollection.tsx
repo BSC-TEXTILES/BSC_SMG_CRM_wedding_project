@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../components/layouts/DashboardLayout';
 import PageContainer from '../components/ui/PageContainer';
 import ToastContainer, { showToast } from '../components/Toast';
+import ModalPortal from '../components/ui/ModalPortal';
 import { API, Auth, UserSession } from '../services/api';
 import { useLocationContext, LocationItem } from '../context/LocationContext';
 import { useRealtimeSection } from '../hooks/useRealtimeSection';
@@ -831,9 +832,13 @@ export default function FeedbackCollection() {
           </div>
 
           {/* Executive Customer Resolution Dashboard Modal */}
-          {selectedFeedback && (
-            <div className="fixed inset-0 bg-primary/70 backdrop-blur-md z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto animate-fade-in">
-              <div className="card-glass max-w-5xl w-full p-6 sm:p-8 space-y-6 animate-scale-in max-h-[92vh] overflow-y-auto shadow-2xl rounded-3xl border border-black/40 bg-white/95 text-primary">
+          <ModalPortal
+            isOpen={!!selectedFeedback}
+            onClose={() => setSelectedFeedback(null)}
+            ariaLabel="Customer Resolution Dashboard"
+          >
+            {selectedFeedback && (
+              <div className="card-glass max-w-5xl w-full p-6 sm:p-8 space-y-6 max-h-[92vh] overflow-y-auto shadow-2xl rounded-3xl border border-black/40 bg-white/95 text-primary">
 
                 {/* 1. Header Redesign */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-accent-soft pb-5">
@@ -1198,8 +1203,8 @@ export default function FeedbackCollection() {
                 </div>
 
               </div>
-            </div>
-          )}
+            )}
+          </ModalPortal>
         </div>
       </PageContainer>
     </DashboardLayout>
