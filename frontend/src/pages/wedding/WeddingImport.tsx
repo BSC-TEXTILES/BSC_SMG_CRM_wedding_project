@@ -46,6 +46,10 @@ interface ImportSummaryResult {
   insertedCodes?: string[];
   errors?: ValidationError[];
   warnings?: ValidationError[];
+  processingTime?: string;
+  processingTimeMs?: number;
+  storeBranch?: string;
+  fileName?: string;
 }
 
 interface ImportLog {
@@ -644,57 +648,68 @@ export default function WeddingImport() {
                     ) : (
                       <Info className="w-5 h-5 text-[#C58A18] shrink-0" />
                     )}
-                    <h3 className="font-black text-sm text-[#4A173A]">
-                      Import Execution Summary
-                    </h3>
+                    <div>
+                      <h3 className="font-black text-sm text-[#4A173A]">
+                        Import Execution Summary
+                      </h3>
+                      <div className="text-[11px] text-[#6F5963] mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+                        <span>File: <strong className="text-[#4A173A]">{importResult.fileName || lastFileName || file?.name || 'File'}</strong></span>
+                        <span>•</span>
+                        <span>Branch: <strong className="text-[#4A173A]">{importResult.storeBranch || locations.find(l => String(l.id) === String(locationId))?.location_name || 'Selected Store'}</strong></span>
+                        <span>•</span>
+                        <span>Processing Time: <strong className="text-[#4A173A]">{importResult.processingTime || '< 1s'}</strong></span>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Exact summary requirement: "X customers imported, Y duplicates skipped, Z errors." */}
-                  <span className="text-xs font-bold text-[#4A173A] bg-[#FFF7F2] px-3 py-1.5 rounded-xl border border-[#E8D9D4]">
-                    {importedCount} customers imported, {duplicateCount} duplicates skipped, {errorCount} errors.
+                  <span className="text-xs font-bold text-[#4A173A] bg-[#FFF7F2] px-3 py-1.5 rounded-xl border border-[#E8D9D4] self-start sm:self-center">
+                    {importedCount} imported · {duplicateCount} duplicates · {errorCount} failed
                   </span>
                 </div>
 
                 {/* Metric Badges */}
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                   <div className="p-3 rounded-xl bg-[#E8F5EE] border border-[#198754]/30">
-                    <span className="text-[11px] font-bold text-[#198754] uppercase tracking-wider block">Imported Successfully</span>
+                    <span className="text-[11px] font-bold text-[#198754] uppercase tracking-wider block">Successfully Imported</span>
                     <span className="text-xl font-black text-[#198754] mt-1 block">{importedCount}</span>
-                    <span className="text-[10px] text-[#198754] block mt-0.5">of {totalRowsCount} rows</span>
+                    <span className="text-[10px] text-[#198754] block mt-0.5">of {totalRowsCount} total rows</span>
                   </div>
 
                   <div className="p-3 rounded-xl bg-[#FFF4D6] border border-[#C58A18]/30">
-                    <span className="text-[11px] font-bold text-[#C58A18] uppercase tracking-wider block">Duplicates Skipped</span>
+                    <span className="text-[11px] font-bold text-[#C58A18] uppercase tracking-wider block">Duplicate Rows</span>
                     <span className="text-xl font-black text-[#C58A18] mt-1 block">{duplicateCount}</span>
+                    <span className="text-[10px] text-[#C58A18] block mt-0.5">skipped (not overwritten)</span>
                   </div>
 
                   <div className="p-3 rounded-xl bg-[#FDE8E7] border border-[#B42318]/30">
-                    <span className="text-[11px] font-bold text-[#B42318] uppercase tracking-wider block">Errors / Invalid Rows</span>
+                    <span className="text-[11px] font-bold text-[#B42318] uppercase tracking-wider block">Failed Rows</span>
                     <span className="text-xl font-black text-[#B42318] mt-1 block">{errorCount}</span>
+                    <span className="text-[10px] text-[#B42318] block mt-0.5">validation failed</span>
                   </div>
 
                   <div className="p-3 rounded-xl bg-[#EDE7F6] border border-[#6A2853]/20">
-                    <span className="text-[11px] font-bold text-[#6A2853] uppercase tracking-wider block">Warnings</span>
-                    <span className="text-xl font-black text-[#6A2853] mt-1 block">{warningCount}</span>
-                    <span className="text-[10px] text-[#6A2853] block mt-0.5">imported with notes</span>
+                    <span className="text-[11px] font-bold text-[#6A2853] uppercase tracking-wider block">Total Processed</span>
+                    <span className="text-xl font-black text-[#6A2853] mt-1 block">{totalRowsCount}</span>
+                    <span className="text-[10px] text-[#6A2853] block mt-0.5">time: {importResult.processingTime || '< 1s'}</span>
                   </div>
                 </div>
 
-                {/* Actions: error report download + rerun */}
+                {/* Actions: Download Failed Rows + rerun */}
                 <div className="flex flex-wrap items-center gap-2.5 pt-1">
                   {errorCount > 0 && Array.isArray(importResult.errors) && importResult.errors.length > 0 && (
                     <button
                       type="button"
                       onClick={handleDownloadErrorReport}
                       disabled={downloadingReport}
-                      className="text-xs font-black inline-flex items-center gap-1.5 bg-[#4A173A] text-white px-3.5 py-2 rounded-xl hover:bg-[#6A2853] transition-colors disabled:opacity-60 shadow-xs"
+                      className="text-xs font-black inline-flex items-center gap-1.5 bg-[#B42318] text-white px-4 py-2.5 rounded-xl hover:bg-[#8B1A12] transition-colors disabled:opacity-60 shadow-xs"
                     >
                       {downloadingReport ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin text-[#B76E79]" />
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
                       ) : (
-                        <FileDown className="w-3.5 h-3.5 text-[#E8C7A8]" />
+                        <FileDown className="w-3.5 h-3.5 text-white" />
                       )}
-                      Download Error Report (.xlsx)
+                      <span>Download Failed Rows</span>
                     </button>
                   )}
 
@@ -708,12 +723,13 @@ export default function WeddingImport() {
                       setFile(null);
                       setFilePreviewCount(null);
                     }}
-                    className="text-xs font-black inline-flex items-center gap-1.5 bg-[#FFFDFC] text-[#4A173A] border border-[#E8D9D4] px-3.5 py-2 rounded-xl hover:bg-[#FFF7F2] transition-colors shadow-2xs"
+                    className="text-xs font-black inline-flex items-center gap-1.5 bg-[#FFFDFC] text-[#4A173A] border border-[#E8D9D4] px-3.5 py-2.5 rounded-xl hover:bg-[#FFF7F2] transition-colors shadow-2xs"
                   >
                     <Upload className="w-3.5 h-3.5 text-[#B76E79]" />
                     Fix rows & upload again
                   </button>
                 </div>
+
 
                 {/* Errors Detail Accordion */}
                 {Array.isArray(importResult.errors) && importResult.errors.length > 0 && (

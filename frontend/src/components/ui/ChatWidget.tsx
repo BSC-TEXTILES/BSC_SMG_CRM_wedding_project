@@ -143,7 +143,11 @@ export default function ChatWidget() {
     <>
       {/* Floating Chat Toggle Button: stacked vertically above Quick Actions */}
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsOpen(prev => !prev);
+        }}
         className={`fixed bottom-[72px] right-4 sm:bottom-24 sm:right-6 z-40 w-12 h-12 sm:w-14 sm:h-14 rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 border-2 cursor-pointer ${
           isOpen
             ? 'bg-primary text-white border-primary-light rotate-0'

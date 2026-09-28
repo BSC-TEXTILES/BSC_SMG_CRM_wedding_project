@@ -6,6 +6,7 @@ const { errorRes } = require('../utils/response');
 const { logAction } = require('../utils/logger');
 const { getLocationFilter, injectLocationId } = require('../middleware/auth');
 const upload = require('../middleware/upload');
+const realtimeService = require('../services/realtimeService');
 
 const uploadRoot = upload.uploadDir || path.join(__dirname, '../../uploads');
 
@@ -27,10 +28,36 @@ function assertLocationAccess(reqUser, targetLocationId) {
 
 // ── 1. UPLOAD VM CHECKLIST PHOTO(S) ─────────────────────────────────
 exports.uploadPhotos = async (req, res) => {
+  const rawFiles = req.files ? (Array.isArray(req.files) ? req.files : Object.values(req.files).flat()) : (req.file ? [req.file] : []);
   try {
-    const rawFiles = req.files ? (Array.isArray(req.files) ? req.files : Object.values(req.files).flat()) : (req.file ? [req.file] : []);
     if (!rawFiles || rawFiles.length === 0) {
       return res.status(400).json({ success: false, message: 'No photo image file was provided' });
+    }
+
+    // Server-side role check: CRM Managers, Managers, VM, and System Administrators (plus Super Admin / Admin)
+    const allowedRoles = ['admin', 'super admin', 'system administrator', 'crm manager', 'manager', 'store manager', 'floor manager', 'vm'];
+    const userRole = (req.user && req.user.role ? String(req.user.role).trim().toLowerCase() : '');
+    if (!allowedRoles.includes(userRole)) {
+      rawFiles.forEach(f => { try { fs.unlinkSync(f.path); } catch (e) {} });
+      return res.status(403).json({
+        success: false,
+        message: 'Permission denied: Only authorized VM auditors and administrators can attach inspection photos'
+      });
+    }
+
+    // Configurable limits: 5MB per image, 5 images per section
+    const MAX_IMAGE_SIZE_BYTES = parseInt(process.env.VM_MAX_IMAGE_SIZE_BYTES || (5 * 1024 * 1024), 10); // 5MB default
+    const MAX_IMAGES_PER_SECTION = parseInt(process.env.VM_MAX_IMAGES_PER_SECTION || 5, 10); // 5 images per section
+
+    // Check individual file size limits
+    for (const file of rawFiles) {
+      if (file.size > MAX_IMAGE_SIZE_BYTES) {
+        rawFiles.forEach(f => { try { fs.unlinkSync(f.path); } catch (e) {} });
+        return res.status(400).json({
+          success: false,
+          message: `Photo "${file.originalname}" exceeds the maximum allowed size of 5MB`
+        });
+      }
     }
 
     const {
@@ -39,8 +66,36 @@ exports.uploadPhotos = async (req, res) => {
       floor = 'Ground Floor',
       section = 'General',
       pointId = null,
-      point_id = null
+      point_id = null,
+      inspectionDate = null,
+      inspection_date = null
     } = req.body || {};
+
+    const effectiveAuditId = submissionId || submission_id || null;
+    const effectiveInspectionDate = inspectionDate || inspection_date || new Date().toISOString().split('T')[0];
+
+    // Check section image count limit
+    if (rawFiles.length > MAX_IMAGES_PER_SECTION) {
+      rawFiles.forEach(f => { try { fs.unlinkSync(f.path); } catch (e) {} });
+      return res.status(400).json({
+        success: false,
+        message: `Cannot upload more than ${MAX_IMAGES_PER_SECTION} photos at a time for this section`
+      });
+    }
+
+    if (effectiveAuditId) {
+      const [existingPhotos] = await pool.query(
+        "SELECT COUNT(*) as cnt FROM vm_checklist_photos WHERE submission_id = ? AND floor = ? AND section = ? AND status != 'Deleted'",
+        [effectiveAuditId, floor, section]
+      );
+      if ((existingPhotos[0]?.cnt || 0) + rawFiles.length > MAX_IMAGES_PER_SECTION) {
+        rawFiles.forEach(f => { try { fs.unlinkSync(f.path); } catch (e) {} });
+        return res.status(400).json({
+          success: false,
+          message: `Exceeds maximum limit of ${MAX_IMAGES_PER_SECTION} photos for this section in audit #${effectiveAuditId}`
+        });
+      }
+    }
 
     const effectiveLocationId = Number(req.body.locationId) || Number(req.body.location_id) || injectLocationId(req) || (req.user && req.user.locationId) || 1;
 
@@ -61,68 +116,83 @@ exports.uploadPhotos = async (req, res) => {
       locName = effectiveLocationId === 1 ? 'Belagavi' : effectiveLocationId === 2 ? 'Davanagere' : 'Shivamogga';
     }
 
-    const uploadedBy = req.user ? (req.user.fullName || req.user.name || req.user.username) : 'Store Manager';
+    const uploadedBy = req.user ? (req.user.fullName || req.user.name || req.user.username) : 'CRM Manager';
     const insertedPhotos = [];
 
     for (const file of rawFiles) {
       const photoId = 'vm_photo_' + crypto.randomBytes(12).toString('hex');
       const relativePath = `/uploads/vm-checklist/${file.filename}`;
-      const ext = path.extname(file.originalname || '').toLowerCase();
 
       await pool.query(
         `INSERT INTO vm_checklist_photos
-           (id, submission_id, location_id, location_name, floor, section, point_id, file_name, file_path, file_size, mime_type, uploaded_by, status)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Active')`,
+           (id, submission_id, location_id, location_name, floor, section, point_id, file_name, file_path, file_size, mime_type, uploaded_by, inspection_date, status)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Active')`,
         [
           photoId,
-          submissionId || null,
+          effectiveAuditId,
           effectiveLocationId,
           locName,
           floor,
           section,
-          pointId || null,
+          pointId || point_id || null,
           file.originalname,
           relativePath,
           file.size,
           file.mimetype || 'image/jpeg',
-          uploadedBy
+          uploadedBy,
+          effectiveInspectionDate
         ]
       );
 
       insertedPhotos.push({
         id: photoId,
-        submissionId: submissionId || null,
+        submissionId: effectiveAuditId,
         locationId: effectiveLocationId,
         locationName: locName,
         floor,
         section,
-        pointId: pointId || null,
+        pointId: pointId || point_id || null,
         fileName: file.originalname,
+        original_name: file.originalname,
         fileUrl: relativePath,
         streamUrl: `/api/vm/photos/${photoId}/file`,
         fileSize: file.size,
         mimeType: file.mimetype || 'image/jpeg',
         uploadedBy,
+        inspectionDate: effectiveInspectionDate,
         createdAt: new Date().toISOString(),
         status: 'Active'
       });
     }
 
-    await logAction(req.user ? req.user.username : 'VM', 'UPLOAD_VM_PHOTO', 'VM', {
+    await logAction(req.user ? req.user.username : 'CRM Manager', 'UPLOAD_VM_PHOTO', 'VM', {
       count: insertedPhotos.length,
       locationId: effectiveLocationId,
       locationName: locName,
       floor,
       section,
-      submissionId
+      submissionId: effectiveAuditId,
+      inspectionDate: effectiveInspectionDate
     });
+
+    try {
+      realtimeService.emitVmChange('UPDATE', {
+        id: effectiveAuditId || 'photo_upload',
+        floor,
+        section,
+        location_id: effectiveLocationId
+      }, effectiveLocationId);
+    } catch (wsErr) {}
 
     return res.json({
       success: true,
-      message: `${insertedPhotos.length} photo(s) uploaded successfully`,
+      message: `${insertedPhotos.length} photo(s) attached successfully`,
       photos: insertedPhotos
     });
   } catch (err) {
+    if (rawFiles && rawFiles.length > 0) {
+      rawFiles.forEach(f => { try { fs.unlinkSync(f.path); } catch (e) {} });
+    }
     console.error('[VM Photo Upload Error]', err);
     return errorRes(res, 'Failed to upload VM checklist photos: ' + err.message, [err.message], 500);
   }
@@ -214,9 +284,15 @@ exports.listPhotos = async (req, res) => {
     const safeOffset = Math.max(parseInt(offset, 10) || 0, 0);
 
     const [rows] = await pool.query(
-      `SELECT p.id, p.submission_id, p.location_id, p.location_name, p.floor, p.section, p.point_id,
-              p.file_name, p.file_path, p.file_size, p.mime_type, p.uploaded_by, p.status, p.created_at
+      `SELECT p.id, p.submission_id, p.location_id,
+              COALESCE(l.location_name, p.location_name, CASE p.location_id WHEN 1 THEN 'Belagavi' WHEN 2 THEN 'Davanagere' ELSE 'Shivamogga' END) as location_name,
+              COALESCE(l.location_code, CASE p.location_id WHEN 1 THEN 'BEL' WHEN 2 THEN 'DAV' ELSE 'SHI' END) as location_code,
+              p.floor, p.section, p.point_id,
+              p.file_name, p.file_path, p.file_size, p.mime_type, p.uploaded_by, p.inspection_date, p.status, p.created_at,
+              s.scorePercent, s.status as audit_status, s.shift
          FROM vm_checklist_photos p
+         LEFT JOIN locations l ON l.id = p.location_id
+         LEFT JOIN vmsubmissions s ON s.id = p.submission_id
          ${whereSql}
         ORDER BY p.created_at DESC
         LIMIT ? OFFSET ?`,
@@ -232,17 +308,23 @@ exports.listPhotos = async (req, res) => {
       id: r.id,
       submissionId: r.submission_id,
       locationId: r.location_id,
-      locationName: r.location_name || (r.location_id === 1 ? 'Belagavi' : r.location_id === 2 ? 'Davanagere' : 'Shivamogga'),
+      locationName: r.location_name,
+      locationCode: r.location_code,
       floor: r.floor,
       section: r.section,
       pointId: r.point_id,
       fileName: r.file_name,
+      original_name: r.file_name,
       fileUrl: r.file_path,
       streamUrl: `/api/vm/photos/${r.id}/file`,
       fileSize: Number(r.file_size || 0),
       mimeType: r.mime_type,
       uploadedBy: r.uploaded_by,
+      inspectionDate: r.inspection_date || (r.created_at ? new Date(r.created_at).toISOString().split('T')[0] : null),
       status: r.status,
+      scorePercent: r.scorePercent !== null && r.scorePercent !== undefined ? Number(r.scorePercent) : null,
+      auditStatus: r.audit_status || 'Completed',
+      shift: r.shift || 'Opening',
       createdAt: r.created_at
     }));
 
@@ -312,6 +394,15 @@ exports.deletePhoto = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Photo not found' });
     }
     const photo = rows[0];
+    const userRole = (req.user && req.user.role ? String(req.user.role).trim().toLowerCase() : '');
+    const isManagerRole = ['admin', 'super admin', 'system administrator', 'crm manager', 'manager', 'store manager'].includes(userRole);
+    const isOwner = req.user && (req.user.username === photo.uploaded_by || req.user.id === photo.user_id);
+    if (!isManagerRole && !isOwner) {
+      return res.status(403).json({
+        success: false,
+        message: 'Permission denied: You do not have permission to delete this audit photo'
+      });
+    }
 
     if (!assertLocationAccess(req.user, photo.location_id)) {
       return res.status(403).json({ success: false, message: 'Forbidden: You do not have permission to delete photos from this store location' });
@@ -330,6 +421,15 @@ exports.deletePhoto = async (req, res) => {
       fileName: photo.file_name
     });
 
+    try {
+      realtimeService.emitVmChange('DELETE', {
+        id: photo.submission_id || photo.id,
+        floor: photo.floor,
+        section: photo.section,
+        location_id: photo.location_id
+      }, photo.location_id);
+    } catch (wsErr) {}
+
     return res.json({
       success: true,
       message: 'Photo deleted successfully'
@@ -343,16 +443,23 @@ exports.deletePhoto = async (req, res) => {
 // ── 5. LINK UNLINKED SECTION PHOTOS TO CHECKLIST SUBMISSION ─────────
 exports.linkPhotosToSubmission = async (req, res) => {
   try {
-    const { submissionId, photoIds } = req.body || {};
+    const { submissionId, photoIds, inspectionDate } = req.body || {};
     if (!submissionId || !Array.isArray(photoIds) || photoIds.length === 0) {
       return res.status(400).json({ success: false, message: 'submissionId and photoIds array are required' });
     }
 
     const placeholders = photoIds.map(() => '?').join(', ');
-    await pool.query(
-      `UPDATE vm_checklist_photos SET submission_id = ? WHERE id IN (${placeholders})`,
-      [submissionId, ...photoIds]
-    );
+    if (inspectionDate) {
+      await pool.query(
+        `UPDATE vm_checklist_photos SET submission_id = ?, inspection_date = ? WHERE id IN (${placeholders})`,
+        [submissionId, inspectionDate, ...photoIds]
+      );
+    } else {
+      await pool.query(
+        `UPDATE vm_checklist_photos SET submission_id = ? WHERE id IN (${placeholders})`,
+        [submissionId, ...photoIds]
+      );
+    }
 
     return res.json({ success: true, message: 'Photos linked to submission successfully' });
   } catch (err) {

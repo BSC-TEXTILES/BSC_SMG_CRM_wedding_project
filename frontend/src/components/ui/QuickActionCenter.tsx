@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Plus, Calendar, Sparkles, Search, UserPlus, PhoneCall, QrCode, UserCheck, Shield } from 'lucide-react';
+import { Plus, Calendar, Sparkles, Search, UserPlus, QrCode, UserCheck, Shield } from 'lucide-react';
 import { Auth } from '../../services/api';
 
 export default function QuickActionCenter() {
@@ -51,7 +51,6 @@ export default function QuickActionCenter() {
   const actions = isWeddingCrm
     ? [
         { label: '+ Add Wedding Customer', icon: UserPlus, href: '/wedding-registration' },
-        { label: "Today's Follow-ups", icon: PhoneCall, href: '/wedding-crm' },
         { label: 'Follow-up Calendar', icon: Calendar, href: '/wedding-crm' },
         { label: 'Tracking Search', icon: Search, href: '/track', target: '_blank' },
         { label: 'Feedback QR', icon: QrCode, href: '/feedback-qr' }

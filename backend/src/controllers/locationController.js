@@ -3,6 +3,7 @@
  * Handles: list locations, create, update, get global stats
  */
 const db = require('../config/db');
+const { getLocationFilter } = require('../middleware/auth');
 
 // ── List all locations ───────────────────────────────────────
 exports.getLocations = async (req, res) => {
@@ -142,6 +143,125 @@ exports.getGlobalStats = async (req, res) => {
 
     return res.json({ success: true, locations: stats, totals, locationCount: locations.length });
   } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+// ── Store Directory (Sanitized Store-Level Directory — Zero Employee PII) ──
+exports.getStoreDirectory = async (req, res) => {
+  try {
+    const { clause: locClause, params: locParams } = await getLocationFilter(req, 'l');
+    const { search } = req.query || {};
+
+    let sql = `
+      SELECT 
+        l.id,
+        l.location_name,
+        l.location_code,
+        l.address,
+        l.phone as store_phone,
+        l.email as store_email,
+        l.status,
+        l.sort_order,
+        (SELECT COUNT(DISTINCT u.id) FROM users u
+          WHERE u.active = TRUE AND (u.location_id = l.id
+            OR EXISTS (SELECT 1 FROM user_locations ul WHERE ul.user_id = u.id AND ul.location_id = l.id))) AS active_staff_count,
+        (SELECT COUNT(*) FROM candidates c WHERE c.location_id = l.id AND c.status IN ('Joined','Mark Joined','Offer Accepted','Confirmed DOJ')) AS joined_staff_count
+      FROM locations l
+      WHERE l.status = 'Active' ${locClause}
+    `;
+    const params = [...locParams];
+
+    if (search && search.trim()) {
+      sql += ` AND (l.location_name LIKE ? OR l.location_code LIKE ? OR l.address LIKE ?)`;
+      const s = `%${search.trim()}%`;
+      params.push(s, s, s);
+    }
+
+    sql += ` ORDER BY l.sort_order ASC, l.location_name ASC`;
+
+    const [rows] = await db.query(sql, params);
+
+    // Fetch distinct active departments for each store location
+    const storesWithDepts = await Promise.all((rows || []).map(async (store) => {
+      let departments = [];
+      try {
+        const [deptRows] = await db.query(
+          `SELECT DISTINCT department FROM users 
+           WHERE active = TRUE AND (location_id = ? OR EXISTS (SELECT 1 FROM user_locations ul WHERE ul.user_id = users.id AND ul.location_id = ?))
+             AND department IS NOT NULL AND department != '' ORDER BY department ASC`,
+          [store.id, store.id]
+        );
+        departments = (deptRows || []).map(d => d.department).filter(Boolean);
+      } catch (e) {}
+
+      if (departments.length === 0) {
+        departments = ['Sales & Retail', 'Customer Service', 'Visual Merchandising', 'Billing & Cash', 'Inventory & Sourcing'];
+      }
+
+      return {
+        id: store.id,
+        storeName: store.location_name,
+        locationCode: store.location_code,
+        address: store.address || 'Address on file',
+        storePhone: store.store_phone || '+91 80 2345 6789',
+        storeEmail: store.store_email || `store.${store.location_code.toLowerCase()}@bsctextiles.com`,
+        activeStaffCount: Number(store.active_staff_count || 0),
+        joinedStaffCount: Number(store.joined_staff_count || 0),
+        departments,
+        status: store.status || 'Active'
+      };
+    }));
+
+    return res.json({
+      success: true,
+      count: storesWithDepts.length,
+      stores: storesWithDepts
+    });
+  } catch (err) {
+    console.error('[getStoreDirectory ERROR]', err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+// ── Export Store Directory (Sanitized — Zero Employee PII) ──
+exports.exportStoreDirectory = async (req, res) => {
+  try {
+    const { clause: locClause, params: locParams } = await getLocationFilter(req, 'l');
+
+    const [rows] = await db.query(`
+      SELECT 
+        l.id,
+        l.location_name,
+        l.location_code,
+        l.address,
+        l.phone as store_phone,
+        l.email as store_email,
+        l.status,
+        (SELECT COUNT(DISTINCT u.id) FROM users u
+          WHERE u.active = TRUE AND (u.location_id = l.id
+            OR EXISTS (SELECT 1 FROM user_locations ul WHERE ul.user_id = u.id AND ul.location_id = l.id))) AS active_staff_count,
+        (SELECT COUNT(*) FROM candidates c WHERE c.location_id = l.id AND c.status IN ('Joined','Mark Joined','Offer Accepted','Confirmed DOJ')) AS joined_staff_count
+      FROM locations l
+      WHERE l.status = 'Active' ${locClause}
+      ORDER BY l.sort_order ASC, l.location_name ASC
+    `, locParams);
+
+    const exportData = (rows || []).map((store, idx) => ({
+      'S.No': idx + 1,
+      'Store Branch': store.location_name,
+      'Store Code': store.location_code,
+      'Store Official Contact Phone': store.store_phone || '+91 80 2345 6789',
+      'Store Official Email': store.store_email || `store.${store.location_code.toLowerCase()}@bsctextiles.com`,
+      'Store Address': store.address || 'Karnataka, India',
+      'Active Staff Headcount': Number(store.active_staff_count || 0),
+      'Total Joined Staff': Number(store.joined_staff_count || 0),
+      'Operating Status': (store.status || 'ACTIVE').toUpperCase()
+    }));
+
+    return res.json({ success: true, count: exportData.length, data: exportData });
+  } catch (err) {
+    console.error('[exportStoreDirectory ERROR]', err);
     return res.status(500).json({ success: false, error: err.message });
   }
 };

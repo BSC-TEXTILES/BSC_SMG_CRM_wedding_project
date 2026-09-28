@@ -23,6 +23,7 @@ const userMgmtController = require('../controllers/userManagementController');
 const employeeMasterController = require('../controllers/employeeMasterController');
 const employeeDocumentController = require('../controllers/employeeDocumentController');
 const vmPhotoController = require('../controllers/vmPhotoController');
+const vmController = require('../controllers/vmController');
 const userValidator = require('../validators/userValidator');
 const feedbackQrController = require('../controllers/feedbackQrController');
 const dashboardController = require('../controllers/dashboardController');
@@ -30,6 +31,8 @@ const landingController = require('../controllers/landingController');
 const apiKeyController = require('../controllers/apiKeyController');
 const apiConnectController = require('../controllers/apiConnectController');
 const { checkApiKeyAuth } = require('../middleware/apiKeyAuth');
+const multer = require('multer');
+const { EMPLOYEE_CSV_MAX_BYTES, EMPLOYEE_CSV_INVALID_FORMAT_MESSAGE } = require('../utils/employeeCsv');
 
 const { body } = require('express-validator');
 const validate = require('../middleware/validate');
@@ -127,36 +130,42 @@ router.post('/employees/not-joined/action', authenticate, authorizeLocationAcces
 router.get('/employees/joined-store', authenticate, authorizeLocationAccess(), candidateController.getJoinedStoreDirectory);
 router.post('/employees/bulk', authenticate, authorize('Admin', 'Super Admin', 'HR'), candidateController.bulkAddEmployees);
 
+// ── Employee Access Requests (Admin Only Approval) ─────────────
+router.get('/employees/access-requests', authenticate, authorize('Admin', 'Super Admin', 'system administrator'), employeeMasterController.listAccessRequests);
+router.post('/employees/access-requests/:id/resolve', authenticate, authorize('Admin', 'Super Admin', 'system administrator'), employeeMasterController.resolveAccessRequest);
+
 // ── Employee Master Directory ─────────────────────────────────
 // Static /employees/... paths above must stay registered first so they are
 // never swallowed by the /employees/:id parameter route.
-router.post('/employees', authenticate, authorizeLocationAccess(), employeeMasterController.createEmployee);
-router.put('/employees/:id', authenticate, authorize('Admin', 'Super Admin', 'HR', 'Manager'), employeeMasterController.updateEmployeeMaster);
-router.delete('/employees/:id', authenticate, authorize('Admin', 'Super Admin', 'HR'), candidateController.deleteEmployee);
+router.post('/employees/bulk-import', authenticate, authorize('Admin', 'Super Admin', 'system administrator', 'Manager', 'Store Manager', 'HR', 'HR Manager'), employeeMasterController.bulkImportEmployees);
+router.post('/employees', authenticate, authorize('Admin', 'Super Admin', 'system administrator'), employeeMasterController.createEmployee);
+router.post('/employees/:id/access-request', authenticate, employeeMasterController.requestEmployeeAccess);
+router.put('/employees/:id', authenticate, authorize('Admin', 'Super Admin', 'system administrator'), employeeMasterController.updateEmployeeMaster);
+router.delete('/employees/:id', authenticate, authorize('Admin', 'Super Admin', 'system administrator'), candidateController.deleteEmployee);
 router.get('/employees/:id', authenticate, authorizeLocationAccess(), employeeMasterController.getEmployeeProfile);
 router.get('/employees/:id/profile', authenticate, authorizeLocationAccess(), employeeDocumentController.getEmployeeProfile);
-router.post('/employees/:id/toggle-status', authenticate, authorizeLocationAccess(), employeeMasterController.toggleEmployeeStatus);
+router.post('/employees/:id/toggle-status', authenticate, authorize('Admin', 'Super Admin', 'system administrator'), employeeMasterController.toggleEmployeeStatus);
 
-// Employee Photo Routes
+// Employee Photo Routes — Admin Only Mutation
 router.post('/employees/:id/photo',
   authenticate,
-  authorizeLocationAccess(),
+  authorize('Admin', 'Super Admin', 'system administrator'),
   uploadRateLimiter,
   upload.uploadEmployeePhoto.fields([{ name: 'photo', maxCount: 1 }, { name: 'file', maxCount: 1 }]),
   upload.verifyUploadedSignatures,
   employeeDocumentController.uploadPhoto);
 router.delete('/employees/:id/photo',
   authenticate,
-  authorizeLocationAccess(),
+  authorize('Admin', 'Super Admin', 'system administrator'),
   employeeDocumentController.removePhoto);
 router.get('/employees/:id/photo',
   employeeDocumentController.getPhoto);
 
-// Employee Documents Routes
+// Employee Documents Routes — Admin Only Mutation
 router.get('/employees/:id/documents', authenticate, authorizeLocationAccess(), employeeDocumentController.listDocuments);
 router.post('/employees/:id/documents',
   authenticate,
-  authorizeLocationAccess(),
+  authorize('Admin', 'Super Admin', 'system administrator'),
   uploadRateLimiter,
   upload.uploadEmployeeDocument.fields([{ name: 'document', maxCount: 1 }, { name: 'file', maxCount: 1 }]),
   upload.verifyUploadedSignatures,
@@ -165,12 +174,12 @@ router.get('/employees/:id/documents/:docId/view', authenticate, authorizeLocati
 router.get('/employees/:id/documents/:docId/download', authenticate, authorizeLocationAccess(), employeeDocumentController.downloadDocument);
 router.put('/employees/:id/documents/:docId',
   authenticate,
-  authorizeLocationAccess(),
+  authorize('Admin', 'Super Admin', 'system administrator'),
   uploadRateLimiter,
   upload.uploadEmployeeDocument.fields([{ name: 'document', maxCount: 1 }, { name: 'file', maxCount: 1 }]),
   upload.verifyUploadedSignatures,
   employeeDocumentController.replaceDocument);
-router.delete('/employees/:id/documents/:docId', authenticate, authorizeLocationAccess(), employeeDocumentController.deleteDocument);
+router.delete('/employees/:id/documents/:docId', authenticate, authorize('Admin', 'Super Admin', 'system administrator'), employeeDocumentController.deleteDocument);
 router.get('/employees/:id/audit', authenticate, authorizeLocationAccess(), employeeMasterController.getAuditTrail);
 
 // ── Interview Routes ─────────────────────────────────────────
@@ -253,17 +262,28 @@ router.get('/crm/diverts', authenticate, authorizeLocationAccess(), crmControlle
 router.post('/crm/diverts/create', authenticate, authorizeLocationAccess(), crmController.createDivert);
 router.post('/crm/diverts/update', authenticate, authorizeLocationAccess(), crmController.updateDivert);
 router.get('/crm/diverts/updates', authenticate, authorizeLocationAccess(), crmController.getDivertUpdates);
+router.post('/crm/diverts/upload-image', authenticate, authorizeLocationAccess(), upload.uploadDivertImage.single('image'), upload.verifyUploadedSignatures, crmController.uploadDivertReferenceImage);
+router.get('/crm/diverts/export', authenticate, authorizeLocationAccess(), crmController.exportDiverts);
+
+// ── Store Directory (Sanitized Store-level Directory — No Employee PII) ──
+router.get('/directory', authenticate, authorizeLocationAccess(), locationController.getStoreDirectory);
+router.get('/directory/export', authenticate, authorizeLocationAccess(), locationController.exportStoreDirectory);
 
 router.get('/cash', authenticate, authorizeLocationAccess(), crmController.getCashSettlement);
 router.post('/cash/save', authenticate, authorizeLocationAccess(), crmController.saveCashSettlement);
 
-router.get('/vm/points', authenticate, crmController.getVmPoints);
-router.get('/vm/submissions', authenticate, authorizeLocationAccess(), crmController.getVmSubmissions);
-router.post('/vm/submit', authenticate, authorizeLocationAccess(), crmController.submitVm);
-router.get('/vm/floors', authenticate, crmController.getVmFloors);
-router.post('/vm/floors', authenticate, authorize('Admin', 'Super Admin'), crmController.createVmFloor);
-router.post('/vm/floors/delete', authenticate, authorize('Admin', 'Super Admin'), crmController.deleteVmFloor);
-router.delete('/vm/floors/:id', authenticate, authorize('Admin', 'Super Admin'), crmController.deleteVmFloor);
+// ── Visual Merchandising (VM) Routes ──────────────────────────
+router.get('/vm/dashboard', authenticate, authorizeLocationAccess(), vmController.getVmDashboard);
+router.get('/vm/audits', authenticate, authorizeLocationAccess(), vmController.getVmAudits);
+router.get('/vm/audits/export', authenticate, authorizeLocationAccess(), vmController.exportVmAudits);
+router.get('/vm/audits/:id', authenticate, authorizeLocationAccess(), vmController.getVmAuditDetail);
+router.get('/vm/submissions', authenticate, authorizeLocationAccess(), vmController.getVmAudits);
+router.post('/vm/submit', authenticate, authorizeLocationAccess(), vmController.submitVm);
+router.get('/vm/points', authenticate, vmController.getVmPoints);
+router.get('/vm/floors', authenticate, vmController.getVmFloors);
+router.post('/vm/floors', authenticate, authorize('Admin', 'Super Admin'), vmController.createVmFloor);
+router.post('/vm/floors/delete', authenticate, authorize('Admin', 'Super Admin'), vmController.deleteVmFloor);
+router.delete('/vm/floors/:id', authenticate, authorize('Admin', 'Super Admin'), vmController.deleteVmFloor);
 
 // ── VM Checklist Photos ──────────────────────────────────────
 router.post('/vm/photos',
@@ -765,6 +785,29 @@ router.post('/legacy', async (req, res) => {
 // ── User Management (Admin Only) ─────────────────────────────────
 router.get('/admin/users', authenticate, authorize('Admin', 'Super Admin'), userMgmtController.listUsers);
 router.get('/admin/users/modules', authenticate, authorize('Admin', 'Super Admin'), userMgmtController.listModules);
+
+// ── Employee / User CSV bulk import (Admin only) ───────────────────
+// Parsed in-memory; nothing touches disk. Only the approved .csv extension
+// is accepted, and the message shown to the user is the approved one.
+const employeeCsvUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: EMPLOYEE_CSV_MAX_BYTES },
+  fileFilter: (req, file, cb) => {
+    if (!/\.csv$/i.test(file.originalname || '')) {
+      return cb(new Error(EMPLOYEE_CSV_INVALID_FORMAT_MESSAGE));
+    }
+    cb(null, true);
+  }
+});
+// Registered BEFORE '/admin/users/:id' so "import-template" is never captured as an id.
+router.get('/admin/users/import-template', authenticate, authorize('Admin', 'Super Admin'), userMgmtController.downloadUserImportTemplate);
+router.post('/admin/users/import-csv', authenticate, authorize('Admin', 'Super Admin'), (req, res, next) => {
+  employeeCsvUpload.single('file')(req, res, (err) => {
+    if (err) return errorRes(res, err.message || 'File upload failed', [], 400);
+    return userMgmtController.importUsersCsv(req, res, next);
+  });
+});
+
 router.get('/admin/users/:id', authenticate, authorize('Admin', 'Super Admin'), userMgmtController.getUser);
 router.post('/admin/users', authenticate, authorize('Admin', 'Super Admin'), userValidator.validateCreateUser, userMgmtController.createUser);
 router.put('/admin/users/:id', authenticate, authorize('Admin', 'Super Admin'), userValidator.validateUpdateUser, userMgmtController.updateUser);

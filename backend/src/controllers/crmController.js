@@ -1198,6 +1198,7 @@ exports.getDiverts = async (req, res) => {
     await db.query(`
       CREATE TABLE IF NOT EXISTS Diverts (
         id VARCHAR(64) PRIMARY KEY,
+        location_id INT DEFAULT 1,
         entryDate VARCHAR(16),
         sectionId VARCHAR(64),
         productWanted VARCHAR(255),
@@ -1208,7 +1209,15 @@ exports.getDiverts = async (req, res) => {
         customerMobile VARCHAR(32),
         status VARCHAR(32) DEFAULT 'open',
         createdBy VARCHAR(255),
-        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        pmNotes TEXT,
+        size VARCHAR(64),
+        colour VARCHAR(64),
+        other_product_details TEXT,
+        required_by_date VARCHAR(32),
+        reference_image VARCHAR(512),
+        remarks TEXT,
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `).catch(() => {});
 
@@ -1222,44 +1231,168 @@ exports.getDiverts = async (req, res) => {
 
 exports.createDivert = async (req, res) => {
   try {
-    const { sectionId, productWanted, quantity, priceRange, reasonCode, customerName, customerMobile: rawMobile, createdBy } = req.body;
+    const {
+      sectionId,
+      productWanted,
+      quantity,
+      priceRange,
+      reasonCode,
+      customerName,
+      customerMobile: rawMobile,
+      createdBy,
+      size,
+      colour,
+      other_product_details,
+      required_by_date,
+      reference_image,
+      remarks
+    } = req.body;
+
+    if (!productWanted || !String(productWanted).trim()) {
+      return res.status(400).json({ success: false, error: 'Product / Fabric Requested is required.' });
+    }
+
     const locationId = injectLocationId(req) || (req.user && req.user.locationId) || 1;
     const id = getUUID();
     const entryDate = new Date().toISOString().split('T')[0];
     
-    // Normalize phone to +91 format
-    let customerMobile = rawMobile || '';
+    // Normalize phone to +91 format if provided
+    let customerMobile = rawMobile ? String(rawMobile).trim() : '';
     if (customerMobile) {
       const digits = customerMobile.replace(/\D/g, '');
       if (digits.length === 10) customerMobile = `+91${digits}`;
       else if (digits.length === 12 && digits.startsWith('91')) customerMobile = `+${digits}`;
       else if (digits.length === 11 && digits.startsWith('0')) customerMobile = `+91${digits.slice(1)}`;
     }
+
+    const creatorName = req.user?.fullName || req.user?.name || createdBy || 'Floor Staff';
     
     await db.query(`
-      INSERT INTO Diverts (id, location_id, entryDate, sectionId, productWanted, quantity, priceRange, reasonCode, customerName, customerMobile, status, createdBy)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'open', ?)
-    `, [id, locationId, entryDate, sectionId || null, productWanted, quantity || 1, priceRange || '', reasonCode || 'OUT_OF_STOCK', customerName || '', customerMobile || '', createdBy || 'Floor Staff']);
+      INSERT INTO Diverts (
+        id, location_id, entryDate, sectionId, productWanted, quantity, priceRange, reasonCode,
+        customerName, customerMobile, status, createdBy,
+        size, colour, other_product_details, required_by_date, reference_image, remarks
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'open', ?, ?, ?, ?, ?, ?, ?)
+    `, [
+      id,
+      locationId,
+      entryDate,
+      sectionId || null,
+      String(productWanted).trim(),
+      parseInt(quantity, 10) || 1,
+      priceRange || '',
+      reasonCode || 'OUT_OF_STOCK',
+      customerName ? String(customerName).trim() : '',
+      customerMobile,
+      creatorName,
+      size ? String(size).trim() : null,
+      colour ? String(colour).trim() : null,
+      other_product_details ? String(other_product_details).trim() : null,
+      required_by_date ? String(required_by_date).trim() : null,
+      reference_image || null,
+      remarks ? String(remarks).trim() : null
+    ]);
 
     const updateId = getUUID();
     await db.query(`
       INSERT INTO DivertUpdates (id, divertId, status, note, actorId, actorRole)
       VALUES (?, ?, 'open', 'Sourcing divert raised by staff', ?, 'Staff')
-    `, [updateId, id, createdBy || 'Staff']);
+    `, [updateId, id, creatorName]);
 
     const io = req.app.get('io');
     if (io) {
       io.emit('divert:created', {
         id,
-        productWanted,
-        quantity: quantity || 1,
-        createdBy: createdBy || 'Floor Staff',
-        message: `URGENT DIVERT: New stock request for ${productWanted} (Qty: ${quantity || 1}) created by ${createdBy || 'Floor Staff'}`
+        productWanted: String(productWanted).trim(),
+        quantity: parseInt(quantity, 10) || 1,
+        createdBy: creatorName,
+        message: `URGENT DIVERT: New stock request for ${String(productWanted).trim()} (Qty: ${parseInt(quantity, 10) || 1}) created by ${creatorName}`
       });
     }
 
     return res.json({ success: true, message: 'Divert created successfully', id });
   } catch (err) {
+    console.error('[createDivert ERROR]', err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+exports.uploadDivertReferenceImage = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: 'No image uploaded or invalid format. Only JPG, JPEG, and PNG images up to 5MB are supported.' });
+    }
+    const relativePath = `/uploads/diverts/${req.file.filename}`;
+    return res.json({
+      success: true,
+      fileName: req.file.filename,
+      fileUrl: relativePath,
+      fileSize: req.file.size
+    });
+  } catch (err) {
+    console.error('[uploadDivertReferenceImage ERROR]', err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+exports.exportDiverts = async (req, res) => {
+  try {
+    const { clause: locClause, params: locParams } = await getLocationFilter(req, 'd');
+    const [rows] = await db.query(`
+      SELECT 
+        d.id,
+        d.entryDate,
+        d.sectionId,
+        d.productWanted,
+        d.quantity,
+        d.priceRange,
+        d.reasonCode,
+        d.customerName,
+        d.customerMobile,
+        d.status,
+        d.createdBy,
+        d.size,
+        d.colour,
+        d.other_product_details,
+        d.required_by_date,
+        d.reference_image,
+        d.remarks,
+        d.pmNotes,
+        d.createdAt,
+        l.location_name
+      FROM Diverts d
+      LEFT JOIN locations l ON l.id = d.location_id
+      WHERE 1=1 ${locClause}
+      ORDER BY d.createdAt DESC
+    `, locParams);
+
+    const exportData = (rows || []).map((item, idx) => ({
+      'S.No': idx + 1,
+      'Ref No': `#${item.id?.slice(0, 6)}`,
+      'Branch': item.location_name || 'BSC Belagavi',
+      'Date': item.entryDate || (item.createdAt ? new Date(item.createdAt).toISOString().split('T')[0] : '—'),
+      'Product / Fabric Requested': item.productWanted || '—',
+      'Store Section': item.sectionId || '—',
+      'Size': item.size || '—',
+      'Colour': item.colour || '—',
+      'Other Product Details': item.other_product_details || '—',
+      'Quantity Requested': item.quantity || 1,
+      'Target Price Range': item.priceRange || '—',
+      'Reason Code': item.reasonCode || '—',
+      'Required-by Date': item.required_by_date || '—',
+      'Reference Image / Reference': item.reference_image || '—',
+      'Remarks / Notes': item.remarks || '—',
+      'Customer Full Name': item.customerName || 'Walk-in',
+      'Customer Mobile Phone': item.customerMobile || '—',
+      'Status': (item.status || 'OPEN').toUpperCase(),
+      'PM Sourcing Notes': item.pmNotes || '—',
+      'Created By': item.createdBy || 'Staff'
+    }));
+
+    return res.json({ success: true, count: exportData.length, data: exportData });
+  } catch (err) {
+    console.error('[exportDiverts ERROR]', err);
     return res.status(500).json({ success: false, error: err.message });
   }
 };

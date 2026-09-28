@@ -37,6 +37,7 @@ const subdirs = [
   'experience-certificates',
   'mcheck-photos',
   'vm-checklist',
+  'diverts',
   'misc'
 ];
 
@@ -227,15 +228,54 @@ const vmChecklistStorage = multer.diskStorage({
     const floor = req.body.floor ? String(req.body.floor).replace(/[^a-zA-Z0-9_-]/g, '') : 'F';
     const uuid = require('crypto').randomBytes(8).toString('hex');
     let ext = path.extname(file.originalname || '').toLowerCase();
-    if (!['.jpg', '.jpeg', '.png', '.webp'].includes(ext)) ext = '.jpg';
+    if (!['.jpg', '.jpeg', '.png'].includes(ext)) ext = '.jpg';
     cb(null, `vm_${cleanLoc}_${floor}_${uuid}${ext}`);
   }
 });
 
+const VM_PHOTO_LIMITS = {
+  maxFileSize: parseInt(process.env.VM_PHOTO_MAX_SIZE_BYTES || String(5 * 1024 * 1024), 10), // 5MB default, configurable
+  maxFilesPerSection: parseInt(process.env.VM_PHOTO_MAX_COUNT || '5', 10), // 5 images per section/question
+  allowedExtensions: ['.jpg', '.jpeg', '.png']
+};
+
 const uploadVmPhotos = multer({
   storage: vmChecklistStorage,
   fileFilter: imageOnlyFilter,
-  limits: { fileSize: 15 * 1024 * 1024 } // 15MB
+  limits: { fileSize: VM_PHOTO_LIMITS.maxFileSize }
+});
+
+// Dedicated storage for Sourcing Divert Reference Images
+const DIVERT_IMAGE_LIMITS = {
+  maxFileSize: parseInt(process.env.DIVERT_IMAGE_MAX_SIZE_BYTES || String(5 * 1024 * 1024), 10), // 5MB default, configurable
+  allowedExtensions: ['.jpg', '.jpeg', '.png']
+};
+
+const divertStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dir = path.join(uploadDir, 'diverts');
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => {
+    const uuid = require('crypto').randomBytes(8).toString('hex');
+    let ext = path.extname(file.originalname || '').toLowerCase();
+    if (!['.jpg', '.jpeg', '.png'].includes(ext)) ext = '.jpg';
+    cb(null, `divert_${Date.now()}_${uuid}${ext}`);
+  }
+});
+
+const uploadDivertImage = multer({
+  storage: divertStorage,
+  fileFilter: (req, file, cb) => {
+    const ext = path.extname(file.originalname || '').toLowerCase();
+    if (['.jpg', '.jpeg', '.png'].includes(ext)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid image type. Only JPG, JPEG, and PNG images are allowed.'));
+    }
+  },
+  limits: { fileSize: DIVERT_IMAGE_LIMITS.maxFileSize }
 });
 
 /**
@@ -313,6 +353,9 @@ upload.verifyUploadedSignatures = verifyUploadedSignatures;
 upload.uploadEmployeePhoto = uploadEmployeePhoto;
 upload.uploadEmployeeDocument = uploadEmployeeDocument;
 upload.uploadVmPhotos = uploadVmPhotos;
+upload.uploadDivertImage = uploadDivertImage;
+upload.VM_PHOTO_LIMITS = VM_PHOTO_LIMITS;
+upload.DIVERT_IMAGE_LIMITS = DIVERT_IMAGE_LIMITS;
 upload.uploadDir = uploadDir;
 
 module.exports = upload;

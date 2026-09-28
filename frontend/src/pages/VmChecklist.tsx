@@ -41,6 +41,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell,
   PieChart, Pie, Legend, LineChart, Line
 } from 'recharts';
+import VmCameraModal from '../components/ui/VmCameraModal';
 
 export interface FloorItem {
   id?: string;
@@ -101,9 +102,11 @@ export const DEFAULT_VM_QUESTIONS = [
 
 export default function VmChecklist() {
   const session = Auth.get();
-  const isAdmin = !session || session.role === 'Admin' || session.role === 'Super Admin';
-  const isManager = Boolean(session && ['Manager', 'Store Manager', 'Floor Manager', 'VM'].includes(session.role));
-  const canManagePhotos = isAdmin || isManager;
+  const userRole = String(session?.role || '').trim().toLowerCase();
+  const isAdmin = !session || ['admin', 'super admin', 'system administrator'].includes(userRole);
+  const isCrmManager = userRole === 'crm manager';
+  const canManagePhotos = isAdmin || isCrmManager;
+  const isManager = Boolean(session && ['manager', 'store manager', 'floor manager', 'vm', 'crm manager', 'system administrator', 'admin', 'super admin'].includes(userRole));
   const userLocation = session?.locationName || (session as any)?.store_location || '';
 
   // Floor & Section Hierarchy State
@@ -146,10 +149,11 @@ export default function VmChecklist() {
   // Tab State
   const [activeTab, setActiveTab] = useState<'audit' | 'gallery' | 'analytics'>('audit');
 
-  // VM Section Photo State
   const [sectionPhotos, setSectionPhotos] = useState<any[]>([]);
   const [stagedPhotoIds, setStagedPhotoIds] = useState<string[]>([]);
+  const [stagedFiles, setStagedFiles] = useState<{ id: string; file: File; previewUrl: string; name: string; size: number }[]>([]);
   const [uploadingSectionPhotos, setUploadingSectionPhotos] = useState(false);
+  const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
 
   // VM Photo Gallery State
   const [galleryPhotos, setGalleryPhotos] = useState<any[]>([]);
@@ -227,63 +231,108 @@ export default function VmChecklist() {
     }
   }, [activeTab, photoFilterLocation, photoFilterFloor, photoFilterSection, photoFilterDate, photoFilterInspector]);
 
-  const handleSectionPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFilesSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
     if (!selectedFloor || !selectedSection) {
       showToast('Please select a floor and section first.', 'error');
+      e.target.value = '';
+      return;
+    }
+    if (!canManagePhotos) {
+      showToast('Only CRM Managers and System Administrators can attach inspection photos.', 'error');
+      e.target.value = '';
       return;
     }
 
-    const validFiles: File[] = [];
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    const MAX_FILES = 5;
+    const MAX_SIZE = 5 * 1024 * 1024; // 5MB limit
+    const allowedExtensions = ['.jpg', '.jpeg', '.png'];
+    const currentCount = stagedFiles.length + sectionPhotos.length;
+
+    if (currentCount >= MAX_FILES) {
+      showToast(`Maximum limit of ${MAX_FILES} photos per section reached.`, 'error');
+      e.target.value = '';
+      return;
+    }
+
+    const newStaged: { id: string; file: File; previewUrl: string; name: string; size: number }[] = [];
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      if (!allowedTypes.includes(file.type)) {
-        showToast(`Invalid file type for ${file.name}. Only JPG, PNG, WEBP are supported.`, 'error');
+      if (currentCount + newStaged.length >= MAX_FILES) {
+        showToast(`Reached maximum limit of ${MAX_FILES} photos per section.`, 'error');
+        break;
+      }
+      const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+      if (!allowedExtensions.includes(ext) && !['image/jpeg', 'image/png'].includes(file.type)) {
+        showToast(`Invalid format for "${file.name}". Only JPG, JPEG, and PNG are allowed.`, 'error');
         continue;
       }
-      if (file.size > 15 * 1024 * 1024) {
-        showToast(`File ${file.name} exceeds 15MB limit.`, 'error');
+      if (file.size > MAX_SIZE) {
+        showToast(`"${file.name}" exceeds the 5MB size limit. Please choose a smaller image.`, 'error');
         continue;
       }
-      validFiles.push(file);
-    }
-
-    if (validFiles.length === 0) return;
-
-    setUploadingSectionPhotos(true);
-    try {
-      const locationName = userLocation || 'Shivamogga';
-      const locationId = session?.locationId || 1;
-      const res = await API.uploadVmPhotos(validFiles, {
-        floor: selectedFloor,
-        section: selectedSection,
-        location_name: locationName,
-        locationName: locationName,
-        locationId: locationId
+      newStaged.push({
+        id: 'staged_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now(),
+        file,
+        previewUrl: URL.createObjectURL(file),
+        name: file.name,
+        size: file.size
       });
-
-      if (res && res.success && Array.isArray(res.photos)) {
-        showToast(
-          res.photos.length === 1
-            ? 'Photo uploaded successfully'
-            : `${res.photos.length} photos uploaded successfully`,
-          'success'
-        );
-        setSectionPhotos((prev) => [...res.photos, ...prev]);
-        setStagedPhotoIds((prev) => [...prev, ...res.photos.map((p: any) => p.id)]);
-        fetchGalleryPhotos();
-      } else {
-        showToast(res?.message || 'Failed to upload photo', 'error');
-      }
-    } catch (err: any) {
-      console.error(err);
-      showToast('Error uploading section photo: ' + (err.message || 'Server error'), 'error');
-    } finally {
-      setUploadingSectionPhotos(false);
-      e.target.value = '';
     }
+
+    if (newStaged.length > 0) {
+      setStagedFiles((prev) => [...prev, ...newStaged]);
+      showToast(`${newStaged.length} photo(s) selected and ready for submission.`, 'success');
+    }
+    e.target.value = '';
+  };
+
+  const removeStagedFile = (id: string) => {
+    setStagedFiles((prev) => {
+      const target = prev.find((item) => item.id === id);
+      if (target && target.previewUrl) {
+        URL.revokeObjectURL(target.previewUrl);
+      }
+      return prev.filter((item) => item.id !== id);
+    });
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (!bytes || bytes === 0) return '0 B';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const handleSectionPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    handleFilesSelected(e);
+  };
+
+  const handlePhotoCapturedFromCamera = (file: File) => {
+    const MAX_FILES = 5;
+    const MAX_SIZE = 5 * 1024 * 1024;
+    const currentCount = stagedFiles.length + sectionPhotos.length;
+
+    if (currentCount >= MAX_FILES) {
+      showToast(`Maximum limit of ${MAX_FILES} photos per section reached.`, 'error');
+      return;
+    }
+    if (file.size > MAX_SIZE) {
+      showToast(`Captured photo exceeds the 5MB size limit.`, 'error');
+      return;
+    }
+
+    const newStagedItem = {
+      id: 'staged_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now(),
+      file,
+      previewUrl: URL.createObjectURL(file),
+      name: file.name,
+      size: file.size
+    };
+
+    setStagedFiles((prev) => [...prev, newStagedItem]);
+    showToast('Photo captured from camera and ready for audit submission.', 'success');
   };
 
   const confirmDeletePhoto = async () => {
@@ -475,6 +524,8 @@ export default function VmChecklist() {
   };
 
   const resetAllSelections = () => {
+    stagedFiles.forEach(s => URL.revokeObjectURL(s.previewUrl));
+    setStagedFiles([]);
     setSelectedFloor(null);
     setSelectedSection(null);
     setSubmittedMsg(null);
@@ -482,12 +533,16 @@ export default function VmChecklist() {
   };
 
   const resetSectionOnly = () => {
+    stagedFiles.forEach(s => URL.revokeObjectURL(s.previewUrl));
+    setStagedFiles([]);
     setSelectedSection(null);
     setSubmittedMsg(null);
     initScores(points);
   };
 
   const handleFloorChangeFromControls = (newFloor: string) => {
+    stagedFiles.forEach(s => URL.revokeObjectURL(s.previewUrl));
+    setStagedFiles([]);
     setSelectedFloor(newFloor);
     const availableSections = floorsData[newFloor]?.sections || [];
     setSelectedSection(availableSections[0] || null);
@@ -496,6 +551,8 @@ export default function VmChecklist() {
   };
 
   const handleSectionChangeFromControls = (newSection: string) => {
+    stagedFiles.forEach(s => URL.revokeObjectURL(s.previewUrl));
+    setStagedFiles([]);
     setSelectedSection(newSection);
     setSubmittedMsg(null);
     initScores(points);
@@ -532,11 +589,34 @@ export default function VmChecklist() {
         entries
       });
 
-      if (res && res.submissionId && stagedPhotoIds.length > 0) {
-        try {
-          await API.linkVmPhotos(res.submissionId, stagedPhotoIds);
-        } catch (linkErr) {
-          console.error('Failed to link photos to submission:', linkErr);
+      if (res && res.submissionId) {
+        if (stagedFiles.length > 0) {
+          try {
+            const locationName = userLocation || 'Shivamogga';
+            const locationId = session?.locationId || 1;
+            const filesToUpload = stagedFiles.map(s => s.file);
+            await API.uploadVmPhotos(filesToUpload, {
+              submissionId: res.submissionId,
+              submission_id: res.submissionId,
+              floor: selectedFloor,
+              section: selectedSection,
+              location_name: locationName,
+              locationName: locationName,
+              locationId: locationId,
+              inspectionDate: new Date().toISOString().split('T')[0]
+            });
+            stagedFiles.forEach(s => URL.revokeObjectURL(s.previewUrl));
+            setStagedFiles([]);
+          } catch (uploadErr) {
+            console.error('Failed to upload staged photos:', uploadErr);
+          }
+        }
+        if (stagedPhotoIds.length > 0) {
+          try {
+            await API.linkVmPhotos(res.submissionId, stagedPhotoIds);
+          } catch (linkErr) {
+            console.error('Failed to link photos to submission:', linkErr);
+          }
         }
       }
 
@@ -1132,83 +1212,164 @@ export default function VmChecklist() {
                     Section Inspection Photos — {selectedFloor} ({selectedSection})
                   </h3>
                   <p className="text-xs text-primary font-medium mt-0.5">
-                    Upload actual photos of the inspected section (entrance, main displays, racks, mannequins, folding). Supports JPG, PNG, WEBP up to 15MB.
+                    Attach photos of inspected displays, racks, mannequins, folding, and signage. JPG, JPEG, PNG up to 5MB (max 5 photos per section).
                   </p>
                 </div>
                 
-                <div className="flex items-center gap-2">
-                  <label className="btn-gold text-xs py-2 px-4 font-extrabold flex items-center gap-1.5 cursor-pointer shadow-sm hover:opacity-90 active:scale-95 transition-all">
-                    <UploadCloud className="w-4 h-4" />
-                    <span>{uploadingSectionPhotos ? 'Uploading Photos…' : 'Upload Section Photo'}</span>
-                    <input
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp,image/jpg"
-                      multiple
-                      className="hidden"
-                      disabled={uploadingSectionPhotos}
-                      onChange={handleSectionPhotoUpload}
-                    />
-                  </label>
-                </div>
+                {canManagePhotos ? (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {/* In-Page Device Camera Modal Trigger */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!selectedFloor || !selectedSection) {
+                          showToast('Please select a floor and section first.', 'error');
+                          return;
+                        }
+                        const currentCount = stagedFiles.length + sectionPhotos.length;
+                        if (currentCount >= 5) {
+                          showToast('Maximum limit of 5 photos per section reached.', 'error');
+                          return;
+                        }
+                        setIsCameraModalOpen(true);
+                      }}
+                      className="btn-gold text-xs py-2 px-3.5 font-extrabold flex items-center gap-1.5 cursor-pointer shadow-sm hover:opacity-90 active:scale-95 transition-all"
+                    >
+                      <Camera className="w-4 h-4" />
+                      <span>Take Photo</span>
+                    </button>
+
+                    {/* Gallery / File Picker */}
+                    <label className="btn-outline text-xs py-2 px-3.5 font-bold flex items-center gap-1.5 cursor-pointer shadow-sm hover:bg-accent/10 active:scale-95 transition-all">
+                      <ImageIcon className="w-4 h-4 text-accent" />
+                      <span>Choose from Gallery</span>
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/jpg"
+                        multiple
+                        className="hidden"
+                        onChange={handleFilesSelected}
+                      />
+                    </label>
+
+                    <span className="text-[11px] font-bold text-accent bg-accent/10 px-2.5 py-1 rounded-lg">
+                      {stagedFiles.length + sectionPhotos.length} / 5 Photos
+                    </span>
+                  </div>
+                ) : (
+                  <div className="text-[11px] font-semibold text-amber-800 bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-200">
+                    Inspection photo upload is restricted to CRM Managers and System Administrators.
+                  </div>
+                )}
               </div>
 
-              {/* Photos Grid */}
-              {sectionPhotos.length === 0 ? (
-                <div className="py-8 px-4 text-center border-2 border-dashed border-accent-soft rounded-2xl bg-background/50">
-                  <Camera className="w-10 h-10 text-primary/25 mx-auto mb-2" />
-                  <p className="text-xs font-black text-primary">No photos uploaded for this section yet</p>
-                  <p className="text-[11px] text-primary/60 mt-0.5">
-                    Click "Upload Section Photo" above to capture and attach visual inspection proof.
-                  </p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                  {sectionPhotos.map((photo, pIdx) => {
-                    const fileUrl = API.getVmPhotoFileUrl(photo.id);
-                    return (
+              {/* Staged photos preview before submission */}
+              {stagedFiles.length > 0 && (
+                <div className="space-y-2 p-3.5 bg-accent/5 rounded-2xl border border-accent/25 animate-fade-in">
+                  <div className="flex items-center justify-between text-xs font-bold text-primary">
+                    <span className="flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-accent" />
+                      Photos Selected for this Audit ({stagedFiles.length} of 5 max)
+                    </span>
+                    <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">
+                      Will be saved upon submitting audit report
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 pt-1">
+                    {stagedFiles.map((staged) => (
                       <div
-                        key={photo.id || pIdx}
-                        className="group relative rounded-xl border border-accent/30 overflow-hidden bg-background shadow-xs hover:shadow-md transition-all aspect-square flex flex-col justify-between"
+                        key={staged.id}
+                        className="relative rounded-xl border-2 border-accent/50 overflow-hidden bg-white shadow-xs group aspect-square flex flex-col justify-between"
                       >
                         <img
-                          src={fileUrl}
-                          alt={photo.original_name}
-                          loading="lazy"
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200 cursor-pointer"
-                          onClick={() => openLightbox(sectionPhotos, pIdx)}
+                          src={staged.previewUrl}
+                          alt={staged.name}
+                          className="w-full h-full object-cover"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20 opacity-0 group-hover:opacity-100 transition-opacity p-2 flex flex-col justify-between pointer-events-none">
-                          <div className="flex justify-end pointer-events-auto">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setPhotoToDelete(photo);
-                                setIsPhotoDeleteModalOpen(true);
-                              }}
-                              className="p-1 rounded-md bg-rose-600/90 text-white hover:bg-rose-700 transition-colors shadow-xs"
-                              title="Delete Photo"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                          <div
-                            className="pointer-events-auto cursor-pointer"
-                            onClick={() => openLightbox(sectionPhotos, pIdx)}
-                          >
-                            <p className="text-[10px] font-bold text-white truncate" title={photo.original_name}>
-                              {photo.original_name}
-                            </p>
-                            <p className="text-[9px] text-accent font-medium">
-                              {photo.file_size ? `${Math.round(photo.file_size / 1024)} KB` : ''} • Click to view
-                            </p>
-                          </div>
+                        <button
+                          type="button"
+                          onClick={() => removeStagedFile(staged.id)}
+                          className="absolute top-1.5 right-1.5 p-1 rounded-full bg-rose-600 text-white hover:bg-rose-700 shadow-md transition-all cursor-pointer z-10"
+                          title="Remove photo before submit"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent p-2 text-white">
+                          <p className="text-[10px] font-bold truncate" title={staged.name}>{staged.name}</p>
+                          <p className="text-[9px] text-accent font-mono">{formatFileSize(staged.size)}</p>
                         </div>
                       </div>
-                    );
-                  })}
+                    ))}
+                  </div>
                 </div>
               )}
+
+              {/* Photos Grid (Existing / Stored) */}
+              {sectionPhotos.length === 0 && stagedFiles.length === 0 ? (
+                <div className="py-8 px-4 text-center border-2 border-dashed border-accent-soft rounded-2xl bg-background/50">
+                  <Camera className="w-10 h-10 text-primary/25 mx-auto mb-2" />
+                  <p className="text-xs font-black text-primary">No photos attached for this section yet</p>
+                  <p className="text-[11px] text-primary/60 mt-0.5">
+                    {canManagePhotos
+                      ? 'Use "Take Photo" or "Choose from Gallery" above to capture inspection proof.'
+                      : 'Inspection photos will appear here once attached by a CRM Manager or System Administrator.'}
+                  </p>
+                </div>
+              ) : sectionPhotos.length > 0 ? (
+                <div className="space-y-2">
+                  <div className="text-[11px] font-bold uppercase tracking-wider text-primary/70">
+                    Previously Saved Section Photos ({sectionPhotos.length}):
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                    {sectionPhotos.map((photo, pIdx) => {
+                      const fileUrl = API.getVmPhotoFileUrl(photo.id);
+                      return (
+                        <div
+                          key={photo.id || pIdx}
+                          className="group relative rounded-xl border border-accent/30 overflow-hidden bg-background shadow-xs hover:shadow-md transition-all aspect-square flex flex-col justify-between"
+                        >
+                          <img
+                            src={fileUrl}
+                            alt={photo.original_name}
+                            loading="lazy"
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200 cursor-pointer"
+                            onClick={() => openLightbox(sectionPhotos, pIdx)}
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20 opacity-0 group-hover:opacity-100 transition-opacity p-2 flex flex-col justify-between pointer-events-none">
+                            <div className="flex justify-end pointer-events-auto">
+                              {canManagePhotos && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setPhotoToDelete(photo);
+                                    setIsPhotoDeleteModalOpen(true);
+                                  }}
+                                  className="p-1 rounded-md bg-rose-600/90 text-white hover:bg-rose-700 transition-colors shadow-xs"
+                                  title="Delete Photo"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </div>
+                            <div
+                              className="pointer-events-auto cursor-pointer"
+                              onClick={() => openLightbox(sectionPhotos, pIdx)}
+                            >
+                              <p className="text-[10px] font-bold text-white truncate" title={photo.original_name}>
+                                {photo.original_name}
+                              </p>
+                              <p className="text-[9px] text-accent font-medium">
+                                {photo.file_size ? `${Math.round(photo.file_size / 1024)} KB` : ''} • Click to view
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : null}
             </div>
 
             {/* 11 Visual Merchandising Check Points List */}
@@ -1407,9 +1568,26 @@ export default function VmChecklist() {
                     </div>
 
                     {sub.photos && sub.photos.length > 0 && (
-                      <div className="flex items-center gap-1.5 mb-2 py-1 px-2 rounded-lg bg-accent/10 border border-accent/20 text-accent font-bold text-[10px]">
-                        <Camera className="w-3 h-3 text-accent" />
-                        <span>{sub.photos.length} Section Photo{sub.photos.length > 1 ? 's' : ''}</span>
+                      <div className="mb-2 space-y-1">
+                        <div className="flex items-center gap-1.5 py-0.5 px-2 rounded-lg bg-accent/10 border border-accent/20 text-accent font-bold text-[10px]">
+                          <Camera className="w-3 h-3 text-accent" />
+                          <span>{sub.photos.length} Inspection Photo{sub.photos.length > 1 ? 's' : ''}</span>
+                        </div>
+                        <div className="flex items-center gap-1 overflow-hidden pt-0.5">
+                          {sub.photos.slice(0, 4).map((ph: any, phIdx: number) => (
+                            <img
+                              key={ph.id || phIdx}
+                              src={API.getVmPhotoFileUrl(ph.id)}
+                              alt="Audit proof"
+                              className="w-7 h-7 rounded-lg object-cover border border-accent/30 shrink-0"
+                            />
+                          ))}
+                          {sub.photos.length > 4 && (
+                            <span className="text-[9px] font-bold text-accent px-1.5 py-1 rounded bg-accent/10 shrink-0">
+                              +{sub.photos.length - 4}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     )}
 
@@ -2561,6 +2739,15 @@ export default function VmChecklist() {
           </div>
         );
       })()}
+
+      {/* In-Page Device Camera Modal */}
+      <VmCameraModal
+        isOpen={isCameraModalOpen}
+        onClose={() => setIsCameraModalOpen(false)}
+        onPhotoCaptured={handlePhotoCapturedFromCamera}
+        floor={selectedFloor || 'Store Floor'}
+        section={selectedSection || 'Section'}
+      />
     </DashboardLayout>
   );
 }

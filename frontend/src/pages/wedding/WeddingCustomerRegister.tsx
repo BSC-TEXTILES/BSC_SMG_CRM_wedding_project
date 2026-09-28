@@ -7,6 +7,7 @@ import { showToast } from '../../components/Toast';
 import { API, Auth, UserSession } from '../../services/api';
 import WeddingNav from './WeddingNav';
 import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../../utils/sidebarState';
+import { useRealtimeSection } from '../../hooks/useRealtimeSection';
 import {
   WeddingCustomer,
   CUSTOMER_STATUSES,
@@ -92,6 +93,11 @@ export default function WeddingCustomerRegister() {
     window.addEventListener('bsc_location_changed', handleLocChange);
     return () => window.removeEventListener('bsc_location_changed', handleLocChange);
   }, []);
+
+  // Real-time sync for wedding customer changes
+  useRealtimeSection(['wedding', 'wedding_reg'], () => {
+    loadData();
+  });
 
   // Pagination & Sorting
   const [currentPage, setCurrentPage] = useState(1);

@@ -358,7 +358,11 @@ export default function EmployeeProfileModal({ employee, onClose, onUpdated }: E
         remarks: editForm.remarks
       };
 
-      await API.updateCandidate(appNoKey, updatedPayload);
+      try {
+        await API.updateEmployee(empIdentifier, updatedPayload);
+      } catch (errEmployeeUpdate) {
+        await API.updateCandidate(appNoKey, updatedPayload);
+      }
 
       showToast('Employee information updated successfully everywhere!', 'success');
 

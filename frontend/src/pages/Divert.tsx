@@ -3,7 +3,7 @@ import DashboardLayout from '../components/layouts/DashboardLayout';
 import { 
   Target, Plus, Search, Filter, Clock, CheckCircle, CircleAlert, 
   Download, RefreshCw, X, Eye, FileText, CircleCheck, ShoppingBag, 
-  ArrowRight, ShieldCheck, UserCheck, Phone, Calendar, Building2, TrendingUp, Sparkles, CircleX
+  ArrowRight, ShieldCheck, UserCheck, Phone, Calendar, Building2, TrendingUp, Sparkles, CircleX, Upload
 } from 'lucide-react';
 import { API } from '../services/api';
 import { showToast } from '../components/Toast';
@@ -29,12 +29,69 @@ export default function Divert() {
   // Raise Form State
   const [productWanted, setProductWanted] = useState<string>('');
   const [sectionId, setSectionId] = useState<string>('');
+  const [size, setSize] = useState<string>('');
+  const [colour, setColour] = useState<string>('');
+  const [otherProductDetails, setOtherProductDetails] = useState<string>('');
   const [quantity, setQuantity] = useState<number>(1);
   const [priceRange, setPriceRange] = useState<string>('');
   const [reasonCode, setReasonCode] = useState<string>('OUT_OF_STOCK');
+  const [requiredByDate, setRequiredByDate] = useState<string>('');
+  const [referenceImageFile, setReferenceImageFile] = useState<File | null>(null);
+  const [referenceImagePreview, setReferenceImagePreview] = useState<string>('');
+  const [remarks, setRemarks] = useState<string>('');
   const [customerName, setCustomerName] = useState<string>('');
   const [customerMobile, setCustomerMobile] = useState<string>('');
   const [creating, setCreating] = useState<boolean>(false);
+
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+    const ext = file.name.split('.').pop()?.toLowerCase();
+    if (!validTypes.includes(file.type) && !['jpg', 'jpeg', 'png'].includes(ext || '')) {
+      showToast('Invalid format. Only JPG, JPEG, and PNG images are supported.', 'error');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('Image exceeds the maximum allowed size of 5 MB.', 'error');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    setReferenceImageFile(file);
+    const objectUrl = URL.createObjectURL(file);
+    setReferenceImagePreview(objectUrl);
+  };
+
+  const handleRemoveImage = () => {
+    if (referenceImagePreview) {
+      URL.revokeObjectURL(referenceImagePreview);
+    }
+    setReferenceImageFile(null);
+    setReferenceImagePreview('');
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const resetForm = () => {
+    setProductWanted('');
+    setSectionId('');
+    setSize('');
+    setColour('');
+    setOtherProductDetails('');
+    setQuantity(1);
+    setPriceRange('');
+    setReasonCode('OUT_OF_STOCK');
+    setRequiredByDate('');
+    handleRemoveImage();
+    setRemarks('');
+    setCustomerName('');
+    setCustomerMobile('');
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -58,28 +115,50 @@ export default function Divert() {
 
   const handleCreateDivert = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!productWanted.trim()) {
+      showToast('Product / Fabric Requested is required.', 'error');
+      return;
+    }
     setCreating(true);
     try {
+      let uploadedImageUrl = '';
+      if (referenceImageFile) {
+        try {
+          const uploadRes = await API.uploadDivertImage(referenceImageFile);
+          if (uploadRes && uploadRes.fileUrl) {
+            uploadedImageUrl = uploadRes.fileUrl;
+          }
+        } catch (uploadErr: any) {
+          console.error('Reference image upload failed:', uploadErr);
+          showToast(uploadErr?.message || 'Failed to upload reference image', 'error');
+          setCreating(false);
+          return;
+        }
+      }
+
       await API.createDivert({
         sectionId,
-        productWanted,
+        productWanted: productWanted.trim(),
         quantity,
         priceRange,
         reasonCode,
-        customerName,
-        customerMobile: customerMobile.length === 10 ? `+91${customerMobile}` : customerMobile,
+        size: size.trim() || undefined,
+        colour: colour.trim() || undefined,
+        other_product_details: otherProductDetails.trim() || undefined,
+        required_by_date: requiredByDate || undefined,
+        reference_image: uploadedImageUrl || undefined,
+        remarks: remarks.trim() || undefined,
+        customerName: customerName.trim() || undefined,
+        customerMobile: customerMobile.length === 10 ? `+91${customerMobile}` : (customerMobile.trim() || undefined),
         createdBy: 'Floor Staff'
       });
       showToast('Sourcing divert request raised successfully.', 'success');
       setShowRaiseModal(false);
-      setProductWanted('');
-      setCustomerName('');
-      setCustomerMobile('');
-      setPriceRange('');
+      resetForm();
       fetchData();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      showToast('Unable to raise sourcing divert request. Please try again.', 'error');
+      showToast(err?.message || 'Unable to raise sourcing divert request. Please try again.', 'error');
     } finally {
       setCreating(false);
     }
@@ -167,14 +246,21 @@ export default function Divert() {
       'S.No': idx + 1,
       'Ref No': item.refNo || `#${item.id?.slice(0, 6)}`,
       'Date': item.entryDate ? new Date(item.entryDate).toLocaleDateString() : '—',
-      'Product Wanted': item.productWanted || '—',
-      'Quantity': item.quantity || 1,
-      'Price Range': item.priceRange || '—',
+      'Product / Fabric Requested': item.productWanted || '—',
+      'Store Section': item.sectionId || '—',
+      'Size': item.size || '—',
+      'Colour': item.colour || '—',
+      'Other Product Details': item.other_product_details || item.otherProductDetails || '—',
+      'Quantity Requested': item.quantity || 1,
+      'Target Price Range': item.priceRange || '—',
       'Reason Code': item.reasonCode || '—',
-      'Customer Name': item.customerName || 'Walk-in',
-      'Customer Phone': item.customerMobile || '—',
+      'Required-by Date': item.required_by_date || item.requiredByDate || '—',
+      'Reference Image / Reference': item.reference_image || item.referenceImage || '—',
+      'Remarks / Notes': item.remarks || '—',
+      'Customer Full Name': item.customerName || 'Walk-in',
+      'Customer Mobile Phone': item.customerMobile || '—',
       'Status': item.status?.toUpperCase() || 'OPEN',
-      'PM Notes': item.pmNotes || '—'
+      'PM Sourcing Notes': item.pmNotes || '—'
     }));
 
     const ws = XLSX.utils.json_to_sheet(dataToExport);
@@ -419,16 +505,43 @@ export default function Divert() {
                       <td className="py-3.5 px-4 font-mono font-extrabold text-primary">
                         #{item.refNo || item.id?.slice(0, 6)}
                       </td>
-                      <td className="py-3.5 px-4 text-[#5D4E42] font-semibold">
+                      <td className="py-3.5 px-4 text-[#5D4E42] font-semibold whitespace-nowrap">
                         {item.entryDate ? new Date(item.entryDate).toLocaleDateString('en-IN') : '—'}
                       </td>
-                      <td className="py-3.5 px-4 font-extrabold text-primary">
-                        {item.productWanted}
+                      <td className="py-3.5 px-4">
+                        <div className="font-extrabold text-primary">{item.productWanted}</div>
+                        <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                          {item.sectionId && (
+                            <span className="px-1.5 py-0.5 rounded bg-amber-50 border border-amber-200 text-amber-800 text-[10px] font-bold">
+                              {item.sectionId}
+                            </span>
+                          )}
+                          {item.colour && (
+                            <span className="px-1.5 py-0.5 rounded bg-sky-50 border border-sky-200 text-sky-800 text-[10px] font-bold">
+                              Colour: {item.colour}
+                            </span>
+                          )}
+                          {item.size && (
+                            <span className="px-1.5 py-0.5 rounded bg-purple-50 border border-purple-200 text-purple-800 text-[10px] font-bold">
+                              Size: {item.size}
+                            </span>
+                          )}
+                          {item.required_by_date && (
+                            <span className="px-1.5 py-0.5 rounded bg-rose-50 border border-rose-200 text-rose-800 text-[10px] font-bold">
+                              Req: {item.required_by_date}
+                            </span>
+                          )}
+                          {item.reference_image && (
+                            <span className="px-1.5 py-0.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-800 text-[10px] font-bold">
+                              📷 Photo
+                            </span>
+                          )}
+                        </div>
                       </td>
-                      <td className="py-3.5 px-4 font-mono font-bold text-primary">
+                      <td className="py-3.5 px-4 font-mono font-bold text-primary whitespace-nowrap">
                         {item.quantity || 1} pcs
                       </td>
-                      <td className="py-3.5 px-4">
+                      <td className="py-3.5 px-4 whitespace-nowrap">
                         <span className="px-2 py-0.5 rounded-lg bg-background border border-accent-soft text-[#5D4E42] font-bold text-[10.5px]">
                           {item.reasonCode || 'OUT_OF_STOCK'}
                         </span>
@@ -437,13 +550,13 @@ export default function Divert() {
                         <div className="font-extrabold text-primary">{item.customerName || 'Walk-in Customer'}</div>
                         <div className="text-[10px] text-primary font-mono">{item.customerMobile || '—'}</div>
                       </td>
-                      <td className="py-3.5 px-4">
+                      <td className="py-3.5 px-4 whitespace-nowrap">
                         {getStatusBadge(item.status)}
                       </td>
                       <td className="py-3.5 px-4 text-[#5D4E42] text-xs max-w-xs truncate italic">
                         {item.pmNotes || 'Awaiting PM review'}
                       </td>
-                      <td className="py-3.5 px-4 text-right" onClick={(e) => e.stopPropagation()}>
+                      <td className="py-3.5 px-4 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                         <button
                           onClick={() => setSelectedDivert(item)}
                           className="px-3 py-1.5 rounded-xl border border-primary text-primary font-extrabold hover:bg-primary hover:text-white transition-all text-xs flex items-center gap-1 ml-auto shadow-2xs"
@@ -462,150 +575,296 @@ export default function Divert() {
         {/* Raise New Sourcing Divert Modal */}
         <ModalPortal
           isOpen={showRaiseModal}
-          onClose={() => setShowRaiseModal(false)}
+          onClose={() => {
+            setShowRaiseModal(false);
+            resetForm();
+          }}
           ariaLabel="Raise New Sourcing Divert"
         >
-          <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden border border-accent/40 flex flex-col">
-              <div className="bg-primary text-white p-5 flex items-center justify-between border-b border-accent/30">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-accent text-white font-black text-lg flex items-center justify-center shadow-md">
-                    <Target className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-extrabold text-white text-base">Raise New Sourcing Divert</h3>
-                    <p className="text-xs text-accent font-medium">Log unavailable floor stock requirement</p>
-                  </div>
+          <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full overflow-hidden border border-accent/40 flex flex-col max-h-[90vh]">
+            <div className="bg-primary text-white p-5 flex items-center justify-between border-b border-accent/30">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-accent text-white font-black text-lg flex items-center justify-center shadow-md">
+                  <Target className="w-5 h-5" />
                 </div>
-
-                <button onClick={() => setShowRaiseModal(false)} className="p-2 rounded-xl bg-white/10 text-white hover:bg-white/20">
-                  <X className="w-5 h-5" />
-                </button>
+                <div>
+                  <h3 className="font-extrabold text-white text-base">Raise New Sourcing Divert</h3>
+                  <p className="text-xs text-accent font-medium">Capture complete merchandise sourcing requirement</p>
+                </div>
               </div>
 
-              <form onSubmit={handleCreateDivert} className="p-6 space-y-4 text-xs bg-background">
-                <div className="bg-white p-4 rounded-2xl border border-accent-soft space-y-3 shadow-xs">
+              <button
+                onClick={() => {
+                  setShowRaiseModal(false);
+                  resetForm();
+                }}
+                className="p-2 rounded-xl bg-white/10 text-white hover:bg-white/20"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateDivert} className="flex-1 overflow-y-auto p-6 space-y-4 text-xs bg-background">
+              
+              {/* SECTION 1 — PRODUCT DETAILS */}
+              <div className="bg-white p-4 rounded-2xl border border-accent-soft space-y-3 shadow-xs">
+                <div className="flex items-center gap-2 border-b border-accent-soft pb-1.5">
+                  <span className="w-5 h-5 rounded-full bg-primary text-white text-[10px] font-black flex items-center justify-center">1</span>
+                  <h4 className="font-extrabold text-primary text-xs uppercase tracking-wider">
+                    Section 1 — Product Details
+                  </h4>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-primary mb-1">Product / Fabric Requested *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Pure Kanjivaram Silk Saree (Bottle Green / Gold Zari border)"
+                    value={productWanted}
+                    onChange={(e) => setProductWanted(e.target.value)}
+                    className="input-modern font-extrabold text-primary w-full"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="block font-bold text-primary mb-1">Product / Fabric Requested *</label>
+                    <label className="block font-bold text-primary mb-1">Store Section</label>
+                    <select
+                      value={sectionId}
+                      onChange={(e) => setSectionId(e.target.value)}
+                      className="select-modern font-bold w-full"
+                    >
+                      <option value="">Select Floor Section</option>
+                      <option value="Ground Floor Saree">Ground Floor Saree</option>
+                      <option value="1st Floor Saree">1st Floor Saree</option>
+                      <option value="Ladies">Ladies</option>
+                      <option value="Kids">Kids</option>
+                      <option value="Mens">Mens</option>
+                      {sections.filter(s => !['Ground Floor Saree', '1st Floor Saree', 'Ladies', 'Kids', 'Mens'].includes(s.name)).map(s => (
+                        <option key={s.id} value={s.name || s.id}>{s.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block font-bold text-primary mb-1">Size</label>
                     <input
                       type="text"
-                      required
-                      placeholder="e.g. Pure Kanjivaram Silk Saree (Bottle Green/Gold border)"
-                      value={productWanted}
-                      onChange={(e) => setProductWanted(e.target.value)}
-                      className="input-modern font-extrabold text-primary"
+                      placeholder="e.g. 42 / XL / Free Size"
+                      value={size}
+                      onChange={(e) => setSize(e.target.value)}
+                      className="input-modern w-full"
                     />
                   </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block font-bold text-primary mb-1">Store Section</label>
-                      <select
-                        value={sectionId}
-                        onChange={(e) => setSectionId(e.target.value)}
-                        className="select-modern font-bold"
-                      >
-                        <option value="">Select Floor Section</option>
-                        <option value="Ground Floor Saree">Ground Floor Saree</option>
-                        <option value="1st Floor Saree">1st Floor Saree</option>
-                        <option value="Ladies">Ladies</option>
-                        <option value="Kids">Kids</option>
-                        <option value="Mens">Mens</option>
-                        {sections.filter(s => !['Ground Floor Saree', '1st Floor Saree', 'Ladies', 'Kids', 'Mens'].includes(s.name)).map(s => (
-                          <option key={s.id} value={s.name || s.id}>{s.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block font-bold text-primary mb-1">Quantity Requested</label>
-                      <input
-                        type="number"
-                        min="1"
-                        value={quantity}
-                        onChange={(e) => setQuantity(parseInt(e.target.value, 10) || 1)}
-                        className="input-modern font-mono font-bold"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block font-bold text-primary mb-1">Target Price Range</label>
-                      <input
-                        type="text"
-                        placeholder="e.g. ₹5,000 - ₹8,000"
-                        value={priceRange}
-                        onChange={(e) => setPriceRange(e.target.value)}
-                        className="input-modern"
-                      />
-                    </div>
-                    <div>
-                      <label className="block font-bold text-primary mb-1">Reason Code</label>
-                      <select
-                        value={reasonCode}
-                        onChange={(e) => setReasonCode(e.target.value)}
-                        className="select-modern font-bold"
-                      >
-                        <option value="OUT_OF_STOCK">Out of Stock</option>
-                        <option value="COLOR_UNAVAILABLE">Color Unavailable</option>
-                        <option value="SIZE_MISSING">Size Missing</option>
-                        <option value="PRICE_HIGH">Price High</option>
-                      </select>
-                    </div>
+                  <div>
+                    <label className="block font-bold text-primary mb-1">Colour</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Bottle Green / Wine"
+                      value={colour}
+                      onChange={(e) => setColour(e.target.value)}
+                      className="input-modern w-full"
+                    />
                   </div>
                 </div>
 
-                <div className="bg-white p-4 rounded-2xl border border-accent-soft space-y-3 shadow-xs">
-                  <h4 className="font-extrabold text-primary text-xs border-b border-accent-soft pb-1.5 uppercase tracking-wider">
-                    Customer Details (Optional)
+                <div>
+                  <label className="block font-bold text-primary mb-1">Other Product Details</label>
+                  <textarea
+                    rows={2}
+                    placeholder="Design, Pattern, Border, Fabric details, Special requirements..."
+                    value={otherProductDetails}
+                    onChange={(e) => setOtherProductDetails(e.target.value)}
+                    className="textarea-modern w-full text-xs"
+                  />
+                </div>
+              </div>
+
+              {/* SECTION 2 — REQUIREMENT */}
+              <div className="bg-white p-4 rounded-2xl border border-accent-soft space-y-3 shadow-xs">
+                <div className="flex items-center gap-2 border-b border-accent-soft pb-1.5">
+                  <span className="w-5 h-5 rounded-full bg-primary text-white text-[10px] font-black flex items-center justify-center">2</span>
+                  <h4 className="font-extrabold text-primary text-xs uppercase tracking-wider">
+                    Section 2 — Requirement
                   </h4>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block font-bold text-primary mb-1">Customer Full Name</label>
-                      <input
-                        type="text"
-                        placeholder="e.g. Anitha Kumar"
-                        value={customerName}
-                        onChange={(e) => setCustomerName(e.target.value)}
-                        className="input-modern font-bold"
-                      />
-                    </div>
-                    <div>
-                      <label className="block font-bold text-primary mb-1">Customer Mobile Phone</label>
-                      <div className="flex">
-                        <span className="p-2.5 bg-accent-soft/50 border border-r-0 border-accent-soft rounded-l-xl font-extrabold text-xs text-[#5D4E42] flex items-center">
-                          +91
-                        </span>
-                        <input
-                          type="tel"
-                          maxLength={10}
-                          placeholder="10-digit mobile number"
-                          value={customerMobile}
-                          onChange={(e) => setCustomerMobile(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                          className="input-modern font-mono rounded-l-none"
-                        />
-                      </div>
-                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-bold text-primary mb-1">Quantity Requested</label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={quantity}
+                      onChange={(e) => setQuantity(parseInt(e.target.value, 10) || 1)}
+                      className="input-modern font-mono font-bold w-full"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-primary mb-1">Target Price Range</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. ₹5,000 - ₹8,000"
+                      value={priceRange}
+                      onChange={(e) => setPriceRange(e.target.value)}
+                      className="input-modern w-full"
+                    />
                   </div>
                 </div>
 
-                <div className="flex items-center justify-end gap-2 pt-3 border-t border-accent-soft">
-                  <button
-                    type="button"
-                    onClick={() => setShowRaiseModal(false)}
-                    className="px-4 py-2 rounded-xl text-xs font-bold text-[#5D4E42] bg-white border border-accent-soft"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={creating}
-                    className="btn-gold text-xs py-2 px-5 font-black shadow-md disabled:opacity-50"
-                  >
-                    {creating ? 'Raising Request...' : 'Raise Sourcing Request'}
-                  </button>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-bold text-primary mb-1">Reason Code</label>
+                    <select
+                      value={reasonCode}
+                      onChange={(e) => setReasonCode(e.target.value)}
+                      className="select-modern font-bold w-full"
+                    >
+                      <option value="OUT_OF_STOCK">Out of Stock</option>
+                      <option value="COLOR_UNAVAILABLE">Color Unavailable</option>
+                      <option value="SIZE_MISSING">Size Missing</option>
+                      <option value="PRICE_HIGH">Price High</option>
+                      <option value="SPECIAL_DESIGN">Special Design Request</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block font-bold text-primary mb-1">Required-by Date (Optional)</label>
+                    <input
+                      type="date"
+                      value={requiredByDate}
+                      onChange={(e) => setRequiredByDate(e.target.value)}
+                      className="input-modern font-mono text-xs w-full"
+                    />
+                  </div>
                 </div>
-              </form>
-            </div>
+              </div>
+
+              {/* SECTION 3 — REFERENCE */}
+              <div className="bg-white p-4 rounded-2xl border border-accent-soft space-y-3 shadow-xs">
+                <div className="flex items-center gap-2 border-b border-accent-soft pb-1.5">
+                  <span className="w-5 h-5 rounded-full bg-primary text-white text-[10px] font-black flex items-center justify-center">3</span>
+                  <h4 className="font-extrabold text-primary text-xs uppercase tracking-wider">
+                    Section 3 — Reference &amp; Remarks
+                  </h4>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-primary mb-1">Reference Image (Optional, max 5 MB)</label>
+                  {!referenceImagePreview ? (
+                    <div className="flex flex-wrap items-center gap-3">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/jpg"
+                        onChange={handleImageSelect}
+                        className="hidden"
+                        id="divert-ref-image"
+                      />
+                      <label
+                        htmlFor="divert-ref-image"
+                        className="cursor-pointer px-4 py-2.5 rounded-xl border border-dashed border-accent-soft hover:border-accent bg-background text-primary font-bold text-xs flex items-center gap-2 transition-all hover:bg-white"
+                      >
+                        <Upload className="w-4 h-4 text-accent" />
+                        <span>Upload Reference Photo (JPG, PNG)</span>
+                      </label>
+                      <span className="text-[11px] text-[#5D4E42]">Desktop or Mobile Camera / Gallery (max 5MB)</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-3 p-2.5 rounded-xl border border-accent-soft bg-background">
+                      <img
+                        src={referenceImagePreview}
+                        alt="Reference Preview"
+                        className="w-16 h-16 object-cover rounded-lg border border-accent/40 shadow-xs"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-bold text-primary truncate text-xs">{referenceImageFile?.name}</div>
+                        <div className="text-[10px] text-[#5D4E42]">
+                          {referenceImageFile ? (referenceImageFile.size / 1024).toFixed(1) + ' KB' : ''}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleRemoveImage}
+                        className="p-1.5 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100"
+                        title="Remove image"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block font-bold text-primary mb-1">Remarks / Notes</label>
+                  <textarea
+                    rows={2}
+                    placeholder="Enter additional remarks or sourcing notes..."
+                    value={remarks}
+                    onChange={(e) => setRemarks(e.target.value)}
+                    className="textarea-modern w-full text-xs"
+                  />
+                </div>
+              </div>
+
+              {/* SECTION 4 — CUSTOMER DETAILS */}
+              <div className="bg-white p-4 rounded-2xl border border-accent-soft space-y-3 shadow-xs">
+                <div className="flex items-center gap-2 border-b border-accent-soft pb-1.5">
+                  <span className="w-5 h-5 rounded-full bg-primary text-white text-[10px] font-black flex items-center justify-center">4</span>
+                  <h4 className="font-extrabold text-primary text-xs uppercase tracking-wider">
+                    Section 4 — Customer Details (Optional)
+                  </h4>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-bold text-primary mb-1">Customer Full Name</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Anitha Kumar"
+                      value={customerName}
+                      onChange={(e) => setCustomerName(e.target.value)}
+                      className="input-modern font-bold w-full"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-primary mb-1">Customer Mobile Phone</label>
+                    <div className="flex">
+                      <span className="p-2.5 bg-accent-soft/50 border border-r-0 border-accent-soft rounded-l-xl font-extrabold text-xs text-[#5D4E42] flex items-center">
+                        +91
+                      </span>
+                      <input
+                        type="tel"
+                        maxLength={10}
+                        placeholder="10-digit mobile number"
+                        value={customerMobile}
+                        onChange={(e) => setCustomerMobile(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                        className="input-modern font-mono rounded-l-none w-full"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-accent-soft">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowRaiseModal(false);
+                    resetForm();
+                  }}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-[#5D4E42] bg-white border border-accent-soft hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={creating}
+                  className="btn-gold text-xs py-2 px-5 font-black shadow-md disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  {creating ? 'Raising Request...' : 'Raise Sourcing Request'}
+                </button>
+              </div>
+            </form>
+          </div>
         </ModalPortal>
 
         {/* Centered Details Popup Modal Card */}
@@ -639,7 +898,7 @@ export default function Divert() {
 
               {/* Scrollable Modal Body */}
               <div className="flex-1 overflow-y-auto p-6 space-y-5 text-xs bg-background">
-                {/* Product & Status Box */}
+                {/* Product & Attributes Box (Section 1) */}
                 <div className="bg-white p-5 rounded-2xl border border-accent-soft space-y-3 shadow-xs">
                   <div className="flex items-center justify-between border-b border-accent-soft pb-2">
                     <span className="text-[10.5px] font-black uppercase text-primary">Sourcing Status</span>
@@ -648,9 +907,38 @@ export default function Divert() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
                     <div>
-                      <span className="text-[10.5px] font-black text-primary block uppercase">Product Requested</span>
+                      <span className="text-[10.5px] font-black text-primary block uppercase">Product / Fabric Requested</span>
                       <span className="font-extrabold text-sm text-primary block mt-0.5">{selectedDivert.productWanted}</span>
                     </div>
+                    <div>
+                      <span className="text-[10.5px] font-black text-primary block uppercase">Store Section</span>
+                      <span className="font-extrabold text-xs text-primary block mt-0.5">{selectedDivert.sectionId || '—'}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10.5px] font-black text-primary block uppercase">Size</span>
+                      <span className="font-extrabold text-xs text-accent block mt-0.5">{selectedDivert.size || '—'}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10.5px] font-black text-primary block uppercase">Colour</span>
+                      <span className="font-bold text-xs text-primary block mt-0.5">{selectedDivert.colour || '—'}</span>
+                    </div>
+                    {selectedDivert.other_product_details && (
+                      <div className="sm:col-span-2">
+                        <span className="text-[10.5px] font-black text-primary block uppercase">Other Product Details</span>
+                        <span className="font-medium text-xs text-primary block mt-0.5 bg-background p-2.5 rounded-xl border border-accent-soft">
+                          {selectedDivert.other_product_details}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Requirement & Priority Box (Section 2) */}
+                <div className="bg-white p-5 rounded-2xl border border-accent-soft space-y-3 shadow-xs">
+                  <h4 className="font-extrabold text-primary text-xs uppercase tracking-wider border-b border-accent-soft pb-2">
+                    Requirement &amp; Priority
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <span className="text-[10.5px] font-black text-primary block uppercase">Requested Quantity</span>
                       <span className="font-mono font-black text-sm text-primary block mt-0.5">{selectedDivert.quantity || 1} Pcs</span>
@@ -663,10 +951,50 @@ export default function Divert() {
                       <span className="text-[10.5px] font-black text-primary block uppercase">Reason Code</span>
                       <span className="font-bold text-xs text-primary block mt-0.5">{selectedDivert.reasonCode || 'OUT_OF_STOCK'}</span>
                     </div>
+                    <div>
+                      <span className="text-[10.5px] font-black text-primary block uppercase">Required-by Date</span>
+                      <span className="font-mono font-bold text-xs text-rose-700 block mt-0.5">{selectedDivert.required_by_date || 'Standard turnaround'}</span>
+                    </div>
                   </div>
                 </div>
 
-                {/* Customer Details */}
+                {/* Reference & Remarks (Section 3) */}
+                {(selectedDivert.reference_image || selectedDivert.remarks) && (
+                  <div className="bg-white p-5 rounded-2xl border border-accent-soft space-y-3 shadow-xs">
+                    <h4 className="font-extrabold text-primary text-xs uppercase tracking-wider border-b border-accent-soft pb-2 flex items-center gap-2">
+                      <ShoppingBag className="w-4 h-4 text-accent" />
+                      <span>Reference Photo &amp; Remarks</span>
+                    </h4>
+                    {selectedDivert.reference_image && (
+                      <div>
+                        <span className="text-[10.5px] font-black text-primary block uppercase mb-1">Attached Reference Photo</span>
+                        <a
+                          href={selectedDivert.reference_image}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-block group"
+                        >
+                          <img
+                            src={selectedDivert.reference_image}
+                            alt="Reference"
+                            className="max-h-48 max-w-xs object-cover rounded-xl border border-accent-soft group-hover:scale-102 transition-transform shadow-sm"
+                          />
+                          <span className="text-[10px] text-accent font-bold block mt-1">Click to view full image ↗</span>
+                        </a>
+                      </div>
+                    )}
+                    {selectedDivert.remarks && (
+                      <div>
+                        <span className="text-[10.5px] font-black text-primary block uppercase mb-0.5">Staff Remarks</span>
+                        <p className="p-2.5 rounded-xl bg-background border border-accent-soft text-primary text-xs">
+                          {selectedDivert.remarks}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Customer Details (Section 4) */}
                 <div className="bg-white p-5 rounded-2xl border border-accent-soft space-y-3 shadow-xs">
                   <h4 className="font-extrabold text-primary text-xs uppercase tracking-wider border-b border-accent-soft pb-2 flex items-center gap-2">
                     <UserCheck className="w-4 h-4 text-accent" />
@@ -695,7 +1023,7 @@ export default function Divert() {
                   </div>
                 </div>
 
-                {/* Beautiful Approval & Lifecycle Timeline */}
+                {/* Approval & Lifecycle Timeline */}
                 <div className="bg-white p-5 rounded-2xl border border-accent-soft space-y-4 shadow-xs">
                   <h4 className="font-extrabold text-primary text-xs uppercase tracking-wider border-b border-accent-soft pb-2 flex items-center gap-2">
                     <Clock className="w-4 h-4 text-accent" />

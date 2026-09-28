@@ -44,6 +44,7 @@ export const MODULE_REGISTRY: AppModuleDefinition[] = [
   { key: 'divert', label: 'Sourcing Diverts', route: '/divert', permission: 'divert', section: 'Store Operations', landingPriority: 40 },
   { key: 'pm_view', label: 'Purchase Manager View', route: '/pm-view', permission: 'pm_view', section: 'Store Operations', landingPriority: 45 },
   { key: 'vm_checklist', label: 'VM Checklist', route: '/vm-checklist', permission: 'vm_checklist', section: 'Store Operations', landingPriority: 20 },
+  { key: 'vm_dashboard', label: 'VM Dashboard', route: '/vm-dashboard', permission: 'vm_checklist', section: 'Store Operations', landingPriority: 21 },
   { key: 'attendance', label: 'Attendance & Roster', route: '/attendance', permission: 'attendance', section: 'Store Operations', landingPriority: 35 },
 
   // Talent & HR
@@ -102,6 +103,7 @@ export const ROUTE_TO_PAGE_KEY: Record<string, string> = {
   '/divert': 'divert',
   '/pm-view': 'pm_view',
   '/vm-checklist': 'vm_checklist',
+  '/vm-dashboard': 'vm_checklist',
   '/attendance': 'attendance',
   '/candidates': 'candidates',
   '/offer-process': 'offer',

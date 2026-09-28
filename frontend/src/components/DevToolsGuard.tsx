@@ -1,10 +1,24 @@
 import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { ShieldAlert, XOctagon } from 'lucide-react';
 import { Auth, API } from '../services/api';
 import { NotificationService } from '../services/notificationService';
 import { DevToolsDetector } from '../services/devToolsDetector';
 
 const SHIELD_FLAG_KEY = 'bsc_shield_enabled';
+
+/**
+ * The shield protects staff data, so it never runs on the public marketing and
+ * kiosk surfaces. Its detector writes to the console on every cycle, which would
+ * otherwise spam the landing page.
+ */
+function isPublicGuardPath(pathname: string): boolean {
+  return pathname === '/'
+    || pathname.startsWith('/madt')
+    || pathname.startsWith('/feedback')
+    || pathname === '/login'
+    || pathname === '/apply';
+}
 
 function readCachedFlag(): boolean {
   try {
@@ -15,7 +29,9 @@ function readCachedFlag(): boolean {
 }
 
 export default function DevToolsGuard() {
-  const [armed, setArmed] = useState<boolean>(() => readCachedFlag());
+  const location = useLocation();
+  const isPublicPage = isPublicGuardPath(location.pathname);
+  const [armed, setArmed] = useState<boolean>(() => !isPublicGuardPath(typeof window !== 'undefined' ? window.location.pathname : '') && readCachedFlag());
   const [isOpen, setIsOpen] = useState(false);
   const [bypass, setBypass] = useState(false);
 
@@ -40,8 +56,6 @@ export default function DevToolsGuard() {
 
   // Synchronize shield armed state from server (on mount, window focus, interval, and Socket.IO push)
   useEffect(() => {
-    const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
-    const isPublicPage = currentPath === '/' || currentPath.startsWith('/madt') || currentPath.startsWith('/feedback') || currentPath === '/login' || currentPath === '/apply';
     if (isPublicPage) {
       return;
     }
@@ -93,12 +107,10 @@ export default function DevToolsGuard() {
       window.removeEventListener('focus', onFocus);
       unsubscribe();
     };
-  }, []);
+  }, [isPublicPage]);
 
   // Subscribe to live DevToolsDetector state
   useEffect(() => {
-    const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
-    const isPublicPage = currentPath === '/' || currentPath.startsWith('/madt') || currentPath.startsWith('/feedback') || currentPath === '/login' || currentPath === '/apply';
     if (isPublicPage) {
       return;
     }
@@ -107,21 +119,27 @@ export default function DevToolsGuard() {
       setIsOpen(prev => prev !== state.isOpen ? state.isOpen : prev);
     });
     return unsub;
-  }, []);
+  }, [isPublicPage]);
 
-  // Arm/disarm detector when armed flag changes
+  // Arm/disarm the detector. Public surfaces stay disarmed even when a cached
+  // flag from an earlier staff session says the shield is on; navigating into the
+  // app re-arms via this effect, and the server sync below confirms the flag.
   useEffect(() => {
+    if (isPublicPage) {
+      DevToolsDetector.arm(false);
+      setIsOpen(false);
+      return;
+    }
     DevToolsDetector.arm(armed);
-  }, [armed]);
+  }, [armed, isPublicPage]);
 
   // If shield is off, or DevTools are closed, or admin has bypassed protection, do not block screen
   const session = Auth.get();
   const isAdmin = session?.role === 'Admin' || session?.role === 'Super Admin';
   // Allow Admins to view the Admin Dashboard (/dashboard), Settings (/settings), and System Administrator (/system-admin) without blocking screen
   // so they can monitor telemetry and configure DevTools detection live
-  const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
-  const isAdminMonitoringPage = pathname === '/dashboard' || pathname === '/settings' || pathname === '/system-admin';
-  const shouldBlock = armed && isOpen && !(isAdmin && (bypass || isAdminMonitoringPage));
+  const isAdminMonitoringPage = location.pathname === '/dashboard' || location.pathname === '/settings' || location.pathname === '/system-admin';
+  const shouldBlock = !isPublicPage && armed && isOpen && !(isAdmin && (bypass || isAdminMonitoringPage));
 
   if (!shouldBlock) return null;
 

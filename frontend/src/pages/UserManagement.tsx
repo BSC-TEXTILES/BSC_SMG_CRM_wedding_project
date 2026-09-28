@@ -38,7 +38,9 @@ import {
   Activity,
   UserCheck,
   UserX,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Download,
+  Upload
 } from 'lucide-react';
 
 interface ModuleDef {
@@ -115,8 +117,7 @@ const DEFAULT_SYSTEM_ROLES = [
   'Interviewer',
   'Employee',
   'Greeter',
-  'Guest',
-  'Telecaller'
+  'Guest'
 ];
 
 export default function UserManagementPage() {
@@ -170,6 +171,16 @@ export default function UserManagementPage() {
   const [formJoiningDate, setFormJoiningDate] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  // Form states - CSV bulk import (single import section for this page)
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [importResult, setImportResult] = useState<{
+    fileName?: string; total?: number; imported?: number; skipped?: number; failed?: number;
+    results?: Array<{ row: number; status: string; reason?: string; username?: string }>;
+  } | null>(null);
+  const importFileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Form states - Edit User
   const [editFullName, setEditFullName] = useState('');
@@ -452,6 +463,104 @@ export default function UserManagementPage() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  // ── CSV bulk import ───────────────────────────────────────────────
+  const resetImportSelection = () => {
+    setImportFile(null);
+    setImportError(null);
+    setImportResult(null);
+  };
+
+  const handlePickImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+    setImportError(null);
+    setImportResult(null);
+    if (!/\.csv$/i.test(file.name)) {
+      setImportFile(null);
+      setImportError('Invalid file format. Please upload the approved CSV file.');
+      return;
+    }
+    setImportFile(file);
+  };
+
+  const handleDownloadImportTemplate = async () => {
+    try {
+      await API.downloadUserImportTemplate();
+      showToast('Approved CSV file downloaded', 'success');
+    } catch (err: any) {
+      showToast(err.message || 'Could not download the approved CSV file. Please try again.', 'error');
+    }
+  };
+
+  const handleImportCsv = async () => {
+    if (!importFile) {
+      setImportError('Select the approved CSV file first.');
+      return;
+    }
+    if (!/\.csv$/i.test(importFile.name)) {
+      setImportError('Invalid file format. Please upload the approved CSV file.');
+      return;
+    }
+    setImporting(true);
+    setImportError(null);
+    setImportResult(null);
+    try {
+      const res = await API.importAdminUsersCsv(importFile);
+      const data = (res && res.data) ? res.data : (res || {});
+      setImportResult(data);
+
+      const imported = Number(data.imported) || 0;
+      const skipped = Number(data.skipped) || 0;
+      const failed = Number(data.failed) || 0;
+      if (failed > 0) {
+        showToast(`Import finished: ${imported} imported, ${skipped} skipped, ${failed} failed`, 'warn');
+      } else if (imported > 0) {
+        showToast(`Import finished: ${imported} account(s) created`, 'success');
+      } else {
+        showToast(`Import finished: no accounts created (${skipped} skipped)`, 'info');
+      }
+
+      // Clear only the picked file - the result panel must stay visible.
+      setImportFile(null);
+      setImportError(null);
+      // Live refresh of the table and every metric above it - no page reload.
+      loadData();
+    } catch (err: any) {
+      const detail = Array.isArray(err?.errors) && err.errors.length > 0
+        ? `${err.message} ${err.errors.join(' ')}`
+        : (err.message || 'The import could not be completed. Please try again.');
+      setImportError(detail);
+      showToast(err.message || 'The import could not be completed. Please try again.', 'error');
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const handleDownloadFailedRows = () => {
+    if (!importResult || !Array.isArray(importResult.results)) return;
+    const failedRows = importResult.results.filter(r => r && r.status === 'Failed');
+    if (failedRows.length === 0) return;
+    const esc = (v: any) => {
+      const s = v == null ? '' : String(v);
+      return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const lines = [
+      ['Row', 'Status', 'Username', 'Reason'].map(esc).join(','),
+      ...failedRows.map(r => [r.row, r.status, r.username || '', r.reason || ''].map(esc).join(','))
+    ];
+    const bom = String.fromCharCode(0xFEFF);
+    const blob = new Blob([bom + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'User_Import_Failed_Rows.csv';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
   };
 
   // Open Edit Modal
@@ -1067,6 +1176,140 @@ export default function UserManagementPage() {
               </div>
             </div>
           </div>
+
+          {/* CSV Bulk Import - the single import section for this page */}
+          {session && ADMIN_ROLE_LIST.includes(session.role) && (
+            <div className="card-glass p-4 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <FileSpreadsheet className="w-4 h-4 text-accent" />
+                    <h3 className="text-sm font-black text-primary">Bulk Import Users (CSV)</h3>
+                  </div>
+                  <p className="text-xs text-primary/60 mt-1">
+                    Upload the approved CSV file to create several accounts at once. The header row is
+                    validated against the approved format before a single row is written.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleDownloadImportTemplate}
+                  className="shrink-0 px-3.5 py-2 rounded-xl bg-white border border-accent/25 text-primary text-xs font-bold hover:bg-gray-50 flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                >
+                  <Download className="w-3.5 h-3.5 text-accent" />
+                  <span>Download Sample CSV</span>
+                </button>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2.5">
+                <input
+                  ref={importFileInputRef}
+                  type="file"
+                  accept=".csv,text/csv"
+                  className="hidden"
+                  onChange={handlePickImportFile}
+                />
+                <button
+                  type="button"
+                  onClick={() => importFileInputRef.current?.click()}
+                  disabled={importing}
+                  className="px-3.5 py-2 rounded-xl bg-white border border-accent/25 text-primary text-xs font-bold hover:bg-gray-50 flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Upload className="w-3.5 h-3.5 text-accent" />
+                  <span>Choose CSV File</span>
+                </button>
+
+                <span className="text-xs font-bold text-primary truncate max-w-[260px]">
+                  {importFile ? importFile.name : 'No file selected'}
+                </span>
+
+                <button
+                  type="button"
+                  onClick={handleImportCsv}
+                  disabled={!importFile || importing}
+                  className="btn-gold text-xs px-4 py-2 flex items-center gap-1.5 shadow-sm font-extrabold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {importing ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>Importing...</span>
+                    </>
+                  ) : (
+                    <>
+                      <FileSpreadsheet className="w-3.5 h-3.5" />
+                      <span>Import</span>
+                    </>
+                  )}
+                </button>
+
+                {!importing && (importFile || importResult) && (
+                  <button
+                    type="button"
+                    onClick={resetImportSelection}
+                    className="px-3 py-2 rounded-xl text-xs font-bold text-primary/60 hover:text-primary transition-colors cursor-pointer"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+
+              {importError && (
+                <div className="rounded-xl border border-red-200 bg-red-50 px-3.5 py-2.5 text-xs font-semibold text-red-700 whitespace-pre-wrap">
+                  {importError}
+                </div>
+              )}
+
+              {importResult && (
+                <div className="rounded-xl border border-accent/25 bg-white/70 p-3.5 space-y-3">
+                  <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs font-bold">
+                    <span className="text-primary">Total Rows: {importResult.total ?? 0}</span>
+                    <span className="text-green-700">Imported: {importResult.imported ?? 0}</span>
+                    <span className="text-amber-700">Skipped: {importResult.skipped ?? 0}</span>
+                    <span className="text-red-700">Failed: {importResult.failed ?? 0}</span>
+                    {(importResult.failed ?? 0) > 0 && (
+                      <button
+                        type="button"
+                        onClick={handleDownloadFailedRows}
+                        className="ml-auto px-3 py-1.5 rounded-lg bg-white border border-accent/25 text-primary text-[11px] font-black hover:bg-gray-50 flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Download className="w-3 h-3 text-accent" />
+                        <span>Download Failed Rows</span>
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="max-h-64 overflow-auto rounded-xl border border-accent/15">
+                    <table className="w-full text-left border-collapse">
+                      <thead className="bg-primary/5">
+                        <tr className="text-[10px] uppercase tracking-wider text-primary/70">
+                          <th className="p-2.5 font-black">Row</th>
+                          <th className="p-2.5 font-black">Status</th>
+                          <th className="p-2.5 font-black">Username</th>
+                          <th className="p-2.5 font-black">Reason</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(importResult.results || []).map((r, i) => (
+                          <tr key={`${r.row}-${i}`} className="border-t border-accent/10 text-xs">
+                            <td className="p-2.5 font-mono text-primary">{r.row}</td>
+                            <td className="p-2.5 font-bold">
+                              <span className={
+                                r.status === 'Imported' ? 'text-green-700'
+                                  : r.status === 'Skipped' ? 'text-amber-700'
+                                    : 'text-red-700'
+                              }>{r.status}</span>
+                            </td>
+                            <td className="p-2.5 text-primary/80 break-all">{r.username || '-'}</td>
+                            <td className="p-2.5 text-primary/70">{r.reason || '-'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Search and Filters Bar */}
           <div className="card-glass p-4 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">

@@ -7,6 +7,19 @@ const authorizationService = require('../services/authorizationService');
 const { invalidateUserStatusCache } = require('../middleware/auth');
 const realtimeService = require('../services/realtimeService');
 const { encryptField, decryptField } = require('../utils/crypto');
+const userValidator = require('../validators/userValidator');
+const {
+  EMPLOYEE_CSV_HEADERS,
+  EMPLOYEE_CSV_MAX_ROWS,
+  EMPLOYEE_CSV_MAX_BYTES,
+  EMPLOYEE_CSV_INVALID_FORMAT_MESSAGE,
+  parseCsv,
+  isEmptyRow,
+  validateHeaderRow,
+  rowToBody,
+  buildSampleCsv,
+  looksBinary
+} = require('../utils/employeeCsv');
 
 /**
  * Parses the `id:name` pairs produced by GROUP_CONCAT in listUsers.
@@ -928,6 +941,246 @@ async function _audit(req, action, details) {
   }
 }
 
+// ── Employee / User CSV bulk import ────────────────────────────────────
+//
+// Every row is pushed through the very same validateCreateUser ->
+// createUser pipeline that the "Create User" form uses, with the real
+// authenticated admin attached to the request. Validation rules, duplicate
+// detection, password hashing, employee-id generation, permission seeding,
+// audit logging and realtime notifications are therefore identical to
+// creating one user by hand — the import can never drift from the UI.
+
+/** Capture res.status().json() without touching the real HTTP response. */
+function _captureRes() {
+  const box = { status: 200, body: null };
+  const res = {
+    status(code) { box.status = code || 200; return res; },
+    json(payload) { box.body = payload; return res; }
+  };
+  return { res, box };
+}
+
+/** Run one create-user payload through the normal validation + insert pipeline. */
+async function _runCreatePipeline(req, payload) {
+  const mockReq = {
+    body: payload,
+    user: req.user,
+    ip: req.ip,
+    headers: req.headers,
+    params: {},
+    query: {}
+  };
+
+  const validation = _captureRes();
+  let nextCalled = false;
+  try {
+    await userValidator.validateCreateUser(mockReq, validation.res, () => { nextCalled = true; });
+  } catch (err) {
+    console.warn('[UserMgmt.import] validator threw:', err.message);
+    return { status: 400, body: { success: false, message: 'Validation failed', errors: [err.message] } };
+  }
+  if (!nextCalled) {
+    return { status: validation.box.status || 400, body: validation.box.body };
+  }
+
+  const created = _captureRes();
+  await createUser(mockReq, created.res);
+  return { status: created.box.status || 200, body: created.box.body };
+}
+
+/** Map a single row outcome onto Imported / Skipped / Failed. */
+function _classifyRow(outcome) {
+  const httpStatus = outcome.status;
+  const body = outcome.body || {};
+  const errors = Array.isArray(body.errors) ? body.errors.filter(Boolean) : [];
+  const message = body.message || '';
+
+  if (httpStatus === 200) return { status: 'Imported', reason: '' };
+  if (httpStatus === 409) return { status: 'Skipped', reason: message || 'Duplicate record' };
+  if (httpStatus === 400) {
+    return { status: 'Failed', reason: errors.length ? errors.join(' ') : (message || 'Validation failed') };
+  }
+  console.warn('[UserMgmt.import] row rejected:', httpStatus, message, errors.join(' | '));
+  return {
+    status: 'Failed',
+    reason: 'Could not save this row. Please review the values and try again.'
+  };
+}
+
+async function _loadLocationLookup() {
+  const [locations] = await db.query(
+    `SELECT id, location_code, location_name, store_name FROM locations`
+  );
+  const byKey = new Map();
+  (locations || []).forEach(loc => {
+    [loc.location_code, loc.location_name, loc.store_name]
+      .filter(Boolean)
+      .map(v => String(v).trim().toLowerCase())
+      .forEach(key => { if (key && !byKey.has(key)) byKey.set(key, Number(loc.id)); });
+  });
+  return byKey;
+}
+
+const JOINING_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+function _isValidJoiningDate(value) {
+  if (!value) return true;
+  if (!JOINING_DATE_PATTERN.test(value)) return false;
+  const [y, m, d] = value.split('-').map(Number);
+  const probe = new Date(Date.UTC(y, m - 1, d));
+  return probe.getUTCFullYear() === y && probe.getUTCMonth() === m - 1 && probe.getUTCDate() === d;
+}
+
+/** GET /admin/users/import-template — CSV built from EMPLOYEE_CSV_HEADERS. */
+const downloadUserImportTemplate = (req, res) => {
+  try {
+    const csv = buildSampleCsv();
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="BSC_User_Import_Template.csv"');
+    res.setHeader('Cache-Control', 'no-store');
+    return res.status(200).send(csv);
+  } catch (err) {
+    console.error('[UserMgmt.import-template Error]', err);
+    return errorRes(res, 'Could not build the sample CSV file.', [err.message], 500);
+  }
+};
+
+/** POST /admin/users/import-csv — bulk account provisioning from an approved CSV. */
+const importUsersCsv = async (req, res) => {
+  try {
+    if (!req.file || !req.file.buffer) {
+      return errorRes(res, 'No file was uploaded. Choose an approved CSV file.', [], 400);
+    }
+
+    const fileName = String(req.file.originalname || '').trim();
+    const buf = req.file.buffer;
+
+    if (!/\.csv$/i.test(fileName)) {
+      return errorRes(res, EMPLOYEE_CSV_INVALID_FORMAT_MESSAGE, [], 400);
+    }
+    if (buf.length === 0) {
+      return errorRes(res, 'The uploaded file is empty.', [], 400);
+    }
+    if (buf.length > EMPLOYEE_CSV_MAX_BYTES) {
+      return errorRes(res, `The file is too large. The maximum size is ${Math.round(EMPLOYEE_CSV_MAX_BYTES / 1024)} KB.`, [], 400);
+    }
+    if (looksBinary(buf)) {
+      // A renamed .xlsx/.xls/.doc/.pdf/.zip keeps its original binary
+      // signature even though the extension says .csv.
+      return errorRes(res, EMPLOYEE_CSV_INVALID_FORMAT_MESSAGE, [], 400);
+    }
+
+    const parsedRows = parseCsv(buf.toString('utf8'));
+
+    // Keep the original row number so a failure message points at the exact
+    // line the user sees in their spreadsheet (header row = row 1).
+    const entries = [];
+    parsedRows.forEach((cells, idx) => {
+      if (!isEmptyRow(cells)) entries.push({ row: idx + 1, cells });
+    });
+
+    if (entries.length === 0) {
+      return errorRes(res, 'The file does not start with a header row.', [], 400);
+    }
+
+    const headerErrors = validateHeaderRow(entries[0].cells);
+    if (headerErrors.length > 0) {
+      return errorRes(res, 'The CSV header does not match the approved format.', headerErrors, 400);
+    }
+
+    const dataEntries = entries.slice(1);
+    if (dataEntries.length === 0) {
+      return errorRes(res, 'The file contains a header row but no data rows.', [], 400);
+    }
+    if (dataEntries.length > EMPLOYEE_CSV_MAX_ROWS) {
+      return errorRes(
+        res,
+        `Too many rows. A single import may contain at most ${EMPLOYEE_CSV_MAX_ROWS} data rows (the file has ${dataEntries.length}).`,
+        [],
+        400
+      );
+    }
+
+    const locationByKey = await _loadLocationLookup();
+
+    const results = [];
+    let imported = 0;
+    let skipped = 0;
+    let failed = 0;
+
+    for (const entry of dataEntries) {
+      const { row, cells } = entry;
+
+      const reject = (reason, username) => {
+        failed += 1;
+        results.push({ row, status: 'Failed', reason, username: username || '' });
+      };
+
+      if (cells.length !== EMPLOYEE_CSV_HEADERS.length) {
+        reject(`Expected ${EMPLOYEE_CSV_HEADERS.length} values but found ${cells.length}.`);
+        continue;
+      }
+
+      const body = rowToBody(cells, EMPLOYEE_CSV_HEADERS);
+      const username = body.username || '';
+
+      if (!body.location) {
+        reject('Location is required. Use a location code (BEL, DAV, SHI) or the location name.', username);
+        continue;
+      }
+      const locationId = locationByKey.get(body.location.toLowerCase());
+      if (!locationId) {
+        reject(`Invalid location "${body.location}". Use a location code (BEL, DAV, SHI) or the location name.`, username);
+        continue;
+      }
+      if (!_isValidJoiningDate(body.joiningDate)) {
+        reject('Joining Date must be a valid date in YYYY-MM-DD format.', username);
+        continue;
+      }
+
+      // Exactly the payload the Create User form submits.
+      const payload = {
+        username: body.username,
+        password: body.password,
+        role: body.role,
+        fullName: body.fullName || body.username,
+        email: body.email || null,
+        phone: body.phone || null,
+        department: body.department || null,
+        designation: body.designation || null,
+        employeeId: body.employeeId || null,
+        section: body.section || null,
+        joiningDate: body.joiningDate || null,
+        allLocations: false,
+        locationId,
+        locationIds: [locationId]
+      };
+
+      const outcome = await _runCreatePipeline(req, payload);
+      const classified = _classifyRow(outcome);
+      results.push({ row, status: classified.status, reason: classified.reason, username });
+
+      if (classified.status === 'Imported') imported += 1;
+      else if (classified.status === 'Skipped') skipped += 1;
+      else failed += 1;
+    }
+
+    const summary = `${imported} imported, ${skipped} skipped, ${failed} failed of ${dataEntries.length}`;
+    await _audit(req, 'IMPORT_USERS_CSV', { fileName, summary });
+
+    return successRes(res, {
+      fileName,
+      total: dataEntries.length,
+      imported,
+      skipped,
+      failed,
+      results
+    }, `Import finished - ${summary}`);
+  } catch (err) {
+    console.error('[UserMgmt.importCsv Error]', err);
+    return errorRes(res, 'The import could not be completed. Please try again.', [err.message], 500);
+  }
+};
+
 module.exports = {
   listUsers,
   getUser,
@@ -939,5 +1192,7 @@ module.exports = {
   toggleStatus,
   resetPassword,
   listModules,
-  getMyPermissions
+  getMyPermissions,
+  downloadUserImportTemplate,
+  importUsersCsv
 };

@@ -2177,6 +2177,7 @@ class WeddingController {
 
 // ── 14. Bulk Customer Import (CSV & XLSX with Robust Validation) ──
   async importCsv(req, res) {
+    const importStartTime = Date.now();
     let conn = null;
     try {
       await ensureTables();
@@ -2423,6 +2424,19 @@ class WeddingController {
         ['9741234567', 'kavya suresh']
       ]);
 
+      const VALID_CRM_CATEGORIES = [
+        'Pure Silk Sarees',
+        'Bridal Lehengas',
+        'Sherwanis & Suits',
+        'Family Matching Sets',
+        'Fancy & Designer Sarees',
+        'Kids Ethnic Wear',
+        'Shirting & Suiting',
+        'Accessories & Dhotis',
+        'General Wedding Shopping'
+      ];
+      const validCategoryMap = new Map(VALID_CRM_CATEGORIES.map(c => [c.toLowerCase().trim(), c]));
+
       const errors = [];
       const warnings = [];
       const candidates = [];
@@ -2534,6 +2548,42 @@ class WeddingController {
           budget = String(legacyBudget).substring(0, 100);
         }
 
+        // Category validation against CRM options
+        const categoryRaw = unwrapFormulaText(pick(row, ['preferred_shopping_category', 'preferred_collection', 'category']));
+        let category = 'General Wedding Shopping';
+        if (categoryRaw && categoryRaw.trim()) {
+          const matchedCategory = validCategoryMap.get(categoryRaw.trim().toLowerCase());
+          if (!matchedCategory) {
+            errors.push({
+              row: rowNo,
+              customerName,
+              mobile: mobileForReport,
+              reason: `Invalid preferred_shopping_category "${categoryRaw}". Must be one of: ${VALID_CRM_CATEGORIES.join(', ')}`
+            });
+            continue;
+          }
+          category = matchedCategory;
+        }
+
+        // Telecaller validation against CRM telecallers
+        const telecallerRaw = unwrapFormulaText(pick(row, ['assigned_telecaller', 'telecaller']));
+        let telecallerName = null;
+        let telecallerId = null;
+        if (telecallerRaw && telecallerRaw.trim()) {
+          const tKey = telecallerRaw.trim().toLowerCase();
+          telecallerId = telecallerMap.get(tKey) || null;
+          if (!telecallerId) {
+            errors.push({
+              row: rowNo,
+              customerName,
+              mobile: mobileForReport,
+              reason: `Unknown telecaller "${telecallerRaw}". Must match an active CRM telecaller.`
+            });
+            continue;
+          }
+          telecallerName = telecallerRaw.trim();
+        }
+
         candidates.push({
           rowNo,
           customerName: String(customerName).substring(0, 150).trim(),
@@ -2544,10 +2594,11 @@ class WeddingController {
           weddingDate,
           shoppingDateRaw: shoppingRaw,
           parsedShopping,
-          category: unwrapFormulaText(pick(row, ['preferred_shopping_category'])) || 'General Wedding Shopping',
+          category,
           familySize,
           budget,
-          telecallerName: unwrapFormulaText(pick(row, ['assigned_telecaller'])),
+          telecallerName,
+          telecallerId,
           notes: unwrapFormulaText(pick(row, ['customer_notes'])),
           followUp: (() => {
             const rawFollowUp = pick(row, ['followup_call_date']);
@@ -2638,18 +2689,8 @@ class WeddingController {
         seqByLoc.set(rowLocation, nextSeq);
         const customerCode = `WED-${locCode}-${new Date().getFullYear()}-${String(nextSeq).padStart(4, '0')}`;
 
-        let telecallerId = null;
-        if (c.telecallerName) {
-          telecallerId = telecallerMap.get(String(c.telecallerName).toLowerCase()) || null;
-          if (!telecallerId) {
-            warnings.push({
-              row: c.rowNo,
-              customerName: c.customerName,
-              mobile: c.mobile,
-              reason: `Telecaller "${c.telecallerName}" is not an active CRM user — imported with the name only.`
-            });
-          }
-        }
+        const telecallerId = c.telecallerId || null;
+        const telecallerName = c.telecallerName || null;
 
         insertRows.push({
           rowNo: c.rowNo,
@@ -2769,12 +2810,21 @@ class WeddingController {
         console.warn('[importCsv] import log warning:', logErr.message);
       }
 
+      const processingTimeMs = Date.now() - importStartTime;
+      const processingTime = (processingTimeMs / 1000).toFixed(2) + 's';
+      const selectedLoc = (locationsList || []).find((l) => Number(l.id) === Number(defaultLocationId));
+      const storeBranch = selectedLoc ? selectedLoc.location_name : 'Selected Branch';
+
       return successRes(res, {
         importedCount: imported,
         duplicateCount: duplicates,
         errorCount: errors.length,
         warningCount: warnings.length,
         totalRows: objects.length,
+        processingTimeMs,
+        processingTime,
+        storeBranch,
+        fileName: req.file.originalname,
         insertedCodes: inserted.slice(0, 100),
         errors: errors.sort((a, b) => (a.row || 0) - (b.row || 0)),
         warnings: warnings.sort((a, b) => (a.row || 0) - (b.row || 0)),

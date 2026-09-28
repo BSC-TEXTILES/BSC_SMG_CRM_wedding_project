@@ -1,7 +1,12 @@
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { createQueryClient, useRealtimeInvalidation } from './hooks/useApi';
 
 const Home = lazy(() => import('./pages/Home'));
+
+// Create QueryClient instance outside component to prevent recreation on re-renders
+const queryClient = createQueryClient();
 const Login = lazy(() => import('./pages/Login'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const VerifyEmail = lazy(() => import('./pages/VerifyEmail'));
@@ -29,6 +34,7 @@ const Divert = lazy(() => import('./pages/Divert'));
 const PMView = lazy(() => import('./pages/PMView'));
 const CashSettlement = lazy(() => import('./pages/CashSettlement'));
 const VmChecklist = lazy(() => import('./pages/VmChecklist'));
+const VmDashboard = lazy(() => import('./pages/VmDashboard'));
 const TVDisplay = lazy(() => import('./pages/TVDisplay'));
 const Greeter = lazy(() => import('./pages/Greeter'));
 const Attendance = lazy(() => import('./pages/Attendance'));
@@ -101,8 +107,21 @@ function AuthChatWidget() {
   return <ChatWidget />;
 }
 
+/** Sets up real-time event listeners for automatic query invalidation */
+function RealtimeInvalidationSetup() {
+  const { setupListeners } = useRealtimeInvalidation(queryClient);
+  
+  useEffect(() => {
+    const cleanup = setupListeners();
+    return cleanup;
+  }, []);
+  
+  return null;
+}
+
 export default function App() {
   return (
+    <QueryClientProvider client={queryClient}>
     <ErrorBoundary>
     <LocationProvider>
     <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
@@ -111,6 +130,7 @@ export default function App() {
       <UserTracker />
       <UrlGuardMonitor />
       <ConsentGuard>
+      <RealtimeInvalidationSetup />
       <Suspense fallback={<RouteSuspenseFallback />}>
       <Routes>
         <Route path="/" element={<Home />} />
@@ -158,6 +178,7 @@ export default function App() {
         <Route path="/pm-view" element={<RouteGuard pageKey="pm_view"><PMView /></RouteGuard>} />
         <Route path="/cash-settlement" element={<CashSettlement />} />
         <Route path="/vm-checklist" element={<RouteGuard pageKey="vm_checklist"><VmChecklist /></RouteGuard>} />
+        <Route path="/vm-dashboard" element={<RouteGuard pageKey="vm_checklist"><VmDashboard /></RouteGuard>} />
         <Route path="/tv" element={<TVDisplay />} />
         <Route path="/greeter" element={<RouteGuard pageKey="greeter"><Greeter /></RouteGuard>} />
         <Route path="/attendance" element={<RouteGuard pageKey="attendance"><Attendance /></RouteGuard>} />
@@ -216,5 +237,6 @@ export default function App() {
     </Router>
     </LocationProvider>
     </ErrorBoundary>
+    </QueryClientProvider>
   );
 }

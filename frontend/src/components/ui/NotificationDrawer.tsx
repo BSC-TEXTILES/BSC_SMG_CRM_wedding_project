@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { X, Bell, Pin, CheckCheck, Trash2, Search, Volume2, VolumeX, MessageSquare, Sliders, CircleCheck, Archive, TriangleAlert } from 'lucide-react';
+import { X, Bell, Pin, CheckCheck, Trash2, Search, Volume2, VolumeX, MessageSquare, Sliders, CircleCheck, Archive, TriangleAlert, Check, ShieldAlert } from 'lucide-react';
 import { NotificationService, SystemNotification } from '../../services/notificationService';
 import NotificationPreferencesModal from './NotificationPreferencesModal';
 import DirectMessagingModal from './DirectMessagingModal';
-import { Auth } from '../../services/api';
+import { Auth, API } from '../../services/api';
+import { showToast } from '../Toast';
 
 interface NotificationDrawerProps {
   isOpen: boolean;
@@ -16,9 +17,21 @@ export default function NotificationDrawer({ isOpen, onClose }: NotificationDraw
   const [searchQuery, setSearchQuery] = useState('');
   const [prefsOpen, setPrefsOpen] = useState(false);
   const [dmOpen, setDmOpen] = useState(false);
+  const [soundOn, setSoundOn] = useState(() => NotificationService.isSoundEnabled());
 
   const session = Auth.get();
   const username = session?.username || 'user';
+  const isAdmin = session && ['admin', 'super admin', 'system administrator'].includes(String(session.role || '').toLowerCase());
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   useEffect(() => {
     const unsubscribe = NotificationService.subscribe((list) => {
@@ -54,7 +67,7 @@ export default function NotificationDrawer({ isOpen, onClose }: NotificationDraw
   return (
     <>
       <div className="fixed inset-0 z-50 flex justify-end">
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs transition-opacity" onClick={onClose} />
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md transition-all cursor-pointer" onClick={onClose} />
 
         <aside className="relative w-full max-w-md bg-card h-full shadow-2xl flex flex-col z-10 animate-fade-in border-l border-border">
           {/* Header */}
@@ -70,6 +83,13 @@ export default function NotificationDrawer({ isOpen, onClose }: NotificationDraw
             </div>
 
             <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setSoundOn(NotificationService.toggleSound())}
+                className="p-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+                title={soundOn ? 'Notification sound enabled (Click to mute)' : 'Notification sound muted (Click to enable)'}
+              >
+                {soundOn ? <Volume2 className="w-4 h-4 text-accent-light" /> : <VolumeX className="w-4 h-4 text-rose-300" />}
+              </button>
               <button
                 onClick={() => setDmOpen(true)}
                 className="p-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition-colors"
@@ -200,6 +220,59 @@ export default function NotificationDrawer({ isOpen, onClose }: NotificationDraw
                         <span className="text-[9.5px] text-text-secondary font-semibold">
                           {(n.acknowledgedBy?.length || 0)} Acknowledgements
                         </span>
+                      </div>
+                    )}
+
+                    {/* Access Request Admin Approval Action */}
+                    {n.type === 'access_request' && n.actionData?.requestId && (
+                      <div className="pt-2 border-t border-border space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-bold text-accent uppercase tracking-wider flex items-center gap-1">
+                            <ShieldAlert className="w-3 h-3 text-accent" />
+                            Employee Access Request
+                          </span>
+                          {n.actionData.resolved && (
+                            <span className="text-[10px] font-extrabold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                              {String(n.actionData.status || 'Resolved').toUpperCase()}
+                            </span>
+                          )}
+                        </div>
+                        {!n.actionData.resolved && isAdmin && (
+                          <div className="flex items-center gap-2 pt-1">
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                try {
+                                  await API.resolveEmployeeAccessRequest(n.actionData.requestId, 'APPROVE');
+                                  showToast('Access request approved successfully', 'success');
+                                  NotificationService.markAsRead(n.id);
+                                } catch (err: any) {
+                                  showToast(err.message || 'Failed to approve access', 'error');
+                                }
+                              }}
+                              className="flex-1 py-1.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs flex items-center justify-center gap-1 shadow-xs cursor-pointer transition-colors"
+                            >
+                              <Check className="w-3.5 h-3.5" />
+                              <span>Approve Access</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                try {
+                                  await API.resolveEmployeeAccessRequest(n.actionData.requestId, 'REJECT');
+                                  showToast('Access request rejected', 'info');
+                                  NotificationService.markAsRead(n.id);
+                                } catch (err: any) {
+                                  showToast(err.message || 'Failed to reject access', 'error');
+                                }
+                              }}
+                              className="py-1.5 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-extrabold text-xs flex items-center justify-center gap-1 cursor-pointer transition-colors"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                              <span>Reject</span>
+                            </button>
+                          </div>
+                        )}
                       </div>
                     )}
 

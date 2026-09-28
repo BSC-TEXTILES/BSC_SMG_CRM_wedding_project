@@ -317,6 +317,7 @@ class CandidateController {
           params
         );
 
+        const canViewSensitive = ['Admin', 'Super Admin', 'system administrator'].includes(req.user?.role) || req.user?.isGlobalAdmin;
         const colors = ['navy', 'gold', 'green', 'red', 'purple', 'teal'];
         const mapped = (rows || []).map(r => ({
           ...r,
@@ -326,14 +327,16 @@ class CandidateController {
           fullName: r.name || r.username || 'Employee',
           appNo: r.empNo || `EMP-${String(r.id).padStart(4, '0')}`,
           employeeCode: r.empNo || `EMP-${String(r.id).padStart(4, '0')}`,
-          empNo: r.empNo || `EMP-${String(r.id).padStart(4, '0')}`,
+          empNo: canViewSensitive ? (r.empNo || `EMP-${String(r.id).padStart(4, '0')}`) : '',
+          phone: canViewSensitive ? (r.phone || '') : '',
+          email: canViewSensitive ? (r.email || '') : '',
           status: r.active ? 'Joined' : 'Inactive',
           color: colors[(r.id || 0) % colors.length],
           initials: (r.name || 'E').split(' ').slice(0, 2).map(w => w[0] || '').join('').toUpperCase() || 'E',
           photoUrl: '',
           hasPhoto: false,
           hasDocuments: false,
-          canViewSensitive: ['Admin', 'Super Admin', 'HR', 'Manager'].includes(req.user?.role)
+          canViewSensitive
         }));
 
         return res.json({
@@ -654,8 +657,6 @@ class CandidateController {
           c.app_no,
           COALESCE(u.employee_id, c.app_no) as emp_code,
           c.name,
-          c.phone,
-          c.email,
           COALESCE(c.designation, u.designation) as designation,
           COALESCE(c.department, u.department) as department,
           COALESCE(c.section, u.section) as section,
@@ -680,7 +681,7 @@ class CandidateController {
       }
 
       if (search) {
-        sql += ` AND (c.name LIKE ? OR c.app_no LIKE ? OR c.phone LIKE ? OR u.employee_id LIKE ?)`;
+        sql += ` AND (c.name LIKE ? OR c.app_no LIKE ? OR u.employee_id LIKE ? OR c.designation LIKE ?)`;
         const s = `%${search}%`;
         params.push(s, s, s, s);
       }

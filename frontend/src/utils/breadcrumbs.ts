@@ -41,6 +41,7 @@ export const ROUTE_LABELS: Record<string, string> = {
   '/divert': 'Sourcing Diverts',
   '/pm-view': 'Purchase Manager View',
   '/vm-checklist': 'VM Checklist',
+  '/vm-dashboard': 'VM Dashboard',
   '/attendance': 'Attendance & Roster',
   '/daily-mcheck': 'Daily MCheck',
   '/mcheck-reports': 'MCheck Reports',

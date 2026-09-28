@@ -624,6 +624,176 @@ async function autoInitializeDatabase() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 
+      try {
+        const [vmPhotoCols] = await pool.query("SHOW COLUMNS FROM `vm_checklist_photos` LIKE 'inspection_date'");
+        if (!vmPhotoCols || vmPhotoCols.length === 0) {
+          await pool.query("ALTER TABLE `vm_checklist_photos` ADD COLUMN `inspection_date` VARCHAR(32) NULL AFTER `uploaded_by`");
+        }
+      } catch (e) {}
+
+      // ─── VM Submissions Table & Columns Migration ────────────────────────
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS \`vmsubmissions\` (
+          \`id\` VARCHAR(64) PRIMARY KEY,
+          \`location_id\` INT NOT NULL DEFAULT 1,
+          \`entryDate\` DATE NOT NULL,
+          \`shift\` VARCHAR(20) DEFAULT 'Opening',
+          \`floor\` VARCHAR(100) NOT NULL,
+          \`section\` VARCHAR(100) NOT NULL DEFAULT 'General',
+          \`scorePercent\` DECIMAL(5,2) DEFAULT 100.00,
+          \`status\` VARCHAR(50) DEFAULT 'Completed',
+          \`submittedBy\` VARCHAR(100) NOT NULL,
+          \`remarks\` TEXT NULL,
+          \`passed_count\` INT DEFAULT 0,
+          \`failed_count\` INT DEFAULT 0,
+          \`total_questions\` INT DEFAULT 10,
+          \`createdAt\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          \`updatedAt\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          INDEX \`idx_vmsub_loc\` (\`location_id\`),
+          INDEX \`idx_vmsub_date\` (\`entryDate\`),
+          INDEX \`idx_vmsub_floor_sec\` (\`floor\`, \`section\`),
+          INDEX \`idx_vmsub_status\` (\`status\`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+      `);
+
+      const ensureVmSubCols = [
+        { col: 'section', def: 'VARCHAR(100) NOT NULL DEFAULT \'General\'' },
+        { col: 'status', def: 'VARCHAR(50) DEFAULT \'Completed\'' },
+        { col: 'remarks', def: 'TEXT NULL' },
+        { col: 'passed_count', def: 'INT DEFAULT 0' },
+        { col: 'failed_count', def: 'INT DEFAULT 0' },
+        { col: 'total_questions', def: 'INT DEFAULT 10' }
+      ];
+      for (const item of ensureVmSubCols) {
+        try {
+          const [cCheck] = await pool.query(`SHOW COLUMNS FROM \`vmsubmissions\` LIKE '${item.col}'`);
+          if (!cCheck || cCheck.length === 0) {
+            await pool.query(`ALTER TABLE \`vmsubmissions\` ADD COLUMN \`${item.col}\` ${item.def}`);
+          }
+        } catch (e) {}
+      }
+
+      // ─── VM Submission Entries Table ────────────────────────────────────
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS \`vmsubmissionentries\` (
+          \`id\` VARCHAR(64) PRIMARY KEY,
+          \`submissionId\` VARCHAR(64) NOT NULL,
+          \`pointId\` VARCHAR(64) NOT NULL,
+          \`pointTitle\` VARCHAR(255) NOT NULL,
+          \`score\` VARCHAR(20) NOT NULL DEFAULT 'Pass',
+          \`remarks\` TEXT NULL,
+          \`photoUrl\` TEXT NULL,
+          \`createdAt\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          INDEX \`idx_vmentries_sub\` (\`submissionId\`),
+          INDEX \`idx_vmentries_point\` (\`pointId\`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+      `);
+
+      // ─── VM Floors Table & Default Seed ─────────────────────────────────
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS \`vmfloors\` (
+          \`id\` VARCHAR(64) PRIMARY KEY,
+          \`location_id\` INT NULL,
+          \`name\` VARCHAR(100) NOT NULL UNIQUE,
+          \`description\` TEXT NULL,
+          \`sections\` TEXT NOT NULL,
+          \`createdAt\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+      `);
+
+      try {
+        const [floorRows] = await pool.query('SELECT COUNT(*) as cnt FROM `vmfloors`');
+        if (!floorRows || floorRows[0]?.cnt === 0) {
+          await pool.query(`
+            INSERT IGNORE INTO \`vmfloors\` (id, name, description, sections) VALUES
+            ('floor_gf', 'Ground Floor', 'Main Entrance & Saree Galleria', '["Normal Sarees"]'),
+            ('floor_1f', 'First Floor', 'High-Value Silk & Luxury Sarees', '["Silk Sarees (Upto Lakhs)"]'),
+            ('floor_2f', 'Second Floor', 'Ladies Wear and Kids Wear', '["Ladies Wear and Kids Wear"]'),
+            ('floor_3f', 'Third Floor', 'Mens Wear and Home Furnishing', '["Mens Wear and Home Furnishing"]')
+          `);
+        }
+      } catch (e) {}
+
+      // ─── VM Checklist Points Table & Default 10 Questions Seed ──────────
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS \`vmchecklistpoints\` (
+          \`id\` VARCHAR(64) PRIMARY KEY,
+          \`title\` VARCHAR(255) NOT NULL,
+          \`description\` TEXT NULL,
+          \`section\` VARCHAR(100) DEFAULT 'Visual Merchandising',
+          \`position\` INT DEFAULT 1,
+          \`isActive\` BOOLEAN DEFAULT TRUE,
+          \`createdAt\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+      `);
+
+      try {
+        const [qRows] = await pool.query('SELECT COUNT(*) as cnt FROM `vmchecklistpoints`');
+        if (!qRows || qRows[0]?.cnt === 0) {
+          await pool.query(`
+            INSERT IGNORE INTO \`vmchecklistpoints\` (id, title, section, position, isActive) VALUES
+            ('vm_q1', 'Is the entire section clean, neat, and well-maintained?', 'Visual Merchandising', 1, 1),
+            ('vm_q2', 'Are products arranged according to category, colour, and size?', 'Visual Merchandising', 2, 1),
+            ('vm_q3', 'Are all racks, shelves, tables, and displays properly aligned?', 'Visual Merchandising', 3, 1),
+            ('vm_q4', 'Are new arrivals and the latest collections displayed prominently?', 'Visual Merchandising', 4, 1),
+            ('vm_q5', 'Are mannequins styled according to the current theme?', 'Visual Merchandising', 5, 1),
+            ('vm_q6', 'Are price tags, product labels, and signage correctly placed and visible?', 'Visual Merchandising', 6, 1),
+            ('vm_q7', 'Are promotional and offer displays updated and correctly positioned?', 'Visual Merchandising', 7, 1),
+            ('vm_q8', 'Is the colour blocking and overall visual theme maintained?', 'Visual Merchandising', 8, 1),
+            ('vm_q9', 'Are folded, hanging, and stacked products properly presented?', 'Visual Merchandising', 9, 1),
+            ('vm_q10', 'Does the section meet the daily VM standard and look attractive to customers?', 'Visual Merchandising', 10, 1)
+          `);
+        }
+      } catch (e) {}
+
+    // ─── Sourcing Diverts Table & Schema Migration ──────────────────────
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS \`Diverts\` (
+        \`id\` VARCHAR(64) PRIMARY KEY,
+        \`location_id\` INT DEFAULT 1,
+        \`entryDate\` VARCHAR(16),
+        \`sectionId\` VARCHAR(64),
+        \`productWanted\` VARCHAR(255),
+        \`quantity\` INT DEFAULT 1,
+        \`priceRange\` VARCHAR(64),
+        \`reasonCode\` VARCHAR(64) DEFAULT 'OUT_OF_STOCK',
+        \`customerName\` VARCHAR(255),
+        \`customerMobile\` VARCHAR(32),
+        \`status\` VARCHAR(32) DEFAULT 'open',
+        \`createdBy\` VARCHAR(255),
+        \`pmNotes\` TEXT,
+        \`size\` VARCHAR(64) NULL,
+        \`colour\` VARCHAR(64) NULL,
+        \`other_product_details\` TEXT NULL,
+        \`required_by_date\` VARCHAR(32) NULL,
+        \`reference_image\` VARCHAR(512) NULL,
+        \`remarks\` TEXT NULL,
+        \`createdAt\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        \`updatedAt\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX \`idx_diverts_loc\` (\`location_id\`),
+        INDEX \`idx_diverts_status\` (\`status\`),
+        INDEX \`idx_diverts_created\` (\`createdAt\`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    try {
+      const [dCols] = await pool.query('DESCRIBE Diverts');
+      const dColNames = dCols.map(c => c.Field);
+      const newDivertCols = [
+        { name: 'size', def: 'VARCHAR(64) NULL' },
+        { name: 'colour', def: 'VARCHAR(64) NULL' },
+        { name: 'other_product_details', def: 'TEXT NULL' },
+        { name: 'required_by_date', def: 'VARCHAR(32) NULL' },
+        { name: 'reference_image', def: 'VARCHAR(512) NULL' },
+        { name: 'remarks', def: 'TEXT NULL' }
+      ];
+      for (const col of newDivertCols) {
+        if (!dColNames.includes(col.name)) {
+          await pool.query(`ALTER TABLE Diverts ADD COLUMN \`${col.name}\` ${col.def}`);
+        }
+      }
+    } catch (_dErr) {}
+
     console.log('[Auto DB Initializer] DATABASE FULLY INITIALIZED!');
     console.log('[Auto DB Initializer] Total Active Tables: 130+');
 

@@ -168,6 +168,7 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
     { key: 'batch_plan', href: '/batch-plan', label: 'Batch Plan', icon: FileText, section: 'Daily Operations' },
     { key: 'pm_view', href: '/pm-view', label: 'Purchase Manager View', icon: Briefcase, section: 'Daily Operations' },
     { key: 'vm_checklist', href: '/vm-checklist', label: 'VM Checklist', icon: ClipboardList, section: 'Daily Operations' },
+    { key: 'vm_dashboard', href: '/vm-dashboard', label: 'VM Dashboard', icon: BarChart3, section: 'Daily Operations' },
 
     // Administration
     { key: 'broadcast', href: '/broadcast-center', label: 'Broadcast Center', icon: Megaphone, section: 'Administration' },

@@ -83,7 +83,8 @@ async function resolveEmployeeActions(user) {
   const none = { can_view: false, can_add: false, can_edit: false, can_delete: false, can_export: false, can_view_sensitive: false };
   if (!user || !user.id) return none;
 
-  if (ADMIN_ROLES.includes(user.role)) {
+  const isAdmin = ADMIN_ROLES.includes(user.role) || user.isGlobalAdmin;
+  if (isAdmin) {
     return { can_view: true, can_add: true, can_edit: true, can_delete: true, can_export: true, can_view_sensitive: true };
   }
 
@@ -102,26 +103,42 @@ async function resolveEmployeeActions(user) {
   let source;
   if (rows.length > 0) {
     source = rows.find(p => p.module === 'employees');
-    if (!source) return none;
   } else {
     source = resolveRoleDefaultPermissions(user.role).find(p => p.module === 'employees');
-    if (!source) return none;
   }
 
-  const can_view = !!source.can_view;
-  const can_edit = !!source.can_edit;
-  const can_delete = !!source.can_delete;
+  // Any authenticated staff member can view the public name directory:
+  const can_view = isAdmin || (source ? !!source.can_view : !['Guest', 'Customer'].includes(user.role));
+  const can_edit = isAdmin;
+  const can_delete = isAdmin;
+  const can_add = isAdmin;
+  const can_export = isAdmin || (source ? !!source.can_export : false);
 
   return {
     can_view,
-    can_add: !!source.can_add,
+    can_add,
     can_edit,
     can_delete,
-    can_export: !!source.can_export,
-    // Compensation, government ids, bank details and HR notes are only
-    // released to matrix roles that are allowed to maintain employee records.
-    can_view_sensitive: can_view && (can_edit || can_delete)
+    can_export,
+    // Sensitive employee details are reserved strictly for administrators or approved access requests
+    can_view_sensitive: isAdmin
   };
+}
+
+async function hasApprovedAccessRequest(userId, employeeId) {
+  if (!userId || !employeeId) return false;
+  try {
+    const [rows] = await pool.query(
+      `SELECT id FROM employee_access_requests 
+       WHERE user_id = ? AND employee_id = ? AND status = 'APPROVED'
+       LIMIT 1`,
+      [userId, employeeId]
+    );
+    return rows && rows.length > 0;
+  } catch (err) {
+    console.warn('[EmployeeMaster] hasApprovedAccessRequest error:', err.message);
+    return false;
+  }
 }
 
 // ── SQL building ───────────────────────────────────────────────────
@@ -249,15 +266,18 @@ async function buildEmployeeQuery(req, options = {}) {
   };
 }
 
-function addSearchClause(where, params, q, has) {
+function addSearchClause(where, params, q, has, sensitive = false) {
   const like = `%${q}%`;
   const fields = [
-    'u.full_name', 'u.username', 'u.employee_id', 'u.candidate_app_no', 'c.app_no',
-    'u.phone', 'u.email', 'u.department', 'u.designation', 'u.section',
-    'l.location_name', 'c.name', 'c.phone', 'c.email'
+    'u.full_name', 'u.username',
+    'u.department', 'u.designation', 'u.section',
+    'l.location_name', 'c.name'
   ];
-  if (has('alternate_phone')) fields.push('u.alternate_phone');
-  if (has('company_email')) fields.push('u.company_email');
+  if (sensitive) {
+    fields.push('u.employee_id', 'u.candidate_app_no', 'c.app_no', 'u.phone', 'u.email', 'c.phone', 'c.email');
+    if (has('alternate_phone')) fields.push('u.alternate_phone');
+    if (has('company_email')) fields.push('u.company_email');
+  }
   const ors = fields.map(f => `LOWER(${f}) LIKE ?`).join(' OR ');
   where.push(`(${ors})`);
   for (let i = 0; i < fields.length; i++) params.push(like);
@@ -337,54 +357,55 @@ function mapEmployeeRow(r, { sensitive = false } = {}) {
     userId: r.user_id,
     username: r.username || '',
     appNo: r.app_no,
-    candidateAppNo: r.candidate_app_no || null,
+    candidateAppNo: sensitive ? (r.candidate_app_no || null) : null,
     employeeCode: r.app_no,
-    employeeId: r.emp_no || '',
-    empNo: r.emp_no || '',
+    employeeId: sensitive ? (r.emp_no || '') : '',
+    empNo: sensitive ? (r.emp_no || '') : '',
     role: r.role || '',
     active: !!r.active,
     accountStatus: r.active ? 'Active' : 'Inactive',
-    lastLoginAt: r.last_login_at || null,
-    lastLogin: r.last_login_at ? new Date(r.last_login_at).toLocaleString('en-IN') : '',
+    lastLoginAt: sensitive ? (r.last_login_at || null) : null,
+    lastLogin: sensitive && r.last_login_at ? new Date(r.last_login_at).toLocaleString('en-IN') : '',
     name,
     fullName: name,
     initials,
     color: AVATAR_COLORS[colorIndex],
-    phone: r.phone || '',
-    email: r.email || '',
-    dob,
-    age: computeAge(r.dob),
-    gender: r.gender || '',
-    cityState: r.city_state || '',
-    address: r.address || '',
+    // PRIVACY PROTECTION: strictly withheld unless authorized
+    phone: sensitive ? (r.phone || '') : '',
+    email: sensitive ? (r.email || '') : '',
+    dob: sensitive ? dob : '',
+    age: sensitive ? computeAge(r.dob) : '',
+    gender: sensitive ? (r.gender || '') : '',
+    cityState: sensitive ? (r.city_state || '') : '',
+    address: sensitive ? (r.address || '') : '',
     desig: r.designation,
     designation: r.designation || '',
     department: r.department || '',
     branch: r.branch || '',
-    reportingManager: r.reporting_manager || '',
+    reportingManager: sensitive ? (r.reporting_manager || '') : '',
     status: r.status_display || (r.active ? 'Joined' : 'Deactivated'),
     salary: sensitive ? legacySalary : '',
     expectedSalary: sensitive ? (r.expected_salary || '') : '',
     currentSalary: sensitive ? (r.current_salary || '') : '',
     previousSalary: sensitive ? legacyPreviousSalary : '',
-    offeredDoj,
-    actualDoj: actualDojStr,
-    estDoj: estDojStr,
+    offeredDoj: sensitive ? offeredDoj : '',
+    actualDoj: sensitive ? actualDojStr : '',
+    estDoj: sensitive ? estDojStr : '',
     joiningDate: joining,
-    noticePeriod: r.notice_period || r.offer_notice_pd || r.offer_status || '',
-    experience: r.experience || '',
-    qualification: r.qualification || '',
-    retailExperience: r.retail_experience || '',
-    previousCompany: r.previous_company || '',
-    previousDesignation: r.previous_designation || '',
-    bloodGroup: r.blood_group || '',
+    noticePeriod: sensitive ? (r.notice_period || r.offer_notice_pd || r.offer_status || '') : '',
+    experience: sensitive ? (r.experience || '') : '',
+    qualification: sensitive ? (r.qualification || '') : '',
+    retailExperience: sensitive ? (r.retail_experience || '') : '',
+    previousCompany: sensitive ? (r.previous_company || '') : '',
+    previousDesignation: sensitive ? (r.previous_designation || '') : '',
+    bloodGroup: sensitive ? (r.blood_group || '') : '',
     aadhaarNumber: sensitive ? (r.aadhaar_number || '') : '',
-    fatherDetails: r.father_details || '',
-    motherDetails: r.mother_details || '',
-    religionCaste: r.religion_caste || '',
-    religion: r.religion || '',
-    caste: r.caste || '',
-    languagesKnown: (() => {
+    fatherDetails: sensitive ? (r.father_details || '') : '',
+    motherDetails: sensitive ? (r.mother_details || '') : '',
+    religionCaste: sensitive ? (r.religion_caste || '') : '',
+    religion: sensitive ? (r.religion || '') : '',
+    caste: sensitive ? (r.caste || '') : '',
+    languagesKnown: sensitive ? (() => {
       try {
         if (!r.languages_known) return [];
         if (Array.isArray(r.languages_known)) return r.languages_known;
@@ -392,20 +413,20 @@ function mapEmployeeRow(r, { sensitive = false } = {}) {
         if (r.languages_known.startsWith('[')) return JSON.parse(r.languages_known);
         return r.languages_known.split(',').map(s => s.trim()).filter(Boolean);
       } catch { return [r.languages_known]; }
-    })(),
+    })() : [],
     photoUrl: r.photo_url || '',
     aadhaarUrl: sensitive ? (r.aadhaar_url || '') : '',
     aadharUrl: sensitive ? (r.aadhaar_url || '') : '',
-    resumeUrl: r.resume_url || '',
-    source: r.source || '',
-    referrer: r.referrer || '',
-    referrerEmpNo: r.referrer_emp_no || '',
-    sourceDetail: r.source_detail || '',
-    q1: r.q1 || '',
-    q2: r.q2 || '',
-    q3: r.q3 || '',
-    q4: r.q4 || '',
-    remarks: r.remarks || r.offer_remarks || '',
+    resumeUrl: sensitive ? (r.resume_url || '') : '',
+    source: sensitive ? (r.source || '') : '',
+    referrer: sensitive ? (r.referrer || '') : '',
+    referrerEmpNo: sensitive ? (r.referrer_emp_no || '') : '',
+    sourceDetail: sensitive ? (r.source_detail || '') : '',
+    q1: sensitive ? (r.q1 || '') : '',
+    q2: sensitive ? (r.q2 || '') : '',
+    q3: sensitive ? (r.q3 || '') : '',
+    q4: sensitive ? (r.q4 || '') : '',
+    remarks: sensitive ? (r.remarks || r.offer_remarks || '') : '',
     section: r.section || '',
     locationId: r.location_id || null,
     locationCode,
@@ -415,20 +436,20 @@ function mapEmployeeRow(r, { sensitive = false } = {}) {
     date: joiningDateObj.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
 
     // ── Employee Master Directory extensions ──────────────────────────
-    alternatePhone: r.alternate_phone || '',
-    companyEmail: r.company_email || '',
-    permanentAddress: r.permanent_address || '',
-    city: r.city || '',
-    district: r.district || '',
-    state: r.state || '',
-    pincode: r.pincode || '',
-    emergencyContactName: r.emergency_contact_name || '',
-    emergencyContactPhone: r.emergency_contact_phone || '',
-    emergencyContactRelation: r.emergency_contact_relation || '',
+    alternatePhone: sensitive ? (r.alternate_phone || '') : '',
+    companyEmail: sensitive ? (r.company_email || '') : '',
+    permanentAddress: sensitive ? (r.permanent_address || '') : '',
+    city: sensitive ? (r.city || '') : '',
+    district: sensitive ? (r.district || '') : '',
+    state: sensitive ? (r.state || '') : '',
+    pincode: sensitive ? (r.pincode || '') : '',
+    emergencyContactName: sensitive ? (r.emergency_contact_name || '') : '',
+    emergencyContactPhone: sensitive ? (r.emergency_contact_phone || '') : '',
+    emergencyContactRelation: sensitive ? (r.emergency_contact_relation || '') : '',
     employmentType: r.employment_type || '',
     floor: r.floor || '',
     workShift: r.work_shift || '',
-    confirmationDate: formatDate(r.confirmation_date),
+    confirmationDate: sensitive ? formatDate(r.confirmation_date) : '',
     employmentStatus: r.employment_status || '',
     bankName: sensitive ? (r.bank_name || '') : '',
     bankAccountNumber: sensitive ? (r.bank_account_number || '') : '',
@@ -436,15 +457,15 @@ function mapEmployeeRow(r, { sensitive = false } = {}) {
     panNumber: sensitive ? (r.pan_number || '') : '',
     hrNotes: sensitive ? (r.hr_notes || '') : '',
     notes: sensitive ? (r.hr_notes || r.remarks || '') : '',
-    offerStatus: r.offer_status || '',
-    offerEstDoj: formatDate(r.offer_est_doj),
-    offerActualDoj: formatDate(r.offer_actual_doj),
-    createdBy: r.created_by || '',
-    updatedBy: r.updated_by || '',
+    offerStatus: sensitive ? (r.offer_status || '') : '',
+    offerEstDoj: sensitive ? formatDate(r.offer_est_doj) : '',
+    offerActualDoj: sensitive ? formatDate(r.offer_actual_doj) : '',
+    createdBy: sensitive ? (r.created_by || '') : '',
+    updatedBy: sensitive ? (r.updated_by || '') : '',
     updatedAt: r.user_updated_at || null,
-    deactivationReason: r.deactivation_reason || '',
-    deactivatedUntil: r.deactivated_until || null,
-    forcePasswordReset: !!r.force_password_reset,
+    deactivationReason: sensitive ? (r.deactivation_reason || '') : '',
+    deactivatedUntil: sensitive ? (r.deactivated_until || null) : null,
+    forcePasswordReset: sensitive ? !!r.force_password_reset : false,
     // Lets the UI hide an entire Compensation / Documents block instead of
     // rendering empty labels for values it is not allowed to receive.
     canViewSensitive: sensitive
@@ -489,7 +510,7 @@ async function listEmployees(req, query = {}) {
   const params = [...locParams];
 
   if (query.q && String(query.q).trim()) {
-    addSearchClause(where, params, String(query.q).trim().toLowerCase(), built.has);
+    addSearchClause(where, params, String(query.q).trim().toLowerCase(), built.has, actions.can_view_sensitive);
   }
   if (query.department) {
     where.push(`LOWER(COALESCE(u.department, '')) = ?`);
@@ -749,21 +770,69 @@ async function getEmployeeProfile(req, identifier) {
   const actions = await resolveEmployeeActions(req.user);
   if (!actions.can_view) return { forbidden: true };
 
-  const row = await resolveEmployeeRecord(req, identifier);
+  let row = await resolveEmployeeRecord(req, identifier);
+  let isUnrestricted = false;
   if (!row) {
-    // The record exists but sits outside the caller's location scope.
-    const unrestricted = await resolveUnrestrictedRow(identifier);
-    if (unrestricted) return { forbidden: true };
-    return { notFound: true };
+    row = await resolveUnrestrictedRow(identifier);
+    if (!row) return { notFound: true };
+    isUnrestricted = true;
   }
 
-  const inScope = await assertLocationScope(req, row.location_id);
-  if (!inScope) return { forbidden: true };
+  const inScope = isUnrestricted ? false : await assertLocationScope(req, row.location_id);
+  const isAdmin = ADMIN_ROLES.includes(req.user?.role) || req.user?.isGlobalAdmin;
+  const isApproved = await hasApprovedAccessRequest(req.user?.id, row.user_id);
 
-  const profile = mapEmployeeRow(row, { sensitive: actions.can_view_sensitive });
+  if (!isAdmin && !isApproved) {
+    // Record unauthorized access attempt in security audit log
+    try {
+      await pool.query(
+        `INSERT INTO audit_logs (username, user_id, action, module, details, ip_address)
+         VALUES (?, ?, 'UNAUTHORIZED_EMPLOYEE_VIEW_ATTEMPT', 'Employee Master', ?, ?)`,
+        [
+          req.user?.username || 'unknown',
+          req.user?.id || 0,
+          `Denied unauthorized view attempt on confidential employee profile #${row.user_id} (${row.name}) by role ${req.user?.role}`,
+          req.ip || ''
+        ]
+      );
+    } catch (err) {}
+
+    // Check if an access request already exists for this user and employee
+    let existingRequest = null;
+    try {
+      const [reqRows] = await pool.query(
+        `SELECT id, status, created_at, reason FROM employee_access_requests
+         WHERE user_id = ? AND employee_id = ? ORDER BY id DESC LIMIT 1`,
+        [req.user?.id, row.user_id]
+      );
+      if (reqRows && reqRows.length > 0) {
+        existingRequest = reqRows[0];
+      }
+    } catch (e) {}
+
+    return {
+      forbidden: true,
+      accessDenied: true,
+      existingRequest,
+      employeeSummary: {
+        id: row.user_id,
+        name: row.name || row.username || 'Employee',
+        full_name: row.name || row.username || 'Employee',
+        employee_code: row.app_no || row.employee_id || '',
+        department: row.department || '',
+        designation: row.designation || '',
+        section: row.section || '',
+        status: row.status_display || (row.active ? 'Joined' : 'Deactivated'),
+        locationName: row.location_name || '',
+        locationCode: row.location_code || ''
+      }
+    };
+  }
+
+  const profile = mapEmployeeRow(row, { sensitive: true });
 
   const [documents, permissions, audit] = await Promise.all([
-    actions.can_view_sensitive ? listDocuments(row.user_id) : Promise.resolve([]),
+    listDocuments(row.user_id),
     loadAssignedAccess(row.user_id),
     loadAuditTrail(row.user_id, row.username, req.user)
   ]);
@@ -773,7 +842,7 @@ async function getEmployeeProfile(req, identifier) {
     documents,
     access: permissions,
     audit,
-    actions
+    actions: { ...actions, can_edit: isAdmin, can_delete: isAdmin, can_view_sensitive: true }
   };
 }
 
@@ -783,9 +852,14 @@ async function resolveUnrestrictedRow(identifier) {
   const isNumeric = /^\d+$/.test(value);
   try {
     const [rows] = await pool.query(
-      isNumeric
-        ? 'SELECT id FROM users WHERE id = ? LIMIT 1'
-        : 'SELECT id FROM users WHERE LOWER(username) = ? OR LOWER(employee_id) = ? OR LOWER(email) = ? LIMIT 1',
+      `SELECT u.id as user_id, u.id, u.username, u.full_name as name, u.email, u.phone,
+              u.department, u.designation, u.section, u.active, u.location_id,
+              u.employee_id as emp_no, COALESCE(u.candidate_app_no, u.employee_id, u.username) as app_no,
+              l.location_name, l.location_code
+       FROM users u
+       LEFT JOIN locations l ON l.id = u.location_id
+       WHERE ${isNumeric ? 'u.id = ?' : 'LOWER(u.username) = ? OR LOWER(u.employee_id) = ? OR LOWER(u.email) = ?'}
+       LIMIT 1`,
       isNumeric ? [Number(value)] : [value.toLowerCase(), value.toLowerCase(), value.toLowerCase()]
     );
     return rows && rows.length ? rows[0] : null;
@@ -956,5 +1030,6 @@ module.exports = {
   getDocumentRow,
   saveDocument,
   softDeleteDocument,
-  assertLocationScope
+  assertLocationScope,
+  hasApprovedAccessRequest
 };

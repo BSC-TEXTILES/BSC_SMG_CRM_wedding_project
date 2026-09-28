@@ -365,6 +365,22 @@ function emitDivertChange(divert = {}, locationId = null) {
   });
 }
 
+function emitVmChange(action, audit = {}, locationId = null) {
+  emitEntityChange({
+    entity: 'VM',
+    action: (action || 'UPDATE').toUpperCase(),
+    id: audit.id || audit.submissionId,
+    locationId: locationId || audit.location_id || audit.locationId || null,
+    meta: {
+      floor: audit.floor,
+      section: audit.section,
+      scorePercent: audit.scorePercent,
+      status: audit.status || 'Completed'
+    },
+    legacyEvent: 'vm:updated'
+  });
+}
+
 module.exports = {
   init,
   getIo,
@@ -379,5 +395,6 @@ module.exports = {
   emitCallQueueChange,
   emitQrChange,
   emitFootfallChange,
-  emitDivertChange
+  emitDivertChange,
+  emitVmChange
 };

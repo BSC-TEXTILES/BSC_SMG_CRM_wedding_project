@@ -1,5 +1,6 @@
 import { API, Auth } from './api';
-import { io, Socket } from 'socket.io-client';
+import type { Socket } from 'socket.io-client';
+import { realtimeClient } from './realtimeClient';
 
 export interface SystemNotification {
   id: string;
@@ -22,6 +23,8 @@ export interface SystemNotification {
   scheduledAt?: string;
   allowReplies?: boolean;
   replies?: { id: string; sender: string; text: string; time: string }[];
+  type?: string;
+  actionData?: any;
 }
 
 export interface DirectMessage {
@@ -85,53 +88,55 @@ class NotificationEngine {
   }
 
   private initAuthListener() {
-    if (typeof window !== 'undefined') {
-      window.addEventListener('bsc_auth_changed', () => {
-        // Runs synchronously inside Auth.clear()/Auth.save(), so it must never
-        // throw or re-trigger another auth event.
-        try {
-          if (Auth.check()) {
-            this.fetchInitialBroadcasts().catch(() => {});
-          } else {
-            this.notifications = [];
-            this.notifyListeners();
-          }
-        } catch (e) {
-          console.warn('[NotificationService] auth listener error:', e);
+    if (typeof window === 'undefined') return;
+
+    window.addEventListener('bsc_auth_changed', () => {
+      // Runs synchronously inside Auth.clear()/Auth.save(), so it must never
+      // throw or re-trigger another auth event.
+      try {
+        if (Auth.check()) {
+          // Login is a wake-up signal: the shared socket stops retrying after a
+          // few failed handshakes, so re-arm it here rather than staying quiet.
+          realtimeClient.resume();
+          this.fetchInitialBroadcasts().catch(() => {});
+        } else {
+          this.notifications = [];
+          this.notifyListeners();
         }
-      });
-    }
+      } catch (e) {
+        console.warn('[NotificationService] auth listener error:', e);
+      }
+    });
+
+    // Returning to a backgrounded tab is the other natural moment to pick up a
+    // backend that came back up in the meantime.
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && Auth.check()) {
+        realtimeClient.resume();
+      }
+    });
   }
 
   private initSocket() {
     if (this.initialized) return;
     this.initialized = true;
-    
-    // @ts-ignore
-    const apiBase = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '') : undefined;
-    this.socket = io(apiBase, {
-      autoConnect: true,
-      transports: ['polling', 'websocket'],
-      reconnectionAttempts: 5,
-      timeout: 10000
-    });
+    // Attach to the app's single shared Socket.IO connection rather than opening
+    // a second one. This callback runs on every successful handshake, so the
+    // handlers below are bound exactly once per socket instance and survive a
+    // dropped-and-restarted backend.
+    realtimeClient.onSocket((socket) => this.wireSocket(socket));
+    realtimeClient.connect();
+  }
 
-    this.socket.on('connect_error', () => {
-      // Quietly handle connection errors on hosting environments where WebSockets are unavailable
-    });
+  private wireSocket(socket: Socket) {
+    if (this.socket === socket) return;
+    this.socket = socket;
 
-    this.socket.on('connect', () => {
-      console.log('[NotificationService] Connected to real-time notification socket');
-      if (Auth.check()) {
-        this.fetchInitialBroadcasts();
-      }
-    });
-
-    this.socket.on('NEW_BROADCAST', (broadcast: any) => {
+    socket.on('NEW_BROADCAST', (broadcast: any) => {
       this.handleIncomingBroadcast(broadcast);
     });
 
-    this.socket.on('feedback:negative', (data: any) => {
+    socket.on('feedback:negative', (data: any) => {
       const notif: SystemNotification = {
         id: 'fb-' + Date.now(),
         title: '🚨 Negative Customer Feedback Alert',
@@ -149,7 +154,7 @@ class NotificationEngine {
       this.playNotificationSound('critical');
     });
 
-    this.socket.on('divert:created', (data: any) => {
+    socket.on('divert:created', (data: any) => {
       const notif: SystemNotification = {
         id: 'div-' + Date.now(),
         title: '📦 Urgent Stock Divert Request',
@@ -167,8 +172,82 @@ class NotificationEngine {
       this.playNotificationSound('high');
     });
 
-    this.socket.on('DELETE_BROADCAST', ({ id }: { id: string }) => {
+    socket.on('DELETE_BROADCAST', ({ id }: { id: string }) => {
       this.notifications = this.notifications.filter(n => n.id !== id.toString());
+      this.notifyListeners();
+    });
+
+    socket.on('notification:new', (notifData: any) => {
+      if (!notifData) return;
+      const notifId = String(notifData.id || 'notif-' + Date.now());
+      if (this.notifications.some(n => n.id === notifId)) return;
+
+      const notif: SystemNotification = {
+        id: notifId,
+        title: notifData.title || 'System Notification',
+        subject: notifData.subject || '',
+        message: notifData.message || '',
+        timestamp: notifData.timestamp || new Date().toISOString(),
+        priority: notifData.priority || 'normal',
+        category: notifData.category || 'General',
+        targetRole: notifData.targetRole || 'Everyone',
+        senderName: notifData.senderName || 'System',
+        read: false,
+        type: notifData.type,
+        actionData: notifData.action_data || notifData.actionData
+      };
+      this.notifications = [notif, ...this.notifications];
+      this.notifyListeners();
+      this.playNotificationSound(notif.priority);
+    });
+
+    socket.on('employee:access_request', (reqData: any) => {
+      if (!reqData) return;
+      const session = Auth.get();
+      const isAdmin = session && ['admin', 'super admin', 'system administrator'].includes(String(session.role || '').toLowerCase());
+      if (!isAdmin) return;
+
+      const notifId = `access-req-${reqData.id}`;
+      if (this.notifications.some(n => n.id === notifId)) return;
+
+      const notif: SystemNotification = {
+        id: notifId,
+        title: '🛡️ Employee Profile Access Request',
+        subject: 'Access Control',
+        message: `${reqData.username || 'A user'} (${reqData.user_role || 'Staff'}) requested access to view ${reqData.employee_name || 'an employee'} (Reason: "${reqData.reason || 'Not specified'}").`,
+        timestamp: reqData.created_at || new Date().toISOString(),
+        priority: 'high',
+        category: 'HR',
+        targetRole: 'Admins',
+        senderName: reqData.username || 'Staff',
+        read: false,
+        type: 'access_request',
+        actionData: {
+          requestId: reqData.id,
+          employeeId: reqData.employee_id,
+          employeeName: reqData.employee_name,
+          username: reqData.username
+        }
+      };
+      this.notifications = [notif, ...this.notifications];
+      this.notifyListeners();
+      this.playNotificationSound('high');
+    });
+
+    socket.on('employee:access_request_resolved', (data: any) => {
+      if (!data || !data.id) return;
+      const notifId = `access-req-${data.id}`;
+      this.notifications = this.notifications.map(n => {
+        if (n.id === notifId || (n.actionData && n.actionData.requestId === data.id)) {
+          return {
+            ...n,
+            read: true,
+            message: `${n.message} [Resolved: ${data.status.toUpperCase()} by ${data.resolved_by_name || 'Admin'}]`,
+            actionData: { ...n.actionData, status: data.status, resolved: true }
+          };
+        }
+        return n;
+      });
       this.notifyListeners();
     });
 
@@ -176,26 +255,30 @@ class NotificationEngine {
     // The server broadcasts a single boolean when an Admin flips the switch so
     // every device re-arms the guard instantly. No user or security data is
     // carried in this event.
-    this.socket.on('security:shield_changed', (payload: { enabled?: boolean } | undefined) => {
+    socket.on('security:shield_changed', (payload: { enabled?: boolean } | undefined) => {
       const enabled = !!(payload && payload.enabled);
       this.shieldListeners.forEach((fn) => {
         try { fn(enabled); } catch { /* a broken listener must not kill the socket */ }
       });
     });
 
-    this.socket.on('security:event_logged', (eventData: any) => {
+    socket.on('security:event_logged', (eventData: any) => {
       this.securityEventListeners.forEach((fn) => {
         try { fn(eventData); } catch {}
       });
     });
 
-    this.socket.on('security:events_cleared', () => {
+    socket.on('security:events_cleared', () => {
       this.securityClearedListeners.forEach((fn) => {
         try { fn(); } catch {}
       });
     });
 
-    this.initialized = true;
+    // The handshake already completed before this callback ran, so pull the
+    // persisted broadcasts now instead of waiting for the next 'connect' event.
+    if (Auth.check()) {
+      this.fetchInitialBroadcasts();
+    }
   }
 
   public async fetchInitialBroadcasts() {

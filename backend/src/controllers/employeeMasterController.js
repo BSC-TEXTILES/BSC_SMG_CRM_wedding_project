@@ -15,6 +15,8 @@ const crypto = require('crypto');
 const db = require('../config/db');
 const upload = require('../middleware/upload');
 const { successRes, errorRes } = require('../utils/response');
+const { encryptField } = require('../utils/crypto');
+const authorizationService = require('../services/authorizationService');
 const employeeMasterService = require('../services/employeeMasterService');
 const userMgmtController = require('./userManagementController');
 const realtimeService = require('../services/realtimeService');
@@ -163,6 +165,15 @@ async function getEmployeeProfile(req, res) {
   try {
     const result = await employeeMasterService.getEmployeeProfile(req, req.params.id);
     if (result.forbidden) {
+      if (result.accessDenied) {
+        return res.status(403).json({
+          success: false,
+          forbidden: true,
+          accessDenied: true,
+          message: 'Access restricted: Confidential employee profile. Administrator authorization required.',
+          employeeSummary: result.employeeSummary
+        });
+      }
       return errorRes(res, 'You do not have access to this employee record', [], 403);
     }
     if (result.notFound) {
@@ -628,6 +639,12 @@ async function updateEmployeeMaster(req, res) {
       fields: Object.keys(body)
     });
 
+    // Real-time broadcast: update directory without page reload
+    const realtimeService = require('../services/realtimeService');
+    if (updated && updated.employee) {
+      realtimeService.emitEmployeeChange('UPDATE', updated.employee, record.location_id);
+    }
+
     return successRes(res, {
       userId: record.user_id,
       appNo: payload.data ? payload.data.appNo : null,
@@ -636,6 +653,234 @@ async function updateEmployeeMaster(req, res) {
   } catch (err) {
     console.error('[employeeMaster.updateEmployeeMaster]', err);
     return errorRes(res, 'Failed to update employee: ' + err.message, [err.message], 500);
+  }
+}
+
+// ── POST /api/employees/:id/access-request ─────────────────────────
+async function requestEmployeeAccess(req, res) {
+  try {
+    const employeeId = req.params.id;
+    const user = req.user;
+    if (!user || !user.id) {
+      return res.status(401).json({ success: false, message: 'Authentication required' });
+    }
+
+    const record = await employeeMasterService.resolveEmployeeRecord(req, employeeId);
+    if (!record) {
+      return res.status(404).json({ success: false, message: 'Employee record not found' });
+    }
+
+    const empName = record.name || record.username || 'Employee';
+    const locId = record.location_id || user.locationId || null;
+    const reason = req.body?.reason || 'Request to view employee details';
+
+    // Check if an access request is already pending for this user and employee
+    const [existing] = await db.query(
+      `SELECT id, status FROM employee_access_requests 
+       WHERE user_id = ? AND employee_id = ? AND status = 'PENDING'
+       LIMIT 1`,
+      [user.id, record.user_id]
+    );
+
+    if (existing.length > 0) {
+      return res.json({
+        success: true,
+        message: 'An access request is already pending administrator approval',
+        requestId: existing[0].id,
+        status: 'PENDING'
+      });
+    }
+
+    const [insertResult] = await db.query(
+      `INSERT INTO employee_access_requests 
+       (employee_id, employee_name, user_id, username, user_role, location_id, requested_action, reason, status)
+       VALUES (?, ?, ?, ?, ?, ?, 'VIEW_EMPLOYEE_DETAILS', ?, 'PENDING')`,
+      [record.user_id, empName, user.id, user.username || user.fullName, user.role || 'Staff', locId, reason]
+    );
+
+    const requestId = insertResult.insertId;
+
+    const notifTitle = 'Employee Details Access Request';
+    const notifMessage = `${user.fullName || user.username} requested access to view employee details for ${empName}.`;
+
+    // Persist to broadcast_messages
+    try {
+      await db.query(
+        `INSERT INTO broadcast_messages 
+         (title, subject, message, priority, category, target_role, sender_name, status, require_ack, pinned)
+         VALUES (?, 'Employee Access Request', ?, 'high', 'Security', 'Admins', ?, 'Pending', 0, 1)`,
+        [notifTitle, notifMessage, user.fullName || user.username]
+      );
+    } catch (e) {}
+
+    // Persist to notification table
+    try {
+      await db.query(
+        `INSERT INTO notification (userId, title, message, type, category, priority, action_data)
+         SELECT id, ?, ?, 'access_request', 'Security', 'high', ?
+         FROM users WHERE role IN ('Admin', 'Super Admin') AND active = 1`,
+        [notifTitle, notifMessage, JSON.stringify({ requestId, employeeId: record.user_id, employeeName: empName, userId: user.id, username: user.username })]
+      );
+    } catch (e) {}
+
+    // Emit live Socket.IO notification to Admins
+    const realtimeService = require('../services/realtimeService');
+    const io = realtimeService.getIo();
+    if (io) {
+      const payload = {
+        id: `req-${requestId}`,
+        requestId,
+        title: notifTitle,
+        message: notifMessage,
+        type: 'access_request',
+        category: 'Security',
+        priority: 'high',
+        employeeId: record.user_id,
+        employeeName: empName,
+        requestingUser: user.fullName || user.username,
+        role: user.role,
+        timestamp: new Date().toISOString(),
+        read: false
+      };
+      io.to('role:Admin').emit('notification:new', payload);
+      io.to('role:Super Admin').emit('notification:new', payload);
+      io.to('role:Admin').emit('employee:access_request', payload);
+      io.to('role:Super Admin').emit('employee:access_request', payload);
+      io.emit('NEW_BROADCAST', {
+        id: requestId,
+        title: notifTitle,
+        message: notifMessage,
+        priority: 'high',
+        category: 'Security',
+        target_role: 'Admins',
+        sender_name: user.fullName || user.username,
+        created_at: new Date().toISOString()
+      });
+    }
+
+    // Record audit event
+    try {
+      await db.query(
+        `INSERT INTO audit_logs (username, user_id, action, module, details, ip_address)
+         VALUES (?, ?, 'EMPLOYEE_ACCESS_REQUESTED', 'Employee Master', ?, ?)`,
+        [user.username, user.id, `Requested access to view employee ID ${record.user_id} (${empName})`, req.ip || '']
+      );
+    } catch (e) {}
+
+    return res.json({
+      success: true,
+      message: `Access request generated for ${empName}. An Administrator has been notified live.`,
+      requestId,
+      status: 'PENDING'
+    });
+  } catch (err) {
+    console.error('[requestEmployeeAccess Error]', err);
+    return res.status(500).json({ success: false, message: 'Failed to submit access request: ' + err.message });
+  }
+}
+
+// ── GET /api/employees/access-requests ─────────────────────────────
+async function listAccessRequests(req, res) {
+  try {
+    const admin = req.user;
+    if (!['Admin', 'Super Admin', 'system administrator'].includes(admin.role)) {
+      return res.status(403).json({ success: false, message: 'Access denied: Administrators only' });
+    }
+    const [rows] = await db.query(
+      `SELECT r.*, u.full_name as requesting_full_name 
+       FROM employee_access_requests r
+       LEFT JOIN users u ON u.id = r.user_id
+       ORDER BY r.created_at DESC LIMIT 100`
+    );
+    return res.json({ success: true, requests: rows });
+  } catch (err) {
+    console.error('[listAccessRequests Error]', err);
+    return res.status(500).json({ success: false, message: 'Failed to fetch access requests' });
+  }
+}
+
+// ── POST /api/employees/access-requests/:id/resolve ────────────────
+async function resolveAccessRequest(req, res) {
+  try {
+    const { id } = req.params;
+    const { action } = req.body;
+    const admin = req.user;
+
+    if (!['Admin', 'Super Admin', 'system administrator'].includes(admin.role)) {
+      return res.status(403).json({ success: false, message: 'Only Administrators can resolve access requests' });
+    }
+
+    const newStatus = action?.toUpperCase() === 'APPROVE' ? 'APPROVED' : 'REJECTED';
+
+    const [rows] = await db.query('SELECT * FROM employee_access_requests WHERE id = ?', [id]);
+    if (!rows.length) {
+      return res.status(404).json({ success: false, message: 'Access request not found' });
+    }
+    const request = rows[0];
+
+    await db.query(
+      `UPDATE employee_access_requests 
+       SET status = ?, resolved_by = ?, resolved_by_name = ?, resolved_at = NOW() 
+       WHERE id = ?`,
+      [newStatus, admin.id, admin.fullName || admin.username, id]
+    );
+
+    // Update broadcast messages status if matching
+    await db.query(
+      `UPDATE broadcast_messages 
+       SET status = ? 
+       WHERE category = 'Security' AND message LIKE ?`,
+      [newStatus, `%${request.employee_name}%`]
+    ).catch(() => {});
+
+    // Notify requesting user over Socket.IO
+    const realtimeService = require('../services/realtimeService');
+    const io = realtimeService.getIo();
+    if (io) {
+      const payload = {
+        requestId: id,
+        employeeId: request.employee_id,
+        employeeName: request.employee_name,
+        status: newStatus,
+        resolvedBy: admin.fullName || admin.username,
+        message: `Your request to view details for ${request.employee_name} has been ${newStatus.toLowerCase()} by ${admin.fullName || admin.username}.`
+      };
+      io.to(`user:${request.user_id}`).emit('employee:access_resolved', payload);
+      io.to(`user:${request.user_id}`).emit('notification:new', {
+        id: `res-${id}-${Date.now()}`,
+        title: `Employee Access Request ${newStatus}`,
+        message: payload.message,
+        type: newStatus === 'APPROVED' ? 'success' : 'warning',
+        category: 'Security',
+        priority: 'high',
+        read: false,
+        timestamp: new Date().toISOString()
+      });
+      io.to('role:Admin').emit('employee:access_resolved', payload);
+      io.to('role:Super Admin').emit('employee:access_resolved', payload);
+    }
+
+    // Security audit log
+    await db.query(
+      `INSERT INTO audit_logs (username, user_id, action, module, details, ip_address)
+       VALUES (?, ?, ?, 'Employee Master', ?, ?)`,
+      [
+        admin.username,
+        admin.id,
+        newStatus === 'APPROVED' ? 'EMPLOYEE_ACCESS_APPROVED' : 'EMPLOYEE_ACCESS_REJECTED',
+        `Admin ${admin.username} ${newStatus.toLowerCase()} access request #${id} for user ${request.username} on employee ${request.employee_name}`,
+        req.ip || ''
+      ]
+    ).catch(() => {});
+
+    return res.json({
+      success: true,
+      message: `Access request #${id} has been ${newStatus.toLowerCase()} successfully`,
+      status: newStatus
+    });
+  } catch (err) {
+    console.error('[resolveAccessRequest Error]', err);
+    return res.status(500).json({ success: false, message: 'Failed to resolve access request: ' + err.message });
   }
 }
 
@@ -648,6 +893,273 @@ async function resolveLocationCode(locationId) {
   return locationId === 1 ? 'BEL' : locationId === 2 ? 'DAV' : locationId === 3 ? 'SHI' : null;
 }
 
+// ── POST /api/employees/bulk-import ───────────────────────────────
+async function bulkImportEmployees(req, res) {
+  try {
+    const actions = await employeeMasterService.resolveEmployeeActions(req.user);
+    if (!actions.can_add) {
+      return errorRes(res, 'You do not have permission to import employees', [], 403);
+    }
+
+    let rawList = [];
+    if (Array.isArray(req.body.employees)) {
+      rawList = req.body.employees;
+    } else if (req.body.data && Array.isArray(req.body.data.employees)) {
+      rawList = req.body.data.employees;
+    } else if (req.body && typeof req.body === 'object' && Array.isArray(req.body.data)) {
+      rawList = req.body.data;
+    }
+
+    if (!rawList || rawList.length === 0) {
+      return errorRes(res, 'No employee records provided for import', [], 400);
+    }
+
+    if (rawList.length > 2000) {
+      return errorRes(res, 'Maximum 2000 records allowed per import batch', [], 400);
+    }
+
+    // Load locations lookup map
+    const [locations] = await db.query('SELECT id, location_code, location_name FROM locations');
+    const locationMap = new Map();
+    (locations || []).forEach(loc => {
+      locationMap.set(String(loc.id), Number(loc.id));
+      if (loc.location_code) locationMap.set(loc.location_code.toLowerCase().trim(), Number(loc.id));
+      if (loc.location_name) locationMap.set(loc.location_name.toLowerCase().trim(), Number(loc.id));
+    });
+
+    const defaultLocId = req.user?.locationId || (locations?.[0]?.id ?? 1);
+
+    let inserted = 0;
+    let updated = 0;
+    let failed = 0;
+    const errors = [];
+    const results = [];
+
+    for (let i = 0; i < rawList.length; i++) {
+      const row = rawList[i];
+      const rowNum = i + 1;
+
+      // Extract & normalize fields
+      const fullName = String(row.fullName || row.name || row['Full Name'] || row['Name'] || row['Employee Name'] || '').trim();
+      if (!fullName) {
+        failed++;
+        errors.push(`Row #${rowNum}: Full name is required`);
+        results.push({ row: rowNum, status: 'Failed', reason: 'Full name is required' });
+        continue;
+      }
+
+      let employeeId = String(row.employeeId || row.empCode || row['Employee ID'] || row['Emp Code'] || row['Employee Code'] || '').trim();
+      let email = String(row.email || row['Email'] || row['Email ID'] || '').trim() || null;
+      let phone = String(row.phone || row.mobile || row['Phone'] || row['Mobile'] || row['Contact'] || '').trim() || null;
+      let department = String(row.department || row.dept || row['Department'] || row['Dept'] || '').trim() || 'General';
+      let designation = String(row.designation || row['Designation'] || row['Position'] || row['Title'] || '').trim() || 'Staff';
+      let role = String(row.role || row['Role'] || '').trim() || 'Staff';
+      let section = String(row.section || row['Section'] || '').trim() || null;
+      let branchName = String(row.branch || row.location || row['Branch'] || row['Location'] || row['Store'] || '').trim();
+      let joiningDate = String(row.joiningDate || row.doj || row['Joining Date'] || row['DOJ'] || '').trim() || null;
+      let salary = row.salary || row['Salary'] || row['CTC'] || null;
+      let status = String(row.status || row.employmentStatus || row['Status'] || row['Employment Status'] || 'Active').trim();
+      let address = String(row.address || row.permanentAddress || row['Address'] || row['Permanent Address'] || '').trim() || null;
+      let city = String(row.city || row['City'] || '').trim() || null;
+      let aadhaarNumber = String(row.aadhaarNumber || row.aadhaar || row['Aadhaar Number'] || row['Aadhaar'] || '').trim() || null;
+
+      // Normalize joining date if necessary (e.g. DD-MM-YYYY to YYYY-MM-DD)
+      if (joiningDate) {
+        const dmyMatch = joiningDate.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+        if (dmyMatch) {
+          joiningDate = `${dmyMatch[3]}-${dmyMatch[2].padStart(2, '0')}-${dmyMatch[1].padStart(2, '0')}`;
+        }
+      }
+
+      // Location resolution
+      let locId = defaultLocId;
+      if (branchName) {
+        const resolved = locationMap.get(branchName.toLowerCase());
+        if (resolved) locId = resolved;
+      } else if (row.locationId && locationMap.has(String(row.locationId))) {
+        locId = Number(row.locationId);
+      }
+      const locCode = await resolveLocationCode(locId);
+
+      // Username resolution
+      let username = String(row.username || row['Username'] || '').trim();
+      if (!username) {
+        if (email) {
+          username = email.split('@')[0].toLowerCase().replace(/[^a-z0-9_.-]/g, '');
+        } else if (employeeId) {
+          username = employeeId.toLowerCase().replace(/[^a-z0-9_.-]/g, '');
+        } else {
+          username = fullName.toLowerCase().replace(/[^a-z0-9]/g, '_').slice(0, 15) + '_' + Math.floor(1000 + Math.random() * 9000);
+        }
+      }
+
+      // Default temporary password
+      const rawPassword = String(row.password || row['Password'] || 'Bsc@12345').trim();
+      const encryptedPassword = encryptField(rawPassword);
+
+      // Check if user already exists by employeeId or username or email
+      let existingUser = null;
+      if (employeeId) {
+        const [[uById]] = await db.query('SELECT id, username, employee_id FROM users WHERE employee_id = ? LIMIT 1', [employeeId]);
+        existingUser = uById;
+      }
+      if (!existingUser && username) {
+        const [[uByUname]] = await db.query('SELECT id, username, employee_id FROM users WHERE username = ? LIMIT 1', [username]);
+        existingUser = uByUname;
+      }
+
+      const activeFlag = status.toLowerCase() === 'inactive' || status.toLowerCase() === 'deactivated' ? 0 : 1;
+
+      try {
+        if (existingUser) {
+          // Update existing user in users table
+          await db.query(
+            `UPDATE users SET 
+              full_name = COALESCE(?, full_name),
+              email = COALESCE(?, email),
+              phone = COALESCE(?, phone),
+              department = COALESCE(?, department),
+              designation = COALESCE(?, designation),
+              role = COALESCE(?, role),
+              section = COALESCE(?, section),
+              joining_date = COALESCE(?, joining_date),
+              location_id = ?,
+              location_code = ?,
+              active = ?,
+              salary = COALESCE(?, salary),
+              permanent_address = COALESCE(?, permanent_address),
+              city = COALESCE(?, city),
+              aadhaar_number = COALESCE(?, aadhaar_number),
+              employment_status = ?,
+              updated_by = ?,
+              updated_at = NOW()
+            WHERE id = ?`,
+            [
+              fullName, email, phone, department, designation, role, section,
+              joiningDate, locId, locCode, activeFlag, salary, address, city,
+              aadhaarNumber, status, req.user?.username || 'admin', existingUser.id
+            ]
+          );
+
+          // Update or insert into employees table
+          try {
+            await db.query(
+              `INSERT INTO employees (employee_id, name, email, phone, department, designation, section, branch, status, joining_date, salary, created_at, updated_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+               ON DUPLICATE KEY UPDATE 
+                 name = VALUES(name), email = VALUES(email), phone = VALUES(phone),
+                 department = VALUES(department), designation = VALUES(designation),
+                 section = VALUES(section), branch = VALUES(branch), status = VALUES(status),
+                 joining_date = VALUES(joining_date), salary = VALUES(salary), updated_at = NOW()`,
+              [
+                existingUser.employee_id || employeeId || `EMP-${existingUser.id}`,
+                fullName, email, phone, department, designation, section,
+                locCode || branchName || 'BSC', status, joiningDate, salary
+              ]
+            );
+          } catch (empSyncErr) {
+            console.warn('[bulkImportEmployees] Sync to employees table warning:', empSyncErr.message);
+          }
+
+          updated++;
+          results.push({ row: rowNum, status: 'Updated', employeeId: existingUser.employee_id || employeeId, name: fullName });
+        } else {
+          // If employeeId is missing, generate one
+          if (!employeeId) {
+            const [[lastRow]] = await db.query("SELECT MAX(id) as maxId FROM users");
+            const nextId = (lastRow?.maxId || 0) + 1;
+            employeeId = `EMP-${String(nextId).padStart(4, '0')}`;
+          }
+
+          // Insert new user into users table
+          const [insertRes] = await db.query(
+            `INSERT INTO users (
+              username, password, role, full_name, email, phone, department, designation,
+              employee_id, section, joining_date, active, location_id, location_code,
+              salary, permanent_address, city, aadhaar_number, employment_status, created_by
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+              username, encryptedPassword, role, fullName, email, phone, department, designation,
+              employeeId, section, joiningDate, activeFlag, locId, locCode,
+              salary, address, city, aadhaarNumber, status, req.user?.username || 'admin'
+            ]
+          );
+
+          const newUserId = insertRes.insertId;
+
+          // Link user_locations
+          try {
+            await db.query('INSERT IGNORE INTO user_locations (user_id, location_id) VALUES (?, ?)', [newUserId, locId]);
+          } catch (_) {}
+
+          // Seed default permissions based on role
+          try {
+            const defaultModules = authorizationService.resolveRoleDefaultPermissions(role);
+            for (const mod of defaultModules) {
+              await db.query(
+                `INSERT IGNORE INTO user_permissions (user_id, module, can_view, can_add, can_edit, can_delete, can_export, can_approve, granted_by)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [newUserId, mod.module, !!mod.can_view, !!mod.can_add, !!mod.can_edit, !!mod.can_delete, !!mod.can_export, !!mod.can_approve, req.user?.username || 'Admin']
+              );
+            }
+          } catch (_) {}
+
+          // Insert into employees table
+          try {
+            await db.query(
+              `INSERT INTO employees (employee_id, name, email, phone, department, designation, section, branch, status, joining_date, salary, created_at, updated_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+              [
+                employeeId, fullName, email, phone, department, designation, section,
+                locCode || branchName || 'BSC', status, joiningDate, salary
+              ]
+            );
+          } catch (empErr) {
+            console.warn('[bulkImportEmployees] Insert into employees warning:', empErr.message);
+          }
+
+          inserted++;
+          results.push({ row: rowNum, status: 'Imported', employeeId, name: fullName });
+        }
+      } catch (rowErr) {
+        failed++;
+        errors.push(`Row #${rowNum} (${fullName}): ${rowErr.message}`);
+        results.push({ row: rowNum, status: 'Failed', reason: rowErr.message, name: fullName });
+      }
+    }
+
+    // Audit log
+    await db.query(
+      `INSERT INTO audit_logs (user_id, action, details, ip_address) VALUES (?, ?, ?, ?)`,
+      [
+        req.user?.id || 1,
+        'BULK_IMPORT_EMPLOYEES',
+        JSON.stringify({ total: rawList.length, inserted, updated, failed }),
+        req.ip || ''
+      ]
+    ).catch(() => {});
+
+    // Realtime notification
+    try {
+      realtimeService.emitEmployeeChange('BULK_IMPORT', {
+        count: inserted + updated,
+        importedBy: req.user?.username || 'Admin'
+      }, defaultLocId);
+    } catch (_) {}
+
+    return res.json({
+      success: true,
+      message: `Bulk import completed: ${inserted} added, ${updated} updated, ${failed} failed.`,
+      stats: { total: rawList.length, inserted, updated, failed },
+      errors,
+      results
+    });
+  } catch (err) {
+    console.error('[employeeMasterController.bulkImportEmployees Error]', err);
+    return res.status(500).json({ success: false, message: 'Bulk import failed: ' + err.message });
+  }
+}
+
 module.exports = {
   getEmployeeProfile,
   createEmployee,
@@ -657,5 +1169,9 @@ module.exports = {
   downloadDocument,
   deleteDocument,
   getAuditTrail,
-  updateEmployeeMaster
+  updateEmployeeMaster,
+  requestEmployeeAccess,
+  listAccessRequests,
+  resolveAccessRequest,
+  bulkImportEmployees
 };

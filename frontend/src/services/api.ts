@@ -467,6 +467,8 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
       const error: any = new Error(errorMessage);
       error.status = res.status; // Lets callers distinguish 400/404/429/500 failures
       error.errors = errorData.errors || [];
+      error.data = errorData;
+      error.response = { data: errorData, status: res.status };
       throw error;
     }
     return await res.json();
@@ -818,7 +820,31 @@ export const API = {
     return apiFetch(`/employees${q ? `?${q}` : ''}`);
   },
   async getEmployeeProfile(id: string | number) {
-    return apiFetch(`/employees/${id}/profile`);
+    return apiFetch(`/employees/${id}`);
+  },
+  async getEmployeeDetails(id: string | number) {
+    return apiFetch(`/employees/${id}`);
+  },
+  async updateEmployee(id: string | number, data: any) {
+    return apiFetch(`/employees/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+  },
+  async requestEmployeeAccess(id: string | number, reason?: string) {
+    return apiFetch(`/employees/${id}/access-request`, {
+      method: 'POST',
+      body: JSON.stringify({ reason })
+    });
+  },
+  async getEmployeeAccessRequests() {
+    return apiFetch('/employees/access-requests');
+  },
+  async resolveEmployeeAccessRequest(id: string | number, action: 'APPROVE' | 'REJECT') {
+    return apiFetch(`/employees/access-requests/${id}/resolve`, {
+      method: 'POST',
+      body: JSON.stringify({ action })
+    });
   },
   async uploadEmployeePhoto(id: string | number, file: File) {
     const fd = new FormData();
@@ -1032,6 +1058,49 @@ export const API = {
   async createAdminUser(data: any) { return apiFetch('/admin/users', { method: 'POST', body: JSON.stringify(data) }); },
   async updateAdminUser(id: number | string, data: any) { return apiFetch(`/admin/users/${id}`, { method: 'PUT', body: JSON.stringify(data) }); },
   async deleteAdminUser(id: number | string) { return apiFetch(`/admin/users/${id}`, { method: 'DELETE' }); },
+  /**
+   * Downloads the approved employee/user import CSV. The header row is
+   * produced by the backend from the same EMPLOYEE_CSV_HEADERS constant the
+   * validator uses, so the downloaded sample can never drift from what the
+   * server will accept.
+   */
+  async downloadUserImportTemplate() {
+    const apiBase = getApiBase();
+    const token = Auth.getToken();
+    const csrfToken = getCsrfToken();
+    const res = await fetch(`${apiBase}/admin/users/import-template`, {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}`, 'x-auth-token': token } : {}),
+        ...(csrfToken ? { 'x-csrf-token': csrfToken } : {})
+      }
+    });
+    if (!res.ok) {
+      let message = 'Could not download the approved CSV file. Please try again.';
+      try {
+        const body = await res.json();
+        if (body && body.message) message = body.message;
+      } catch (e) { /* non-JSON body */ }
+      throw new Error(message);
+    }
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'BSC_User_Import_Template.csv';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+    return { success: true };
+  },
+  /** Bulk-imports approved user accounts from a .csv file. */
+  async importAdminUsersCsv(file: File) {
+    const formData = new FormData();
+    formData.append('file', file, file.name);
+    return apiFetch('/admin/users/import-csv', { method: 'POST', body: formData });
+  },
   async getAdminUserPermissions(id: number | string) {
     const res = await apiFetch(`/admin/users/${id}/permissions`);
     return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
@@ -1135,10 +1204,78 @@ export const API = {
   async createDivert(payload: any) { return apiFetch('/crm/diverts/create', { method: 'POST', body: JSON.stringify(payload) }); },
   async updateDivert(payload: any) { return apiFetch('/crm/diverts/update', { method: 'POST', body: JSON.stringify(payload) }); },
   async getDivertUpdates(divertId: string) { return apiFetch(`/crm/diverts/updates?divertId=${divertId}`); },
+  async uploadDivertImage(file: File) {
+    const fd = new FormData();
+    fd.append('image', file);
+    return apiFetch('/crm/diverts/upload-image', { method: 'POST', body: fd });
+  },
+  async exportDiverts() { return apiFetch('/crm/diverts/export'); },
+  async getStoreDirectory(search?: string) {
+    return apiFetch(`/directory${search ? `?search=${encodeURIComponent(search)}` : ''}`);
+  },
+  async exportStoreDirectory() { return apiFetch('/directory/export'); },
   async getCashSettlement(date?: string) { return apiFetch(`/cash${date ? `?date=${date}` : ''}`); },
   async saveCashSettlement(payload: any) { return apiFetch('/cash/save', { method: 'POST', body: JSON.stringify(payload) }); },
   async getVmPoints() { return apiFetch('/vm/points'); },
-  async getVmSubmissions() { return apiFetch('/vm/submissions'); },
+  async getVmSubmissions(params?: any) {
+    const q = params ? new URLSearchParams(cleanQueryParams(params)).toString() : '';
+    return apiFetch(`/vm/submissions${q ? `?${q}` : ''}`);
+  },
+  async getVmDashboard(params?: {
+    locationId?: string | number;
+    floor?: string;
+    section?: string;
+    dateRange?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    auditor?: string;
+    status?: string;
+  }) {
+    const q = params ? new URLSearchParams(cleanQueryParams(params)).toString() : '';
+    return apiFetch(`/vm/dashboard${q ? `?${q}` : ''}`);
+  },
+  async getVmAudits(params?: {
+    locationId?: string | number;
+    floor?: string;
+    section?: string;
+    dateRange?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    auditor?: string;
+    status?: string;
+    minScore?: number;
+    maxScore?: number;
+    search?: string;
+    limit?: number;
+    page?: number;
+  }) {
+    const q = params ? new URLSearchParams(cleanQueryParams(params)).toString() : '';
+    return apiFetch(`/vm/audits${q ? `?${q}` : ''}`);
+  },
+  async getVmAuditDetail(id: string) {
+    return apiFetch(`/vm/audits/${encodeURIComponent(id)}`);
+  },
+  async exportVmAudits(params?: any) {
+    const q = params ? new URLSearchParams(cleanQueryParams(params)).toString() : '';
+    const apiBase = getApiBase();
+    const token = Auth.getToken();
+    const response = await fetch(`${apiBase}/vm/audits/export${q ? `?${q}` : ''}`, {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      }
+    });
+    if (!response.ok) throw new Error('Failed to export VM audits');
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `vm_audits_export_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+    return { success: true };
+  },
   async submitVm(payload: any) { return apiFetch('/vm/submit', { method: 'POST', body: JSON.stringify(payload) }); },
   async getVmFloors() { return apiFetch('/vm/floors'); },
   async createVmFloor(payload: any) { return apiFetch('/vm/floors', { method: 'POST', body: JSON.stringify(payload) }); },
@@ -1160,9 +1297,11 @@ export const API = {
       point_id?: string;
       submissionId?: string;
       submission_id?: string;
+      inspectionDate?: string;
+      inspection_date?: string;
     }
   ) {
-    if (typeof FormData !== 'undefined' && filesOrFormData instanceof FormData) {
+    if (filesOrFormData instanceof FormData) {
       return apiFetch('/vm/photos', { method: 'POST', body: filesOrFormData });
     }
     const fd = new FormData();
@@ -1188,6 +1327,9 @@ export const API = {
       if (meta.submissionId || meta.submission_id) {
         fd.append('submissionId', meta.submissionId || meta.submission_id || '');
         fd.append('submission_id', meta.submission_id || meta.submissionId || '');
+      }
+      if (meta.inspectionDate || meta.inspection_date) {
+        fd.append('inspectionDate', meta.inspectionDate || meta.inspection_date || '');
       }
     }
     return apiFetch('/vm/photos', { method: 'POST', body: fd });
@@ -1887,7 +2029,7 @@ export const API = {
     return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
   },
 
-  async getQrCodeScans(qrCodeId: string, params?: { page?: number; limit?: number; date?: string }) {
+async getQrCodeScans(qrCodeId: string, params?: { page?: number; limit?: number; date?: string }) {
     const q = params ? new URLSearchParams(cleanQueryParams(params)).toString() : '';
     const res = await apiFetch(`/feedback-qr/${qrCodeId}/scans${q ? `?${q}` : ''}`);
     return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
@@ -1943,6 +2085,25 @@ export const API = {
       body: JSON.stringify({ source })
     });
     return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
+  },
+
+  // Employee Audit
+  async getEmployeeAudit(employeeId: number | string) {
+    const res = await apiFetch(`/employees/${employeeId}/audit`);
+    return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
+  },
+
+  // Employee Directory Export
+  async exportEmployeeDirectory() {
+    return apiFetch('/directory/export');
+  },
+
+  // Employee Bulk Import (CSV & Excel)
+  async bulkImportEmployees(employees: any[]) {
+    return apiFetch('/employees/bulk-import', {
+      method: 'POST',
+      body: JSON.stringify({ employees })
+    });
   },
 
   // ── Workflow & Approval Module ─────────────────────────────────────

@@ -19,7 +19,7 @@ export interface SessionLike {
 // key absent for a role here is hidden for that role.
 const ALL_ADMIN_KEYS = [
   'wedding_crm', 'wedding_operations', 'wedding_registration', 'candidate_apply', 'footfall', 
-  'feedback_collection', 'feedback_list', 'feedback_qr', 'divert', 'pm_view', 'vm_checklist', 
+  'feedback_collection', 'feedback_list', 'feedback_qr', 'divert', 'pm_view', 'vm_checklist', 'vm_dashboard', 
   'attendance', 'dashboard', 'candidates', 'offer', 'openings', 'daily_mcheck', 'mcheck_reports', 
   'mcheck_history', 'employees', 'dept_hiring', 'section_allocation', 'feedback_public', 'tv', 
   'greeter', 'broadcast', 'user_management', 'settings', 'system_admin', 'telecaller_dashboard', 
@@ -32,7 +32,7 @@ export const ROLE_NAV_MAP: Record<string, string[]> = {
   'Admin': ALL_ADMIN_KEYS,
   'Manager': [
     'wedding_crm', 'wedding_operations', 'wedding_registration', 'telecaller_desk', 'telecaller_dashboard', 'candidate_apply', 'footfall', 
-    'feedback_collection', 'feedback_list', 'feedback_qr', 'divert', 'pm_view', 'vm_checklist', 
+    'feedback_collection', 'feedback_list', 'feedback_qr', 'divert', 'pm_view', 'vm_checklist', 'vm_dashboard', 
     'attendance', 'dashboard', 'candidates', 'offer', 'openings', 'daily_mcheck', 'mcheck_reports', 
     'mcheck_history', 'employees', 'dept_hiring', 'section_allocation', 'broadcast', 'user_management'
   ],
@@ -43,7 +43,7 @@ export const ROLE_NAV_MAP: Record<string, string[]> = {
     'dept_hiring', 'section_allocation', 'broadcast', 'user_management'
   ],
   'VM': [
-    'vm_checklist', 'dashboard', 'footfall', 'broadcast'
+    'vm_checklist', 'vm_dashboard', 'dashboard', 'footfall', 'broadcast'
   ],
   'Greeter': [
     'dashboard', 'footfall', 'greeter', 'wedding_registration', 'feedback_collection', 'feedback_list', 'feedback_qr', 'feedback_public', 'tv'
@@ -52,7 +52,7 @@ export const ROLE_NAV_MAP: Record<string, string[]> = {
     'wedding_crm', 'wedding_registration', 'wedding_operations', 'telecaller_desk', 'telecaller_dashboard', 'dashboard', 'footfall'
   ],
   'CRM Manager': [
-    'wedding_crm', 'wedding_operations', 'wedding_registration', 'telecaller_desk', 'telecaller_dashboard', 'dashboard', 'footfall', 'broadcast'
+    'wedding_crm', 'wedding_operations', 'wedding_registration', 'telecaller_desk', 'telecaller_dashboard', 'dashboard', 'footfall', 'broadcast', 'vm_checklist', 'vm_dashboard'
   ],
   'Data Analyst': [
     'wedding_crm', 'wedding_operations', 'dashboard', 'mcheck_reports', 'regional_analytics'
@@ -97,6 +97,7 @@ export const MODULE_KEY_TO_ROUTE: Record<string, string> = {
   divert: '/divert',
   pm_view: '/pm-view',
   vm_checklist: '/vm-checklist',
+  vm_dashboard: '/vm-dashboard',
   attendance: '/attendance',
   candidates: '/candidates',
   offer: '/offer-process',

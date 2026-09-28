@@ -5,12 +5,19 @@ const { getJwtSecret } = require('../backend/src/utils/secrets');
 
 const JWT_SECRET = getJwtSecret();
 
-// Create a test admin token with matching tokenVersion
-const token = jwt.sign(
-  { id: 1, username: 'admin@bsctextiles.com', role: 'Admin', fullName: 'System Admin', isGlobalAdmin: true, tokenVersion: 22 },
-  JWT_SECRET,
-  { expiresIn: '1h' }
-);
+const db = require('../backend/src/config/db');
+
+let token = '';
+
+async function initToken() {
+  const [rows] = await db.query('SELECT token_version FROM users WHERE id = 1');
+  const tokenVersion = rows[0]?.token_version || 0;
+  token = jwt.sign(
+    { id: 1, username: 'admin@bsctextiles.com', role: 'Admin', fullName: 'System Admin', isGlobalAdmin: true, tokenVersion },
+    JWT_SECRET,
+    { expiresIn: '1h' }
+  );
+}
 
 function postMultipart(path, boundary, bodyBuffer) {
   return new Promise((resolve, reject) => {
@@ -63,6 +70,7 @@ function buildMultipart(fields, fileField, fileName, fileContent) {
 }
 
 async function runImportTests() {
+  await initToken();
   console.log('--- 1. Test Import with Missing Location ---');
   const test1 = buildMultipart({}, 'file', 'test.csv', 'customer_name,mobile_number\nTest,9845011111');
   const res1 = await postMultipart('/api/wedding-crm/import-csv', test1.boundary, test1.buffer);
@@ -120,7 +128,12 @@ async function runImportTests() {
   console.log('\nALL IMPORT VALIDATION TESTS PASSED SUCCESSFULLY!');
 }
 
-runImportTests().catch(err => {
+runImportTests().then(async () => {
+  // Close the shared MySQL pool so the test process can exit - otherwise the
+  // open pool keeps the event loop alive and `npm test` never completes.
+  try { await db.end(); } catch (e) { /* already closed */ }
+  process.exit(0);
+}).catch(err => {
   console.error('Import Tests Failed:', err);
   process.exit(1);
 });
