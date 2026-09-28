@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import Topbar from '../components/Topbar';
@@ -156,18 +156,18 @@ export default function SettingsPage() {
     if (greeterPin.trim()) payload.greeter = greeterPin.trim();
     if (tvPin.trim()) payload.tv = tvPin.trim();
     if (cashPin.trim()) payload.cash = cashPin.trim();
-    
+
     if (Object.keys(payload).length === 0) {
       showToast('Type a new PIN in at least one field first.', 'error');
       return;
     }
-    
+
     // Allow up to 10 chars as per new validation
     if (!Object.values(payload).every(v => /^[a-zA-Z0-9]{4,10}$/.test(v))) {
       showToast('PINs must be 4-10 characters.', 'error');
       return;
     }
-    
+
     setSavingPins(true);
     try {
       // Save each PIN via the new secure kiosk-pins API
@@ -178,7 +178,7 @@ export default function SettingsPage() {
           body: JSON.stringify({ pinType, pin, locationId })
         });
       }
-      
+
       showToast('Store Operational PINs updated (stored securely)!', 'success');
       setGreeterPin(''); setTvPin(''); setCashPin('');
       loadAll();
@@ -234,8 +234,8 @@ export default function SettingsPage() {
                   onClick={() => setActiveTab(t.key as any)}
                   className={`
                     px-4 py-2.5 rounded-xl transition-all duration-150 flex items-center gap-2 shadow-xs whitespace-nowrap
-                    ${activeTab === t.key 
-                      ? 'bg-primary text-white shadow-md font-extrabold' 
+                    ${activeTab === t.key
+                      ? 'bg-primary text-white shadow-md font-extrabold'
                       : 'bg-white text-[#5D4E42] border border-accent-soft hover:bg-background'}
                   `}
                 >

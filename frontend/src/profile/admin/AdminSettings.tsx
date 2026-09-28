@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import AdminLayout from './AdminLayout';
 import { ProfileApi } from '../api';
 import { SiteSettings } from '../types';
-import { Save, CheckCircle2, AlertCircle, Globe, Search, Shield } from 'lucide-react';
+import { Save, CheckCircle2, AlertCircle, Globe, Search } from 'lucide-react';
 
 export const AdminSettings: React.FC = () => {
   const [settings, setSettings] = useState<SiteSettings | null>(null);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import DashboardLayout from '../../components/layouts/DashboardLayout';
@@ -7,21 +7,7 @@ import ToastContainer, { showToast } from '../../components/Toast';
 import { API, Auth, UserSession } from '../../services/api';
 import WeddingNav from './WeddingNav';
 import LocationFilterSelect from '../../components/ui/LocationFilterSelect';
-import {
-  BarChart3,
-  TrendingUp,
-  Download,
-  Users,
-  MapPin,
-  Calendar,
-  Award,
-  RefreshCw,
-  PhoneCall,
-  CircleCheck,
-  History,
-  FileText,
-  Loader2
-} from 'lucide-react';
+import { Download, RefreshCw, History, FileText, Loader2 } from 'lucide-react';
 
 export default function WeddingReports() {
   const navigate = useNavigate();

@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { X, ShieldCheck, FileText, ChevronDown, Lock } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { ShieldCheck, FileText, ChevronDown, Lock } from 'lucide-react';
 import PrivacyPolicyModal from './PrivacyPolicyModal';
 import TermsAndConditionsModal from './TermsAndConditionsModal';
 import ModalPortal from './ModalPortal';

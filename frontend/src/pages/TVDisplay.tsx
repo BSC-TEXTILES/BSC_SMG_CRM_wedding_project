@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Tv, Sparkles, TrendingUp, Users, Target, Lock, KeyRound, Radio, Volume2, VolumeX, ShieldCheck, MapPin } from 'lucide-react';
+import { Tv, Sparkles, TrendingUp, Users, Target, KeyRound, Radio, Volume2, VolumeX, MapPin } from 'lucide-react';
 import { API, Auth } from '../services/api';
 import { io } from 'socket.io-client';
 import { useLocationContext } from '../context/LocationContext';

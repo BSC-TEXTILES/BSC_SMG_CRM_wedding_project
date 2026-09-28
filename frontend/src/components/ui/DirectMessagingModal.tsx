@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, MessageSquare, Send, User, Check, CheckCheck, Shield } from 'lucide-react';
+import { X, MessageSquare, Send, CheckCheck } from 'lucide-react';
 import { NotificationService, DirectMessage } from '../../services/notificationService';
 import { UserSession } from '../../services/api';
 import { showToast } from '../Toast';

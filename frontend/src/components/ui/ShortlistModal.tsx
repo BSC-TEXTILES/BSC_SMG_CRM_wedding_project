@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, CheckCircle, Award, Briefcase, DollarSign, Calendar, Sparkles, UserCheck, Layers, Building, CircleHelp, Star, ShieldCheck } from 'lucide-react';
+import { X, CheckCircle, Sparkles, Building } from 'lucide-react';
 import { API } from '../../services/api';
 import { showToast } from '../Toast';
 import ModalPortal from './ModalPortal';
@@ -98,7 +98,7 @@ export default function ShortlistModal({ candidate, isOpen, onClose, onShortlist
       ariaLabel={`Shortlist Candidate - ${candidate?.name || 'Applicant'}`}
     >
       <div className="relative w-full max-w-3xl max-h-[92vh] bg-background rounded-3xl shadow-2xl flex flex-col z-10 overflow-hidden border-2 border-accent/50 select-text">
-        
+
         {/* Modal Header */}
         <div className="bg-gradient-to-r from-primary via-primary to-[#3D2B1F] text-white p-5 sm:p-6 border-b-2 border-accent/40 relative">
           <button
@@ -142,7 +142,7 @@ export default function ShortlistModal({ candidate, isOpen, onClose, onShortlist
 
         {/* Modal Form Content */}
         <form onSubmit={handleConfirmShortlist} className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-5 text-xs">
-          
+
           {/* Section 1: Screening Questionnaire Card */}
           <div className="p-5 rounded-2xl bg-white border border-accent-soft shadow-xs space-y-4">
             <h3 className="font-black text-primary uppercase text-xs tracking-wider border-b border-accent-soft pb-2.5 flex items-center gap-2">
@@ -309,7 +309,7 @@ export default function ShortlistModal({ candidate, isOpen, onClose, onShortlist
             <div className="text-[11px] text-primary font-bold">
               Candidate status updates to <span className="text-primary font-black">Shortlisted</span>
             </div>
-            
+
             <div className="flex items-center gap-2">
               <button
                 type="button"

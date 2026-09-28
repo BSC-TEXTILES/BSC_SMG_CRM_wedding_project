@@ -2,14 +2,7 @@ import React, { useState, useEffect } from 'react';
 import AdminLayout from './AdminLayout';
 import { ProfileApi } from '../api';
 import { ProfileData } from '../types';
-import {
-  Save,
-  Upload,
-  CheckCircle2,
-  AlertCircle,
-  FileText,
-  Image as ImageIcon
-} from 'lucide-react';
+import { Save, Upload, CheckCircle2, AlertCircle } from 'lucide-react';
 
 export const AdminProfile: React.FC = () => {
   const [profile, setProfile] = useState<ProfileData | null>(null);
@@ -102,7 +95,7 @@ export const AdminProfile: React.FC = () => {
           {/* Visuals & Imagery */}
           <div className="pf-card p-6 space-y-6">
             <h3 className="font-serif font-bold text-base text-[var(--pf-text-main)]">Imagery & Visual Assets</h3>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Profile / Portrait Image */}
               <div className="space-y-3">

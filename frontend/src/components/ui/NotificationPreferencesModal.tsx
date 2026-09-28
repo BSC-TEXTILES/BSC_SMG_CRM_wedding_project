@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, Volume2, VolumeX, Bell, Sliders, ShieldCheck } from 'lucide-react';
+import { useState } from 'react';
+import { X, Volume2, Sliders } from 'lucide-react';
 import { NotificationService, NotificationSettings } from '../../services/notificationService';
 import { showToast } from '../Toast';
 import ModalPortal from './ModalPortal';

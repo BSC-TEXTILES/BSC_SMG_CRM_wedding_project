@@ -7,41 +7,7 @@ import { API, Auth, UserSession } from '../services/api';
 import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../utils/sidebarState';
 import { permissionsCache } from '../context/PermissionsCache';
 import { useRealtimeSection } from '../hooks/useRealtimeSection';
-import {
-  Users,
-  UserPlus,
-  Shield,
-  ShieldCheck,
-  ShieldAlert,
-  Key,
-  Lock,
-  Edit,
-  Trash2,
-  Check,
-  X,
-  Search,
-  Filter,
-  RefreshCw,
-  Eye,
-  EyeOff,
-  Copy,
-  SquareCheck,
-  Square,
-  Building2,
-  Mail,
-  Phone,
-  Clock,
-  TriangleAlert,
-  ChevronDown,
-  Sparkles,
-  SlidersHorizontal,
-  Activity,
-  UserCheck,
-  UserX,
-  FileSpreadsheet,
-  Download,
-  Upload
-} from 'lucide-react';
+import { Users, UserPlus, Shield, ShieldCheck, Key, Lock, Edit, Trash2, Check, X, Search, Filter, RefreshCw, Eye, EyeOff, Copy, SquareCheck, Building2, Mail, Clock, TriangleAlert, Sparkles, SlidersHorizontal, Activity, UserCheck, UserX, FileSpreadsheet, Download, Upload } from 'lucide-react';
 
 interface ModuleDef {
   key: string;

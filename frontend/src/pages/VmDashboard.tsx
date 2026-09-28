@@ -1,47 +1,10 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../components/layouts/DashboardLayout';
-import {
-  ClipboardList,
-  CheckCircle2,
-  AlertTriangle,
-  XCircle,
-  Building2,
-  Sparkles,
-  TrendingUp,
-  Calendar,
-  Filter,
-  RotateCcw,
-  Download,
-  Eye,
-  Camera,
-  Layers,
-  Store,
-  Clock,
-  ArrowUpRight,
-  Search,
-  Maximize2,
-  ChevronRight,
-  ChevronLeft,
-  Image as ImageIcon,
-  UserCheck,
-  RefreshCw,
-  SlidersHorizontal,
-  FileSpreadsheet,
-  X,
-  ZoomIn,
-  ZoomOut,
-  Trash2,
-  LayoutGrid,
-  ListFilter,
-  Tag
-} from 'lucide-react';
+import { ClipboardList, CheckCircle2, AlertTriangle, Building2, TrendingUp, RotateCcw, Download, Eye, Camera, Layers, Store, Clock, Search, Maximize2, ChevronRight, ChevronLeft, Image as ImageIcon, UserCheck, RefreshCw, SlidersHorizontal, FileSpreadsheet, X, ZoomIn, ZoomOut, Trash2, LayoutGrid, ListFilter, Tag } from 'lucide-react';
 import { API, Auth } from '../services/api';
 import { showToast } from '../components/Toast';
-import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell,
-  PieChart, Pie, Legend, LineChart, Line, AreaChart, Area
-} from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell, PieChart, Pie, AreaChart, Area } from 'recharts';
 
 export default function VmDashboard() {
   const navigate = useNavigate();

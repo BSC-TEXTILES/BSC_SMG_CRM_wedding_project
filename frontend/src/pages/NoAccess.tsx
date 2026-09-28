@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Auth } from '../services/api';
 import { permissionsCache } from '../context/PermissionsCache';
@@ -36,7 +36,7 @@ export default function NoAccess() {
   return (
     <div className="min-h-screen bg-[#FBF8F5] flex flex-col items-center justify-center p-4 sm:p-6 text-center select-none font-sans">
       <div className="max-w-md w-full bg-white/90 backdrop-blur-md rounded-3xl border border-[#DFDDD7] shadow-xl p-8 sm:p-10 flex flex-col items-center animate-in fade-in zoom-in-95 duration-200">
-        
+
         {/* Shield Icon */}
         <div className="w-16 h-16 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mb-5 border border-amber-200/80 shadow-inner">
           <ShieldAlert className="w-8 h-8 text-[#C9A45C]" />

@@ -1,12 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { API, Auth } from '../services/api';
 import { useLocationContext } from '../context/LocationContext';
 import ToastContainer, { showToast } from '../components/Toast';
 import { optimizeFile } from '../utils/fileOptimizer';
-import { 
-  User, Phone, Mail, MapPin, Calendar, Briefcase, Award, 
-  FileText, ShieldCheck, CircleCheck, Upload, Sparkles, ArrowRight, ArrowLeft, Image as ImageIcon, FileCheck
-} from 'lucide-react';
+import { User, MapPin, Briefcase, FileText, ShieldCheck, CircleCheck, Upload, ArrowRight, ArrowLeft, Image as ImageIcon, FileCheck } from 'lucide-react';
 
 export default function CandidateEntryPage() {
   const locCtx = useLocationContext();
@@ -133,7 +130,7 @@ export default function CandidateEntryPage() {
   };
 
   const handleLangToggle = (lang: string) => {
-    setLanguagesKnown(prev => 
+    setLanguagesKnown(prev =>
       prev.includes(lang) ? prev.filter(l => l !== lang) : [...prev, lang]
     );
   };
@@ -173,7 +170,7 @@ export default function CandidateEntryPage() {
       if (resumeFile || photoFile || aadhaarFile) {
         const formData = new FormData();
         if (name) formData.append('name', name);
-        
+
         try {
           if (resumeFile) {
             const optimizedResume = await optimizeFile(resumeFile, 'Resume');
@@ -193,7 +190,7 @@ export default function CandidateEntryPage() {
           setLoading(false);
           return;
         }
-        
+
         setLoadingText('Uploading files to server...');
         const uploadRes = await API.uploadDocuments(formData, name, targetAppNo);
         if (uploadRes.success) {
@@ -203,8 +200,8 @@ export default function CandidateEntryPage() {
         }
       }
 
-      const effectiveLocId = selectedLocationId 
-        || (session?.locationId ? String(session.locationId) : '') 
+      const effectiveLocId = selectedLocationId
+        || (session?.locationId ? String(session.locationId) : '')
         || (locCtx.currentLocation && locCtx.currentLocation !== 'ALL' ? locCtx.currentLocation : '');
 
       if (!effectiveLocId) {
@@ -288,8 +285,8 @@ export default function CandidateEntryPage() {
             <div>
               <h1 className="font-extrabold text-base sm:text-lg leading-tight tracking-tight">BSC Candidate Registration</h1>
               <div className="text-[10px] text-accent font-bold uppercase tracking-widest mt-0.5">
-                BSC Textiles · {selectedLocationId 
-                  ? (locCtx.allLocations.find(l => String(l.id) === selectedLocationId)?.name || 'STORE').toUpperCase() 
+                BSC Textiles · {selectedLocationId
+                  ? (locCtx.allLocations.find(l => String(l.id) === selectedLocationId)?.name || 'STORE').toUpperCase()
                   : (session?.locationName || (locCtx.activeLocation.id !== 'ALL' ? locCtx.activeLocation.name : 'ALL LOCATIONS')).toUpperCase()}
               </div>
             </div>

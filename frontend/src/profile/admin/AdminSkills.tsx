@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import AdminLayout from './AdminLayout';
 import { ProfileApi } from '../api';
 import { SkillItem } from '../types';
-import { Plus, Edit2, Trash2, CheckCircle2, AlertCircle, X, Sparkles } from 'lucide-react';
+import { Plus, Edit2, Trash2, CheckCircle2, AlertCircle, X } from 'lucide-react';
 
 export const AdminSkills: React.FC = () => {
   const [skills, setSkills] = useState<SkillItem[]>([]);

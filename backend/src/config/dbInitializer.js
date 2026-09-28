@@ -83,20 +83,33 @@ async function autoInitializeDatabase() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 
-    // Ensure token_version, deactivated_until, and deactivation_reason columns exist on existing deployments
+    // Columns declared in the CREATE above that pre-existing deployments never
+    // received, because CREATE TABLE IF NOT EXISTS cannot alter a table that
+    // already exists. Auth middleware reads several of these directly.
     try {
       const [uCols] = await pool.query('DESCRIBE users');
-      const uColNames = uCols.map(c => c.Field);
-      if (!uColNames.includes('token_version')) {
-        await pool.query('ALTER TABLE users ADD COLUMN token_version INT DEFAULT 1');
+      const uColNames = new Set(uCols.map(c => c.Field));
+      const securityColumns = [
+        ['token_version', 'INT DEFAULT 1'],
+        ['deactivated_until', 'DATETIME NULL'],
+        ['deactivation_reason', 'TEXT NULL'],
+        ['email_verified', 'TINYINT(1) DEFAULT 0'],
+        ['email_verified_at', 'TIMESTAMP NULL'],
+        ['two_fa_enabled', 'TINYINT(1) DEFAULT 1'],
+        ['failed_2fa_attempts', 'INT DEFAULT 0'],
+        ['locked_until_2fa', 'TIMESTAMP NULL'],
+        ['last_login_ip', 'VARCHAR(45) NULL'],
+        ['last_login_user_agent', 'TEXT NULL'],
+        ['login_count', 'INT DEFAULT 0']
+      ];
+      for (const [name, definition] of securityColumns) {
+        if (!uColNames.has(name)) {
+          await pool.query(`ALTER TABLE users ADD COLUMN \`${name}\` ${definition}`);
+        }
       }
-      if (!uColNames.includes('deactivated_until')) {
-        await pool.query('ALTER TABLE users ADD COLUMN deactivated_until DATETIME NULL');
-      }
-      if (!uColNames.includes('deactivation_reason')) {
-        await pool.query('ALTER TABLE users ADD COLUMN deactivation_reason TEXT NULL');
-      }
-    } catch (_uErr) {}
+    } catch (_uErr) {
+      console.warn('[Auto DB Initializer] Security column migration skipped:', _uErr.message);
+    }
 
     // ─── Employee Master Directory: extend the master `users` record ───
     // `users` stays the single source of truth for every employee. These
@@ -120,13 +133,47 @@ async function autoInitializeDatabase() {
         ['floor', 'VARCHAR(100) NULL'],
         ['confirmation_date', 'DATE NULL'],
         ['work_shift', 'VARCHAR(100) NULL'],
+        ['reporting_manager', 'VARCHAR(150) NULL'],
         ['employment_status', 'VARCHAR(50) NULL DEFAULT \'Active\''],
         ['pan_number', 'VARCHAR(20) NULL'],
         ['bank_name', 'VARCHAR(100) NULL'],
         ['bank_account_number', 'VARCHAR(50) NULL'],
         ['ifsc_code', 'VARCHAR(20) NULL'],
         ['created_by', 'VARCHAR(150) NULL'],
-        ['updated_by', 'VARCHAR(150) NULL']
+        ['updated_by', 'VARCHAR(150) NULL'],
+        // Remainder of the `users` declaration: candidate/HR fields that the
+        // directory SELECTs as u.<col>, so a missing one fails the whole query
+        // (MySQL only reports the first unknown column, hence the cascade).
+        ['offered_doj', 'DATE NULL'],
+        ['actual_doj', 'DATE NULL'],
+        ['salary', 'VARCHAR(100) NULL'],
+        ['current_salary', 'VARCHAR(100) NULL'],
+        ['expected_salary', 'VARCHAR(100) NULL'],
+        ['experience', 'VARCHAR(150) NULL'],
+        ['retail_experience', 'VARCHAR(150) NULL'],
+        ['qualification', 'VARCHAR(150) NULL'],
+        ['previous_company', 'VARCHAR(150) NULL'],
+        ['previous_designation', 'VARCHAR(150) NULL'],
+        ['previous_salary', 'VARCHAR(100) NULL'],
+        ['dob', 'DATE NULL'],
+        ['gender', 'VARCHAR(20) NULL'],
+        ['blood_group', 'VARCHAR(20) NULL'],
+        ['aadhaar_number', 'VARCHAR(50) NULL'],
+        ['father_details', 'VARCHAR(255) NULL'],
+        ['mother_details', 'VARCHAR(255) NULL'],
+        ['religion', 'VARCHAR(100) NULL'],
+        ['caste', 'VARCHAR(100) NULL'],
+        ['languages_known', 'TEXT NULL'],
+        ['city_state', 'VARCHAR(150) NULL'],
+        ['address', 'TEXT NULL'],
+        ['aadhaar_url', 'TEXT NULL'],
+        ['resume_url', 'TEXT NULL'],
+        ['branch', 'VARCHAR(150) NULL'],
+        ['remarks', 'TEXT NULL'],
+        ['source', 'VARCHAR(100) NULL'],
+        ['referrer', 'VARCHAR(150) NULL'],
+        ['referrer_emp_no', 'VARCHAR(50) NULL'],
+        ['notice_period', 'VARCHAR(50) NULL']
       ];
       for (const [name, definition] of employeeMasterColumns) {
         if (!have.has(name)) {
@@ -662,7 +709,12 @@ async function autoInitializeDatabase() {
         { col: 'remarks', def: 'TEXT NULL' },
         { col: 'passed_count', def: 'INT DEFAULT 0' },
         { col: 'failed_count', def: 'INT DEFAULT 0' },
-        { col: 'total_questions', def: 'INT DEFAULT 10' }
+        { col: 'total_questions', def: 'INT DEFAULT 10' },
+        // createdAt/updatedAt are declared in the CREATE above, so tables created
+        // before those columns existed never received them and every VM read that
+        // selects s.updatedAt fails.
+        { col: 'createdAt', def: 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP' },
+        { col: 'updatedAt', def: 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP' }
       ];
       for (const item of ensureVmSubCols) {
         try {
@@ -793,6 +845,156 @@ async function autoInitializeDatabase() {
         }
       }
     } catch (_dErr) {}
+
+    // ─── Consent / Policy tracking ─────────────────────────────────────────
+    // consentController queries both tables on every /consent/status call, but
+    // neither was ever created here, so the endpoint returned 500 on any database
+    // that had not been set up by hand.
+    try {
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS \`policy_versions\` (
+          \`id\` INT AUTO_INCREMENT PRIMARY KEY,
+          \`policy_type\` VARCHAR(50) NOT NULL,
+          \`version\` VARCHAR(32) NOT NULL,
+          \`title\` VARCHAR(150) NULL,
+          \`is_current\` TINYINT(1) NOT NULL DEFAULT 0,
+          \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          \`updated_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          INDEX \`idx_policy_type_current\` (\`policy_type\`, \`is_current\`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+      `);
+
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS \`user_consents\` (
+          \`id\` INT AUTO_INCREMENT PRIMARY KEY,
+          \`user_id\` INT NOT NULL,
+          \`username\` VARCHAR(150) NOT NULL,
+          \`privacy_policy_accepted\` TINYINT(1) NOT NULL DEFAULT 0,
+          \`privacy_policy_version\` VARCHAR(32) NULL,
+          \`privacy_policy_accepted_at\` DATETIME NULL,
+          \`terms_accepted\` TINYINT(1) NOT NULL DEFAULT 0,
+          \`terms_version\` VARCHAR(32) NULL,
+          \`terms_accepted_at\` DATETIME NULL,
+          \`consent_status\` VARCHAR(32) NOT NULL DEFAULT 'pending',
+          \`ip_address\` VARCHAR(100) NULL,
+          \`user_agent\` TEXT NULL,
+          \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          \`updated_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          UNIQUE KEY \`uq_user_consents_user\` (\`user_id\`),
+          INDEX \`idx_user_consents_status\` (\`consent_status\`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+      `);
+    } catch (_consentErr) {
+      console.warn('[Auto DB Initializer] Consent schema migration skipped:', _consentErr.message);
+    }
+
+    // ─── Employee access requests ──────────────────────────────────────────
+    // Previously only created by the standalone scripts/init_access_requests_table.js
+    // step, so /employees/access-requests 500'd wherever that script was never run.
+    try {
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS \`employee_access_requests\` (
+          \`id\` INT AUTO_INCREMENT PRIMARY KEY,
+          \`employee_id\` INT NOT NULL,
+          \`employee_name\` VARCHAR(255) NULL,
+          \`user_id\` INT NOT NULL,
+          \`username\` VARCHAR(150) NOT NULL,
+          \`user_role\` VARCHAR(100) NULL,
+          \`location_id\` INT NULL,
+          \`requested_action\` VARCHAR(100) DEFAULT 'VIEW_EMPLOYEE_DETAILS',
+          \`reason\` TEXT NULL,
+          \`status\` ENUM('PENDING', 'APPROVED', 'REJECTED') DEFAULT 'PENDING',
+          \`resolved_by\` INT NULL,
+          \`resolved_by_name\` VARCHAR(150) NULL,
+          \`resolved_at\` DATETIME NULL,
+          \`created_at\` DATETIME DEFAULT CURRENT_TIMESTAMP,
+          \`updated_at\` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          INDEX \`idx_emp\` (\`employee_id\`),
+          INDEX \`idx_user\` (\`user_id\`),
+          INDEX \`idx_status\` (\`status\`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+      `);
+    } catch (_accessErr) {
+      console.warn('[Auto DB Initializer] Access requests schema migration skipped:', _accessErr.message);
+    }
+
+    // ─── Feedback QR columns added after the original schema ───────────────
+    // createQrCode/updateQrCode write `floor`, getQrCodes/getQrCodeStats/
+    // exportQrCodes filter and select it, and the Feedback reads use
+    // `locationCode` — but neither column was ever migrated onto tables created
+    // from the original schema files.
+    try {
+      const qrCodeColumns = [
+        { name: 'floor', def: 'VARCHAR(100) NULL' }
+      ];
+      for (const col of qrCodeColumns) {
+        const [exists] = await pool.query(`SHOW COLUMNS FROM \`FeedbackQrCode\` LIKE ?`, [col.name]);
+        if (!exists || exists.length === 0) {
+          await pool.query(`ALTER TABLE \`FeedbackQrCode\` ADD COLUMN \`${col.name}\` ${col.def}`);
+        }
+      }
+
+      const feedbackColumns = [
+        { name: 'locationCode', def: 'VARCHAR(10) NULL' },
+        { name: 'locationName', def: 'VARCHAR(100) NULL' },
+        { name: 'entryTime', def: 'VARCHAR(32) NULL' },
+        { name: 'email', def: 'VARCHAR(150) NULL' }
+      ];
+      for (const col of feedbackColumns) {
+        const [exists] = await pool.query(`SHOW COLUMNS FROM \`Feedback\` LIKE ?`, [col.name]);
+        if (!exists || exists.length === 0) {
+          await pool.query(`ALTER TABLE \`Feedback\` ADD COLUMN \`${col.name}\` ${col.def}`);
+        }
+      }
+    } catch (_fbQrErr) {
+      console.warn('[Auto DB Initializer] Feedback QR column migration skipped:', _fbQrErr.message);
+    }
+
+    // ─── Session activity & route rules ────────────────────────────────────
+    // auth.js logSessionActivity() INSERTs into session_activity on every request
+    // and swallows the failure, so the audit trail has been silently writing
+    // nothing; /security/session-activity and /security/force-logout both read it.
+    // allowed_routes is consulted by validate-route. Creating it empty preserves
+    // the existing documented fail-open behaviour - route rules are a policy
+    // decision for operators, not something this initializer should invent.
+    try {
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS \`session_activity\` (
+          \`id\` BIGINT AUTO_INCREMENT PRIMARY KEY,
+          \`user_id\` INT NULL,
+          \`username\` VARCHAR(150) NOT NULL,
+          \`session_id\` VARCHAR(64) NULL,
+          \`action\` VARCHAR(64) NOT NULL DEFAULT 'API_CALL',
+          \`module\` VARCHAR(100) NULL,
+          \`details\` JSON NULL,
+          \`ip_address\` VARCHAR(45) NULL,
+          \`user_agent\` TEXT NULL,
+          \`location_id\` INT NULL,
+          \`method\` VARCHAR(10) NULL,
+          \`path\` VARCHAR(255) NULL,
+          \`status_code\` INT NULL,
+          \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          INDEX \`idx_session_user\` (\`user_id\`),
+          INDEX \`idx_session_username\` (\`username\`),
+          INDEX \`idx_session_action\` (\`action\`),
+          INDEX \`idx_session_created\` (\`created_at\`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+      `);
+
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS \`allowed_routes\` (
+          \`id\` INT AUTO_INCREMENT PRIMARY KEY,
+          \`role\` VARCHAR(100) NOT NULL,
+          \`route_pattern\` VARCHAR(255) NOT NULL,
+          \`is_active\` TINYINT(1) NOT NULL DEFAULT 1,
+          \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          \`updated_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          INDEX \`idx_allowed_routes_role\` (\`role\`, \`is_active\`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+      `);
+    } catch (_sessionErr) {
+      console.warn('[Auto DB Initializer] Session activity / allowed routes schema skipped:', _sessionErr.message);
+    }
 
     console.log('[Auto DB Initializer] DATABASE FULLY INITIALIZED!');
     console.log('[Auto DB Initializer] Total Active Tables: 130+');

@@ -1,4 +1,5 @@
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../backend/.env') });
 const http = require('http');
 const jwt = require('jsonwebtoken');
 const { getJwtSecret } = require('../backend/src/utils/secrets');

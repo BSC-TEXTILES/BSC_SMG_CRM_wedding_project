@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import DashboardLayout from '../components/layouts/DashboardLayout';
 import PageContainer from '../components/ui/PageContainer';
-import { UserCheck, Calendar, Clock, CircleCheck, Search, Filter, Users, UserX, UserMinus, ShieldCheck, Activity, Award, Download } from 'lucide-react';
+import { UserCheck, Calendar, Clock, CircleCheck, Search, Users, ShieldCheck, Activity, Download } from 'lucide-react';
 import { API } from '../services/api';
 import MetricCard from '../components/ui/MetricCard';
 import * as XLSX from 'xlsx';
-
 import EmployeeProfileModal from '../components/ui/EmployeeProfileModal';
 
 export default function Attendance() {
@@ -75,7 +74,7 @@ export default function Attendance() {
     <DashboardLayout title="Attendance & Shift Roster Desk" subtitle="Daily Staff Attendance Tracking & Floor Shift Allocations">
       <PageContainer maxWidth="full">
         <div className="space-y-6">
-        
+
         {/* Top Summary Analytics Cards Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <MetricCard

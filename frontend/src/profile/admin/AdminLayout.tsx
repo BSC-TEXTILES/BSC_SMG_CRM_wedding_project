@@ -1,31 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useProfileTheme } from '../themeContext';
-import {
-  LayoutDashboard,
-  User,
-  Info,
-  Briefcase,
-  Sparkles,
-  Layers,
-  FolderGit2,
-  Award,
-  MessageSquareQuote,
-  Image,
-  Inbox,
-  Share2,
-  Settings,
-  History,
-  LogOut,
-  ChevronLeft,
-  ChevronRight,
-  Menu,
-  X,
-  ExternalLink,
-  Sun,
-  Moon,
-  ShieldAlert
-} from 'lucide-react';
+import { LayoutDashboard, User, Info, Briefcase, Sparkles, Layers, FolderGit2, Award, MessageSquareQuote, Image, Inbox, Share2, Settings, History, LogOut, Menu, X, ExternalLink, Sun, Moon } from 'lucide-react';
 
 interface AdminLayoutProps {
   children: React.ReactNode;

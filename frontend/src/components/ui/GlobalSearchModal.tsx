@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, X, Users, UserCheck, Briefcase, FileText, Settings, ArrowRight } from 'lucide-react';
+import { Search, X, ArrowRight } from 'lucide-react';
 import ModalPortal from './ModalPortal';
 import { API } from '../../services/api';
 
@@ -56,8 +56,8 @@ export default function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModal
         // Search Employees
         const empRes = await API.getEmployees();
         if (empRes && empRes.employees) {
-          empRes.employees.filter((e: any) => 
-            (e.name && e.name.toLowerCase().includes(q)) || 
+          empRes.employees.filter((e: any) =>
+            (e.name && e.name.toLowerCase().includes(q)) ||
             (e.appNo && e.appNo.toLowerCase().includes(q)) ||
             (e.phone && e.phone.includes(q))
           ).slice(0, 5).forEach((e: any) => {

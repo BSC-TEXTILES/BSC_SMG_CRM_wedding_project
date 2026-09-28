@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import Topbar from '../components/Topbar';
@@ -57,11 +57,11 @@ export default function OpeningsPage() {
     try {
       await API.call('updateOpening', { designation, required_count: count });
       showToast(`Role requirement updated successfully for ${designation}.`, 'success');
-      
+
       const newEdit = { ...editMode };
       delete newEdit[designation];
       setEditMode(newEdit);
-      
+
       loadOpenings();
     } catch (err: any) {
       showToast('Error: ' + err.message, 'error');
@@ -78,11 +78,11 @@ export default function OpeningsPage() {
     try {
       // 1. Add designation to DB
       await API.addDesignation(newRoleName.trim());
-      
+
       // 2. Set initial required count in manpower_requisitions
-      await API.call('updateOpening', { 
-        designation: newRoleName.trim(), 
-        required_count: newRoleRequired || 0 
+      await API.call('updateOpening', {
+        designation: newRoleName.trim(),
+        required_count: newRoleRequired || 0
       });
 
       showToast(`Role "${newRoleName.trim()}" created successfully.`, 'success');
@@ -161,14 +161,14 @@ export default function OpeningsPage() {
                   const isEditing = editMode[op.designation] !== undefined;
                   const reqCount = isEditing ? editMode[op.designation] : op.required;
                   const stillNeeded = Math.max(0, reqCount - op.hired);
-                  
+
                   return (
                     <tr key={op.designation} className="hover:bg-black/5 transition-colors font-medium">
                       <td className="py-4 px-3 text-center font-bold text-primary">{idx + 1}</td>
                       <td className="py-4 px-4 text-primary font-bold">{op.designation}</td>
                       <td className="py-4 px-4">
                         {isEditing ? (
-                          <input 
+                          <input
                             type="number"
                             min="0"
                             value={reqCount}

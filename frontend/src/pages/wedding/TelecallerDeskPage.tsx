@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import DashboardLayout from '../../components/layouts/DashboardLayout';
 import PageContainer from '../../components/ui/PageContainer';
-import ToastContainer, { showToast } from '../../components/Toast';
+import ToastContainer from '../../components/Toast';
 import { toastManager } from '../../utils/toastManager';
 import { useTelecallerQueue } from '../../hooks/useTelecallerQueue';
 import { API, Auth, UserSession } from '../../services/api';
@@ -15,27 +15,7 @@ import {
   getStatusBadge
 } from './weddingTypes';
 import LocationFilterSelect from '../../components/ui/LocationFilterSelect';
-import {
-  PhoneCall,
-  PhoneForwarded,
-  Clock,
-  Calendar,
-  TriangleAlert,
-  Users,
-  CircleCheck,
-  Sparkles,
-  MapPin,
-  Search,
-  MessageCircle,
-  Eye,
-  RefreshCw,
-  X,
-  Target,
-  ChevronRight,
-  User,
-  Check,
-  Award
-} from 'lucide-react';
+import { PhoneCall, CircleCheck, Search, MessageCircle, Eye, RefreshCw, X, Target, Check, Award } from 'lucide-react';
 
 export default function TelecallerDeskPage() {
   const navigate = useNavigate();

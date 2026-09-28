@@ -1,21 +1,6 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import {
-  Shield,
-  ShieldAlert,
-  ShieldCheck,
-  RefreshCw,
-  Search,
-  Filter,
-  Trash2,
-  CircleCheck,
-  CircleX,
-  TriangleAlert,
-  Clock,
-  Laptop,
-  Eye,
-  Activity
-} from 'lucide-react';
-import { API, Auth, UserSession } from '../services/api';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { ShieldAlert, ShieldCheck, RefreshCw, Search, Filter, Trash2, CircleCheck, CircleX, Clock, Laptop, Activity } from 'lucide-react';
+import { API, UserSession } from '../services/api';
 import { NotificationService } from '../services/notificationService';
 import { DevToolsDetector, DevToolsDetectionState } from '../services/devToolsDetector';
 import { showToast } from './Toast';

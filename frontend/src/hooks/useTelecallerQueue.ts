@@ -39,7 +39,6 @@ export function useTelecallerQueue(locationFilter: number | '' = '') {
       
       const url = `/wedding-crm/calling-desk${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
 
-      // Simple retry logic (replacing requestManager.fetchWithRetry)
       let res: any = null;
       for (let attempt = 0; attempt < 3; attempt++) {
         try {

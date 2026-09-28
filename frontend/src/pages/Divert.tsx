@@ -1,10 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import DashboardLayout from '../components/layouts/DashboardLayout';
-import { 
-  Target, Plus, Search, Filter, Clock, CheckCircle, CircleAlert, 
-  Download, RefreshCw, X, Eye, FileText, CircleCheck, ShoppingBag, 
-  ArrowRight, ShieldCheck, UserCheck, Phone, Calendar, Building2, TrendingUp, Sparkles, CircleX, Upload
-} from 'lucide-react';
+import { Target, Plus, Search, Filter, Clock, Download, X, Eye, FileText, CircleCheck, ShoppingBag, ShieldCheck, UserCheck, TrendingUp, Sparkles, CircleX, Upload } from 'lucide-react';
 import { API } from '../services/api';
 import { showToast } from '../components/Toast';
 import MetricCard from '../components/ui/MetricCard';
@@ -300,8 +296,8 @@ export default function Divert() {
   };
 
   return (
-    <DashboardLayout 
-      title="Sourcing Diverts &amp; Merchandise Requests" 
+    <DashboardLayout
+      title="Sourcing Diverts &amp; Merchandise Requests"
       subtitle="Track, filter, and review floor merchandise divert requests raised by staff for Purchase Manager review"
     >
       <div className="space-y-6">
@@ -496,9 +492,9 @@ export default function Divert() {
                 </thead>
                 <tbody className="divide-y divide-accent-soft/60">
                   {filteredDiverts.map((item, idx) => (
-                    <tr 
-                      key={item.id || idx} 
-                      onClick={() => setSelectedDivert(item)} 
+                    <tr
+                      key={item.id || idx}
+                      onClick={() => setSelectedDivert(item)}
                       className="hover:bg-black/5 cursor-pointer transition-colors font-medium"
                     >
                       <td className="py-3.5 px-3 text-center font-bold text-primary">{idx + 1}</td>
@@ -605,7 +601,7 @@ export default function Divert() {
             </div>
 
             <form onSubmit={handleCreateDivert} className="flex-1 overflow-y-auto p-6 space-y-4 text-xs bg-background">
-              
+
               {/* SECTION 1 — PRODUCT DETAILS */}
               <div className="bg-white p-4 rounded-2xl border border-accent-soft space-y-3 shadow-xs">
                 <div className="flex items-center gap-2 border-b border-accent-soft pb-1.5">

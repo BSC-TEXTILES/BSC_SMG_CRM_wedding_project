@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import Topbar from '../components/Topbar';
@@ -6,36 +6,11 @@ import ToastContainer, { showToast } from '../components/Toast';
 import { API, Auth, UserSession } from '../services/api';
 import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../utils/sidebarState';
 import MetricCard from '../components/ui/MetricCard';
-import StatusBadge from '../components/ui/StatusBadge';
+import '../components/ui/StatusBadge';
 import ManageSectionsModal from '../components/ManageSectionsModal';
 import EmployeeProfileModal from '../components/ui/EmployeeProfileModal';
 import { BSC_DEPARTMENT_SECTIONS, BSC_DEPARTMENTS, getSectionsForDepartment, getUniqueDepartments, normalizeDepartmentName } from '../utils/bscDepartments';
-import { 
-  Layers, 
-  Users, 
-  Search, 
-  Filter, 
-  Save, 
-  X, 
-  SquareCheck, 
-  Square, 
-  UserCheck, 
-  Building2, 
-  Calendar, 
-  DollarSign, 
-  Phone, 
-  Mail, 
-  FileText, 
-  Briefcase, 
-  ExternalLink,
-  ChevronRight,
-  ShieldCheck,
-  CheckCircle,
-  CircleAlert,
-  ArrowRight,
-  Sparkles,
-  Plus
-} from 'lucide-react';
+import { Layers, Users, Search, Filter, Save, X, SquareCheck, Square, UserCheck, Building2, CheckCircle, CircleAlert, ArrowRight } from 'lucide-react';
 
 export default function SectionAllocationPage() {
   const navigate = useNavigate();
@@ -288,7 +263,7 @@ export default function SectionAllocationPage() {
   };
 
   const toggleSelectEmp = (empId: string) => {
-    setSelectedEmpIds(prev => 
+    setSelectedEmpIds(prev =>
       prev.includes(empId) ? prev.filter(id => id !== empId) : [...prev, empId]
     );
   };
@@ -336,15 +311,15 @@ export default function SectionAllocationPage() {
     <div className="min-h-screen bg-background flex">
       <ToastContainer />
 
-      <Sidebar 
-        session={session} 
-        isOpen={sidebarOpen} 
-        onClose={() => setSidebarOpen(false)} 
+      <Sidebar
+        session={session}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
       />
 
       <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${collapsed ? 'lg:pl-[72px]' : 'lg:pl-64'}`}>
-        <Topbar 
-          title="Section Allocation" 
+        <Topbar
+          title="Section Allocation"
           session={session}
           onMenuClick={() => setSidebarOpen(true)}
         />
@@ -701,7 +676,7 @@ export default function SectionAllocationPage() {
                   Updating section for {selectedEmpIds.length} selected employees
                 </p>
               </div>
-              <button 
+              <button
                 onClick={() => setBulkModal(prev => ({ ...prev, open: false }))}
                 className="w-8 h-8 rounded-full bg-primary/10 hover:bg-primary hover:text-white text-primary flex items-center justify-center transition-colors"
               >

@@ -1,23 +1,6 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import DashboardLayout from '../components/layouts/DashboardLayout';
-import {
-  QrCode,
-  ExternalLink,
-  Smartphone,
-  Sparkles,
-  Copy,
-  Check,
-  MapPin,
-  Download,
-  Globe,
-  FileText,
-  RefreshCw,
-  Store,
-  Layers,
-  CheckCircle2,
-  TrendingUp,
-  Share2
-} from 'lucide-react';
+import { ExternalLink, Smartphone, Copy, Check, MapPin, Download, Globe, Store, Layers, CheckCircle2, TrendingUp, Share2 } from 'lucide-react';
 import { API } from '../services/api';
 import { showToast } from '../components/Toast';
 import { useLocationContext } from '../context/LocationContext';
@@ -158,7 +141,7 @@ export default function FeedbackQR() {
       // Pass locationId if a specific location is selected and not 'ALL'
       const locIdParam = currentLocation !== 'ALL' ? currentLocation : undefined;
       const res: any = await API.getLocationQrCodes(locIdParam);
-      
+
       const incomingList: LocationQrData[] = Array.isArray(res?.data)
         ? res.data
         : (Array.isArray(res) ? res : []);
@@ -303,8 +286,8 @@ export default function FeedbackQR() {
   }, [locationQrCodes, displayedStores]);
 
   return (
-    <DashboardLayout 
-      title="Location-Based Feedback QR Codes" 
+    <DashboardLayout
+      title="Location-Based Feedback QR Codes"
       subtitle="POS & Customer Checkout QR Displays — Belagavi, Davanagere & Shivamogga"
       hideBreadcrumbs={true}
     >
@@ -321,8 +304,8 @@ export default function FeedbackQR() {
                 Store Location Filter
               </div>
               <div className="text-[11px] text-text-secondary">
-                {canSwitch 
-                  ? 'Switch location to view specific QR or choose "All Locations"' 
+                {canSwitch
+                  ? 'Switch location to view specific QR or choose "All Locations"'
                   : `Scope fixed to assigned branch: ${currentLocationLabel}`}
               </div>
             </div>

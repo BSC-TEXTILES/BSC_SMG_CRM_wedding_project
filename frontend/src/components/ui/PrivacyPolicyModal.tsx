@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { X, ShieldCheck, ChevronDown, ChevronUp } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { X, ShieldCheck, ChevronDown } from 'lucide-react';
 import ModalPortal from './ModalPortal';
 
 interface PrivacyPolicyModalProps {

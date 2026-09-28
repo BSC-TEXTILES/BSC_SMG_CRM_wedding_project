@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import AdminLayout from './AdminLayout';
 import { ProfileApi } from '../api';
 import { ProfileData } from '../types';
-import { Save, CheckCircle2, AlertCircle, Plus, Trash2, Target, Compass, Sparkles } from 'lucide-react';
+import { Save, CheckCircle2, AlertCircle, Plus, Trash2, Target, Compass } from 'lucide-react';
 
 export const AdminAbout: React.FC = () => {
   const [profile, setProfile] = useState<ProfileData | null>(null);

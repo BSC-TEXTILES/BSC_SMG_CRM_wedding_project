@@ -3,20 +3,7 @@ import { Link } from 'react-router-dom';
 import AdminLayout from './AdminLayout';
 import { ProfileApi } from '../api';
 import { DashboardStats } from '../types';
-import {
-  FolderGit2,
-  Layers,
-  MessageSquareQuote,
-  Image,
-  Inbox,
-  Sparkles,
-  ArrowRight,
-  Plus,
-  CheckCircle2,
-  Clock,
-  ShieldCheck,
-  AlertCircle
-} from 'lucide-react';
+import { FolderGit2, Layers, MessageSquareQuote, Inbox, Plus, AlertCircle } from 'lucide-react';
 
 export const AdminDashboard: React.FC = () => {
   const [stats, setStats] = useState<DashboardStats | null>(null);

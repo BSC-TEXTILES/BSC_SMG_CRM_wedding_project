@@ -1,16 +1,16 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { MapPin, ChevronDown, Check, Lock } from 'lucide-react';
 import { useLocationContext } from '../../context/LocationContext';
 
 export default function GlobalLocationSelector() {
-  const { 
-    activeLocation, 
-    currentLocation, 
-    setCurrentLocation, 
-    availableLocations, 
-    canSwitch, 
-    isGlobalAdmin, 
-    currentLocationLabel 
+  const {
+    activeLocation,
+    currentLocation,
+    setCurrentLocation,
+    availableLocations,
+    canSwitch,
+    isGlobalAdmin,
+    currentLocationLabel
   } = useLocationContext();
 
   const [isOpen, setIsOpen] = useState(false);
@@ -31,7 +31,7 @@ export default function GlobalLocationSelector() {
     const loc = availableLocations[0];
     const displayName = loc ? loc.name : activeLocation.name || 'Store';
     return (
-      <div 
+      <div
         className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-[#FFFAF7] border border-[#E8D9D4] text-[#2B1722] text-xs font-bold shadow-2xs select-none flex-shrink-0"
         title={`Your account is strictly scoped to ${displayName}`}
       >
@@ -55,7 +55,7 @@ export default function GlobalLocationSelector() {
         aria-expanded={isOpen}
       >
         <MapPin className="w-3.5 h-3.5 text-[#B76E79] group-hover:scale-110 transition-transform flex-shrink-0" />
-        
+
         {/* Desktop: ACTIVE: All Locations ▼ */}
         <span className="hidden lg:inline text-xs font-black tracking-tight text-[#4A173A]">
           ACTIVE: {activeLocation.name}

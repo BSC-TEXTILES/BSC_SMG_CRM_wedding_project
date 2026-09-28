@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import AdminLayout from './AdminLayout';
 import { ProfileApi } from '../api';
 import { ExperienceItem } from '../types';
-import { Plus, Edit2, Trash2, CheckCircle2, AlertCircle, X, Calendar, MapPin } from 'lucide-react';
+import { Plus, Edit2, Trash2, CheckCircle2, AlertCircle, X } from 'lucide-react';
 
 export const AdminExperience: React.FC = () => {
   const [experiences, setExperiences] = useState<ExperienceItem[]>([]);

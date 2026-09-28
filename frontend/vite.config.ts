@@ -16,16 +16,6 @@ export default defineConfig({
       '/api': {
         target: process.env.VITE_API_URL || 'http://localhost:5000',
         changeOrigin: true,
-        configure: (proxy) => {
-          proxy.on('proxyReq', (proxyReq, req, res) => {
-            const authHeader = req.headers.authorization;
-            if (authHeader) {
-              console.log('[Vite Proxy] Forwarding Authorization header:', authHeader.substring(0, 30) + '...');
-            } else {
-              console.log('[Vite Proxy] No Authorization header in request to:', req.url);
-            }
-          });
-        },
       },
       '/uploads': {
         target: process.env.VITE_API_URL || 'http://localhost:5000',
@@ -39,6 +29,7 @@ export default defineConfig({
     }
   },
   build: {
+    target: 'es2022',
     // Split heavy vendor libraries so business code updates don't invalidate
     // the whole cache, and the browser can download them in parallel.
     rollupOptions: {
@@ -53,7 +44,13 @@ export default defineConfig({
     },
     chunkSizeWarningLimit: 600,
   },
+  // esbuild 0.28 cannot lower parameter destructuring to Vite 5's legacy default
+  // targets, which breaks both dev pre-bundling and the production transpile pass.
+  optimizeDeps: {
+    esbuildOptions: { target: 'es2022' },
+  },
   esbuild: {
+    target: 'es2022',
     drop: process.env.NODE_ENV === 'production' ? ['console', 'debugger'] : [],
   },
 });

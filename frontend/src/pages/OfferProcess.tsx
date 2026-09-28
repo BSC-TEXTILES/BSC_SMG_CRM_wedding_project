@@ -1,17 +1,10 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import Topbar from '../components/Topbar';
 import ToastContainer, { showToast } from '../components/Toast';
 import { API, Auth, UserSession } from '../services/api';
-import {
-  Search, FileText, Phone, Calendar, CheckCircle2, XCircle,
-  UserCheck, X, Briefcase, DollarSign, Save,
-  FileCheck, ChevronRight, TrendingUp, User,
-  Loader2, Clock, Award, Edit3,
-  GraduationCap, CheckCheck, AlertTriangle, Activity, Banknote, Star
-} from 'lucide-react';
-
+import { Search, CheckCircle2, XCircle, UserCheck, X, Briefcase, DollarSign, FileCheck, ChevronRight, TrendingUp, Loader2, Clock } from 'lucide-react';
 import { isDateInRange, getBusinessDate } from '../utils/dateUtils';
 import CandidateProfileModal from '../components/ui/CandidateProfileModal';
 import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../utils/sidebarState';

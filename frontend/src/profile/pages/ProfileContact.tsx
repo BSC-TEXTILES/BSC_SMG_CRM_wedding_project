@@ -3,18 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { ProfileHeader } from '../components/ProfileHeader';
 import { ProfileFooter } from '../components/ProfileFooter';
 import { ProfileApi } from '../api';
-import {
-  MapPin,
-  Phone,
-  Mail,
-  Clock,
-  Send,
-  CheckCircle2,
-  AlertCircle,
-  ShieldCheck,
-  Calendar,
-  Building
-} from 'lucide-react';
+import { Phone, Clock, Send, CheckCircle2, AlertCircle, ShieldCheck } from 'lucide-react';
 
 export const ProfileContact: React.FC = () => {
   const [searchParams] = useSearchParams();

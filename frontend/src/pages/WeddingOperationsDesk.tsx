@@ -1,15 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import DashboardLayout from '../components/layouts/DashboardLayout';
 import PageContainer from '../components/ui/PageContainer';
 import MetricCard from '../components/ui/MetricCard';
 import { showToast } from '../components/Toast';
 import { API, Auth, UserSession } from '../services/api';
-import {
-  Search, FileText, Phone, Calendar,
-  MapPin, Clock, Edit3, Heart, ShoppingBag, Eye,
-  RefreshCw, X, Save, User
-} from 'lucide-react';
+import { Search, FileText, Phone, Calendar, MapPin, Clock, Edit3, Heart, ShoppingBag, Eye, X, Save, User } from 'lucide-react';
 
 // ── Status mapping: backend DB values ↔ frontend display values ──
 const DB_TO_DISPLAY: Record<string, string> = {

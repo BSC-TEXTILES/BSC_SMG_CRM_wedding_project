@@ -358,10 +358,8 @@ router.post('/landing/event', (req, res) => landingController.trackEvent(req, re
 
 
 // ── Wedding Registration ──────────────────────────────────────
-console.log('[DEBUG] Loading workflow routes...');
 const weddingRegistrationRoutes = require('./weddingRegistrationRoutes');
 router.use('/wedding-registration', weddingRegistrationRoutes);
-console.log('[DEBUG] Workflow routes mounted at /workflow');
 
 // ── Batch Plan & Weaving Module ──────────────────────────────
 const batchPlanRoutes = require('./batchPlanRoutes');
@@ -1124,9 +1122,59 @@ router.post('/security/validate-route', authenticate, async (req, res) => {
       [normalizedRole]
     );
 
+    const DEFAULT_ROLE_PATTERNS = {
+      'Telecaller': [
+        '^/telecaller(/|$)',
+        '^/telecaller-dashboard(/|$)',
+        '^/wedding-crm(/|$)',
+        '^/wedding(/|$)',
+        '^/profile(/|$)',
+      ],
+      'VM Extension Telecaller': [
+        '^/telecaller(/|$)',
+        '^/telecaller-dashboard(/|$)',
+        '^/wedding-crm(/|$)',
+        '^/wedding(/|$)',
+        '^/profile(/|$)',
+      ],
+      'CRM Executive': [
+        '^/telecaller(/|$)',
+        '^/telecaller-dashboard(/|$)',
+        '^/wedding-crm(/|$)',
+        '^/wedding(/|$)',
+        '^/footfall(/|$)',
+        '^/profile(/|$)',
+      ],
+      'Greeter': [
+        '^/greeter(/|$)',
+        '^/footfall(/|$)',
+        '^/feedback(/|$)',
+        '^/wedding-registration(/|$)',
+        '^/tv(/|$)',
+        '^/profile(/|$)',
+      ],
+      'VM': [
+        '^/vm-checklist(/|$)',
+        '^/vm-dashboard(/|$)',
+        '^/footfall(/|$)',
+        '^/broadcast(/|$)',
+        '^/profile(/|$)',
+      ],
+    };
+
     if (!rows || rows.length === 0) {
+      if (DEFAULT_ROLE_PATTERNS[normalizedRole]) {
+        const isAllowed = DEFAULT_ROLE_PATTERNS[normalizedRole].some(p => {
+          try { return new RegExp(p).test(pathname); } catch (e) { return false; }
+        });
+        return res.json({
+          success: true,
+          allowed: isAllowed,
+          reason: isAllowed ? "Route permitted for role" : `Route not permitted for role ${normalizedRole}`
+        });
+      }
       // No role rules configured — fail open (frontend RBAC is the primary guard)
-      return res.json({ success: true, allowed: true, reason: 'No route rules configured' });
+      return res.json({ success: true, allowed: true, reason: 'No role rules configured' });
     }
 
     const isAllowed = rows.some(row => {

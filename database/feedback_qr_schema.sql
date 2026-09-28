@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS `FeedbackQrCode` (
   `locationName` VARCHAR(100) NOT NULL, -- 'Belagavi', 'Davanagere', 'Shivamogga'
   `sectionId` VARCHAR(64) NULL,
   `sectionName` VARCHAR(150) NULL,
+  `floor` VARCHAR(100) NULL, -- Mall floor the QR is placed on; used by list/stats/export filters
   `feedbackFormId` VARCHAR(64) NULL, -- Reference to FeedbackQuestions set
   `targetUrl` TEXT NOT NULL, -- Full URL that QR code points to
   `qrCodeDataUrl` LONGTEXT NULL, -- Base64 PNG data URL

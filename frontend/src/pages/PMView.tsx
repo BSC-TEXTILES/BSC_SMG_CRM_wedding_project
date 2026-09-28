@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import DashboardLayout from '../components/layouts/DashboardLayout';
-import { Briefcase, CheckCircle, Clock, Save, RefreshCw } from 'lucide-react';
+import { Briefcase, RefreshCw } from 'lucide-react';
 import { API } from '../services/api';
 import { showToast } from '../components/Toast';
 
@@ -174,7 +174,7 @@ export default function PMView() {
           <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
             <div className="card-glass p-6 max-w-lg w-full animate-scale-in max-h-[90vh] overflow-y-auto">
               <h3 className="text-lg font-black text-primary mb-3">Review &amp; Update Sourcing Status</h3>
-              
+
               {/* Complete Requirement Details Card */}
               <div className="p-4 rounded-2xl bg-white border border-accent-soft space-y-2.5 text-xs mb-4 shadow-xs">
                 <div className="border-b border-accent-soft pb-2">

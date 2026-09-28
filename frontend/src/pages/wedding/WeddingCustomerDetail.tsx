@@ -12,30 +12,7 @@ import {
   CALL_OUTCOMES,
   getStatusBadge
 } from './weddingTypes';
-import {
-  User,
-  Heart,
-  Calendar,
-  Clock,
-  PhoneCall,
-  MapPin,
-  MessageCircle,
-  FileText,
-  History,
-  TrendingUp,
-  ShoppingBag,
-  Sparkles,
-  ArrowLeft,
-  Edit2,
-  CircleCheck,
-  Plus,
-  X,
-  CircleAlert,
-  RefreshCw,
-  Award,
-  Users,
-  ExternalLink
-} from 'lucide-react';
+import { User, Heart, PhoneCall, MessageCircle, FileText, History, TrendingUp, ArrowLeft, Plus, X, CircleAlert, RefreshCw, Users, ExternalLink } from 'lucide-react';
 
 export default function WeddingCustomerDetail() {
   const { id } = useParams<{ id: string }>();

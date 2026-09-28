@@ -1,10 +1,7 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { API } from '../services/api';
 import ToastContainer, { showToast } from '../components/Toast';
-import {
-  Search, MapPin, Calendar, Clock, CircleCheck,
-  CircleAlert, ArrowRight, Heart, Sparkles, Phone
-} from 'lucide-react';
+import { Search, MapPin, Calendar, Clock, CircleCheck, CircleAlert, Heart, Sparkles, Phone } from 'lucide-react';
 
 const STATUS_COLORS: Record<string, string> = {
   'Registration Received': 'bg-blue-100 text-blue-800 border-blue-200',

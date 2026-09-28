@@ -43,6 +43,11 @@ const ALLOWED_ORIGIN_SET = new Set([
 // LAN IP regex for local development / testing across store terminals
 const LAN_IP_REGEX = /^http:\/\/(?:192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3})(?::\d+)?$/;
 
+// Vite auto-increments when a port is taken, so a hardcoded port list breaks the
+// moment a second dev server starts. Loopback is accepted on any port in
+// development only; production still requires an explicit origin.
+const LOOPBACK_REGEX = /^http:\/\/(?:localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/;
+
 function isOriginAllowed(origin) {
   // Allow requests with no origin (e.g. mobile apps, curl, server-to-server, same-origin)
   if (!origin) return true;
@@ -54,6 +59,11 @@ function isOriginAllowed(origin) {
 
   // Local LAN network match in development / staging
   if (process.env.NODE_ENV !== 'production' && LAN_IP_REGEX.test(normalized)) {
+    return true;
+  }
+
+  // Any loopback port, development only
+  if (process.env.NODE_ENV !== 'production' && LOOPBACK_REGEX.test(normalized)) {
     return true;
   }
 

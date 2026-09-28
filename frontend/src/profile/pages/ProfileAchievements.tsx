@@ -3,15 +3,7 @@ import { ProfileHeader } from '../components/ProfileHeader';
 import { ProfileFooter } from '../components/ProfileFooter';
 import { ProfileApi } from '../api';
 import { AchievementItem } from '../types';
-import {
-  Award,
-  ShieldCheck,
-  Calendar,
-  ExternalLink,
-  Medal,
-  Sparkles,
-  ArrowRight
-} from 'lucide-react';
+import { Award, ShieldCheck, ExternalLink } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const ProfileAchievements: React.FC = () => {

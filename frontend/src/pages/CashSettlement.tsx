@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '../components/layouts/DashboardLayout';
-import { DollarSign, CreditCard, Calendar, Save, CircleCheck, Lock, KeyRound } from 'lucide-react';
+import { Calendar, Save, CircleCheck, Lock, KeyRound } from 'lucide-react';
 import { API } from '../services/api';
 import { showToast } from '../components/Toast';
 

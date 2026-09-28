@@ -1,16 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import Topbar from '../components/Topbar';
 import { API, Auth, UserSession } from '../services/api';
 import { showToast } from '../components/Toast';
 import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../utils/sidebarState';
-import {
-  BarChart3, Download, FileSpreadsheet, Filter, Search, RefreshCw,
-  Calendar, CircleCheck, CircleX, Clock, CircleAlert, Circle,
-  ChevronDown, TriangleAlert, TrendingUp, TrendingDown, Minus,
-  ClipboardList, Target, Eye, ChevronRight, UserCheck, ArrowRight
-} from 'lucide-react';
+import { BarChart3, Download, FileSpreadsheet, Filter, Search, RefreshCw, CircleCheck, CircleX, Clock, CircleAlert, Circle, ChevronDown, TriangleAlert, TrendingUp, TrendingDown, Minus, Target, Eye, ArrowRight } from 'lucide-react';
 
 const STATUS_COLORS: Record<string, { bg: string; text: string; border: string; dot: string }> = {
   DONE:        { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', dot: 'bg-emerald-500' },

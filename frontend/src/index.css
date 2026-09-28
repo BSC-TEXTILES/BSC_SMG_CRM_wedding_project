@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Manrope:wght@500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Manrope:wght@500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -123,7 +123,9 @@ body {
   min-height: 100vh;
   margin: 0;
   padding: 0;
-  overflow-x: hidden;
+  /* `clip` (not `hidden`) — `hidden` would make body a scroll container and
+     silently break `position: sticky` on the landing page. */
+  overflow-x: clip;
   max-width: 100%;
   width: 100%;
   -webkit-font-smoothing: antialiased;
@@ -849,5 +851,52 @@ html, body, #root {
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
   }
+}
+
+/* ==================================================
+   LOGIN PAGE
+   The scrollbar-hiding rule further up applies to html/body/#root,
+   so when the card is taller than a short laptop viewport there is
+   no affordance that more content exists. Give this page its own
+   scroller with a visible, on-brand scrollbar, and recover height on
+   short screens by tightening rhythm — never by shrinking type or
+   dropping fields.
+   ================================================== */
+
+.login-shell {
+  scrollbar-width: thin !important;
+  -ms-overflow-style: auto !important;
+}
+
+.login-shell::-webkit-scrollbar {
+  display: block !important;
+  width: 10px !important;
+}
+
+.login-shell::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.login-shell::-webkit-scrollbar-thumb {
+  background: #d9c2b8;
+  border-radius: 8px;
+  border: 3px solid #FFF7F2;
+}
+
+.login-shell::-webkit-scrollbar-thumb:hover {
+  background: #B76E79;
+}
+
+@media (max-height: 820px) {
+  .login-form { padding: 22px !important; }
+  .login-form > * + * { margin-top: 15px !important; }
+  .login-card-header { padding: 14px 18px !important; }
+}
+
+@media (max-height: 720px) {
+  .login-form { padding: 18px !important; }
+  .login-form > * + * { margin-top: 12px !important; }
+  .login-card-header { padding: 12px 16px !important; }
+  .login-card { border-radius: 20px; }
 }
 

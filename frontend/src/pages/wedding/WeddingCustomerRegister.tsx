@@ -15,32 +15,7 @@ import {
   getStatusBadge
 } from './weddingTypes';
 import LocationFilterSelect from '../../components/ui/LocationFilterSelect';
-import {
-  Users,
-  UserPlus,
-  Search,
-  Filter,
-  Plus,
-  PhoneCall,
-  UserCheck,
-  Building2,
-  MapPin,
-  Calendar,
-  Clock,
-  Sparkles,
-  MessageCircle,
-  Download,
-  Upload,
-  RefreshCw,
-  ChevronLeft,
-  ChevronRight,
-  Eye,
-  Edit,
-  X,
-  CircleCheck,
-  CircleAlert,
-  Trash2
-} from 'lucide-react';
+import { UserPlus, Search, PhoneCall, UserCheck, MapPin, MessageCircle, Download, RefreshCw, ChevronLeft, ChevronRight, Eye, X, CircleCheck, CircleAlert, Trash2 } from 'lucide-react';
 
 export default function WeddingCustomerRegister() {
   const navigate = useNavigate();
@@ -302,11 +277,11 @@ export default function WeddingCustomerRegister() {
         assigned_telecaller_id: callerObj.id
       });
 
-      const isReassign = assignCustomer.assigned_telecaller && 
+      const isReassign = assignCustomer.assigned_telecaller &&
         assignCustomer.assigned_telecaller !== 'Auto-Assigned' &&
         assignCustomer.assigned_telecaller !== 'Staff';
       showToast(
-        isReassign 
+        isReassign
           ? `Telecaller reassigned to ${callerObj.full_name || callerObj.name} successfully.`
           : `Telecaller assigned to ${callerObj.full_name || callerObj.name} successfully.`,
         'success'

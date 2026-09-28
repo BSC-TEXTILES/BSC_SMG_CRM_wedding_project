@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ProjectItem } from '../types';
-import { X, ExternalLink, Calendar, User, Tag, CheckCircle2 } from 'lucide-react';
+import { X, ExternalLink, CheckCircle2 } from 'lucide-react';
 
 interface ProjectDetailModalProps {
   project: ProjectItem | null;

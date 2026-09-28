@@ -3,15 +3,7 @@ import { ProfileHeader } from '../components/ProfileHeader';
 import { ProfileFooter } from '../components/ProfileFooter';
 import { ProfileApi } from '../api';
 import { ExperienceItem } from '../types';
-import {
-  Briefcase,
-  Calendar,
-  MapPin,
-  CheckCircle2,
-  Award,
-  ArrowRight,
-  Filter
-} from 'lucide-react';
+import { Calendar, MapPin, CheckCircle2, Award, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const ProfileExperience: React.FC = () => {

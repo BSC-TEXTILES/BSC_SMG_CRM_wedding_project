@@ -2,16 +2,7 @@ import React, { useState, useEffect } from 'react';
 import AdminLayout from './AdminLayout';
 import { ProfileApi } from '../api';
 import { ServiceItem } from '../types';
-import {
-  Plus,
-  Edit2,
-  Trash2,
-  CheckCircle2,
-  AlertCircle,
-  X,
-  Layers,
-  Sparkles
-} from 'lucide-react';
+import { Plus, Edit2, Trash2, CheckCircle2, AlertCircle, X } from 'lucide-react';
 
 export const AdminServices: React.FC = () => {
   const [services, setServices] = useState<ServiceItem[]>([]);
