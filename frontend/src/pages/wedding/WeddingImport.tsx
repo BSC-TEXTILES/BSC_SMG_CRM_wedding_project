@@ -22,7 +22,9 @@ import {
   ChevronDown,
   ChevronUp,
   History,
-  FileDown
+  FileDown,
+  RefreshCw,
+  Trash2
 } from 'lucide-react';
 
 interface ValidationError {
@@ -120,6 +122,49 @@ export default function WeddingImport() {
   const [downloadingReport, setDownloadingReport] = useState(false);
   const [lastFileName, setLastFileName] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const clearSelectedFile = React.useCallback(() => {
+    setFile(null);
+    setFileError(null);
+    setFilePreviewCount(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  }, []);
+
+  const formatFileSize = (bytes?: number) => {
+    if (!bytes || bytes === 0) return '0 B';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+  };
+
+  const formatImportDate = (dateVal?: string | Date | null): string => {
+    if (!dateVal) return '—';
+    try {
+      const str = String(dateVal).trim();
+      if (!str || str === 'null' || str === 'undefined') return '—';
+
+      // Parse MySQL standard format "YYYY-MM-DD HH:mm:ss" or "YYYY-MM-DDTHH:mm:ss"
+      const match = str.match(/^(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2}):(\d{2})/);
+      if (match) {
+        const [, year, month, day, hours, minutes, seconds] = match;
+        return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+      }
+
+      const d = new Date(str);
+      if (isNaN(d.getTime())) return str;
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear();
+      const hours = String(d.getHours()).padStart(2, '0');
+      const minutes = String(d.getMinutes()).padStart(2, '0');
+      const seconds = String(d.getSeconds()).padStart(2, '0');
+      return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+    } catch {
+      return String(dateVal);
+    }
+  };
 
   const loadImportLogs = React.useCallback(async () => {
     if (!API.getWeddingImportLogs) return;
@@ -222,16 +267,19 @@ export default function WeddingImport() {
   // Pre-validate file when user chooses a file
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0] || null;
+    
+    // Always clear old importResult and previous file states when a file is picked
+    setImportResult(null);
     setFile(null);
     setFileError(null);
     setFilePreviewCount(null);
-    setImportResult(null);
 
     if (!selectedFile) return;
 
     // 1. File Type Validation
     const fileName = selectedFile.name.toLowerCase();
     if (fileName.endsWith('.xls')) {
+      setFile(null);
       setFileError('Legacy .xls files are not supported. Open the file in Excel and save it as .xlsx (File > Save As > Excel Workbook), then upload it again.');
       showToast('Legacy .xls is not supported — please save the file as .xlsx', 'error');
       return;
@@ -240,6 +288,7 @@ export default function WeddingImport() {
     const isXlsx = fileName.endsWith('.xlsx');
 
     if (!isCsv && !isXlsx) {
+      setFile(null);
       setFileError('Invalid file format. Please upload a .csv or .xlsx file only.');
       showToast('Only .csv and .xlsx files are supported', 'error');
       return;
@@ -247,12 +296,14 @@ export default function WeddingImport() {
 
     // 2. File Size Validation
     if (selectedFile.size === 0) {
+      setFile(null);
       setFileError('The selected file is completely empty (0 bytes). Please select a file with customer records.');
       showToast('Selected file is empty', 'error');
       return;
     }
 
     if (selectedFile.size > 10 * 1024 * 1024) {
+      setFile(null);
       setFileError('File size exceeds the 10 MB limit. Please split the file into smaller batches.');
       showToast('File too large (max 10MB)', 'error');
       return;
@@ -265,12 +316,14 @@ export default function WeddingImport() {
         try {
           const content = event.target?.result as string;
           if (!content || content.trim().length === 0) {
+            setFile(null);
             setFileError('The CSV file has no content.');
             return;
           }
 
           const lines = content.split(/\r?\n/).filter(line => line.trim().length > 0);
           if (lines.length < 1) {
+            setFile(null);
             setFileError('The CSV file does not contain a header row.');
             return;
           }
@@ -285,37 +338,42 @@ export default function WeddingImport() {
             const missing: string[] = [];
             if (!hasCustomerName) missing.push('customer_name');
             if (!hasMobileNumber) missing.push('mobile_number');
+            setFile(null);
             setFileError(`Missing required column headers: ${missing.join(', ')}. Row 1 must include "customer_name" and "mobile_number". Download the official template to get the exact headers.`);
             return;
           }
 
           const rowCount = Math.max(0, lines.length - 1);
           if (rowCount > MAX_IMPORT_ROWS) {
+            setFile(null);
             setFileError(`The file contains ${rowCount} rows. The maximum per import is ${MAX_IMPORT_ROWS}. Please split it into smaller batches.`);
             showToast(`Too many rows (max ${MAX_IMPORT_ROWS})`, 'error');
             return;
           }
-          setFilePreviewCount(rowCount);
           if (rowCount === 0) {
+            setFile(null);
             setFileError('The file contains headers but no customer data rows below row 1.');
             return;
           }
 
-          // File passed all pre-checks
+          setFilePreviewCount(rowCount);
+          // File passed all pre-checks - strictly set as the active file
           setFile(selectedFile);
           setLastFileName(selectedFile.name);
         } catch (err: any) {
+          setFile(null);
           setFileError('Could not read the CSV file. Please ensure it is saved with UTF-8 encoding.');
         }
       };
 
       reader.onerror = () => {
+        setFile(null);
         setFileError('Failed to read the file. Please ensure the file is not corrupted.');
       };
 
       reader.readAsText(selectedFile, 'UTF-8');
     } else {
-      // Excel file: accepted for upload (the server checks the row count)
+      // Excel file: accepted for upload
       setFile(selectedFile);
       setLastFileName(selectedFile.name);
     }
@@ -323,6 +381,8 @@ export default function WeddingImport() {
 
   const handleImport = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (uploading) return;
 
     if (!locationId) {
       setLocationError(true);
@@ -350,12 +410,18 @@ export default function WeddingImport() {
 
       const imported = res.importedCount ?? res.imported ?? 0;
       const skipped = res.duplicateCount ?? res.duplicates ?? 0;
-      const errors = res.errorCount ?? res.errors?.length ?? 0;
+      const errors = res.errorCount ?? res.failed ?? res.errors?.length ?? 0;
       const warnings = res.warningCount ?? res.warnings?.length ?? 0;
 
       const summaryText = `${imported} customers imported, ${skipped} duplicates skipped, ${errors} errors${warnings ? `, ${warnings} warnings` : ''}.`;
       showToast(summaryText, imported > 0 ? 'success' : 'info');
+      // Auto-refresh import history without full page reload
       loadImportLogs();
+
+      // Reset file input value so selecting the same file again immediately triggers onChange
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     } catch (err: any) {
       const errMsg = err.message || 'Please check your file and try again.';
       showToast('Import failed: ' + errMsg, 'error');
@@ -366,6 +432,10 @@ export default function WeddingImport() {
         summary: 'Import failed: ' + errMsg,
         errors: [{ row: 0, reason: errMsg }]
       });
+      loadImportLogs();
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     } finally {
       setUploading(false);
     }
@@ -579,37 +649,86 @@ export default function WeddingImport() {
                     ref={fileInputRef}
                     type="file"
                     accept=".csv, .xlsx, .xls"
+                    disabled={uploading}
+                    onClick={(e) => {
+                      // Reset value on click so choosing the same file name always triggers onChange
+                      (e.target as HTMLInputElement).value = '';
+                    }}
                     onChange={handleFileChange}
-                    className="w-full p-3.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-2xl file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-xs file:font-black file:bg-[#4A173A] file:text-white hover:file:bg-[#6A2853] cursor-pointer text-xs font-medium text-[#2B1722] transition-colors"
+                    className="w-full p-3.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-2xl file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-xs file:font-black file:bg-[#4A173A] file:text-white hover:file:bg-[#6A2853] cursor-pointer text-xs font-medium text-[#2B1722] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                 </div>
 
                 {/* File Error Alert */}
                 {fileError && (
-                  <div className="mt-2.5 p-3 rounded-xl bg-[#FDE8E7] border border-[#B42318]/30 text-[#B42318] text-xs flex items-start gap-2">
-                    <CircleAlert className="w-4 h-4 text-[#B42318] shrink-0 mt-0.5" />
-                    <div>
-                      <span className="font-bold">File Validation Error: </span>
-                      <span>{fileError}</span>
+                  <div className="mt-2.5 p-3 rounded-xl bg-[#FDE8E7] border border-[#B42318]/30 text-[#B42318] text-xs flex items-start justify-between gap-2">
+                    <div className="flex items-start gap-2">
+                      <CircleAlert className="w-4 h-4 text-[#B42318] shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-bold">File Validation Error: </span>
+                        <span>{fileError}</span>
+                      </div>
                     </div>
+                    <button
+                      type="button"
+                      onClick={clearSelectedFile}
+                      className="text-[11px] font-bold text-[#B42318] hover:underline shrink-0"
+                    >
+                      Clear
+                    </button>
                   </div>
                 )}
 
-                {/* File Ready Confirmation */}
+                {/* File Ready Confirmation & Controls */}
                 {file && !fileError && (
-                  <div className="mt-2.5 p-3 rounded-xl bg-[#E8F5EE] border border-[#198754]/30 text-[#198754] text-xs flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <CircleCheck className="w-4 h-4 text-[#198754] shrink-0" />
-                      <div>
-                        <span className="font-bold">{file.name}</span>
-                        {filePreviewCount !== null && (
-                          <span className="text-[#198754] ml-1.5">
-                            ({filePreviewCount} customer {filePreviewCount === 1 ? 'row' : 'rows'} detected)
+                  <div className="mt-2.5 p-3.5 rounded-xl bg-[#E8F5EE] border border-[#198754]/30 text-[#198754] text-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <CircleCheck className="w-4.5 h-4.5 text-[#198754] shrink-0" />
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-bold text-[#198754] truncate max-w-[280px]" title={file.name}>
+                            {file.name}
                           </span>
+                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#198754]/15 text-[#198754] font-bold uppercase">
+                            {file.name.toLowerCase().endsWith('.csv') ? 'CSV' : 'Excel (.xlsx)'}
+                          </span>
+                          <span className="text-[10px] font-mono text-[#198754]/80">
+                            {formatFileSize(file.size)}
+                          </span>
+                        </div>
+                        {filePreviewCount !== null && (
+                          <p className="text-[11px] text-[#198754] mt-0.5">
+                            {filePreviewCount} customer {filePreviewCount === 1 ? 'row' : 'rows'} detected & validated
+                          </p>
                         )}
                       </div>
                     </div>
-                    <span className="text-[10px] uppercase font-black px-2 py-0.5 rounded bg-[#198754]/20 text-[#198754]">Ready</span>
+
+                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                      <button
+                        type="button"
+                        disabled={uploading}
+                        onClick={() => fileInputRef.current?.click()}
+                        className="px-2.5 py-1.5 rounded-lg bg-white border border-[#198754]/40 hover:bg-[#E8F5EE] text-[#198754] font-bold text-[11px] inline-flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                        title="Replace currently selected file"
+                      >
+                        <RefreshCw className="w-3 h-3 text-[#198754]" />
+                        <span>Replace File</span>
+                      </button>
+                      <button
+                        type="button"
+                        disabled={uploading}
+                        onClick={clearSelectedFile}
+                        className="px-2 py-1.5 rounded-lg bg-white border border-[#B42318]/30 hover:bg-[#FDE8E7] text-[#B42318] font-bold text-[11px] inline-flex items-center gap-1 transition-colors disabled:opacity-50"
+                        title="Remove file"
+                      >
+                        <Trash2 className="w-3 h-3 text-[#B42318]" />
+                        <span>Remove</span>
+                      </button>
+                      <span className="text-[10px] uppercase font-black px-2 py-1 rounded bg-[#198754] text-white tracking-wide">
+                        Ready
+                      </span>
+                    </div>
                   </div>
                 )}
               </div>
@@ -719,9 +838,13 @@ export default function WeddingImport() {
                       setImportResult(null);
                       setShowErrorDetails(false);
                       setShowWarningDetails(false);
-                      if (fileInputRef.current) fileInputRef.current.value = '';
                       setFile(null);
+                      setFileError(null);
                       setFilePreviewCount(null);
+                      if (fileInputRef.current) {
+                        fileInputRef.current.value = '';
+                        fileInputRef.current.click();
+                      }
                     }}
                     className="text-xs font-black inline-flex items-center gap-1.5 bg-[#FFFDFC] text-[#4A173A] border border-[#E8D9D4] px-3.5 py-2.5 rounded-xl hover:bg-[#FFF7F2] transition-colors shadow-2xs"
                   >
@@ -881,7 +1004,7 @@ export default function WeddingImport() {
                       {importLogs.map((log) => (
                         <tr key={log.id} className="hover:bg-[#FFF1F2] transition-colors">
                           <td className="py-2 pr-3 pl-3 font-mono whitespace-nowrap text-[#6F5963]">
-                            {log.created_at ? new Date(log.created_at).toLocaleString() : '—'}
+                            {formatImportDate(log.created_at || (log as any).uploaded_at)}
                           </td>
                           <td className="py-2 px-3 font-medium max-w-[180px] truncate text-[#4A173A]" title={log.file_name}>
                             {log.file_name || '—'}

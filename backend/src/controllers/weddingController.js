@@ -132,6 +132,7 @@ async function ensureTables() {
   if (!tablesInitPromise) {
     tablesInitPromise = (async () => {
       try {
+        await pool.query("SET time_zone = '+05:30'").catch(() => {});
         await pool.query(`
       CREATE TABLE IF NOT EXISTS \`wedding_customers\` (
         \`id\` INT AUTO_INCREMENT PRIMARY KEY,
@@ -2170,7 +2171,12 @@ class WeddingController {
       params.push(limit);
 
       const [rows] = await pool.query(sql, params);
-      return successRes(res, { imports: rows }, 'Import history fetched successfully.');
+      const mappedRows = (rows || []).map((r) => ({
+        ...r,
+        uploaded_at: r.created_at,
+        imported_at: r.created_at
+      }));
+      return successRes(res, { imports: mappedRows }, 'Import history fetched successfully.');
     } catch (err) {
       console.error('[WeddingController.getImportLogs Error]', err);
       return errorRes(res, 'Failed to load import history', [err.message], 500);
@@ -2783,13 +2789,18 @@ class WeddingController {
       }
 
       let importId = null;
+      const importStatus = errors.length > 0
+        ? (imported === 0 ? 'Failed' : 'Completed with Errors')
+        : 'Completed';
+      const serverTimestamp = new Date().toISOString();
+
       try {
         const [locRow] = await pool.query('SELECT location_name FROM locations WHERE id = ?', [defaultLocationId]);
         const [logRes] = await pool.query(
           `INSERT INTO wedding_import_logs
              (file_name, file_type, location_id, location_name, user_id, user_name,
-              total_rows, imported_count, duplicate_count, error_count, status, summary)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+              total_rows, imported_count, duplicate_count, error_count, status, summary, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
           [
             String(req.file.originalname || '').substring(0, 255),
             isXlsx ? 'xlsx' : 'csv',
@@ -2801,9 +2812,7 @@ class WeddingController {
             imported,
             duplicates,
             errors.length,
-            errors.length > 0
-              ? (imported === 0 ? 'Failed' : 'Completed with Errors')
-              : 'Completed',
+            importStatus,
             summary
           ]
         );
@@ -2818,19 +2827,29 @@ class WeddingController {
       const storeBranch = selectedLoc ? selectedLoc.location_name : 'Selected Branch';
 
       return successRes(res, {
+        importId,
         importedCount: imported,
+        imported,
         duplicateCount: duplicates,
+        duplicates,
         errorCount: errors.length,
+        failed: errors.length,
         warningCount: warnings.length,
         totalRows: objects.length,
         processingTimeMs,
         processingTime,
         storeBranch,
+        store: storeBranch,
         fileName: req.file.originalname,
+        filename: req.file.originalname,
+        status: importStatus,
+        uploadedAt: serverTimestamp,
+        uploaded_at: serverTimestamp,
+        createdAt: serverTimestamp,
+        created_at: serverTimestamp,
         insertedCodes: inserted.slice(0, 100),
         errors: errors.sort((a, b) => (a.row || 0) - (b.row || 0)),
         warnings: warnings.sort((a, b) => (a.row || 0) - (b.row || 0)),
-        importId,
         summary
       }, summary);
     } catch (err) {

@@ -23,9 +23,19 @@ const pool = mysql.createPool({
   queueLimit: 100,        // bounded queue: shed excess load instead of exhausting memory
   ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false' } : undefined,
   dateStrings: true,
+  timezone: '+05:30',
   connectTimeout: 5000,  // 5s max per connection attempt (was 10s - too slow for Passenger timeout)
   enableKeepAlive: true, // Keep connections alive to prevent stale connection 503s
   keepAliveInitialDelay: 0
+});
+
+// Enforce Indian Standard Time (IST / UTC+5:30) on every connection in the pool
+pool.on('connection', (conn) => {
+  conn.query("SET time_zone = '+05:30'", (err) => {
+    if (err) {
+      console.warn('[MySQL DB] Warning: Failed to set session time_zone to +05:30:', err.message);
+    }
+  });
 });
 
 // Verify connection at startup (non-blocking - NEVER blocks the app from starting)

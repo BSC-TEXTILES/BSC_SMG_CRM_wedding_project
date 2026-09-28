@@ -58,12 +58,14 @@ router.get('/export-customers-csv', weddingController.exportCustomersCsv);
 router.get('/export-csv', weddingController.exportCustomersCsv);
 
 // ── Bulk CSV / Excel Import (authenticated + wedding_crm add permission) ──
-router.post('/import-csv', canAddWedding, (req, res, next) => {
+const handleBulkImport = (req, res, next) => {
   bulkUpload.single('file')(req, res, (err) => {
     if (err) return errorRes(res, err.message || 'File upload failed', [], 400);
     return weddingController.importCsv(req, res, next);
   });
-});
+};
+router.post('/import-csv', canAddWedding, handleBulkImport);
+router.post('/import', canAddWedding, handleBulkImport);
 
 // ── Import Error Report (.xlsx) + Import History ──────────────
 router.post('/import-error-report', canViewWedding, weddingController.downloadErrorReport);
