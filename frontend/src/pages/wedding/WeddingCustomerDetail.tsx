@@ -482,12 +482,14 @@ export default function WeddingCustomerDetail() {
                   <span>Wedding & Shopping Information</span>
                 </div>
                 <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-[#6F5963]">Wedding Date:</span>
-                    <strong className="text-[#B76E79]">
-                      {customer.wedding_date ? new Date(customer.wedding_date).toLocaleDateString() : 'TBD'}
-                    </strong>
-                  </div>
+                  {customer.wedding_date ? (
+                    <div className="flex justify-between">
+                      <span className="text-[#6F5963]">Wedding Date:</span>
+                      <strong className="text-[#B76E79]">
+                        {new Date(customer.wedding_date).toLocaleDateString()}
+                      </strong>
+                    </div>
+                  ) : null}
                   <div className="flex justify-between">
                     <span className="text-[#6F5963]">Expected Shopping:</span>
                     <strong className="text-[#4A173A]">
@@ -502,10 +504,12 @@ export default function WeddingCustomerDetail() {
                     <span className="text-[#6F5963]">Budget Range:</span>
                     <strong className="text-[#198754]">{customer.budget || 'Not Decided'}</strong>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-[#6F5963]">Family Size:</span>
-                    <strong className="text-[#2B1722]">{customer.estimated_family_size || 2} members</strong>
-                  </div>
+                  {customer.estimated_family_size ? (
+                    <div className="flex justify-between">
+                      <span className="text-[#6F5963]">Family Size:</span>
+                      <strong className="text-[#2B1722]">{customer.estimated_family_size} members</strong>
+                    </div>
+                  ) : null}
                 </div>
               </div>
 

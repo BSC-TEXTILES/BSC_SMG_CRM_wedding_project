@@ -55,10 +55,8 @@ export default function WeddingCustomerCreate() {
     discovery_channel: 'Walkin Footfall',
 
     // Section 3: Wedding Details
-    wedding_date: '',
     expected_shopping_date: '',
     preferred_shopping_category: 'Pure Silk Sarees',
-    estimated_family_size: 2,
 
     // Section 4: Requirements
     customer_preferences: '',
@@ -175,13 +173,10 @@ export default function WeddingCustomerCreate() {
         alternate_mobile: form.alternate_mobile.trim() || undefined,
         email: form.email.trim() || undefined,
         location_id: Number(form.location_id),
-        wedding_date: form.wedding_date || undefined,
         expected_shopping_date:
           form.expected_shopping_date ||
-          form.wedding_date ||
           new Date().toISOString().slice(0, 10),
         preferred_shopping_category: form.preferred_shopping_category,
-        estimated_family_size: Number(form.estimated_family_size) || 1,
         budget: form.budget,
         lead_source: form.lead_source,
         priority: form.priority,
@@ -467,19 +462,7 @@ export default function WeddingCustomerCreate() {
                 </h3>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
-                <div>
-                  <label className="block font-semibold text-[#6F5963] mb-1">
-                    Wedding / Muhurtham Date
-                  </label>
-                  <input
-                    type="date"
-                    value={form.wedding_date}
-                    onChange={(e) => handleChange('wedding_date', e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-semibold text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
-                  />
-                </div>
-
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                 <div>
                   <label className="block font-semibold text-[#6F5963] mb-1">
                     Expected Shopping Date *
@@ -508,20 +491,6 @@ export default function WeddingCustomerCreate() {
                       </option>
                     ))}
                   </select>
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-[#6F5963] mb-1">
-                    Estimated Family Size
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="100"
-                    value={form.estimated_family_size}
-                    onChange={(e) => handleChange('estimated_family_size', e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-semibold text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
-                  />
                 </div>
               </div>
             </div>

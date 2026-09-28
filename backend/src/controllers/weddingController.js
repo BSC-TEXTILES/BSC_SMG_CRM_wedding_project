@@ -932,7 +932,9 @@ class WeddingController {
       const weddingDate = req.body.wedding_date || req.body.weddingDate || null;
       const expectedShoppingDate = req.body.expected_shopping_date || req.body.expectedShoppingDate;
       const preferredCategory = req.body.preferred_shopping_category || req.body.preferredShoppingCategory || (Array.isArray(req.body.shopping_categories) ? req.body.shopping_categories.join(', ') : req.body.shopping_categories) || 'General Wedding Shopping';
-      const estimatedFamilySize = parseInt(req.body.estimated_family_size || req.body.estimatedFamilySize || 1, 10);
+      const estimatedFamilySize = (req.body.estimated_family_size !== undefined && req.body.estimated_family_size !== null && req.body.estimated_family_size !== '')
+        ? parseInt(req.body.estimated_family_size, 10)
+        : (req.body.estimatedFamilySize !== undefined && req.body.estimatedFamilySize !== null && req.body.estimatedFamilySize !== '' ? parseInt(req.body.estimatedFamilySize, 10) : null);
       let assignedTelecaller = (req.body.assigned_telecaller || req.body.assignedTelecaller || '').trim() || null;
       let assignedTelecallerId = req.body.assigned_telecaller_id ? parseInt(req.body.assigned_telecaller_id, 10) : null;
       // follow_up_date: if not provided, default to 3 days from today
