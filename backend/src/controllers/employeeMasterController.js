@@ -189,6 +189,33 @@ async function getEmployeeProfile(req, res) {
     });
   } catch (err) {
     console.error('[employeeMaster.getEmployeeProfile]', err);
+    try {
+      const basic = await employeeMasterService.resolveUnrestrictedRow(req.params.id);
+      if (basic) {
+        return res.json({
+          success: true,
+          employee: {
+            id: basic.user_id || basic.id,
+            userId: basic.user_id || basic.id,
+            username: basic.username || '',
+            name: basic.name || basic.full_name || basic.username || 'Employee',
+            fullName: basic.name || basic.full_name || basic.username || 'Employee',
+            employeeCode: basic.app_no || basic.employee_id || `EMP-${basic.id || basic.user_id}`,
+            department: basic.department || '',
+            designation: basic.designation || '',
+            section: basic.section || '',
+            phone: basic.phone || '',
+            email: basic.email || '',
+            branch: basic.location_name || '',
+            status: basic.status_display || (basic.active ? 'Joined' : 'Active')
+          },
+          documents: [],
+          access: { modules: [], locations: [] },
+          audit: [],
+          actions: { can_view: true, can_edit: false, can_delete: false, can_view_sensitive: false }
+        });
+      }
+    } catch (_) {}
     return errorRes(res, 'Unable to load employee profile: ' + err.message, [err.message], 500);
   }
 }

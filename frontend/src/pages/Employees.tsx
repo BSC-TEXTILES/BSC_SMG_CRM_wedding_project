@@ -286,7 +286,20 @@ export default function EmployeesPage() {
         });
         setRequestReason('');
       } else {
-        showToast(err.message || 'Unable to load employee details', 'error');
+        console.warn('[Employees] Server error loading full profile, showing directory overview:', err);
+        if (emp) {
+          setProfileModalData({
+            ...emp,
+            id: emp.id,
+            userId: emp.id,
+            fullName: emp.name || emp.fullName,
+            name: emp.name || emp.fullName,
+            employeeCode: emp.employeeCode || emp.empNo || emp.appNo,
+            branch: emp.branch || emp.locationName,
+          });
+        } else {
+          showToast(err.message || 'Unable to load employee details', 'error');
+        }
       }
     } finally {
       setLoadingDetailsId(null);

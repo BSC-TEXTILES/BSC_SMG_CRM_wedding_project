@@ -67,9 +67,9 @@ export default function NotificationDrawer({ isOpen, onClose }: NotificationDraw
   return (
     <>
       <div className="fixed inset-0 z-50 flex justify-end">
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-md transition-all cursor-pointer" onClick={onClose} />
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-all cursor-pointer" onClick={onClose} />
 
-        <aside className="relative w-full max-w-md bg-card h-full shadow-2xl flex flex-col z-10 animate-fade-in border-l border-border">
+        <aside className="relative w-full max-w-md bg-card h-full max-h-[100dvh] shadow-2xl flex flex-col z-10 animate-fade-in border-l border-border">
           {/* Header */}
           <div className="p-4 sm:p-5 border-b border-accent/20 bg-primary text-white flex items-center justify-between">
             <div className="flex items-center gap-3">

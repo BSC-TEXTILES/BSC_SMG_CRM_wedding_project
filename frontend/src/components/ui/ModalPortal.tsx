@@ -22,6 +22,26 @@ export function unlockBodyScroll() {
   }
 }
 
+/**
+ * Safety valve: force-resets all body scroll locks.
+ * Call on route changes to prevent stale overflow:hidden from
+ * unmounted modals leaving the page stuck.
+ */
+export function forceResetBodyScroll() {
+  if (typeof document === 'undefined') return;
+  activeModalCount = 0;
+  document.body.style.overflow = '';
+  previousBodyOverflow = '';
+}
+
+// Safety: clear scroll lock on page unload to prevent stuck state
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', () => {
+    if (activeModalCount > 0) forceResetBodyScroll();
+  });
+}
+
+
 export interface ModalPortalProps {
   isOpen: boolean;
   onClose?: () => void;

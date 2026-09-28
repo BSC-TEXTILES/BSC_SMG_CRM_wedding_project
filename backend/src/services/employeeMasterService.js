@@ -288,10 +288,19 @@ const AVATAR_COLORS = ['navy', 'gold', 'green', 'red', 'purple', 'teal'];
 
 function formatDate(value) {
   if (!value) return '';
-  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value)) return value.slice(0, 10);
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (trimmed.startsWith('0000-00-00') || trimmed === '0000-00-00') return '';
+    if (/^\d{4}-\d{2}-\d{2}/.test(trimmed)) {
+      const year = parseInt(trimmed.slice(0, 4), 10);
+      if (year < 1900 || year > 2100) return '';
+      return trimmed.slice(0, 10);
+    }
+  }
   const dt = new Date(value);
   if (isNaN(dt.getTime())) return '';
   const yyyy = dt.getFullYear();
+  if (yyyy < 1900 || yyyy > 2100) return '';
   const mm = String(dt.getMonth() + 1).padStart(2, '0');
   const dd = String(dt.getDate()).padStart(2, '0');
   return `${yyyy}-${mm}-${dd}`;
@@ -300,38 +309,56 @@ function formatDate(value) {
 function displayDate(value) {
   const iso = formatDate(value);
   if (!iso) return '';
-  const dt = new Date(`${iso}T00:00:00`);
-  if (isNaN(dt.getTime())) return iso;
-  return dt.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  try {
+    const dt = new Date(`${iso}T00:00:00`);
+    if (isNaN(dt.getTime())) return iso;
+    return dt.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  } catch (_) {
+    return iso;
+  }
 }
 
 function computeAge(dob) {
   const iso = formatDate(dob);
   if (!iso) return '';
-  const birth = new Date(`${iso}T00:00:00`);
-  if (isNaN(birth.getTime())) return '';
-  const now = new Date();
-  let age = now.getFullYear() - birth.getFullYear();
-  const m = now.getMonth() - birth.getMonth();
-  if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) age--;
-  return age >= 0 && age < 130 ? String(age) : '';
+  try {
+    const birth = new Date(`${iso}T00:00:00`);
+    if (isNaN(birth.getTime())) return '';
+    const now = new Date();
+    let age = now.getFullYear() - birth.getFullYear();
+    const m = now.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) age--;
+    return age >= 0 && age < 130 ? String(age) : '';
+  } catch (_) {
+    return '';
+  }
 }
 
 function mapEmployeeRow(r, { sensitive = false } = {}) {
-  const name = r.name || '';
+  const name = String(r.name || r.full_name || r.username || '').trim();
   const initials = name
-    ? name.split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase()
+    ? name.split(' ').filter(Boolean).slice(0, 2).map(w => w[0] || '').join('').toUpperCase() || 'E'
     : 'E';
-  const colorIndex = ((name ? name.charCodeAt(0) : 0) + (name && name[1] ? name.charCodeAt(1) : 0)) % AVATAR_COLORS.length;
+  const colorIndex = Math.abs(((name ? name.charCodeAt(0) : 0) + (name && name[1] ? name.charCodeAt(1) : 0))) % (AVATAR_COLORS.length || 1);
 
-  const createdDate = new Date(r.created_at || Date.now());
-  const offerUpdatedAt = r.offer_updated_at ? new Date(r.offer_updated_at) : null;
-  const joiningDateObj = r.joining_date
-    ? new Date(r.joining_date)
-    : (r.offer_actual_doj ? new Date(r.offer_actual_doj)
-      : (r.offered_doj ? new Date(r.offered_doj)
-        : (offerUpdatedAt && !isNaN(offerUpdatedAt.getTime()) ? offerUpdatedAt : createdDate)));
-  if (isNaN(joiningDateObj.getTime())) joiningDateObj.setTime(createdDate.getTime());
+  const createdDate = (!r.created_at || isNaN(new Date(r.created_at).getTime())) ? new Date() : new Date(r.created_at);
+  const offerUpdatedAt = r.offer_updated_at && !isNaN(new Date(r.offer_updated_at).getTime()) ? new Date(r.offer_updated_at) : null;
+  
+  let joiningDateObj = null;
+  if (r.joining_date && !isNaN(new Date(r.joining_date).getTime())) {
+    joiningDateObj = new Date(r.joining_date);
+  } else if (r.offer_actual_doj && !isNaN(new Date(r.offer_actual_doj).getTime())) {
+    joiningDateObj = new Date(r.offer_actual_doj);
+  } else if (r.offered_doj && !isNaN(new Date(r.offered_doj).getTime())) {
+    joiningDateObj = new Date(r.offered_doj);
+  } else if (offerUpdatedAt) {
+    joiningDateObj = offerUpdatedAt;
+  } else {
+    joiningDateObj = createdDate;
+  }
+  if (!joiningDateObj || isNaN(joiningDateObj.getTime())) {
+    joiningDateObj = new Date();
+  }
 
   const dob = formatDate(r.dob);
   const actualDojStr = formatDate(
@@ -365,7 +392,12 @@ function mapEmployeeRow(r, { sensitive = false } = {}) {
     active: !!r.active,
     accountStatus: r.active ? 'Active' : 'Inactive',
     lastLoginAt: sensitive ? (r.last_login_at || null) : null,
-    lastLogin: sensitive && r.last_login_at ? new Date(r.last_login_at).toLocaleString('en-IN') : '',
+    lastLogin: sensitive && r.last_login_at ? (() => {
+      try {
+        const d = new Date(r.last_login_at);
+        return isNaN(d.getTime()) ? '' : d.toLocaleString('en-IN');
+      } catch (_) { return ''; }
+    })() : '',
     name,
     fullName: name,
     initials,
@@ -409,10 +441,14 @@ function mapEmployeeRow(r, { sensitive = false } = {}) {
       try {
         if (!r.languages_known) return [];
         if (Array.isArray(r.languages_known)) return r.languages_known;
-        if (typeof r.languages_known !== 'string') return [r.languages_known];
-        if (r.languages_known.startsWith('[')) return JSON.parse(r.languages_known);
-        return r.languages_known.split(',').map(s => s.trim()).filter(Boolean);
-      } catch { return [r.languages_known]; }
+        if (typeof r.languages_known !== 'string') return [String(r.languages_known)];
+        const trimmed = r.languages_known.trim();
+        if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+          const parsed = JSON.parse(trimmed);
+          if (Array.isArray(parsed)) return parsed;
+        }
+        return trimmed.split(',').map(s => s.trim()).filter(Boolean);
+      } catch { return [String(r.languages_known)]; }
     })() : [],
     photoUrl: r.photo_url || '',
     aadhaarUrl: sensitive ? (r.aadhaar_url || '') : '',
@@ -433,7 +469,13 @@ function mapEmployeeRow(r, { sensitive = false } = {}) {
     locationName: r.location_name || '',
     createdAt: r.created_at || null,
     rawDate: joiningDateObj.getTime(),
-    date: joiningDateObj.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
+    date: (() => {
+      try {
+        return joiningDateObj.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+      } catch (_) {
+        return '';
+      }
+    })(),
 
     // ── Employee Master Directory extensions ──────────────────────────
     alternatePhone: sensitive ? (r.alternate_phone || '') : '',
@@ -739,25 +781,30 @@ async function resolveEmployeeRecord(req, identifier) {
   const value = String(identifier ?? '').trim();
   if (!value) return null;
 
-  const isNumeric = /^\d+$/.test(value);
-  const { select, from, locParams } = await buildEmployeeQuery(req, { includeInactive: true });
+  try {
+    const isNumeric = /^\d+$/.test(value);
+    const { select, from, locParams } = await buildEmployeeQuery(req, { includeInactive: true });
 
-  const match = isNumeric
-    ? 'u.id = ?'
-    : '(LOWER(u.username) = ? OR LOWER(u.employee_id) = ? OR LOWER(u.candidate_app_no) = ? OR LOWER(c.app_no) = ? OR LOWER(u.email) = ?)';
+    const match = isNumeric
+      ? 'u.id = ?'
+      : '(LOWER(u.username) = ? OR LOWER(u.employee_id) = ? OR LOWER(u.candidate_app_no) = ? OR LOWER(c.app_no) = ? OR LOWER(u.email) = ?)';
 
-  const matchParams = isNumeric
-    ? [Number(value)]
-    : [value.toLowerCase(), value.toLowerCase(), value.toLowerCase(), value.toLowerCase(), value.toLowerCase()];
+    const matchParams = isNumeric
+      ? [Number(value)]
+      : [value.toLowerCase(), value.toLowerCase(), value.toLowerCase(), value.toLowerCase(), value.toLowerCase()];
 
-  const [rows] = await pool.query(
-    `${select} ${from} AND ${match} LIMIT 5`,
-    [...locParams, ...matchParams]
-  );
+    const [rows] = await pool.query(
+      `${select} ${from} AND ${match} LIMIT 5`,
+      [...locParams, ...matchParams]
+    );
 
-  const deduped = dedupeRows(rows);
-  if (!deduped.length) return null;
-  return deduped[0];
+    const deduped = dedupeRows(rows);
+    if (deduped.length) return deduped[0];
+  } catch (err) {
+    console.warn('[EmployeeMaster] resolveEmployeeRecord query fallback:', err.message);
+  }
+
+  return resolveUnrestrictedRow(identifier);
 }
 
 /**
@@ -767,83 +814,109 @@ async function resolveEmployeeRecord(req, identifier) {
  * restricted user can never probe for employees in other stores.
  */
 async function getEmployeeProfile(req, identifier) {
-  const actions = await resolveEmployeeActions(req.user);
-  if (!actions.can_view) return { forbidden: true };
+  try {
+    const actions = await resolveEmployeeActions(req.user);
+    if (!actions.can_view) return { forbidden: true };
 
-  let row = await resolveEmployeeRecord(req, identifier);
-  let isUnrestricted = false;
-  if (!row) {
-    row = await resolveUnrestrictedRow(identifier);
-    if (!row) return { notFound: true };
-    isUnrestricted = true;
-  }
+    let row = await resolveEmployeeRecord(req, identifier);
+    let isUnrestricted = false;
+    if (!row) {
+      row = await resolveUnrestrictedRow(identifier);
+      if (!row) return { notFound: true };
+      isUnrestricted = true;
+    }
 
-  const inScope = isUnrestricted ? false : await assertLocationScope(req, row.location_id);
-  const isAdmin = ADMIN_ROLES.includes(req.user?.role) || req.user?.isGlobalAdmin;
-  const isApproved = await hasApprovedAccessRequest(req.user?.id, row.user_id);
+    const inScope = isUnrestricted ? false : await assertLocationScope(req, row.location_id);
+    const isAdmin = ADMIN_ROLES.includes(req.user?.role) || req.user?.isGlobalAdmin;
+    const isApproved = await hasApprovedAccessRequest(req.user?.id, row.user_id || row.id);
 
-  if (!isAdmin && !isApproved) {
-    // Record unauthorized access attempt in security audit log
+    if (!isAdmin && !isApproved) {
+      // Record unauthorized access attempt in security audit log
+      try {
+        await pool.query(
+          `INSERT INTO audit_logs (username, user_id, action, module, details, ip_address)
+           VALUES (?, ?, 'UNAUTHORIZED_EMPLOYEE_VIEW_ATTEMPT', 'Employee Master', ?, ?)`,
+          [
+            req.user?.username || 'unknown',
+            req.user?.id || 0,
+            `Denied unauthorized view attempt on confidential employee profile #${row.user_id || row.id} (${row.name}) by role ${req.user?.role}`,
+            req.ip || ''
+          ]
+        );
+      } catch (err) {}
+
+      // Check if an access request already exists for this user and employee
+      let existingRequest = null;
+      try {
+        const [reqRows] = await pool.query(
+          `SELECT id, status, created_at, reason FROM employee_access_requests
+           WHERE user_id = ? AND employee_id = ? ORDER BY id DESC LIMIT 1`,
+          [req.user?.id, row.user_id || row.id]
+        );
+        if (reqRows && reqRows.length > 0) {
+          existingRequest = reqRows[0];
+        }
+      } catch (e) {}
+
+      return {
+        forbidden: true,
+        accessDenied: true,
+        existingRequest,
+        employeeSummary: {
+          id: row.user_id || row.id,
+          name: row.name || row.username || 'Employee',
+          full_name: row.name || row.username || 'Employee',
+          employee_code: row.app_no || row.employee_id || '',
+          department: row.department || '',
+          designation: row.designation || '',
+          section: row.section || '',
+          status: row.status_display || (row.active ? 'Joined' : 'Deactivated'),
+          locationName: row.location_name || '',
+          locationCode: row.location_code || ''
+        }
+      };
+    }
+
+    let profile;
     try {
-      await pool.query(
-        `INSERT INTO audit_logs (username, user_id, action, module, details, ip_address)
-         VALUES (?, ?, 'UNAUTHORIZED_EMPLOYEE_VIEW_ATTEMPT', 'Employee Master', ?, ?)`,
-        [
-          req.user?.username || 'unknown',
-          req.user?.id || 0,
-          `Denied unauthorized view attempt on confidential employee profile #${row.user_id} (${row.name}) by role ${req.user?.role}`,
-          req.ip || ''
-        ]
-      );
-    } catch (err) {}
-
-    // Check if an access request already exists for this user and employee
-    let existingRequest = null;
-    try {
-      const [reqRows] = await pool.query(
-        `SELECT id, status, created_at, reason FROM employee_access_requests
-         WHERE user_id = ? AND employee_id = ? ORDER BY id DESC LIMIT 1`,
-        [req.user?.id, row.user_id]
-      );
-      if (reqRows && reqRows.length > 0) {
-        existingRequest = reqRows[0];
-      }
-    } catch (e) {}
-
-    return {
-      forbidden: true,
-      accessDenied: true,
-      existingRequest,
-      employeeSummary: {
-        id: row.user_id,
-        name: row.name || row.username || 'Employee',
-        full_name: row.name || row.username || 'Employee',
-        employee_code: row.app_no || row.employee_id || '',
+      profile = mapEmployeeRow(row, { sensitive: true });
+    } catch (mapErr) {
+      console.warn('[EmployeeMaster] mapEmployeeRow fallback:', mapErr.message);
+      profile = {
+        id: row.user_id || row.id,
+        userId: row.user_id || row.id,
+        username: row.username || '',
+        name: row.name || row.full_name || row.username || 'Employee',
+        fullName: row.name || row.full_name || row.username || 'Employee',
+        employeeCode: row.app_no || row.employee_id || `EMP-${row.id || row.user_id}`,
+        empNo: row.emp_no || row.employee_id || '',
         department: row.department || '',
         designation: row.designation || '',
         section: row.section || '',
-        status: row.status_display || (row.active ? 'Joined' : 'Deactivated'),
-        locationName: row.location_name || '',
-        locationCode: row.location_code || ''
-      }
+        phone: row.phone || '',
+        email: row.email || '',
+        branch: row.location_name || row.branch || '',
+        status: row.status_display || (row.active ? 'Joined' : 'Active')
+      };
+    }
+
+    const [documents, permissions, audit] = await Promise.all([
+      listDocuments(row.user_id || row.id).catch(() => []),
+      loadAssignedAccess(row.user_id || row.id).catch(() => ({ modules: [], locations: [] })),
+      loadAuditTrail(row.user_id || row.id, row.username, req.user).catch(() => [])
+    ]);
+
+    return {
+      employee: profile,
+      documents: documents || [],
+      access: permissions || { modules: [], locations: [] },
+      audit: audit || [],
+      actions: { ...actions, can_edit: isAdmin, can_delete: isAdmin, can_view_sensitive: true }
     };
+  } catch (err) {
+    console.error('[EmployeeMaster.getEmployeeProfile] error:', err);
+    throw err;
   }
-
-  const profile = mapEmployeeRow(row, { sensitive: true });
-
-  const [documents, permissions, audit] = await Promise.all([
-    listDocuments(row.user_id),
-    loadAssignedAccess(row.user_id),
-    loadAuditTrail(row.user_id, row.username, req.user)
-  ]);
-
-  return {
-    employee: profile,
-    documents,
-    access: permissions,
-    audit,
-    actions: { ...actions, can_edit: isAdmin, can_delete: isAdmin, can_view_sensitive: true }
-  };
 }
 
 async function resolveUnrestrictedRow(identifier) {
@@ -855,6 +928,7 @@ async function resolveUnrestrictedRow(identifier) {
       `SELECT u.id as user_id, u.id, u.username, u.full_name as name, u.email, u.phone,
               u.department, u.designation, u.section, u.active, u.location_id,
               u.employee_id as emp_no, COALESCE(u.candidate_app_no, u.employee_id, u.username) as app_no,
+              u.joining_date, u.created_at, u.salary,
               l.location_name, l.location_code
        FROM users u
        LEFT JOIN locations l ON l.id = u.location_id
@@ -862,8 +936,23 @@ async function resolveUnrestrictedRow(identifier) {
        LIMIT 1`,
       isNumeric ? [Number(value)] : [value.toLowerCase(), value.toLowerCase(), value.toLowerCase()]
     );
-    return rows && rows.length ? rows[0] : null;
+    if (rows && rows.length) return rows[0];
+
+    // Fallback: check employees table if not found in users!
+    const [empRows] = await pool.query(
+      `SELECT e.id as user_id, e.id, e.name, e.name as username, e.email, e.phone,
+              e.department, e.designation, e.section, 1 as active,
+              COALESCE(e.app_no, e.employee_id, CONCAT('EMP-', e.id)) as app_no,
+              e.employee_id as emp_no, e.branch as location_name, e.branch as location_code,
+              e.joining_date, e.salary, e.status as status_display, e.created_at
+       FROM employees e
+       WHERE ${isNumeric ? 'e.id = ?' : 'LOWER(e.employee_id) = ? OR LOWER(e.email) = ? OR LOWER(e.name) = ?'}
+       LIMIT 1`,
+      isNumeric ? [Number(value)] : [value.toLowerCase(), value.toLowerCase(), value.toLowerCase()]
+    );
+    return empRows && empRows.length ? empRows[0] : null;
   } catch (err) {
+    console.warn('[EmployeeMaster] resolveUnrestrictedRow lookup warning:', err.message);
     return null;
   }
 }

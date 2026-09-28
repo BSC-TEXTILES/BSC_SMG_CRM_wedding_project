@@ -1,5 +1,6 @@
 import React, { Suspense, lazy, useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { forceResetBodyScroll } from './components/ui/ModalPortal';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createQueryClient, useRealtimeInvalidation } from './hooks/useApi';
 
@@ -102,6 +103,25 @@ function UrlGuardMonitor() {
   return null;
 }
 
+/**
+ * RouteChangeCleanup — Force-resets stale overlay state on route change.
+ * Prevents body scroll lock, stuck blur classes, and sidebar-open state
+ * from persisting when the user navigates away from a page with an open modal.
+ */
+function RouteChangeCleanup() {
+  const location = useLocation();
+  useEffect(() => {
+    // Force-reset body scroll lock on route change
+    forceResetBodyScroll();
+    // Clear any stale sidebar-open class
+    document.body.classList.remove('sidebar-open');
+    // Clear any stale inline filter/blur on body
+    document.body.style.filter = '';
+    (document.body.style as any).webkitFilter = '';
+  }, [location.pathname]);
+  return null;
+}
+
 /** Renders ChatWidget for all users */
 function AuthChatWidget() {
   return <ChatWidget />;
@@ -129,6 +149,7 @@ export default function App() {
       <ConnectivityBanner />
       <UserTracker />
       <UrlGuardMonitor />
+      <RouteChangeCleanup />
       <ConsentGuard>
       <RealtimeInvalidationSetup />
       <Suspense fallback={<RouteSuspenseFallback />}>

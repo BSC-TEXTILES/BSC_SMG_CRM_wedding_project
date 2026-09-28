@@ -48,7 +48,7 @@ export default function DashboardLayout({
   }, [navigate]);
 
   return (
-    <div className="min-h-screen bg-[#FFF7F2] flex relative select-text w-full overflow-x-hidden">
+    <div className="min-h-screen min-h-[100dvh] bg-[#FFF7F2] flex relative select-text w-full overflow-x-hidden">
       <ToastContainer />
 
       <Sidebar session={session} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />

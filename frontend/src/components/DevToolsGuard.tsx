@@ -148,9 +148,9 @@ export default function DevToolsGuard() {
       role="alertdialog"
       aria-modal="true"
       aria-labelledby="devtools-guard-title"
-      className="fixed inset-0 z-[99999] flex items-center justify-center bg-primary/95 backdrop-blur-2xl px-4 animate-fade-in select-none"
+      className="fixed inset-0 z-[99999] flex items-center justify-center bg-primary/95 backdrop-blur-sm px-4 animate-fade-in select-none"
     >
-      <div className="max-w-md w-full text-center p-6 rounded-3xl bg-black/5 border border-black/10 shadow-2xl backdrop-blur-md">
+      <div className="max-w-md w-full text-center p-6 rounded-3xl bg-black/5 border border-black/10 shadow-2xl">
         <div className="mx-auto w-20 h-20 rounded-2xl bg-[#C0392B]/15 border border-[#C0392B]/40 flex items-center justify-center mb-6 shadow-2xl">
           <XOctagon className="w-10 h-10 text-[#E57373]" strokeWidth={1.75} />
         </div>

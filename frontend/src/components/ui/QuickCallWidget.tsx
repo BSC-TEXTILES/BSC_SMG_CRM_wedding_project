@@ -28,6 +28,11 @@ interface ContactItem {
 }
 
 export default function QuickCallWidget() {
+  // Call option removed as requested
+  return null;
+}
+
+function _DisabledQuickCallWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'dial' | 'history'>('dial');
   const [searchQuery, setSearchQuery] = useState('');

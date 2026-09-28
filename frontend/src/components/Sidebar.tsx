@@ -215,7 +215,7 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
       {/* Mobile Backdrop */}
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-[#351027]/60 backdrop-blur-xs z-40 lg:hidden transition-opacity"
+          className="fixed inset-0 bg-[#351027]/60 z-40 lg:hidden transition-opacity"
           onClick={onClose}
           aria-hidden="true"
         />
