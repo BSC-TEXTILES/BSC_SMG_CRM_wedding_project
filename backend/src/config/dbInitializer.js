@@ -98,6 +98,91 @@ async function autoInitializeDatabase() {
       }
     } catch (_uErr) {}
 
+    // ─── Employee Master Directory: extend the master `users` record ───
+    // `users` stays the single source of truth for every employee. These
+    // columns only add the structured HR master fields the directory shows;
+    // no existing column, index or login contract is touched.
+    try {
+      const [empCols] = await pool.query('DESCRIBE users');
+      const have = new Set(empCols.map(c => c.Field));
+      const employeeMasterColumns = [
+        ['alternate_phone', 'VARCHAR(20) NULL'],
+        ['company_email', 'VARCHAR(150) NULL'],
+        ['permanent_address', 'TEXT NULL'],
+        ['city', 'VARCHAR(100) NULL'],
+        ['district', 'VARCHAR(100) NULL'],
+        ['state', 'VARCHAR(100) NULL'],
+        ['pincode', 'VARCHAR(10) NULL'],
+        ['emergency_contact_name', 'VARCHAR(150) NULL'],
+        ['emergency_contact_phone', 'VARCHAR(20) NULL'],
+        ['emergency_contact_relation', 'VARCHAR(60) NULL'],
+        ['employment_type', 'VARCHAR(50) NULL'],
+        ['floor', 'VARCHAR(100) NULL'],
+        ['confirmation_date', 'DATE NULL'],
+        ['work_shift', 'VARCHAR(100) NULL'],
+        ['employment_status', 'VARCHAR(50) NULL DEFAULT \'Active\''],
+        ['pan_number', 'VARCHAR(20) NULL'],
+        ['bank_name', 'VARCHAR(100) NULL'],
+        ['bank_account_number', 'VARCHAR(50) NULL'],
+        ['ifsc_code', 'VARCHAR(20) NULL'],
+        ['created_by', 'VARCHAR(150) NULL'],
+        ['updated_by', 'VARCHAR(150) NULL']
+      ];
+      for (const [name, definition] of employeeMasterColumns) {
+        if (!have.has(name)) {
+          await pool.query(`ALTER TABLE users ADD COLUMN \`${name}\` ${definition}`);
+        }
+      }
+
+      const employeeMasterIndexes = [
+        ['idx_users_department', 'department'],
+        ['idx_users_designation', 'designation'],
+        ['idx_users_location', 'location_id'],
+        ['idx_users_employment_status', 'employment_status'],
+        ['idx_users_joining', 'joining_date']
+      ];
+      const [idxRows] = await pool.query('SHOW INDEX FROM users');
+      const existingIndexes = new Set(idxRows.map(r => r.Key_name));
+      for (const [indexName, column] of employeeMasterIndexes) {
+        if (!existingIndexes.has(indexName)) {
+          try {
+            await pool.query(`ALTER TABLE users ADD INDEX \`${indexName}\` (\`${column}\`)`);
+          } catch (_idxErr) { /* index may already exist concurrently */ }
+        }
+      }
+    } catch (_empErr) {
+      console.warn('[Auto DB Initializer] Employee master column migration skipped:', _empErr.message);
+    }
+
+    // ─── Employee Documents (permission-protected HR files) ────────────
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS \`employee_documents\` (
+        \`id\` INT AUTO_INCREMENT PRIMARY KEY,
+        \`user_id\` INT NOT NULL,
+        \`document_type\` VARCHAR(60) NOT NULL,
+        \`file_name\` VARCHAR(255) NOT NULL,
+        \`file_path\` TEXT NOT NULL,
+        \`file_size\` INT NOT NULL DEFAULT 0,
+        \`file_ext\` VARCHAR(20) NULL,
+        \`mime_type\` VARCHAR(120) NULL,
+        \`uploaded_by\` VARCHAR(150) NULL,
+        \`status\` VARCHAR(50) DEFAULT 'Active',
+        \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        \`updated_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        \`deleted_at\` TIMESTAMP NULL,
+        INDEX \`idx_employee_documents_user\` (\`user_id\`),
+        INDEX \`idx_employee_documents_type\` (\`document_type\`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    try {
+      await pool.query("ALTER TABLE `employee_documents` ADD COLUMN IF NOT EXISTS `status` VARCHAR(50) DEFAULT 'Active'");
+      await pool.query("ALTER TABLE `users` ADD COLUMN IF NOT EXISTS `photo_url` TEXT NULL");
+      await pool.query("ALTER TABLE `candidates` ADD COLUMN IF NOT EXISTS `photo_url` TEXT NULL");
+    } catch (_colErr) {
+      /* Column already exists */
+    }
+
     // ─── Email Verification Tokens ────────────────────────────────────
     await pool.query(`
       CREATE TABLE IF NOT EXISTS \`email_verification_tokens\` (
@@ -514,8 +599,33 @@ async function autoInitializeDatabase() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 
+    // ─── VM Checklist Photos (Store Inspection Photo Management) ──────
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS \`vm_checklist_photos\` (
+        \`id\` VARCHAR(64) PRIMARY KEY,
+        \`submission_id\` VARCHAR(64) NULL,
+        \`location_id\` INT NOT NULL DEFAULT 2,
+        \`location_name\` VARCHAR(100) NULL,
+        \`floor\` VARCHAR(100) NOT NULL,
+        \`section\` VARCHAR(100) NOT NULL,
+        \`point_id\` VARCHAR(64) NULL,
+        \`file_name\` VARCHAR(255) NOT NULL,
+        \`file_path\` TEXT NOT NULL,
+        \`file_size\` INT NOT NULL DEFAULT 0,
+        \`mime_type\` VARCHAR(120) NULL,
+        \`uploaded_by\` VARCHAR(150) NULL,
+        \`status\` VARCHAR(50) DEFAULT 'Active',
+        \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        \`deleted_at\` TIMESTAMP NULL,
+        INDEX \`idx_vm_photos_loc\` (\`location_id\`),
+        INDEX \`idx_vm_photos_sub\` (\`submission_id\`),
+        INDEX \`idx_vm_photos_floor_sec\` (\`floor\`, \`section\`),
+        INDEX \`idx_vm_photos_created\` (\`created_at\`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
     console.log('[Auto DB Initializer] DATABASE FULLY INITIALIZED!');
-    console.log('[Auto DB Initializer] Total Active Tables: 129+');
+    console.log('[Auto DB Initializer] Total Active Tables: 130+');
 
   } catch (err) {
     console.error('[Auto DB Initializer] Error:', err.message);

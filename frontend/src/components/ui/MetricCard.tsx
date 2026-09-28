@@ -23,13 +23,13 @@ export default function MetricCard({
   onClick
 }: MetricCardProps) {
   const colorStyles = {
-    navy: { iconBg: 'bg-primary/10 text-primary', border: 'border-l-4 border-l-primary' },
-    gold: { iconBg: 'bg-accent/15 text-accent-dark', border: 'border-l-4 border-l-accent' },
-    emerald: { iconBg: 'bg-status-success/10 text-status-success', border: 'border-l-4 border-l-status-success' },
-    teal: { iconBg: 'bg-status-success/10 text-status-success', border: 'border-l-4 border-l-status-success' },
-    amber: { iconBg: 'bg-status-warning/10 text-status-warning', border: 'border-l-4 border-l-status-warning' },
-    indigo: { iconBg: 'bg-status-info/10 text-status-info', border: 'border-l-4 border-l-status-info' },
-    rose: { iconBg: 'bg-status-danger/10 text-status-danger', border: 'border-l-4 border-l-status-danger' }
+    navy: { iconBg: 'bg-[#4A173A]/10 text-[#4A173A]', border: 'border-l-4 border-l-[#4A173A]' },
+    gold: { iconBg: 'bg-[#B76E79]/15 text-[#B76E79]', border: 'border-l-4 border-l-[#B76E79]' },
+    emerald: { iconBg: 'bg-[#E8F5EE] text-[#198754]', border: 'border-l-4 border-l-[#198754]' },
+    teal: { iconBg: 'bg-[#E8F5EE] text-[#198754]', border: 'border-l-4 border-l-[#198754]' },
+    amber: { iconBg: 'bg-[#FFF4D6] text-[#C58A18]', border: 'border-l-4 border-l-[#C58A18]' },
+    indigo: { iconBg: 'bg-[#EAF1FA] text-[#356AE6]', border: 'border-l-4 border-l-[#356AE6]' },
+    rose: { iconBg: 'bg-[#FDE8E7] text-[#B42318]', border: 'border-l-4 border-l-[#B42318]' }
   };
 
   const style = colorStyles[color] || colorStyles.navy;
@@ -38,16 +38,16 @@ export default function MetricCard({
     <div
       onClick={onClick}
       className={`
-        card-glass card-glass-hover p-4 sm:p-5 flex flex-col justify-between transition-all duration-200 border border-[#DFDDD7] bg-white rounded-2xl h-full min-w-0
+        card-glass card-glass-hover p-4 sm:p-5 flex flex-col justify-between transition-all duration-200 border border-[#E8D9D4] bg-[#FFFDFC] rounded-2xl h-full min-w-0 shadow-xs
         ${style.border} ${onClick ? 'cursor-pointer' : ''}
       `}
     >
       <div className="flex items-start justify-between gap-3 min-w-0">
         <div className="min-w-0 flex-1">
-          <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-[#687080] block mb-1 truncate">
+          <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-[#6F5963] block mb-1 truncate">
             {title}
           </span>
-          <div className="text-xl sm:text-2xl lg:text-3xl font-black text-[#182033] tracking-tight truncate">
+          <div className="text-xl sm:text-2xl lg:text-3xl font-black text-[#4A173A] tracking-tight truncate">
             {value}
           </div>
         </div>
@@ -58,8 +58,8 @@ export default function MetricCard({
       </div>
 
       {(subtext || trend) && (
-        <div className="mt-4 pt-3 border-t border-border/80 flex items-center justify-between text-xs">
-          {subtext && <span className="text-text-secondary font-medium">{subtext}</span>}
+        <div className="mt-4 pt-3 border-t border-[#EADBD7] flex items-center justify-between text-xs">
+          {subtext && <span className="text-[#6F5963] font-medium">{subtext}</span>}
           {trend && (
             <span className={`font-bold flex items-center gap-0.5 ${trendUp ? 'text-status-success' : 'text-status-warning'}`}>
               {trend}

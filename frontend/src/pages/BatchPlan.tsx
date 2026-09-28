@@ -238,7 +238,7 @@ export default function BatchPlan() {
       <ToastContainer />
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} session={session} />
 
-      <div className={`flex-1 flex flex-col min-w-0 overflow-y-auto transition-all duration-300 ${collapsed ? 'lg:pl-20' : 'lg:pl-64'}`}>
+      <div className={`flex-1 flex flex-col min-w-0 overflow-y-auto transition-all duration-300 ${collapsed ? 'lg:pl-[72px]' : 'lg:pl-64'}`}>
         <Topbar 
           title="Batch Plan & Weaving Operations" 
           session={session} 

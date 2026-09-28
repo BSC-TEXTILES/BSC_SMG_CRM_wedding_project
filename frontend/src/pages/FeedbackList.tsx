@@ -179,7 +179,7 @@ export default function FeedbackList() {
 
   return (
     <DashboardLayout title="Feedback Call Queue Desk" subtitle="Telecaller Resolution Workspace & Customer Issue Lifecycle Management">
-      <div className="w-full max-w-[1680px] mx-auto min-w-0 overflow-x-clip flex flex-col gap-4 sm:gap-5">
+      <div className="w-full min-w-0 flex flex-col gap-4 sm:gap-5">
 
         {/* Top Search + Filter Toolbar — search + status + time in one row on desktop */}
         <div className="card-glass p-3 sm:p-4">

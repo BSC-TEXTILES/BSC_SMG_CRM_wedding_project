@@ -19,7 +19,21 @@ import {
   MapPin,
   Trash2,
   TriangleAlert,
-  X
+  X,
+  Camera,
+  Image as ImageIcon,
+  ZoomIn,
+  ZoomOut,
+  Maximize2,
+  ChevronLeft,
+  Download,
+  Eye,
+  UploadCloud,
+  Calendar,
+  User,
+  Filter,
+  Layers,
+  FileText
 } from 'lucide-react';
 import { API, Auth } from '../services/api';
 import { showToast } from '../components/Toast';
@@ -88,6 +102,9 @@ export const DEFAULT_VM_QUESTIONS = [
 export default function VmChecklist() {
   const session = Auth.get();
   const isAdmin = !session || session.role === 'Admin' || session.role === 'Super Admin';
+  const isManager = Boolean(session && ['Manager', 'Store Manager', 'Floor Manager', 'VM'].includes(session.role));
+  const canManagePhotos = isAdmin || isManager;
+  const userLocation = session?.locationName || (session as any)?.store_location || '';
 
   // Floor & Section Hierarchy State
   const [floorsData, setFloorsData] = useState<Record<string, FloorItem>>(DEFAULT_VM_FLOORS);
@@ -126,9 +143,190 @@ export default function VmChecklist() {
   const [deletingFloor, setDeletingFloor] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
+  // Tab State
+  const [activeTab, setActiveTab] = useState<'audit' | 'gallery' | 'analytics'>('audit');
+
+  // VM Section Photo State
+  const [sectionPhotos, setSectionPhotos] = useState<any[]>([]);
+  const [stagedPhotoIds, setStagedPhotoIds] = useState<string[]>([]);
+  const [uploadingSectionPhotos, setUploadingSectionPhotos] = useState(false);
+
+  // VM Photo Gallery State
+  const [galleryPhotos, setGalleryPhotos] = useState<any[]>([]);
+  const [loadingGallery, setLoadingGallery] = useState(false);
+  const [photoFilterLocation, setPhotoFilterLocation] = useState<string>(
+    (!isAdmin && !isManager && userLocation) ? userLocation : 'All'
+  );
+  const [photoFilterFloor, setPhotoFilterFloor] = useState<string>('All');
+  const [photoFilterSection, setPhotoFilterSection] = useState<string>('All');
+  const [photoFilterDate, setPhotoFilterDate] = useState<string>('');
+  const [photoFilterInspector, setPhotoFilterInspector] = useState<string>('All');
+
+  // Lightbox Viewer State
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxPhotos, setLightboxPhotos] = useState<any[]>([]);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [lightboxZoom, setLightboxZoom] = useState(1);
+
+  // Photo Delete Confirmation State
+  const [photoToDelete, setPhotoToDelete] = useState<any | null>(null);
+  const [deletingPhoto, setDeletingPhoto] = useState(false);
+  const [isPhotoDeleteModalOpen, setIsPhotoDeleteModalOpen] = useState(false);
+
+  // Detailed Modal for Checklist Inspection
+  const [selectedSubmissionForModal, setSelectedSubmissionForModal] = useState<any | null>(null);
+
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    if (selectedFloor && selectedSection) {
+      loadSectionPhotos(selectedFloor, selectedSection);
+    } else {
+      setSectionPhotos([]);
+      setStagedPhotoIds([]);
+    }
+  }, [selectedFloor, selectedSection]);
+
+  const loadSectionPhotos = async (floor: string, section: string) => {
+    try {
+      const res = await API.getVmPhotos({ floor, section });
+      if (res && res.success && Array.isArray(res.photos)) {
+        setSectionPhotos(res.photos);
+      }
+    } catch (e) {
+      console.error('Error loading section photos:', e);
+    }
+  };
+
+  const fetchGalleryPhotos = async () => {
+    setLoadingGallery(true);
+    try {
+      const params: any = {};
+      if (photoFilterLocation !== 'All') params.location = photoFilterLocation;
+      if (photoFilterFloor !== 'All') params.floor = photoFilterFloor;
+      if (photoFilterSection !== 'All') params.section = photoFilterSection;
+      if (photoFilterDate) params.date = photoFilterDate;
+      if (photoFilterInspector !== 'All') params.inspector = photoFilterInspector;
+
+      const res = await API.getVmPhotos(params);
+      if (res && res.success && Array.isArray(res.photos)) {
+        setGalleryPhotos(res.photos);
+      }
+    } catch (e) {
+      console.error('Error loading VM photos gallery:', e);
+    } finally {
+      setLoadingGallery(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'gallery') {
+      fetchGalleryPhotos();
+    }
+  }, [activeTab, photoFilterLocation, photoFilterFloor, photoFilterSection, photoFilterDate, photoFilterInspector]);
+
+  const handleSectionPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    if (!selectedFloor || !selectedSection) {
+      showToast('Please select a floor and section first.', 'error');
+      return;
+    }
+
+    const validFiles: File[] = [];
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (!allowedTypes.includes(file.type)) {
+        showToast(`Invalid file type for ${file.name}. Only JPG, PNG, WEBP are supported.`, 'error');
+        continue;
+      }
+      if (file.size > 15 * 1024 * 1024) {
+        showToast(`File ${file.name} exceeds 15MB limit.`, 'error');
+        continue;
+      }
+      validFiles.push(file);
+    }
+
+    if (validFiles.length === 0) return;
+
+    setUploadingSectionPhotos(true);
+    try {
+      const locationName = userLocation || 'Shivamogga';
+      const locationId = session?.locationId || 1;
+      const res = await API.uploadVmPhotos(validFiles, {
+        floor: selectedFloor,
+        section: selectedSection,
+        location_name: locationName,
+        locationName: locationName,
+        locationId: locationId
+      });
+
+      if (res && res.success && Array.isArray(res.photos)) {
+        showToast(
+          res.photos.length === 1
+            ? 'Photo uploaded successfully'
+            : `${res.photos.length} photos uploaded successfully`,
+          'success'
+        );
+        setSectionPhotos((prev) => [...res.photos, ...prev]);
+        setStagedPhotoIds((prev) => [...prev, ...res.photos.map((p: any) => p.id)]);
+        fetchGalleryPhotos();
+      } else {
+        showToast(res?.message || 'Failed to upload photo', 'error');
+      }
+    } catch (err: any) {
+      console.error(err);
+      showToast('Error uploading section photo: ' + (err.message || 'Server error'), 'error');
+    } finally {
+      setUploadingSectionPhotos(false);
+      e.target.value = '';
+    }
+  };
+
+  const confirmDeletePhoto = async () => {
+    if (!photoToDelete || deletingPhoto) return;
+    setDeletingPhoto(true);
+    try {
+      const res = await API.deleteVmPhoto(photoToDelete.id);
+      if (res && res.success !== false) {
+        showToast('Photo deleted successfully', 'success');
+        setSectionPhotos((prev) => prev.filter((p) => p.id !== photoToDelete.id));
+        setGalleryPhotos((prev) => prev.filter((p) => p.id !== photoToDelete.id));
+        setStagedPhotoIds((prev) => prev.filter((id) => id !== photoToDelete.id));
+        if (lightboxOpen && lightboxPhotos.length > 0) {
+          const remaining = lightboxPhotos.filter((p) => p.id !== photoToDelete.id);
+          if (remaining.length === 0) {
+            setLightboxOpen(false);
+          } else {
+            setLightboxPhotos(remaining);
+            if (lightboxIndex >= remaining.length) {
+              setLightboxIndex(remaining.length - 1);
+            }
+          }
+        }
+        setIsPhotoDeleteModalOpen(false);
+        setPhotoToDelete(null);
+      } else {
+        showToast(res?.message || 'Failed to delete photo', 'error');
+      }
+    } catch (err: any) {
+      console.error(err);
+      showToast('Error deleting photo: ' + (err.message || 'Server error'), 'error');
+    } finally {
+      setDeletingPhoto(false);
+    }
+  };
+
+  const openLightbox = (photos: any[], startIndex = 0) => {
+    if (!photos || photos.length === 0) return;
+    setLightboxPhotos(photos);
+    setLightboxIndex(startIndex);
+    setLightboxZoom(1);
+    setLightboxOpen(true);
+  };
 
   const loadData = async () => {
     try {
@@ -325,7 +523,7 @@ export default function VmChecklist() {
     const auditorName = session?.fullName || session?.username || 'VM Inspector';
 
     try {
-      await API.submitVm({
+      const res = await API.submitVm({
         shift,
         floor: selectedFloor,
         section: selectedSection,
@@ -333,11 +531,22 @@ export default function VmChecklist() {
         submittedBy: auditorName,
         entries
       });
+
+      if (res && res.submissionId && stagedPhotoIds.length > 0) {
+        try {
+          await API.linkVmPhotos(res.submissionId, stagedPhotoIds);
+        } catch (linkErr) {
+          console.error('Failed to link photos to submission:', linkErr);
+        }
+      }
+
       showToast('Visual Merchandising Checklist submitted successfully.', 'success');
       setSubmittedMsg(
         `Visual Merchandising Checklist submitted successfully for ${selectedFloor} —  ${selectedSection}! Score: ${scorePercent.toFixed(0)}%`
       );
+      setStagedPhotoIds([]);
       loadData();
+      loadSectionPhotos(selectedFloor, selectedSection);
     } catch (err: any) {
       console.error(err);
       showToast('Unable to submit VM checklist: ' + (err.message || 'Server error'), 'error');
@@ -498,8 +707,58 @@ export default function VmChecklist() {
     >
       <div className="space-y-6">
         
-        {/* VIEW 1: FLOOR SELECTION (Initial State) */}
-        <div className="space-y-6 animate-fade-in">
+        {/* Navigation Tabs */}
+        <div className="flex items-center gap-2 border-b border-accent-soft/60 pb-3 flex-wrap">
+          <button
+            type="button"
+            onClick={() => setActiveTab('audit')}
+            className={`px-4 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer ${
+              activeTab === 'audit'
+                ? 'bg-primary text-white shadow-md shadow-primary/20'
+                : 'bg-white text-primary border border-accent-soft hover:bg-accent/10'
+            }`}
+          >
+            <ClipboardList className="w-4 h-4" />
+            <span>Audit & Inspection Checklist</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTab('gallery');
+              fetchGalleryPhotos();
+            }}
+            className={`px-4 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer ${
+              activeTab === 'gallery'
+                ? 'bg-primary text-white shadow-md shadow-primary/20'
+                : 'bg-white text-primary border border-accent-soft hover:bg-accent/10'
+            }`}
+          >
+            <Camera className="w-4 h-4 text-accent" />
+            <span>Store Photos Gallery</span>
+            {galleryPhotos.length > 0 && (
+              <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-accent/20 text-accent font-black">
+                {galleryPhotos.length}
+              </span>
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('analytics')}
+            className={`px-4 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer ${
+              activeTab === 'analytics'
+                ? 'bg-primary text-white shadow-md shadow-primary/20'
+                : 'bg-white text-primary border border-accent-soft hover:bg-accent/10'
+            }`}
+          >
+            <Sparkles className="w-4 h-4" />
+            <span>Analytics & Performance</span>
+          </button>
+        </div>
+
+        {activeTab === 'audit' && (
+          <div className="space-y-6">
+            {/* VIEW 1: FLOOR SELECTION (Initial State) */}
+            <div className="space-y-6 animate-fade-in">
             {/* Step 1 Header Banner */}
             <div className="card-glass p-6 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-gradient-to-r from-primary/5 via-accent/5 to-white border-2 border-accent/30 shadow-xs">
               <div className="flex items-center gap-3.5">
@@ -864,6 +1123,94 @@ export default function VmChecklist() {
               </div>
             </div>
 
+            {/* SECTION INSPECTION PHOTOS */}
+            <div className="card-glass p-5 sm:p-6 space-y-4 bg-white border-2 border-accent/30 shadow-xs">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-accent-soft/70">
+                <div>
+                  <h3 className="text-sm font-extrabold text-primary uppercase tracking-wider flex items-center gap-2">
+                    <Camera className="w-4 h-4 text-accent" />
+                    Section Inspection Photos — {selectedFloor} ({selectedSection})
+                  </h3>
+                  <p className="text-xs text-primary font-medium mt-0.5">
+                    Upload actual photos of the inspected section (entrance, main displays, racks, mannequins, folding). Supports JPG, PNG, WEBP up to 15MB.
+                  </p>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <label className="btn-gold text-xs py-2 px-4 font-extrabold flex items-center gap-1.5 cursor-pointer shadow-sm hover:opacity-90 active:scale-95 transition-all">
+                    <UploadCloud className="w-4 h-4" />
+                    <span>{uploadingSectionPhotos ? 'Uploading Photos…' : 'Upload Section Photo'}</span>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/jpg"
+                      multiple
+                      className="hidden"
+                      disabled={uploadingSectionPhotos}
+                      onChange={handleSectionPhotoUpload}
+                    />
+                  </label>
+                </div>
+              </div>
+
+              {/* Photos Grid */}
+              {sectionPhotos.length === 0 ? (
+                <div className="py-8 px-4 text-center border-2 border-dashed border-accent-soft rounded-2xl bg-background/50">
+                  <Camera className="w-10 h-10 text-primary/25 mx-auto mb-2" />
+                  <p className="text-xs font-black text-primary">No photos uploaded for this section yet</p>
+                  <p className="text-[11px] text-primary/60 mt-0.5">
+                    Click "Upload Section Photo" above to capture and attach visual inspection proof.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                  {sectionPhotos.map((photo, pIdx) => {
+                    const fileUrl = API.getVmPhotoFileUrl(photo.id);
+                    return (
+                      <div
+                        key={photo.id || pIdx}
+                        className="group relative rounded-xl border border-accent/30 overflow-hidden bg-background shadow-xs hover:shadow-md transition-all aspect-square flex flex-col justify-between"
+                      >
+                        <img
+                          src={fileUrl}
+                          alt={photo.original_name}
+                          loading="lazy"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200 cursor-pointer"
+                          onClick={() => openLightbox(sectionPhotos, pIdx)}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20 opacity-0 group-hover:opacity-100 transition-opacity p-2 flex flex-col justify-between pointer-events-none">
+                          <div className="flex justify-end pointer-events-auto">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setPhotoToDelete(photo);
+                                setIsPhotoDeleteModalOpen(true);
+                              }}
+                              className="p-1 rounded-md bg-rose-600/90 text-white hover:bg-rose-700 transition-colors shadow-xs"
+                              title="Delete Photo"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                          <div
+                            className="pointer-events-auto cursor-pointer"
+                            onClick={() => openLightbox(sectionPhotos, pIdx)}
+                          >
+                            <p className="text-[10px] font-bold text-white truncate" title={photo.original_name}>
+                              {photo.original_name}
+                            </p>
+                            <p className="text-[9px] text-accent font-medium">
+                              {photo.file_size ? `${Math.round(photo.file_size / 1024)} KB` : ''} • Click to view
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
             {/* 11 Visual Merchandising Check Points List */}
             <div className="card-glass p-6 space-y-4 bg-white">
               <div className="flex items-center justify-between border-b border-accent-soft pb-3">
@@ -1039,18 +1386,13 @@ export default function VmChecklist() {
                 const passedQ = sub.entries ? sub.entries.filter((e: any) => e.score === 'Pass').length : Math.round((subScore / 100) * 11);
                 
                 return (
-                  <div key={sub.id} className="card-glass p-4 bg-white border border-accent/20 relative overflow-hidden group cursor-pointer hover:border-accent transition-colors" onClick={() => {
-                    // Clicking to view inspection detail could populate the form or open a modal.
-                    setSelectedFloor(sub.floor);
-                    setSelectedSection(sub.section);
-                    setShift(sub.shift);
-                    if (sub.entries) {
-                        const newScores: any = {};
-                        sub.entries.forEach((e: any) => { newScores[e.pointId] = { score: e.score, remarks: e.remarks || '' }; });
-                        setScores(newScores);
-                    }
-                    window.scrollTo({ top: 300, behavior: 'smooth' });
-                  }}>
+                  <div
+                    key={sub.id}
+                    className="card-glass p-4 bg-white border border-accent/20 relative overflow-hidden group cursor-pointer hover:border-accent hover:shadow-md transition-all"
+                    onClick={() => {
+                      setSelectedSubmissionForModal(sub);
+                    }}
+                  >
                     <div className={`absolute top-0 left-0 w-1 h-full ${subScore >= 80 ? 'bg-emerald-500' : subScore >= 50 ? 'bg-amber-500' : 'bg-rose-500'}`} />
                     <div className="flex justify-between items-start mb-2">
                       <div className="text-[10px] font-black uppercase text-primary/60">{d}</div>
@@ -1060,10 +1402,18 @@ export default function VmChecklist() {
                     </div>
                     <div className="font-extrabold text-sm text-primary mb-1">{sub.floor}</div>
                     <div className="text-xs font-bold text-accent mb-2">{sub.section || 'General Section'}</div>
-                    <div className="text-[10px] font-bold text-primary mb-3">
+                    <div className="text-[10px] font-bold text-primary mb-2">
                       {passedQ} / {totalQ} Questions Passed
                     </div>
-                    <div className="pt-3 border-t border-accent-soft/60 flex justify-between items-center text-[10px] font-medium text-primary">
+
+                    {sub.photos && sub.photos.length > 0 && (
+                      <div className="flex items-center gap-1.5 mb-2 py-1 px-2 rounded-lg bg-accent/10 border border-accent/20 text-accent font-bold text-[10px]">
+                        <Camera className="w-3 h-3 text-accent" />
+                        <span>{sub.photos.length} Section Photo{sub.photos.length > 1 ? 's' : ''}</span>
+                      </div>
+                    )}
+
+                    <div className="pt-2 border-t border-accent-soft/60 flex justify-between items-center text-[10px] font-medium text-primary">
                       <span>{sub.shift || 'Opening'} Shift</span>
                       <span className="font-bold">{sub.submittedBy}</span>
                     </div>
@@ -1072,17 +1422,254 @@ export default function VmChecklist() {
               })}
             </div>
           )}
-        
-        {/* --- VM ANALYTICS DASHBOARD --- */}
-        <div className="space-y-6">
-          {/* Dashboard Header & Filters */}
-          <div className="card-glass p-5 bg-gradient-to-r from-primary/5 via-accent/5 to-white border-2 border-accent/30 flex flex-col gap-4">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        </div>
+      </div>
+    )}
+
+    {/* STORE PHOTOS GALLERY TAB */}
+    {activeTab === 'gallery' && (
+      <div className="space-y-6 animate-fade-in">
+        {/* Gallery Header & Filters Banner */}
+        <div className="card-glass p-5 sm:p-6 bg-gradient-to-r from-primary/5 via-accent/5 to-white border-2 border-accent/30 flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-primary text-accent flex items-center justify-center font-black shadow-md shrink-0">
+                <Camera className="w-6 h-6" />
+              </div>
               <div>
-                <h2 className="text-xl font-black text-primary tracking-tight flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-accent" />
-                  Visual Merchandising Analytics
-                </h2>
+                <div className="text-xs font-black text-accent uppercase tracking-wider flex items-center gap-1.5">
+                  <span>Visual Merchandising Proof</span>
+                  <span>•</span>
+                  <span>{galleryPhotos.length} Photos</span>
+                </div>
+                <h2 className="text-xl font-black text-primary tracking-tight">Store Visual Merchandising Gallery</h2>
+                <p className="text-xs text-primary font-medium mt-0.5">
+                  Browse, inspect, and verify high-resolution floor display photos across all retail locations.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={fetchGalleryPhotos}
+                disabled={loadingGallery}
+                className="btn-outline text-xs px-3.5 py-2 font-bold flex items-center gap-1.5 cursor-pointer"
+              >
+                <RotateCcw className={`w-3.5 h-3.5 ${loadingGallery ? 'animate-spin' : ''}`} />
+                <span>Refresh</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Filter Controls Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 pt-4 border-t border-accent-soft/60 items-center">
+            <div>
+              <label className="block text-[10px] font-black uppercase text-primary/70 mb-1">
+                Store Location
+              </label>
+              <select
+                value={photoFilterLocation}
+                onChange={(e) => setPhotoFilterLocation(e.target.value)}
+                disabled={!canManagePhotos && Boolean(userLocation)}
+                className="select-modern text-xs w-full bg-white"
+              >
+                {(isAdmin || isManager) && <option value="All">All Locations</option>}
+                <option value="Belagavi">Belagavi</option>
+                <option value="Davanagere">Davanagere</option>
+                <option value="Shivamogga">Shivamogga</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-black uppercase text-primary/70 mb-1">
+                Floor
+              </label>
+              <select
+                value={photoFilterFloor}
+                onChange={(e) => setPhotoFilterFloor(e.target.value)}
+                className="select-modern text-xs w-full bg-white"
+              >
+                <option value="All">All Floors</option>
+                {Object.keys(floorsData).map((f) => (
+                  <option key={f} value={f}>{f}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-black uppercase text-primary/70 mb-1">
+                Section
+              </label>
+              <select
+                value={photoFilterSection}
+                onChange={(e) => setPhotoFilterSection(e.target.value)}
+                className="select-modern text-xs w-full bg-white"
+              >
+                <option value="All">All Sections</option>
+                {(photoFilterFloor === 'All'
+                  ? Object.values(floorsData).flatMap((f) => f.sections)
+                  : floorsData[photoFilterFloor]?.sections || []
+                ).map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-black uppercase text-primary/70 mb-1">
+                Inspection Date
+              </label>
+              <input
+                type="date"
+                value={photoFilterDate}
+                onChange={(e) => setPhotoFilterDate(e.target.value)}
+                className="input-modern text-xs w-full bg-white"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-black uppercase text-primary/70 mb-1">
+                Inspector
+              </label>
+              <div className="flex items-center gap-1.5">
+                <select
+                  value={photoFilterInspector}
+                  onChange={(e) => setPhotoFilterInspector(e.target.value)}
+                  className="select-modern text-xs w-full bg-white"
+                >
+                  <option value="All">All Inspectors</option>
+                  {uniqueInspectors.map((ins) => (
+                    <option key={ins} value={ins}>{ins}</option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPhotoFilterLocation((!isAdmin && !isManager && userLocation) ? userLocation : 'All');
+                    setPhotoFilterFloor('All');
+                    setPhotoFilterSection('All');
+                    setPhotoFilterDate('');
+                    setPhotoFilterInspector('All');
+                  }}
+                  className="btn-outline text-[10px] uppercase font-bold py-2 px-2.5 shrink-0"
+                  title="Clear Filters"
+                >
+                  Reset
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Gallery Grid */}
+        {loadingGallery ? (
+          <div className="card-glass p-12 text-center bg-white">
+            <div className="spinner mx-auto mb-3" />
+            <p className="text-xs font-bold text-primary">Loading VM inspection photos…</p>
+          </div>
+        ) : galleryPhotos.length === 0 ? (
+          <div className="card-glass p-12 text-center bg-white border border-accent-soft">
+            <Camera className="w-12 h-12 text-primary/25 mx-auto mb-3" />
+            <h3 className="text-sm font-black text-primary">No photos uploaded for this section</h3>
+            <p className="text-xs text-primary/60 mt-1 max-w-sm mx-auto">
+              No visual merchandising photos match your active location and filter settings. Switch to the Audit tab to capture and save section photos.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            {galleryPhotos.map((photo, idx) => {
+              const fileUrl = API.getVmPhotoFileUrl(photo.id);
+              const uploadDate = photo.created_at
+                ? new Date(photo.created_at).toLocaleDateString()
+                : '';
+              return (
+                <div
+                  key={photo.id}
+                  className="card-glass bg-white border border-accent/25 rounded-2xl overflow-hidden hover:border-accent hover:shadow-xl transition-all duration-200 group flex flex-col justify-between"
+                >
+                  {/* Photo Thumbnail Container */}
+                  <div
+                    className="relative aspect-4/3 bg-background overflow-hidden cursor-pointer"
+                    onClick={() => openLightbox(galleryPhotos, idx)}
+                  >
+                    <img
+                      src={fileUrl}
+                      alt={photo.original_name}
+                      loading="lazy"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute top-2 left-2 flex items-center gap-1">
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-black/60 backdrop-blur-xs text-white">
+                        {photo.location_name || 'BSC Store'}
+                      </span>
+                    </div>
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openLightbox(galleryPhotos, idx);
+                        }}
+                        className="p-2 rounded-xl bg-white/90 text-primary hover:bg-white transition-all shadow-md active:scale-95"
+                        title="View Fullscreen"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                      {canManagePhotos && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPhotoToDelete(photo);
+                            setIsPhotoDeleteModalOpen(true);
+                          }}
+                          className="p-2 rounded-xl bg-rose-600/90 text-white hover:bg-rose-700 transition-all shadow-md active:scale-95"
+                          title="Delete Photo"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Photo Metadata Footer */}
+                  <div className="p-3.5 space-y-1.5 border-t border-accent-soft/60">
+                    <div className="flex items-center justify-between text-[10px] font-black">
+                      <span className="text-primary truncate max-w-[120px]" title={photo.floor}>
+                        {photo.floor}
+                      </span>
+                      <span className="text-accent truncate max-w-[110px]" title={photo.section}>
+                        {photo.section}
+                      </span>
+                    </div>
+                    <p className="text-[11px] font-bold text-primary truncate" title={photo.original_name}>
+                      {photo.original_name}
+                    </p>
+                    <div className="flex items-center justify-between text-[10px] text-primary/60 pt-1 border-t border-accent-soft/40">
+                      <span>{photo.uploaded_by || 'Staff'}</span>
+                      <span>{uploadDate}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    )}
+
+    {/* --- VM ANALYTICS DASHBOARD TAB --- */}
+    {activeTab === 'analytics' && (
+      <div className="space-y-6 animate-fade-in">
+        {/* Dashboard Header & Filters */}
+        <div className="card-glass p-5 bg-gradient-to-r from-primary/5 via-accent/5 to-white border-2 border-accent/30 flex flex-col gap-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-black text-primary tracking-tight flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-accent" />
+                Visual Merchandising Analytics
+              </h2>
                 <p className="text-xs text-primary font-medium mt-0.5">
                   Real-time insights and performance metrics derived from actual saved inspections.
                 </p>
@@ -1139,7 +1726,6 @@ export default function VmChecklist() {
                   Clear Filters
                 </button>
               </div>
-            </div>
             </div>
           </div>
 
@@ -1353,10 +1939,11 @@ export default function VmChecklist() {
                 ))}
               </div>
             </div>
-          </div>
         </div>
         {/* --- END VM ANALYTICS DASHBOARD --- */}
-</div>
+      </div>
+    )}
+  </div>
       {/* CREATE NEW FLOOR / FOLDER MODAL (ADMIN ONLY) */}
       {isCreateModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
@@ -1576,6 +2163,404 @@ export default function VmChecklist() {
           </div>
         </div>
       )}
+
+      {/* DELETE PHOTO CONFIRMATION MODAL */}
+      {isPhotoDeleteModalOpen && photoToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-primary/60 backdrop-blur-md animate-fade-in">
+          <div className="bg-white rounded-3xl shadow-2xl border border-accent-soft w-full max-w-md overflow-hidden animate-scale-in">
+            <div className="p-6 text-center space-y-4">
+              <div className="w-14 h-14 rounded-2xl bg-red-50 border border-red-200 flex items-center justify-center mx-auto text-red-500">
+                <Trash2 className="w-7 h-7" />
+              </div>
+              <div>
+                <h3 className="text-lg font-black text-primary tracking-tight">Delete this photo?</h3>
+                <p className="text-sm text-primary/70 font-medium mt-1">
+                  This action cannot be undone. Are you sure you want to delete <span className="font-bold text-primary">{photoToDelete.original_name}</span>?
+                </p>
+              </div>
+            </div>
+            <div className="px-6 py-4 bg-background border-t border-accent-soft flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsPhotoDeleteModalOpen(false);
+                  setPhotoToDelete(null);
+                }}
+                disabled={deletingPhoto}
+                className="px-4 py-2.5 rounded-xl border border-accent/30 text-primary text-xs font-bold hover:bg-gray-100 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeletePhoto}
+                disabled={deletingPhoto}
+                className="px-5 py-2.5 rounded-xl bg-red-600 text-white text-xs font-black shadow-lg shadow-red-600/20 hover:bg-red-700 active:scale-95 transition-all cursor-pointer flex items-center gap-2"
+              >
+                {deletingPhoto ? 'Deleting…' : 'Delete Photo'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* LIGHTBOX PHOTO VIEWER MODAL */}
+      {lightboxOpen && lightboxPhotos.length > 0 && (() => {
+        const currentPhoto = lightboxPhotos[lightboxIndex] || lightboxPhotos[0];
+        const fileUrl = API.getVmPhotoFileUrl(currentPhoto.id);
+        const hasPrev = lightboxIndex > 0;
+        const hasNext = lightboxIndex < lightboxPhotos.length - 1;
+
+        return (
+          <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex flex-col justify-between animate-fade-in p-4 select-none">
+            {/* Top Toolbar */}
+            <div className="flex items-center justify-between gap-4 text-white p-2 border-b border-white/10 shrink-0">
+              <div className="flex items-center gap-3">
+                <span className="px-2.5 py-1 rounded-lg bg-white/10 text-xs font-black">
+                  {lightboxIndex + 1} / {lightboxPhotos.length}
+                </span>
+                <span className="text-xs font-bold text-white/90 truncate max-w-xs md:max-w-md">
+                  {currentPhoto.original_name}
+                </span>
+              </div>
+
+              {/* Controls */}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setLightboxZoom((z) => Math.max(0.5, z - 0.25))}
+                  className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
+                  title="Zoom Out"
+                >
+                  <ZoomOut className="w-4 h-4" />
+                </button>
+                <span className="text-xs font-mono font-bold w-12 text-center text-white/80">
+                  {Math.round(lightboxZoom * 100)}%
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setLightboxZoom((z) => Math.min(3, z + 0.25))}
+                  className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
+                  title="Zoom In"
+                >
+                  <ZoomIn className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLightboxZoom(1)}
+                  className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors text-xs font-bold cursor-pointer"
+                  title="Reset Zoom"
+                >
+                  100%
+                </button>
+                <a
+                  href={fileUrl}
+                  download={currentPhoto.original_name}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
+                  title="Download Photo"
+                >
+                  <Download className="w-4 h-4" />
+                </a>
+                {canManagePhotos && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPhotoToDelete(currentPhoto);
+                      setIsPhotoDeleteModalOpen(true);
+                    }}
+                    className="p-2 rounded-xl bg-rose-600/80 hover:bg-rose-700 text-white transition-colors cursor-pointer"
+                    title="Delete Photo"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setLightboxOpen(false)}
+                  className="p-2 rounded-xl bg-white/20 hover:bg-white/30 text-white transition-colors ml-2 cursor-pointer"
+                  title="Close (Esc)"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Central Viewport with Image & Nav Chevrons */}
+            <div className="relative flex-1 flex items-center justify-center overflow-hidden my-2">
+              {hasPrev && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLightboxIndex((i) => Math.max(0, i - 1));
+                    setLightboxZoom(1);
+                  }}
+                  className="absolute left-4 z-10 p-3 rounded-full bg-black/60 hover:bg-black/90 text-white transition-all shadow-lg active:scale-95 cursor-pointer"
+                  title="Previous Photo"
+                >
+                  <ChevronLeft className="w-6 h-6" />
+                </button>
+              )}
+
+              <div className="max-w-full max-h-full flex items-center justify-center p-2">
+                <img
+                  src={fileUrl}
+                  alt={currentPhoto.original_name}
+                  style={{
+                    transform: `scale(${lightboxZoom})`,
+                    transition: 'transform 0.15s ease'
+                  }}
+                  className="max-h-[70vh] max-w-[90vw] object-contain rounded-xl shadow-2xl"
+                />
+              </div>
+
+              {hasNext && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLightboxIndex((i) => Math.min(lightboxPhotos.length - 1, i + 1));
+                    setLightboxZoom(1);
+                  }}
+                  className="absolute right-4 z-10 p-3 rounded-full bg-black/60 hover:bg-black/90 text-white transition-all shadow-lg active:scale-95 cursor-pointer"
+                  title="Next Photo"
+                >
+                  <ChevronRight className="w-6 h-6" />
+                </button>
+              )}
+            </div>
+
+            {/* Bottom Drawer & Metadata Banner */}
+            <div className="space-y-3 shrink-0">
+              <div className="p-3 bg-white/10 backdrop-blur-md rounded-2xl flex flex-wrap items-center justify-between gap-3 text-white text-xs border border-white/10">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="px-2.5 py-0.5 rounded-full bg-accent text-primary font-black uppercase text-[10px]">
+                    {currentPhoto.location_name || 'BSC Store'}
+                  </span>
+                  <span className="font-bold text-white">Floor: {currentPhoto.floor}</span>
+                  <span className="text-white/40">•</span>
+                  <span className="font-bold text-accent">Section: {currentPhoto.section}</span>
+                  {currentPhoto.checklist_id && (
+                    <>
+                      <span className="text-white/40">•</span>
+                      <span className="text-white/80 font-mono text-[10px]">Audit: #{currentPhoto.checklist_id.slice(0, 8)}</span>
+                    </>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-3 text-white/70 text-[11px]">
+                  <span>Uploaded by: <strong className="text-white">{currentPhoto.uploaded_by || 'Staff'}</strong></span>
+                  <span>•</span>
+                  <span>{currentPhoto.created_at ? new Date(currentPhoto.created_at).toLocaleString() : ''}</span>
+                  {currentPhoto.file_size && (
+                    <>
+                      <span>•</span>
+                      <span>{Math.round(currentPhoto.file_size / 1024)} KB</span>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Thumbnails Ribbon */}
+              {lightboxPhotos.length > 1 && (
+                <div className="flex items-center gap-2 overflow-x-auto py-1 max-w-full justify-center">
+                  {lightboxPhotos.map((p, idx) => (
+                    <button
+                      type="button"
+                      key={p.id || idx}
+                      onClick={() => {
+                        setLightboxIndex(idx);
+                        setLightboxZoom(1);
+                      }}
+                      className={`w-14 h-14 rounded-xl overflow-hidden shrink-0 border-2 transition-all cursor-pointer ${
+                        idx === lightboxIndex ? 'border-accent scale-105 shadow-md' : 'border-white/20 opacity-60 hover:opacity-100'
+                      }`}
+                    >
+                      <img
+                        src={API.getVmPhotoFileUrl(p.id)}
+                        alt={p.original_name}
+                        className="w-full h-full object-cover"
+                      />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* CHECKLIST INSPECTION DETAILS MODAL (ADMIN / STAFF AUDIT VIEW) */}
+      {selectedSubmissionForModal && (() => {
+        const sub = selectedSubmissionForModal;
+        const subScore = Number(sub.scorePercent || 0);
+        const d = new Date(sub.entryDate || sub.createdAt).toLocaleDateString();
+        const subPhotos = sub.photos || [];
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-primary/60 backdrop-blur-md animate-fade-in">
+            <div className="bg-white rounded-3xl shadow-2xl border-2 border-accent/40 w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden animate-scale-in">
+              {/* Header */}
+              <div className="p-5 bg-gradient-to-r from-primary via-primary to-[#3D2B1F] text-white flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center font-black">
+                    <ClipboardList className="w-5 h-5 text-accent" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-extrabold text-white">Visual Merchandising Inspection Report</h3>
+                    <p className="text-xs text-accent">
+                      {sub.floor} — {sub.section || 'General Section'} ({sub.shift || 'Opening'} Shift)
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedSubmissionForModal(null)}
+                  className="text-white hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-6 space-y-6 overflow-y-auto flex-1">
+                {/* Checklist Information Overview */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="p-3 bg-background rounded-xl border border-accent-soft">
+                    <div className="text-[10px] font-black uppercase text-primary/60">Compliance Score</div>
+                    <div className="text-lg font-black text-primary font-mono mt-0.5">{subScore}%</div>
+                  </div>
+                  <div className="p-3 bg-background rounded-xl border border-accent-soft">
+                    <div className="text-[10px] font-black uppercase text-primary/60">Inspection Date</div>
+                    <div className="text-xs font-bold text-primary mt-1">{d}</div>
+                  </div>
+                  <div className="p-3 bg-background rounded-xl border border-accent-soft">
+                    <div className="text-[10px] font-black uppercase text-primary/60">Audited By</div>
+                    <div className="text-xs font-bold text-primary mt-1 truncate">{sub.submittedBy || 'Auditor'}</div>
+                  </div>
+                  <div className="p-3 bg-background rounded-xl border border-accent-soft">
+                    <div className="text-[10px] font-black uppercase text-primary/60">Audit Shift</div>
+                    <div className="text-xs font-bold text-accent mt-1">{sub.shift || 'Opening'} Shift</div>
+                  </div>
+                </div>
+
+                {/* Uploaded Photos Section */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between border-b border-accent-soft pb-2">
+                    <h4 className="text-xs font-black uppercase tracking-wider text-primary flex items-center gap-2">
+                      <Camera className="w-4 h-4 text-accent" />
+                      Uploaded Inspection Photos ({subPhotos.length})
+                    </h4>
+                    {subPhotos.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => openLightbox(subPhotos, 0)}
+                        className="text-xs font-bold text-accent hover:underline flex items-center gap-1 cursor-pointer"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>Open Gallery</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {subPhotos.length === 0 ? (
+                    <p className="text-xs text-primary/50 italic py-2">No photos were uploaded for this inspection.</p>
+                  ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {subPhotos.map((photo: any, pIdx: number) => (
+                        <div
+                          key={photo.id || pIdx}
+                          onClick={() => openLightbox(subPhotos, pIdx)}
+                          className="relative rounded-xl border border-accent/30 overflow-hidden bg-background aspect-square group cursor-pointer hover:border-accent shadow-xs"
+                        >
+                          <img
+                            src={API.getVmPhotoFileUrl(photo.id)}
+                            alt={photo.original_name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                          />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <Eye className="w-5 h-5 text-white" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Questions & Results Table */}
+                <div className="space-y-3">
+                  <h4 className="text-xs font-black uppercase tracking-wider text-primary border-b border-accent-soft pb-2">
+                    Checklist Questions & Results
+                  </h4>
+                  <div className="space-y-2">
+                    {(sub.entries || []).map((entry: any, eIdx: number) => (
+                      <div
+                        key={entry.id || eIdx}
+                        className="p-3 rounded-xl bg-background/60 border border-accent-soft/80 flex items-center justify-between gap-3 text-xs"
+                      >
+                        <div className="flex-1">
+                          <span className="font-extrabold text-primary mr-2">Q{eIdx + 1}.</span>
+                          <span className="font-bold text-primary">{entry.pointTitle}</span>
+                          {entry.remarks && (
+                            <p className="text-[11px] text-primary/70 italic mt-0.5">
+                              Remarks: {entry.remarks}
+                            </p>
+                          )}
+                        </div>
+                        <span
+                          className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase shrink-0 ${
+                            entry.score === 'Pass'
+                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                              : entry.score === 'Fail'
+                              ? 'bg-rose-100 text-rose-800 border border-rose-300'
+                              : 'bg-gray-100 text-gray-700 border border-gray-300'
+                          }`}
+                        >
+                          {entry.score}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="p-4 bg-background border-t border-accent-soft flex items-center justify-between shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedFloor(sub.floor);
+                    setSelectedSection(sub.section);
+                    setShift(sub.shift || 'Opening');
+                    if (sub.entries) {
+                      const newScores: any = {};
+                      sub.entries.forEach((e: any) => {
+                        newScores[e.pointId] = { score: e.score, remarks: e.remarks || '' };
+                      });
+                      setScores(newScores);
+                    }
+                    setSelectedSubmissionForModal(null);
+                    setActiveTab('audit');
+                    window.scrollTo({ top: 300, behavior: 'smooth' });
+                  }}
+                  className="btn-outline text-xs px-4 py-2 font-bold flex items-center gap-1.5 cursor-pointer"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Load into Active Audit Form</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedSubmissionForModal(null)}
+                  className="px-5 py-2 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary-hover cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </DashboardLayout>
   );
 }

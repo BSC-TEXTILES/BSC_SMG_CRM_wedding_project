@@ -209,94 +209,94 @@ export default function TelecallerDeskPage() {
                 <button
                   onClick={refreshQueue}
                   disabled={loading}
-                  className="px-3.5 py-2 bg-white hover:bg-[#F6F4EF] border border-[#DFDDD7] rounded-xl text-xs font-bold text-[#182033] flex items-center gap-1.5 transition-colors"
+                  className="px-3.5 py-2 bg-[#FFFDFC] hover:bg-[#FFF7F2] border border-[#E8D9D4] rounded-xl text-xs font-semibold text-[#4A173A] flex items-center gap-1.5 transition-colors shadow-xs"
                 >
-                  <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-[#C9A45C]' : ''}`} />
+                  <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-[#B76E79]' : 'text-[#B76E79]'}`} />
                   <span>Refresh Queue</span>
                 </button>
               </div>
             }
           />
 
-          {/* Section 11: Daily Target & Calls Status Strip */}
-          <div className="bg-[#101C36] text-white p-5 rounded-3xl border border-[#C9A45C]/30 shadow-xl space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-[#C9A45C]/20 pb-4">
+          {/* Daily Target & Calls Status Strip */}
+          <div className="bg-[#4A173A] text-white p-5 rounded-3xl border border-[#B76E79]/30 shadow-lg space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-[#B76E79]/20 pb-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[#C9A45C] text-[#101C36] flex items-center justify-center font-black shadow-md">
-                  <Target className="w-5 h-5" />
+                <div className="w-10 h-10 rounded-xl bg-[#B76E79] text-white flex items-center justify-center font-bold shadow-md">
+                  <Target className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-base font-black tracking-tight text-white">
+                  <h2 className="text-base font-bold tracking-tight text-white">
                     Telecaller Daily Calling Target & Performance
                   </h2>
-                  <div className="text-[11px] text-[#E4CB92] font-semibold">
+                  <div className="text-[11px] text-[#E8C7A8] font-medium">
                     {isGlobalOrAdmin ? 'Admin Supervised Calling Desk · All Telecaller Queues' : `${session?.fullName || 'Telecaller Desk'} · Live Telephony Queue`}
                   </div>
                 </div>
               </div>
 
               <div className="flex items-center gap-3 text-xs">
-                <div className="bg-[#07101F] px-3.5 py-2 rounded-xl border border-[#C9A45C]/30">
-                  <span className="text-muted text-[10px] uppercase font-bold block">Daily Target</span>
-                  <span className="text-sm font-black text-white">{deskSummary.dailyTarget} calls</span>
+                <div className="bg-[#351027]/80 px-3.5 py-2 rounded-xl border border-[#B76E79]/30">
+                  <span className="text-[#E8C7A8] text-[10px] uppercase font-bold block">Daily Target</span>
+                  <span className="text-sm font-bold text-white">{deskSummary.dailyTarget} calls</span>
                 </div>
-                <div className="bg-[#07101F] px-3.5 py-2 rounded-xl border border-[#C9A45C]/30">
-                  <span className="text-muted text-[10px] uppercase font-bold block">Remaining</span>
-                  <span className="text-sm font-black text-[#C9A45C]">{deskSummary.remainingCalls} to go</span>
+                <div className="bg-[#351027]/80 px-3.5 py-2 rounded-xl border border-[#B76E79]/30">
+                  <span className="text-[#E8C7A8] text-[10px] uppercase font-bold block">Remaining</span>
+                  <span className="text-sm font-bold text-[#D89AA3]">{deskSummary.remainingCalls} to go</span>
                 </div>
               </div>
             </div>
 
             {/* Daily Metrics Pill Row */}
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-center text-xs">
-              <div className="bg-[#07101F]/80 p-3 rounded-2xl border border-[#C9A45C]/20">
-                <div className="text-[10px] uppercase font-bold text-gray-400">Total Assigned</div>
-                <div className="text-xl font-black text-white mt-1">{deskSummary.assignedCalls}</div>
+              <div className="bg-[#351027]/80 p-3 rounded-2xl border border-[#B76E79]/20">
+                <div className="text-[10px] uppercase font-semibold text-[#E8C7A8]">Total Assigned</div>
+                <div className="text-xl font-bold text-white mt-1">{deskSummary.assignedCalls}</div>
               </div>
-              <div className="bg-[#07101F]/80 p-3 rounded-2xl border border-[#C9A45C]/20">
-                <div className="text-[10px] uppercase font-bold text-emerald-400">Calls Done Today</div>
-                <div className="text-xl font-black text-emerald-400 mt-1">{deskSummary.completedToday}</div>
+              <div className="bg-[#351027]/80 p-3 rounded-2xl border border-[#B76E79]/20">
+                <div className="text-[10px] uppercase font-semibold text-[#198754]">Calls Done Today</div>
+                <div className="text-xl font-bold text-[#E8F5EE] mt-1">{deskSummary.completedToday}</div>
               </div>
-              <div className="bg-[#07101F]/80 p-3 rounded-2xl border border-[#C9A45C]/20">
-                <div className="text-[10px] uppercase font-bold text-blue-400">Connected Calls</div>
-                <div className="text-xl font-black text-blue-400 mt-1">{deskSummary.connectedCalls}</div>
+              <div className="bg-[#351027]/80 p-3 rounded-2xl border border-[#B76E79]/20">
+                <div className="text-[10px] uppercase font-semibold text-[#D89AA3]">Connected Calls</div>
+                <div className="text-xl font-bold text-white mt-1">{deskSummary.connectedCalls}</div>
               </div>
-              <div className="bg-[#07101F]/80 p-3 rounded-2xl border border-[#C9A45C]/20">
-                <div className="text-[10px] uppercase font-bold text-purple-400">Callbacks Requested</div>
-                <div className="text-xl font-black text-purple-400 mt-1">{deskSummary.callbackCount}</div>
+              <div className="bg-[#351027]/80 p-3 rounded-2xl border border-[#B76E79]/20">
+                <div className="text-[10px] uppercase font-semibold text-[#E8C7A8]">Callbacks Requested</div>
+                <div className="text-xl font-bold text-[#E8C7A8] mt-1">{deskSummary.callbackCount}</div>
               </div>
-              <div className="bg-[#07101F]/80 p-3 rounded-2xl border border-[#C9A45C]/20">
-                <div className="text-[10px] uppercase font-bold text-amber-400">Pending in Queue</div>
-                <div className="text-xl font-black text-amber-400 mt-1">{deskSummary.pendingCalls}</div>
+              <div className="bg-[#351027]/80 p-3 rounded-2xl border border-[#B76E79]/20">
+                <div className="text-[10px] uppercase font-semibold text-[#FFF4D6]">Pending in Queue</div>
+                <div className="text-xl font-bold text-[#FFF4D6] mt-1">{deskSummary.pendingCalls}</div>
               </div>
             </div>
           </div>
 
-          {/* Section 12: Work Queue Tabs & Filters */}
-          <div className="bg-white rounded-3xl border border-[#DFDDD7] shadow-xs p-5 space-y-4">
+          {/* Work Queue Tabs & Filters */}
+          <div className="bg-[#FFFDFC] rounded-3xl border border-[#E8D9D4] shadow-xs p-5 space-y-4">
             {/* Queue Selection Tabs */}
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#DFDDD7] pb-3">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E8D9D4] pb-3">
               <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide py-1">
                 {[
-                  { key: 'dueToday', label: "Today's Calls", count: queueRecords.dueToday.length, color: 'text-amber-700 bg-amber-50' },
-                  { key: 'overdue', label: 'Overdue Calls', count: queueRecords.overdue.length, color: 'text-[#C7374A] bg-red-50' },
-                  { key: 'callbacks', label: 'Callbacks', count: queueRecords.callbacks.length, color: 'text-purple-700 bg-purple-50' },
-                  { key: 'upcoming', label: 'Upcoming', count: queueRecords.upcoming.length, color: 'text-blue-700 bg-blue-50' },
-                  { key: 'priority', label: 'VIP / Priority', count: queueRecords.priority.length, color: 'text-indigo-700 bg-indigo-50' },
-                  { key: 'newLeads', label: 'New Leads', count: queueRecords.newLeads.length, color: 'text-emerald-700 bg-emerald-50' },
-                  { key: 'myQueue', label: 'My Queue', count: queueRecords.myQueue.length, color: 'text-primary bg-primary-soft' }
+                  { key: 'dueToday', label: "Today's Calls", count: queueRecords.dueToday.length, color: 'text-[#C58A18] bg-[#FFF4D6]' },
+                  { key: 'overdue', label: 'Overdue Calls', count: queueRecords.overdue.length, color: 'text-[#B42318] bg-[#FDE8E7]' },
+                  { key: 'callbacks', label: 'Callbacks', count: queueRecords.callbacks.length, color: 'text-[#6A2853] bg-[#EDE7F6]' },
+                  { key: 'upcoming', label: 'Upcoming', count: queueRecords.upcoming.length, color: 'text-[#4A173A] bg-[#FFFAF7]' },
+                  { key: 'priority', label: 'VIP / Priority', count: queueRecords.priority.length, color: 'text-[#4A173A] bg-[#F6E2E5]' },
+                  { key: 'newLeads', label: 'New Leads', count: queueRecords.newLeads.length, color: 'text-[#6A2853] bg-[#EDE7F6]' },
+                  { key: 'myQueue', label: 'My Queue', count: queueRecords.myQueue.length, color: 'text-[#C58A18] bg-[#FFF4D6]' }
                 ].map((tab) => (
                   <button
                     key={tab.key}
                     onClick={() => setActiveQueue(tab.key as any)}
-                    className={`px-3 py-2 rounded-xl text-xs font-extrabold flex items-center gap-2 transition-all ${
+                    className={`px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all ${
                       activeQueue === tab.key
-                        ? 'bg-[#101C36] text-[#C9A45C] shadow-md border border-[#C9A45C]/30'
-                        : 'bg-[#F6F4EF] text-[#687080] hover:text-primary'
+                        ? 'bg-[#B76E79] text-white shadow-xs'
+                        : 'bg-[#FFF7F2] text-[#6F5963] hover:text-[#4A173A] hover:bg-[#F6E2E5]'
                     }`}
                   >
                     <span>{tab.label}</span>
-                    <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-black ${tab.color}`}>
+                    <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${tab.color}`}>
                       {tab.count}
                     </span>
                   </button>
@@ -305,13 +305,13 @@ export default function TelecallerDeskPage() {
 
               {/* Queue Search Box */}
               <div className="relative w-full sm:w-64">
-                <Search className="w-3.5 h-3.5 text-muted absolute left-3 top-1/2 -translate-y-1/2" />
+                <Search className="w-3.5 h-3.5 text-[#9A858D] absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   placeholder="Filter by customer / phone..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-8 pr-3 py-1.5 bg-[#F6F4EF] border border-[#DFDDD7] rounded-xl text-xs text-[#182033] focus:outline-none focus:border-[#C9A45C]"
+                  className="w-full pl-8 pr-3 py-1.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl text-xs text-[#2B1722] placeholder-[#9A858D] focus:outline-none focus:border-[#B76E79]"
                 />
               </div>
             </div>
@@ -319,15 +319,15 @@ export default function TelecallerDeskPage() {
             {/* Mobile Queue Card View (< md) */}
             <div className="md:hidden space-y-3">
               {loading ? (
-                <div className="text-center py-10 bg-white rounded-2xl border border-[#DFDDD7]">
-                  <RefreshCw className="w-5 h-5 animate-spin text-[#C9A45C] mx-auto mb-2" />
-                  <span className="text-xs text-muted">Loading telecaller queue...</span>
+                <div className="text-center py-10 bg-[#FFFDFC] rounded-2xl border border-[#E8D9D4]">
+                  <RefreshCw className="w-5 h-5 animate-spin text-[#B76E79] mx-auto mb-2" />
+                  <span className="text-xs text-[#6F5963]">Loading telecaller queue...</span>
                 </div>
               ) : currentList.length === 0 ? (
-                <div className="text-center py-10 bg-white rounded-2xl border border-[#DFDDD7] p-4">
-                  <CircleCheck className="w-10 h-10 text-[#16805B] mx-auto mb-2" />
-                  <div className="font-bold text-sm text-[#182033]">Queue is currently clear!</div>
-                  <div className="text-xs text-muted mt-0.5">All calls in this queue have been handled.</div>
+                <div className="text-center py-10 bg-[#FFFDFC] rounded-2xl border border-[#E8D9D4] p-4">
+                  <CircleCheck className="w-10 h-10 text-[#198754] mx-auto mb-2" />
+                  <div className="font-bold text-sm text-[#4A173A]">Queue is currently clear!</div>
+                  <div className="text-xs text-[#6F5963] mt-0.5">All calls in this queue have been handled.</div>
                 </div>
               ) : (
                 currentList.map((cust) => {
@@ -339,49 +339,49 @@ export default function TelecallerDeskPage() {
                   return (
                     <div
                       key={cust.id}
-                      className="p-4 bg-white rounded-2xl border border-[#DFDDD7] shadow-xs space-y-3"
+                      className="p-4 bg-[#FFFDFC] rounded-2xl border border-[#E8D9D4] shadow-xs space-y-3"
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div>
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <Link
                               to={`/wedding-crm/customers/${cust.id}`}
-                              className="font-bold text-sm text-[#182033] hover:text-[#C98218]"
+                              className="font-bold text-sm text-[#2B1722] hover:text-[#4A173A]"
                             >
                               {cust.customer_name}
                             </Link>
-                            <span className="text-[10px] font-mono text-[#C9A45C] bg-[#101C36] px-1.5 py-0.5 rounded">
+                            <span className="text-[10px] font-mono text-white bg-[#4A173A] px-1.5 py-0.5 rounded">
                               {cust.customer_code}
                             </span>
                           </div>
-                          <div className="text-[11px] text-muted mt-0.5">
+                          <div className="text-[11px] text-[#6F5963] mt-0.5">
                             {cust.preferred_shopping_category || 'General Wedding'} · 📍 {cust.location_name || 'Store'}
                           </div>
                         </div>
 
-                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${badge.bg}`}>
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${badge.bg}`}>
                           <span className={`w-1.5 h-1.5 rounded-full ${badge.dot}`} />
                           {cust.customer_status}
                         </span>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-2 text-xs bg-[#F6F4EF] p-2.5 rounded-xl border border-[#DFDDD7]/60">
+                      <div className="grid grid-cols-2 gap-2 text-xs bg-[#FFFAF7] p-2.5 rounded-xl border border-[#E8D9D4]">
                         <div>
-                          <span className="text-[10px] text-muted uppercase font-bold block">Wedding Date</span>
-                          <span className="font-semibold text-pink-700">
+                          <span className="text-[10px] text-[#6F5963] uppercase font-semibold block">Wedding Date</span>
+                          <span className="font-semibold text-[#B76E79]">
                             {cust.wedding_date ? `💍 ${new Date(cust.wedding_date).toLocaleDateString()}` : 'TBD'}
                           </span>
                         </div>
                         <div>
-                          <span className="text-[10px] text-muted uppercase font-bold block">Follow-up</span>
-                          <span className={`font-semibold ${isOverdue ? 'text-[#C7374A]' : 'text-[#182033]'}`}>
+                          <span className="text-[10px] text-[#6F5963] uppercase font-semibold block">Follow-up</span>
+                          <span className={`font-semibold ${isOverdue ? 'text-[#B42318]' : 'text-[#2B1722]'}`}>
                             {cust.follow_up_date ? new Date(cust.follow_up_date).toLocaleDateString() : 'None'}
-                            {isOverdue && <span className="ml-1 text-[9px] bg-red-100 text-red-700 px-1 rounded font-black">OVERDUE</span>}
+                            {isOverdue && <span className="ml-1 text-[9px] bg-[#FDE8E7] text-[#B42318] px-1 rounded font-bold">OVERDUE</span>}
                           </span>
                         </div>
-                        <div className="col-span-2 flex items-center justify-between text-[11px] pt-1 border-t border-[#DFDDD7]/60">
-                          <span className="text-muted">Assigned: {cust.assigned_telecaller ? `👤 ${cust.assigned_telecaller}` : 'Unassigned'}</span>
-                          <span className="text-blue-900 font-bold">{cust.expected_shopping_date ? `Shop: ${new Date(cust.expected_shopping_date).toLocaleDateString()}` : ''}</span>
+                        <div className="col-span-2 flex items-center justify-between text-[11px] pt-1 border-t border-[#E8D9D4]">
+                          <span className="text-[#6F5963]">Assigned: {cust.assigned_telecaller ? `👤 ${cust.assigned_telecaller}` : 'Unassigned'}</span>
+                          <span className="text-[#4A173A] font-semibold">{cust.expected_shopping_date ? `Shop: ${new Date(cust.expected_shopping_date).toLocaleDateString()}` : ''}</span>
                         </div>
                       </div>
 
@@ -389,40 +389,40 @@ export default function TelecallerDeskPage() {
                       <div className="flex items-center gap-2 pt-1 flex-wrap sm:flex-nowrap">
                         <button
                           onClick={() => handleOpenCallModal(cust)}
-                          className="flex-1 min-w-[110px] py-2 bg-[#101C36] hover:bg-[#07101F] text-[#C9A45C] font-black rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-xs border border-[#C9A45C]/30"
+                          className="flex-1 min-w-[110px] py-2 bg-[#4A173A] hover:bg-[#6A2853] text-white font-semibold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-xs border border-[#B76E79]/30"
                         >
-                          <PhoneCall className="w-3.5 h-3.5" />
+                          <PhoneCall className="w-3.5 h-3.5 text-[#E8C7A8]" />
                           <span>Call & Log</span>
                         </button>
                         <a
                           href={`https://wa.me/91${cust.mobile_number.replace(/\D/g, '')}?text=Namaste%20${encodeURIComponent(cust.customer_name)}%2C%20greetings%20from%20BSC%20Exclusive!`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="p-2 bg-green-600 hover:bg-green-700 text-white rounded-xl text-xs flex items-center justify-center"
+                          className="p-2 bg-[#198754] hover:bg-[#16805B] text-white rounded-xl text-xs flex items-center justify-center"
                           title="WhatsApp"
                         >
                           <MessageCircle className="w-4 h-4" />
                         </a>
                         <button
                           onClick={() => handleQuickStatus(cust, 'Shopping Confirmed')}
-                          className="p-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-xs border border-blue-200"
+                          className="p-2 bg-[#F6E2E5] hover:bg-[#D89AA3]/30 text-[#4A173A] rounded-xl text-xs border border-[#E8D9D4]"
                           title="Confirm Shopping"
                         >
                           <Check className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleQuickStatus(cust, 'Won')}
-                          className="p-2 bg-emerald-50 hover:bg-emerald-100 text-[#16805B] rounded-xl text-xs border border-emerald-200"
+                          className="p-2 bg-[#E8F5EE] hover:bg-[#198754]/20 text-[#198754] rounded-xl text-xs border border-[#E8D9D4]"
                           title="Won"
                         >
                           <Award className="w-4 h-4" />
                         </button>
                         <Link
                           to={`/wedding-crm/customers/${cust.id}`}
-                          className="p-2 bg-[#F6F4EF] hover:bg-[#DFDDD7] text-primary rounded-xl text-xs flex items-center justify-center"
+                          className="p-2 bg-[#FFFAF7] hover:bg-[#FFF7F2] text-[#4A173A] rounded-xl text-xs border border-[#E8D9D4] flex items-center justify-center"
                           title="Profile"
                         >
-                          <Eye className="w-4 h-4" />
+                          <Eye className="w-4 h-4 text-[#B76E79]" />
                         </Link>
                       </div>
                     </div>
@@ -433,35 +433,35 @@ export default function TelecallerDeskPage() {
 
             {/* Desktop Queue Table (hidden on < md) */}
             <div className="hidden md:block overflow-x-auto">
-              <table className="w-full text-left text-xs text-[#182033]">
-                <thead className="bg-[#07101F] text-white uppercase text-[10px] tracking-wider">
+              <table className="w-full text-left text-xs text-[#2B1722]">
+                <thead className="bg-[#F8EDE8] text-[#4A173A] border-b border-[#E8D9D4] uppercase text-[10px] tracking-wider">
                   <tr>
-                    <th className="py-3 px-4 font-black">Reg ID</th>
-                    <th className="py-3 px-4 font-black">Customer</th>
-                    <th className="py-3 px-4 font-black">Mobile</th>
-                    <th className="py-3 px-4 font-black">Telecaller</th>
-                    <th className="py-3 px-4 font-black">Location</th>
-                    <th className="py-3 px-4 font-black">Wedding Date</th>
-                    <th className="py-3 px-4 font-black">Expected Shopping</th>
-                    <th className="py-3 px-4 font-black">Status</th>
-                    <th className="py-3 px-4 font-black">Next Follow-up</th>
-                    <th className="py-3 px-4 font-black text-right">Actions</th>
+                    <th className="py-3 px-4 font-bold">Reg ID</th>
+                    <th className="py-3 px-4 font-bold">Customer</th>
+                    <th className="py-3 px-4 font-bold">Mobile</th>
+                    <th className="py-3 px-4 font-bold">Telecaller</th>
+                    <th className="py-3 px-4 font-bold">Location</th>
+                    <th className="py-3 px-4 font-bold">Wedding Date</th>
+                    <th className="py-3 px-4 font-bold">Expected Shopping</th>
+                    <th className="py-3 px-4 font-bold">Status</th>
+                    <th className="py-3 px-4 font-bold">Next Follow-up</th>
+                    <th className="py-3 px-4 font-bold text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#DFDDD7]">
+                <tbody className="divide-y divide-[#E8D9D4]">
                   {loading ? (
                     <tr>
-                      <td colSpan={10} className="text-center py-12 text-muted">
-                        <RefreshCw className="w-5 h-5 animate-spin text-[#C9A45C] mx-auto mb-2" />
+                      <td colSpan={10} className="text-center py-12 text-[#6F5963]">
+                        <RefreshCw className="w-5 h-5 animate-spin text-[#B76E79] mx-auto mb-2" />
                         <span>Loading telecaller queue...</span>
                       </td>
                     </tr>
                   ) : currentList.length === 0 ? (
                     <tr>
-                      <td colSpan={10} className="text-center py-12 text-muted">
-                        <CircleCheck className="w-10 h-10 text-[#16805B] mx-auto mb-2" />
-                        <div className="font-bold text-sm text-[#182033]">Queue is currently clear!</div>
-                        <div className="text-xs text-muted mt-0.5">All calls in this queue have been handled.</div>
+                      <td colSpan={10} className="text-center py-12 text-[#6F5963]">
+                        <CircleCheck className="w-10 h-10 text-[#198754] mx-auto mb-2" />
+                        <div className="font-bold text-sm text-[#4A173A]">Queue is currently clear!</div>
+                        <div className="text-xs text-[#6F5963] mt-0.5">All calls in this queue have been handled.</div>
                       </td>
                     </tr>
                   ) : (
@@ -472,11 +472,11 @@ export default function TelecallerDeskPage() {
                         new Date(cust.follow_up_date).getTime() < new Date().setHours(0, 0, 0, 0);
 
                       return (
-                        <tr key={cust.id} className="hover:bg-[#F6F4EF]/70 transition-colors">
-                          <td className="py-3 px-4 font-black text-primary">
+                        <tr key={cust.id} className="hover:bg-[#FFF1F2] transition-colors">
+                          <td className="py-3 px-4 font-bold text-[#4A173A]">
                             <Link
                               to={`/wedding-crm/customers/${cust.id}`}
-                              className="hover:text-[#C98218] hover:underline"
+                              className="hover:text-[#B76E79] hover:underline"
                             >
                               {cust.customer_code}
                             </Link>
@@ -484,59 +484,59 @@ export default function TelecallerDeskPage() {
                           <td className="py-3 px-4">
                             <Link
                               to={`/wedding-crm/customers/${cust.id}`}
-                              className="font-bold text-[#182033] hover:text-[#C98218] block"
+                              className="font-semibold text-[#2B1722] hover:text-[#4A173A] block"
                             >
                               {cust.customer_name}
                             </Link>
-                            <span className="text-[10px] text-muted block mt-0.5">
+                            <span className="text-[10px] text-[#6F5963] block mt-0.5">
                               {cust.preferred_shopping_category || 'General Wedding'}
                             </span>
                           </td>
-                          <td className="py-3 px-4 font-semibold text-[#182033]">
+                          <td className="py-3 px-4 font-medium text-[#2B1722]">
                             {cust.mobile_number}
                           </td>
-                          <td className="py-3 px-4 font-semibold text-gray-700">
+                          <td className="py-3 px-4 font-medium text-[#6F5963]">
                             {cust.assigned_telecaller ? (
-                              <span className="badge b-new text-[11px]">
+                              <span className="bg-[#FFFAF7] border border-[#E8D9D4] text-[#4A173A] px-2 py-0.5 rounded-full text-[11px] font-semibold">
                                 👤 {cust.assigned_telecaller}
                               </span>
                             ) : (
-                              <span className="text-muted italic text-[11px]">Unassigned</span>
+                              <span className="text-[#9A858D] italic text-[11px]">Unassigned</span>
                             )}
                           </td>
-                          <td className="py-3 px-4 font-medium text-muted">
+                          <td className="py-3 px-4 font-medium text-[#6F5963]">
                             📍 {cust.location_name || 'Store'}
                           </td>
                           <td className="py-3 px-4">
                             {cust.wedding_date ? (
-                              <span className="text-pink-700 font-bold">
+                              <span className="text-[#B76E79] font-medium">
                                 💍 {new Date(cust.wedding_date).toLocaleDateString()}
                               </span>
                             ) : (
-                              <span className="text-muted">TBD</span>
+                              <span className="text-[#9A858D]">TBD</span>
                             )}
                           </td>
-                          <td className="py-3 px-4 font-bold text-blue-900">
+                          <td className="py-3 px-4 font-semibold text-[#4A173A]">
                             {cust.expected_shopping_date ? (
                               new Date(cust.expected_shopping_date).toLocaleDateString()
                             ) : (
-                              <span className="text-muted font-normal">TBD</span>
+                              <span className="text-[#9A858D] font-normal">TBD</span>
                             )}
                           </td>
                           <td className="py-3 px-4">
-                            <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${badge.bg}`}>
+                            <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${badge.bg}`}>
                               <span className={`w-1.5 h-1.5 rounded-full ${badge.dot}`} />
                               {cust.customer_status}
                             </span>
                           </td>
                           <td className="py-3 px-4">
                             {cust.follow_up_date ? (
-                              <span className={`font-bold ${isOverdue ? 'text-[#C7374A]' : 'text-[#182033]'}`}>
+                              <span className={`font-semibold ${isOverdue ? 'text-[#B42318]' : 'text-[#2B1722]'}`}>
                                 {new Date(cust.follow_up_date).toLocaleDateString()}
-                                {isOverdue && <span className="ml-1 text-[9px] bg-red-100 text-red-700 px-1 rounded uppercase font-black">Overdue</span>}
+                                {isOverdue && <span className="ml-1 text-[9px] bg-[#FDE8E7] text-[#B42318] px-1 rounded uppercase font-bold">Overdue</span>}
                               </span>
                             ) : (
-                              <span className="text-muted">None</span>
+                              <span className="text-[#9A858D]">None</span>
                             )}
                           </td>
                           <td className="py-3 px-4 text-right">
@@ -544,10 +544,10 @@ export default function TelecallerDeskPage() {
                               {/* Log Call Button */}
                               <button
                                 onClick={() => handleOpenCallModal(cust)}
-                                className="px-3 py-1.5 bg-[#101C36] hover:bg-[#07101F] text-[#C9A45C] font-black rounded-xl text-xs flex items-center gap-1 shadow-xs border border-[#C9A45C]/30"
+                                className="px-3 py-1.5 bg-[#4A173A] hover:bg-[#6A2853] text-white font-semibold rounded-xl text-xs flex items-center gap-1 shadow-xs border border-[#B76E79]/30"
                                 title="Call & Log Outcome"
                               >
-                                <PhoneCall className="w-3.5 h-3.5" />
+                                <PhoneCall className="w-3.5 h-3.5 text-[#E8C7A8]" />
                                 <span>Call</span>
                               </button>
 
@@ -556,7 +556,7 @@ export default function TelecallerDeskPage() {
                                 href={`https://wa.me/91${cust.mobile_number.replace(/\D/g, '')}?text=Namaste%20${encodeURIComponent(cust.customer_name)}%2C%20greetings%20from%20BSC%20Exclusive!`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="p-1.5 bg-green-600 hover:bg-green-700 text-white rounded-xl text-xs"
+                                className="p-1.5 bg-[#198754] hover:bg-[#16805B] text-white rounded-xl text-xs"
                                 title="Chat on WhatsApp"
                               >
                                 <MessageCircle className="w-3.5 h-3.5" />
@@ -565,7 +565,7 @@ export default function TelecallerDeskPage() {
                               {/* Mark Shopping Confirmed Quick Action */}
                               <button
                                 onClick={() => handleQuickStatus(cust, 'Shopping Confirmed')}
-                                className="p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-xs border border-blue-200"
+                                className="p-1.5 bg-[#F6E2E5] hover:bg-[#D89AA3]/30 text-[#4A173A] rounded-xl text-xs border border-[#E8D9D4]"
                                 title="Mark Shopping Confirmed"
                               >
                                 <Check className="w-3.5 h-3.5" />
@@ -574,7 +574,7 @@ export default function TelecallerDeskPage() {
                               {/* Mark Won Quick Action */}
                               <button
                                 onClick={() => handleQuickStatus(cust, 'Won')}
-                                className="p-1.5 bg-emerald-50 hover:bg-emerald-100 text-[#16805B] rounded-xl text-xs border border-emerald-200"
+                                className="p-1.5 bg-[#E8F5EE] hover:bg-[#198754]/20 text-[#198754] rounded-xl text-xs border border-[#E8D9D4]"
                                 title="Mark Won"
                               >
                                 <Award className="w-3.5 h-3.5" />
@@ -583,10 +583,10 @@ export default function TelecallerDeskPage() {
                               {/* View Details */}
                               <Link
                                 to={`/wedding-crm/customers/${cust.id}`}
-                                className="p-1.5 bg-[#F6F4EF] hover:bg-[#DFDDD7] text-primary rounded-xl text-xs"
+                                className="p-1.5 bg-[#FFFAF7] hover:bg-[#FFF7F2] text-[#4A173A] rounded-xl text-xs border border-[#E8D9D4]"
                                 title="Open Full Profile"
                               >
-                                <Eye className="w-3.5 h-3.5" />
+                                <Eye className="w-3.5 h-3.5 text-[#B76E79]" />
                               </Link>
                             </div>
                           </td>
@@ -599,20 +599,20 @@ export default function TelecallerDeskPage() {
             </div>
           </div>
 
-          {/* Call Logging Form Modal (Section 14 Specification) */}
+          {/* Call Logging Form Modal */}
           {callModalOpen && activeCustomer && (
             <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-              <div className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-[#DFDDD7] space-y-4 animate-scale-in max-h-[90vh] overflow-y-auto">
-                <div className="flex items-center justify-between pb-3 border-b border-[#DFDDD7]">
+              <div className="bg-[#FFFDFC] rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-[#E8D9D4] space-y-4 animate-scale-in max-h-[90vh] overflow-y-auto">
+                <div className="flex items-center justify-between pb-3 border-b border-[#E8D9D4]">
                   <div>
-                    <h3 className="text-base font-black text-[#182033]">
+                    <h3 className="text-base font-bold text-[#4A173A]">
                       Log Call: {activeCustomer.customer_name}
                     </h3>
-                    <div className="text-xs text-muted">
+                    <div className="text-xs text-[#6F5963]">
                       {activeCustomer.customer_code} · 📱 {activeCustomer.mobile_number} · 📍 {activeCustomer.location_name || 'Store'}
                     </div>
                   </div>
-                  <button onClick={() => setCallModalOpen(false)} className="p-1 text-muted hover:bg-[#F6F4EF] rounded-lg">
+                  <button onClick={() => setCallModalOpen(false)} className="p-1 text-[#6F5963] hover:text-[#4A173A] hover:bg-[#FFF7F2] rounded-lg">
                     <X className="w-5 h-5" />
                   </button>
                 </div>
@@ -621,7 +621,7 @@ export default function TelecallerDeskPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {/* Call Outcome */}
                     <div>
-                      <label className="block text-[10px] font-bold uppercase text-muted mb-1">
+                      <label className="block text-[10px] font-bold uppercase text-[#6F5963] mb-1">
                         Call Outcome *
                       </label>
                       <select
@@ -642,7 +642,7 @@ export default function TelecallerDeskPage() {
                             new_customer_status: nextStatus
                           });
                         }}
-                        className="w-full px-3 py-2 bg-[#F6F4EF] border border-[#DFDDD7] rounded-xl font-bold"
+                        className="w-full px-3 py-2 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-semibold text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
                       >
                         {CALL_OUTCOMES.map((out) => (
                           <option key={out} value={out}>
@@ -652,15 +652,15 @@ export default function TelecallerDeskPage() {
                       </select>
                     </div>
 
-                    {/* Customer Status Update (Section 13 Workflow) */}
+                    {/* Customer Status Update */}
                     <div>
-                      <label className="block text-[10px] font-bold uppercase text-muted mb-1">
+                      <label className="block text-[10px] font-bold uppercase text-[#6F5963] mb-1">
                         Update Customer Status
                       </label>
                       <select
                         value={callForm.new_customer_status}
                         onChange={(e) => setCallForm({ ...callForm, new_customer_status: e.target.value })}
-                        className="w-full px-3 py-2 bg-[#F6F4EF] border border-[#DFDDD7] rounded-xl font-bold text-primary"
+                        className="w-full px-3 py-2 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-semibold text-[#4A173A] focus:outline-none focus:border-[#B76E79]"
                       >
                         {CUSTOMER_STATUSES.map((st) => (
                           <option key={st} value={st}>
@@ -672,26 +672,26 @@ export default function TelecallerDeskPage() {
 
                     {/* Next Follow-up Date */}
                     <div>
-                      <label className="block text-[10px] font-bold uppercase text-muted mb-1">
+                      <label className="block text-[10px] font-bold uppercase text-[#6F5963] mb-1">
                         Next Follow-up Date
                       </label>
                       <input
                         type="date"
                         value={callForm.next_follow_up_date}
                         onChange={(e) => setCallForm({ ...callForm, next_follow_up_date: e.target.value })}
-                        className="w-full px-3 py-2 bg-[#F6F4EF] border border-[#DFDDD7] rounded-xl font-bold"
+                        className="w-full px-3 py-2 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-semibold text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
                       />
                     </div>
 
                     {/* Preferred Call Time */}
                     <div>
-                      <label className="block text-[10px] font-bold uppercase text-muted mb-1">
+                      <label className="block text-[10px] font-bold uppercase text-[#6F5963] mb-1">
                         Preferred Call Window
                       </label>
                       <select
                         value={callForm.next_follow_up_time}
                         onChange={(e) => setCallForm({ ...callForm, next_follow_up_time: e.target.value })}
-                        className="w-full px-3 py-2 bg-[#F6F4EF] border border-[#DFDDD7] rounded-xl font-medium"
+                        className="w-full px-3 py-2 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-medium text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
                       >
                         {CALL_TIME_OPTIONS.map((time) => (
                           <option key={time} value={time}>
@@ -703,21 +703,21 @@ export default function TelecallerDeskPage() {
 
                     {/* Expected Shopping Date (Updated) */}
                     <div className="sm:col-span-2">
-                      <label className="block text-[10px] font-bold uppercase text-muted mb-1">
+                      <label className="block text-[10px] font-bold uppercase text-[#6F5963] mb-1">
                         Expected Shopping Date (Updated from call)
                       </label>
                       <input
                         type="date"
                         value={callForm.expected_shopping_date}
                         onChange={(e) => setCallForm({ ...callForm, expected_shopping_date: e.target.value })}
-                        className="w-full px-3 py-2 bg-[#F6F4EF] border border-[#DFDDD7] rounded-xl font-bold"
+                        className="w-full px-3 py-2 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-semibold text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
                       />
                     </div>
                   </div>
 
                   {/* Customer Remarks */}
                   <div>
-                    <label className="block text-[10px] font-bold uppercase text-muted mb-1">
+                    <label className="block text-[10px] font-bold uppercase text-[#6F5963] mb-1">
                       Call Notes & Customer Response *
                     </label>
                     <textarea
@@ -726,12 +726,12 @@ export default function TelecallerDeskPage() {
                       placeholder="Enter customer response, family shopping schedule, saree/fabric preferences, budget discussed..."
                       value={callForm.remarks}
                       onChange={(e) => setCallForm({ ...callForm, remarks: e.target.value })}
-                      className="w-full px-3 py-2 bg-[#F6F4EF] border border-[#DFDDD7] rounded-xl font-medium"
+                      className="w-full px-3 py-2 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-medium text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
                     />
                   </div>
 
-                  <div className="flex items-center justify-between pt-3 border-t border-[#DFDDD7]">
-                    <div className="text-[10px] text-muted">
+                  <div className="flex items-center justify-between pt-3 border-t border-[#E8D9D4]">
+                    <div className="text-[10px] text-[#6F5963]">
                       Will create a call audit record under your profile.
                     </div>
 
@@ -739,14 +739,14 @@ export default function TelecallerDeskPage() {
                       <button
                         type="button"
                         onClick={() => setCallModalOpen(false)}
-                        className="px-4 py-2 rounded-xl bg-[#F6F4EF] hover:bg-[#DFDDD7] font-bold text-[#182033]"
+                        className="px-4 py-2 rounded-xl bg-[#FFFAF7] hover:bg-[#FFF7F2] border border-[#E8D9D4] font-semibold text-[#4A173A]"
                       >
                         Cancel
                       </button>
                       <button
                         type="submit"
                         disabled={savingCall}
-                        className="px-6 py-2 rounded-xl bg-[#101C36] hover:bg-[#07101F] text-[#C9A45C] font-black shadow-md border border-[#C9A45C]/30"
+                        className="px-6 py-2 rounded-xl bg-[#4A173A] hover:bg-[#6A2853] text-white font-semibold shadow-xs border border-[#B76E79]/30"
                       >
                         {savingCall ? 'Saving...' : 'Save & Log Outcome'}
                       </button>

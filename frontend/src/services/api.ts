@@ -817,6 +817,47 @@ export const API = {
     const q = params ? new URLSearchParams(cleanQueryParams(params)).toString() : '';
     return apiFetch(`/employees${q ? `?${q}` : ''}`);
   },
+  async getEmployeeProfile(id: string | number) {
+    return apiFetch(`/employees/${id}/profile`);
+  },
+  async uploadEmployeePhoto(id: string | number, file: File) {
+    const fd = new FormData();
+    fd.append('photo', file);
+    return apiFetch(`/employees/${id}/photo`, { method: 'POST', body: fd });
+  },
+  async removeEmployeePhoto(id: string | number) {
+    return apiFetch(`/employees/${id}/photo`, { method: 'DELETE' });
+  },
+  getEmployeePhotoUrl(id: string | number) {
+    const apiBase = getApiBase();
+    return `${apiBase}/employees/${id}/photo`;
+  },
+  async getEmployeeDocuments(id: string | number) {
+    return apiFetch(`/employees/${id}/documents`);
+  },
+  async uploadEmployeeDocument(id: string | number, file: File, documentType: string) {
+    const fd = new FormData();
+    fd.append('document', file);
+    fd.append('documentType', documentType);
+    return apiFetch(`/employees/${id}/documents`, { method: 'POST', body: fd });
+  },
+  async replaceEmployeeDocument(id: string | number, docId: string | number, file: File, documentType?: string) {
+    const fd = new FormData();
+    fd.append('document', file);
+    if (documentType) fd.append('documentType', documentType);
+    return apiFetch(`/employees/${id}/documents/${docId}`, { method: 'PUT', body: fd });
+  },
+  async deleteEmployeeDocument(id: string | number, docId: string | number) {
+    return apiFetch(`/employees/${id}/documents/${docId}`, { method: 'DELETE' });
+  },
+  getEmployeeDocumentViewUrl(id: string | number, docId: string | number) {
+    const apiBase = getApiBase();
+    return `${apiBase}/employees/${id}/documents/${docId}/view`;
+  },
+  getEmployeeDocumentDownloadUrl(id: string | number, docId: string | number) {
+    const apiBase = getApiBase();
+    return `${apiBase}/employees/${id}/documents/${docId}/download`;
+  },
   async addCandidate(data: any) {
     // Legacy route uses /add or we just map it in our generic call
     return apiFetch('/candidates', {
@@ -1102,6 +1143,65 @@ export const API = {
   async getVmFloors() { return apiFetch('/vm/floors'); },
   async createVmFloor(payload: any) { return apiFetch('/vm/floors', { method: 'POST', body: JSON.stringify(payload) }); },
   async deleteVmFloor(payload: any) { return apiFetch('/vm/floors/delete', { method: 'POST', body: JSON.stringify(typeof payload === 'object' ? payload : { id: payload }) }); },
+  async getVmPhotos(params?: { locationId?: string | number; floor?: string; section?: string; submissionId?: string; pointId?: string; date?: string; dateFrom?: string; dateTo?: string; inspector?: string; status?: string; limit?: number; offset?: number }) {
+    const q = params ? new URLSearchParams(cleanQueryParams(params)).toString() : '';
+    return apiFetch(`/vm/photos${q ? `?${q}` : ''}`);
+  },
+  async uploadVmPhotos(
+    filesOrFormData: File[] | File | FormData,
+    meta?: {
+      floor?: string;
+      section?: string;
+      location_name?: string;
+      locationName?: string;
+      locationId?: string | number;
+      location_id?: string | number;
+      pointId?: string;
+      point_id?: string;
+      submissionId?: string;
+      submission_id?: string;
+    }
+  ) {
+    if (typeof FormData !== 'undefined' && filesOrFormData instanceof FormData) {
+      return apiFetch('/vm/photos', { method: 'POST', body: filesOrFormData });
+    }
+    const fd = new FormData();
+    const files = Array.isArray(filesOrFormData) ? filesOrFormData : [filesOrFormData];
+    files.forEach((file) => {
+      fd.append('photos', file);
+    });
+    if (meta) {
+      if (meta.floor) fd.append('floor', meta.floor);
+      if (meta.section) fd.append('section', meta.section);
+      if (meta.location_name || meta.locationName) {
+        fd.append('location_name', meta.location_name || meta.locationName || '');
+        fd.append('locationName', meta.locationName || meta.location_name || '');
+      }
+      if (meta.locationId || meta.location_id) {
+        fd.append('locationId', String(meta.locationId || meta.location_id));
+        fd.append('location_id', String(meta.location_id || meta.locationId));
+      }
+      if (meta.pointId || meta.point_id) {
+        fd.append('pointId', meta.pointId || meta.point_id || '');
+        fd.append('point_id', meta.point_id || meta.pointId || '');
+      }
+      if (meta.submissionId || meta.submission_id) {
+        fd.append('submissionId', meta.submissionId || meta.submission_id || '');
+        fd.append('submission_id', meta.submission_id || meta.submissionId || '');
+      }
+    }
+    return apiFetch('/vm/photos', { method: 'POST', body: fd });
+  },
+  async deleteVmPhoto(photoId: string) {
+    return apiFetch(`/vm/photos/${photoId}`, { method: 'DELETE' });
+  },
+  async linkVmPhotos(submissionId: string, photoIds: string[]) {
+    return apiFetch('/vm/photos/link', { method: 'POST', body: JSON.stringify({ submissionId, photoIds }) });
+  },
+  getVmPhotoFileUrl(photoId: string) {
+    const apiBase = getApiBase();
+    return `${apiBase}/vm/photos/${photoId}/file`;
+  },
 
   // Chat (Gemini AI)
   async getChatStatus() { return apiFetch('/chat/status'); },

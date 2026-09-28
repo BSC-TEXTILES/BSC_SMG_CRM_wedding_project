@@ -136,17 +136,17 @@ export default function WeddingReports() {
                 />
                 <button
                   onClick={handleExport}
-                  className="px-3.5 py-2 bg-white hover:bg-[#F6F4EF] border border-[#DFDDD7] rounded-xl text-xs font-bold text-[#182033] flex items-center gap-1.5 shadow-xs transition-colors"
+                  className="px-3.5 py-2 bg-[#FFFDFC] hover:bg-[#FFF7F2] border border-[#E8D9D4] rounded-xl text-xs font-bold text-[#4A173A] flex items-center gap-1.5 shadow-2xs transition-colors"
                 >
-                  <Download className="w-3.5 h-3.5 text-[#C98218]" />
+                  <Download className="w-3.5 h-3.5 text-[#B76E79]" />
                   <span>Export Report</span>
                 </button>
                 <button
                   onClick={loadReport}
                   disabled={loading}
-                  className="px-3.5 py-2 bg-white hover:bg-[#F6F4EF] border border-[#DFDDD7] rounded-xl text-xs font-bold text-[#182033] flex items-center gap-1.5 transition-colors"
+                  className="px-3.5 py-2 bg-[#FFFDFC] hover:bg-[#FFF7F2] border border-[#E8D9D4] rounded-xl text-xs font-bold text-[#4A173A] flex items-center gap-1.5 transition-colors shadow-2xs"
                 >
-                  <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-[#C9A45C]' : ''}`} />
+                  <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-[#B76E79]' : 'text-[#B76E79]'}`} />
                   <span>Refresh</span>
                 </button>
               </div>
@@ -154,24 +154,24 @@ export default function WeddingReports() {
           />
 
           {/* Telecaller Performance Table Card */}
-          <div className="bg-white rounded-3xl border border-[#DFDDD7] shadow-xs p-6 space-y-4">
-            <div className="flex items-center justify-between border-b border-[#DFDDD7] pb-3">
+          <div className="bg-[#FFFDFC] rounded-3xl border border-[#E8D9D4] shadow-xs p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-[#E8D9D4] pb-3">
               <div>
-                <h3 className="text-sm font-black text-[#182033] uppercase tracking-wider">
+                <h3 className="text-sm font-black text-[#4A173A] uppercase tracking-wider">
                   Telecaller & Staff Performance Matrix
                 </h3>
-                <div className="text-xs text-muted">
+                <div className="text-xs text-[#6F5963]">
                   Calls logged, confirmations, store visits, and sales won per telecaller
                 </div>
               </div>
-              <span className="text-xs font-bold text-muted">
+              <span className="text-xs font-bold text-[#6F5963]">
                 {telecallerPerf.length} active staff
               </span>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs text-[#182033]">
-                <thead className="bg-[#07101F] text-white uppercase text-[10px] tracking-wider">
+            <div className="overflow-x-auto rounded-2xl border border-[#E8D9D4]">
+              <table className="w-full text-left text-xs text-[#2B1722]">
+                <thead className="bg-[#F8EDE8] text-[#4A173A] uppercase text-[10px] tracking-wider border-b border-[#E8D9D4]">
                   <tr>
                     <th className="py-3 px-4 font-black">Telecaller Name</th>
                     <th className="py-3 px-4 font-black">Location</th>
@@ -182,17 +182,17 @@ export default function WeddingReports() {
                     <th className="py-3 px-4 font-black text-right">Conversion Rate</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#DFDDD7]">
+                <tbody className="divide-y divide-[#E8D9D4] bg-[#FFFDFC]">
                   {loading ? (
                     <tr>
-                      <td colSpan={7} className="text-center py-10 text-muted">
-                        <RefreshCw className="w-5 h-5 animate-spin text-[#C9A45C] mx-auto mb-2" />
+                      <td colSpan={7} className="text-center py-10 text-[#6F5963]">
+                        <RefreshCw className="w-5 h-5 animate-spin text-[#B76E79] mx-auto mb-2" />
                         <span>Loading performance data...</span>
                       </td>
                     </tr>
                   ) : telecallerPerf.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="text-center py-10 text-muted">
+                      <td colSpan={7} className="text-center py-10 text-[#6F5963]">
                         No performance records found for the selected store location.
                       </td>
                     </tr>
@@ -203,27 +203,27 @@ export default function WeddingReports() {
                       const rate = total > 0 ? Math.round((won / total) * 100) : 0;
 
                       return (
-                        <tr key={idx} className="hover:bg-[#F6F4EF]/70 transition-colors">
-                          <td className="py-3 px-4 font-black text-primary">
+                        <tr key={idx} className="hover:bg-[#FFF1F2] transition-colors">
+                          <td className="py-3 px-4 font-black text-[#4A173A]">
                             👤 {p.name || p.telecaller_name}
                           </td>
-                          <td className="py-3 px-4 font-medium text-muted">
+                          <td className="py-3 px-4 font-medium text-[#6F5963]">
                             📍 {p.location_name || 'Store'}
                           </td>
-                          <td className="py-3 px-4 font-bold text-[#182033]">
+                          <td className="py-3 px-4 font-bold text-[#2B1722]">
                             {total}
                           </td>
-                          <td className="py-3 px-4 font-bold text-blue-700">
+                          <td className="py-3 px-4 font-bold text-[#356AE6]">
                             {p.connected || 0}
                           </td>
-                          <td className="py-3 px-4 font-bold text-purple-700">
+                          <td className="py-3 px-4 font-bold text-[#6A2853]">
                             {p.confirmed || 0}
                           </td>
-                          <td className="py-3 px-4 font-black text-[#16805B]">
+                          <td className="py-3 px-4 font-black text-[#198754]">
                             {won}
                           </td>
                           <td className="py-3 px-4 text-right">
-                            <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-black bg-emerald-50 text-emerald-800 border border-emerald-300">
+                            <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-black bg-[#E8F5EE] text-[#198754] border border-[#198754]/30">
                               {rate}%
                             </span>
                           </td>
@@ -237,75 +237,75 @@ export default function WeddingReports() {
           </div>
 
           {/* Import History */}
-          <div className="bg-white rounded-3xl border border-[#DFDDD7] shadow-xs p-5 sm:p-6 space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-[#DFDDD7]">
-              <h3 className="text-sm font-black text-[#182033] flex items-center gap-2">
-                <History className="w-4.5 h-4.5 text-[#C98218]" />
+          <div className="bg-[#FFFDFC] rounded-3xl border border-[#E8D9D4] shadow-xs p-5 sm:p-6 space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-[#E8D9D4]">
+              <h3 className="text-sm font-black text-[#4A173A] flex items-center gap-2">
+                <History className="w-4.5 h-4.5 text-[#B76E79]" />
                 <span>Bulk Import History</span>
               </h3>
               <div className="flex items-center gap-2">
                 <Link
                   to="/wedding-crm/import"
-                  className="text-[11px] font-black text-[#101C36] hover:text-[#C98218] inline-flex items-center gap-1.5 underline"
+                  className="text-[11px] font-black text-[#4A173A] hover:text-[#6A2853] inline-flex items-center gap-1.5 underline"
                 >
-                  <FileText className="w-3 h-3" />
+                  <FileText className="w-3 h-3 text-[#B76E79]" />
                   New Import
                 </Link>
                 <button
                   type="button"
                   onClick={loadImportLogs}
                   disabled={logsLoading}
-                  className="text-[11px] font-bold text-[#101C36] hover:text-[#C98218] inline-flex items-center gap-1.5 underline disabled:opacity-60"
+                  className="text-[11px] font-bold text-[#4A173A] hover:text-[#6A2853] inline-flex items-center gap-1.5 underline disabled:opacity-60"
                 >
-                  {logsLoading && <Loader2 className="w-3 h-3 animate-spin" />}
+                  {logsLoading && <Loader2 className="w-3 h-3 animate-spin text-[#B76E79]" />}
                   Refresh
                 </button>
               </div>
             </div>
 
             {importLogs.length === 0 ? (
-              <p className="text-xs text-muted py-3">
+              <p className="text-xs text-[#6F5963] py-3">
                 No bulk imports recorded for your stores yet.
               </p>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto rounded-2xl border border-[#E8D9D4]">
                 <table className="w-full text-left text-xs">
-                  <thead>
-                    <tr className="border-b border-[#DFDDD7] text-[#182033] font-black text-[11px]">
-                      <th className="py-2 pr-3">When</th>
-                      <th className="py-2 px-3">File</th>
-                      <th className="py-2 px-3">Store</th>
-                      <th className="py-2 px-3">Uploaded By</th>
-                      <th className="py-2 px-3 text-right">Rows</th>
-                      <th className="py-2 px-3 text-right">Imported</th>
-                      <th className="py-2 px-3 text-right">Duplicates</th>
-                      <th className="py-2 px-3 text-right">Errors</th>
-                      <th className="py-2 pl-3">Status</th>
+                  <thead className="bg-[#F8EDE8] text-[#4A173A] font-black text-[11px] border-b border-[#E8D9D4]">
+                    <tr>
+                      <th className="py-2.5 pr-3 pl-3">When</th>
+                      <th className="py-2.5 px-3">File</th>
+                      <th className="py-2.5 px-3">Store</th>
+                      <th className="py-2.5 px-3">Uploaded By</th>
+                      <th className="py-2.5 px-3 text-right">Rows</th>
+                      <th className="py-2.5 px-3 text-right">Imported</th>
+                      <th className="py-2.5 px-3 text-right">Duplicates</th>
+                      <th className="py-2.5 px-3 text-right">Errors</th>
+                      <th className="py-2.5 pl-3 pr-3">Status</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#EFEEE9] text-[#3a4160]">
+                  <tbody className="divide-y divide-[#EADBD7] text-[#2B1722] bg-[#FFFDFC]">
                     {importLogs.map((log: any) => (
-                      <tr key={log.id} className="hover:bg-[#F6F4EF]/70 transition-colors">
-                        <td className="py-2.5 pr-3 font-mono whitespace-nowrap">
+                      <tr key={log.id} className="hover:bg-[#FFF1F2] transition-colors">
+                        <td className="py-2.5 pr-3 pl-3 font-mono whitespace-nowrap text-[#6F5963]">
                           {log.created_at ? new Date(log.created_at).toLocaleString() : '—'}
                         </td>
-                        <td className="py-2.5 px-3 font-medium max-w-[200px] truncate" title={log.file_name}>
+                        <td className="py-2.5 px-3 font-medium max-w-[200px] truncate text-[#4A173A]" title={log.file_name}>
                           {log.file_name || '—'}
                         </td>
-                        <td className="py-2.5 px-3">{log.location_name || (log.location_id ? `#${log.location_id}` : 'All')}</td>
-                        <td className="py-2.5 px-3">{log.user_name || '—'}</td>
-                        <td className="py-2.5 px-3 text-right font-mono">{log.total_rows ?? 0}</td>
-                        <td className="py-2.5 px-3 text-right font-mono font-bold text-emerald-700">{log.imported_count ?? 0}</td>
-                        <td className="py-2.5 px-3 text-right font-mono text-amber-700">{log.duplicate_count ?? 0}</td>
-                        <td className="py-2.5 px-3 text-right font-mono font-bold text-red-700">{log.error_count ?? 0}</td>
-                        <td className="py-2.5 pl-3">
+                        <td className="py-2.5 px-3 text-[#6F5963]">{log.location_name || (log.location_id ? `#${log.location_id}` : 'All')}</td>
+                        <td className="py-2.5 px-3 font-semibold text-[#2B1722]">{log.user_name || '—'}</td>
+                        <td className="py-2.5 px-3 text-right font-mono text-[#6F5963]">{log.total_rows ?? 0}</td>
+                        <td className="py-2.5 px-3 text-right font-mono font-bold text-[#198754]">{log.imported_count ?? 0}</td>
+                        <td className="py-2.5 px-3 text-right font-mono text-[#C58A18] font-bold">{log.duplicate_count ?? 0}</td>
+                        <td className="py-2.5 px-3 text-right font-mono font-bold text-[#B42318]">{log.error_count ?? 0}</td>
+                        <td className="py-2.5 pl-3 pr-3">
                           <span
-                            className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase ${
+                            className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
                               String(log.status || '').toLowerCase().replace(/[\s-]+/g, '_') === 'completed_with_errors'
-                                ? 'bg-amber-100 text-amber-800'
+                                ? 'bg-[#FFF4D6] text-[#C58A18]'
                                 : String(log.status || '').toLowerCase().replace(/[\s-]+/g, '_') === 'failed'
-                                ? 'bg-red-100 text-red-800'
-                                : 'bg-emerald-100 text-emerald-800'
+                                ? 'bg-[#FDE8E7] text-[#B42318]'
+                                : 'bg-[#E8F5EE] text-[#198754]'
                             }`}
                           >
                             {String(log.status || 'Completed').replace(/[\s-]+/g, ' ')}
@@ -318,7 +318,7 @@ export default function WeddingReports() {
               </div>
             )}
 
-            <p className="text-[10px] text-muted">
+            <p className="text-[10px] text-[#6F5963]">
               Every CSV / Excel upload into the customer register is logged here with its user, store and row counts.
             </p>
           </div>

@@ -165,11 +165,11 @@ export default function WeddingFollowUpCalendar() {
                   value={locationFilter}
                   onChange={(val) => setLocationFilter(val)}
                 />
-                <div className="flex items-center bg-white rounded-xl border border-[#DFDDD7] p-1 text-xs font-bold shadow-2xs">
+                <div className="flex items-center bg-[#FFFDFC] rounded-xl border border-[#E8D9D4] p-1 text-xs font-bold shadow-xs">
                   <button
                     onClick={() => setViewMode('month')}
                     className={`px-3 py-1 rounded-lg transition-all ${
-                      viewMode === 'month' ? 'bg-[#101C36] text-[#C9A45C]' : 'text-muted'
+                      viewMode === 'month' ? 'bg-[#B76E79] text-white shadow-xs' : 'text-[#6F5963] hover:text-[#4A173A]'
                     }`}
                   >
                     Month View
@@ -177,7 +177,7 @@ export default function WeddingFollowUpCalendar() {
                   <button
                     onClick={() => setViewMode('list')}
                     className={`px-3 py-1 rounded-lg transition-all ${
-                      viewMode === 'list' ? 'bg-[#101C36] text-[#C9A45C]' : 'text-muted'
+                      viewMode === 'list' ? 'bg-[#B76E79] text-white shadow-xs' : 'text-[#6F5963] hover:text-[#4A173A]'
                     }`}
                   >
                     List View
@@ -188,16 +188,16 @@ export default function WeddingFollowUpCalendar() {
           />
 
           {/* Calendar Header Navigator */}
-          <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#DFDDD7] shadow-xs flex items-center justify-between">
+          <div className="bg-[#FFFDFC] p-4 sm:p-5 rounded-2xl border border-[#E8D9D4] shadow-xs flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#101C36] text-[#C9A45C] flex items-center justify-center font-black">
+              <div className="w-10 h-10 rounded-xl bg-[#4A173A] text-[#B76E79] flex items-center justify-center font-black shadow-xs">
                 <CalendarDays className="w-5 h-5" />
               </div>
               <div>
-                <h2 className="text-lg font-black text-[#182033]">
+                <h2 className="text-lg font-black text-[#4A173A]">
                   {monthNames[month]} {year}
                 </h2>
-                <div className="text-xs text-muted font-semibold">
+                <div className="text-xs text-[#6F5963] font-semibold">
                   Follow-up Calls & Expected Shopping Appointments
                 </div>
               </div>
@@ -206,20 +206,20 @@ export default function WeddingFollowUpCalendar() {
             <div className="flex items-center gap-2">
               <button
                 onClick={handlePrevMonth}
-                className="p-2 rounded-xl bg-[#F6F4EF] hover:bg-[#DFDDD7] text-primary transition-colors"
+                className="p-2 rounded-xl bg-[#FFF7F2] hover:bg-[#E8D9D4] text-[#4A173A] border border-[#E8D9D4] transition-colors"
                 title="Previous Month"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setCurrentDate(new Date())}
-                className="px-3 py-1.5 rounded-xl bg-[#F6F4EF] hover:bg-[#DFDDD7] text-xs font-bold text-primary transition-colors"
+                className="px-3 py-1.5 rounded-xl bg-[#FFF7F2] hover:bg-[#E8D9D4] text-xs font-bold text-[#4A173A] border border-[#E8D9D4] transition-colors"
               >
                 Today
               </button>
               <button
                 onClick={handleNextMonth}
-                className="p-2 rounded-xl bg-[#F6F4EF] hover:bg-[#DFDDD7] text-primary transition-colors"
+                className="p-2 rounded-xl bg-[#FFF7F2] hover:bg-[#E8D9D4] text-[#4A173A] border border-[#E8D9D4] transition-colors"
                 title="Next Month"
               >
                 <ChevronRight className="w-4 h-4" />
@@ -230,9 +230,9 @@ export default function WeddingFollowUpCalendar() {
           {/* Main Grid: Calendar on Left, Selected Day Details on Right */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Calendar Grid (2 Cols) */}
-            <div className="lg:col-span-2 bg-white rounded-3xl border border-[#DFDDD7] shadow-xs p-5 space-y-4">
+            <div className="lg:col-span-2 bg-[#FFFDFC] rounded-3xl border border-[#E8D9D4] shadow-xs p-5 space-y-4">
               {/* Day of Week Labels */}
-              <div className="grid grid-cols-7 gap-1 text-center font-black text-[11px] uppercase tracking-wider text-muted border-b border-[#DFDDD7] pb-2">
+              <div className="grid grid-cols-7 gap-1 text-center font-black text-[11px] uppercase tracking-wider text-[#6F5963] border-b border-[#E8D9D4] pb-2">
                 <span>Sun</span>
                 <span>Mon</span>
                 <span>Tue</span>
@@ -245,7 +245,7 @@ export default function WeddingFollowUpCalendar() {
               {/* Day Grid */}
               <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
                 {blanks.map((b) => (
-                  <div key={`blank-${b}`} className="min-h-[70px] sm:min-h-[85px] bg-[#F6F4EF]/30 rounded-xl" />
+                  <div key={`blank-${b}`} className="min-h-[70px] sm:min-h-[85px] bg-[#FFF7F2]/60 rounded-xl border border-dashed border-[#E8D9D4]/50" />
                 ))}
 
                 {daysArray.map((dayNum) => {
@@ -264,18 +264,18 @@ export default function WeddingFollowUpCalendar() {
                       }}
                       className={`min-h-[70px] sm:min-h-[85px] p-2 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between ${
                         isSelected
-                          ? 'border-[#C9A45C] bg-[#101C36] text-white shadow-md'
+                          ? 'border-[#B76E79] bg-[#4A173A] text-white shadow-md'
                           : isToday
-                          ? 'border-blue-400 bg-blue-50/50'
-                          : 'border-[#DFDDD7] bg-[#F6F4EF]/50 hover:bg-white hover:border-[#C9A45C]'
+                          ? 'border-[#B76E79] bg-[#F6E2E5]/50'
+                          : 'border-[#E8D9D4] bg-[#FFFAF7] hover:bg-white hover:border-[#B76E79]'
                       }`}
                     >
                       <div className="flex items-center justify-between">
-                        <span className={`text-xs font-black ${isSelected ? 'text-[#C9A45C]' : isToday ? 'text-blue-700' : 'text-[#182033]'}`}>
+                        <span className={`text-xs font-black ${isSelected ? 'text-[#E8C7A8]' : isToday ? 'text-[#B76E79]' : 'text-[#2B1722]'}`}>
                           {dayNum}
                         </span>
                         {isToday && (
-                          <span className="text-[8px] bg-blue-600 text-white px-1 py-0.2 rounded-full font-black uppercase">
+                          <span className="text-[8px] bg-[#B76E79] text-white px-1.5 py-0.5 rounded-full font-black uppercase tracking-wider">
                             Today
                           </span>
                         )}
@@ -286,8 +286,8 @@ export default function WeddingFollowUpCalendar() {
                           <span
                             className={`inline-block px-1.5 py-0.5 rounded-lg text-[9px] font-black ${
                               isSelected
-                                ? 'bg-[#C9A45C] text-[#101C36]'
-                                : 'bg-amber-100 text-amber-900 border border-amber-300'
+                                ? 'bg-[#B76E79] text-white'
+                                : 'bg-[#F6E2E5] text-[#4A173A] border border-[#E8D9D4]'
                             }`}
                           >
                             {count} call{count > 1 ? 's' : ''}
@@ -301,21 +301,21 @@ export default function WeddingFollowUpCalendar() {
             </div>
 
             {/* Selected Date Customers Detail Panel (1 Col) */}
-            <div className="bg-white rounded-3xl border border-[#DFDDD7] shadow-xs p-5 space-y-4">
-              <div className="border-b border-[#DFDDD7] pb-3">
-                <h3 className="text-sm font-black text-[#182033] uppercase tracking-wider">
+            <div className="bg-[#FFFDFC] rounded-3xl border border-[#E8D9D4] shadow-xs p-5 space-y-4">
+              <div className="border-b border-[#E8D9D4] pb-3">
+                <h3 className="text-sm font-black text-[#4A173A] uppercase tracking-wider">
                   Follow-ups for {selectedDateStr ? new Date(selectedDateStr).toLocaleDateString() : 'Selected Day'}
                 </h3>
-                <div className="text-xs text-muted">
+                <div className="text-xs text-[#6F5963]">
                   {selectedDayEvents.length} scheduled customer calls
                 </div>
               </div>
 
               {selectedDayEvents.length === 0 ? (
-                <div className="text-center py-12 text-muted text-xs">
-                  <CalendarIcon className="w-8 h-8 text-muted mx-auto mb-2" />
-                  <div className="font-bold text-sm text-[#182033]">No follow-ups for this date</div>
-                  <div className="text-xs text-muted mt-0.5">Select another date on the calendar to view scheduled follow-ups.</div>
+                <div className="text-center py-12 text-[#6F5963] text-xs">
+                  <CalendarIcon className="w-8 h-8 text-[#B76E79] mx-auto mb-2 opacity-80" />
+                  <div className="font-bold text-sm text-[#4A173A]">No follow-ups for this date</div>
+                  <div className="text-xs text-[#6F5963] mt-0.5">Select another date on the calendar to view scheduled follow-ups.</div>
                 </div>
               ) : (
                 <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
@@ -324,51 +324,51 @@ export default function WeddingFollowUpCalendar() {
                     return (
                       <div
                         key={cust.id}
-                        className="p-3.5 rounded-2xl bg-[#F6F4EF] border border-[#DFDDD7] hover:border-[#C9A45C] text-xs space-y-2 transition-all"
+                        className="p-3.5 rounded-2xl bg-[#FFFAF7] border border-[#E8D9D4] hover:border-[#B76E79] text-xs space-y-2 transition-all shadow-2xs"
                       >
                         <div className="flex items-center justify-between">
                           <Link
                             to={`/wedding-crm/customers/${cust.id}`}
-                            className="font-black text-primary hover:text-[#C98218] hover:underline"
+                            className="font-black text-[#4A173A] hover:text-[#6A2853] hover:underline"
                           >
                             {cust.customer_name}
                           </Link>
-                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-black border ${badge.bg}`}>
+                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${badge.bg}`}>
                             {cust.customer_status}
                           </span>
                         </div>
 
-                        <div className="text-muted space-y-1 text-[11px]">
-                          <div className="flex items-center gap-1.5 font-semibold">
+                        <div className="text-[#6F5963] space-y-1 text-[11px]">
+                          <div className="flex items-center gap-1.5 font-semibold text-[#2B1722]">
                             <span>📱 {cust.mobile_number}</span>
                             <span>·</span>
                             <span>📍 {cust.location_name || 'Store'}</span>
                           </div>
-                          <div className="text-primary font-bold">
+                          <div className="text-[#4A173A] font-bold">
                             Assigned: {cust.assigned_telecaller || 'Unassigned'}
                           </div>
                           {cust.preferred_call_time && (
-                            <div className="text-amber-800 font-bold">
+                            <div className="text-[#C58A18] font-bold">
                               Window: {cust.preferred_call_time}
                             </div>
                           )}
                         </div>
 
-                        <div className="flex items-center justify-between pt-2 border-t border-[#DFDDD7]">
+                        <div className="flex items-center justify-between pt-2 border-t border-[#E8D9D4]">
                           <a
                             href={`https://wa.me/91${cust.mobile_number?.replace(/\D/g, '')}?text=Namaste%20${encodeURIComponent(cust.customer_name)}%2C%20greetings%20from%20BSC%20Exclusive!`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-[11px] font-bold text-green-700 hover:underline"
+                            className="text-[11px] font-bold text-[#198754] hover:underline"
                           >
                             WhatsApp
                           </a>
 
                           <Link
                             to={`/wedding-crm/customers/${cust.id}`}
-                            className="px-2.5 py-1 bg-[#101C36] text-[#C9A45C] rounded-lg text-[10px] font-bold shadow-xs flex items-center gap-1"
+                            className="px-2.5 py-1 bg-[#4A173A] hover:bg-[#6A2853] text-white rounded-lg text-[10px] font-bold shadow-xs flex items-center gap-1 transition-colors"
                           >
-                            <Eye className="w-3 h-3" /> View Record
+                            <Eye className="w-3 h-3 text-[#B76E79]" /> View Record
                           </Link>
                         </div>
                       </div>

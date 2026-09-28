@@ -414,23 +414,23 @@ export default function WeddingImport() {
           />
 
           {/* Main Card */}
-          <div className="bg-white rounded-3xl border border-[#DFDDD7] shadow-xs p-6 sm:p-8 space-y-6">
+          <div className="bg-[#FFFDFC] rounded-3xl border border-[#E8D9D4] shadow-xs p-6 sm:p-8 space-y-6">
             
             {/* Header with Template Downloads */}
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pb-6 border-b border-[#DFDDD7]">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pb-6 border-b border-[#E8D9D4]">
               <div>
-                <h2 className="text-xl font-black text-[#182033] flex items-center gap-2">
-                  <FileSpreadsheet className="w-6 h-6 text-[#C98218]" />
+                <h2 className="text-xl font-black text-[#4A173A] flex items-center gap-2">
+                  <FileSpreadsheet className="w-6 h-6 text-[#B76E79]" />
                   <span>Bulk Import Wedding Customers</span>
                 </h2>
-                <p className="text-xs text-muted mt-1 max-w-2xl leading-relaxed">
+                <p className="text-xs text-[#6F5963] mt-1 max-w-2xl leading-relaxed">
                   Upload customer registrations in bulk via CSV or Excel (.xlsx).
                   Duplicate mobile numbers will be skipped automatically to maintain clean customer history.
                 </p>
-                <p className="text-[11px] text-muted mt-1.5 flex items-start gap-1.5">
-                  <FileText className="w-3.5 h-3.5 text-[#C98218] shrink-0 mt-0.5" />
+                <p className="text-[11px] text-[#6F5963] mt-1.5 flex items-start gap-1.5">
+                  <FileText className="w-3.5 h-3.5 text-[#B76E79] shrink-0 mt-0.5" />
                   <span>
-                    Official template: <span className="font-bold text-[#182033]">{TEMPLATE_FILE_NAME}</span> — keep row 1 unchanged,
+                    Official template: <span className="font-bold text-[#4A173A]">{TEMPLATE_FILE_NAME}</span> — keep row 1 unchanged,
                     delete the 3 grey sample rows, max {MAX_IMPORT_ROWS} rows per upload, store branch chosen below.
                   </span>
                 </p>
@@ -442,13 +442,13 @@ export default function WeddingImport() {
                   type="button"
                   onClick={() => handleDownloadTemplate('csv')}
                   disabled={downloadingCsv}
-                  className="px-4 py-2.5 bg-white hover:bg-[#F6F4EF] border border-[#DFDDD7] rounded-xl text-xs font-bold text-[#182033] flex items-center gap-2 shadow-xs transition-all hover:border-[#C98218] active:scale-95 disabled:opacity-50"
+                  className="px-4 py-2.5 bg-[#FFFDFC] hover:bg-[#FFF7F2] border border-[#B76E79] rounded-xl text-xs font-bold text-[#4A173A] flex items-center gap-2 shadow-2xs transition-all hover:border-[#4A173A] active:scale-95 disabled:opacity-50"
                   title="Download standard UTF-8 CSV template"
                 >
                   {downloadingCsv ? (
-                    <Loader2 className="w-3.5 h-3.5 text-[#C98218] animate-spin" />
+                    <Loader2 className="w-3.5 h-3.5 text-[#B76E79] animate-spin" />
                   ) : (
-                    <Download className="w-3.5 h-3.5 text-[#C98218]" />
+                    <Download className="w-3.5 h-3.5 text-[#B76E79]" />
                   )}
                   <span>Download CSV Template</span>
                 </button>
@@ -457,13 +457,13 @@ export default function WeddingImport() {
                   type="button"
                   onClick={() => handleDownloadTemplate('xlsx')}
                   disabled={downloadingXlsx}
-                  className="px-4 py-2.5 bg-[#059669]/10 hover:bg-[#059669]/15 border border-[#059669]/30 rounded-xl text-xs font-bold text-[#065F46] flex items-center gap-2 shadow-xs transition-all active:scale-95 disabled:opacity-50"
+                  className="px-4 py-2.5 bg-[#FFF7F2] hover:bg-[#F6E2E5] border border-[#B76E79] rounded-xl text-xs font-bold text-[#4A173A] flex items-center gap-2 shadow-2xs transition-all active:scale-95 disabled:opacity-50"
                   title="Download Excel spreadsheet with color-coded headers"
                 >
                   {downloadingXlsx ? (
-                    <Loader2 className="w-3.5 h-3.5 text-[#059669] animate-spin" />
+                    <Loader2 className="w-3.5 h-3.5 text-[#B76E79] animate-spin" />
                   ) : (
-                    <FileSpreadsheet className="w-3.5 h-3.5 text-[#059669]" />
+                    <FileSpreadsheet className="w-3.5 h-3.5 text-[#B76E79]" />
                   )}
                   <span>Download Excel (.xlsx) Template</span>
                 </button>
@@ -471,13 +471,13 @@ export default function WeddingImport() {
             </div>
 
             {/* Companion Guidance & Format Legend Card */}
-            <div className="p-4 sm:p-5 rounded-2xl bg-[#FAF9F5] border border-[#DFDDD7] space-y-3">
+            <div className="p-4 sm:p-5 rounded-2xl bg-[#FFFAF7] border border-[#E8D9D4] space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="text-xs font-black text-[#182033] uppercase tracking-wider flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-[#C98218]" />
+                <span className="text-xs font-black text-[#4A173A] uppercase tracking-wider flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-[#B76E79]" />
                   <span>Column Specification & Legend</span>
                 </span>
-                <span className="text-[11px] font-medium text-muted">
+                <span className="text-[11px] font-medium text-[#6F5963]">
                   Exact Row 1 headers · {COLUMN_SPECS.filter((c) => c.required).length} required ·{' '}
                   {COLUMN_SPECS.filter((c) => !c.required).length} optional · max {MAX_IMPORT_ROWS} rows
                 </span>
@@ -488,40 +488,40 @@ export default function WeddingImport() {
                   <div
                     key={col.name}
                     className={`p-2.5 rounded-xl border space-y-1 ${
-                      col.required ? 'bg-red-50 border-red-200' : 'bg-emerald-50/70 border-emerald-200'
+                      col.required ? 'bg-[#FDE8E7] border-[#B42318]/30' : 'bg-[#FFFDFC] border-[#E8D9D4]'
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span
                         className={`font-mono text-[11px] font-black break-all ${
-                          col.required ? 'text-red-900' : 'text-emerald-900'
+                          col.required ? 'text-[#B42318]' : 'text-[#4A173A]'
                         }`}
                       >
                         {col.name}
                       </span>
                       <span
                         className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase shrink-0 ${
-                          col.required ? 'bg-red-600 text-white' : 'bg-emerald-100 text-emerald-800'
+                          col.required ? 'bg-[#B42318] text-white' : 'bg-[#E8F5EE] text-[#198754]'
                         }`}
                       >
                         {col.required ? 'Required' : 'Optional'}
                       </span>
                     </div>
-                    <p className={`text-[11px] ${col.required ? 'text-red-800' : 'text-emerald-800'}`}>{col.hint}</p>
-                    <p className="text-[10px] text-muted font-mono italic break-words">
+                    <p className={`text-[11px] ${col.required ? 'text-[#B42318]' : 'text-[#2B1722]'}`}>{col.hint}</p>
+                    <p className="text-[10px] text-[#6F5963] font-mono italic break-words">
                       {col.format ? `${col.format} · ` : ''}e.g. {col.example}
                     </p>
                   </div>
                 ))}
               </div>
 
-              <p className="text-[11px] text-muted leading-relaxed">
-                <span className="font-black text-[#182033]">Legacy headers still accepted:</span> name, phone,
+              <p className="text-[11px] text-[#6F5963] leading-relaxed">
+                <span className="font-black text-[#4A173A]">Legacy headers still accepted:</span> name, phone,
                 alternate_number, email_id, marriage_date, expected_visit_date, preferred_collection, estimated_members,
                 budget, budget_range, store_location, followup_call_date, notes, telecaller.
               </p>
-              <p className="text-[11px] text-muted leading-relaxed">
-                <span className="font-black text-[#182033]">Before uploading:</span> delete the 3 grey sample rows from{' '}
+              <p className="text-[11px] text-[#6F5963] leading-relaxed">
+                <span className="font-black text-[#4A173A]">Before uploading:</span> delete the 3 grey sample rows from{' '}
                 {TEMPLATE_FILE_NAME}, keep row 1 unchanged, and pick the store branch on this screen (the file does not
                 contain a store column).
               </p>
@@ -531,8 +531,8 @@ export default function WeddingImport() {
             <form onSubmit={handleImport} className="space-y-6 max-w-2xl">
               {/* Store Location Selection */}
               <div>
-                <label className="block text-xs font-black text-[#182033] mb-1.5">
-                  Assign Store Location <span className="text-red-600">*</span>
+                <label className="block text-xs font-black text-[#4A173A] mb-1.5">
+                  Assign Store Location <span className="text-[#B42318]">*</span>
                 </label>
                 <div className="relative">
                   <select
@@ -542,9 +542,9 @@ export default function WeddingImport() {
                       setLocationId(e.target.value);
                       if (e.target.value) setLocationError(false);
                     }}
-                    className={`w-full px-4 py-3 bg-[#F6F4EF] border ${
-                      locationError ? 'border-red-500 ring-2 ring-red-200' : 'border-[#DFDDD7]'
-                    } rounded-xl font-bold text-xs text-[#182033] focus:outline-hidden focus:border-[#101C36] transition-colors`}
+                    className={`w-full px-4 py-3 bg-[#FFFAF7] border ${
+                      locationError ? 'border-[#B42318] ring-2 ring-[#B42318]/20' : 'border-[#E8D9D4]'
+                    } rounded-xl font-bold text-xs text-[#2B1722] focus:outline-hidden focus:border-[#B76E79] transition-colors`}
                   >
                     <option value="">-- Choose Store Location (Required) --</option>
                     {locations.map((loc) => (
@@ -555,20 +555,20 @@ export default function WeddingImport() {
                   </select>
                 </div>
                 {locationError && (
-                  <p className="text-[11px] text-red-600 font-bold mt-1.5 flex items-center gap-1">
+                  <p className="text-[11px] text-[#B42318] font-bold mt-1.5 flex items-center gap-1">
                     <CircleAlert className="w-3.5 h-3.5 shrink-0" />
                     <span>Please assign a store location to import customer records.</span>
                   </p>
                 )}
-                <span className="text-[11px] text-muted block mt-1">
+                <span className="text-[11px] text-[#6F5963] block mt-1">
                   Default branch for records where "store_location" is not specified in the file.
                 </span>
               </div>
 
               {/* File Input */}
               <div>
-                <label className="block text-xs font-black text-[#182033] mb-1.5">
-                  Select Customer File (.csv or .xlsx) <span className="text-red-600">*</span>
+                <label className="block text-xs font-black text-[#4A173A] mb-1.5">
+                  Select Customer File (.csv or .xlsx) <span className="text-[#B42318]">*</span>
                 </label>
                 <div className="relative">
                   <input
@@ -576,14 +576,14 @@ export default function WeddingImport() {
                     type="file"
                     accept=".csv, .xlsx, .xls"
                     onChange={handleFileChange}
-                    className="w-full p-3.5 bg-[#F6F4EF] border border-[#DFDDD7] rounded-2xl file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-xs file:font-black file:bg-[#101C36] file:text-[#C9A45C] hover:file:bg-[#07101F] cursor-pointer text-xs font-medium text-[#182033]"
+                    className="w-full p-3.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-2xl file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-xs file:font-black file:bg-[#4A173A] file:text-white hover:file:bg-[#6A2853] cursor-pointer text-xs font-medium text-[#2B1722] transition-colors"
                   />
                 </div>
 
                 {/* File Error Alert */}
                 {fileError && (
-                  <div className="mt-2.5 p-3 rounded-xl bg-red-50 border border-red-200 text-red-800 text-xs flex items-start gap-2">
-                    <CircleAlert className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                  <div className="mt-2.5 p-3 rounded-xl bg-[#FDE8E7] border border-[#B42318]/30 text-[#B42318] text-xs flex items-start gap-2">
+                    <CircleAlert className="w-4 h-4 text-[#B42318] shrink-0 mt-0.5" />
                     <div>
                       <span className="font-bold">File Validation Error: </span>
                       <span>{fileError}</span>
@@ -593,19 +593,19 @@ export default function WeddingImport() {
 
                 {/* File Ready Confirmation */}
                 {file && !fileError && (
-                  <div className="mt-2.5 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center justify-between">
+                  <div className="mt-2.5 p-3 rounded-xl bg-[#E8F5EE] border border-[#198754]/30 text-[#198754] text-xs flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <CircleCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <CircleCheck className="w-4 h-4 text-[#198754] shrink-0" />
                       <div>
                         <span className="font-bold">{file.name}</span>
                         {filePreviewCount !== null && (
-                          <span className="text-emerald-700 ml-1.5">
+                          <span className="text-[#198754] ml-1.5">
                             ({filePreviewCount} customer {filePreviewCount === 1 ? 'row' : 'rows'} detected)
                           </span>
                         )}
                       </div>
                     </div>
-                    <span className="text-[10px] uppercase font-black px-2 py-0.5 rounded bg-emerald-200/80 text-emerald-900">Ready</span>
+                    <span className="text-[10px] uppercase font-black px-2 py-0.5 rounded bg-[#198754]/20 text-[#198754]">Ready</span>
                   </div>
                 )}
               </div>
@@ -615,16 +615,16 @@ export default function WeddingImport() {
                 <button
                   type="submit"
                   disabled={uploading || !file || !locationId || !!fileError}
-                  className="px-8 py-3.5 rounded-xl bg-[#101C36] hover:bg-[#07101F] text-[#C9A45C] font-black text-xs shadow-md border border-[#C9A45C]/30 flex items-center gap-2.5 transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="px-8 py-3.5 rounded-xl bg-[#4A173A] hover:bg-[#6A2853] text-white font-black text-xs shadow-md border border-[#4A173A] flex items-center gap-2.5 transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   {uploading ? (
                     <>
-                      <Loader2 className="w-4 h-4 animate-spin text-[#C9A45C]" />
+                      <Loader2 className="w-4 h-4 animate-spin text-[#B76E79]" />
                       <span>Processing & Importing Customer Records...</span>
                     </>
                   ) : (
                     <>
-                      <Upload className="w-4 h-4 text-[#C9A45C]" />
+                      <Upload className="w-4 h-4 text-[#E8C7A8]" />
                       <span>Start Bulk Import</span>
                     </>
                   )}
@@ -634,49 +634,49 @@ export default function WeddingImport() {
 
             {/* Post-Import Result Summary */}
             {importResult && (
-              <div className="p-5 sm:p-6 rounded-2xl bg-white border border-[#DFDDD7] shadow-sm space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-3 border-b border-[#DFDDD7]">
+              <div className="p-5 sm:p-6 rounded-2xl bg-[#FFFDFC] border border-[#E8D9D4] shadow-xs space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-3 border-b border-[#E8D9D4]">
                   <div className="flex items-center gap-2">
                     {importedCount > 0 ? (
-                      <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                      <CheckCircle2 className="w-5 h-5 text-[#198754] shrink-0" />
                     ) : errorCount > 0 ? (
-                      <XCircle className="w-5 h-5 text-red-600 shrink-0" />
+                      <XCircle className="w-5 h-5 text-[#B42318] shrink-0" />
                     ) : (
-                      <Info className="w-5 h-5 text-amber-600 shrink-0" />
+                      <Info className="w-5 h-5 text-[#C58A18] shrink-0" />
                     )}
-                    <h3 className="font-black text-sm text-[#182033]">
+                    <h3 className="font-black text-sm text-[#4A173A]">
                       Import Execution Summary
                     </h3>
                   </div>
 
                   {/* Exact summary requirement: "X customers imported, Y duplicates skipped, Z errors." */}
-                  <span className="text-xs font-bold text-[#182033] bg-[#F6F4EF] px-3 py-1.5 rounded-xl border border-[#DFDDD7]">
+                  <span className="text-xs font-bold text-[#4A173A] bg-[#FFF7F2] px-3 py-1.5 rounded-xl border border-[#E8D9D4]">
                     {importedCount} customers imported, {duplicateCount} duplicates skipped, {errorCount} errors.
                   </span>
                 </div>
 
                 {/* Metric Badges */}
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
-                  <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200">
-                    <span className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider block">Imported Successfully</span>
-                    <span className="text-xl font-black text-emerald-900 mt-1 block">{importedCount}</span>
-                    <span className="text-[10px] text-emerald-700 block mt-0.5">of {totalRowsCount} rows</span>
+                  <div className="p-3 rounded-xl bg-[#E8F5EE] border border-[#198754]/30">
+                    <span className="text-[11px] font-bold text-[#198754] uppercase tracking-wider block">Imported Successfully</span>
+                    <span className="text-xl font-black text-[#198754] mt-1 block">{importedCount}</span>
+                    <span className="text-[10px] text-[#198754] block mt-0.5">of {totalRowsCount} rows</span>
                   </div>
 
-                  <div className="p-3 rounded-xl bg-amber-50 border border-amber-200">
-                    <span className="text-[11px] font-bold text-amber-800 uppercase tracking-wider block">Duplicates Skipped</span>
-                    <span className="text-xl font-black text-amber-900 mt-1 block">{duplicateCount}</span>
+                  <div className="p-3 rounded-xl bg-[#FFF4D6] border border-[#C58A18]/30">
+                    <span className="text-[11px] font-bold text-[#C58A18] uppercase tracking-wider block">Duplicates Skipped</span>
+                    <span className="text-xl font-black text-[#C58A18] mt-1 block">{duplicateCount}</span>
                   </div>
 
-                  <div className="p-3 rounded-xl bg-red-50 border border-red-200">
-                    <span className="text-[11px] font-bold text-red-800 uppercase tracking-wider block">Errors / Invalid Rows</span>
-                    <span className="text-xl font-black text-red-900 mt-1 block">{errorCount}</span>
+                  <div className="p-3 rounded-xl bg-[#FDE8E7] border border-[#B42318]/30">
+                    <span className="text-[11px] font-bold text-[#B42318] uppercase tracking-wider block">Errors / Invalid Rows</span>
+                    <span className="text-xl font-black text-[#B42318] mt-1 block">{errorCount}</span>
                   </div>
 
-                  <div className="p-3 rounded-xl bg-sky-50 border border-sky-200">
-                    <span className="text-[11px] font-bold text-sky-800 uppercase tracking-wider block">Warnings</span>
-                    <span className="text-xl font-black text-sky-900 mt-1 block">{warningCount}</span>
-                    <span className="text-[10px] text-sky-700 block mt-0.5">imported with notes</span>
+                  <div className="p-3 rounded-xl bg-[#EDE7F6] border border-[#6A2853]/20">
+                    <span className="text-[11px] font-bold text-[#6A2853] uppercase tracking-wider block">Warnings</span>
+                    <span className="text-xl font-black text-[#6A2853] mt-1 block">{warningCount}</span>
+                    <span className="text-[10px] text-[#6A2853] block mt-0.5">imported with notes</span>
                   </div>
                 </div>
 
@@ -687,12 +687,12 @@ export default function WeddingImport() {
                       type="button"
                       onClick={handleDownloadErrorReport}
                       disabled={downloadingReport}
-                      className="text-xs font-black inline-flex items-center gap-1.5 bg-[#101C36] text-white px-3.5 py-2 rounded-xl hover:bg-[#1d2b52] transition-colors disabled:opacity-60"
+                      className="text-xs font-black inline-flex items-center gap-1.5 bg-[#4A173A] text-white px-3.5 py-2 rounded-xl hover:bg-[#6A2853] transition-colors disabled:opacity-60 shadow-xs"
                     >
                       {downloadingReport ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-[#B76E79]" />
                       ) : (
-                        <FileDown className="w-3.5 h-3.5" />
+                        <FileDown className="w-3.5 h-3.5 text-[#E8C7A8]" />
                       )}
                       Download Error Report (.xlsx)
                     </button>
@@ -708,9 +708,9 @@ export default function WeddingImport() {
                       setFile(null);
                       setFilePreviewCount(null);
                     }}
-                    className="text-xs font-black inline-flex items-center gap-1.5 bg-white text-[#101C36] border border-[#DFDDD7] px-3.5 py-2 rounded-xl hover:bg-[#FAF9F5] transition-colors"
+                    className="text-xs font-black inline-flex items-center gap-1.5 bg-[#FFFDFC] text-[#4A173A] border border-[#E8D9D4] px-3.5 py-2 rounded-xl hover:bg-[#FFF7F2] transition-colors shadow-2xs"
                   >
-                    <Upload className="w-3.5 h-3.5" />
+                    <Upload className="w-3.5 h-3.5 text-[#B76E79]" />
                     Fix rows & upload again
                   </button>
                 </div>
@@ -721,7 +721,7 @@ export default function WeddingImport() {
                     <button
                       type="button"
                       onClick={() => setShowErrorDetails(!showErrorDetails)}
-                      className="text-xs font-bold text-red-700 hover:text-red-900 flex items-center gap-1.5 underline"
+                      className="text-xs font-bold text-[#B42318] hover:underline flex items-center gap-1.5"
                     >
                       <span>
                         {showErrorDetails ? 'Hide' : 'View'} Details of {importResult.errors.length} Skipped / Error Rows
@@ -734,20 +734,20 @@ export default function WeddingImport() {
                     </button>
 
                     {showErrorDetails && (
-                      <div className="max-h-60 overflow-y-auto rounded-xl border border-red-200 bg-red-50/50 p-3 text-xs">
+                      <div className="max-h-60 overflow-y-auto rounded-xl border border-[#B42318]/30 bg-[#FDE8E7] p-3 text-xs">
                         <table className="w-full text-left">
                           <thead>
-                            <tr className="border-b border-red-200 text-red-900 text-[11px] font-black">
+                            <tr className="border-b border-[#B42318]/20 text-[#B42318] text-[11px] font-black">
                               <th className="pb-1.5 pr-2">Row #</th>
                               <th className="pb-1.5 px-2">Customer</th>
                               <th className="pb-1.5 px-2">Mobile</th>
                               <th className="pb-1.5 pl-2">Reason</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-red-100 text-[11px] text-red-800 font-medium">
+                          <tbody className="divide-y divide-[#B42318]/10 text-[11px] text-[#B42318] font-medium">
                             {importResult.errors.map((err, idx) => (
                               <tr key={idx}>
-                                <td className="py-1.5 pr-2 font-mono font-bold text-red-900">
+                                <td className="py-1.5 pr-2 font-mono font-bold text-[#B42318]">
                                   {err.row > 0 ? `Row ${err.row}` : '—'}
                                 </td>
                                 <td className="py-1.5 px-2 font-medium">{err.customerName || '—'}</td>
@@ -768,7 +768,7 @@ export default function WeddingImport() {
                     <button
                       type="button"
                       onClick={() => setShowWarningDetails(!showWarningDetails)}
-                      className="text-xs font-bold text-sky-700 hover:text-sky-900 flex items-center gap-1.5 underline"
+                      className="text-xs font-bold text-[#6A2853] hover:underline flex items-center gap-1.5"
                     >
                       <span>
                         {showWarningDetails ? 'Hide' : 'View'} {importResult.warnings.length} Warning{importResult.warnings.length === 1 ? '' : 's'} (rows still imported)
@@ -781,20 +781,20 @@ export default function WeddingImport() {
                     </button>
 
                     {showWarningDetails && (
-                      <div className="max-h-48 overflow-y-auto rounded-xl border border-sky-200 bg-sky-50/60 p-3 text-xs">
+                      <div className="max-h-48 overflow-y-auto rounded-xl border border-[#6A2853]/20 bg-[#EDE7F6] p-3 text-xs">
                         <table className="w-full text-left">
                           <thead>
-                            <tr className="border-b border-sky-200 text-sky-900 text-[11px] font-black">
+                            <tr className="border-b border-[#6A2853]/20 text-[#6A2853] text-[11px] font-black">
                               <th className="pb-1.5 pr-2">Row #</th>
                               <th className="pb-1.5 px-2">Customer</th>
                               <th className="pb-1.5 px-2">Mobile</th>
                               <th className="pb-1.5 pl-2">Warning</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-sky-100 text-[11px] text-sky-800 font-medium">
+                          <tbody className="divide-y divide-[#6A2853]/10 text-[11px] text-[#6A2853] font-medium">
                             {(importResult.warnings || []).map((warn, idx) => (
                               <tr key={idx}>
-                                <td className="py-1.5 pr-2 font-mono font-bold text-sky-900">
+                                <td className="py-1.5 pr-2 font-mono font-bold text-[#6A2853]">
                                   {warn.row > 0 ? `Row ${warn.row}` : '—'}
                                 </td>
                                 <td className="py-1.5 px-2 font-medium">{warn.customerName || '—'}</td>
@@ -814,7 +814,7 @@ export default function WeddingImport() {
                   <div className="pt-2 flex items-center justify-between">
                     <Link
                       to="/wedding-crm/customers"
-                      className="text-xs font-black text-[#101C36] hover:text-[#C98218] flex items-center gap-1.5 transition-colors underline"
+                      className="text-xs font-black text-[#4A173A] hover:text-[#6A2853] flex items-center gap-1.5 transition-colors underline"
                     >
                       <span>Open Customer Register to view imported records →</span>
                     </Link>
@@ -824,66 +824,66 @@ export default function WeddingImport() {
             )}
 
             {/* Import History */}
-            <div className="p-4 sm:p-5 rounded-2xl bg-white border border-[#DFDDD7] shadow-sm space-y-3">
+            <div className="p-4 sm:p-5 rounded-2xl bg-[#FFFDFC] border border-[#E8D9D4] shadow-xs space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="text-xs font-black text-[#182033] uppercase tracking-wider flex items-center gap-1.5">
-                  <History className="w-3.5 h-3.5 text-[#C98218]" />
+                <span className="text-xs font-black text-[#4A173A] uppercase tracking-wider flex items-center gap-1.5">
+                  <History className="w-3.5 h-3.5 text-[#B76E79]" />
                   <span>Import History</span>
                 </span>
                 <button
                   type="button"
                   onClick={loadImportLogs}
                   disabled={logsLoading}
-                  className="text-[11px] font-bold text-[#101C36] hover:text-[#C98218] inline-flex items-center gap-1.5 underline disabled:opacity-60"
+                  className="text-[11px] font-bold text-[#4A173A] hover:text-[#6A2853] inline-flex items-center gap-1.5 underline disabled:opacity-60"
                 >
-                  {logsLoading && <Loader2 className="w-3 h-3 animate-spin" />}
+                  {logsLoading && <Loader2 className="w-3.5 h-3.5 animate-spin text-[#B76E79]" />}
                   Refresh
                 </button>
               </div>
 
               {importLogs.length === 0 ? (
-                <p className="text-[11px] text-muted py-2">
+                <p className="text-[11px] text-[#6F5963] py-2">
                   No imports recorded for your stores yet.
                 </p>
               ) : (
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto rounded-xl border border-[#E8D9D4]">
                   <table className="w-full text-left text-[11px]">
-                    <thead>
-                      <tr className="border-b border-[#DFDDD7] text-[#182033] font-black">
-                        <th className="py-2 pr-3">When</th>
-                        <th className="py-2 px-3">File</th>
-                        <th className="py-2 px-3">Store</th>
-                        <th className="py-2 px-3">By</th>
-                        <th className="py-2 px-3 text-right">Rows</th>
-                        <th className="py-2 px-3 text-right">Imported</th>
-                        <th className="py-2 px-3 text-right">Dupes</th>
-                        <th className="py-2 px-3 text-right">Errors</th>
-                        <th className="py-2 pl-3">Status</th>
+                    <thead className="bg-[#F8EDE8]">
+                      <tr className="border-b border-[#E8D9D4] text-[#4A173A] font-black">
+                        <th className="py-2.5 pr-3 pl-3">When</th>
+                        <th className="py-2.5 px-3">File</th>
+                        <th className="py-2.5 px-3">Store</th>
+                        <th className="py-2.5 px-3">By</th>
+                        <th className="py-2.5 px-3 text-right">Rows</th>
+                        <th className="py-2.5 px-3 text-right">Imported</th>
+                        <th className="py-2.5 px-3 text-right">Dupes</th>
+                        <th className="py-2.5 px-3 text-right">Errors</th>
+                        <th className="py-2.5 pl-3 pr-3">Status</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-[#EFEEE9] text-[#3a4160]">
+                    <tbody className="divide-y divide-[#EADBD7] text-[#2B1722] bg-[#FFFDFC]">
                       {importLogs.map((log) => (
-                        <tr key={log.id} className="hover:bg-[#FAF9F5]">
-                          <td className="py-2 pr-3 font-mono whitespace-nowrap">
+                        <tr key={log.id} className="hover:bg-[#FFF1F2] transition-colors">
+                          <td className="py-2 pr-3 pl-3 font-mono whitespace-nowrap text-[#6F5963]">
                             {log.created_at ? new Date(log.created_at).toLocaleString() : '—'}
                           </td>
-                          <td className="py-2 px-3 font-medium max-w-[180px] truncate" title={log.file_name}>
+                          <td className="py-2 px-3 font-medium max-w-[180px] truncate text-[#4A173A]" title={log.file_name}>
                             {log.file_name || '—'}
                           </td>
-                          <td className="py-2 px-3">{log.location_name || (log.location_id ? `#${log.location_id}` : 'All')}</td>
-                          <td className="py-2 px-3">{log.user_name || '—'}</td>
-                          <td className="py-2 px-3 text-right font-mono">{log.total_rows ?? 0}</td>
-                          <td className="py-2 px-3 text-right font-mono font-bold text-emerald-700">{log.imported_count ?? 0}</td>
-                          <td className="py-2 px-3 text-right font-mono text-amber-700">{log.duplicate_count ?? 0}</td>
-                          <td className="py-2 px-3 text-right font-mono font-bold text-red-700">{log.error_count ?? 0}</td>
-                          <td className="py-2 pl-3">
+                          <td className="py-2 px-3 text-[#6F5963]">{log.location_name || (log.location_id ? `#${log.location_id}` : 'All')}</td>
+                          <td className="py-2 px-3 font-semibold text-[#2B1722]">{log.user_name || '—'}</td>
+                          <td className="py-2 px-3 text-right font-mono text-[#6F5963]">{log.total_rows ?? 0}</td>
+                          <td className="py-2 px-3 text-right font-mono font-bold text-[#198754]">{log.imported_count ?? 0}</td>
+                          <td className="py-2 px-3 text-right font-mono text-[#C58A18] font-bold">{log.duplicate_count ?? 0}</td>
+                          <td className="py-2 px-3 text-right font-mono font-bold text-[#B42318]">{log.error_count ?? 0}</td>
+                          <td className="py-2 pl-3 pr-3">
                             <span
                               className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase ${
                                 String(log.status || '').toLowerCase().replace(/[\s-]+/g, '_') === 'completed_with_errors'
-                                  ? 'bg-amber-100 text-amber-800'
+                                  ? 'bg-[#FFF4D6] text-[#C58A18]'
                                   : String(log.status || '').toLowerCase().replace(/[\s-]+/g, '_') === 'failed'
-                                  ? 'bg-red-100 text-red-800'
-                                  : 'bg-emerald-100 text-emerald-800'
+                                  ? 'bg-[#FDE8E7] text-[#B42318]'
+                                  : 'bg-[#E8F5EE] text-[#198754]'
                               }`}
                             >
                               {String(log.status || 'Completed').replace(/[\s-]+/g, ' ')}
@@ -896,7 +896,7 @@ export default function WeddingImport() {
                 </div>
               )}
 
-              <p className="text-[10px] text-muted">
+              <p className="text-[10px] text-[#6F5963]">
                 Same history is available under Wedding → Reports → Import History.
               </p>
             </div>

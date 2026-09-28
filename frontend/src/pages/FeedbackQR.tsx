@@ -308,7 +308,7 @@ export default function FeedbackQR() {
       subtitle="POS & Customer Checkout QR Displays — Belagavi, Davanagere & Shivamogga"
       hideBreadcrumbs={true}
     >
-      <div className="max-w-7xl mx-auto space-y-6">
+      <div className="w-full min-w-0 space-y-6">
 
         {/* Location Selector Tabs Bar */}
         <div className="card-glass p-3 sm:p-4 flex flex-col md:flex-row items-center justify-between gap-4 border border-accent/20">

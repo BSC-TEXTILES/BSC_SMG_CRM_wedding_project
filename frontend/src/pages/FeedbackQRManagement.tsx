@@ -495,13 +495,13 @@ const LocationQrCard = ({ locQr, loading }: { locQr: any; loading: boolean }) =>
   }
 
   return (
-    <div className={`card-glass p-5 space-y-4 border {colors.border}`}>
+    <div className={`card-glass p-5 space-y-4 border ${colors.border}`}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <div className="font-extrabold text-primary text-sm uppercase tracking-wider">{locQr.locationName}</div>
           <div className="flex items-center gap-1.5 mt-0.5">
-            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${colors.bg} {colors.text} {colors.border}`}>
+            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${colors.bg} ${colors.text} ${colors.border}`}>
               {locQr.locationCode}
             </span>
             <span className="text-[10px] text-primary/60 font-medium">{locQr.storeName}</span>
@@ -531,9 +531,9 @@ const LocationQrCard = ({ locQr, loading }: { locQr: any; loading: boolean }) =>
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-2 text-center">
-        <div className="p-2 {colors.bg} rounded-xl border {colors.border}">
-          <div className="font-extrabold text-lg {colors.text}">{locQr.scanCount}</div>
-          <div className="text-[10px] uppercase tracking-wider {colors.text}/80">Scans</div>
+        <div className={`p-2 ${colors.bg} rounded-xl border ${colors.border}`}>
+          <div className={`font-extrabold text-lg ${colors.text}`}>{locQr.scanCount}</div>
+          <div className={`text-[10px] uppercase tracking-wider ${colors.text}/80`}>Scans</div>
         </div>
         <div className="p-2 bg-emerald-50 rounded-xl border border-emerald-200">
           <div className="font-extrabold text-lg text-emerald-800">{locQr.feedbackCount}</div>
@@ -606,12 +606,12 @@ const LocationQrPlaceholder = ({ locationCode, locationName, storeName }: { loca
   const colors = locationColors[locationCode as keyof typeof locationColors] || locationColors.BEL;
 
   return (
-    <div className="card-glass p-5 space-y-4 border {colors.border}">
+    <div className={`card-glass p-5 space-y-4 border ${colors.border}`}>
       <div className="flex items-center justify-between">
         <div>
           <div className="font-extrabold text-primary text-sm uppercase tracking-wider">{locationName}</div>
           <div className="flex items-center gap-1.5 mt-0.5">
-            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${colors.bg} {colors.text} {colors.border}`}>
+            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${colors.bg} ${colors.text} ${colors.border}`}>
               {locationCode}
             </span>
             <span className="text-[10px] text-primary/60 font-medium">{storeName}</span>

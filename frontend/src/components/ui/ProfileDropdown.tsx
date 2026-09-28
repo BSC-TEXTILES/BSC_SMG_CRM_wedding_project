@@ -122,7 +122,7 @@ export default function ProfileDropdown({
               onClick={() => { setOpen(false); setChangePasswordOpen(true); }}
               className="w-full flex items-center gap-2 p-2 rounded-xl text-text-primary hover:bg-background transition-colors cursor-pointer"
             >
-              <KeyRound className="w-4 h-4 text-[#C9A45C]" />
+              <KeyRound className="w-4 h-4 text-[#B76E79]" />
               <span>Update Password</span>
             </button>
 

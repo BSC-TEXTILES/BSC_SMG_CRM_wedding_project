@@ -272,239 +272,31 @@ class CandidateController {
     }
   }
 
+  /**
+   * GET /api/employees — Employee Master Directory listing.
+   *
+   * Delegates to employeeMasterService so the directory page and the four
+   * pre-existing consumers (Attendance, Dashboard, DepartmentHiring,
+   * SectionAllocation) share one query, one location scope and one DTO.
+   *
+   * Back-compatible contract: `{ success, employees, total }`. The directory
+   * additionally receives `stats`, `facets`, `actions` and pagination fields.
+   */
   async getEmployees(req, res) {
     try {
-      const db = require('../config/db');
-      // Build location filter scoped to the users table alias 'u'
-      const { clause: locClause, params: locParams } = await getLocationFilter(req, 'u');
-
-      // MySQL 5.7-compatible: match candidate by app_no or phone
-      let rows;
-      try {
-        [rows] = await db.query(
-          `SELECT
-              u.id as user_id, u.username as username, u.employee_id as emp_no,
-              u.full_name as name, u.email, u.phone,
-              COALESCE(c.app_no, u.candidate_app_no, u.employee_id, u.username) as app_no,
-              c.app_no as candidate_app_no,
-              COALESCE(u.section, c.section, '') as section,
-              c.reporting_manager as reporting_manager,
-              COALESCE(c.offered_doj, u.joining_date) as offered_doj,
-              c.updated_at as candidate_updated_at,
-              u.updated_at as user_updated_at, u.last_login_at,
-              COALESCE(u.department, c.department) as department,
-              COALESCE(u.designation, c.designation) as designation,
-              u.role, u.active, u.created_at, u.location_id, u.location_code,
-              c.dob,
-              c.gender,
-              c.blood_group,
-              c.aadhaar_number,
-              c.father_details,
-              c.mother_details,
-              COALESCE(c.religion_caste, CONCAT_WS('/', c.religion, c.caste)) as religion_caste,
-              c.religion,
-              c.caste,
-              c.languages_known,
-              c.city_state,
-              c.address,
-              c.qualification,
-              c.experience,
-              c.retail_experience,
-              c.previous_company,
-              c.previous_designation,
-              c.salary,
-              c.current_salary,
-              c.expected_salary,
-              c.photo_url,
-              c.aadhaar_url,
-              c.resume_url,
-              c.remarks,
-              c.source,
-              c.referrer,
-              c.referrer_emp_no,
-              c.notice_period,
-              c.source_detail,
-              c.q1, c.q2, c.q3, c.q4,
-              so.notice_period as offer_notice_pd,
-              COALESCE(so.est_doj, c.offered_doj, u.joining_date) as offer_est_doj,
-              COALESCE(so.actual_doj, u.joining_date) as offer_actual_doj,
-              so.status as offer_status,
-              so.remarks as offer_remarks,
-              so.updated_at as offer_updated_at,
-              l.location_name as branch,
-              u.joining_date,
-              COALESCE(c.offered_doj, u.joining_date) as actual_doj
-           FROM users u
-           LEFT JOIN locations l ON l.id = u.location_id
-           LEFT JOIN candidates c ON (
-             (u.candidate_app_no IS NOT NULL AND u.candidate_app_no != '' AND c.app_no = u.candidate_app_no)
-             OR (u.employee_id IS NOT NULL AND u.employee_id != '' AND c.app_no = u.employee_id)
-             OR (u.phone IS NOT NULL AND u.phone != '' AND c.phone = u.phone)
-           )
-           LEFT JOIN selection_offers so ON c.app_no = so.app_no
-           WHERE u.active = 1
-           ${locClause}
-           ORDER BY LOWER(u.full_name) ASC`,
-          locParams
-        );
-      } catch (sqlErr) {
-        console.warn('[getEmployees] Full query failed, trying simplified fallback:', sqlErr.message);
-        // Clean fallback: only existing columns on `users` table
-        [rows] = await db.query(
-          `SELECT
-              u.id as user_id, u.username as username, u.employee_id as emp_no,
-              u.full_name as name, u.email, u.phone,
-              COALESCE(u.employee_id, u.username) as app_no,
-              NULL as candidate_app_no,
-              COALESCE(u.section, '') as section,
-              NULL as reporting_manager,
-              u.joining_date as offered_doj,
-              u.updated_at as candidate_updated_at,
-              u.updated_at as user_updated_at, u.last_login_at,
-              u.department, u.designation, u.role, u.active, u.created_at,
-              u.location_id, u.location_code,
-              NULL as dob, NULL as gender, NULL as blood_group, NULL as aadhaar_number, NULL as father_details, NULL as mother_details,
-              '' as religion_caste, NULL as religion, NULL as caste, NULL as languages_known,
-              NULL as city_state, NULL as address, NULL as qualification, NULL as experience, NULL as retail_experience,
-              NULL as previous_company, NULL as previous_designation, NULL as salary, NULL as current_salary, NULL as expected_salary,
-              NULL as photo_url, NULL as aadhaar_url, NULL as resume_url, NULL as remarks, NULL as source, NULL as referrer, NULL as referrer_emp_no,
-              NULL as notice_period, NULL as source_detail, NULL as q1, NULL as q2, NULL as q3, NULL as q4,
-              NULL as offer_notice_pd, u.joining_date as offer_est_doj, u.joining_date as offer_actual_doj,
-              NULL as offer_status, NULL as offer_remarks, NULL as offer_updated_at,
-              COALESCE(l.location_name, '') as branch,
-              u.joining_date, u.joining_date as actual_doj
-           FROM users u
-           LEFT JOIN locations l ON l.id = u.location_id
-           WHERE u.active = 1
-           ${locClause}
-           ORDER BY LOWER(u.full_name) ASC`,
-          locParams
-        );
-      }
-
-      const colors = ['navy', 'gold', 'green', 'red', 'purple', 'teal'];
-
-      const formatLocalDate = (d) => {
-        if (!d) return '';
-        if (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}/.test(d)) {
-          return d.slice(0, 10);
-        }
-        const dt = new Date(d);
-        if (isNaN(dt.getTime())) return '';
-        const yyyy = dt.getFullYear();
-        const mm = String(dt.getMonth() + 1).padStart(2, '0');
-        const dd = String(dt.getDate()).padStart(2, '0');
-        return `${yyyy}-${mm}-${dd}`;
-      };
-
-      const employees = rows.map(r => {
-        const initials = r.name
-          ? r.name.split(' ').slice(0, 2).map(w => w[0] || '').join('').toUpperCase()
-          : 'E';
-        const colorIndex = ((r.name ? r.name.charCodeAt(0) : 0) + (r.name ? r.name.charCodeAt(1) || 0 : 0)) % colors.length;
-        
-const createdDate = new Date(r.created_at || Date.now());
-
-        // Use users table joining_date and actual_doj as primary, fallback to candidate/offer data
-        const joiningDateObj = r.joining_date
-          ? new Date(r.joining_date)
-          : (r.offer_actual_doj
-              ? new Date(r.offer_actual_doj)
-              : (r.offered_doj ? new Date(r.offered_doj) : (r.offer_updated_at ? new Date(r.offer_updated_at) : createdDate)));
-        
-        const actualDojObj = r.actual_doj
-          ? new Date(r.actual_doj)
-          : (r.offer_actual_doj ? new Date(r.offer_actual_doj) : null);
-
-        const rawDate = isNaN(joiningDateObj.getTime()) ? createdDate.getTime() : joiningDateObj.getTime();
-
-        const actualDojStr = formatLocalDate(r.actual_doj || r.offer_actual_doj || r.offered_doj || r.offer_updated_at || r.candidate_updated_at || r.user_updated_at || r.created_at);
-        const offeredDoj = formatLocalDate(r.offered_doj || r.offer_est_doj || r.offer_actual_doj);
-        const estDojStr = formatLocalDate(r.offer_est_doj || r.offered_doj);
-        const dobStr = formatLocalDate(r.dob);
-
-        const salaryOffered = r.salary || r.current_salary || r.expected_salary || '—';
-
-        return {
-          id: r.user_id,
-          userId: r.user_id,
-          username: r.username || '',
-          appNo: r.app_no,
-          candidateAppNo: r.candidate_app_no || null,
-          employeeCode: r.app_no,
-          employeeId: r.emp_no || '',
-          empNo: r.emp_no || '',
-          role: r.role || '',
-          active: !!r.active,
-          lastLoginAt: r.last_login_at || null,
-          name: r.name,
-          fullName: r.name,
-          initials,
-          color: colors[colorIndex],
-          phone: r.phone || '',
-          email: r.email || '',
-          dob: dobStr,
-          gender: r.gender || '',
-          cityState: r.city_state || '',
-          address: r.address || '',
-          desig: r.designation,
-          designation: r.designation,
-          department: r.department || '',
-          branch: r.branch || '',
-          reportingManager: r.reporting_manager || '',
-          status: 'Joined',
-          salary: salaryOffered,
-          expectedSalary: r.expected_salary || '',
-          previousSalary: r.current_salary || r.previous_salary || '',
-          currentSalary: r.current_salary || '',
-          offeredDoj,
-          actualDoj: actualDojStr,
-          estDoj: estDojStr,
-          joiningDate: formatLocalDate(r.joining_date),
-          noticePeriod: r.notice_period || r.offer_notice_pd || '',
-          experience: r.experience || '',
-          qualification: r.qualification || '',
-          retailExperience: r.retail_experience || '',
-          previousCompany: r.previous_company || '',
-          previousDesignation: r.previous_designation || '',
-          bloodGroup: r.blood_group || '',
-          aadhaarNumber: r.aadhaar_number || '',
-          fatherDetails: r.father_details || '',
-          motherDetails: r.mother_details || '',
-          religionCaste: r.religion_caste || '',
-          religion: r.religion || '',
-          caste: r.caste || '',
-          languagesKnown: (() => {
-            try {
-              if (!r.languages_known) return [];
-              if (typeof r.languages_known !== 'string') return r.languages_known;
-              if (r.languages_known.startsWith('[')) return JSON.parse(r.languages_known);
-              return [r.languages_known];
-            } catch { return [r.languages_known]; }
-          })(),
-          photoUrl: r.photo_url || '',
-          aadhaarUrl: r.aadhaar_url || '',
-          aadharUrl: r.aadhaar_url || '',
-          resumeUrl: r.resume_url || '',
-          source: r.source || '',
-          referrer: r.referrer || '',
-          referrerEmpNo: r.referrer_emp_no || '',
-          sourceDetail: r.source_detail || '',
-          q1: r.q1 || '',
-          q2: r.q2 || '',
-          q3: r.q3 || '',
-          q4: r.q4 || '',
-          remarks: r.remarks || r.offer_remarks || '',
-          section: r.section || '',
-          locationId: r.location_id || null,
-          locationCode: r.location_code || (r.location_id === 1 ? 'BEL' : r.location_id === 2 ? 'DAV' : r.location_id === 3 ? 'SHI' : null),
-          createdAt: r.created_at || null,
-          rawDate,
-          date: joiningDateObj.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
-        };
+      const employeeMasterService = require('../services/employeeMasterService');
+      const result = await employeeMasterService.listEmployees(req, req.query || {});
+      return res.json({
+        success: true,
+        employees: result.employees,
+        total: result.filteredTotal,
+        filteredTotal: result.filteredTotal,
+        page: result.page,
+        pageSize: result.pageSize,
+        stats: result.stats,
+        facets: result.facets,
+        actions: result.actions
       });
-
-      return res.json({ success: true, employees, total: employees.length });
     } catch (err) {
       console.error('[candidateController.getEmployees Error]', err);
       return errorRes(res, 'Unable to load employees: ' + err.message, [err.message], 500);
@@ -604,6 +396,23 @@ const createdDate = new Date(r.created_at || Date.now());
     try {
       const identifier = req.params.id;
       const user = await userSyncService.resolveUser(identifier);
+
+      // Access Control Matrix: only roles with can_delete on `employees` may
+      // remove a record — the route-level role list is a second, coarser gate.
+      const employeeMasterService = require('../services/employeeMasterService');
+      const actions = await employeeMasterService.resolveEmployeeActions(req.user);
+      if (!actions.can_delete) {
+        return errorRes(res, 'You do not have permission to delete employees', [], 403);
+      }
+      if (user) {
+        const inScope = await employeeMasterService.assertLocationScope(req, user.location_id);
+        if (!inScope) {
+          return errorRes(res, 'You do not have access to this employee record', [], 403);
+        }
+        if (req.user && user.id === req.user.id) {
+          return errorRes(res, 'You cannot delete your own account', [], 400);
+        }
+      }
 
       if (user && ['admin@bsctextiles.com', 'admin'].includes(String(user.username).toLowerCase())) {
         return errorRes(res, 'Cannot delete the built-in system administrator account', [], 403);

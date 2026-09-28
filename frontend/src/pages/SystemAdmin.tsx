@@ -354,7 +354,7 @@ export default function SystemAdminPage() {
       <ToastContainer />
       <Sidebar session={session} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${collapsed ? 'lg:pl-20' : 'lg:pl-64'}`}>
+      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${collapsed ? 'lg:pl-[72px]' : 'lg:pl-64'}`}>
         <Topbar
           title="System Administrator"
           breadcrumbs={[{ label: tabs.find(t => t.key === activeTab)?.label || 'Overview' }]}
@@ -362,7 +362,7 @@ export default function SystemAdminPage() {
           onMenuClick={() => setSidebarOpen(true)}
         />
 
-        <main className="p-4 lg:p-6 space-y-6 flex-1 overflow-y-auto">
+        <main className="w-full min-w-0 max-w-full px-4 sm:px-5 lg:px-6 py-4 sm:py-5 lg:py-6 space-y-5 sm:space-y-6 flex-1 overflow-y-auto">
           {/* Header */}
           <div className="card-glass p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>

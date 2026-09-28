@@ -1388,9 +1388,22 @@ exports.getVmSubmissions = async (req, res) => {
       entriesMap[e.submissionId].push(e);
     });
 
+    const photosMap = {};
+    try {
+      const [photoRows] = await db.query(
+        "SELECT id, submission_id, location_name, floor, section, file_name as original_name, file_size, mime_type, uploaded_by, created_at FROM vm_checklist_photos WHERE submission_id IN (?) AND status != 'Deleted'",
+        [submissionIds]
+      );
+      (photoRows || []).forEach(p => {
+        if (!photosMap[p.submission_id]) photosMap[p.submission_id] = [];
+        photosMap[p.submission_id].push(p);
+      });
+    } catch (e) {}
+
     const formattedRows = rows.map(r => ({
       ...r,
-      entries: entriesMap[r.id] || []
+      entries: entriesMap[r.id] || [],
+      photos: photosMap[r.id] || []
     }));
 
     return res.json({ success: true, submissions: formattedRows });

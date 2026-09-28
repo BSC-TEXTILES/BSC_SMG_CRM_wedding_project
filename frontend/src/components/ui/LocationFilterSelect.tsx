@@ -76,23 +76,23 @@ export default function LocationFilterSelect({
     const singleLoc = displayLocations[0] || MASTER_LOCATIONS.find(l => l.id === (session?.locationId || 3)) || MASTER_LOCATIONS[2];
     return (
       <div
-        className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#F6F4EF] border border-[#DFDDD7] text-[#182033] text-xs font-bold shadow-2xs select-none ${className}`}
+        className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#FFFAF7] border border-[#E8D9D4] text-[#2B1722] text-xs font-bold shadow-2xs select-none ${className}`}
         title={`Your account is scoped strictly to ${singleLoc.name} (${singleLoc.code})`}
       >
-        <MapPin className="w-3.5 h-3.5 text-[#C9A45C] flex-shrink-0" />
+        <MapPin className="w-3.5 h-3.5 text-[#B76E79] flex-shrink-0" />
         <span className="truncate max-w-[150px]">Location: {singleLoc.name} ({singleLoc.code})</span>
-        <Lock className="w-3 h-3 text-[#687080] flex-shrink-0" />
+        <Lock className="w-3 h-3 text-[#6F5963] flex-shrink-0" />
       </div>
     );
   }
 
   return (
     <div className={`relative inline-flex items-center ${className}`}>
-      <div className="absolute left-2.5 sm:left-3 pointer-events-none text-[#C9A45C] flex items-center justify-center z-10">
+      <div className="absolute left-2.5 sm:left-3 pointer-events-none text-[#B76E79] flex items-center justify-center z-10">
         {currentValue === '' ? (
-          <Globe className="w-3.5 h-3.5 text-[#16805B]" />
+          <Globe className="w-3.5 h-3.5 text-[#198754]" />
         ) : (
-          <MapPin className="w-3.5 h-3.5 text-[#C9A45C]" />
+          <MapPin className="w-3.5 h-3.5 text-[#B76E79]" />
         )}
       </div>
 
@@ -101,7 +101,7 @@ export default function LocationFilterSelect({
         onChange={handleChange}
         disabled={disabled}
         aria-label="Filter by store location"
-        className="w-full pl-8 sm:pl-8.5 pr-8 py-2 bg-white hover:bg-[#FDFBF7] focus:bg-white border border-[#DFDDD7] hover:border-[#C9A45C] focus:border-[#C9A45C] focus:ring-1 focus:ring-[#C9A45C] rounded-xl text-xs font-bold text-[#182033] transition-all shadow-2xs cursor-pointer appearance-none outline-none disabled:opacity-60 disabled:cursor-not-allowed min-w-[145px] sm:min-w-[170px]"
+        className="w-full pl-8 sm:pl-8.5 pr-8 py-2 bg-[#FFFAF7] hover:bg-white focus:bg-white border border-[#E8D9D4] hover:border-[#B76E79] focus:border-[#B76E79] focus:ring-1 focus:ring-[#B76E79] rounded-xl text-xs font-bold text-[#2B1722] transition-all shadow-2xs cursor-pointer appearance-none outline-none disabled:opacity-60 disabled:cursor-not-allowed min-w-[145px] sm:min-w-[170px]"
       >
         {effectiveIsGlobal && showAllOption && (
           <option value="">
@@ -115,7 +115,7 @@ export default function LocationFilterSelect({
         ))}
       </select>
 
-      <div className="absolute right-2.5 pointer-events-none text-[#687080] flex items-center justify-center z-10">
+      <div className="absolute right-2.5 pointer-events-none text-[#6F5963] flex items-center justify-center z-10">
         <ChevronDown className="w-3.5 h-3.5" />
       </div>
     </div>

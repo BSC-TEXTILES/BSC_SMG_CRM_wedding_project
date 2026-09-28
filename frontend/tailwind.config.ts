@@ -17,88 +17,125 @@ const config: Config = {
     },
     extend: {
       colors: {
-        // Literal hex values for Midnight Navy + Champagne Gold Enterprise Theme
+        // BSC Exclusive Wedding CRM Brand Color System
         primary: {
-          DEFAULT: '#101C36', // Master Primary (Midnight Navy)
-          dark: '#07101F',    // Master Primary Dark
-          hover: '#07101F',
-          light: '#1C2E56',
-          soft: '#EEF2F9'
+          DEFAULT: '#4A173A', // Deep Plum (Primary Brand)
+          dark: '#351027',    // Dark Plum
+          medium: '#6A2853',  // Medium Plum
+          hover: '#6A2853',   // Primary Button / Nav Hover
+          light: '#6A2853',
+          soft: '#FFF7F2'     // Soft Cream
         },
-        gold: {
-          DEFAULT: '#C9A45C', // Master Champagne Gold
-          light: '#E4CB92',   // Master Gold Light
-          hover: '#B38C45',
-          dark: '#9E762E',
-          soft: '#FAF5EA'
+        plum: {
+          DEFAULT: '#4A173A', // Deep Plum
+          dark: '#351027',    // Dark Plum
+          medium: '#6A2853',  // Medium Plum
+          dusty: '#8B5A72',   // Dusty Plum
+          soft: '#FFF7F2'     // Soft Cream
+        },
+        rosegold: {
+          DEFAULT: '#B76E79', // Rose Gold (Primary Accent)
+          light: '#D89AA3',   // Light Rose Gold
+          hover: '#A85F6A',   // Secondary Button Hover
+          mauve: '#C9A0AA',   // Soft Mauve
+          soft: '#F6E2E5'
         },
         accent: {
-          DEFAULT: '#C9A45C', // Master Champagne Gold
-          light: '#E4CB92',   // Master Gold Light
-          hover: '#B38C45',
-          soft: '#FAF5EA',
-          softHover: '#F4EBDA'
+          DEFAULT: '#B76E79', // Rose Gold (Primary Accent)
+          light: '#D89AA3',   // Light Rose Gold
+          hover: '#A85F6A',   // Secondary Button Hover
+          dark: '#6A2853',    // Medium Plum
+          soft: '#FFF7F2',    // Soft Cream
+          softHover: '#F6E2E5'
         },
-        background: {
-          DEFAULT: '#F6F4EF', // Master Background (Warm Off-white / Ivory)
-          card: '#FFFFFF'
-        },
-        card: '#FFFFFF',
-        surface: '#FFFFFF',
-        border: {
-          DEFAULT: '#DFDDD7', // Master Border (Enterprise Subtle Border)
-          soft: '#EAE8E3',
-          warm: '#DFDDD7'
-        },
-        navy: {
-          DEFAULT: '#101C36',
-          dark: '#07101F',
-          light: '#1C2E56',
-          hover: '#07101F'
+        gold: {
+          DEFAULT: '#B76E79', // Mapped to Rose Gold for brand consistency
+          light: '#D89AA3',   // Light Rose Gold
+          hover: '#A85F6A',
+          dark: '#4A173A',    // Deep Plum
+          champagne: '#E8C7A8',
+          soft: '#FFF7F2'
         },
         champagne: {
-          DEFAULT: '#C9A45C',
-          dark: '#9E762E',
-          light: '#E4CB92',
-          hover: '#B38C45'
+          DEFAULT: '#E8C7A8', // Champagne Accent
+          light: '#FFF7F2',
+          hover: '#DFBC9D',
+          dark: '#B76E79'
+        },
+        background: {
+          DEFAULT: '#FFF7F2', // Soft Cream
+          card: '#FFFDFC',    // Card / Surface
+          cream: '#FFF7F2'
+        },
+        card: '#FFFDFC',      // Card / Surface
+        surface: '#FFFDFC',   // Card / Surface
+        border: {
+          DEFAULT: '#E8D9D4', // UI Border
+          divider: '#EADBD7', // UI Divider
+          soft: '#E8D9D4',
+          warm: '#E8D9D4'
+        },
+        divider: '#EADBD7',
+        input: {
+          bg: '#FFFAF7',      // Input Background
+          border: '#E8D9D4',
+          focus: '#B76E79'
+        },
+        navy: {
+          DEFAULT: '#4A173A', // Mapped to Deep Plum
+          dark: '#351027',    // Dark Plum
+          light: '#6A2853',   // Medium Plum
+          hover: '#6A2853'
         },
         burgundy: {
-          // Backward-compatibility alias mapped to Midnight Navy
-          DEFAULT: '#101C36',
-          dark: '#07101F',
-          light: '#1C2E56',
-          hover: '#07101F'
+          DEFAULT: '#4A173A', // Deep Plum
+          dark: '#351027',
+          light: '#6A2853',
+          hover: '#6A2853'
+        },
+        cream: {
+          DEFAULT: '#FFF7F2', // Soft Cream
+          card: '#FFFDFC',
+          border: '#E8D9D4'
         },
         ivory: {
-          DEFAULT: '#F6F4EF',
-          card: '#FFFFFF',
-          border: '#DFDDD7'
+          DEFAULT: '#FFF7F2',
+          card: '#FFFDFC',
+          border: '#E8D9D4'
         },
         status: {
-          success: '#16805B', // Master Success
-          'success-light': '#E8F5EF',
-          warning: '#C98218', // Master Warning
-          'warning-light': '#FFF4DD',
-          danger: '#C7374A',  // Master Danger
-          'danger-light': '#FDEBED',
-          info: '#3567A8',     // Master Info
-          'info-light': '#EAF1FA'
+          success: '#198754',         // Confirmed / Success
+          'success-light': '#E8F5EE',
+          warning: '#C58A18',         // Pending / Warning
+          'warning-light': '#FFF4D6',
+          danger: '#B42318',          // Cancelled / Error
+          'danger-light': '#FDE8E7',
+          info: '#356AE6',            // Information
+          'info-light': '#EAF1FA',
+          neutral: '#737373',         // Neutral
+          interested: '#6A2853',      // Interested CRM Status
+          'interested-light': '#EDE7F6',
+          followup: '#4A173A',        // Follow-up CRM Status
+          'followup-light': '#F6E2E5'
         }
       },
       textColor: {
         primary: {
-          DEFAULT: '#182033', // Master Main Text
-          hover: '#07101F'
+          DEFAULT: '#2B1722', // Primary Text
+          hover: '#4A173A'
         },
         secondary: {
-          DEFAULT: '#687080', // Master Secondary / Muted Text
-          hover: '#182033'
+          DEFAULT: '#6F5963', // Secondary Text
+          hover: '#2B1722'
         },
-        muted: '#687080',
-        navy: '#101C36',
-        gold: '#C9A45C',
-        'gold-light': '#E4CB92',
-        'primary-hover': '#07101F'
+        muted: '#9A858D',     // Muted Text
+        plum: '#4A173A',      // Deep Plum
+        rosegold: '#B76E79',  // Rose Gold
+        champagne: '#E8C7A8', // Champagne
+        navy: '#4A173A',      // Alias
+        gold: '#B76E79',      // Alias to Rose Gold
+        'gold-light': '#D89AA3',
+        'primary-hover': '#4A173A'
       }
     },
   },

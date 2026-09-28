@@ -1,9 +1,27 @@
-import React, { useState, useEffect } from 'react';
-import { X, Phone, Mail, MapPin, Calendar, Briefcase, DollarSign, FileText, UserCheck, ShieldCheck, ExternalLink, Award, User, Heart, Layers, Building, Edit3, Save, RotateCcw } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  X, Phone, Mail, MapPin, Calendar, Briefcase, DollarSign, FileText,
+  UserCheck, ShieldCheck, ExternalLink, Award, User, Heart, Layers,
+  Building, Edit3, Save, RotateCcw, Camera, Upload, Download, Eye,
+  Trash2, RefreshCw, ZoomIn, ZoomOut, Maximize2, FileCheck,
+  AlertCircle, CheckCircle2, AlertTriangle, Shield
+} from 'lucide-react';
 import StatusBadge from './StatusBadge';
 import { API } from '../../services/api';
 import { showToast } from '../Toast';
 import { formatName } from '../../utils/formatName';
+
+export const STANDARD_DOCUMENT_TYPES = [
+  'Aadhaar',
+  'PAN',
+  'Address Proof',
+  'Passport Photo',
+  'Educational Certificate',
+  'Experience Certificate',
+  'Joining Documents',
+  'Offer Letter',
+  'Other HR Documents'
+];
 
 interface EmployeeProfileModalProps {
   employee: any | null;
@@ -17,13 +35,69 @@ export default function EmployeeProfileModal({ employee, onClose, onUpdated }: E
   const [saving, setSaving] = useState<boolean>(false);
   const [currentEmp, setCurrentEmp] = useState<any | null>(employee);
 
+  // Documents State
+  const [documents, setDocuments] = useState<any[]>([]);
+  const [loadingDocs, setLoadingDocs] = useState<boolean>(false);
+
+  // Photo Upload / Replace State
+  const [uploadingPhoto, setUploadingPhoto] = useState<boolean>(false);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+
+  // Document Upload Modal State
+  const [isUploadDocModalOpen, setIsUploadDocModalOpen] = useState<boolean>(false);
+  const [uploadingDoc, setUploadingDoc] = useState<boolean>(false);
+  const [selectedDocType, setSelectedDocType] = useState<string>('Aadhaar');
+  const [docFileToUpload, setDocFileToUpload] = useState<File | null>(null);
+  const docFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Document View Modal State
+  const [isViewModalOpen, setIsViewModalOpen] = useState<boolean>(false);
+  const [docToView, setDocToView] = useState<any | null>(null);
+  const [zoomLevel, setZoomLevel] = useState<number>(1);
+
+  // Document Replace State
+  const [isReplaceDocOpen, setIsReplaceDocOpen] = useState<boolean>(false);
+  const [docToReplace, setDocToReplace] = useState<any | null>(null);
+  const [replaceFile, setReplaceFile] = useState<File | null>(null);
+  const [replacingDoc, setReplacingDoc] = useState<boolean>(false);
+  const replaceFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Delete Confirmation State (Photo or Document)
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState<boolean>(false);
+  const [itemToDelete, setItemToDelete] = useState<{ type: 'photo' | 'document'; id?: string | number; name?: string } | null>(null);
+  const [deleting, setDeleting] = useState<boolean>(false);
+
+  // Photo Preview State
+  const [isPhotoPreviewOpen, setIsPhotoPreviewOpen] = useState<boolean>(false);
+
   // Edit Form State
   const [editForm, setEditForm] = useState<any>({});
+
+  const empIdentifier = currentEmp?.id || currentEmp?.appNo || currentEmp?.empNo || currentEmp?.employeeId;
+
+  // Load employee profile & documents
+  const loadDocuments = async () => {
+    if (!empIdentifier) return;
+    setLoadingDocs(true);
+    try {
+      const res = await API.getEmployeeDocuments(empIdentifier);
+      if (res && res.success && Array.isArray(res.documents)) {
+        setDocuments(res.documents);
+      } else if (Array.isArray(res)) {
+        setDocuments(res);
+      }
+    } catch (err: any) {
+      console.warn('[Employee Profile] Could not fetch documents:', err.message);
+    } finally {
+      setLoadingDocs(false);
+    }
+  };
 
   useEffect(() => {
     setCurrentEmp(employee);
     if (employee) {
-      // Initialize edit form from employee props
+      loadDocuments();
+
       const parseSal = (val: any) => {
         if (!val) return { base: '', inc: '' };
         const s = String(val).trim();
@@ -77,7 +151,7 @@ export default function EmployeeProfileModal({ employee, onClose, onUpdated }: E
 
   const fileUrl = (url: string | null | undefined): string | null => {
     if (!url) return null;
-    if (url.startsWith('http') || url.startsWith('data:')) return url;
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) return url;
     return API.fileUrl ? API.fileUrl(url) : url;
   };
 
@@ -108,6 +182,139 @@ export default function EmployeeProfileModal({ employee, onClose, onUpdated }: E
   };
 
   const sal = parseSalary(currentEmp.salary);
+
+  // ── PHOTO ACTIONS ─────────────────────────────────────────────────────────
+  const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate type
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!validTypes.includes(file.type.toLowerCase())) {
+      showToast('Please select a valid image file (JPG, JPEG, PNG, or WEBP)', 'error');
+      e.target.value = '';
+      return;
+    }
+
+    // Validate size (10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      showToast('Image file size must be less than 10MB', 'error');
+      e.target.value = '';
+      return;
+    }
+
+    setUploadingPhoto(true);
+    try {
+      const res = await API.uploadEmployeePhoto(empIdentifier, file);
+      if (res && res.success) {
+        showToast('Employee profile photo updated successfully!', 'success');
+        const newUrl = res.photoUrl || (res.user && res.user.photoUrl);
+        setCurrentEmp((prev: any) => ({
+          ...prev,
+          photoUrl: newUrl
+        }));
+        if (onUpdated) onUpdated();
+      } else {
+        showToast(res?.message || 'Failed to upload photo', 'error');
+      }
+    } catch (err: any) {
+      showToast('Photo upload error: ' + err.message, 'error');
+    } finally {
+      setUploadingPhoto(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!itemToDelete) return;
+    setDeleting(true);
+    try {
+      if (itemToDelete.type === 'photo') {
+        const res = await API.removeEmployeePhoto(empIdentifier);
+        if (res && res.success) {
+          showToast('Employee profile photo removed successfully', 'success');
+          setCurrentEmp((prev: any) => ({
+            ...prev,
+            photoUrl: null
+          }));
+          if (onUpdated) onUpdated();
+        } else {
+          showToast(res?.message || 'Failed to remove photo', 'error');
+        }
+      } else if (itemToDelete.type === 'document' && itemToDelete.id) {
+        const res = await API.deleteEmployeeDocument(empIdentifier, itemToDelete.id);
+        if (res && res.success) {
+          showToast('Document deleted successfully', 'success');
+          await loadDocuments();
+        } else {
+          showToast(res?.message || 'Failed to delete document', 'error');
+        }
+      }
+    } catch (err: any) {
+      showToast('Action failed: ' + err.message, 'error');
+    } finally {
+      setDeleting(false);
+      setIsDeleteConfirmOpen(false);
+      setItemToDelete(null);
+    }
+  };
+
+  // ── DOCUMENT ACTIONS ──────────────────────────────────────────────────────
+  const handleUploadDocumentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!docFileToUpload) {
+      showToast('Please select a file to upload', 'error');
+      return;
+    }
+
+    if (docFileToUpload.size > 15 * 1024 * 1024) {
+      showToast('File size must be under 15MB', 'error');
+      return;
+    }
+
+    setUploadingDoc(true);
+    try {
+      const res = await API.uploadEmployeeDocument(empIdentifier, docFileToUpload, selectedDocType);
+      if (res && res.success) {
+        showToast('Document uploaded successfully!', 'success');
+        setIsUploadDocModalOpen(false);
+        setDocFileToUpload(null);
+        await loadDocuments();
+      } else {
+        showToast(res?.message || 'Failed to upload document', 'error');
+      }
+    } catch (err: any) {
+      showToast('Upload failed: ' + err.message, 'error');
+    } finally {
+      setUploadingDoc(false);
+    }
+  };
+
+  const handleReplaceDocumentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!docToReplace || !replaceFile) {
+      showToast('Please choose a replacement file', 'error');
+      return;
+    }
+
+    setReplacingDoc(true);
+    try {
+      const res = await API.replaceEmployeeDocument(empIdentifier, docToReplace.id, replaceFile, docToReplace.documentType);
+      if (res && res.success) {
+        showToast('Document replaced successfully!', 'success');
+        setIsReplaceDocOpen(false);
+        setDocToReplace(null);
+        setReplaceFile(null);
+        await loadDocuments();
+      } else {
+        showToast(res?.message || 'Failed to replace document', 'error');
+      }
+    } catch (err: any) {
+      showToast('Replace failed: ' + err.message, 'error');
+    } finally {
+      setReplacingDoc(false);
+    }
+  };
 
   const handleSaveCompleteInfo = async () => {
     setSaving(true);
@@ -171,6 +378,28 @@ export default function EmployeeProfileModal({ employee, onClose, onUpdated }: E
     }
   };
 
+  const formatFileSize = (bytes: number) => {
+    if (!bytes || bytes <= 0) return '—';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const isImageFile = (mime?: string, name?: string) => {
+    if (mime && mime.startsWith('image/')) return true;
+    if (name) {
+      const ext = name.toLowerCase().split('.').pop();
+      return ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext || '');
+    }
+    return false;
+  };
+
+  const isPdfFile = (mime?: string, name?: string) => {
+    if (mime && mime === 'application/pdf') return true;
+    if (name && name.toLowerCase().endsWith('.pdf')) return true;
+    return false;
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-primary/70 backdrop-blur-md transition-all animate-fade-in select-text">
       <div className="relative w-full max-w-4xl max-h-[92vh] bg-background rounded-3xl shadow-2xl flex flex-col z-10 overflow-hidden border-2 border-accent/50">
@@ -208,23 +437,83 @@ export default function EmployeeProfileModal({ employee, onClose, onUpdated }: E
           </div>
 
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
-            {/* Enlarged Photo / Avatar Picture */}
-            <div className="relative shrink-0">
+            {/* Enlarged Photo / Avatar with Upload & Action Overlay */}
+            <div className="relative shrink-0 group">
+              <input
+                ref={photoInputRef}
+                type="file"
+                accept=".jpg,.jpeg,.png,.webp"
+                className="hidden"
+                onChange={handlePhotoSelect}
+              />
+
               {photo ? (
-                <img
-                  src={photo}
-                  alt={empName}
-                  className="w-28 h-28 sm:w-32 sm:h-32 rounded-3xl object-cover border-4 border-accent shadow-2xl bg-white p-1"
-                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                />
+                <div className="relative">
+                  <img
+                    src={photo}
+                    alt={empName}
+                    onClick={() => setIsPhotoPreviewOpen(true)}
+                    className="w-28 h-28 sm:w-32 sm:h-32 rounded-3xl object-cover border-4 border-accent shadow-2xl bg-white p-1 cursor-pointer hover:opacity-95 transition-all"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLElement).style.display = 'none';
+                      const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                      if (fallback) fallback.style.display = 'flex';
+                    }}
+                  />
+                  <div
+                    style={{ display: 'none' }}
+                    className="w-28 h-28 sm:w-32 sm:h-32 rounded-3xl bg-gradient-to-br from-primary to-primary-hover text-white font-black text-3xl sm:text-4xl items-center justify-center border-4 border-accent shadow-2xl"
+                  >
+                    {currentEmp.initials || empName.slice(0, 2).toUpperCase()}
+                  </div>
+                </div>
               ) : (
-                <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-3xl bg-gradient-to-br from-primary to-primary-hover text-white font-black text-3xl sm:text-4xl flex items-center justify-center border-4 border-accent shadow-2xl">
+                <div
+                  onClick={() => photoInputRef.current?.click()}
+                  className="w-28 h-28 sm:w-32 sm:h-32 rounded-3xl bg-gradient-to-br from-primary to-primary-hover text-white font-black text-3xl sm:text-4xl flex items-center justify-center border-4 border-accent shadow-2xl cursor-pointer hover:border-amber-400 transition-all"
+                  title="Click to Upload Profile Photo"
+                >
                   {currentEmp.initials || empName.slice(0, 2).toUpperCase()}
                 </div>
               )}
-              <span className="absolute -bottom-2 -right-2 px-3 py-1 rounded-full bg-emerald-500 text-white text-[10px] font-black uppercase tracking-wider shadow-md border-2 border-emerald-600">
-                Active Staff
-              </span>
+
+              {/* Photo Actions Button Bar */}
+              <div className="flex items-center justify-center gap-1 mt-2">
+                <button
+                  type="button"
+                  onClick={() => photoInputRef.current?.click()}
+                  disabled={uploadingPhoto}
+                  className="px-2 py-1 rounded-lg bg-white/20 hover:bg-white/30 text-white text-[10px] font-black flex items-center gap-1 shadow-xs border border-white/20 transition-all"
+                  title={photo ? 'Replace Employee Photo' : 'Upload Employee Photo'}
+                >
+                  <Camera className="w-3 h-3 text-amber-300" />
+                  <span>{uploadingPhoto ? 'Uploading...' : photo ? 'Replace' : 'Upload Photo'}</span>
+                </button>
+
+                {photo && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setIsPhotoPreviewOpen(true)}
+                      className="p-1 rounded-lg bg-white/20 hover:bg-white/30 text-white transition-all shadow-xs border border-white/20"
+                      title="Preview Photo"
+                    >
+                      <Eye className="w-3 h-3 text-emerald-300" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setItemToDelete({ type: 'photo', name: 'Profile Photo' });
+                        setIsDeleteConfirmOpen(true);
+                      }}
+                      className="p-1 rounded-lg bg-rose-500/80 hover:bg-rose-600 text-white transition-all shadow-xs border border-rose-400/40"
+                      title="Remove Profile Photo"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
 
             {/* Header Text Details */}
@@ -258,6 +547,11 @@ export default function EmployeeProfileModal({ employee, onClose, onUpdated }: E
                 <span className="inline-flex items-center gap-1 px-3 py-1 rounded-xl bg-white/10 border border-white/10 text-emerald-300 font-bold">
                   <Layers className="w-3.5 h-3.5" /> Section: {section}
                 </span>
+                {currentEmp.branch && (
+                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-xl bg-white/10 border border-white/10 text-amber-200 font-bold">
+                    <Building className="w-3.5 h-3.5" /> {currentEmp.branch}
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -267,9 +561,9 @@ export default function EmployeeProfileModal({ employee, onClose, onUpdated }: E
         <div className="flex items-center gap-2 p-2 sm:px-6 bg-white border-b border-accent-soft overflow-x-auto text-xs font-bold scrollbar-none sticky top-0 z-10 shadow-xs">
           {[
             { id: 'overview', label: '👤 Employment Overview' },
-            { id: 'personal', label: '📋 Personal & Contact Details' },
-            { id: 'professional', label: '💼 Experience & Background' },
-            { id: 'documents', label: '📄 Verified Documents' }
+            { id: 'personal', label: '📋 Personal & Contact' },
+            { id: 'professional', label: '💼 Experience & Roles' },
+            { id: 'documents', label: `📄 Employee Documents (${documents.length})` }
           ].map(t => (
             <button
               key={t.id}
@@ -413,55 +707,153 @@ export default function EmployeeProfileModal({ employee, onClose, onUpdated }: E
                 </div>
               )}
 
-              {/* TAB 4: VERIFIED DOCUMENTS */}
+              {/* TAB 4: EMPLOYEE DOCUMENTS (PRODUCTION DOCUMENT MANAGEMENT) */}
               {activeTab === 'documents' && (
                 <div className="space-y-4 animate-fade-in">
-                  <div className="p-5 rounded-2xl bg-white border border-accent-soft shadow-xs space-y-4">
-                    <h4 className="font-black text-primary uppercase text-xs tracking-wider border-b border-accent-soft pb-2 flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-amber-600" />
-                      <span>Onboarded Documents & Verification Links</span>
-                    </h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {fileUrl(currentEmp.photoUrl) && (
-                        <a
-                          href={fileUrl(currentEmp.photoUrl)!}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="p-3 rounded-xl border border-accent-soft bg-background hover:bg-primary hover:text-white transition-all flex items-center justify-between font-bold group"
-                        >
-                          <span>📷 Staff Profile Photo</span>
-                          <ExternalLink className="w-4 h-4 text-amber-600 group-hover:text-white" />
-                        </a>
-                      )}
-                      {fileUrl(currentEmp.aadhaarUrl || currentEmp.aadharUrl || currentEmp.aadhaar_url || currentEmp.aadhar_url) && (
-                        <a
-                          href={fileUrl(currentEmp.aadhaarUrl || currentEmp.aadharUrl || currentEmp.aadhaar_url || currentEmp.aadhar_url)!}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="p-3 rounded-xl border border-accent-soft bg-background hover:bg-primary hover:text-white transition-all flex items-center justify-between font-bold group"
-                        >
-                          <span>📄 Aadhaar Card Document</span>
-                          <ExternalLink className="w-4 h-4 text-amber-600 group-hover:text-white" />
-                        </a>
-                      )}
-                      {fileUrl(currentEmp.resumeUrl) && (
-                        <a
-                          href={fileUrl(currentEmp.resumeUrl)!}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="p-3 rounded-xl border border-accent-soft bg-background hover:bg-primary hover:text-white transition-all flex items-center justify-between font-bold group"
-                        >
-                          <span>📑 Employee Resume / CV</span>
-                          <ExternalLink className="w-4 h-4 text-amber-600 group-hover:text-white" />
-                        </a>
-                      )}
+                  {/* Documents Action Bar */}
+                  <div className="p-4 rounded-2xl bg-white border border-accent-soft shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div>
+                      <h4 className="font-black text-primary uppercase text-xs tracking-wider flex items-center gap-2">
+                        <FileCheck className="w-4 h-4 text-emerald-600" />
+                        <span>Authorized Employee Document Vault</span>
+                      </h4>
+                      <p className="text-[11px] text-[#6B5D50] mt-0.5">
+                        Permanent secure repository for KYC, certificates, offer letters and HR documentation.
+                      </p>
                     </div>
-                    {!currentEmp.photoUrl && !currentEmp.resumeUrl && !(currentEmp.aadhaarUrl || currentEmp.aadharUrl || currentEmp.aadhaar_url || currentEmp.aadhar_url) && (
-                      <div className="p-8 text-center text-primary font-semibold italic">
-                        No uploaded document files found for this profile.
-                      </div>
-                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => setIsUploadDocModalOpen(true)}
+                      className="btn-gold px-4 py-2 text-xs font-black rounded-xl shadow-md flex items-center gap-1.5 shrink-0"
+                    >
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>Upload Document</span>
+                    </button>
                   </div>
+
+                  {/* Documents List */}
+                  {loadingDocs ? (
+                    <div className="p-12 text-center text-primary font-bold">
+                      <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-accent" />
+                      <span>Loading employee documents...</span>
+                    </div>
+                  ) : documents.length > 0 ? (
+                    <div className="grid grid-cols-1 gap-3">
+                      {documents.map((doc: any) => {
+                        const isImg = isImageFile(doc.mimeType, doc.fileName);
+                        const isPdf = isPdfFile(doc.mimeType, doc.fileName);
+
+                        return (
+                          <div
+                            key={doc.id}
+                            className="p-4 rounded-2xl bg-white border border-accent-soft hover:border-accent shadow-xs transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 group"
+                          >
+                            <div className="flex items-center gap-3.5 min-w-0">
+                              <div className={`w-11 h-11 rounded-2xl flex items-center justify-center font-black shrink-0 ${
+                                isPdf ? 'bg-rose-50 text-rose-600 border border-rose-200' :
+                                isImg ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                                'bg-blue-50 text-blue-600 border border-blue-200'
+                              }`}>
+                                <FileText className="w-5 h-5" />
+                              </div>
+
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="px-2.5 py-0.5 rounded-md bg-accent/15 text-primary text-[10px] font-black uppercase tracking-wider">
+                                    {doc.documentType}
+                                  </span>
+                                  <span className="text-[10px] text-[#6B5D50] font-mono">
+                                    {formatFileSize(doc.fileSize)}
+                                  </span>
+                                </div>
+                                <h5 className="font-extrabold text-primary text-xs tracking-tight truncate mt-0.5" title={doc.fileName}>
+                                  {doc.fileName}
+                                </h5>
+                                <div className="text-[10.5px] text-[#6B5D50] flex items-center gap-2 mt-0.5">
+                                  <span>Uploaded: {doc.createdAt ? new Date(doc.createdAt).toLocaleDateString() : '—'}</span>
+                                  <span>•</span>
+                                  <span>By: {doc.uploadedBy || 'HR Staff'}</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Document Actions */}
+                            <div className="flex items-center gap-1.5 self-end sm:self-center shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setDocToView(doc);
+                                  setZoomLevel(1);
+                                  setIsViewModalOpen(true);
+                                }}
+                                className="px-2.5 py-1.5 rounded-lg border border-accent/40 bg-white hover:bg-accent/10 text-primary font-bold text-xs flex items-center gap-1 transition-all"
+                                title="View Document"
+                              >
+                                <Eye className="w-3.5 h-3.5 text-accent" />
+                                <span>View</span>
+                              </button>
+
+                              <a
+                                href={API.getEmployeeDocumentDownloadUrl(empIdentifier, doc.id)}
+                                download={doc.fileName}
+                                className="px-2.5 py-1.5 rounded-lg border border-accent/40 bg-white hover:bg-accent/10 text-primary font-bold text-xs flex items-center gap-1 transition-all"
+                                title="Download Document"
+                              >
+                                <Download className="w-3.5 h-3.5 text-emerald-600" />
+                                <span>Download</span>
+                              </a>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setDocToReplace(doc);
+                                  setReplaceFile(null);
+                                  setIsReplaceDocOpen(true);
+                                }}
+                                className="p-1.5 rounded-lg border border-accent/30 bg-white hover:bg-amber-50 text-amber-700 transition-all"
+                                title="Replace Document"
+                              >
+                                <RefreshCw className="w-3.5 h-3.5" />
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setItemToDelete({ type: 'document', id: doc.id, name: doc.fileName });
+                                  setIsDeleteConfirmOpen(true);
+                                }}
+                                className="p-1.5 rounded-lg border border-rose-200 bg-white hover:bg-rose-50 text-rose-600 transition-all"
+                                title="Delete Document"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="p-12 text-center bg-white rounded-2xl border-2 border-dashed border-accent-soft space-y-3">
+                      <div className="w-14 h-14 rounded-full bg-accent/10 text-accent flex items-center justify-center mx-auto">
+                        <FileText className="w-7 h-7" />
+                      </div>
+                      <div>
+                        <h4 className="font-extrabold text-primary text-sm">No documents uploaded</h4>
+                        <p className="text-xs text-[#6B5D50] mt-0.5">
+                          Upload employee Aadhaar, PAN, certificates or offer letters for permanent record.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setIsUploadDocModalOpen(true)}
+                        className="btn-gold px-4 py-2 text-xs font-black rounded-xl shadow-md inline-flex items-center gap-1.5"
+                      >
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>Upload First Document</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </>
@@ -633,6 +1025,308 @@ export default function EmployeeProfileModal({ employee, onClose, onUpdated }: E
           </div>
         </div>
       </div>
+
+      {/* ── PHOTO PREVIEW MODAL ──────────────────────────────────────────────── */}
+      {isPhotoPreviewOpen && photo && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+          <div className="relative max-w-xl w-full bg-white rounded-3xl p-5 border-2 border-accent/40 shadow-2xl flex flex-col items-center">
+            <button
+              onClick={() => setIsPhotoPreviewOpen(false)}
+              className="absolute top-4 right-4 p-2 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 transition-all"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h3 className="text-base font-black text-primary mb-3">Employee Profile Photo</h3>
+            <img
+              src={photo}
+              alt={empName}
+              className="max-h-[60vh] max-w-full rounded-2xl object-contain border-2 border-accent-soft"
+            />
+            <div className="mt-4 text-center">
+              <div className="font-extrabold text-primary text-sm">{empName}</div>
+              <div className="text-xs text-[#6B5D50]">{empCode} • {desig}</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── UPLOAD DOCUMENT MODAL ────────────────────────────────────────────── */}
+      {isUploadDocModalOpen && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
+          <div className="relative w-full max-w-md bg-white rounded-3xl p-6 border-2 border-accent shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-accent-soft pb-3">
+              <h3 className="font-black text-primary text-base flex items-center gap-2">
+                <Upload className="w-4 h-4 text-accent" />
+                <span>Upload Employee Document</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => { setIsUploadDocModalOpen(false); setDocFileToUpload(null); }}
+                className="p-1.5 rounded-full hover:bg-gray-100 text-gray-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleUploadDocumentSubmit} className="space-y-4">
+              <div>
+                <label className="block text-[11px] font-black text-primary uppercase mb-1">
+                  Document Type
+                </label>
+                <select
+                  value={selectedDocType}
+                  onChange={(e) => setSelectedDocType(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-accent-soft text-xs font-bold text-primary outline-none focus:ring-2 focus:ring-accent/40 bg-white"
+                >
+                  {STANDARD_DOCUMENT_TYPES.map(type => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-black text-primary uppercase mb-1">
+                  Select File (PDF, Images, DOCX - Max 15MB)
+                </label>
+                <input
+                  ref={docFileInputRef}
+                  type="file"
+                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp"
+                  onChange={(e) => setDocFileToUpload(e.target.files?.[0] || null)}
+                  className="w-full px-3 py-2 rounded-xl border border-accent-soft text-xs text-primary file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-black file:bg-primary file:text-white hover:file:bg-primary-hover cursor-pointer"
+                />
+                {docFileToUpload && (
+                  <div className="mt-2 text-xs font-bold text-emerald-700 flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Selected: {docFileToUpload.name} ({formatFileSize(docFileToUpload.size)})</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-2 border-t border-accent-soft">
+                <button
+                  type="button"
+                  onClick={() => { setIsUploadDocModalOpen(false); setDocFileToUpload(null); }}
+                  className="px-4 py-2 rounded-xl border border-accent-soft text-xs font-bold text-[#5D4E42] hover:bg-gray-100"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={uploadingDoc || !docFileToUpload}
+                  className="btn-gold px-5 py-2 text-xs font-black rounded-xl shadow-md flex items-center gap-1.5 disabled:opacity-50"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>{uploadingDoc ? 'Uploading...' : 'Confirm Upload'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── REPLACE DOCUMENT MODAL ───────────────────────────────────────────── */}
+      {isReplaceDocOpen && docToReplace && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
+          <div className="relative w-full max-w-md bg-white rounded-3xl p-6 border-2 border-accent shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-accent-soft pb-3">
+              <h3 className="font-black text-primary text-base flex items-center gap-2">
+                <RefreshCw className="w-4 h-4 text-amber-600" />
+                <span>Replace Document</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => { setIsReplaceDocOpen(false); setDocToReplace(null); setReplaceFile(null); }}
+                className="p-1.5 rounded-full hover:bg-gray-100 text-gray-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-900 space-y-1">
+              <div className="font-black">Current File: {docToReplace.fileName}</div>
+              <div className="text-[11px]">Type: {docToReplace.documentType} • The previous version will be retired in audit history.</div>
+            </div>
+
+            <form onSubmit={handleReplaceDocumentSubmit} className="space-y-4">
+              <div>
+                <label className="block text-[11px] font-black text-primary uppercase mb-1">
+                  Choose New File
+                </label>
+                <input
+                  ref={replaceFileInputRef}
+                  type="file"
+                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp"
+                  onChange={(e) => setReplaceFile(e.target.files?.[0] || null)}
+                  className="w-full px-3 py-2 rounded-xl border border-accent-soft text-xs text-primary file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-black file:bg-primary file:text-white hover:file:bg-primary-hover cursor-pointer"
+                />
+                {replaceFile && (
+                  <div className="mt-2 text-xs font-bold text-emerald-700 flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Selected: {replaceFile.name} ({formatFileSize(replaceFile.size)})</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-2 border-t border-accent-soft">
+                <button
+                  type="button"
+                  onClick={() => { setIsReplaceDocOpen(false); setDocToReplace(null); setReplaceFile(null); }}
+                  className="px-4 py-2 rounded-xl border border-accent-soft text-xs font-bold text-[#5D4E42] hover:bg-gray-100"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={replacingDoc || !replaceFile}
+                  className="btn-gold px-5 py-2 text-xs font-black rounded-xl shadow-md flex items-center gap-1.5 disabled:opacity-50"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>{replacingDoc ? 'Replacing...' : 'Confirm Replace'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── VIEW DOCUMENT PREVIEW MODAL ───────────────────────────────────────── */}
+      {isViewModalOpen && docToView && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md animate-fade-in">
+          <div className="relative w-full max-w-4xl max-h-[92vh] bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden border-2 border-accent">
+            {/* Header */}
+            <div className="p-4 bg-primary text-white flex items-center justify-between border-b border-accent/40">
+              <div className="min-w-0 pr-4">
+                <span className="px-2 py-0.5 rounded-md bg-white/20 text-amber-300 text-[10px] font-black uppercase">
+                  {docToView.documentType}
+                </span>
+                <h4 className="font-black text-sm text-white truncate mt-1">{docToView.fileName}</h4>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                {isImageFile(docToView.mimeType, docToView.fileName) && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setZoomLevel(prev => Math.min(prev + 0.25, 3))}
+                      className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white"
+                      title="Zoom In"
+                    >
+                      <ZoomIn className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setZoomLevel(prev => Math.max(prev - 0.25, 0.5))}
+                      className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white"
+                      title="Zoom Out"
+                    >
+                      <ZoomOut className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setZoomLevel(1)}
+                      className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white"
+                      title="Fit to Screen"
+                    >
+                      <Maximize2 className="w-4 h-4" />
+                    </button>
+                  </>
+                )}
+
+                <a
+                  href={API.getEmployeeDocumentDownloadUrl(empIdentifier, docToView.id)}
+                  download={docToView.fileName}
+                  className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1 shadow-xs"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download</span>
+                </a>
+
+                <button
+                  type="button"
+                  onClick={() => setIsViewModalOpen(false)}
+                  className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Viewer Body */}
+            <div className="flex-1 overflow-auto p-4 flex items-center justify-center bg-gray-100 min-h-[50vh]">
+              {isImageFile(docToView.mimeType, docToView.fileName) ? (
+                <div className="overflow-auto max-h-[70vh] flex items-center justify-center">
+                  <img
+                    src={API.getEmployeeDocumentViewUrl(empIdentifier, docToView.id)}
+                    alt={docToView.fileName}
+                    style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'center center' }}
+                    className="max-h-[68vh] max-w-full rounded-xl object-contain shadow-lg transition-transform duration-150"
+                  />
+                </div>
+              ) : isPdfFile(docToView.mimeType, docToView.fileName) ? (
+                <iframe
+                  src={API.getEmployeeDocumentViewUrl(empIdentifier, docToView.id)}
+                  title={docToView.fileName}
+                  className="w-full h-[72vh] rounded-xl border border-gray-300 shadow-md bg-white"
+                />
+              ) : (
+                <div className="p-8 text-center bg-white rounded-2xl border border-gray-200 shadow-md max-w-md space-y-3">
+                  <AlertCircle className="w-12 h-12 text-amber-500 mx-auto" />
+                  <h4 className="font-extrabold text-primary text-base">Preview unavailable</h4>
+                  <p className="text-xs text-[#6B5D50]">
+                    This file format cannot be rendered directly in the browser viewer. You can download the file to inspect it.
+                  </p>
+                  <a
+                    href={API.getEmployeeDocumentDownloadUrl(empIdentifier, docToView.id)}
+                    download={docToView.fileName}
+                    className="btn-gold px-5 py-2 text-xs font-black rounded-xl shadow-md inline-flex items-center gap-1.5"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>Download Document</span>
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── DELETE CONFIRMATION DIALOG ───────────────────────────────────────── */}
+      {isDeleteConfirmOpen && itemToDelete && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
+          <div className="relative w-full max-w-sm bg-white rounded-3xl p-6 border-2 border-rose-300 shadow-2xl space-y-4 text-center">
+            <div className="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="font-black text-primary text-base">
+                Delete this {itemToDelete.type === 'photo' ? 'photo' : 'document'}?
+              </h3>
+              <p className="text-xs text-[#6B5D50] mt-1">
+                {itemToDelete.name ? `"${itemToDelete.name}" will be removed.` : ''} This action cannot be undone.
+              </p>
+            </div>
+            <div className="flex items-center justify-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => { setIsDeleteConfirmOpen(false); setItemToDelete(null); }}
+                className="px-4 py-2 rounded-xl border border-gray-300 text-xs font-bold text-[#5D4E42] hover:bg-gray-100"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                disabled={deleting}
+                className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-black shadow-md disabled:opacity-50"
+              >
+                {deleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

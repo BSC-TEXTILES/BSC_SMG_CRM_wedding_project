@@ -276,7 +276,10 @@ export default function EmployeesPage() {
       religion: emp.religion || '',
       caste: emp.caste || emp.religionCaste || emp.religion_caste || '',
       languagesKnown: langsStr,
-      remarks: emp.remarks || ''
+      remarks: emp.remarks || '',
+      photoPreview: emp.photoUrl || '',
+      photoFile: null,
+      removePhoto: false
     });
   };
 
@@ -327,6 +330,24 @@ export default function EmployeesPage() {
       };
 
       await API.updateCandidate(editModal.emp.appNo, updatedData);
+
+      // Handle employee photo upload / removal if modified in modal
+      const appNoKey = editModal.emp.appNo || editModal.emp.empNo || editModal.emp.id;
+      if (editForm.photoFile) {
+        try {
+          const photoRes = await API.uploadEmployeePhoto(appNoKey, editForm.photoFile);
+          if (photoRes?.photoUrl) updatedData.photoUrl = photoRes.photoUrl;
+        } catch (photoErr: any) {
+          console.warn('[Photo Save Warning]', photoErr.message);
+        }
+      } else if (editForm.removePhoto) {
+        try {
+          await API.removeEmployeePhoto(appNoKey);
+          updatedData.photoUrl = null;
+        } catch (photoErr: any) {
+          console.warn('[Photo Remove Warning]', photoErr.message);
+        }
+      }
 
       showToast('Employee details saved successfully.', 'success');
       setEditModal({ open: false, emp: null });
@@ -618,7 +639,22 @@ export default function EmployeesPage() {
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-primary text-white font-black text-xs flex items-center justify-center shrink-0 shadow-xs">
+                      {emp.photoUrl ? (
+                        <img
+                          src={emp.photoUrl.startsWith('http') ? emp.photoUrl : (API.fileUrl ? API.fileUrl(emp.photoUrl) : emp.photoUrl)}
+                          alt={emp.name}
+                          className="w-10 h-10 rounded-full object-cover border border-accent/40 shadow-xs shrink-0 bg-white"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLElement).style.display = 'none';
+                            const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                            if (fallback) fallback.style.display = 'flex';
+                          }}
+                        />
+                      ) : null}
+                      <div
+                        style={{ display: emp.photoUrl ? 'none' : 'flex' }}
+                        className="w-10 h-10 rounded-full bg-primary text-white font-black text-xs items-center justify-center shrink-0 shadow-xs"
+                      >
                         {emp.initials || emp.name?.slice(0, 2).toUpperCase()}
                       </div>
                       <div>
@@ -705,7 +741,22 @@ export default function EmployeesPage() {
                       <td className="py-3.5 px-4 font-mono text-[#5D4E42] font-bold">{emp.appNo || emp.empNo}</td>
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-3 group text-left">
-                          <div className="w-8 h-8 rounded-full bg-primary text-white font-black text-xs flex items-center justify-center shadow-xs">
+                          {emp.photoUrl ? (
+                            <img
+                              src={emp.photoUrl.startsWith('http') ? emp.photoUrl : (API.fileUrl ? API.fileUrl(emp.photoUrl) : emp.photoUrl)}
+                              alt={emp.name}
+                              className="w-8 h-8 rounded-full object-cover border border-accent/40 shadow-xs shrink-0 bg-white"
+                              onError={(e) => {
+                                (e.currentTarget as HTMLElement).style.display = 'none';
+                                const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                                if (fallback) fallback.style.display = 'flex';
+                              }}
+                            />
+                          ) : null}
+                          <div
+                            style={{ display: emp.photoUrl ? 'none' : 'flex' }}
+                            className="w-8 h-8 rounded-full bg-primary text-white font-black text-xs items-center justify-center shadow-xs shrink-0"
+                          >
                             {emp.initials || emp.name?.slice(0, 2).toUpperCase()}
                           </div>
                           <div>
@@ -813,6 +864,65 @@ export default function EmployeesPage() {
               {/* TAB 1: BASIC INFO */}
               {editTab === 'basic' && (
                 <div className="space-y-4 bg-white p-5 rounded-2xl border border-accent-soft shadow-xs">
+                  {/* Employee Photo Component */}
+                  <div className="p-3.5 bg-background rounded-2xl border border-accent-soft flex flex-col sm:flex-row items-center sm:items-start gap-4">
+                    <div className="relative shrink-0">
+                      {editForm.photoPreview ? (
+                        <img
+                          src={editForm.photoPreview}
+                          alt="Employee Preview"
+                          className="w-20 h-20 rounded-2xl object-cover border-2 border-accent shadow-md bg-white p-0.5"
+                        />
+                      ) : (
+                        <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary to-primary-hover text-white font-black text-2xl flex items-center justify-center border-2 border-accent shadow-md">
+                          {editForm.name?.slice(0, 2).toUpperCase() || 'EMP'}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex-1 text-center sm:text-left space-y-1.5">
+                      <div className="font-black text-primary text-xs uppercase tracking-wider">Employee Photo</div>
+                      <p className="text-[11px] text-[#6B5D50]">
+                        Supported formats: JPG, JPEG, PNG, WEBP (Max 10MB). Permanently stored with employee record.
+                      </p>
+                      <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-1">
+                        <label className="btn-gold px-3 py-1.5 text-xs font-black rounded-xl shadow-xs cursor-pointer flex items-center gap-1.5">
+                          <Camera className="w-3.5 h-3.5" />
+                          <span>{editForm.photoPreview ? 'Replace Photo' : 'Upload Photo'}</span>
+                          <input
+                            type="file"
+                            accept=".jpg,.jpeg,.png,.webp"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                if (file.size > 10 * 1024 * 1024) {
+                                  showToast('Image size must be under 10MB', 'error');
+                                  return;
+                                }
+                                const previewUrl = URL.createObjectURL(file);
+                                setEditForm({ ...editForm, photoFile: file, photoPreview: previewUrl, removePhoto: false });
+                              }
+                            }}
+                          />
+                        </label>
+
+                        {editForm.photoPreview && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditForm({ ...editForm, photoFile: null, photoPreview: '', removePhoto: true });
+                            }}
+                            className="px-3 py-1.5 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-50 text-xs font-black flex items-center gap-1"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Remove Photo</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
                   <div>
                     <label className="block font-bold text-primary mb-1">Full Employee Name *</label>
                     <input type="text" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} className="input-modern font-extrabold text-primary" required />

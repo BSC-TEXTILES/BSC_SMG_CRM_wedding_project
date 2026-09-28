@@ -30,11 +30,13 @@ const subdirs = [
   'applicants',
   'candidate-resumes',
   'candidate-photos',
+  'employee-photos',
   'employee-documents',
   'offer-letters',
   'relieving-letters',
   'experience-certificates',
   'mcheck-photos',
+  'vm-checklist',
   'misc'
 ];
 
@@ -119,16 +121,17 @@ const storage = multer.diskStorage({
   }
 });
 
+const allowedExts = ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png', '.webp'];
+const allowedMimeTypes = [
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'image/jpeg',
+  'image/png',
+  'image/webp'
+];
+
 const fileFilter = (req, file, cb) => {
-  const allowedExts = ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png'];
-  const allowedMimeTypes = [
-    'application/pdf',
-    'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'image/jpeg',
-    'image/png'
-  ];
-  
   const originalName = file.originalname || '';
   const ext = path.extname(originalName).toLowerCase();
 
@@ -143,14 +146,96 @@ const fileFilter = (req, file, cb) => {
     cb(null, true);
   } else {
     securityLogger.log('UPLOAD_FORMAT_REJECTED', req, { originalName, ext, mime: file.mimetype });
-    cb(new Error(`Invalid file format: ${ext} or mimetype: ${file.mimetype}. Allowed formats: PDF, DOC, DOCX, JPG, JPEG, PNG.`));
+    cb(new Error(`Invalid file format: ${ext} or mimetype: ${file.mimetype}. Allowed formats: PDF, DOC, DOCX, JPG, JPEG, PNG, WEBP.`));
   }
 };
 
 const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 800 * 1024 } // 800KB max document limit strictly enforced
+  limits: { fileSize: 800 * 1024 } // 800KB max document limit strictly enforced for legacy endpoints
+});
+
+// Dedicated storage for Employee Photos
+const employeePhotoStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dir = path.join(uploadDir, 'employee-photos');
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => {
+    const empId = req.params.id || req.body.employeeId || 'EMP';
+    const cleanId = String(empId).replace(/[^a-zA-Z0-9_-]/g, '');
+    const uuid = require('crypto').randomBytes(8).toString('hex');
+    let ext = path.extname(file.originalname || '').toLowerCase();
+    if (!['.jpg', '.jpeg', '.png', '.webp'].includes(ext)) ext = '.jpg';
+    cb(null, `photo_${cleanId}_${uuid}${ext}`);
+  }
+});
+
+const imageOnlyFilter = (req, file, cb) => {
+  const ext = path.extname(file.originalname || '').toLowerCase();
+  const validExts = ['.jpg', '.jpeg', '.png', '.webp'];
+  const validMimes = ['image/jpeg', 'image/png', 'image/webp'];
+  if (validExts.includes(ext) && validMimes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error(`Only image files (JPG, JPEG, PNG, WEBP) are allowed. Provided: ${ext}`));
+  }
+};
+
+const uploadEmployeePhoto = multer({
+  storage: employeePhotoStorage,
+  fileFilter: imageOnlyFilter,
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB
+});
+
+// Dedicated storage for Employee Documents
+const employeeDocumentStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dir = path.join(uploadDir, 'employee-documents');
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => {
+    const empId = req.params.id || req.body.employeeId || 'EMP';
+    const docType = req.body.documentType ? String(req.body.documentType).replace(/[^a-zA-Z0-9_-]/g, '') : 'Doc';
+    const cleanId = String(empId).replace(/[^a-zA-Z0-9_-]/g, '');
+    const uuid = require('crypto').randomBytes(8).toString('hex');
+    let ext = path.extname(file.originalname || '').toLowerCase();
+    if (!allowedExts.includes(ext)) ext = '.pdf';
+    cb(null, `${cleanId}_${docType}_${uuid}${ext}`);
+  }
+});
+
+const uploadEmployeeDocument = multer({
+  storage: employeeDocumentStorage,
+  fileFilter,
+  limits: { fileSize: 15 * 1024 * 1024 } // 15MB
+});
+
+// Dedicated storage for VM Checklist Photos
+const vmChecklistStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dir = path.join(uploadDir, 'vm-checklist');
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => {
+    const loc = req.body.locationName || req.body.location || req.body.locationId || 'STORE';
+    const cleanLoc = String(loc).replace(/[^a-zA-Z0-9_-]/g, '');
+    const floor = req.body.floor ? String(req.body.floor).replace(/[^a-zA-Z0-9_-]/g, '') : 'F';
+    const uuid = require('crypto').randomBytes(8).toString('hex');
+    let ext = path.extname(file.originalname || '').toLowerCase();
+    if (!['.jpg', '.jpeg', '.png', '.webp'].includes(ext)) ext = '.jpg';
+    cb(null, `vm_${cleanLoc}_${floor}_${uuid}${ext}`);
+  }
+});
+
+const uploadVmPhotos = multer({
+  storage: vmChecklistStorage,
+  fileFilter: imageOnlyFilter,
+  limits: { fileSize: 15 * 1024 * 1024 } // 15MB
 });
 
 /**
@@ -190,6 +275,9 @@ function verifyUploadedSignatures(req, res, next) {
         } else if (ext === '.jpg' || ext === '.jpeg') {
           // JPEG begins with FF D8 FF
           isValid = buffer[0] === 0xFF && buffer[1] === 0xD8 && buffer[2] === 0xFF;
+        } else if (ext === '.webp') {
+          // WebP begins with RIFF....WEBP (0x52 0x49 0x46 0x46 ... 0x57 0x45 0x42 0x50)
+          isValid = buffer.slice(0, 4).toString('ascii') === 'RIFF' && buffer.slice(8, 12).toString('ascii') === 'WEBP';
         } else if (ext === '.doc') {
           // OLE CFB begins with D0 CF 11 E0
           isValid = buffer[0] === 0xD0 && buffer[1] === 0xCF && buffer[2] === 0x11 && buffer[3] === 0xE0;
@@ -222,5 +310,9 @@ function verifyUploadedSignatures(req, res, next) {
 }
 
 upload.verifyUploadedSignatures = verifyUploadedSignatures;
+upload.uploadEmployeePhoto = uploadEmployeePhoto;
+upload.uploadEmployeeDocument = uploadEmployeeDocument;
+upload.uploadVmPhotos = uploadVmPhotos;
+upload.uploadDir = uploadDir;
 
 module.exports = upload;

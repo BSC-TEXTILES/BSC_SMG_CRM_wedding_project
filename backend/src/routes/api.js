@@ -20,6 +20,9 @@ const crmController = require('../controllers/crmController');
 const mcheckController = require('../controllers/mcheckController');
 const locationController = require('../controllers/locationController');
 const userMgmtController = require('../controllers/userManagementController');
+const employeeMasterController = require('../controllers/employeeMasterController');
+const employeeDocumentController = require('../controllers/employeeDocumentController');
+const vmPhotoController = require('../controllers/vmPhotoController');
 const userValidator = require('../validators/userValidator');
 const feedbackQrController = require('../controllers/feedbackQrController');
 const dashboardController = require('../controllers/dashboardController');
@@ -123,8 +126,52 @@ router.get('/employees/not-joined', authenticate, authorizeLocationAccess(), can
 router.post('/employees/not-joined/action', authenticate, authorizeLocationAccess(), candidateController.handleNotJoinedAction);
 router.get('/employees/joined-store', authenticate, authorizeLocationAccess(), candidateController.getJoinedStoreDirectory);
 router.post('/employees/bulk', authenticate, authorize('Admin', 'Super Admin', 'HR'), candidateController.bulkAddEmployees);
-router.put('/employees/:id', authenticate, authorize('Admin', 'Super Admin', 'HR', 'Manager'), candidateController.updateEmployee);
+
+// ── Employee Master Directory ─────────────────────────────────
+// Static /employees/... paths above must stay registered first so they are
+// never swallowed by the /employees/:id parameter route.
+router.post('/employees', authenticate, authorizeLocationAccess(), employeeMasterController.createEmployee);
+router.put('/employees/:id', authenticate, authorize('Admin', 'Super Admin', 'HR', 'Manager'), employeeMasterController.updateEmployeeMaster);
 router.delete('/employees/:id', authenticate, authorize('Admin', 'Super Admin', 'HR'), candidateController.deleteEmployee);
+router.get('/employees/:id', authenticate, authorizeLocationAccess(), employeeMasterController.getEmployeeProfile);
+router.get('/employees/:id/profile', authenticate, authorizeLocationAccess(), employeeDocumentController.getEmployeeProfile);
+router.post('/employees/:id/toggle-status', authenticate, authorizeLocationAccess(), employeeMasterController.toggleEmployeeStatus);
+
+// Employee Photo Routes
+router.post('/employees/:id/photo',
+  authenticate,
+  authorizeLocationAccess(),
+  uploadRateLimiter,
+  upload.uploadEmployeePhoto.fields([{ name: 'photo', maxCount: 1 }, { name: 'file', maxCount: 1 }]),
+  upload.verifyUploadedSignatures,
+  employeeDocumentController.uploadPhoto);
+router.delete('/employees/:id/photo',
+  authenticate,
+  authorizeLocationAccess(),
+  employeeDocumentController.removePhoto);
+router.get('/employees/:id/photo',
+  employeeDocumentController.getPhoto);
+
+// Employee Documents Routes
+router.get('/employees/:id/documents', authenticate, authorizeLocationAccess(), employeeDocumentController.listDocuments);
+router.post('/employees/:id/documents',
+  authenticate,
+  authorizeLocationAccess(),
+  uploadRateLimiter,
+  upload.uploadEmployeeDocument.fields([{ name: 'document', maxCount: 1 }, { name: 'file', maxCount: 1 }]),
+  upload.verifyUploadedSignatures,
+  employeeDocumentController.uploadDocument);
+router.get('/employees/:id/documents/:docId/view', authenticate, authorizeLocationAccess(), employeeDocumentController.viewDocument);
+router.get('/employees/:id/documents/:docId/download', authenticate, authorizeLocationAccess(), employeeDocumentController.downloadDocument);
+router.put('/employees/:id/documents/:docId',
+  authenticate,
+  authorizeLocationAccess(),
+  uploadRateLimiter,
+  upload.uploadEmployeeDocument.fields([{ name: 'document', maxCount: 1 }, { name: 'file', maxCount: 1 }]),
+  upload.verifyUploadedSignatures,
+  employeeDocumentController.replaceDocument);
+router.delete('/employees/:id/documents/:docId', authenticate, authorizeLocationAccess(), employeeDocumentController.deleteDocument);
+router.get('/employees/:id/audit', authenticate, authorizeLocationAccess(), employeeMasterController.getAuditTrail);
 
 // ── Interview Routes ─────────────────────────────────────────
 router.get('/interviews', authenticate, authorizeLocationAccess(), interviewController.getInterviews);
@@ -217,6 +264,18 @@ router.get('/vm/floors', authenticate, crmController.getVmFloors);
 router.post('/vm/floors', authenticate, authorize('Admin', 'Super Admin'), crmController.createVmFloor);
 router.post('/vm/floors/delete', authenticate, authorize('Admin', 'Super Admin'), crmController.deleteVmFloor);
 router.delete('/vm/floors/:id', authenticate, authorize('Admin', 'Super Admin'), crmController.deleteVmFloor);
+
+// ── VM Checklist Photos ──────────────────────────────────────
+router.post('/vm/photos',
+  authenticate,
+  uploadRateLimiter,
+  upload.uploadVmPhotos.fields([{ name: 'photos', maxCount: 10 }, { name: 'photo', maxCount: 1 }, { name: 'file', maxCount: 1 }]),
+  upload.verifyUploadedSignatures,
+  vmPhotoController.uploadPhotos);
+router.get('/vm/photos', authenticate, authorizeLocationAccess(), vmPhotoController.listPhotos);
+router.get('/vm/photos/:photoId/file', authenticate, vmPhotoController.streamPhoto);
+router.delete('/vm/photos/:photoId', authenticate, authorizeLocationAccess(), vmPhotoController.deletePhoto);
+router.post('/vm/photos/link', authenticate, authorizeLocationAccess(), vmPhotoController.linkPhotosToSubmission);
 
 // ── Broadcast Routes ─────────────────────────────────────────
 router.get('/broadcasts', optionalAuthenticate, broadcastController.getBroadcasts);

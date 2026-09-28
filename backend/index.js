@@ -166,10 +166,12 @@ const subdirs = [
   'applicants',
   'candidate-resumes',
   'candidate-photos',
+  'employee-photos',
   'employee-documents',
   'offer-letters',
   'relieving-letters',
   'experience-certificates',
+  'vm-checklist',
   'misc'
 ];
 
@@ -190,7 +192,7 @@ if (fs.existsSync(parentUploadsDir)) {
 }
 
 // Smart Uploads Fallback Handler (prevents 404 for photos & documents across subfolders)
-app.get(['/uploads/*', '/candidate-resumes/*', '/candidate-photos/*', '/employee-documents/*', '/:file(*.pdf)', '/:file(*.jpg)', '/:file(*.jpeg)', '/:file(*.png)', '/:file(*.doc)', '/:file(*.docx)'], (req, res, next) => {
+app.get(['/uploads/*', '/candidate-resumes/*', '/candidate-photos/*', '/employee-photos/*', '/employee-documents/*', '/vm-checklist/*', '/:file(*.pdf)', '/:file(*.jpg)', '/:file(*.jpeg)', '/:file(*.png)', '/:file(*.webp)', '/:file(*.doc)', '/:file(*.docx)'], (req, res, next) => {
   const reqPath = req.params[0] || req.params.file || req.path.replace(/^\//, '');
   const fileName = path.basename(reqPath);
   const candidateAppNo = req.query.appNo || '';
@@ -198,23 +200,29 @@ app.get(['/uploads/*', '/candidate-resumes/*', '/candidate-photos/*', '/employee
   const possiblePaths = [
     path.join(primaryUploadsDir, 'applicants', candidateAppNo, fileName),
     path.join(primaryUploadsDir, fileName),
+    path.join(primaryUploadsDir, 'employee-photos', fileName),
+    path.join(primaryUploadsDir, 'employee-documents', fileName),
+    path.join(primaryUploadsDir, 'vm-checklist', fileName),
     path.join(primaryUploadsDir, 'candidate-resumes', fileName),
     path.join(primaryUploadsDir, 'candidate-photos', fileName),
-    path.join(primaryUploadsDir, 'employee-documents', fileName),
     path.join(primaryUploadsDir, 'misc', fileName),
 
     path.join(parentUploadsDir, 'applicants', candidateAppNo, fileName),
     path.join(parentUploadsDir, fileName),
+    path.join(parentUploadsDir, 'employee-photos', fileName),
+    path.join(parentUploadsDir, 'employee-documents', fileName),
+    path.join(parentUploadsDir, 'vm-checklist', fileName),
     path.join(parentUploadsDir, 'candidate-resumes', fileName),
     path.join(parentUploadsDir, 'candidate-photos', fileName),
-    path.join(parentUploadsDir, 'employee-documents', fileName),
     path.join(parentUploadsDir, 'misc', fileName),
     
     path.join(grandParentUploadsDir, 'applicants', candidateAppNo, fileName),
     path.join(grandParentUploadsDir, fileName),
+    path.join(grandParentUploadsDir, 'employee-photos', fileName),
+    path.join(grandParentUploadsDir, 'employee-documents', fileName),
+    path.join(grandParentUploadsDir, 'vm-checklist', fileName),
     path.join(grandParentUploadsDir, 'candidate-resumes', fileName),
     path.join(grandParentUploadsDir, 'candidate-photos', fileName),
-    path.join(grandParentUploadsDir, 'employee-documents', fileName),
     path.join(grandParentUploadsDir, 'misc', fileName)
   ];
 
@@ -473,6 +481,11 @@ app.use('/api/landing', landingRoutes);
 // Public Feedback QR scan tracking (no CSRF, no auth - for QR code scanning by customers)
 app.get('/api/feedback-qr/scan/:qrCodeId', feedbackQrController.trackQrScan);
 app.post('/api/feedback-qr/scan/:qrCodeId', feedbackQrController.trackQrScan);
+
+// Public Profile Website Routes & Admin Endpoints
+const profileSiteRoutes = require('./src/routes/profileSiteRoutes');
+app.use('/api/profile-site', profileSiteRoutes);
+app.use('/api', profileSiteRoutes);
 
 // Apply CSRF protection to all other API routes (auth routes exempted in middleware)
 app.use('/api', csrfProtection, apiRoutes);

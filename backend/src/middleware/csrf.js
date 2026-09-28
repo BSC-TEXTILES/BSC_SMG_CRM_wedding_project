@@ -36,6 +36,10 @@ const CSRF_EXEMPT_PATHS = new Set([
   '/api/user-tracking/logout',
   '/user-tracking/activity',
   '/api/user-tracking/activity',
+  '/contact',
+  '/api/contact',
+  '/profile-site/contact',
+  '/api/profile-site/contact'
 ]);
 
 const csrfProtection = (req, res, next) => {

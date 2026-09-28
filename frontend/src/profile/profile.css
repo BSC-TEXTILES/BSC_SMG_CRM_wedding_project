@@ -1,0 +1,193 @@
+/* ==========================================================================
+   PROFILE WEBSITE DESIGN SYSTEM — LUXURY EDITORIAL PALETTE
+   Inspired by historic South Indian handloom textile heritage
+   ========================================================================== */
+
+:root {
+  --pf-font-serif: "Playfair Display", "Cormorant Garamond", Georgia, "Times New Roman", serif;
+  --pf-font-sans: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --pf-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /* Light Theme Tokens */
+  --pf-bg: #FAF8F5;
+  --pf-bg-alt: #F4EFEA;
+  --pf-bg-card: #FFFFFF;
+  --pf-bg-hover: #F8F5F0;
+  --pf-border: #E8E0D5;
+  --pf-border-soft: #F0EAE1;
+  --pf-border-strong: #D5C8B8;
+  
+  --pf-text-main: #201A16;
+  --pf-text-muted: #6C5F53;
+  --pf-text-subtle: #988B7E;
+  
+  --pf-burgundy: #4E141B;
+  --pf-burgundy-hover: #681C25;
+  --pf-burgundy-light: #F9EFEF;
+  --pf-gold: #B38938;
+  --pf-gold-light: #FBF6EB;
+  --pf-gold-hover: #C59A45;
+  --pf-gold-border: #E2CFAB;
+
+  --pf-shadow-sm: 0 1px 3px rgba(32, 26, 22, 0.04);
+  --pf-shadow-md: 0 4px 16px rgba(32, 26, 22, 0.06);
+  --pf-shadow-lg: 0 12px 36px rgba(32, 26, 22, 0.08);
+}
+
+.profile-dark {
+  /* Dark Theme Tokens */
+  --pf-bg: #12100E;
+  --pf-bg-alt: #181513;
+  --pf-bg-card: #1F1B18;
+  --pf-bg-hover: #26221E;
+  --pf-border: #302A24;
+  --pf-border-soft: #27221D;
+  --pf-border-strong: #453C34;
+  
+  --pf-text-main: #F6F3EE;
+  --pf-text-muted: #AEA59B;
+  --pf-text-subtle: #797166;
+  
+  --pf-burgundy: #9E2B37;
+  --pf-burgundy-hover: #B83543;
+  --pf-burgundy-light: #2D1418;
+  --pf-gold: #D4AF37;
+  --pf-gold-light: #2A2415;
+  --pf-gold-hover: #E4C04F;
+  --pf-gold-border: #524424;
+
+  --pf-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --pf-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --pf-shadow-lg: 0 12px 36px rgba(0, 0, 0, 0.5);
+}
+
+.profile-theme-wrapper {
+  background-color: var(--pf-bg);
+  color: var(--pf-text-main);
+  font-family: var(--pf-font-sans);
+  min-height: 100vh;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* Serif Headings */
+.pf-heading-serif {
+  font-family: var(--pf-font-serif);
+  letter-spacing: -0.015em;
+  font-weight: 500;
+}
+
+.pf-subheading {
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--pf-gold);
+  font-weight: 700;
+}
+
+/* Luxury buttons */
+.pf-btn-primary {
+  background-color: var(--pf-burgundy);
+  color: #FFFFFF;
+  padding: 0.75rem 1.6rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 8px rgba(78, 20, 27, 0.2);
+  border: 1px solid transparent;
+}
+.pf-btn-primary:hover {
+  background-color: var(--pf-burgundy-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(78, 20, 27, 0.3);
+}
+
+.pf-btn-secondary {
+  background-color: transparent;
+  color: var(--pf-text-main);
+  border: 1px solid var(--pf-border-strong);
+  padding: 0.75rem 1.6rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+}
+.pf-btn-secondary:hover {
+  background-color: var(--pf-bg-alt);
+  border-color: var(--pf-gold);
+}
+
+.pf-btn-gold {
+  background-color: var(--pf-gold);
+  color: #FFFFFF;
+  padding: 0.75rem 1.6rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+}
+.pf-btn-gold:hover {
+  background-color: var(--pf-gold-hover);
+  transform: translateY(-1px);
+}
+
+/* Card Styling */
+.pf-card {
+  background-color: var(--pf-bg-card);
+  border: 1px solid var(--pf-border);
+  border-radius: 1rem;
+  box-shadow: var(--pf-shadow-sm);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.pf-card:hover {
+  border-color: var(--pf-gold-border);
+  box-shadow: var(--pf-shadow-md);
+}
+
+/* Glass accents */
+.pf-glass {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.profile-dark .pf-glass {
+  background: rgba(20, 18, 16, 0.85);
+}
+
+/* Subtle gold badge */
+.pf-badge-gold {
+  background-color: var(--pf-gold-light);
+  color: var(--pf-gold);
+  border: 1px solid var(--pf-gold-border);
+  border-radius: 9999px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* Section container */
+.pf-container {
+  max-width: 1240px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
+}
+
+@media (min-width: 768px) {
+  .pf-container {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}

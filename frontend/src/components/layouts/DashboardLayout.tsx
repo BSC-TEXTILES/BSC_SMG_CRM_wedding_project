@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import Sidebar from '../Sidebar';
 import Topbar from '../Topbar';
 import ToastContainer from '../Toast';
+import PageContainer from '../ui/PageContainer';
 import { Auth, UserSession } from "../../services/api";
-import { Plus, X, UserCheck, BarChart3, Target, PhoneCall, Zap, QrCode } from 'lucide-react';
 
 import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../../utils/sidebarState';
 import { BreadcrumbCrumb } from '../../utils/breadcrumbs';
@@ -17,6 +17,7 @@ interface DashboardLayoutProps {
   breadcrumbs?: BreadcrumbCrumb[] | null;
   hideBreadcrumbs?: boolean;
   rightElement?: React.ReactNode;
+  noPadding?: boolean;
 }
 
 export default function DashboardLayout({
@@ -25,12 +26,12 @@ export default function DashboardLayout({
   subtitle,
   breadcrumbs = [],
   hideBreadcrumbs,
-  rightElement
+  rightElement,
+  noPadding = false
 }: DashboardLayoutProps) {
   const navigate = useNavigate();
   const [session, setSession] = useState<UserSession | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [speedDialOpen, setSpeedDialOpen] = useState(false);
   const [collapsed, setCollapsed] = useState<boolean>(getSidebarCollapsed());
 
   useEffect(() => {
@@ -47,7 +48,7 @@ export default function DashboardLayout({
   }, [navigate]);
 
   return (
-    <div className="min-h-screen bg-[#F6F4EF] flex relative select-text w-full overflow-x-hidden">
+    <div className="min-h-screen bg-[#FFF7F2] flex relative select-text w-full overflow-x-hidden">
       <ToastContainer />
 
       <Sidebar session={session} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
@@ -63,7 +64,11 @@ export default function DashboardLayout({
         />
 
         <main className="flex-1 w-full min-w-0 max-w-full overflow-y-auto">
-          {children}
+          {noPadding ? children : (
+            <PageContainer maxWidth="full">
+              {children}
+            </PageContainer>
+          )}
         </main>
       </div>
     </div>

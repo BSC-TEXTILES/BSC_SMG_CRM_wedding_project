@@ -16,6 +16,16 @@ export default defineConfig({
       '/api': {
         target: process.env.VITE_API_URL || 'http://localhost:5000',
         changeOrigin: true,
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq, req, res) => {
+            const authHeader = req.headers.authorization;
+            if (authHeader) {
+              console.log('[Vite Proxy] Forwarding Authorization header:', authHeader.substring(0, 30) + '...');
+            } else {
+              console.log('[Vite Proxy] No Authorization header in request to:', req.url);
+            }
+          });
+        },
       },
       '/uploads': {
         target: process.env.VITE_API_URL || 'http://localhost:5000',

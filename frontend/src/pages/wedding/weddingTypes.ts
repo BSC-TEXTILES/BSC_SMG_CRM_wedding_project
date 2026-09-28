@@ -135,51 +135,47 @@ export const BUDGET_RANGES = [
 
 /**
  * Returns badge style for customer status
- * Following Section 22 color standards:
- * New Lead -> Info/Navy
- * Contact Pending -> Warning
- * Contacted -> Info
- * Follow-up Scheduled -> Champagne
- * Overdue -> Danger
- * Shopping Confirmed -> Blue
- * Visit Scheduled -> Info
- * Visited / Won -> Success (#16805B)
- * Not Interested / Lost -> Muted
+ * Matching BSC Exclusive Wedding CRM Brand Color System:
+ * - CONFIRMED / WON / VISITED: bg #E8F5EE, text #198754
+ * - PENDING / CONTACT PENDING: bg #FFF4D6, text #C58A18
+ * - CANCELLED / LOST / NOT INTERESTED: bg #FDE8E7, text #B42318
+ * - INTERESTED / NEW LEAD: bg #EDE7F6, text #6A2853
+ * - FOLLOW-UP / CALLBACK / SCHEDULED: bg #F6E2E5, text #4A173A
  */
 export function getStatusBadge(status?: string) {
-  const s = (status || '').toLowerCase();
-  if (s.includes('won') || s.includes('converted') || s.includes('visited')) {
+  const s = (status || '').toLowerCase().trim();
+  if (s.includes('won') || s.includes('converted') || s.includes('confirm') || s.includes('visited') || s.includes('planned')) {
     return {
-      bg: 'bg-emerald-50 text-emerald-800 border-emerald-300',
-      dot: 'bg-emerald-600'
+      bg: 'bg-[#E8F5EE] text-[#198754] border-[#198754]/25',
+      dot: 'bg-[#198754]'
     };
   }
-  if (s.includes('confirm') || s.includes('planned')) {
+  if (s.includes('interested') || s === 'new lead') {
     return {
-      bg: 'bg-blue-50 text-blue-800 border-blue-300',
-      dot: 'bg-blue-600'
+      bg: 'bg-[#EDE7F6] text-[#6A2853] border-[#6A2853]/25',
+      dot: 'bg-[#6A2853]'
     };
   }
-  if (s.includes('schedule') || s.includes('follow-up') || s.includes('callback')) {
+  if (s.includes('follow-up') || s.includes('callback') || s.includes('scheduled')) {
     return {
-      bg: 'bg-amber-50 text-amber-900 border-[#C9A45C]/40',
-      dot: 'bg-[#C9A45C]'
+      bg: 'bg-[#F6E2E5] text-[#4A173A] border-[#4A173A]/25',
+      dot: 'bg-[#4A173A]'
     };
   }
-  if (s.includes('pending') || s.includes('new')) {
+  if (s.includes('pending') || s.includes('new') || s.includes('contacted')) {
     return {
-      bg: 'bg-primary-soft text-primary border-border',
-      dot: 'bg-primary'
+      bg: 'bg-[#FFF4D6] text-[#C58A18] border-[#C58A18]/25',
+      dot: 'bg-[#C58A18]'
     };
   }
-  if (s.includes('not interested') || s.includes('lost') || s.includes('cancel') || s.includes('invalid')) {
+  if (s.includes('not interested') || s.includes('lost') || s.includes('cancel') || s.includes('invalid') || s.includes('rejected')) {
     return {
-      bg: 'bg-rose-50 text-rose-800 border-rose-300',
-      dot: 'bg-rose-600'
+      bg: 'bg-[#FDE8E7] text-[#B42318] border-[#B42318]/25',
+      dot: 'bg-[#B42318]'
     };
   }
   return {
-    bg: 'bg-gray-50 text-gray-700 border-gray-200',
-    dot: 'bg-gray-400'
+    bg: 'bg-[#FFF7F2] text-[#6F5963] border-[#E8D9D4]',
+    dot: 'bg-[#9A858D]'
   };
 }

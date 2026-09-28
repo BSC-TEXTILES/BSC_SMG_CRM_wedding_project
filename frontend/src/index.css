@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Manrope:wght@500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,64 +6,81 @@
 
 :root {
   /* ==================================================
-     MASTER BRAND DESIGN TOKENS — BSC Textiles CRM
-     MIDNIGHT NAVY + CHAMPAGNE PREMIUM ENTERPRISE THEME
+     BSC EXCLUSIVE WEDDING CRM BRAND COLOR SYSTEM
+     DEEP PLUM + ROSE GOLD + SOFT CREAM + CHAMPAGNE
      ================================================== */
-  --color-primary: #101C36;          /* Master Primary (Midnight Navy) */
-  --color-primary-dark: #07101F;     /* Master Primary Dark */
-  --color-gold: #C9A45C;             /* Master Champagne Gold */
-  --color-gold-light: #E4CB92;       /* Master Gold Light */
-  --color-background: #F6F4EF;       /* Master Background (Warm Off-white / Ivory) */
-  --color-card: #FFFFFF;             /* Master Cards / Surface */
-  --color-text: #182033;             /* Master Main Text (Dark Slate Navy) */
-  --color-text-secondary: #687080;   /* Master Secondary / Muted Text */
-  --color-border: #DFDDD7;           /* Master Border (Subtle Enterprise Border) */
-  --color-success: #16805B;          /* Master Success */
-  --color-success-light: #E8F5EF;    /* Master Success Light */
-  --color-warning: #C98218;          /* Master Warning */
-  --color-warning-light: #FFF4DD;    /* Master Warning Light */
-  --color-danger: #C7374A;           /* Master Danger */
-  --color-danger-light: #FDEBED;     /* Master Danger Light */
-  --color-info: #3567A8;             /* Master Info */
-  --color-info-light: #EAF1FA;       /* Master Info Light */
+  --color-primary: #4A173A;          /* Deep Plum (Primary Brand) */
+  --color-primary-dark: #351027;     /* Dark Plum */
+  --color-primary-medium: #6A2853;   /* Medium Plum */
+  --color-accent: #B76E79;           /* Rose Gold (Primary Accent) */
+  --color-accent-light: #D89AA3;     /* Light Rose Gold */
+  --color-accent-hover: #A85F6A;     /* Rose Gold Hover */
+  --color-champagne: #E8C7A8;        /* Champagne */
+  --color-dusty-plum: #8B5A72;       /* Dusty Plum */
+  --color-soft-mauve: #C9A0AA;       /* Soft Mauve */
+
+  --color-background: #FFF7F2;       /* Soft Cream */
+  --color-card: #FFFDFC;             /* Card / Surface */
+  --color-text: #2B1722;             /* Primary Text */
+  --color-text-secondary: #6F5963;   /* Secondary Text */
+  --color-text-muted: #9A858D;       /* Muted Text */
+  --color-border: #E8D9D4;           /* Border */
+  --color-divider: #EADBD7;          /* Divider */
+  --color-input-bg: #FFFAF7;         /* Input Background */
+
+  /* Status Colors */
+  --color-success: #198754;          /* Confirmed / Success */
+  --color-success-light: #E8F5EE;
+  --color-warning: #C58A18;          /* Pending / Warning */
+  --color-warning-light: #FFF4D6;
+  --color-danger: #B42318;           /* Cancelled / Error */
+  --color-danger-light: #FDE8E7;
+  --color-info: #356AE6;             /* Information */
+  --color-info-light: #EAF1FA;
+  --color-neutral: #737373;          /* Neutral */
+  --color-interested: #6A2853;       /* Interested CRM Status */
+  --color-interested-light: #EDE7F6;
+  --color-followup: #4A173A;         /* Follow-up CRM Status */
+  --color-followup-light: #F6E2E5;
 
   /* Semantic Contrast System Tokens */
-  --text-primary: #182033;
-  --text-secondary: #687080;
-  --text-muted: #8E98A8;
+  --text-primary: #2B1722;
+  --text-secondary: #6F5963;
+  --text-muted: #9A858D;
   --text-inverse: #FFFFFF;
-  --text-inverse-muted: rgba(255, 255, 255, 0.8);
-  --text-gold: #C9A45C;
-  --surface-light: #FFFFFF;
-  --surface-dark: #101C36;
-  --surface-navy: #101C36;
-  --border-light: #DFDDD7;
+  --text-inverse-muted: rgba(255, 255, 255, 0.85);
+  --text-gold: #B76E79;
+  --text-rosegold: #B76E79;
+  --text-plum: #4A173A;
+  --surface-light: #FFFDFC;
+  --surface-dark: #4A173A;
+  --surface-navy: #4A173A;
+  --border-light: #E8D9D4;
   --border-dark: rgba(255, 255, 255, 0.15);
 
   /* Reusable standard aliases matching existing code */
   --bg: var(--color-background);
   --surface: var(--color-card);
   --text-main: var(--color-text);
-  --text-muted: var(--color-text-secondary);
   --text-soft: var(--color-text-secondary);
   --border: var(--color-border);
   --border-warm: var(--color-border);
 
-  --color-accent: var(--color-gold);
-  --color-accent-hover: #B38C45;
-  --color-accent-soft: #FAF5EA;
-  --color-accent-text: #9E762E;
-  --color-accent-bright: var(--color-gold-light);
-  --color-primary-hover: var(--color-primary-dark);
-  --color-primary-soft: #EEF2F9;
-  --color-primary-light: #1C2E56;
+  --color-gold: var(--color-accent);
+  --color-gold-light: var(--color-accent-light);
+  --color-accent-soft: #FFF7F2;
+  --color-accent-text: #B76E79;
+  --color-accent-bright: var(--color-accent-light);
+  --color-primary-hover: var(--color-primary-medium);
+  --color-primary-soft: #FFF7F2;
+  --color-primary-light: #6A2853;
 
   --burgundy: var(--color-primary);
   --burgundy-dark: var(--color-primary-dark);
-  --burgundy-light: #1C2E56;
-  --champagne: var(--color-gold);
-  --champagne-dark: #9E762E;
-  --champagne-light: var(--color-gold-light);
+  --burgundy-light: #6A2853;
+  --champagne: var(--color-champagne);
+  --champagne-dark: #B76E79;
+  --champagne-light: #FFF7F2;
   --cream: var(--color-background);
   --ivory: var(--color-background);
 
@@ -74,10 +91,18 @@
 
   --navy: var(--color-primary);
   --navy-dark: var(--color-primary-dark);
-  --navy-light: #1C2E56;
-  --gold: var(--color-gold);
-  --gold-dark: #9E762E;
+  --navy-light: #6A2853;
+  --gold: var(--color-accent);
+  --gold-dark: #4A173A;
   --muted: var(--color-text-secondary);
+
+  /* Chart Colors Order */
+  --chart-color-1: #4A173A;
+  --chart-color-2: #B76E79;
+  --chart-color-3: #D89AA3;
+  --chart-color-4: #E8C7A8;
+  --chart-color-5: #8B5A72;
+  --chart-color-6: #C9A0AA;
 }
 
 html {
@@ -92,7 +117,7 @@ html {
 }
 
 body {
-  font-family: 'Inter', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'Inter', 'Plus Jakarta Sans', 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
   background-color: var(--bg);
   color: var(--text-main);
   min-height: 100vh;
@@ -110,13 +135,13 @@ body {
 
 /* Sidebar color classes */
 .sidebar-bg { background-color: var(--color-primary); }
-.sidebar-border { border-color: rgba(201, 164, 92, 0.2); }
+.sidebar-border { border-color: rgba(183, 110, 121, 0.25); }
 .sidebar-text { color: #FFFFFF; }
 .sidebar-text-muted { color: rgba(255, 255, 255, 0.85); }
-.sidebar-accent { color: var(--color-gold); }
-.sidebar-hover-bg { background-color: var(--color-primary-dark); }
-.sidebar-active-bg { background-color: var(--color-gold); }
-.sidebar-active-text { color: var(--color-primary-dark); }
+.sidebar-accent { color: var(--color-accent); }
+.sidebar-hover-bg { background-color: var(--color-primary-medium); }
+.sidebar-active-bg { background-color: var(--color-accent); }
+.sidebar-active-text { color: #FFFFFF; }
 
 /* Enable full project text selection & copying everywhere */
 html, #root, * {
@@ -128,12 +153,12 @@ html, #root, * {
 
 /* Refined Selection Highlighting */
 ::selection {
-  background-color: rgba(201, 164, 92, 0.25);
-  color: var(--color-text);
+  background-color: rgba(183, 110, 121, 0.25);
+  color: #2B1722;
 }
 ::-moz-selection {
-  background-color: rgba(201, 164, 92, 0.25);
-  color: var(--color-text);
+  background-color: rgba(183, 110, 121, 0.25);
+  color: #2B1722;
 }
 
 /* Refined Scrollbar */
@@ -145,28 +170,32 @@ html, #root, * {
   background: var(--color-background);
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--color-gold);
+  background: var(--color-accent);
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-primary);
 }
 
-/* Enterprise Cards */
+/* ==================================================
+   DASHBOARD CARDS
+   ================================================== */
 .card-glass {
   background: var(--color-card);
   border: 1px solid var(--color-border);
-  box-shadow: 0 2px 10px rgba(16, 28, 54, 0.04);
-  border-radius: 14px;
+  box-shadow: 0 2px 10px rgba(74, 23, 58, 0.04);
+  border-radius: 16px;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .card-glass-hover:hover {
-  box-shadow: 0 6px 20px rgba(16, 28, 54, 0.08);
-  border-color: var(--color-gold);
+  box-shadow: 0 6px 20px rgba(74, 23, 58, 0.08);
+  border-color: var(--color-accent);
   transform: translateY(-1px);
 }
 
-/* Enterprise Badges (Pill Style) — Corporate Status System */
+/* ==================================================
+   CRM STATUS BADGES & ENTERPRISE BADGES
+   ================================================== */
 .badge {
   display: inline-flex;
   align-items: center;
@@ -179,15 +208,44 @@ html, #root, * {
   letter-spacing: 0.01em;
   box-shadow: 0 1px 2px rgba(0,0,0,0.02);
 }
-.b-new { background: var(--color-primary-soft); color: var(--color-primary); border: 1px solid var(--color-border); }
-.b-short { background: #FAF5EA; color: #8A6D1A; border: 1px solid #E5DCD2; }
-.b-int { background: #EAF0F8; color: var(--color-info); border: 1px solid #B0CBEB; }
-.b-sel { background: #E6F4EE; color: var(--color-success); border: 1px solid #A3D8C3; }
-.b-offer { background: #FAF5EA; color: #8A6D1A; border: 1px solid #E4C982; }
-.b-hold { background: #FCF3E5; color: var(--color-warning); border: 1px solid #F2D5A6; }
-.b-rej { background: #FCECEE; color: var(--color-danger); border: 1px solid #F4B3BC; }
-.b-board { background: #E6F4EE; color: var(--color-success); border: 1px solid #A3D8C3; }
-.b-info { background: #EAF0F8; color: var(--color-info); border: 1px solid #B0CBEB; }
+
+/* CRM Specific Badges */
+.badge-confirmed, .badge-won, .badge-visited {
+  background-color: #E8F5EE !important;
+  color: #198754 !important;
+  border: 1px solid #A3D8C3 !important;
+}
+.badge-pending, .badge-contact-pending {
+  background-color: #FFF4D6 !important;
+  color: #C58A18 !important;
+  border: 1px solid #F2D5A6 !important;
+}
+.badge-cancelled, .badge-lost, .badge-not-interested {
+  background-color: #FDE8E7 !important;
+  color: #B42318 !important;
+  border: 1px solid #F4B3BC !important;
+}
+.badge-interested, .badge-new-lead {
+  background-color: #EDE7F6 !important;
+  color: #6A2853 !important;
+  border: 1px solid #D1C4E9 !important;
+}
+.badge-followup, .badge-callback, .badge-scheduled {
+  background-color: #F6E2E5 !important;
+  color: #4A173A !important;
+  border: 1px solid #E8C1C8 !important;
+}
+
+/* Compatibility Pill Badges */
+.b-new { background: #EDE7F6; color: #6A2853; border: 1px solid #D1C4E9; }
+.b-short { background: #FFF4D6; color: #C58A18; border: 1px solid #F2D5A6; }
+.b-int { background: #EAF1FA; color: #356AE6; border: 1px solid #B0CBEB; }
+.b-sel { background: #E8F5EE; color: #198754; border: 1px solid #A3D8C3; }
+.b-offer { background: #F6E2E5; color: #4A173A; border: 1px solid #E8C1C8; }
+.b-hold { background: #FFF4D6; color: #C58A18; border: 1px solid #F2D5A6; }
+.b-rej { background: #FDE8E7; color: #B42318; border: 1px solid #F4B3BC; }
+.b-board { background: #E8F5EE; color: #198754; border: 1px solid #A3D8C3; }
+.b-info { background: #EAF1FA; color: #356AE6; border: 1px solid #B0CBEB; }
 
 /* Status Chips */
 .sc-chip {
@@ -198,9 +256,9 @@ html, #root, * {
   font-size: 10.5px;
   font-weight: 700;
 }
-.sc-done { background: #E6F4EE; color: var(--color-success); border: 1px solid #A3D8C3; }
-.sc-fail { background: #FCECEE; color: var(--color-danger); border: 1px solid #F4B3BC; }
-.sc-pending { background: #FCF3E5; color: var(--color-warning); border: 1px solid #F2D5A6; }
+.sc-done { background: #E8F5EE; color: #198754; border: 1px solid #A3D8C3; }
+.sc-fail { background: #FDE8E7; color: #B42318; border: 1px solid #F4B3BC; }
+.sc-pending { background: #FFF4D6; color: #C58A18; border: 1px solid #F2D5A6; }
 
 /* Days in Pipeline Chip */
 .days-chip {
@@ -209,9 +267,9 @@ html, #root, * {
   font-size: 10px;
   font-weight: 700;
 }
-.dc-ok { background: #E6F4EE; color: var(--color-success); }
-.dc-warn { background: #FCF3E5; color: var(--color-warning); }
-.dc-danger { background: #FCECEE; color: var(--color-danger); }
+.dc-ok { background: #E8F5EE; color: #198754; }
+.dc-warn { background: #FFF4D6; color: #C58A18; }
+.dc-danger { background: #FDE8E7; color: #B42318; }
 
 /* Funnel Rows */
 .funnel-row {
@@ -262,27 +320,29 @@ html, #root, * {
   flex-shrink: 0;
 }
 
-/* Modern Form Controls */
+/* ==================================================
+   MODERN FORM CONTROLS
+   ================================================== */
 @layer components {
   .input-modern, .select-modern, .textarea-modern {
     width: 100%;
     padding: 10px 14px;
     border-radius: 10px;
-    border: 1px solid var(--color-border);
-    background-color: #FFFFFF;
-    color: var(--color-text);
+    border: 1px solid #E8D9D4;
+    background-color: #FFFAF7;
+    color: #2B1722;
     font-weight: 600;
     font-size: 13px;
     transition: all 0.15s ease-in-out;
   }
   .input-modern:focus, .select-modern:focus, .textarea-modern:focus {
     outline: none;
-    border-color: var(--color-gold);
+    border-color: #B76E79;
     background-color: #FFFFFF;
-    box-shadow: 0 0 0 3px rgba(201, 164, 92, 0.2);
+    box-shadow: 0 0 0 3px rgba(183, 110, 121, 0.2);
   }
   .input-modern::placeholder, .textarea-modern::placeholder {
-    color: var(--color-text-secondary);
+    color: #9A858D;
   }
 }
 
@@ -306,51 +366,77 @@ input[class*="pr-12"], select[class*="pr-12"], .input-modern[class*="pr-12"] { p
   pointer-events: none;
 }
 
-/* Modern Buttons — Master Color System */
+/* ==================================================
+   BUTTONS — BRAND SYSTEM
+   ================================================== */
+/* PRIMARY BUTTON: Background: #4A173A, Text: #FFFFFF, Hover: #6A2853 */
 .btn-primary {
-  background-color: var(--color-primary);
+  background-color: #4A173A;
   color: #FFFFFF;
   font-weight: 700;
   padding: 9px 18px;
   border-radius: 10px;
   transition: all 0.15s ease;
-  box-shadow: 0 2px 6px rgba(16, 28, 54, 0.2);
+  box-shadow: 0 2px 6px rgba(74, 23, 58, 0.2);
 }
 .btn-primary:hover {
-  background-color: var(--color-primary-dark);
+  background-color: #6A2853;
   color: #FFFFFF;
   transform: translateY(-0.5px);
-  box-shadow: 0 4px 12px rgba(7, 16, 31, 0.25);
+  box-shadow: 0 4px 12px rgba(106, 40, 83, 0.25);
 }
-.btn-gold {
-  background-color: var(--color-gold);
-  color: var(--color-primary-dark);
-  font-weight: 800;
+
+/* SECONDARY BUTTON: Background: #B76E79, Text: #FFFFFF, Hover: #A85F6A */
+.btn-secondary {
+  background-color: #B76E79;
+  color: #FFFFFF;
+  font-weight: 700;
   padding: 9px 18px;
   border-radius: 10px;
   transition: all 0.15s ease;
-  box-shadow: 0 2px 6px rgba(201, 164, 92, 0.25);
+  box-shadow: 0 2px 6px rgba(183, 110, 121, 0.2);
 }
-.btn-gold:hover {
-  background-color: var(--color-gold-light);
-  color: var(--color-primary-dark);
+.btn-secondary:hover {
+  background-color: #A85F6A;
+  color: #FFFFFF;
   transform: translateY(-0.5px);
+  box-shadow: 0 4px 12px rgba(168, 95, 106, 0.25);
 }
-.btn-secondary {
-  background-color: #FFFFFF;
-  color: var(--color-text);
-  border: 1px solid var(--color-border);
+
+/* OUTLINE BUTTON: Border: #B76E79, Text: #4A173A, Background: transparent */
+.btn-outline {
+  border: 1px solid #B76E79;
+  color: #4A173A;
+  background-color: transparent;
   font-weight: 700;
   padding: 9px 18px;
   border-radius: 10px;
   transition: all 0.15s ease;
 }
-.btn-secondary:hover {
-  background-color: var(--color-background);
-  border-color: var(--color-gold);
+.btn-outline:hover {
+  background-color: #FFF7F2;
+  border-color: #6A2853;
+  color: #6A2853;
 }
+
+/* Gold Button alias mapped to Rose Gold */
+.btn-gold {
+  background-color: #B76E79;
+  color: #FFFFFF;
+  font-weight: 700;
+  padding: 9px 18px;
+  border-radius: 10px;
+  transition: all 0.15s ease;
+  box-shadow: 0 2px 6px rgba(183, 110, 121, 0.2);
+}
+.btn-gold:hover {
+  background-color: #A85F6A;
+  color: #FFFFFF;
+  transform: translateY(-0.5px);
+}
+
 .btn-danger {
-  background-color: var(--color-danger);
+  background-color: #B42318;
   color: #FFFFFF;
   font-weight: 700;
   padding: 9px 18px;
@@ -358,10 +444,11 @@ input[class*="pr-12"], select[class*="pr-12"], .input-modern[class*="pr-12"] { p
   transition: all 0.15s ease;
 }
 .btn-danger:hover {
-  background-color: #A82839;
+  background-color: #931D14;
 }
+
 .btn-success {
-  background-color: var(--color-success);
+  background-color: #198754;
   color: #FFFFFF;
   font-weight: 700;
   padding: 9px 18px;
@@ -369,7 +456,61 @@ input[class*="pr-12"], select[class*="pr-12"], .input-modern[class*="pr-12"] { p
   transition: all 0.15s ease;
 }
 .btn-success:hover {
-  background-color: #106648;
+  background-color: #146C43;
+}
+
+/* ==================================================
+   TABLES — BRAND SYSTEM
+   ================================================== */
+.table-wedding, table.enterprise-table {
+  background-color: #FFFDFC;
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+}
+.table-wedding thead, table.enterprise-table thead, .thead-wedding {
+  background-color: #F8EDE8 !important;
+}
+.table-wedding thead th, table.enterprise-table thead th, .th-wedding {
+  color: #4A173A !important;
+  border-bottom: 1px solid #E8D9D4;
+  font-weight: 800;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.table-wedding tbody td, table.enterprise-table tbody td {
+  color: #2B1722;
+  border-bottom: 1px solid #E8D9D4;
+}
+.table-wedding tbody tr:hover, table.enterprise-table tbody tr:hover, .tr-wedding-hover:hover {
+  background-color: #FFF1F2 !important;
+}
+.table-wedding tbody tr.selected, table.enterprise-table tbody tr.selected, .tr-wedding-selected {
+  background-color: #F6E2E5 !important;
+}
+
+/* ==================================================
+   DROPDOWNS & FILTERS
+   ================================================== */
+.dropdown-menu-wedding {
+  background-color: #FFFDFC;
+  border: 1px solid #E8D9D4;
+  border-radius: 14px;
+  box-shadow: 0 10px 25px rgba(74, 23, 58, 0.08);
+}
+.dropdown-item-wedding {
+  color: #2B1722;
+  transition: all 0.15s ease;
+}
+.dropdown-item-wedding:hover {
+  background-color: #FFF7F2;
+  color: #4A173A;
+}
+.dropdown-item-wedding.active, .dropdown-item-wedding[aria-selected="true"] {
+  background-color: #F6E2E5 !important;
+  color: #4A173A !important;
+  font-weight: 700;
 }
 
 /* Animations */
@@ -385,7 +526,6 @@ input[class*="pr-12"], select[class*="pr-12"], .input-modern[class*="pr-12"] { p
   from { opacity: 0; transform: translateY(-16px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-
 .animate-slide-down {
   animation: slideDown 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
@@ -420,7 +560,9 @@ input[class*="pr-12"], select[class*="pr-12"], .input-modern[class*="pr-12"] { p
 
 /* Sidebar Collapse Global Layout Adaptation */
 @media (min-width: 1024px) {
-  body[data-sidebar-collapsed="true"] .lg\:pl-64 {
+  body[data-sidebar-collapsed="true"] .lg\:pl-64,
+  body[data-sidebar-collapsed="true"] .lg\:pl-20,
+  body[data-sidebar-collapsed="true"] .lg\:pl-\[72px\] {
     padding-left: 72px !important;
   }
 }
@@ -456,9 +598,9 @@ input[class*="pr-12"], select[class*="pr-12"], .input-modern[class*="pr-12"] { p
 }
 
 @keyframes trackingHighlight {
-  0%   { box-shadow: 0 0 0 0 rgba(242, 210, 189, 0.8); background-color: #FCF2EC; }
-  60%  { box-shadow: 0 0 0 12px rgba(242, 210, 189, 0); background-color: #FAEDE4; }
-  100% { box-shadow: 0 0 0 0 rgba(242, 210, 189, 0); background-color: #FCF2EC; }
+  0%   { box-shadow: 0 0 0 0 rgba(183, 110, 121, 0.6); background-color: #F6E2E5; }
+  60%  { box-shadow: 0 0 0 12px rgba(183, 110, 121, 0); background-color: #FFF7F2; }
+  100% { box-shadow: 0 0 0 0 rgba(183, 110, 121, 0); background-color: #F6E2E5; }
 }
 .animate-tracking-highlight {
   animation: trackingHighlight 1.4s cubic-bezier(0.4, 0, 0.2, 1) 0.9s 1 forwards;
@@ -488,9 +630,9 @@ input[class*="pr-12"], select[class*="pr-12"], .input-modern[class*="pr-12"] { p
 
 /* ── Processing/Loading Animations ─────────────────────────────── */
 @keyframes pulseRing {
-  0% { box-shadow: 0 0 0 0 rgba(242, 210, 189, 0.7); }
-  70% { box-shadow: 0 0 0 16px rgba(242, 210, 189, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(242, 210, 189, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(183, 110, 121, 0.7); }
+  70% { box-shadow: 0 0 0 16px rgba(183, 110, 121, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(183, 110, 121, 0); }
 }
 .animate-pulse-ring {
   animation: pulseRing 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
@@ -580,6 +722,3 @@ body::-webkit-scrollbar,
   width: 0 !important;
   height: 0 !important;
 }
-
-
-

@@ -117,20 +117,20 @@ export default function ChangePasswordModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
       <div 
-        className="w-full max-w-md bg-white rounded-3xl shadow-2xl border border-[#C9A45C]/30 overflow-hidden transform transition-all"
+        className="w-full max-w-md bg-[#FFFDFC] rounded-3xl shadow-2xl border border-[#E8D9D4] overflow-hidden transform transition-all"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="bg-[#101C36] px-6 py-5 text-white flex items-center justify-between border-b border-[#C9A45C]/20">
+        <div className="bg-[#4A173A] px-6 py-5 text-white flex items-center justify-between border-b border-[#B76E79]/25">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center text-[#E5C378] border border-[#C9A45C]/30 shadow-inner">
-              <KeyRound className="w-5 h-5" />
+            <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center text-[#E8C7A8] border border-[#B76E79]/30 shadow-inner">
+              <KeyRound className="w-5 h-5 text-[#E8C7A8]" />
             </div>
             <div>
               <h3 className="text-base font-black tracking-tight text-white leading-tight">
                 Update Password
               </h3>
-              <p className="text-[11px] text-[#E5C378] font-bold uppercase tracking-wider mt-0.5">
+              <p className="text-[11px] text-[#E8C7A8] font-bold uppercase tracking-wider mt-0.5">
                 {session?.fullName || session?.username} · {session?.role || 'User'}
               </p>
             </div>
@@ -273,9 +273,9 @@ export default function ChangePasswordModal({
             )}
           </div>
 
-          <div className="p-3 rounded-2xl bg-[#FAF8F3] border border-[#C9A45C]/25 text-[11px] text-text-secondary space-y-1">
-            <div className="font-bold text-[#101C36] flex items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-[#C9A45C]" />
+          <div className="p-3.5 rounded-2xl bg-[#FFF7F2] border border-[#B76E79]/20 text-[11px] text-[#6F5963] space-y-1">
+            <div className="font-bold text-[#4A173A] flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-[#B76E79]" />
               <span>Password Security Rules:</span>
             </div>
             <ul className="list-disc list-inside space-y-0.5 pl-1 text-[10.5px]">
@@ -291,23 +291,23 @@ export default function ChangePasswordModal({
               type="button"
               onClick={handleModalClose}
               disabled={loading}
-              className="px-4 py-2.5 rounded-xl border border-gray-300 text-text-secondary hover:bg-gray-100 font-bold text-xs transition-colors disabled:opacity-50"
+              className="px-4 py-2.5 rounded-xl border border-[#E8D9D4] text-[#6F5963] hover:bg-[#FFF7F2] font-bold text-xs transition-colors disabled:opacity-50 cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading || !currentPassword || !newPassword || newPassword !== confirmPassword}
-              className="px-5 py-2.5 rounded-xl bg-[#101C36] text-white hover:bg-[#07101F] font-black text-xs tracking-wide transition-all shadow-md shadow-[#101C36]/20 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              className="px-5 py-2.5 rounded-xl bg-[#4A173A] text-white hover:bg-[#6A2853] font-black text-xs tracking-wide transition-all shadow-md shadow-[#4A173A]/20 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               {loading ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin text-[#E5C378]" />
+                  <Loader2 className="w-4 h-4 animate-spin text-[#E8C7A8]" />
                   <span>Updating…</span>
                 </>
               ) : (
                 <>
-                  <KeyRound className="w-4 h-4 text-[#E5C378]" />
+                  <KeyRound className="w-4 h-4 text-[#E8C7A8]" />
                   <span>Save New Password</span>
                 </>
               )}

@@ -170,17 +170,17 @@ export default function WeddingCallHistory() {
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleExport}
-                  className="px-3.5 py-2 bg-white hover:bg-[#F6F4EF] border border-[#DFDDD7] rounded-xl text-xs font-bold text-[#182033] flex items-center gap-1.5 shadow-xs transition-colors"
+                  className="px-3.5 py-2 bg-[#FFFDFC] hover:bg-[#FFF7F2] border border-[#E8D9D4] rounded-xl text-xs font-bold text-[#4A173A] flex items-center gap-1.5 shadow-2xs transition-colors"
                 >
-                  <Download className="w-3.5 h-3.5 text-[#C98218]" />
+                  <Download className="w-3.5 h-3.5 text-[#B76E79]" />
                   <span>Export Logs</span>
                 </button>
                 <button
                   onClick={loadLogs}
                   disabled={loading}
-                  className="px-3.5 py-2 bg-white hover:bg-[#F6F4EF] border border-[#DFDDD7] rounded-xl text-xs font-bold text-[#182033] flex items-center gap-1.5 transition-colors"
+                  className="px-3.5 py-2 bg-[#FFFDFC] hover:bg-[#FFF7F2] border border-[#E8D9D4] rounded-xl text-xs font-bold text-[#4A173A] flex items-center gap-1.5 transition-colors shadow-2xs"
                 >
-                  <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-[#C9A45C]' : ''}`} />
+                  <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-[#B76E79]' : 'text-[#B76E79]'}`} />
                   <span>Refresh</span>
                 </button>
               </div>
@@ -188,11 +188,11 @@ export default function WeddingCallHistory() {
           />
 
           {/* Search & Filter Toolbar */}
-          <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#DFDDD7] shadow-xs space-y-3">
+          <div className="bg-[#FFFDFC] p-4 sm:p-5 rounded-2xl border border-[#E8D9D4] shadow-xs space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
               {/* Search */}
               <div className="relative">
-                <Search className="w-3.5 h-3.5 text-muted absolute left-3 top-1/2 -translate-y-1/2" />
+                <Search className="w-3.5 h-3.5 text-[#9A858D] absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   placeholder="Search customer, mobile, remarks..."
@@ -201,7 +201,7 @@ export default function WeddingCallHistory() {
                     setSearchQuery(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="w-full pl-8 pr-3 py-2 bg-[#F6F4EF] border border-[#DFDDD7] rounded-xl font-medium focus:outline-none focus:border-[#C9A45C]"
+                  className="w-full pl-8 pr-3 py-2 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-medium text-[#2B1722] placeholder:text-[#9A858D] focus:outline-none focus:border-[#B76E79]"
                 />
               </div>
 
@@ -213,7 +213,7 @@ export default function WeddingCallHistory() {
                     setOutcomeFilter(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="w-full px-3 py-2 bg-[#F6F4EF] border border-[#DFDDD7] rounded-xl font-bold focus:outline-none focus:border-[#C9A45C]"
+                  className="w-full px-3 py-2 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-bold text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
                 >
                   <option value="">Outcome: All Outcomes</option>
                   {CALL_OUTCOMES.map((out) => (
@@ -232,7 +232,7 @@ export default function WeddingCallHistory() {
                     setTelecallerFilter(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="w-full px-3 py-2 bg-[#F6F4EF] border border-[#DFDDD7] rounded-xl font-bold focus:outline-none focus:border-[#C9A45C]"
+                  className="w-full px-3 py-2 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-bold text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
                 >
                   <option value="">Telecaller: All Staff</option>
                   {telecallers.map((t) => (
@@ -256,9 +256,9 @@ export default function WeddingCallHistory() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between pt-2 border-t border-[#DFDDD7] text-xs text-muted">
+            <div className="flex items-center justify-between pt-2 border-t border-[#E8D9D4] text-xs text-[#6F5963]">
               <span>
-                Showing <strong className="text-primary">{filteredLogs.length}</strong> total call logs recorded
+                Showing <strong className="text-[#4A173A]">{filteredLogs.length}</strong> total call logs recorded
               </span>
             </div>
           </div>
@@ -266,49 +266,49 @@ export default function WeddingCallHistory() {
           {/* Mobile Call Logs List (< md) */}
           <div className="md:hidden space-y-3">
             {loading ? (
-              <div className="p-8 text-center bg-white rounded-2xl border border-[#DFDDD7]">
-                <RefreshCw className="w-5 h-5 animate-spin text-[#C9A45C] mx-auto mb-2" />
-                <span className="text-xs text-muted">Loading call records...</span>
+              <div className="p-8 text-center bg-[#FFFDFC] rounded-2xl border border-[#E8D9D4]">
+                <RefreshCw className="w-5 h-5 animate-spin text-[#B76E79] mx-auto mb-2" />
+                <span className="text-xs text-[#6F5963]">Loading call records...</span>
               </div>
             ) : paginatedLogs.length === 0 ? (
-              <div className="p-8 text-center bg-white rounded-2xl border border-[#DFDDD7]">
-                <History className="w-8 h-8 text-muted mx-auto mb-2" />
-                <div className="font-bold text-sm text-[#182033]">No call logs found</div>
-                <div className="text-xs text-muted mt-0.5">Calls logged by telecallers will appear here.</div>
+              <div className="p-8 text-center bg-[#FFFDFC] rounded-2xl border border-[#E8D9D4]">
+                <History className="w-8 h-8 text-[#B76E79] mx-auto mb-2 opacity-70" />
+                <div className="font-bold text-sm text-[#4A173A]">No call logs found</div>
+                <div className="text-xs text-[#6F5963] mt-0.5">Calls logged by telecallers will appear here.</div>
               </div>
             ) : (
               paginatedLogs.map((log: any, idx: number) => (
-                <div key={idx} className="p-4 bg-white rounded-2xl border border-[#DFDDD7] shadow-xs space-y-2.5">
+                <div key={idx} className="p-4 bg-[#FFFDFC] rounded-2xl border border-[#E8D9D4] shadow-xs space-y-2.5">
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <div className="font-bold text-sm text-[#182033]">
+                      <div className="font-bold text-sm text-[#4A173A]">
                         {log.customer_name || 'Customer'}
                       </div>
-                      <div className="text-xs text-muted">
+                      <div className="text-xs text-[#6F5963]">
                         📱 {log.customer_mobile || log.mobile_number || '—'}
                       </div>
                     </div>
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-blue-50 text-blue-800 border border-blue-200">
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-[#F6E2E5] text-[#4A173A] border border-[#E8D9D4]">
                       {log.call_outcome}
                     </span>
                   </div>
 
-                  <div className="text-xs bg-[#F6F4EF] p-2.5 rounded-xl border border-[#DFDDD7]/60 space-y-1">
+                  <div className="text-xs bg-[#FFFAF7] p-2.5 rounded-xl border border-[#E8D9D4] space-y-1">
                     <div className="flex items-center justify-between text-[11px]">
-                      <span className="text-muted">📅 {log.call_date} {log.call_time}</span>
-                      <span className="text-primary font-semibold">👤 {log.telecaller_name || 'Staff'}</span>
+                      <span className="text-[#6F5963]">📅 {log.call_date} {log.call_time}</span>
+                      <span className="text-[#4A173A] font-semibold">👤 {log.telecaller_name || 'Staff'}</span>
                     </div>
                     {log.remarks && (
-                      <p className="text-gray-700 italic pt-1 border-t border-[#DFDDD7]/60 text-[11px]">
+                      <p className="text-[#2B1722] italic pt-1 border-t border-[#E8D9D4] text-[11px]">
                         "{log.remarks}"
                       </p>
                     )}
                   </div>
 
                   <div className="flex items-center justify-between pt-1">
-                    <span className="text-[11px] text-muted">
+                    <span className="text-[11px] text-[#6F5963]">
                       {log.next_follow_up_date ? (
-                        <span className="text-amber-800 font-bold">Next: {new Date(log.next_follow_up_date).toLocaleDateString()}</span>
+                        <span className="text-[#C58A18] font-bold">Next: {new Date(log.next_follow_up_date).toLocaleDateString()}</span>
                       ) : (
                         'No follow-up'
                       )}
@@ -316,9 +316,9 @@ export default function WeddingCallHistory() {
                     {log.customer_id && (
                       <Link
                         to={`/wedding-crm/customers/${log.customer_id}`}
-                        className="px-2.5 py-1 bg-[#101C36] text-[#C9A45C] rounded-lg text-xs font-bold shadow-xs flex items-center gap-1"
+                        className="px-2.5 py-1 bg-[#4A173A] hover:bg-[#6A2853] text-white rounded-lg text-xs font-bold shadow-xs flex items-center gap-1 transition-colors"
                       >
-                        <Eye className="w-3 h-3" />
+                        <Eye className="w-3 h-3 text-[#B76E79]" />
                         <span>Profile</span>
                       </Link>
                     )}
@@ -329,10 +329,10 @@ export default function WeddingCallHistory() {
           </div>
 
           {/* Desktop Call Logs Table (hidden on < md) */}
-          <div className="hidden md:block bg-white rounded-2xl border border-[#DFDDD7] shadow-xs overflow-hidden">
+          <div className="hidden md:block bg-[#FFFDFC] rounded-2xl border border-[#E8D9D4] shadow-xs overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs text-[#182033]">
-                <thead className="bg-[#07101F] text-white uppercase text-[10px] tracking-wider">
+              <table className="w-full text-left text-xs text-[#2B1722]">
+                <thead className="bg-[#F8EDE8] text-[#4A173A] uppercase text-[10px] tracking-wider border-b border-[#E8D9D4]">
                   <tr>
                     <th className="py-3 px-4 font-black">Date & Time</th>
                     <th className="py-3 px-4 font-black">Customer</th>
@@ -344,67 +344,67 @@ export default function WeddingCallHistory() {
                     <th className="py-3 px-4 font-black text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#DFDDD7]">
+                <tbody className="divide-y divide-[#E8D9D4] bg-[#FFFDFC]">
                   {loading ? (
                     <tr>
-                      <td colSpan={8} className="text-center py-12 text-muted">
-                        <RefreshCw className="w-5 h-5 animate-spin text-[#C9A45C] mx-auto mb-2" />
+                      <td colSpan={8} className="text-center py-12 text-[#6F5963]">
+                        <RefreshCw className="w-5 h-5 animate-spin text-[#B76E79] mx-auto mb-2" />
                         <span>Loading call records...</span>
                       </td>
                     </tr>
                   ) : paginatedLogs.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="text-center py-12 text-muted">
-                        <History className="w-8 h-8 text-muted mx-auto mb-2" />
-                        <div className="font-bold text-sm text-[#182033]">No call logs found</div>
-                        <div className="text-xs text-muted mt-0.5">Calls logged by telecallers will appear here.</div>
+                      <td colSpan={8} className="text-center py-12 text-[#6F5963]">
+                        <History className="w-8 h-8 text-[#B76E79] mx-auto mb-2 opacity-70" />
+                        <div className="font-bold text-sm text-[#4A173A]">No call logs found</div>
+                        <div className="text-xs text-[#6F5963] mt-0.5">Calls logged by telecallers will appear here.</div>
                       </td>
                     </tr>
                   ) : (
                     paginatedLogs.map((log: any, idx: number) => (
-                      <tr key={idx} className="hover:bg-[#F6F4EF]/70 transition-colors">
-                        <td className="py-3 px-4 font-bold text-[#182033]">
+                      <tr key={idx} className="hover:bg-[#FFF1F2] transition-colors">
+                        <td className="py-3 px-4 font-bold text-[#2B1722]">
                           <div>{log.call_date}</div>
-                          <div className="text-[10px] text-muted font-medium">{log.call_time}</div>
+                          <div className="text-[10px] text-[#6F5963] font-medium">{log.call_time}</div>
                         </td>
-                        <td className="py-3 px-4 font-black text-primary">
+                        <td className="py-3 px-4 font-black text-[#4A173A]">
                           {log.customer_name || 'Customer'}
                         </td>
-                        <td className="py-3 px-4 font-semibold text-muted">
+                        <td className="py-3 px-4 font-semibold text-[#6F5963]">
                           {log.customer_mobile || log.mobile_number || '—'}
                         </td>
-                        <td className="py-3 px-4 font-bold text-primary">
+                        <td className="py-3 px-4 font-bold text-[#4A173A]">
                           👤 {log.telecaller_name || 'Staff'}
                         </td>
                         <td className="py-3 px-4">
-                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-blue-50 text-blue-800 border border-blue-200">
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-[#F6E2E5] text-[#4A173A] border border-[#E8D9D4]">
                             {log.call_outcome}
                           </span>
                         </td>
                         <td className="py-3 px-4 max-w-xs">
                           {log.remarks ? (
-                            <p className="line-clamp-2 text-gray-700 italic">"{log.remarks}"</p>
+                            <p className="line-clamp-2 text-[#2B1722] italic">"{log.remarks}"</p>
                           ) : (
-                            <span className="text-muted italic">No remarks</span>
+                            <span className="text-[#9A858D] italic">No remarks</span>
                           )}
                         </td>
                         <td className="py-3 px-4 font-semibold">
                           {log.next_follow_up_date ? (
-                            <span className="text-amber-800 font-bold">
+                            <span className="text-[#C58A18] font-bold">
                               {new Date(log.next_follow_up_date).toLocaleDateString()}
                             </span>
                           ) : (
-                            <span className="text-muted">None</span>
+                            <span className="text-[#9A858D]">None</span>
                           )}
                         </td>
                         <td className="py-3 px-4 text-right">
                           {log.customer_id && (
                             <Link
                               to={`/wedding-crm/customers/${log.customer_id}`}
-                              className="p-1.5 bg-[#F6F4EF] hover:bg-[#DFDDD7] text-primary rounded-lg inline-flex items-center"
+                              className="p-1.5 bg-[#FFF7F2] hover:bg-[#E8D9D4] text-[#4A173A] border border-[#E8D9D4] rounded-lg inline-flex items-center transition-colors"
                               title="View Customer Profile"
                             >
-                              <Eye className="w-3.5 h-3.5" />
+                              <Eye className="w-3.5 h-3.5 text-[#B76E79]" />
                             </Link>
                           )}
                         </td>
@@ -416,24 +416,24 @@ export default function WeddingCallHistory() {
             </div>
 
             {/* Pagination Controls */}
-            <div className="p-4 border-t border-[#DFDDD7] bg-[#F6F4EF] flex items-center justify-between text-xs">
-              <div className="text-muted">
-                Showing page <strong className="text-primary">{currentPage}</strong> of{' '}
-                <strong className="text-primary">{Math.max(1, Math.ceil(filteredLogs.length / pageSize))}</strong>
+            <div className="p-4 border-t border-[#E8D9D4] bg-[#FFFAF7] flex items-center justify-between text-xs">
+              <div className="text-[#6F5963]">
+                Showing page <strong className="text-[#4A173A]">{currentPage}</strong> of{' '}
+                <strong className="text-[#4A173A]">{Math.max(1, Math.ceil(filteredLogs.length / pageSize))}</strong>
               </div>
 
               <div className="flex items-center gap-1.5">
                 <button
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
-                  className="px-3 py-1.5 rounded-lg bg-white border border-[#DFDDD7] font-bold text-[#182033] disabled:opacity-40"
+                  className="px-3 py-1.5 rounded-lg bg-[#FFFDFC] border border-[#E8D9D4] font-bold text-[#4A173A] disabled:opacity-40 hover:bg-[#FFF7F2] transition-colors"
                 >
                   <ChevronLeft className="w-3.5 h-3.5" />
                 </button>
                 <button
                   onClick={() => setCurrentPage((p) => (p * pageSize < filteredLogs.length ? p + 1 : p))}
                   disabled={currentPage * pageSize >= filteredLogs.length}
-                  className="px-3 py-1.5 rounded-lg bg-white border border-[#DFDDD7] font-bold text-[#182033] disabled:opacity-40"
+                  className="px-3 py-1.5 rounded-lg bg-[#FFFDFC] border border-[#E8D9D4] font-bold text-[#4A173A] disabled:opacity-40 hover:bg-[#FFF7F2] transition-colors"
                 >
                   <ChevronRight className="w-3.5 h-3.5" />
                 </button>

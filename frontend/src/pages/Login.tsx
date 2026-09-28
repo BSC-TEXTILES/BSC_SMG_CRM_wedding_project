@@ -396,7 +396,7 @@ export default function LoginPage() {
 
 
   return (
-    <div className="relative min-h-screen bg-background flex flex-col items-center justify-center p-4 sm:p-6">
+    <div className="relative min-h-screen bg-[#FFF7F2] flex flex-col items-center justify-center p-4 sm:p-6">
       <ToastContainer />
 
       {/* Top Left Section: Back to Home Page */}
@@ -404,23 +404,23 @@ export default function LoginPage() {
         <button
           type="button"
           onClick={() => navigate('/')}
-          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-border shadow-md hover:shadow-lg text-text-primary hover:text-[#101C36] text-xs font-bold transition-all active:scale-95 group cursor-pointer"
+          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#FFFDFC] border border-[#E8D9D4] shadow-md hover:shadow-lg text-[#2B1722] hover:text-[#4A173A] text-xs font-bold transition-all active:scale-95 group cursor-pointer"
         >
-          <ArrowLeft className="w-4 h-4 text-text-secondary group-hover:-translate-x-0.5 transition-transform" />
-          <Home className="w-3.5 h-3.5 text-[#C9A45C]" />
+          <ArrowLeft className="w-4 h-4 text-[#6F5963] group-hover:-translate-x-0.5 transition-transform" />
+          <Home className="w-3.5 h-3.5 text-[#B76E79]" />
           <span>Back to Home</span>
         </button>
       </div>
 
-      <div className="w-full max-w-md bg-white rounded-3xl overflow-hidden shadow-2xl border border-accent-soft animate-fade-in">
+      <div className="w-full max-w-md bg-[#FFFDFC] rounded-3xl overflow-hidden shadow-2xl border border-[#E8D9D4] animate-fade-in">
         {/* Card Header */}
-        <div className="bg-[#101C36] p-5 sm:p-6 flex items-center gap-3.5 border-b border-[#C9A45C]/30 shadow-sm">
-          <div className="w-14 h-12 rounded-2xl bg-white p-1 shadow-md border border-[#C9A45C]/30 flex items-center justify-center flex-shrink-0">
+        <div className="bg-[#4A173A] p-5 sm:p-6 flex items-center gap-3.5 border-b border-[#E8C7A8]/30 shadow-sm">
+          <div className="w-14 h-12 rounded-2xl bg-white p-1 shadow-md border border-[#E8C7A8]/30 flex items-center justify-center flex-shrink-0">
             <img src="/logo.png" alt="BSC Logo" className="max-h-full max-w-full object-contain" />
           </div>
           <div className="min-w-0 flex-1">
             <h2 className="text-lg font-black text-white leading-tight tracking-tight truncate">Enterprise Operations Portal</h2>
-            <div className="text-[11px] text-[#E5C378] font-extrabold uppercase tracking-wider mt-0.5 truncate">
+            <div className="text-[11px] text-[#E8C7A8] font-extrabold uppercase tracking-wider mt-0.5 truncate">
               BSC Textiles · MULTI-LOCATION SYSTEM
             </div>
           </div>
@@ -430,8 +430,8 @@ export default function LoginPage() {
         {!show2fa ? (
           <form onSubmit={handleLogin} className="p-7 space-y-5">
           <div>
-            <h3 className="text-xl font-black text-text-primary tracking-tight">Welcome Back</h3>
-            <p className="text-xs text-text-secondary font-medium mt-1">Sign in with your authorized system credentials. Your location will be loaded automatically.</p>
+            <h3 className="text-xl font-black text-[#4A173A] tracking-tight">Welcome Back</h3>
+            <p className="text-xs text-[#6F5963] font-medium mt-1">Sign in with your authorized system credentials. Your location will be loaded automatically.</p>
           </div>
 
 
@@ -589,7 +589,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading || (isLocked && lockRemainingSeconds > 0)}
-            className="w-full py-3.5 px-4 rounded-xl bg-[#101C36] text-white font-extrabold text-xs tracking-wide hover:bg-[#07101F] active:scale-[0.99] transition-all shadow-lg shadow-[#101C36]/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-3.5 px-4 rounded-xl bg-[#4A173A] text-white font-extrabold text-xs tracking-wide hover:bg-[#6A2853] active:scale-[0.99] transition-all shadow-lg shadow-[#4A173A]/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? (
               <>
@@ -609,21 +609,21 @@ export default function LoginPage() {
             )}
           </button>
 
-          <div className="pt-2 border-t border-border space-y-2">
+          <div className="pt-2 border-t border-[#E8D9D4] space-y-2">
             <button
               type="button"
               onClick={() => navigate('/wedding-registration')}
-                className="btn-secondary w-full tracking-wide flex items-center justify-center gap-2"
+              className="w-full py-2.5 px-4 rounded-xl bg-[#FFFAF7] border border-[#E8D9D4] hover:bg-[#FFF7F2] hover:border-[#B76E79] text-[#4A173A] font-bold text-xs tracking-wide flex items-center justify-center gap-2 transition-all shadow-2xs"
             >
               <span>Register for Wedding Shopping</span>
-              <Sparkles className="w-4 h-4 text-amber-600" />
+              <Sparkles className="w-4 h-4 text-[#B76E79]" />
             </button>
             <button
               type="button"
               onClick={() => navigate('/track')}
-              className="btn-secondary w-full tracking-wide flex items-center justify-center gap-2"
+              className="w-full py-2.5 px-4 rounded-xl bg-[#FFFAF7] border border-[#E8D9D4] hover:bg-[#FFF7F2] hover:border-[#B76E79] text-[#4A173A] font-bold text-xs tracking-wide flex items-center justify-center gap-2 transition-all shadow-2xs"
             >
-              <Search className="w-3.5 h-3.5 text-text-secondary" />
+              <Search className="w-3.5 h-3.5 text-[#6F5963]" />
               <span>Track Wedding Request</span>
             </button>
           </div>
@@ -631,14 +631,14 @@ export default function LoginPage() {
         ) : (
           /* 2FA Verification Step */
           <div className="p-7 space-y-5 animate-fade-in" role="alert" aria-live="polite">
-            <div className="flex items-center gap-3 p-4 rounded-2xl bg-[#FAF8F3] border border-[#C9A45C]/30">
-              <div className="w-10 h-10 rounded-xl bg-[#101C36]/10 flex items-center justify-center flex-shrink-0">
-                <Lock className="w-5 h-5 text-[#101C36]" />
+            <div className="flex items-center gap-3 p-4 rounded-2xl bg-[#FFFAF7] border border-[#E8D9D4]">
+              <div className="w-10 h-10 rounded-xl bg-[#4A173A]/10 flex items-center justify-center flex-shrink-0">
+                <Lock className="w-5 h-5 text-[#4A173A]" />
               </div>
               <div>
-                <h3 className="font-black text-sm text-[#101C36]">Verify Your Identity</h3>
-                <p className="text-xs text-[#687080] mt-0.5">
-                  A 6-digit verification code has been sent to <span className="font-semibold text-[#101C36]">{partialAuth?.email || 'your registered email'}</span>.
+                <h3 className="font-black text-sm text-[#4A173A]">Verify Your Identity</h3>
+                <p className="text-xs text-[#6F5963] mt-0.5">
+                  A 6-digit verification code has been sent to <span className="font-semibold text-[#4A173A]">{partialAuth?.email || 'your registered email'}</span>.
                   Enter the code below to complete sign-in.
                 </p>
               </div>
@@ -652,7 +652,7 @@ export default function LoginPage() {
 
             <form onSubmit={handleVerify2fa} className="space-y-4">
               <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-text-primary mb-2">
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-[#2B1722] mb-2">
                   6-Digit Verification Code
                 </label>
                 <div className="flex items-center justify-center gap-2">
@@ -694,12 +694,12 @@ export default function LoginPage() {
                       inputMode="numeric"
                       autoComplete="one-time-code"
                       disabled={otpLoading}
-                      className="w-10 h-12 text-center text-base font-bold rounded-xl border-2 border-[#DFDDD7] bg-white focus:border-[#C9A45C] focus:ring-2 focus:ring-[#C9A45C]/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-10 h-12 text-center text-base font-bold rounded-xl border-2 border-[#E8D9D4] bg-[#FFFAF7] text-[#2B1722] focus:border-[#B76E79] focus:ring-2 focus:ring-[#B76E79]/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                       autoFocus={index === 0}
                     />
                   ))}
                 </div>
-                <p className="text-[11px] text-text-secondary font-medium mt-2 text-center">
+                <p className="text-[11px] text-[#6F5963] font-medium mt-2 text-center">
                   Enter the 6-digit code sent to your email. Code expires in 10 minutes.
                 </p>
               </div>
@@ -707,7 +707,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={otpLoading || otp.length !== 6}
-                className="w-full py-3.5 px-4 rounded-xl bg-[#101C36] text-white font-extrabold text-xs tracking-wide hover:bg-[#07101F] active:scale-[0.99] transition-all shadow-lg shadow-[#101C36]/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-3.5 px-4 rounded-xl bg-[#4A173A] text-white font-extrabold text-xs tracking-wide hover:bg-[#6A2853] active:scale-[0.99] transition-all shadow-lg shadow-[#4A173A]/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {otpLoading ? (
                   <>
@@ -716,7 +716,7 @@ export default function LoginPage() {
                   </>
                 ) : (
                   <>
-                    <ShieldCheck className="w-4 h-4" />
+                    <ShieldCheck className="w-4 h-4 text-[#E8C7A8]" />
                     <span>Verify & Sign In</span>
                     <ArrowRight className="w-4 h-4" />
                   </>
@@ -724,21 +724,21 @@ export default function LoginPage() {
               </button>
             </form>
 
-            <div className="pt-4 border-t border-border space-y-3">
+            <div className="pt-4 border-t border-[#E8D9D4] space-y-3">
               <button
                 type="button"
                 onClick={handleResend2fa}
                 disabled={resendCooldown > 0}
-                className="w-full py-2.5 px-4 rounded-xl border border-[#DFDDD7] bg-white text-[#182033] font-bold text-xs hover:bg-[#F6F4EF] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-2.5 px-4 rounded-xl border border-[#E8D9D4] bg-[#FFFDFC] text-[#4A173A] font-bold text-xs hover:bg-[#FFF7F2] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {resendCooldown > 0 ? (
                   <>
-                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <RefreshCw className="w-4 h-4 animate-spin text-[#B76E79]" />
                     <span>Resend Code ({resendCooldown}s)</span>
                   </>
                 ) : (
                   <>
-                    <RefreshCw className="w-4 h-4" />
+                    <RefreshCw className="w-4 h-4 text-[#B76E79]" />
                     <span>Didn't receive the code? Resend</span>
                   </>
                 )}
@@ -747,21 +747,21 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={handleBackToLogin}
-                className="w-full py-2.5 px-4 rounded-xl bg-[#F6F4EF] text-[#687080] font-bold text-xs hover:bg-[#E8E0D8] transition-all"
+                className="w-full py-2.5 px-4 rounded-xl bg-[#FFF7F2] text-[#6F5963] font-bold text-xs hover:bg-[#E8D9D4] hover:text-[#4A173A] transition-all"
               >
-                <ArrowLeft className="w-4 h-4 inline mr-1" />
+                <ArrowLeft className="w-4 h-4 inline mr-1 text-[#B76E79]" />
                 <span>Back to Sign In</span>
               </button>
             </div>
           </div>
         )}
 
-        <div className="bg-background px-7 py-3.5 border-t border-border flex items-center justify-between text-xs text-text-secondary font-semibold">
+        <div className="bg-[#FFF7F2] px-7 py-3.5 border-t border-[#E8D9D4] flex items-center justify-between text-xs text-[#6F5963] font-semibold">
           <span className="flex items-center gap-1.5">
-            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            <ShieldCheck className="w-4 h-4 text-[#198754]" />
             <span>Authorized access only · Location auto-assigned</span>
           </span>
-          <span className="font-bold text-text-primary">BSC v3.0</span>
+          <span className="font-bold text-[#4A173A]">BSC v3.0</span>
         </div>
       </div>
 
