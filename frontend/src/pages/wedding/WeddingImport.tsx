@@ -177,8 +177,9 @@ export default function WeddingImport() {
   const [downloadingXlsx, setDownloadingXlsx] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [importResult, setImportResult] = useState<ImportSummaryResult | null>(null);
-  const [showErrorDetails, setShowErrorDetails] = useState(false);
+  const [showErrorDetails, setShowErrorDetails] = useState(true);
   const [showWarningDetails, setShowWarningDetails] = useState(false);
+  const [errorSearchQuery, setErrorSearchQuery] = useState('');
   const [importLogs, setImportLogs] = useState<ImportLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(false);
   const [downloadingReport, setDownloadingReport] = useState(false);
@@ -580,7 +581,11 @@ export default function WeddingImport() {
 
       const imp = result.importedCount ?? result.imported ?? 0;
       const dup = result.duplicateCount ?? result.duplicates ?? 0;
-      const err = result.errorCount ?? result.failed ?? 0;
+      const err = result.errorCount ?? result.failed ?? result.errors?.length ?? 0;
+
+      if (err > 0 || (Array.isArray(result.errors) && result.errors.length > 0)) {
+        setShowErrorDetails(true);
+      }
 
       if (imp > 0) {
         showToast(`Import completed: ${imp} imported, ${dup} duplicates skipped, ${err} errors.`, 'success');
@@ -762,7 +767,11 @@ export default function WeddingImport() {
 
       const imp = result.importedCount ?? result.imported ?? 0;
       const dup = result.duplicateCount ?? result.duplicates ?? 0;
-      const err = result.errorCount ?? result.skipped ?? 0;
+      const err = result.errorCount ?? result.skipped ?? result.errors?.length ?? 0;
+
+      if (err > 0 || (Array.isArray(result.errors) && result.errors.length > 0)) {
+        setShowErrorDetails(true);
+      }
 
       if (imp > 0) {
         showToast(`Import completed: ${imp} imported, ${dup} duplicates skipped, ${err} errors.`, 'success');
@@ -1934,44 +1943,90 @@ export default function WeddingImport() {
                   </button>
                 </div>
 
-                {/* Errors Detail Accordion */}
+                {/* Errors Detail Section (Always visible/expanded when errors exist) */}
                 {Array.isArray(importResult.errors) && importResult.errors.length > 0 && (
-                  <div className="space-y-2 pt-2">
-                    <button
-                      type="button"
-                      onClick={() => setShowErrorDetails(!showErrorDetails)}
-                      className="text-xs font-bold text-[#B42318] hover:underline flex items-center gap-1.5"
-                    >
-                      <span>
-                        {showErrorDetails ? 'Hide' : 'View'} Details of {importResult.errors.length} Skipped / Error Rows
-                      </span>
-                      {showErrorDetails ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                    </button>
+                  <div className="space-y-3 pt-3 border-t border-[#E8D9D4]">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 bg-[#FDE8E7] p-3.5 rounded-xl border border-[#B42318]/30">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <CircleAlert className="w-5 h-5 text-[#B42318] shrink-0" />
+                        <div>
+                          <h4 className="text-xs font-black text-[#B42318]">
+                            Failed Rows & Validation Error Details ({importResult.errors.length} failed rows)
+                          </h4>
+                          <p className="text-[11px] text-[#B42318]/80 mt-0.5">
+                            Each failed row is listed below with its row number, customer name, mobile, and exact validation reason.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 self-start sm:self-center shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => setShowErrorDetails(!showErrorDetails)}
+                          className="px-3.5 py-1.5 rounded-lg bg-white border border-[#B42318]/40 hover:bg-[#FDE8E7] text-[#B42318] font-black text-xs inline-flex items-center gap-1.5 transition-colors shadow-2xs"
+                        >
+                          <span>{showErrorDetails ? 'Collapse Error Details' : 'Expand Error Details'}</span>
+                          {showErrorDetails ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                        </button>
+                      </div>
+                    </div>
 
                     {showErrorDetails && (
-                      <div className="max-h-60 overflow-y-auto rounded-xl border border-[#B42318]/30 bg-[#FDE8E7] p-3 text-xs">
-                        <table className="w-full text-left">
-                          <thead>
-                            <tr className="border-b border-[#B42318]/20 text-[#B42318] text-[11px] font-black">
-                              <th className="pb-1.5 pr-2">Row #</th>
-                              <th className="pb-1.5 px-2">Customer</th>
-                              <th className="pb-1.5 px-2">Mobile</th>
-                              <th className="pb-1.5 pl-2">Reason</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-[#B42318]/10 text-[11px] text-[#B42318] font-medium">
-                            {importResult.errors.map((err, idx) => (
-                              <tr key={idx}>
-                                <td className="py-1.5 pr-2 font-mono font-bold text-[#B42318]">
-                                  {err.row > 0 ? `Row ${err.row}` : '—'}
-                                </td>
-                                <td className="py-1.5 px-2 font-medium">{err.customerName || '—'}</td>
-                                <td className="py-1.5 px-2 font-mono">{err.mobile || '—'}</td>
-                                <td className="py-1.5 pl-2">{err.reason}</td>
+                      <div className="space-y-2.5">
+                        {importResult.errors.length > 5 && (
+                          <div className="relative">
+                            <Search className="w-4 h-4 text-[#6F5963] absolute left-3 top-1/2 -translate-y-1/2" />
+                            <input
+                              type="text"
+                              placeholder="Search in error list by customer, mobile, row number, or error reason..."
+                              value={errorSearchQuery}
+                              onChange={(e) => setErrorSearchQuery(e.target.value)}
+                              className="w-full pl-9 pr-4 py-2 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl text-xs font-medium text-[#2B1722] focus:outline-hidden focus:border-[#B42318]"
+                            />
+                          </div>
+                        )}
+
+                        <div className="max-h-80 overflow-y-auto rounded-xl border border-[#B42318]/30 bg-[#FFFDFC] text-xs shadow-2xs">
+                          <table className="w-full text-left">
+                            <thead className="bg-[#FDE8E7] sticky top-0 z-10">
+                              <tr className="border-b border-[#B42318]/20 text-[#B42318] text-[11px] font-black">
+                                <th className="py-2.5 px-3">Row #</th>
+                                <th className="py-2.5 px-3">Customer Name</th>
+                                <th className="py-2.5 px-3">Mobile Number</th>
+                                <th className="py-2.5 px-3">Validation Failure Reason</th>
                               </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                            </thead>
+                            <tbody className="divide-y divide-[#EADBD7] text-[11px]">
+                              {importResult.errors
+                                .filter((err) => {
+                                  if (!errorSearchQuery.trim()) return true;
+                                  const q = errorSearchQuery.toLowerCase().trim();
+                                  return (
+                                    String(err.row || '').includes(q) ||
+                                    String(err.customerName || (err as any).customer_name || (err as any).name || '').toLowerCase().includes(q) ||
+                                    String(err.mobile || (err as any).mobile_number || (err as any).phone || '').includes(q) ||
+                                    String(err.reason || (err as any).error || (err as any).message || '').toLowerCase().includes(q)
+                                  );
+                                })
+                                .map((err, idx) => (
+                                  <tr key={idx} className="hover:bg-[#FDE8E7]/40 transition-colors">
+                                    <td className="py-2 px-3 font-mono font-bold text-[#B42318] whitespace-nowrap">
+                                      {err.row > 0 ? `Row ${err.row}` : (err as any).rowNo ? `Row ${(err as any).rowNo}` : `#${idx + 2}`}
+                                    </td>
+                                    <td className="py-2 px-3 font-medium text-[#2B1722]">
+                                      {err.customerName || (err as any).customer_name || (err as any).name || '—'}
+                                    </td>
+                                    <td className="py-2 px-3 font-mono text-[#2B1722]">
+                                      {err.mobile || (err as any).mobile_number || (err as any).phone || '—'}
+                                    </td>
+                                    <td className="py-2 px-3 text-[#B42318] font-medium leading-relaxed">
+                                      {err.reason || (err as any).error || (err as any).message || 'Validation failed'}
+                                    </td>
+                                  </tr>
+                                ))}
+                            </tbody>
+                          </table>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -2080,8 +2135,7 @@ export default function WeddingImport() {
                       {importLogs.map((log) => {
                         const isGoogleSheet =
                           log.file_type === 'google_sheets' ||
-                          String(log.file_name || '').toLowerCase().includes('.gsheet') ||
-                          String(log.file_name || '').includes('(');
+                          String(log.file_name || '').toLowerCase().endsWith('.gsheet');
 
                         return (
                           <tr key={log.id} className="hover:bg-[#FFF1F2] transition-colors">
