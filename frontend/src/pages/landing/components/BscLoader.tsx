@@ -14,12 +14,13 @@ export default function BscLoader({ onComplete }: BscLoaderProps) {
       return;
     }
 
-    const t1 = setTimeout(() => setPhase('brand'), 450);
-    const t2 = setTimeout(() => setPhase('fadeout'), 1250);
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+    const t1 = setTimeout(() => setPhase('brand'), isMobile ? 220 : 400);
+    const t2 = setTimeout(() => setPhase('fadeout'), isMobile ? 650 : 1100);
     const t3 = setTimeout(() => {
       setPhase('done');
       onComplete();
-    }, 1750);
+    }, isMobile ? 950 : 1500);
 
     return () => {
       clearTimeout(t1);
@@ -32,18 +33,20 @@ export default function BscLoader({ onComplete }: BscLoaderProps) {
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#140D08] text-[#FAF7F2] transition-opacity duration-600 select-none ${
+      className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#140D08] text-[#FAF7F2] transition-opacity duration-500 select-none ${
         phase === 'fadeout' ? 'opacity-0 pointer-events-none' : 'opacity-100'
       }`}
     >
       <div className="flex flex-col items-center gap-5 text-center px-6">
-        
         {/* Exact Official BSC Master Logo */}
         <div className="relative">
           <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-white/5 border border-white/10 p-2 shadow-2xl flex items-center justify-center backdrop-blur-md animate-pulse">
             <img
-              src="/Main_logo.png"
+              src="/Main_logo_web.png"
               alt="BSC Textiles"
+              width={96}
+              height={96}
+              decoding="async"
               className="w-full h-full object-contain"
             />
           </div>

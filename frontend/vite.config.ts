@@ -39,6 +39,7 @@ export default defineConfig({
           'vendor-charts': ['recharts'],
           'vendor-icons': ['lucide-react'],
           'vendor-xlsx': ['xlsx'],
+          'vendor-three': ['three'],
         },
       },
     },

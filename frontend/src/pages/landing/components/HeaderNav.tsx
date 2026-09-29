@@ -41,8 +41,11 @@ export default function HeaderNav({ activeSection = 'hero', onNavigate }: Header
           className="flex items-center gap-2.5 sm:gap-3 group select-none"
         >
           <img
-            src="/Main_logo.png"
+            src="/Main_logo_mobile.png"
             alt="BSC Textiles"
+            width={44}
+            height={44}
+            decoding="async"
             className="h-9 sm:h-11 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
           />
           <div className="flex flex-col">

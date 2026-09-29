@@ -82,6 +82,9 @@ export default function EditorialCollections() {
                 <img
                   src={item.image}
                   alt={item.title}
+                  width={400}
+                  height={288}
+                  decoding="async"
                   className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-700 ease-out"
                   loading="lazy"
                 />

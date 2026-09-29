@@ -1,7 +1,6 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, Suspense, lazy } from 'react';
 import Lenis from 'lenis';
 import HeaderNav from './components/HeaderNav';
-import BscThreeCanvas from './components/BscThreeCanvas';
 import BscLoader from './components/BscLoader';
 import CinematicHero from './sections/CinematicHero';
 import LegacySection from './sections/LegacySection';
@@ -13,6 +12,8 @@ import CraftsmanshipSection from './sections/CraftsmanshipSection';
 import ContactDesksSection from './sections/ContactDesksSection';
 import LuxuryFooter from './components/LuxuryFooter';
 import './landing.css';
+
+const BscThreeCanvas = lazy(() => import('./components/BscThreeCanvas'));
 
 const SECTION_IDS = [
   'hero',
@@ -109,9 +110,11 @@ export default function LandingPage() {
       <BscLoader onComplete={() => setIsLoaderFinished(true)} />
 
       {/* ============================================================== */}
-      {/* 1. THREE.JS 3D SCROLL & PARTICLE CANVAS                        */}
+      {/* 1. THREE.JS 3D SCROLL & PARTICLE CANVAS (Lazily Streamed)      */}
       {/* ============================================================== */}
-      <BscThreeCanvas scrollY={scrollY} />
+      <Suspense fallback={null}>
+        <BscThreeCanvas scrollY={scrollY} />
+      </Suspense>
 
       {/* ============================================================== */}
       {/* 2. OUTER CINEMATIC BACKGROUND (100% Full Viewport)             */}
@@ -120,6 +123,8 @@ export default function LandingPage() {
         <img
           src="/images/floor.webp"
           alt=""
+          width={1920}
+          height={1080}
           className="bsc-outer-bg-img"
           loading="eager"
           decoding="async"

@@ -74,6 +74,9 @@ export default function StoreLocationsSection() {
                     <img
                       src={store.image}
                       alt={store.city}
+                      width={400}
+                      height={256}
+                      decoding="async"
                       className="w-full h-full object-cover hover:scale-108 transition-transform duration-700 ease-out"
                       loading="lazy"
                     />

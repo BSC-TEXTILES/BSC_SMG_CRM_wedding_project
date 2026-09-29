@@ -81,6 +81,9 @@ export default function WeddingSuiteSection() {
                 <img
                   src="/images/coll-bridal-1200.webp"
                   alt="Bridal Silk Consultation"
+                  width={500}
+                  height={420}
+                  decoding="async"
                   className="w-full h-[360px] sm:h-[420px] object-cover"
                   loading="lazy"
                 />

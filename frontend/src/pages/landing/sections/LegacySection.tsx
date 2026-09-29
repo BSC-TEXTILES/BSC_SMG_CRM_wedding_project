@@ -35,6 +35,9 @@ export default function LegacySection() {
               <img
                 src="/images/floor.webp"
                 alt="BSC Textiles showroom floor"
+                width={600}
+                height={480}
+                decoding="async"
                 className="w-full h-[380px] sm:h-[480px] object-cover hover:scale-105 transition-transform duration-700 ease-out"
                 loading="lazy"
               />

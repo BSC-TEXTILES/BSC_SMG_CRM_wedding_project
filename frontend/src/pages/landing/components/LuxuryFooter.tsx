@@ -20,8 +20,12 @@ export default function LuxuryFooter() {
             <div className="flex items-center gap-3">
               <div className="p-1 rounded-xl bg-white/10 border border-white/15">
                 <img
-                  src="/Main_logo.png"
+                  src="/Main_logo_mobile.png"
                   alt="BSC Textiles"
+                  width={40}
+                  height={40}
+                  loading="lazy"
+                  decoding="async"
                   className="h-10 w-auto object-contain"
                 />
               </div>

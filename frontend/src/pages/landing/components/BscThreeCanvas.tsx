@@ -28,25 +28,25 @@ export default function BscThreeCanvas({ scrollY = 0 }: BscThreeCanvasProps) {
     );
     camera.position.z = 24;
 
-    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: !isMobile });
+    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: !isMobile, powerPreference: 'high-performance' });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.5 : 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1 : 1.75));
     container.appendChild(renderer.domElement);
 
     // Ambient & Point Lighting for luxury textile gold sheen
     const ambientLight = new THREE.AmbientLight(0xfff5ea, 0.8);
     scene.add(ambientLight);
 
-    const goldLight = new THREE.PointLight(0xe8c7a8, 2.5, 50);
+    const goldLight = new THREE.PointLight(0xe8c7a8, 2.2, 50);
     goldLight.position.set(10, 10, 15);
     scene.add(goldLight);
 
-    const plumLight = new THREE.PointLight(0xb76e79, 1.8, 40);
+    const plumLight = new THREE.PointLight(0xb76e79, 1.6, 40);
     plumLight.position.set(-10, -10, 10);
     scene.add(plumLight);
 
     // 1. Floating Gold & Silk Thread Particles
-    const particleCount = isMobile ? 120 : 360;
+    const particleCount = isMobile ? 60 : 320;
     const geometry = new THREE.BufferGeometry();
     const positions = new Float32Array(particleCount * 3);
     const colors = new Float32Array(particleCount * 3);
@@ -84,7 +84,7 @@ export default function BscThreeCanvas({ scrollY = 0 }: BscThreeCanvasProps) {
     scene.add(particles);
 
     // 2. Subtle Floating Silk Wave Plane
-    const planeGeo = new THREE.PlaneGeometry(36, 26, isMobile ? 16 : 32, isMobile ? 16 : 32);
+    const planeGeo = new THREE.PlaneGeometry(36, 26, isMobile ? 10 : 28, isMobile ? 10 : 28);
     const planeMat = new THREE.MeshStandardMaterial({
       color: 0x24141d,
       roughness: 0.6,
@@ -124,6 +124,8 @@ export default function BscThreeCanvas({ scrollY = 0 }: BscThreeCanvasProps) {
 
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
+
+      if (document.hidden) return;
 
       if (prefersReducedMotion) {
         renderer.render(scene, camera);

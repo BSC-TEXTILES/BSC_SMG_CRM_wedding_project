@@ -121,8 +121,12 @@ export default function CinematicHero({ onScrollTo, scrollY = 0 }: CinematicHero
           <div className="relative group">
             <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-full bg-white/70 backdrop-blur-md border border-[#E4D8C4] p-2.5 shadow-lg flex items-center justify-center transition-transform duration-500 group-hover:scale-105">
               <img
-                src="/Main_logo.png"
+                src="/Main_logo_web.png"
                 alt="BSC Textiles"
+                width={112}
+                height={112}
+                fetchPriority="high"
+                decoding="async"
                 className="w-full h-full object-contain"
               />
             </div>
