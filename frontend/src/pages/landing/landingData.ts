@@ -106,7 +106,7 @@ export const LANDING_DATA = {
       id: 1,
       tag: 'BSC HERITAGE',
       title: 'Five Generations',
-      subtitle: '1938 → Present · 86+ Years',
+      subtitle: '1938 → Present · 88+ Years',
       stat: 'Est. 1938',
       description: 'Karnataka’s timeless textile institution. Authentic handloom silks opened and draped on the counter, verified weaver by weaver.',
       highlight: 'Silk Mark Certified Authentic Zari',
@@ -189,7 +189,7 @@ export const LANDING_DATA = {
       }
     ],
     stats: [
-      { value: '86+', label: 'Years of Heritage', sub: 'Unbroken legacy since 1938' },
+      { value: '88+', label: 'Years of Heritage', sub: 'Unbroken legacy since 1938' },
       { value: '5', label: 'Generations', sub: 'Of textile expertise & trust' },
       { value: '100%', label: 'Pure Handloom', sub: 'Silk Mark certified authenticity' },
       { value: '50k+', label: 'Weddings Draped', sub: 'Generations of celebration' }

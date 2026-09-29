@@ -13,7 +13,7 @@ export default function LegacySection() {
       className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 border-t border-[#E8DFC8]/60 bg-[#FAF7F2] select-none [perspective:1200px]"
     >
       <div className="max-w-6xl mx-auto">
-        
+
         {/* Section Header */}
         <div className="text-center max-w-2xl mx-auto mb-16 sm:mb-20">
           <span className="text-[10px] sm:text-xs font-bold tracking-[0.2em] uppercase text-[#B76E79]">
@@ -29,7 +29,7 @@ export default function LegacySection() {
 
         {/* Narrative & Real Floor Imagery Grid with 3D Depth */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
-          
+
           {/* Left Column: Authentic Photography with 3D Perspective */}
           <div className="lg:col-span-6 relative [transform-style:preserve-3d] transition-transform duration-500 hover:[transform:rotateY(-3deg)_rotateX(2deg)]">
             <div className="relative rounded-3xl overflow-hidden shadow-2xl border-2 border-[#E8DFC8]">
@@ -41,7 +41,7 @@ export default function LegacySection() {
                 className="w-full h-[380px] sm:h-[480px] object-cover hover:scale-105 transition-transform duration-700 ease-out"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
-              
+
               {/* Floating Glass Stamp with Z-Index Depth */}
               <div className="absolute bottom-6 left-6 right-6 p-4 sm:p-5 rounded-2xl bg-white/85 backdrop-blur-xl border border-white/60 shadow-xl flex items-center justify-between [transform:translateZ(24px)]">
                 <div>
@@ -56,7 +56,7 @@ export default function LegacySection() {
                   </p>
                 </div>
                 <div className="w-12 h-12 rounded-full bg-[#1C1510] text-[#E8C7A8] flex items-center justify-center font-serif text-xs sm:text-sm font-bold shadow-md shrink-0 ml-3">
-                  86y
+                  88y
                 </div>
               </div>
             </div>
