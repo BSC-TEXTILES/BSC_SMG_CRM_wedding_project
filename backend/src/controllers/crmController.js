@@ -166,6 +166,24 @@ function getISTDateString() {
   return istDate.toISOString().split('T')[0];
 }
 
+/**
+ * Footfall rows are keyed by an IST calendar day. `toISOString().split('T')[0]`
+ * yields the UTC day, which is still the previous day until 05:30 IST — so an
+ * early-morning entry would be stored under yesterday and never appear in
+ * "Today's Footfall".
+ */
+function toFootfallDateOrNull(value) {
+  if (value === undefined || value === null || value === '') return null;
+  const s = String(value).trim();
+  return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : null;
+}
+
+function getISTHour() {
+  const now = new Date();
+  const istDate = new Date(now.getTime() + (now.getTimezoneOffset() * 60000) + 5.5 * 60 * 60 * 1000);
+  return istDate.getUTCHours();
+}
+
 function getISTTimeString(d = new Date()) {
   try {
     let dateObj = d;
@@ -327,23 +345,21 @@ exports.getSections = async (req, res) => {
 // ── Footfall Entries ────────────────────────────────────────
 exports.getFootfall = async (req, res) => {
   try {
-    const date = req.query.date || new Date().toISOString().split('T')[0];
-    const requestedLoc = parseTargetLocation(req.query.locationId || req.query.location_id || req.headers['x-location-id']);
-
-    if (requestedLoc) {
-      const [rows] = await db.query(
-        `SELECT * FROM FootfallEntries WHERE entryDate = ? AND location_id = ? ORDER BY slotHour ASC`,
-        [date, requestedLoc]
-      );
-      return res.json({ success: true, date, entries: rows, locationId: requestedLoc });
-    }
-
+    const date = toFootfallDateOrNull(req.query.date) || getISTDateString();
     const { clause: locClause, params: locParams } = await getLocationFilter(req, 'FootfallEntries');
+
+    // Always scoped by getLocationFilter: it honours a requested store for
+    // global/multi-store users and clamps single-store users to their own.
     const [rows] = await db.query(
       `SELECT * FROM FootfallEntries WHERE entryDate = ? ${locClause} ORDER BY slotHour ASC`,
       [date, ...locParams]
     );
-    return res.json({ success: true, date, entries: rows });
+    return res.json({
+      success: true,
+      date,
+      entries: rows,
+      locationId: parseTargetLocation(req.query.locationId || req.query.location_id || req.headers['x-location-id'])
+    });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
   }
@@ -373,8 +389,8 @@ exports.upsertFootfall = async (req, res) => {
       }
     }
 
-    const targetDate = entryDate || new Date().toISOString().split('T')[0];
-    const targetHour = (slotHour !== undefined && slotHour !== null && !isNaN(Number(slotHour))) ? Number(slotHour) : new Date().getHours();
+    const targetDate = toFootfallDateOrNull(entryDate) || getISTDateString();
+    const targetHour = (slotHour !== undefined && slotHour !== null && !isNaN(Number(slotHour))) ? Number(slotHour) : getISTHour();
     const targetVisitors = Math.max(0, Number(visitors) || 0);
     const targetRemarks = String(remarks || '').trim();
     const targetSubmittedBy = String(submittedBy || req.user?.fullName || req.user?.username || 'Staff').trim();
