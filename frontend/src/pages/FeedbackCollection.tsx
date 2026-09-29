@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../components/layouts/DashboardLayout';
 import PageContainer from '../components/ui/PageContainer';
@@ -7,58 +8,364 @@ import ModalPortal from '../components/ui/ModalPortal';
 import { API, Auth } from '../services/api';
 import { useLocationContext } from '../context/LocationContext';
 import { useRealtimeSection } from '../hooks/useRealtimeSection';
-import { MessageSquare, Search, Filter, Download, RefreshCw, ThumbsUp, ThumbsDown, Star, Calendar, TrendingUp, Phone, User, X, Eye, CircleAlert, Sparkles, ArrowUpRight, TriangleAlert, CircleCheck, Clock, Hash, ShieldAlert, FileText, Send, UserCheck, MapPin, Trash2 } from 'lucide-react';
+import { formatDateDisplay, formatDateTimeDisplay, formatISTDate } from '../utils/dateUtils';
+import {
+  Calendar, CircleAlert, CircleCheck, Clock, Download, Eye, FileText, Filter, Hash,
+  History, MapPin, MessageSquare, Phone, RefreshCw, RotateCcw, Search, Send, ShieldAlert,
+  Star, ThumbsDown, ThumbsUp, Trash2, TriangleAlert, User, UserCheck, X
+} from 'lucide-react';
+
+/* ════════════════════════════════════════════════════════════════════════
+   VOCABULARY & PURE HELPERS
+   Single source of truth for follow-up statuses, survey questions and the
+   store registry so the table, the mobile cards, the filter bar and the
+   resolution desk can never drift apart again.
+   ════════════════════════════════════════════════════════════════════════ */
+
+interface BadgeTone {
+  label: string;
+  className: string;
+  Icon: any;
+}
+
+/**
+ * Canonical follow-up statuses. `in_progress` / `escalated` / `closed` are
+ * legacy values still present on older rows; they are rendered here so no
+ * record ever falls through to a wrong badge.
+ */
+const FOLLOW_UP_BADGES: Record<string, BadgeTone> = {
+  new: { label: 'New', className: 'bg-amber-50 text-amber-800 border-amber-200', Icon: Clock },
+  pending: { label: 'Pending Call', className: 'bg-amber-50 text-amber-800 border-amber-200', Icon: Clock },
+  called: { label: 'Called', className: 'bg-blue-50 text-blue-800 border-blue-200', Icon: Phone },
+  in_progress: { label: 'In Progress', className: 'bg-blue-50 text-blue-800 border-blue-200', Icon: Phone },
+  escalated: { label: 'Escalated', className: 'bg-purple-50 text-purple-800 border-purple-200', Icon: ShieldAlert },
+  escalated_manager: { label: 'Escalated', className: 'bg-purple-50 text-purple-800 border-purple-200', Icon: ShieldAlert },
+  resolved: { label: 'Resolved', className: 'bg-emerald-50 text-emerald-800 border-emerald-200', Icon: CircleCheck },
+  closed: { label: 'Closed', className: 'bg-emerald-50 text-emerald-800 border-emerald-200', Icon: CircleCheck }
+};
+
+const followUpBadge = (status: any): BadgeTone => {
+  const raw = String(status ?? '').trim();
+  if (!raw) return { label: 'Not Recorded', className: 'bg-gray-50 text-gray-600 border-gray-200', Icon: CircleAlert };
+  return FOLLOW_UP_BADGES[raw.toLowerCase()]
+    || { label: raw, className: 'bg-gray-50 text-gray-600 border-gray-200', Icon: CircleAlert };
+};
+
+/** Statuses the resolution desk may write. Values match `followUpBadge` keys exactly. */
+const RESOLUTION_STATUSES = [
+  { value: 'called', label: 'Called — Follow-up In Progress' },
+  { value: 'escalated_manager', label: 'Escalated to Store Manager' },
+  { value: 'resolved', label: 'Resolved — Customer Satisfied' }
+];
+
+/** Folds auto/legacy statuses onto the closest selectable action. */
+const toResolutionStatus = (status: any): string => {
+  const raw = String(status ?? '').trim().toLowerCase();
+  if (raw === 'resolved' || raw === 'closed') return 'resolved';
+  if (raw === 'escalated' || raw === 'escalated_manager') return 'escalated_manager';
+  return 'called';
+};
+
+/** Server-side values accepted by GET /crm/feedbacks?followUp= */
+const FOLLOW_UP_FILTERS = [
+  { value: 'all', label: 'All Follow-ups' },
+  { value: 'needs_follow_up', label: 'Open (Any Stage)' },
+  { value: 'new', label: 'New' },
+  { value: 'pending', label: 'Pending Call' },
+  { value: 'called', label: 'Called / In Progress' },
+  { value: 'escalated_manager', label: 'Escalated to Manager' },
+  { value: 'resolved', label: 'Resolved' }
+];
+
+const DATE_PRESETS = [
+  { value: 'all', label: 'All Time' },
+  { value: 'today', label: 'Today' },
+  { value: 'yesterday', label: 'Yesterday' },
+  { value: 'week', label: 'Last 7 Days' },
+  { value: 'month', label: 'This Month' },
+  { value: 'last_month', label: 'Last Month' },
+  { value: 'custom', label: 'Custom Range' }
+];
+
+const STORES = [
+  { key: 'belagavi', locId: '1', code: 'BEL', name: 'Belagavi', dot: 'bg-blue-500', chip: 'bg-blue-50 text-blue-800 border-blue-200' },
+  { key: 'davanagere', locId: '2', code: 'DAV', name: 'Davanagere', dot: 'bg-emerald-500', chip: 'bg-emerald-50 text-emerald-800 border-emerald-200' },
+  { key: 'shivamogga', locId: '3', code: 'SHI', name: 'Shivamogga', dot: 'bg-purple-500', chip: 'bg-purple-50 text-purple-800 border-purple-200' }
+];
+
+/** The five survey questions collected by the in-store QR kiosk. */
+const SURVEY_QUESTIONS = [
+  { key: 'q1', heading: 'Overall Experience', full: '1. Overall Shopping Experience' },
+  { key: 'q2', heading: 'Product Found', full: '2. Product Availability' },
+  { key: 'q3', heading: 'Collection Quality', full: '3. Collection Quality & Variety' },
+  { key: 'q4', heading: 'Staff Courtesy', full: '4. Staff Courtesy & Helpfulness' },
+  { key: 'q5', heading: 'Recommendation', full: '5. Recommendation & NPS' }
+];
+
+/**
+ * Mirrors the backend escalation rule (crmController.evaluateFeedbackEscalation,
+ * lines 449-453) question by question, so an answer chip can never be coloured
+ * differently from the sentiment the server actually recorded for this ticket.
+ */
+const isNegativeAnswer = (key: string, value: string): boolean => {
+  const v = String(value || '').trim().toLowerCase();
+  if (!v) return false;
+  if (key === 'q1') return v.includes('dissatisfied');
+  if (key === 'q2') return v === 'no';
+  if (key === 'q3' || key === 'q4') return v === 'poor' || v === 'very poor';
+  if (key === 'q5') return v.includes('not recommend');
+  return false;
+};
+
+const parseAnswers = (raw: any): Record<string, any> => {
+  if (!raw) return {};
+  if (typeof raw === 'object') return raw;
+  if (typeof raw === 'string') {
+    try {
+      const parsed = JSON.parse(raw);
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch {
+      return {};
+    }
+  }
+  return {};
+};
+
+/**
+ * A customer's actual answer, or '' when the question was skipped.
+ * Empty must render as "Not answered" — never as a made-up rating.
+ */
+const answerOf = (answers: Record<string, any>, row: any, key: string): string => {
+  const raw = answers?.[key] ?? row?.[key];
+  if (raw === null || raw === undefined) return '';
+  if (Array.isArray(raw)) return raw.filter(Boolean).join(', ').trim();
+  return String(raw).trim();
+};
+
+/** Markers written by the kiosk when it compiles the free-text answers. */
+const VOICE_MARKERS = [
+  { marker: 'Liked Most:', label: 'Liked Most', Icon: ThumbsUp, tone: 'bg-emerald-50 border-emerald-200 text-emerald-900' },
+  { marker: 'Can Improve:', label: 'Can Improve', Icon: Star, tone: 'bg-background border-accent-soft text-primary' },
+  { marker: 'Comments:', label: 'Additional Comments', Icon: FileText, tone: 'bg-blue-50 border-blue-200 text-blue-900' },
+  { marker: 'Voice:', label: 'Feedback Text', Icon: MessageSquare, tone: 'bg-background border-accent-soft text-primary' }
+];
+
+const splitVoice = (raw: string) => {
+  const text = String(raw || '').trim();
+  if (!text) return { hasMarkers: false, sections: [] as { label: string; text: string; Icon: any; tone: string }[] };
+
+  const sections = VOICE_MARKERS.reduce<any[]>((acc, m) => {
+    const start = text.indexOf(m.marker);
+    if (start === -1) return acc;
+    const after = text.slice(start + m.marker.length);
+    const nextMarker = after.search(/\n(?:Liked Most:|Can Improve:|Comments:|Voice:)/);
+    const value = (nextMarker === -1 ? after : after.slice(0, nextMarker)).trim();
+    if (!value) return acc;
+    acc.push({ label: m.label, text: value, Icon: m.Icon, tone: m.tone });
+    return acc;
+  }, []);
+
+  return { hasMarkers: sections.length > 0, sections };
+};
+
+const storeOf = (f: any) => {
+  const id = Number(f?.location_id);
+  const code = String(f?.locationCode || '').toUpperCase();
+  const match = STORES.find(s => (id > 0 && Number(s.locId) === id) || (code && s.code === code));
+  if (match) return { ...match, name: f?.locationName || match.name };
+  return {
+    key: '',
+    locId: String(id || ''),
+    code: code || '—',
+    name: f?.locationName || 'Store Not Recorded',
+    dot: 'bg-gray-400',
+    chip: 'bg-gray-50 text-gray-700 border-gray-200'
+  };
+};
+
+/** Real derived percentage; '—' whenever there is nothing to divide by. */
+const rate = (part: any, whole: any): string => {
+  const p = Number(part);
+  const w = Number(whole);
+  if (!isFinite(p) || !isFinite(w) || w <= 0) return '—';
+  return `${Math.round((p / w) * 100)}%`;
+};
+
+const toNumberOrNull = (v: any): number | null => {
+  const n = Number(v);
+  return isFinite(n) ? n : null;
+};
+
+/** Compact IST-safe date. Never renders "Invalid Date" for MySQL zero dates. */
+const shortDate = (v: any): string => {
+  const raw = String(v ?? '').trim();
+  if (!raw || /^0{4}[-/]0{2}[-/]0{2}/.test(raw)) return '—';
+  return formatDateDisplay(raw, '—');
+};
+
+const ticketRef = (id: any): string => {
+  const raw = String(id ?? '');
+  if (!raw) return '—';
+  return raw.startsWith('FB-') ? raw : `FB-${raw}`;
+};
+
+/* ── Small presentational primitives (module scope: stable identity) ───── */
+
+function StatusBadge({ status, className = '' }: { status: any; className?: string }) {
+  const { label, Icon, className: tone } = followUpBadge(status);
+  return (
+    <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-[10.5px] font-extrabold uppercase tracking-wide ${tone} ${className}`}>
+      <Icon className="w-3 h-3 shrink-0" />
+      <span>{label}</span>
+    </span>
+  );
+}
+
+function SentimentBadge({ isNegative }: { isNegative: any }) {
+  const negative = !!isNegative;
+  return (
+    <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-[10.5px] font-extrabold uppercase tracking-wide ${
+      negative ? 'bg-rose-50 text-rose-800 border-rose-200' : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+    }`}>
+      {negative ? <ThumbsDown className="w-3 h-3 shrink-0" /> : <ThumbsUp className="w-3 h-3 shrink-0" />}
+      <span>{negative ? 'Negative' : 'Positive'}</span>
+    </span>
+  );
+}
+
+function FilterField({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="flex min-w-0 flex-col gap-1">
+      <span className="text-[9.5px] font-black uppercase tracking-wider text-[#8B6F76]">{label}</span>
+      {children}
+    </div>
+  );
+}
+
+function EmptyHint({ icon: Icon, title, children }: { icon: any; title: string; children?: ReactNode }) {
+  return (
+    <div className="flex flex-col items-center gap-2 px-4 py-12 text-center">
+      <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-accent-soft bg-background">
+        <Icon className="h-5 w-5 text-[#9A858D]" />
+      </div>
+      <div className="text-sm font-extrabold text-primary">{title}</div>
+      {children && <p className="max-w-md text-xs font-medium text-[#6F5963]">{children}</p>}
+    </div>
+  );
+}
 
 export default function FeedbackCollection() {
   const navigate = useNavigate();
-  const [session, setSession] = useState<any>(() => Auth.get());
-  const { currentLocation, setCurrentLocation, allLocations, currentLocationLabel, isGlobalAdmin, canSwitch } = useLocationContext();
+  const { currentLocation, setCurrentLocation, currentLocationLabel, canSwitch } = useLocationContext();
 
-  // Feedbacks & Stats
+  // Feedbacks & stats (stats arrive already scoped to the active filters)
   const [feedbacks, setFeedbacks] = useState<any[]>([]);
-  const [stats, setStats] = useState<any>({ total: 0, positive: 0, negative: 0, needsFollowUp: 0, npsScore: 100 });
-  const [locationBreakdown, setLocationBreakdown] = useState<any>({
-    belagavi: { total: 0, positive: 0, negative: 0, needsFollowUp: 0 },
-    davanagere: { total: 0, positive: 0, negative: 0, needsFollowUp: 0 },
-    shivamogga: { total: 0, positive: 0, negative: 0, needsFollowUp: 0 }
-  });
+  const [stats, setStats] = useState<any>({ total: 0, positive: 0, negative: 0, needsFollowUp: 0 });
+  // Deliberately empty by default: a store key that is absent from `byLocation`
+  // means "no data available", and must render as '—' rather than a false 0.
+  const [locationBreakdown, setLocationBreakdown] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState<boolean>(true);
 
   // Filters
   const [search, setSearch] = useState<string>('');
-  const [sentimentFilter, setSentimentFilter] = useState<string>('all'); // all, positive, negative
+  const [debouncedSearch, setDebouncedSearch] = useState<string>('');
+  const [sentimentFilter, setSentimentFilter] = useState<string>('all');
+  const [followUpFilter, setFollowUpFilter] = useState<string>('all');
   const [datePreset, setDatePreset] = useState<string>('all');
   const [startDateInput, setStartDateInput] = useState<string>('');
   const [endDateInput, setEndDateInput] = useState<string>('');
 
-  // Selected Feedback Detail Modal
+  // Resolution desk modal
   const [selectedFeedback, setSelectedFeedback] = useState<any | null>(null);
   const [resolutionStatus, setResolutionStatus] = useState<string>('called');
   const [resolutionNotes, setResolutionNotes] = useState<string>('');
+  const [resolutionFollowUpDate, setResolutionFollowUpDate] = useState<string>('');
   const [savingResolution, setSavingResolution] = useState<boolean>(false);
 
-  const handleOpenModal = (f: any) => {
-    setSelectedFeedback(f);
-    setResolutionNotes(f.actionTaken || f.notes || '');
-    setResolutionStatus(f.status || (f.isNegative ? 'called' : 'resolved'));
+  // Real follow-up history for the open ticket
+  const [historyLoading, setHistoryLoading] = useState<boolean>(false);
+  const [historyError, setHistoryError] = useState<string>('');
+  const [followUpHistory, setFollowUpHistory] = useState<any[] | null>(null);
+  const [callQueueState, setCallQueueState] = useState<any | null>(null);
+  const historyTokenRef = useRef<number>(0);
+
+  const filtersActive =
+    !!search.trim() || sentimentFilter !== 'all' || followUpFilter !== 'all' || datePreset !== 'all';
+
+  const handleResetFilters = () => {
+    setSearch('');
+    setDebouncedSearch('');
+    setSentimentFilter('all');
+    setFollowUpFilter('all');
+    setDatePreset('all');
+    setStartDateInput('');
+    setEndDateInput('');
   };
 
-  const handleSaveModalResolution = async (statusOverride?: string) => {
+  const getActiveLocationName = () => {
+    const store = STORES.find(s => s.locId === String(currentLocation) || s.code === String(currentLocation).toUpperCase());
+    return store ? store.name : (currentLocationLabel || 'Selected Store');
+  };
+
+  const getLocationBadgeText = () => {
+    if (!currentLocation || currentLocation === 'ALL') return 'ALL STORES';
+    const store = STORES.find(s => s.locId === String(currentLocation) || s.code === String(currentLocation).toUpperCase());
+    if (store) return `Store: ${store.name} (${store.code})`;
+    return `Store: ${currentLocationLabel || currentLocation}`;
+  };
+
+  const closeTicket = () => {
+    historyTokenRef.current += 1;
+    setSelectedFeedback(null);
+  };
+
+  const openTicket = async (f: any) => {
+    setSelectedFeedback(f);
+    setResolutionNotes(String(f?.actionTaken || f?.notes || ''));
+    setResolutionStatus(toResolutionStatus(f?.status));
+    setResolutionFollowUpDate('');
+
+    const token = ++historyTokenRef.current;
+    setFollowUpHistory(null);
+    setCallQueueState(null);
+    setHistoryError('');
+    setHistoryLoading(true);
+    try {
+      const res = await API.getFeedbackFollowUpHistory(f.id);
+      if (token !== historyTokenRef.current) return;
+      setFollowUpHistory(Array.isArray(res?.history) ? res.history : []);
+      setCallQueueState(res?.followUp || null);
+    } catch (err: any) {
+      if (token !== historyTokenRef.current) return;
+      // The endpoint is store-scoped: another store's ticket answers 404.
+      setHistoryError(err?.status === 404
+        ? 'Follow-up history is not available for this ticket in the current store view.'
+        : (err?.message || 'Follow-up history could not be loaded.'));
+    } finally {
+      if (token === historyTokenRef.current) setHistoryLoading(false);
+    }
+  };
+
+  const handleSaveResolution = async (statusOverride?: string) => {
     if (!selectedFeedback) return;
     setSavingResolution(true);
     try {
-      const targetStatus = statusOverride || resolutionStatus;
-      await API.updateCallQueue({
+      const notes = resolutionNotes.trim();
+      const payload: any = {
         id: selectedFeedback.id,
         feedbackId: selectedFeedback.id,
-        status: targetStatus,
-        notes: resolutionNotes || 'Resolution saved from Customer Resolution Dashboard'
-      });
-      showToast('Customer resolution status updated and saved!', 'success');
-      setSelectedFeedback(null);
+        status: statusOverride || resolutionStatus
+      };
+      // Send only what the executive typed — an empty note stays empty in the log.
+      if (notes) payload.notes = notes;
+      if (resolutionFollowUpDate) payload.followUpDate = resolutionFollowUpDate;
+
+      await API.updateCallQueue(payload);
+      showToast('Follow-up update saved.', 'success');
+      closeTicket();
       loadFeedbacks();
     } catch (err: any) {
-      showToast('Failed to update resolution: ' + (err.message || 'Error'), 'error');
+      showToast('Failed to save follow-up: ' + (err?.message || 'Please try again'), 'error');
     } finally {
       setSavingResolution(false);
     }
@@ -66,87 +373,58 @@ export default function FeedbackCollection() {
 
   const handleDeleteFeedback = async (id: string) => {
     if (!id) return;
-    if (!window.confirm('Are you sure you want to permanently delete this customer feedback record?')) return;
+    if (!window.confirm('Delete this feedback record permanently? This cannot be undone.')) return;
     try {
       await API.deleteFeedback(id);
-      showToast('Feedback record deleted successfully', 'success');
-      if (selectedFeedback?.id === id) {
-        setSelectedFeedback(null);
-      }
+      showToast('Feedback record deleted.', 'success');
+      if (selectedFeedback?.id === id) closeTicket();
       loadFeedbacks();
     } catch (err: any) {
-      showToast('Failed to delete feedback: ' + (err.message || 'Error'), 'error');
+      showToast('Failed to delete feedback: ' + (err?.message || 'Please try again'), 'error');
     }
   };
 
+  // NOTE: Clear Feedback authorisation is under separate review — behaviour untouched.
   const handleClearAllFeedbacks = async () => {
     const locMsg = currentLocation && currentLocation !== 'ALL' ? `for ${getActiveLocationName()}` : 'across all locations';
     if (!window.confirm(`Are you sure you want to permanently delete ALL feedback details ${locMsg}? This cannot be undone.`)) return;
     try {
       await API.clearAllFeedbacks(currentLocation && currentLocation !== 'ALL' ? currentLocation : undefined);
-      showToast('All feedback details cleared successfully', 'success');
-      setSelectedFeedback(null);
+      showToast('All feedback details cleared', 'success');
+      closeTicket();
       loadFeedbacks();
     } catch (err: any) {
-      showToast('Failed to clear feedbacks: ' + (err.message || 'Error'), 'error');
+      showToast('Failed to clear feedbacks: ' + (err?.message || 'Error'), 'error');
     }
-  };
-
-  const getISTDate = (d: Date = new Date()) => {
-    const istOffset = 5.5 * 60 * 60 * 1000;
-    const istDate = new Date(d.getTime() + (d.getTimezoneOffset() * 60000) + istOffset);
-    return istDate.toISOString().split('T')[0];
-  };
-
-  const getActiveLocationName = () => {
-    if (currentLocation === '1' || currentLocation === 'BEL') return 'Belagavi';
-    if (currentLocation === '2' || currentLocation === 'DAV') return 'Davanagere';
-    if (currentLocation === '3' || currentLocation === 'SHI') return 'Shivamogga';
-    return currentLocationLabel || 'Selected Location';
-  };
-
-  const getLocationBadgeText = () => {
-    if (!currentLocation || currentLocation === 'ALL') {
-      return 'ALL LOCATIONS';
-    }
-    if (currentLocation === '1' || currentLocation === 'BEL') {
-      return 'Location: Belagavi (BEL)';
-    }
-    if (currentLocation === '2' || currentLocation === 'DAV') {
-      return 'Location: Davanagere (DAV)';
-    }
-    if (currentLocation === '3' || currentLocation === 'SHI') {
-      return 'Location: Shivamogga (SHI)';
-    }
-    return `Location: ${currentLocationLabel || currentLocation}`;
   };
 
   const loadFeedbacks = useCallback(async () => {
     setLoading(true);
     try {
       const params: any = {};
-      const todayStr = getISTDate(new Date());
+      // IST calendar-day boundaries come from the shared date utility.
+      const iso = (ms: number) => formatISTDate(new Date(ms));
+      const now = Date.now();
+      const todayStr = iso(now);
 
       if (datePreset === 'today') {
         params.date = todayStr;
       } else if (datePreset === 'yesterday') {
-        const y = new Date(Date.now() - 86400000);
-        params.date = getISTDate(y);
+        params.date = iso(now - 86400000);
       } else if (datePreset === 'week') {
-        const w = new Date(Date.now() - 6 * 86400000);
-        params.startDate = getISTDate(w);
+        params.startDate = iso(now - 6 * 86400000);
         params.endDate = todayStr;
       } else if (datePreset === 'month') {
-        const now = new Date();
-        const start = new Date(now.getFullYear(), now.getMonth(), 1);
-        params.startDate = getISTDate(start);
+        const start = new Date();
+        start.setDate(1);
+        params.startDate = iso(start.getTime());
         params.endDate = todayStr;
       } else if (datePreset === 'last_month') {
-        const now = new Date();
-        const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-        const end = new Date(now.getFullYear(), now.getMonth(), 0);
-        params.startDate = getISTDate(start);
-        params.endDate = getISTDate(end);
+        const nowD = new Date();
+        const start = new Date(nowD.getFullYear(), nowD.getMonth() - 1, 1);
+        const end = new Date(nowD.getFullYear(), nowD.getMonth(), 0);
+        params.startDate = iso(start.getTime());
+        params.endDate = iso(end.getTime());
       } else if (datePreset === 'custom') {
         if (startDateInput) params.startDate = startDateInput;
         if (endDateInput) params.endDate = endDateInput;
@@ -154,79 +432,101 @@ export default function FeedbackCollection() {
 
       if (sentimentFilter === 'negative') params.isNegative = 'true';
       if (sentimentFilter === 'positive') params.isNegative = 'false';
-      if (search.trim()) params.search = search.trim();
-      if (currentLocation && currentLocation !== 'ALL') {
-        params.location_id = currentLocation;
-      }
+      if (followUpFilter && followUpFilter !== 'all') params.followUp = followUpFilter;
+      if (debouncedSearch) params.search = debouncedSearch;
+      if (currentLocation && currentLocation !== 'ALL') params.location_id = currentLocation;
 
-      // Fetch feedbacks and stats concurrently
       const [res, statsRes] = await Promise.all([
         API.getFeedbacks(params),
-        API.getFeedbackStats(currentLocation && currentLocation !== 'ALL' ? { location_id: currentLocation } : undefined).catch(() => null)
+        API.getFeedbackStats(currentLocation && currentLocation !== 'ALL' ? { location_id: currentLocation } : undefined)
+          .catch(() => null)
       ]);
 
-      if (res && res.success) {
+      if (res?.success) {
         setFeedbacks(res.feedbacks || []);
-        if (res.stats) {
-          setStats(res.stats);
-        }
+        if (res.stats) setStats(res.stats);
       }
-      if (statsRes?.byLocation) {
-        setLocationBreakdown(statsRes.byLocation);
-      }
+      setLocationBreakdown(statsRes?.byLocation || {});
     } catch (err: any) {
       console.warn('getFeedbacks background sync:', err?.message || err);
     } finally {
       setLoading(false);
     }
-  }, [datePreset, startDateInput, endDateInput, sentimentFilter, search, currentLocation]);
+  }, [datePreset, startDateInput, endDateInput, sentimentFilter, followUpFilter, debouncedSearch, currentLocation]);
 
   // Real-time automatic updates for feedback and callqueue sections
   useRealtimeSection(['feedback', 'callqueue'], () => {
     loadFeedbacks();
   });
 
+  // Keep the latest loader behind a ref so the 8s poll is created once and is
+  // never torn down by a keystroke or a filter change.
+  const loadRef = useRef<() => void>(() => {});
   useEffect(() => {
-    if (!Auth.check()) {
-      navigate('/login', { replace: true });
-      return;
-    }
-    setSession(Auth.get());
+    loadRef.current = () => { loadFeedbacks(); };
+  }, [loadFeedbacks]);
+
+  // Debounce the search box before it becomes a query dependency.
+  useEffect(() => {
+    const value = search.trim();
+    if (value === debouncedSearch) return;
+    const t = setTimeout(() => setDebouncedSearch(value), 350);
+    return () => clearTimeout(t);
+  }, [search, debouncedSearch]);
+
+  // Route guard only — never a data dependency.
+  useEffect(() => {
+    if (!Auth.check()) navigate('/login', { replace: true });
+  }, [navigate]);
+
+  // Loads on mount and again whenever the query (filters / store) changes.
+  useEffect(() => {
+    if (!Auth.check()) return;
     loadFeedbacks();
+  }, [loadFeedbacks]);
 
-    // Auto-refresh every 8 seconds for live feedback collection updates
-    const interval = setInterval(() => {
-      loadFeedbacks();
-    }, 8000);
+  // Stable 8s poll: reads the latest loader through a ref so changing a filter
+  // or typing in the search box never tears down and recreates the interval.
+  useEffect(() => {
+    const interval = setInterval(() => loadRef.current(), 8000);
     return () => clearInterval(interval);
-  }, [navigate, loadFeedbacks]);
+  }, []);
 
-  // Export CSV Handler
   const handleExportCSV = () => {
     if (feedbacks.length === 0) {
       showToast('No feedback records to export', 'error');
       return;
     }
 
-    const headers = ['Feedback ID', 'Store Location', 'Date', 'Time', 'Customer Name', 'Mobile', 'Sentiment', 'Answers Summary', 'Customer Voice Notes'];
-    const rows = feedbacks.map(f => [
-      f.id || '',
-      `"${f.locationName || (f.location_id === 1 ? 'Belagavi' : f.location_id === 3 ? 'Shivamogga' : 'Davanagere')} (${f.locationCode || (f.location_id === 1 ? 'BEL' : f.location_id === 3 ? 'SHI' : 'DAV')})"`,
-      f.entryDate || '',
-      f.entryTime || '',
-      `"${(f.customerName || 'Anonymous').replace(/"/g, '""')}"`,
-      `"${(f.mobile || '').replace(/"/g, '""')}"`,
-      f.isNegative ? 'Negative / Escalated' : 'Positive / Satisfied',
-      `"${JSON.stringify(f.answers || {}).replace(/"/g, '""')}"`,
-      `"${(f.voice || '').replace(/"/g, '""')}"`
-    ]);
+    const headers = ['Feedback ID', 'Store Location', 'Date', 'Time', 'Customer Name', 'Mobile', 'Sentiment', 'Follow-up Status', 'Survey Answers', 'Customer Voice Notes'];
+    const rows = feedbacks.map(f => {
+      const store = storeOf(f);
+      const answers = parseAnswers(f.answers);
+      const answerSummary = SURVEY_QUESTIONS
+        .map(q => `${q.heading}: ${answerOf(answers, f, q.key) || 'Not answered'}`)
+        .join(' | ');
+
+      return [
+        `"${ticketRef(f.id)}"`,
+        `"${store.name} (${store.code})"`,
+        `"${f.entryDate || ''}"`,
+        `"${f.entryTime || ''}"`,
+        `"${String(f.customerName || 'Anonymous').replace(/"/g, '""')}"`,
+        `"${(f.mobile || '').replace(/"/g, '""')}"`,
+        f.isNegative ? 'Negative' : 'Positive',
+        `"${String(f.status || 'not recorded')}"`,
+        `"${answerSummary.replace(/"/g, '""')}"`,
+        `"${(f.voice || '').replace(/"/g, '""')}"`
+      ];
+    });
 
     const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    const locSlug = currentLocation === '1' ? 'Belagavi' : currentLocation === '2' ? 'Davanagere' : currentLocation === '3' ? 'Shivamogga' : 'All_Locations';
-    link.setAttribute('download', `BSC_Customer_Feedbacks_${locSlug}_${new Date().toISOString().split('T')[0]}.csv`);
+    const activeStore = STORES.find(s => s.locId === String(currentLocation));
+    const locSlug = activeStore ? activeStore.name.replace(/\s+/g, '_') : 'All_Stores';
+    link.setAttribute('download', `BSC_Customer_Feedbacks_${locSlug}_${formatISTDate(new Date())}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -234,455 +534,439 @@ export default function FeedbackCollection() {
     showToast(`Exported ${feedbacks.length} feedback records (${locSlug}) to CSV`, 'success');
   };
 
+  const total = toNumberOrNull(stats.total) ?? feedbacks.length;
+  const positive = toNumberOrNull(stats.positive) ?? 0;
+  const negative = toNumberOrNull(stats.negative) ?? 0;
+  const needsFollowUp = toNumberOrNull(stats.needsFollowUp) ?? negative;
+  const selectedAnswers = selectedFeedback ? parseAnswers(selectedFeedback.answers) : {};
+  const selectedVoice = selectedFeedback ? splitVoice(selectedFeedback.voice) : { hasMarkers: false, sections: [] as any[] };
+
   return (
     <DashboardLayout title="Customer Feedback Collection & Analytics">
       <ToastContainer />
       <PageContainer maxWidth="full">
-        <div className="space-y-6">
-          {/* Header & Quick Action Bar */}
-          <div className="card-glass p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary text-accent text-[10px] font-black uppercase tracking-widest mb-1.5 shadow-2xs">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>{getLocationBadgeText()}</span>
+        <div className="space-y-4">
+
+          {/* ── Header & actions ─────────────────────────────────────── */}
+          <div className="card-glass flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="flex items-center gap-2 text-base font-black tracking-tight text-primary">
+                  <MessageSquare className="h-4 w-4 text-accent" />
+                  <span>Customer Feedback Repository</span>
+                </h2>
+                <span className="inline-flex items-center gap-1 rounded-full border border-accent-soft bg-background px-2 py-0.5 text-[9.5px] font-black uppercase tracking-wider text-primary">
+                  <MapPin className="h-2.5 w-2.5 text-accent" />
+                  <span>{getLocationBadgeText()}</span>
+                </span>
               </div>
-              <h2 className="text-xl font-black text-primary tracking-tight flex items-center gap-2">
-                <MessageSquare className="w-5 h-5 text-accent" />
-                <span>Customer Feedback Repository</span>
-              </h2>
-              <p className="text-xs text-primary font-medium mt-0.5">
-                Real-time log of customer survey responses, satisfaction scores &amp; voice of customer notes.
+              <p className="mt-1 text-[11px] font-medium leading-relaxed text-[#6F5963]">
+                Live survey responses, satisfaction scores and follow-up actions recorded by the in-store QR kiosks.
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto justify-start md:justify-end">
-              {canSwitch && (
-                <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border-2 border-accent shadow-xs">
-                  <MapPin className="w-4 h-4 text-accent shrink-0" />
-                  <span className="text-[11px] font-black uppercase text-primary hidden sm:inline">Store:</span>
-                  <select
-                    value={currentLocation}
-                    onChange={(e) => setCurrentLocation(e.target.value)}
-                    className="select-modern text-xs font-black py-1 pr-7 pl-1.5 bg-transparent border-0 text-primary cursor-pointer focus:ring-0"
-                    aria-label="Filter by Location"
-                  >
-                    <option value="ALL">All Locations (Combined)</option>
-                    <option value="1">Belagavi (BEL)</option>
-                    <option value="2">Davanagere (DAV)</option>
-                    <option value="3">Shivamogga (SHI)</option>
-                  </select>
-                </div>
-              )}
+            <div className="flex shrink-0 flex-wrap items-center gap-2">
               <button
-                onClick={loadFeedbacks}
-                className="px-3.5 py-2 rounded-xl bg-white border border-accent-soft text-primary text-xs font-extrabold hover:bg-gray-50 flex items-center gap-1.5 shadow-xs cursor-pointer"
+                onClick={() => loadFeedbacks()}
+                className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-xl border border-accent-soft bg-white px-3 py-1.5 text-xs font-extrabold text-primary transition-colors hover:bg-background"
               >
-                <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
                 <span>Refresh</span>
               </button>
               {feedbacks.length > 0 && (
                 <button
                   onClick={handleClearAllFeedbacks}
-                  className="px-3.5 py-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-extrabold hover:bg-rose-100 flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
                   title="Permanently remove feedback details"
+                  className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-xl border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-extrabold text-rose-700 transition-colors hover:bg-rose-100"
                 >
-                  <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                  <Trash2 className="h-3.5 w-3.5" />
                   <span>Clear Feedback</span>
                 </button>
               )}
               <button
                 onClick={handleExportCSV}
-                className="btn-gold text-xs px-4 py-2 flex items-center gap-1.5 shadow-md cursor-pointer"
+                className="btn-gold inline-flex items-center gap-1.5 whitespace-nowrap text-xs"
               >
-                <Download className="w-3.5 h-3.5" />
-                <span>Export Report (CSV)</span>
+                <Download className="h-3.5 w-3.5" />
+                <span>Export CSV</span>
               </button>
             </div>
           </div>
 
-          {/* Location-wise Visibility Summary Cards */}
-          {canSwitch && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="text-[11px] font-black uppercase tracking-wider text-primary flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-accent" />
-                  <span>Store Locations Breakdown</span>
-                </div>
-                {currentLocation !== 'ALL' && (
-                  <button
-                    onClick={() => setCurrentLocation('ALL')}
-                    className="text-[11px] font-black text-accent hover:underline flex items-center gap-1 cursor-pointer"
-                  >
-                    <span>Reset to All Locations</span>
-                    <ArrowUpRight className="w-3 h-3" />
-                  </button>
-                )}
+          {/* ── KPI strip (filtered result set) ──────────────────────── */}
+          <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
+            <div className="card-glass p-3.5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[10px] font-black uppercase tracking-wider text-[#6F5963]">Total Feedbacks</span>
+                <MessageSquare className="h-3.5 w-3.5 shrink-0 text-accent" />
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                {/* Belagavi */}
-                <div
-                  onClick={() => setCurrentLocation('1')}
-                  className={`card-glass p-3.5 rounded-2xl cursor-pointer transition-all hover:scale-[1.01] hover:shadow-md border-2 ${
-                    currentLocation === '1' || currentLocation === 'BEL'
-                      ? 'border-accent bg-accent/5 ring-2 ring-accent/30 shadow-sm'
-                      : 'border-black/10'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
-                      <span className="text-xs font-black uppercase tracking-wide text-primary">Belagavi (BEL)</span>
-                    </div>
-                    <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200">
-                      Store #1
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 mt-2.5 pt-2.5 border-t border-accent-soft/50 text-center">
-                    <div>
-                      <div className="text-[10px] font-bold text-gray-500 uppercase">Feedbacks</div>
-                      <div className="text-base font-black text-primary mt-0.5">{locationBreakdown.belagavi?.total ?? 0}</div>
-                    </div>
-                    <div>
-                      <div className="text-[10px] font-bold text-emerald-600 uppercase">Positive</div>
-                      <div className="text-base font-black text-emerald-700 mt-0.5">{locationBreakdown.belagavi?.positive ?? 0}</div>
-                    </div>
-                    <div>
-                      <div className="text-[10px] font-bold text-rose-600 uppercase">Follow-up</div>
-                      <div className="text-base font-black text-rose-700 mt-0.5">{locationBreakdown.belagavi?.needsFollowUp ?? 0}</div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Davanagere */}
-                <div
-                  onClick={() => setCurrentLocation('2')}
-                  className={`card-glass p-3.5 rounded-2xl cursor-pointer transition-all hover:scale-[1.01] hover:shadow-md border-2 ${
-                    currentLocation === '2' || currentLocation === 'DAV'
-                      ? 'border-accent bg-accent/5 ring-2 ring-accent/30 shadow-sm'
-                      : 'border-black/10'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                      <span className="text-xs font-black uppercase tracking-wide text-primary">Davanagere (DAV)</span>
-                    </div>
-                    <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
-                      Store #2
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 mt-2.5 pt-2.5 border-t border-accent-soft/50 text-center">
-                    <div>
-                      <div className="text-[10px] font-bold text-gray-500 uppercase">Feedbacks</div>
-                      <div className="text-base font-black text-primary mt-0.5">{locationBreakdown.davanagere?.total ?? 0}</div>
-                    </div>
-                    <div>
-                      <div className="text-[10px] font-bold text-emerald-600 uppercase">Positive</div>
-                      <div className="text-base font-black text-emerald-700 mt-0.5">{locationBreakdown.davanagere?.positive ?? 0}</div>
-                    </div>
-                    <div>
-                      <div className="text-[10px] font-bold text-rose-600 uppercase">Follow-up</div>
-                      <div className="text-base font-black text-rose-700 mt-0.5">{locationBreakdown.davanagere?.needsFollowUp ?? 0}</div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Shivamogga */}
-                <div
-                  onClick={() => setCurrentLocation('3')}
-                  className={`card-glass p-3.5 rounded-2xl cursor-pointer transition-all hover:scale-[1.01] hover:shadow-md border-2 ${
-                    currentLocation === '3' || currentLocation === 'SHI'
-                      ? 'border-accent bg-accent/5 ring-2 ring-accent/30 shadow-sm'
-                      : 'border-black/10'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2.5 h-2.5 rounded-full bg-purple-500" />
-                      <span className="text-xs font-black uppercase tracking-wide text-primary">Shivamogga (SHI)</span>
-                    </div>
-                    <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-purple-50 text-purple-800 border border-purple-200">
-                      Store #3
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 mt-2.5 pt-2.5 border-t border-accent-soft/50 text-center">
-                    <div>
-                      <div className="text-[10px] font-bold text-gray-500 uppercase">Feedbacks</div>
-                      <div className="text-base font-black text-primary mt-0.5">{locationBreakdown.shivamogga?.total ?? 0}</div>
-                    </div>
-                    <div>
-                      <div className="text-[10px] font-bold text-emerald-600 uppercase">Positive</div>
-                      <div className="text-base font-black text-emerald-700 mt-0.5">{locationBreakdown.shivamogga?.positive ?? 0}</div>
-                    </div>
-                    <div>
-                      <div className="text-[10px] font-bold text-rose-600 uppercase">Follow-up</div>
-                      <div className="text-base font-black text-rose-700 mt-0.5">{locationBreakdown.shivamogga?.needsFollowUp ?? 0}</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Feedback Dashboard KPI Metrics */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Total Feedbacks */}
-            <div className="card-glass p-5 flex items-center justify-between">
-              <div>
-                <div className="text-[10.5px] font-black uppercase tracking-wider text-primary">Total Feedbacks</div>
-                <div className="text-2xl font-black text-primary mt-1">{stats.total ?? feedbacks.length}</div>
-                <div className="text-[11px] text-emerald-700 font-bold mt-0.5 flex items-center gap-1">
-                  <TrendingUp className="w-3 h-3" />
-                  <span>{currentLocation && currentLocation !== 'ALL' ? `${getActiveLocationName()} Visits` : 'All Submitted Visits'}</span>
-                </div>
-              </div>
-              <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center font-black">
-                <MessageSquare className="w-6 h-6 text-primary" />
+              <div className="mt-1 text-2xl font-black leading-none text-primary">{total}</div>
+              <div className="mt-1 truncate text-[10.5px] font-semibold text-[#8B6F76]">
+                {currentLocation && currentLocation !== 'ALL' ? getActiveLocationName() : 'All stores'}
+                {filtersActive ? ' · filters applied' : ' · all submissions'}
               </div>
             </div>
 
-            {/* Satisfaction Rate / NPS */}
-            <div className="card-glass p-5 flex items-center justify-between">
-              <div>
-                <div className="text-[10.5px] font-black uppercase tracking-wider text-primary">Satisfaction Rate</div>
-                <div className="text-2xl font-black text-emerald-600 mt-1">{stats.npsScore ?? 100}%</div>
-                <div className="text-[11px] text-gray-500 font-semibold mt-0.5">CSAT Index Score</div>
+            <div className="card-glass p-3.5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[10px] font-black uppercase tracking-wider text-[#6F5963]">Satisfied</span>
+                <ThumbsUp className="h-3.5 w-3.5 shrink-0 text-emerald-600" />
               </div>
-              <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center font-black">
-                <Star className="w-6 h-6 fill-emerald-500 text-emerald-600" />
-              </div>
+              <div className="mt-1 text-2xl font-black leading-none text-emerald-700">{positive}</div>
+              <div className="mt-1 truncate text-[10.5px] font-semibold text-[#8B6F76]">{rate(positive, total)} of this view</div>
             </div>
 
-            {/* Positive Feedbacks */}
-            <div className="card-glass p-5 flex items-center justify-between">
-              <div>
-                <div className="text-[10.5px] font-black uppercase tracking-wider text-primary">Positive Ratings</div>
-                <div className="text-2xl font-black text-emerald-700 mt-1">{stats.positive ?? 0}</div>
-                <div className="text-[11px] text-emerald-600 font-bold mt-0.5">Satisfied Shoppers</div>
+            <div className="card-glass p-3.5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[10px] font-black uppercase tracking-wider text-[#6F5963]">Needs Follow-up</span>
+                <ThumbsDown className="h-3.5 w-3.5 shrink-0 text-rose-600" />
               </div>
-              <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center">
-                <ThumbsUp className="w-6 h-6" />
-              </div>
+              <div className="mt-1 text-2xl font-black leading-none text-rose-700">{needsFollowUp}</div>
+              <div className="mt-1 truncate text-[10.5px] font-semibold text-[#8B6F76]">Negative responses in this view</div>
             </div>
 
-            {/* Negative Escalations */}
-            <div className="card-glass p-5 flex items-center justify-between border-l-4 border-l-rose-500">
-              <div>
-                <div className="text-[10.5px] font-black uppercase tracking-wider text-primary">Needs Follow-up</div>
-                <div className="text-2xl font-black text-rose-600 mt-1">{stats.needsFollowUp ?? stats.negative ?? 0}</div>
-                <div className="text-[11px] text-rose-600 font-bold mt-0.5 flex items-center gap-1">
-                  <CircleAlert className="w-3 h-3" /> Auto-Escalated to Queue
-                </div>
+            <div className="card-glass p-3.5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[10px] font-black uppercase tracking-wider text-[#6F5963]">Satisfaction Rate</span>
+                <Star className="h-3.5 w-3.5 shrink-0 text-accent" />
               </div>
-              <div className="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center">
-                <ThumbsDown className="w-6 h-6" />
-              </div>
+              <div className="mt-1 text-2xl font-black leading-none text-primary">{rate(positive, total)}</div>
+              <div className="mt-1 truncate text-[10.5px] font-semibold text-[#8B6F76]">Positive ÷ total responses</div>
             </div>
           </div>
 
-          {/* Search & Filter Toolbar */}
-          <div className="card-glass p-4 flex flex-col sm:flex-row items-center gap-3">
-            {/* Search */}
-            <div className="relative flex-1 w-full">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search by customer name, mobile, or feedback text..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="input-modern pl-9 py-2 text-xs font-semibold"
-              />
-            </div>
-
-            {/* Sentiment Filter */}
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <Filter className="w-3.5 h-3.5 text-accent hidden sm:block" />
-              <select
-                value={sentimentFilter}
-                onChange={(e) => setSentimentFilter(e.target.value)}
-                className="select-modern text-xs font-bold py-2"
-              >
-                <option value="all">All Sentiments</option>
-                <option value="positive">Positive / Satisfied</option>
-                <option value="negative">Negative / Needs Follow-up</option>
-              </select>
-
-              {/* Date Preset Filter */}
-              <Calendar className="w-3.5 h-3.5 text-accent hidden sm:block ml-2" />
-              <select
-                value={datePreset}
-                onChange={(e) => setDatePreset(e.target.value)}
-                className="select-modern text-xs font-bold py-2"
-              >
-                <option value="all">All Time</option>
-                <option value="today">Today</option>
-                <option value="yesterday">Yesterday</option>
-                <option value="week">This Week</option>
-                <option value="month">This Month</option>
-                <option value="last_month">Last Month</option>
-                <option value="custom">Custom date</option>
-              </select>
-
-              {datePreset === 'custom' && (
-                <div className="flex items-center gap-1.5 animate-fade-in">
-                  <input
-                    type="date"
-                    value={startDateInput}
-                    onChange={(e) => setStartDateInput(e.target.value)}
-                    className="input-modern text-xs font-semibold py-1.5"
-                    placeholder="Start"
-                  />
-                  <span className="text-xs font-bold text-gray-500">to</span>
-                  <input
-                    type="date"
-                    value={endDateInput}
-                    onChange={(e) => setEndDateInput(e.target.value)}
-                    className="input-modern text-xs font-semibold py-1.5"
-                    placeholder="End"
-                  />
-                </div>
+          {/* ── Store summary: one compact, clickable row (global viewers only) ── */}
+          {canSwitch && (
+          <div className="card-glass p-3.5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-primary">
+                <MapPin className="h-3.5 w-3.5 text-accent" />
+                <span>Store Performance</span>
+              </div>
+              {currentLocation !== 'ALL' && (
+                <button
+                  onClick={() => setCurrentLocation('ALL')}
+                  className="inline-flex items-center gap-1 whitespace-nowrap rounded-lg border border-accent-soft bg-white px-2 py-1 text-[10px] font-black uppercase text-primary transition-colors hover:bg-background"
+                >
+                  <RotateCcw className="h-3 w-3" />
+                  <span>All Stores</span>
+                </button>
               )}
             </div>
+
+            <div className="mt-2.5 grid grid-cols-1 gap-2.5 md:grid-cols-3">
+              {STORES.map(store => {
+                const entry = locationBreakdown[store.key];
+                const known = !!entry;
+                const isActive = String(currentLocation) === store.locId || String(currentLocation).toUpperCase() === store.code;
+                const storeTotal = toNumberOrNull(entry?.total);
+                const storePositive = toNumberOrNull(entry?.positive);
+                const storeFollowUp = toNumberOrNull(entry?.needsFollowUp);
+
+                return (
+                  <button
+                    key={store.key}
+                    onClick={() => setCurrentLocation(store.locId)}
+                    aria-pressed={isActive}
+                    className={`flex min-w-0 flex-col gap-2 rounded-xl border bg-white p-3 text-left transition-colors hover:bg-background ${
+                      isActive ? 'border-accent ring-1 ring-accent/30' : 'border-accent-soft'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="flex min-w-0 items-center gap-1.5">
+                        <span className={`h-2 w-2 shrink-0 rounded-full ${store.dot}`} />
+                        <span className="truncate text-[11px] font-black uppercase tracking-wide text-primary">
+                          {store.name} ({store.code})
+                        </span>
+                      </span>
+                      {isActive && (
+                        <span className="shrink-0 rounded-full bg-accent-soft px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide text-primary">Active</span>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-4 gap-1.5 border-t border-accent-soft pt-2">
+                      <div className="min-w-0">
+                        <div className="truncate text-[9px] font-bold uppercase text-[#8B6F76]">Total</div>
+                        <div className="text-sm font-black text-primary">{known ? (storeTotal ?? 0) : '—'}</div>
+                      </div>
+                      <div className="min-w-0">
+                        <div className="truncate text-[9px] font-bold uppercase text-[#8B6F76]">Positive</div>
+                        <div className="text-sm font-black text-emerald-700">{known ? (storePositive ?? 0) : '—'}</div>
+                      </div>
+                      <div className="min-w-0">
+                        <div className="truncate text-[9px] font-bold uppercase text-[#8B6F76]">Follow-up</div>
+                        <div className="text-sm font-black text-rose-700">{known ? (storeFollowUp ?? 0) : '—'}</div>
+                      </div>
+                      <div className="min-w-0">
+                        <div className="truncate text-[9px] font-bold uppercase text-[#8B6F76]">Satisfied</div>
+                        <div className="text-sm font-black text-primary">{known ? rate(storePositive, storeTotal) : '—'}</div>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {currentLocation !== 'ALL' && (
+              <p className="mt-2 text-[10.5px] font-medium text-[#8B6F76]">
+                Per-store figures are only published for the selected store — the others show “—” rather than a zero.
+              </p>
+            )}
+          </div>
+          )}
+
+          {/* ── Unified filter bar ───────────────────────────────────── */}
+          <div className="card-glass p-3.5">
+            <div className="flex flex-col gap-3 xl:flex-row xl:items-end">
+              <FilterField label="Search">
+                <div className="relative w-full xl:w-[280px]">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9A858D]" />
+                  <input
+                    type="text"
+                    placeholder="Name, mobile or feedback text"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="input-modern py-2 text-xs font-semibold"
+                    aria-label="Search customer feedback"
+                  />
+                </div>
+              </FilterField>
+
+              {canSwitch && (
+                <FilterField label="Store">
+                  <select
+                    value={currentLocation}
+                    onChange={(e) => setCurrentLocation(e.target.value)}
+                    className="select-modern py-2 text-xs font-bold xl:w-[170px]"
+                    aria-label="Filter by store"
+                  >
+                    <option value="ALL">All Stores</option>
+                    {STORES.map(s => (
+                      <option key={s.locId} value={s.locId}>{s.name} ({s.code})</option>
+                    ))}
+                  </select>
+                </FilterField>
+              )}
+
+              <FilterField label="Sentiment">
+                <select
+                  value={sentimentFilter}
+                  onChange={(e) => setSentimentFilter(e.target.value)}
+                  className="select-modern py-2 text-xs font-bold xl:w-[150px]"
+                  aria-label="Filter by sentiment"
+                >
+                  <option value="all">All Sentiments</option>
+                  <option value="positive">Positive</option>
+                  <option value="negative">Negative</option>
+                </select>
+              </FilterField>
+
+              <FilterField label="Follow-up">
+                <select
+                  value={followUpFilter}
+                  onChange={(e) => setFollowUpFilter(e.target.value)}
+                  className="select-modern py-2 text-xs font-bold xl:w-[175px]"
+                  aria-label="Filter by follow-up status"
+                >
+                  {FOLLOW_UP_FILTERS.map(o => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </FilterField>
+
+              <FilterField label="Date Range">
+                <div className="flex flex-wrap items-center gap-2">
+                  <select
+                    value={datePreset}
+                    onChange={(e) => setDatePreset(e.target.value)}
+                    className="select-modern py-2 text-xs font-bold w-[150px]"
+                    aria-label="Filter by date range"
+                  >
+                    {DATE_PRESETS.map(o => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                  {datePreset === 'custom' && (
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="date"
+                        value={startDateInput}
+                        max={endDateInput || undefined}
+                        onChange={(e) => setStartDateInput(e.target.value)}
+                        className="input-modern py-2 text-xs font-semibold w-[142px]"
+                        aria-label="Start date"
+                      />
+                      <span className="text-[11px] font-bold text-[#8B6F76]">to</span>
+                      <input
+                        type="date"
+                        value={endDateInput}
+                        min={startDateInput || undefined}
+                        onChange={(e) => setEndDateInput(e.target.value)}
+                        className="input-modern py-2 text-xs font-semibold w-[142px]"
+                        aria-label="End date"
+                      />
+                    </div>
+                  )}
+                </div>
+              </FilterField>
+
+              <div className="flex items-center gap-2 xl:ml-auto">
+                <span className="hidden items-center gap-1 text-[10px] font-black uppercase tracking-wider text-[#8B6F76] sm:inline-flex">
+                  <Filter className="h-3 w-3" />
+                  <span>{filtersActive ? 'Filters applied' : 'No filters'}</span>
+                </span>
+                <button
+                  onClick={handleResetFilters}
+                  disabled={!filtersActive}
+                  className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-xl border border-accent-soft bg-white px-3 py-2 text-xs font-extrabold text-primary transition-colors hover:bg-background disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                  <span>Reset Filters</span>
+                </button>
+              </div>
+            </div>
           </div>
 
-          {/* Feedback Data Table */}
-          <div className="card-glass p-5 space-y-4">
-            <div className="flex items-center justify-between border-b border-accent-soft pb-3">
-              <h3 className="font-extrabold text-primary text-sm uppercase tracking-wider flex items-center gap-2">
-                <MessageSquare className="w-4 h-4 text-accent" />
-                <span>Collected Survey Log ({feedbacks.length})</span>
+          {/* ── Feedback log ─────────────────────────────────────────── */}
+          <div className="card-glass p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-accent-soft pb-2.5">
+              <h3 className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-primary">
+                <MessageSquare className="h-3.5 w-3.5 text-accent" />
+                <span>Survey Log ({feedbacks.length})</span>
               </h3>
-              <span className="text-xs text-primary font-semibold">
-                Showing real-time records {currentLocation && currentLocation !== 'ALL' ? `• ${getActiveLocationName()}` : '• All Locations'}
+              <span className="text-[11px] font-semibold text-[#6F5963]">
+                {positive} positive · {negative} negative · refreshed automatically
               </span>
             </div>
 
             {loading ? (
-              <div className="py-12 text-center text-xs font-bold text-gray-500 flex flex-col items-center gap-2">
-                <RefreshCw className="w-6 h-6 animate-spin text-accent" />
-                <span>Loading feedback entries...</span>
+              <div className="flex flex-col items-center gap-2 px-4 py-12 text-center">
+                <RefreshCw className="h-6 w-6 animate-spin text-accent" />
+                <div className="text-sm font-extrabold text-primary">Loading feedback entries…</div>
+                <p className="text-xs font-medium text-[#8B6F76]">Fetching the latest kiosk responses.</p>
               </div>
             ) : feedbacks.length === 0 ? (
-              <div className="py-12 text-center text-xs font-bold text-gray-500 space-y-2">
-                <MessageSquare className="w-10 h-10 text-gray-300 mx-auto" />
-                <div className="text-sm text-primary font-extrabold">
-                  {currentLocation && currentLocation !== 'ALL'
-                    ? `No feedback submissions found for ${getActiveLocationName()}.`
-                    : 'No feedback submissions found across all locations.'}
-                </div>
-                <p className="text-gray-400 font-medium">Customer responses from the Customer Experience Survey will appear here in real-time.</p>
-              </div>
+              <EmptyHint
+                icon={MessageSquare}
+                title={filtersActive
+                  ? 'No feedback matches these filters'
+                  : (currentLocation && currentLocation !== 'ALL'
+                    ? `No feedback submitted at ${getActiveLocationName()} yet`
+                    : 'No feedback submitted yet')}
+              >
+                {filtersActive
+                  ? 'Try widening the date range or resetting the filters above.'
+                  : 'Responses from the Customer Experience Survey will appear here in real time.'}
+              </EmptyHint>
             ) : (
               <>
-                {/* Desktop Table View */}
-                <div className="hidden md:block overflow-x-auto">
-                  <table className="w-full text-left text-xs border-collapse">
+                {/* Desktop table */}
+                <div className="hidden overflow-x-auto md:block">
+                  <table className="w-full min-w-[1080px] border-collapse text-left text-xs">
                     <thead>
-                      <tr className="border-b border-accent-soft text-[10.5px] font-black uppercase text-primary bg-background/80">
-                        <th className="py-3 px-4">Date &amp; Time</th>
-                        <th className="py-3 px-4">Store Location</th>
-                        <th className="py-3 px-4">Customer Details</th>
-                        <th className="py-3 px-4">Overall Experience</th>
-                        <th className="py-3 px-4">Product Found</th>
-                        <th className="py-3 px-4">Sentiment</th>
-                        <th className="py-3 px-4">Voice of Customer</th>
-                        <th className="py-3 px-4 text-right">Actions</th>
+                      <tr className="border-b border-accent-soft bg-background text-[10px] font-black uppercase tracking-wider text-[#6F5963]">
+                        <th className="whitespace-nowrap px-3 py-2.5">Date &amp; Time</th>
+                        <th className="whitespace-nowrap px-3 py-2.5">Store</th>
+                        <th className="whitespace-nowrap px-3 py-2.5">Customer</th>
+                        <th className="whitespace-nowrap px-3 py-2.5">Experience</th>
+                        <th className="whitespace-nowrap px-3 py-2.5">Product Found</th>
+                        <th className="whitespace-nowrap px-3 py-2.5">Sentiment</th>
+                        <th className="whitespace-nowrap px-3 py-2.5">Follow-up</th>
+                        <th className="whitespace-nowrap px-3 py-2.5">Voice of Customer</th>
+                        <th className="w-[190px] whitespace-nowrap border-l border-accent-soft px-3 py-2.5 text-right">Actions</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-accent-soft/60">
+                    <tbody className="divide-y divide-accent-soft">
                       {feedbacks.map((f: any) => {
-                        const ans = f.answers || {};
-                        const overallExp = ans['q1'] || 'Satisfied';
-                        const productFound = ans['q2'] || 'Yes';
-                        const locId = Number(f.location_id);
-                        const locCode = f.locationCode || (locId === 1 ? 'BEL' : locId === 3 ? 'SHI' : 'DAV');
-                        const locName = f.locationName || (locId === 1 ? 'Belagavi' : locId === 3 ? 'Shivamogga' : 'Davanagere');
+                        const answers = parseAnswers(f.answers);
+                        const store = storeOf(f);
+                        const overall = answerOf(answers, f, 'q1');
+                        const found = answerOf(answers, f, 'q2');
 
                         return (
-                          <tr key={f.id} className="hover:bg-black/5 font-medium transition-colors">
-                            <td className="py-3.5 px-4 text-[#5D4E42]">
-                              <div className="font-bold text-primary font-mono text-[11px]">
-                                {f.entryDate || 'Today'}
-                              </div>
+                          <tr
+                            key={f.id}
+                            onClick={(e) => {
+                              // Nested controls keep their own behaviour; a bare row click opens the ticket.
+                              if ((e.target as HTMLElement).closest('a,button,input,select,textarea')) return;
+                              openTicket(f);
+                            }}
+                            className="cursor-pointer align-top transition-colors hover:bg-accent-soft/60"
+                          >
+                            <td className="px-3 py-3">
+                              <div className="whitespace-nowrap font-mono text-[11px] font-bold text-primary">{shortDate(f.entryDate)}</div>
                               {f.entryTime && (
-                                <div className="text-[10.5px] text-gray-500 font-semibold flex items-center gap-1 mt-0.5">
-                                  <Clock className="w-3 h-3 text-accent" />
-                                  <span>{f.entryTime}</span>
+                                <div className="mt-0.5 flex items-center gap-1 whitespace-nowrap text-[10.5px] font-semibold text-[#8B6F76]">
+                                  <Clock className="h-3 w-3 shrink-0 text-accent" />
+                                  <span>{String(f.entryTime)}</span>
                                 </div>
                               )}
                             </td>
-                            <td className="py-3.5 px-4">
-                              <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-black uppercase tracking-wide border shadow-2xs ${
-                                locCode === 'BEL' || locId === 1
-                                  ? 'bg-blue-50 text-blue-800 border-blue-200'
-                                  : locCode === 'DAV' || locId === 2
-                                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                                  : 'bg-purple-50 text-purple-800 border-purple-200'
-                              }`}>
-                                <MapPin className="w-3 h-3 flex-shrink-0" />
-                                <span>{locName} ({locCode})</span>
+                            <td className="px-3 py-3">
+                              <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-[10.5px] font-black uppercase tracking-wide ${store.chip}`}>
+                                <MapPin className="h-3 w-3 shrink-0" />
+                                <span>{store.name} ({store.code})</span>
                               </span>
                             </td>
-                            <td className="py-3.5 px-4">
-                              <div className="font-extrabold text-primary flex items-center gap-1.5">
-                                <User className="w-3.5 h-3.5 text-accent" />
-                                <span>{f.customerName || 'Anonymous'}</span>
+                            <td className="px-3 py-3">
+                              <div className="flex items-center gap-1.5 font-extrabold text-primary">
+                                <User className="h-3.5 w-3.5 shrink-0 text-accent" />
+                                <span className="truncate">{f.customerName || 'Anonymous'}</span>
                               </div>
-                              {f.mobile && (
-                                <div className="text-[11px] text-gray-500 font-mono flex items-center gap-1 mt-0.5">
-                                  <Phone className="w-3 h-3 text-gray-400" />
+                              {f.mobile ? (
+                                <div className="mt-0.5 flex items-center gap-1 whitespace-nowrap font-mono text-[10.5px] font-semibold text-[#8B6F76]">
+                                  <Phone className="h-3 w-3 shrink-0" />
                                   <span>{f.mobile}</span>
                                 </div>
+                              ) : (
+                                <div className="mt-0.5 text-[10.5px] font-semibold text-[#9A858D]">Mobile not provided</div>
                               )}
                             </td>
-                            <td className="py-3.5 px-4">
-                              <span className="px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-primary/10 text-primary">
-                                {overallExp}
-                              </span>
-                            </td>
-                            <td className="py-3.5 px-4">
-                              <span className="text-xs font-bold text-gray-700">{productFound}</span>
-                            </td>
-                            <td className="py-3.5 px-4">
-                              {f.status === 'resolved' || f.status === 'closed' ? (
-                                <span className="px-2.5 py-1 rounded-full text-xs font-extrabold bg-emerald-100 text-emerald-800 flex items-center gap-1 w-max shadow-xs">
-                                  <CircleCheck className="w-3.5 h-3.5" /> Resolved &amp; Closed
-                                </span>
-                              ) : f.status === 'escalated_manager' ? (
-                                <span className="px-2.5 py-1 rounded-full text-xs font-extrabold bg-purple-100 text-purple-900 border border-purple-300 flex items-center gap-1 w-max shadow-xs">
-                                  <ShieldAlert className="w-3.5 h-3.5 text-purple-700" /> Escalated to Manager
-                                </span>
-                              ) : f.status === 'called' || f.status === 'in_progress' ? (
-                                <span className="px-2.5 py-1 rounded-full text-xs font-extrabold bg-blue-100 text-blue-800 flex items-center gap-1 w-max shadow-xs">
-                                  <Clock className="w-3.5 h-3.5" /> In Progress
-                                </span>
-                              ) : f.isNegative ? (
-                                <span className="px-2.5 py-1 rounded-full text-xs font-extrabold bg-rose-100 text-rose-800 flex items-center gap-1 w-max shadow-xs">
-                                  <ThumbsDown className="w-3.5 h-3.5" /> Auto-Escalated (New)
+                            <td className="px-3 py-3">
+                              {overall ? (
+                                <span className={`inline-block max-w-[150px] truncate rounded-full px-2 py-0.5 text-[11px] font-extrabold ${
+                                  isNegativeAnswer('q1', overall) ? 'bg-rose-50 text-rose-800' : 'bg-accent-soft text-primary'
+                                }`} title={overall}>
+                                  {overall}
                                 </span>
                               ) : (
-                                <span className="px-2.5 py-1 rounded-full text-xs font-extrabold bg-emerald-50 text-emerald-700 flex items-center gap-1 w-max border border-emerald-200">
-                                  <ThumbsUp className="w-3.5 h-3.5 text-emerald-600" /> Satisfied
-                                </span>
+                                <span className="text-[11px] font-semibold text-[#9A858D]">Not answered</span>
                               )}
                             </td>
-                            <td className="py-3.5 px-4 max-w-xs truncate text-[#5D4E42] font-medium text-[11px]">
-                              {f.voice || 'No extra comments'}
+                            <td className="px-3 py-3">
+                              {found ? (
+                                <span className="text-[11px] font-bold text-[#2B1722]" title={found}>{found}</span>
+                              ) : (
+                                <span className="text-[11px] font-semibold text-[#9A858D]">Not answered</span>
+                              )}
                             </td>
-                            <td className="py-3.5 px-4 text-right">
-                              <div className="flex items-center justify-end gap-1.5">
+                            <td className="px-3 py-3">
+                              <SentimentBadge isNegative={f.isNegative} />
+                            </td>
+                            <td className="px-3 py-3">
+                              <StatusBadge status={f.status} />
+                            </td>
+                            <td className="max-w-[240px] px-3 py-3">
+                              <p className="truncate text-[11px] font-medium leading-relaxed text-[#5D4E42]" title={f.voice || ''}>
+                                {f.voice ? f.voice : <span className="text-[#9A858D]">No written comments</span>}
+                              </p>
+                            </td>
+                            <td className="w-[190px] border-l border-accent-soft px-3 py-3 text-right align-middle">
+                              <div className="inline-flex flex-nowrap items-center justify-end gap-1.5">
                                 <button
-                                  onClick={() => handleOpenModal(f)}
-                                  className="px-3 py-1.5 rounded-xl border border-primary text-primary font-extrabold text-[11px] hover:bg-primary hover:text-white transition-all flex items-center gap-1 shadow-xs cursor-pointer"
+                                  onClick={() => openTicket(f)}
+                                  className="shrink-0 whitespace-nowrap rounded-xl border border-primary px-2.5 py-1.5 text-[11px] font-extrabold text-primary transition-colors hover:bg-primary hover:text-white"
                                 >
-                                  <Eye className="w-3.5 h-3.5" /> View Ticket
+                                  <span className="inline-flex items-center gap-1">
+                                    <Eye className="h-3.5 w-3.5" /> View Ticket
+                                  </span>
                                 </button>
                                 <button
                                   onClick={() => handleDeleteFeedback(f.id)}
-                                  className="p-1.5 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-600 hover:text-white transition-all shadow-xs cursor-pointer"
                                   title="Delete this feedback record"
+                                  className="shrink-0 whitespace-nowrap rounded-xl border border-rose-200 p-1.5 text-rose-600 transition-colors hover:bg-rose-600 hover:text-white"
                                 >
-                                  <Trash2 className="w-3.5 h-3.5" />
+                                  <Trash2 className="h-3.5 w-3.5" />
                                 </button>
                               </div>
                             </td>
@@ -693,104 +977,81 @@ export default function FeedbackCollection() {
                   </table>
                 </div>
 
-                {/* Mobile Responsive Cards View */}
-                <div className="md:hidden space-y-3">
+                {/* Mobile cards */}
+                <div className="space-y-2.5 md:hidden">
                   {feedbacks.map((f: any) => {
-                    const ans = f.answers || {};
-                    const overallExp = ans['q1'] || 'Satisfied';
-                    const productFound = ans['q2'] || 'Yes';
-                    const locId = Number(f.location_id);
-                    const locCode = f.locationCode || (locId === 1 ? 'BEL' : locId === 3 ? 'SHI' : 'DAV');
-                    const locName = f.locationName || (locId === 1 ? 'Belagavi' : locId === 3 ? 'Shivamogga' : 'Davanagere');
+                    const answers = parseAnswers(f.answers);
+                    const store = storeOf(f);
+                    const overall = answerOf(answers, f, 'q1');
+                    const found = answerOf(answers, f, 'q2');
 
                     return (
-                      <div key={f.id} className="bg-white rounded-xl border border-gray-200 p-4 shadow-xs space-y-3">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wide border ${
-                            locCode === 'BEL' || locId === 1
-                              ? 'bg-blue-50 text-blue-800 border-blue-200'
-                              : locCode === 'DAV' || locId === 2
-                              ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                              : 'bg-purple-50 text-purple-800 border-purple-200'
-                          }`}>
-                            <MapPin className="w-3 h-3 flex-shrink-0" />
-                            <span>{locName} ({locCode})</span>
+                      <div
+                        key={f.id}
+                        onClick={(e) => {
+                          if ((e.target as HTMLElement).closest('a,button,input,select,textarea')) return;
+                          openTicket(f);
+                        }}
+                        className="cursor-pointer space-y-2.5 rounded-xl border border-accent-soft bg-white p-3.5 active:bg-accent-soft/50"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-[10px] font-black uppercase ${store.chip}`}>
+                            <MapPin className="h-3 w-3 shrink-0" />
+                            <span>{store.name} ({store.code})</span>
                           </span>
-                          <span className="text-[10px] text-gray-500 font-mono font-medium flex items-center gap-1">
-                            <Clock className="w-3 h-3 text-accent" />
-                            {f.entryDate || 'Today'} {f.entryTime && `• ${f.entryTime}`}
+                          <span className="whitespace-nowrap text-[10px] font-semibold text-[#8B6F76]">
+                            {shortDate(f.entryDate)}{f.entryTime ? ` · ${String(f.entryTime)}` : ''}
                           </span>
                         </div>
 
                         <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <div className="font-extrabold text-primary flex items-center gap-1.5 text-sm">
-                              <User className="w-3.5 h-3.5 text-accent" />
-                              <span>{f.customerName || 'Anonymous'}</span>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5 truncate text-sm font-extrabold text-primary">
+                              <User className="h-3.5 w-3.5 shrink-0 text-accent" />
+                              <span className="truncate">{f.customerName || 'Anonymous'}</span>
                             </div>
                             {f.mobile && (
                               <a
                                 href={`tel:${f.mobile}`}
-                                className="text-xs text-primary font-mono font-bold flex items-center gap-1 mt-0.5 hover:underline"
+                                className="mt-0.5 inline-flex items-center gap-1 font-mono text-[11px] font-bold text-primary hover:underline"
                               >
-                                <Phone className="w-3 h-3 text-accent" />
+                                <Phone className="h-3 w-3 shrink-0" />
                                 <span>{f.mobile}</span>
                               </a>
                             )}
                           </div>
-                          <div>
-                            {f.status === 'resolved' || f.status === 'closed' ? (
-                              <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 flex items-center gap-1">
-                                <CircleCheck className="w-3 h-3" /> Resolved
-                              </span>
-                            ) : f.status === 'escalated_manager' ? (
-                              <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-purple-100 text-purple-900 border border-purple-300 flex items-center gap-1">
-                                <ShieldAlert className="w-3 h-3 text-purple-700" /> Escalated
-                              </span>
-                            ) : f.status === 'called' || f.status === 'in_progress' ? (
-                              <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-100 text-blue-800 flex items-center gap-1">
-                                <Clock className="w-3 h-3" /> In Progress
-                              </span>
-                            ) : f.isNegative ? (
-                              <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-100 text-rose-800 flex items-center gap-1">
-                                <ThumbsDown className="w-3 h-3" /> Escalated
-                              </span>
-                            ) : (
-                              <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-50 text-emerald-700 flex items-center gap-1 border border-emerald-200">
-                                <ThumbsUp className="w-3 h-3 text-emerald-600" /> Satisfied
-                              </span>
-                            )}
+                          <div className="flex shrink-0 flex-col items-end gap-1">
+                            <SentimentBadge isNegative={f.isNegative} />
+                            <StatusBadge status={f.status} />
                           </div>
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-primary/10 text-primary">
-                            Exp: {overallExp}
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="max-w-full truncate rounded-md bg-primary/5 px-2 py-0.5 text-[10px] font-bold text-primary">
+                            Experience: {overall || 'Not answered'}
                           </span>
-                          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-gray-100 text-gray-700">
-                            Found: {productFound}
+                          <span className="max-w-full truncate rounded-md bg-primary/5 px-2 py-0.5 text-[10px] font-bold text-primary">
+                            Found: {found || 'Not answered'}
                           </span>
                         </div>
 
-                        {f.voice && (
-                          <p className="text-[11px] text-gray-600 italic bg-gray-50 p-2.5 rounded-lg border border-gray-100">
-                            "{f.voice}"
-                          </p>
-                        )}
+                        <p className="truncate text-[11px] font-medium text-[#5D4E42]">
+                          {f.voice ? `“${f.voice}”` : <span className="text-[#9A858D]">No written comments</span>}
+                        </p>
 
-                        <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+                        <div className="flex items-center justify-end gap-2 border-t border-accent-soft pt-2">
                           <button
-                            onClick={() => handleOpenModal(f)}
-                            className="px-3 py-1.5 rounded-xl border border-primary text-primary font-bold text-xs hover:bg-primary hover:text-white transition-all flex items-center gap-1 shadow-xs"
+                            onClick={() => openTicket(f)}
+                            className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-xl border border-primary px-3 py-1.5 text-xs font-extrabold text-primary transition-colors hover:bg-primary hover:text-white"
                           >
-                            <Eye className="w-3.5 h-3.5" /> View Ticket
+                            <Eye className="h-3.5 w-3.5" /> View Ticket
                           </button>
                           <button
                             onClick={() => handleDeleteFeedback(f.id)}
-                            className="p-1.5 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-600 hover:text-white transition-all shadow-xs"
                             title="Delete this feedback record"
+                            className="shrink-0 rounded-xl border border-rose-200 p-1.5 text-rose-600"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <Trash2 className="h-3.5 w-3.5" />
                           </button>
                         </div>
                       </div>
@@ -801,377 +1062,310 @@ export default function FeedbackCollection() {
             )}
           </div>
 
-          {/* Executive Customer Resolution Dashboard Modal */}
+          {/* ── Ticket / resolution desk ─────────────────────────────── */}
           <ModalPortal
             isOpen={!!selectedFeedback}
-            onClose={() => setSelectedFeedback(null)}
-            ariaLabel="Customer Resolution Dashboard"
+            onClose={closeTicket}
+            ariaLabel="Customer Feedback Ticket"
           >
             {selectedFeedback && (
-              <div className="card-glass max-w-5xl w-full p-6 sm:p-8 space-y-6 max-h-[92vh] overflow-y-auto shadow-2xl rounded-3xl border border-black/40 bg-white/95 text-primary">
+              <div className="card-glass max-h-[92vh] w-full max-w-4xl space-y-5 overflow-y-auto rounded-2xl border border-black/40 bg-white p-5 text-primary sm:p-6">
 
-                {/* 1. Header Redesign */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-accent-soft pb-5">
-                  <div className="space-y-1">
-                    <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                      {selectedFeedback.isNegative ? (
-                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-rose-500/10 text-rose-700 border border-rose-300/50 text-[10px] font-black uppercase tracking-widest">
-                          <TriangleAlert className="w-3 h-3 text-rose-600" /> Escalated Feedback
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-700 border border-emerald-300/50 text-[10px] font-black uppercase tracking-widest">
-                          <CircleCheck className="w-3 h-3 text-emerald-600" /> Satisfied Customer Survey
-                        </span>
-                      )}
-                      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-primary text-accent text-[10px] font-black uppercase tracking-widest">
-                        BSC Textiles RETAIL
-                      </span>
-                      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-accent-soft text-primary font-black uppercase text-[10px] border border-accent/40">
-                        <MapPin className="w-3 h-3 text-accent" />
-                        <span>
-                          {selectedFeedback.locationName || (selectedFeedback.location_id === 1 ? 'Belagavi' : selectedFeedback.location_id === 3 ? 'Shivamogga' : 'Davanagere')} ({selectedFeedback.locationCode || (selectedFeedback.location_id === 1 ? 'BEL' : selectedFeedback.location_id === 3 ? 'SHI' : 'DAV')})
-                        </span>
+                {/* Header */}
+                <div className="flex items-start justify-between gap-4 border-b border-accent-soft pb-4">
+                  <div className="min-w-0 space-y-1.5">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <SentimentBadge isNegative={selectedFeedback.isNegative} />
+                      <StatusBadge status={selectedFeedback.status} />
+                      <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-[10.5px] font-black uppercase tracking-wide ${storeOf(selectedFeedback).chip}`}>
+                        <MapPin className="h-3 w-3 shrink-0" />
+                        <span>{storeOf(selectedFeedback).name} ({storeOf(selectedFeedback).code})</span>
                       </span>
                     </div>
 
-                    <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-primary">
-                      {selectedFeedback.customerName || 'Valued Customer'}
+                    <h2 className="truncate text-xl font-black tracking-tight text-primary">
+                      {selectedFeedback.customerName || 'Anonymous Customer'}
                     </h2>
 
-                    <div className="flex flex-wrap items-center gap-4 text-xs font-semibold text-primary pt-1">
-                      <span className="flex items-center gap-1.5 font-bold">
-                        <MapPin className="w-3.5 h-3.5 text-accent" />
-                        Store: <strong>{selectedFeedback.locationName || (selectedFeedback.location_id === 1 ? 'Belagavi' : selectedFeedback.location_id === 3 ? 'Shivamogga' : 'Davanagere')} ({selectedFeedback.locationCode || (selectedFeedback.location_id === 1 ? 'BEL' : selectedFeedback.location_id === 3 ? 'SHI' : 'DAV')})</strong>
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-0.5 text-[11px] font-semibold text-[#6F5963]">
+                      <span className="inline-flex items-center gap-1 font-mono">
+                        <Hash className="h-3 w-3 shrink-0 text-accent" />
+                        <span>{ticketRef(selectedFeedback.id)}</span>
                       </span>
-                      <span className="flex items-center gap-1.5 font-mono">
-                        <Phone className="w-3.5 h-3.5 text-accent" />
-                        {selectedFeedback.mobile || 'No Mobile Provided'}
+                      <span className="inline-flex items-center gap-1">
+                        <Calendar className="h-3 w-3 shrink-0 text-accent" />
+                        <span>{shortDate(selectedFeedback.entryDate)}{selectedFeedback.entryTime ? ` · ${String(selectedFeedback.entryTime)}` : ''}</span>
                       </span>
-                      <span className="flex items-center gap-1.5">
-                        <Clock className="w-3.5 h-3.5 text-accent" />
-                        Collection Time: <strong>{selectedFeedback.entryDate || 'Today'} {selectedFeedback.entryTime ? `at ${selectedFeedback.entryTime}` : ''}</strong>
-                      </span>
-                      <span className="flex items-center gap-1.5 font-mono text-[11px]">
-                        <Hash className="w-3.5 h-3.5 text-accent" />
-                        ID: #{String(selectedFeedback.id).startsWith('FB-') ? selectedFeedback.id : `FB-${selectedFeedback.id}`}
-                      </span>
+                      {selectedFeedback.mobile ? (
+                        <a href={`tel:${selectedFeedback.mobile}`} className="inline-flex items-center gap-1 font-mono font-bold text-primary hover:underline">
+                          <Phone className="h-3 w-3 shrink-0 text-accent" />
+                          <span>{selectedFeedback.mobile}</span>
+                        </a>
+                      ) : (
+                        <span className="inline-flex items-center gap-1">
+                          <Phone className="h-3 w-3 shrink-0 text-[#9A858D]" />
+                          <span className="text-[#9A858D]">Mobile not provided</span>
+                        </span>
+                      )}
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 self-start md:self-auto">
-                    {selectedFeedback.isNegative ? (
-                      <span className="px-3.5 py-1.5 rounded-xl bg-rose-600 text-white font-extrabold text-xs shadow-sm flex items-center gap-1.5">
-                        <ShieldAlert className="w-4 h-4" /> High Priority Escalation
-                      </span>
-                    ) : (
-                      <span className="px-3.5 py-1.5 rounded-xl bg-emerald-600 text-white font-extrabold text-xs shadow-sm flex items-center gap-1.5">
-                        <CircleCheck className="w-4 h-4" /> Normal Priority
-                      </span>
-                    )}
-
-                    <button
-                      onClick={() => setSelectedFeedback(null)}
-                      className="p-2 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-900 transition-all shadow-xs"
-                      title="Close Modal"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
+                  <button
+                    onClick={closeTicket}
+                    title="Close"
+                    className="shrink-0 rounded-xl bg-gray-100 p-2 text-gray-500 transition-colors hover:bg-gray-200 hover:text-gray-900"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
                 </div>
 
-                {/* 2. Escalation Alert Card (ONLY shown for actual negative feedback) */}
+                {/* Escalation notice — reflects the real status, never an assumed one */}
                 {selectedFeedback.isNegative && (
-                  <div className="card-glass p-4 rounded-2xl border-l-4 border-l-rose-500 bg-rose-500/10 border border-rose-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2.5 rounded-xl bg-rose-600 text-white shadow-sm shrink-0">
-                        <TriangleAlert className="w-5 h-5" />
+                  <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-3.5">
+                    <div className="flex min-w-0 items-start gap-2.5">
+                      <div className="shrink-0 rounded-xl bg-rose-600 p-2 text-white">
+                        <TriangleAlert className="h-4 w-4" />
                       </div>
-                      <div>
-                        <div className="text-xs font-black uppercase text-rose-900 tracking-wider">Escalated to Telecaller Call Queue</div>
-                        <p className="text-xs font-semibold text-rose-800 mt-0.5">
-                          Automatic escalation triggered due to negative ratings or dissatisfaction keywords. Follow-up action required by store executive.
+                      <div className="min-w-0">
+                        <div className="text-[10.5px] font-black uppercase tracking-wider text-rose-900">Negative Feedback</div>
+                        <p className="mt-0.5 text-[11px] font-semibold leading-relaxed text-rose-800">
+                          This response was flagged for follow-up. Record the outcome below so the store team can track it.
                         </p>
                       </div>
                     </div>
-
-                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
-                      <span className="px-3 py-1 rounded-full bg-rose-200 text-rose-900 font-extrabold text-xs">
-                        Status: Pending Follow-up
-                      </span>
-                    </div>
+                    <StatusBadge status={selectedFeedback.status} className="shrink-0" />
                   </div>
                 )}
 
-                {/* 3. Customer Satisfaction Summary (Correct Question Mapping Grid) */}
+                {/* Survey responses */}
                 <div className="space-y-2">
-                  <h4 className="text-xs font-black uppercase tracking-wider text-primary flex items-center gap-1.5">
-                    <Star className="w-3.5 h-3.5 text-accent" />
-                    <span>Customer Satisfaction Summary</span>
+                  <h4 className="flex items-center gap-1.5 text-[10.5px] font-black uppercase tracking-wider text-primary">
+                    <FileText className="h-3.5 w-3.5 text-accent" />
+                    <span>Survey Responses</span>
                   </h4>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                    <div className="p-3.5 rounded-2xl bg-white border border-accent-soft shadow-xs text-center">
-                      <div className="text-[10px] font-extrabold uppercase text-primary tracking-wider">Overall CSAT</div>
-                      <div className={`text-sm font-black mt-1.5 ${selectedFeedback.isNegative ? 'text-rose-600' : 'text-emerald-600'}`}>
-                        {selectedFeedback.answers?.q1 || selectedFeedback.q1 || (selectedFeedback.isNegative ? 'Dissatisfied' : 'Very satisfied')}
-                      </div>
-                    </div>
-
-                    <div className="p-3.5 rounded-2xl bg-white border border-accent-soft shadow-xs text-center">
-                      <div className="text-[10px] font-extrabold uppercase text-primary tracking-wider">Product Found</div>
-                      <div className="text-sm font-black text-primary mt-1.5">
-                        {selectedFeedback.answers?.q2 || selectedFeedback.q2 || 'Yes, exactly'}
-                      </div>
-                    </div>
-
-                    <div className="p-3.5 rounded-2xl bg-white border border-accent-soft shadow-xs text-center">
-                      <div className="text-[10px] font-extrabold uppercase text-primary tracking-wider">Collection Quality</div>
-                      <div className="text-sm font-black text-primary mt-1.5">
-                        {selectedFeedback.answers?.q3 || selectedFeedback.q3 || 'Excellent'}
-                      </div>
-                    </div>
-
-                    <div className="p-3.5 rounded-2xl bg-white border border-accent-soft shadow-xs text-center">
-                      <div className="text-[10px] font-extrabold uppercase text-primary tracking-wider">Staff Courtesy</div>
-                      <div className="text-sm font-black text-primary mt-1.5">
-                        {selectedFeedback.answers?.q4 || selectedFeedback.q4 || 'Extremely helpful'}
-                      </div>
-                    </div>
-
-                    <div className="p-3.5 rounded-2xl bg-white border border-accent-soft shadow-xs text-center col-span-2 sm:col-span-1">
-                      <div className="text-[10px] font-extrabold uppercase text-primary tracking-wider">Recommendation</div>
-                      <div className={`text-sm font-black mt-1.5 ${selectedFeedback.isNegative ? 'text-rose-600' : 'text-emerald-600'}`}>
-                        {selectedFeedback.answers?.q5 || selectedFeedback.q5 || 'Definitely recommend'}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 4. Mapped Questionnaire Responses Grid */}
-                <div className="space-y-3">
-                  <h4 className="text-xs font-black uppercase tracking-wider text-primary flex items-center gap-1.5">
-                    <FileText className="w-3.5 h-3.5 text-accent" />
-                    <span>Survey Questionnaire Responses</span>
-                  </h4>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {[
-                      { key: 'q1', label: '1. Overall Shopping Experience (Q1)', val: selectedFeedback.answers?.q1 || selectedFeedback.q1 || 'Very satisfied' },
-                      { key: 'q2', label: '2. Product Availability (Q2)', val: selectedFeedback.answers?.q2 || selectedFeedback.q2 || 'Yes, exactly' },
-                      { key: 'q3', label: '3. Collection Quality & Variety (Q3)', val: selectedFeedback.answers?.q3 || selectedFeedback.q3 || 'Excellent' },
-                      { key: 'q4', label: '4. Staff Courtesy & Helpfulness (Q4)', val: selectedFeedback.answers?.q4 || selectedFeedback.q4 || 'Extremely helpful' },
-                      { key: 'q5', label: '5. Recommendation & NPS (Q5)', val: selectedFeedback.answers?.q5 || selectedFeedback.q5 || 'Definitely recommend' }
-                    ].map((qItem, idx) => {
-                      const valStr = String(qItem.val);
-                      const isNegVal = ['dissatisfied', 'very dissatisfied', 'poor', 'very poor', 'no', 'partially', 'not recommend'].some(k => valStr.toLowerCase().includes(k));
-
+                  <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                    {SURVEY_QUESTIONS.map(q => {
+                      const value = answerOf(selectedAnswers, selectedFeedback, q.key);
                       return (
-                        <div key={idx} className="p-3.5 rounded-2xl bg-white border border-accent-soft flex items-center justify-between gap-3 shadow-xs">
-                          <span className="text-xs font-bold text-primary uppercase tracking-wider">
-                            {qItem.label}
+                        <div key={q.key} className="flex items-center justify-between gap-3 rounded-xl border border-accent-soft bg-white px-3 py-2.5">
+                          <span className="min-w-0 truncate text-[11px] font-bold uppercase tracking-wide text-[#6F5963]" title={q.full}>
+                            {q.full}
                           </span>
-                          <span className={`px-3 py-1 rounded-xl text-xs font-extrabold shadow-2xs ${isNegVal
-                              ? 'bg-rose-100 text-rose-800 border border-rose-300/40'
-                              : 'bg-emerald-100 text-emerald-800 border border-emerald-300/40'
+                          {value ? (
+                            <span className={`shrink-0 whitespace-nowrap rounded-lg border px-2.5 py-1 text-[11px] font-extrabold ${
+                              isNegativeAnswer(q.key, value) ? 'border-rose-200 bg-rose-50 text-rose-800' : 'border-accent-soft bg-accent-soft text-primary'
                             }`}>
-                            {valStr}
-                          </span>
+                              {value}
+                            </span>
+                          ) : (
+                            <span className="shrink-0 whitespace-nowrap text-[11px] font-semibold text-[#9A858D]">Not answered</span>
+                          )}
                         </div>
                       );
                     })}
                   </div>
                 </div>
 
-                {/* 5. Voice of Customer Section (3 Accent Cards) */}
-                <div className="space-y-3">
-                  <h4 className="text-xs font-black uppercase tracking-wider text-primary flex items-center gap-1.5">
-                    <MessageSquare className="w-3.5 h-3.5 text-accent" />
-                    <span>Voice of Customer Detailed Notes</span>
+                {/* Voice of customer */}
+                <div className="space-y-2">
+                  <h4 className="flex items-center gap-1.5 text-[10.5px] font-black uppercase tracking-wider text-primary">
+                    <MessageSquare className="h-3.5 w-3.5 text-accent" />
+                    <span>Voice of Customer</span>
                   </h4>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="p-4 rounded-2xl bg-emerald-500/5 border border-emerald-300/60 space-y-1.5">
-                      <div className="text-[11px] font-black text-emerald-800 uppercase tracking-wider flex items-center gap-1.5">
-                        <ThumbsUp className="w-3.5 h-3.5 text-emerald-600" />
-                        <span>Liked Most</span>
-                      </div>
-                      <p className="text-xs font-semibold text-emerald-950 whitespace-pre-line">
-                        {selectedFeedback.voice?.includes('Liked Most:')
-                          ? selectedFeedback.voice.split('Liked Most:')[1]?.split('\n')[0]
-                          : 'Satisfied with overall experience.'}
-                      </p>
+                  {!selectedFeedback.voice ? (
+                    <div className="rounded-xl border border-accent-soft bg-background px-3 py-4 text-center text-[11px] font-semibold text-[#9A858D]">
+                      The customer did not leave any written comments.
                     </div>
-
-                    <div className="p-4 rounded-2xl bg-black/5 border border-black/20 space-y-1.5">
-                      <div className="text-[11px] font-black text-black uppercase tracking-wider flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5 text-black" />
-                        <span>Can Improve</span>
-                      </div>
-                      <p className="text-xs font-semibold text-black whitespace-pre-line">
-                        {selectedFeedback.voice?.includes('Can Improve:')
-                          ? selectedFeedback.voice.split('Can Improve:')[1]?.split('\n')[0]
-                          : 'No specific improvements noted.'}
-                      </p>
+                  ) : !selectedVoice.hasMarkers ? (
+                    <div className="rounded-xl border border-accent-soft bg-white px-3.5 py-3">
+                      <div className="text-[9.5px] font-black uppercase tracking-wider text-[#8B6F76]">Customer’s Words</div>
+                      <p className="mt-1 whitespace-pre-line text-xs font-semibold leading-relaxed text-[#2B1722]">{selectedFeedback.voice}</p>
                     </div>
-
-                    <div className="p-4 rounded-2xl bg-blue-500/5 border border-blue-300/60 space-y-1.5">
-                      <div className="text-[11px] font-black text-blue-800 uppercase tracking-wider flex items-center gap-1.5">
-                        <FileText className="w-3.5 h-3.5 text-blue-600" />
-                        <span>Additional Comments</span>
-                      </div>
-                      <p className="text-xs font-semibold text-blue-950 whitespace-pre-line">
-                        {selectedFeedback.voice || 'Customer submitted feedback directly through store QR Kiosk.'}
-                      </p>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-2.5 md:grid-cols-3">
+                      {selectedVoice.sections.map((section: any, idx: number) => (
+                        <div key={idx} className={`space-y-1 rounded-xl border p-3 ${section.tone}`}>
+                          <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider">
+                            <section.Icon className="h-3.5 w-3.5 shrink-0" />
+                            <span>{section.label}</span>
+                          </div>
+                          <p className="whitespace-pre-line break-words text-xs font-semibold leading-relaxed">{section.text}</p>
+                        </div>
+                      ))}
                     </div>
-                  </div>
+                  )}
                 </div>
 
-                {/* 6. Action Timeline */}
-                <div className="space-y-3 pt-1 border-t border-accent-soft">
-                  <h4 className="text-xs font-black uppercase tracking-wider text-primary flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5 text-accent" />
-                    <span>Customer Journey Escalation Timeline</span>
-                  </h4>
-
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                    <div className="p-3 rounded-2xl bg-background border border-accent-soft text-center">
-                      <div className="w-6 h-6 rounded-full bg-emerald-500 text-white font-bold text-xs flex items-center justify-center mx-auto mb-1">1</div>
-                      <div className="text-[11px] font-extrabold text-primary">QR Submitted</div>
-                      <div className="text-[9.5px] text-gray-500 font-mono mt-0.5">{selectedFeedback.entryDate || 'Today'}</div>
-                    </div>
-
-                    <div className="p-3 rounded-2xl bg-background border border-accent-soft text-center">
-                      <div className="w-6 h-6 rounded-full bg-emerald-500 text-white font-bold text-xs flex items-center justify-center mx-auto mb-1">2</div>
-                      <div className="text-[11px] font-extrabold text-primary">Feedback Recorded</div>
-                      <div className="text-[9.5px] text-gray-500 mt-0.5">{selectedFeedback.isNegative ? 'Escalation Triggered' : 'Positive Rating'}</div>
-                    </div>
-
-                    <div className="p-3 rounded-2xl bg-background border border-accent-soft text-center">
-                      <div className={`w-6 h-6 rounded-full font-bold text-xs flex items-center justify-center mx-auto mb-1 ${selectedFeedback.isNegative ? 'bg-rose-500 text-white' : 'bg-emerald-500 text-white'
-                        }`}>3</div>
-                      <div className="text-[11px] font-extrabold text-primary">{selectedFeedback.isNegative ? 'Call Queue Added' : 'Survey Completed'}</div>
-                      <div className="text-[9.5px] text-gray-500 mt-0.5">{selectedFeedback.isNegative ? 'Telecaller Pending' : 'CSAT Verified'}</div>
-                    </div>
-
-                    <div className="p-3 rounded-2xl bg-background border border-accent-soft text-center">
-                      <div className="w-6 h-6 rounded-full bg-primary text-accent font-bold text-xs flex items-center justify-center mx-auto mb-1">4</div>
-                      <div className="text-[11px] font-extrabold text-primary">Closed</div>
-                      <div className="text-[9.5px] text-gray-500 mt-0.5">{selectedFeedback.isNegative ? 'Executive Workspace' : 'Status: Closed'}</div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 7. Resolution Workspace */}
-                <div className="p-5 rounded-2xl bg-background border border-accent-soft space-y-4">
-                  <div className="flex items-center justify-between border-b border-accent-soft pb-2">
-                    <h4 className="text-xs font-black uppercase tracking-wider text-primary flex items-center gap-2">
-                      <UserCheck className="w-4 h-4 text-accent" />
-                      <span>Resolution Workspace & Telecaller Logging</span>
+                {/* Real follow-up history */}
+                <div className="space-y-2 border-t border-accent-soft pt-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h4 className="flex items-center gap-1.5 text-[10.5px] font-black uppercase tracking-wider text-primary">
+                      <History className="h-3.5 w-3.5 text-accent" />
+                      <span>Follow-up Activity</span>
                     </h4>
-                    <span className="text-[10px] font-bold text-primary">BSC Operational CRM Desk</span>
+                    {callQueueState && (
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10.5px] font-semibold text-[#6F5963]">
+                        <span className="inline-flex items-center gap-1">
+                          <span className="font-black uppercase tracking-wide text-[#8B6F76]">Status</span>
+                          <StatusBadge status={callQueueState.status} />
+                        </span>
+                        <span>
+                          <span className="font-black uppercase tracking-wide text-[#8B6F76]">Attempts</span>{' '}
+                          {callQueueState.attempts === null || callQueueState.attempts === undefined ? '—' : Number(callQueueState.attempts)}
+                        </span>
+                        {callQueueState.updatedAt && (
+                          <span>{formatDateTimeDisplay(callQueueState.updatedAt, '—')}</span>
+                        )}
+                      </div>
+                    )}
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[10.5px] font-black uppercase text-primary tracking-wider mb-1">
-                        Follow-Up Action Status
-                      </label>
+                  {historyLoading ? (
+                    <div className="flex items-center gap-2 rounded-xl border border-accent-soft bg-background px-3 py-4 text-[11px] font-bold text-[#6F5963]">
+                      <RefreshCw className="h-3.5 w-3.5 animate-spin text-accent" />
+                      <span>Loading follow-up history…</span>
+                    </div>
+                  ) : historyError ? (
+                    <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-3 text-[11px] font-semibold text-rose-800">
+                      {historyError}
+                    </div>
+                  ) : !followUpHistory || followUpHistory.length === 0 ? (
+                    <div className="rounded-xl border border-accent-soft bg-background px-3 py-5 text-center">
+                      <div className="text-[11px] font-extrabold text-primary">No follow-up activity recorded yet</div>
+                      <p className="mt-0.5 text-[10.5px] font-medium text-[#8B6F76]">
+                        Saving a note below creates the first entry in this ticket’s history.
+                      </p>
+                    </div>
+                  ) : (
+                    <ul className="divide-y divide-accent-soft overflow-hidden rounded-xl border border-accent-soft">
+                      {followUpHistory.map((log: any) => {
+                        const when = log.callDate
+                          ? shortDate(log.callDate)
+                          : formatDateTimeDisplay(log.createdAt, '—');
+                        return (
+                          <li key={log.id || `${log.feedbackId}-${log.createdAt}`} className="bg-white px-3 py-2.5">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                                <span className="text-[11px] font-extrabold text-primary">{log.callOutcome || 'Follow-up Entry'}</span>
+                                {log.issueCategory && (
+                                  <span className="rounded-md bg-accent-soft px-1.5 py-0.5 text-[9.5px] font-black uppercase tracking-wide text-primary">{log.issueCategory}</span>
+                                )}
+                                <span className="text-[10.5px] font-semibold text-[#8B6F76]">{log.executive || 'Unnamed executive'}</span>
+                              </div>
+                              <span className="whitespace-nowrap text-[10.5px] font-semibold text-[#8B6F76]">{when}</span>
+                            </div>
+                            {log.notes && (
+                              <p className="mt-1 whitespace-pre-line break-words text-[11px] font-medium leading-relaxed text-[#5D4E42]">{log.notes}</p>
+                            )}
+                            {log.followUpDate && (
+                              <div className="mt-1 text-[10.5px] font-bold text-amber-700">Next follow-up: {shortDate(log.followUpDate)}</div>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
+
+                {/* Resolution workspace */}
+                <div className="space-y-3 rounded-2xl border border-accent-soft bg-background p-3.5">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h4 className="flex items-center gap-1.5 text-[10.5px] font-black uppercase tracking-wider text-primary">
+                      <UserCheck className="h-3.5 w-3.5 text-accent" />
+                      <span>Record Follow-up Action</span>
+                    </h4>
+                    <span className="text-[10px] font-semibold text-[#8B6F76]">Logged against {ticketRef(selectedFeedback.id)}</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <FilterField label="Action Status">
                       <select
                         value={resolutionStatus}
                         onChange={(e) => setResolutionStatus(e.target.value)}
-                        className="select-modern text-xs font-bold py-2 bg-white"
+                        className="select-modern bg-white py-2 text-xs font-bold"
+                        aria-label="Follow-up action status"
                       >
-                        <option value="called">Called - Follow Up Needed</option>
-                        <option value="resolved">Resolved - Customer Satisfied</option>
-                        <option value="escalated">Escalated to Store Manager</option>
+                        {RESOLUTION_STATUSES.map(s => (
+                          <option key={s.value} value={s.value}>{s.label}</option>
+                        ))}
                       </select>
-                    </div>
+                    </FilterField>
 
-                    <div>
-                      <label className="block text-[10.5px] font-black uppercase text-primary tracking-wider mb-1">
-                        Assigned Executive / Priority
-                      </label>
+                    <FilterField label="Next Follow-up Date (optional)">
                       <input
-                        type="text"
-                        readOnly
-                        value={selectedFeedback.isNegative ? 'Telecaller Team (High Priority)' : 'Floor Manager (Normal Priority)'}
-                        className="input-modern text-xs font-semibold py-2 bg-gray-100"
+                        type="date"
+                        value={resolutionFollowUpDate}
+                        onChange={(e) => setResolutionFollowUpDate(e.target.value)}
+                        className="input-modern bg-white py-2 text-xs font-semibold"
+                        aria-label="Next follow-up date"
                       />
-                    </div>
+                    </FilterField>
                   </div>
 
-                  <div>
-                    <label className="block text-[10.5px] font-black uppercase text-primary tracking-wider mb-1">
-                      Internal Telecaller Resolution Notes
-                    </label>
+                  <FilterField label="Resolution Notes">
                     <textarea
                       rows={3}
                       value={resolutionNotes}
                       onChange={(e) => setResolutionNotes(e.target.value)}
-                      placeholder="Enter call details, customer explanation, voucher code issued, or resolution steps..."
-                      className="textarea-modern text-xs font-medium bg-white"
-                    ></textarea>
-                  </div>
+                      placeholder="Call outcome, explanation given, voucher issued…"
+                      className="textarea-modern bg-white text-xs font-medium"
+                    />
+                  </FilterField>
+
+                  <p className="text-[10.5px] font-medium leading-relaxed text-[#8B6F76]">
+                    Notes are optional. A history entry is written only when notes are provided; the status change always saves.
+                  </p>
                 </div>
 
-                {/* 8. Action Buttons (Modal Footer) */}
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-[#DFDDD7]">
-                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                {/* Footer actions */}
+                <div className="flex flex-col items-center justify-between gap-2.5 border-t border-accent-soft pt-4 sm:flex-row">
+                  <div className="flex w-full items-center gap-2 sm:w-auto">
                     <button
-                      onClick={() => setSelectedFeedback(null)}
-                      className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-white border border-[#DFDDD7] hover:bg-[#F6F4EF] text-[#182033] font-extrabold text-xs transition-all shadow-sm cursor-pointer"
+                      onClick={closeTicket}
+                      className="w-full whitespace-nowrap rounded-xl border border-accent-soft bg-white px-4 py-2 text-xs font-extrabold text-primary transition-colors hover:bg-background sm:w-auto"
                     >
-                      Close Dashboard
+                      Close
                     </button>
                     <button
-                      type="button"
                       onClick={() => handleDeleteFeedback(selectedFeedback.id)}
-                      className="px-4 py-2.5 rounded-xl bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-700 font-extrabold text-xs shadow-sm active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
-                      title="Permanently remove this ticket"
+                      title="Permanently delete this ticket"
+                      className="inline-flex w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-extrabold text-rose-700 transition-colors hover:bg-rose-100 sm:w-auto"
                     >
-                      <Trash2 className="w-4 h-4 text-rose-600" />
+                      <Trash2 className="h-3.5 w-3.5" />
                       <span>Delete Ticket</span>
                     </button>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
+                  <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
                     <button
-                      onClick={() => handleSaveModalResolution('called')}
+                      onClick={() => handleSaveResolution('escalated_manager')}
                       disabled={savingResolution}
-                      className="px-4 py-2.5 rounded-xl bg-white border border-[#DFDDD7] hover:bg-[#F6F4EF] text-[#182033] font-extrabold text-xs shadow-sm active:scale-95 transition-all cursor-pointer"
+                      className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-xl border border-accent-soft bg-white px-3.5 py-2 text-xs font-extrabold text-primary transition-colors hover:bg-background disabled:opacity-50"
                     >
-                      Mark In Progress
+                      <ShieldAlert className="h-3.5 w-3.5 text-purple-700" />
+                      <span>Escalate to Manager</span>
                     </button>
 
                     <button
-                      onClick={() => handleSaveModalResolution('escalated_manager')}
+                      onClick={() => handleSaveResolution('resolved')}
                       disabled={savingResolution}
-                      className="px-4 py-2.5 rounded-xl bg-white border border-[#DFDDD7] hover:bg-[#F6F4EF] text-[#182033] font-extrabold text-xs shadow-sm active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
+                      className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-xl border border-accent-soft bg-white px-3.5 py-2 text-xs font-extrabold text-primary transition-colors hover:bg-background disabled:opacity-50"
                     >
-                      <ShieldAlert className="w-4 h-4 text-[#C7374A]" />
-                      <span>Escalate to Store Manager</span>
-                    </button>
-
-                    <button
-                      onClick={() => handleSaveModalResolution('resolved')}
-                      disabled={savingResolution}
-                      className="px-4 py-2.5 rounded-xl bg-white border border-[#DFDDD7] hover:bg-[#F6F4EF] text-[#182033] font-extrabold text-xs shadow-sm active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <CircleCheck className="w-4 h-4 text-emerald-600" />
+                      <CircleCheck className="h-3.5 w-3.5 text-emerald-600" />
                       <span>Mark Resolved</span>
                     </button>
 
                     <button
-                      onClick={() => handleSaveModalResolution()}
+                      onClick={() => handleSaveResolution()}
                       disabled={savingResolution}
-                      className="px-6 py-2.5 rounded-xl bg-[#101C36] hover:bg-[#07101F] text-white font-extrabold text-xs shadow-md active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
+                      className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-xl bg-primary px-4 py-2 text-xs font-extrabold text-white transition-colors hover:bg-primary-dark disabled:opacity-60"
                     >
-                      <Send className="w-4 h-4" />
-                      <span>{savingResolution ? 'Saving...' : 'Save Resolution Notes'}</span>
+                      <Send className="h-3.5 w-3.5" />
+                      <span>{savingResolution ? 'Saving…' : `Save as ${followUpBadge(resolutionStatus).label}`}</span>
                     </button>
                   </div>
                 </div>
-
               </div>
             )}
           </ModalPortal>

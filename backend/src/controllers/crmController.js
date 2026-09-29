@@ -1737,7 +1737,8 @@ exports.getFeedbacks = async (req, res) => {
       await db.query(`ALTER TABLE Feedback ADD COLUMN ${col}`).catch(() => {});
     }
 
-    const { date, startDate, endDate, isNegative, search } = req.query;
+    const { date, startDate, endDate, isNegative, search, followUp, follow_up } = req.query;
+    const followUpFilter = followUp || follow_up;
     const { clause: locClause, params: locParams } = await getLocationFilter(req, 'Feedback');
     let sql = `SELECT * FROM Feedback WHERE 1=1 ${locClause}`;
     const params = [...locParams];
@@ -1767,6 +1768,19 @@ exports.getFeedbacks = async (req, res) => {
     if (isNegative !== undefined && isNegative !== '' && isNegative !== 'all') {
       sql += ' AND isNegative = ?';
       params.push(isNegative === 'true' || isNegative === '1' ? 1 : 0);
+    }
+
+    // Follow-up status filter. Rows predating the resolution desk store NULL,
+    // which counts as "new" for both storage and display.
+    if (followUpFilter && followUpFilter !== 'all') {
+      if (followUpFilter === 'needs_follow_up') {
+        sql += " AND COALESCE(NULLIF(status, ''), 'new') IN ('new', 'pending', 'called', 'escalated', 'escalated_manager')";
+      } else if (followUpFilter === 'resolved') {
+        sql += " AND status IN ('resolved', 'closed')";
+      } else {
+        sql += " AND COALESCE(NULLIF(status, ''), 'new') = ?";
+        params.push(followUpFilter);
+      }
     }
 
     if (search) {
@@ -1881,6 +1895,67 @@ exports.getFeedbacks = async (req, res) => {
       feedbacks: [],
       stats: { total: 0, positive: 0, negative: 0, needsFollowUp: 0, npsScore: 100 }
     });
+  }
+};
+
+/**
+ * Follow-up history for one feedback ticket.
+ *
+ * CallLogs has no location_id column, so access is enforced by first resolving
+ * the feedback through the caller's location filter — a restricted user asking
+ * for another store's ticket gets a not-found rather than the rows.
+ */
+exports.getFeedbackFollowUpHistory = async (req, res) => {
+  const id = req.params.id;
+  if (!id) {
+    return res.status(400).json({ success: false, message: 'Feedback ID is required' });
+  }
+
+  try {
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS CallLogs (
+        id VARCHAR(64) PRIMARY KEY,
+        feedbackId VARCHAR(64) NOT NULL,
+        executive VARCHAR(255) DEFAULT 'Store Executive',
+        callDate VARCHAR(32),
+        callOutcome VARCHAR(64),
+        issueCategory VARCHAR(64),
+        followUpDate VARCHAR(64),
+        notes TEXT,
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `).catch(() => {});
+
+    const { clause: locClause, params: locParams } = await getLocationFilter(req, 'Feedback');
+    const [owned] = await db.query(
+      `SELECT id, location_id FROM Feedback WHERE id = ? ${locClause}`,
+      [id, ...locParams]
+    );
+    if (!owned || owned.length === 0) {
+      return res.status(404).json({ success: false, message: 'Feedback not found for this location' });
+    }
+
+    const [logs] = await db.query(
+      `SELECT id, feedbackId, executive, callDate, callOutcome, issueCategory, followUpDate, notes, createdAt
+         FROM CallLogs WHERE feedbackId = ? ORDER BY createdAt DESC, id DESC LIMIT 100`,
+      [id]
+    ).catch(() => [[]]);
+
+    const [queue] = await db.query(
+      `SELECT status, notes, attempts, followUpDate, updatedAt
+         FROM CallQueue WHERE feedbackId = ? OR id = ? ORDER BY updatedAt DESC LIMIT 1`,
+      [id, id]
+    ).catch(() => [[]]);
+
+    return res.json({
+      success: true,
+      history: logs || [],
+      followUp: (queue && queue.length) ? queue[0] : null
+    });
+  } catch (err) {
+    console.error('[getFeedbackFollowUpHistory Error]', err);
+    // Never surface raw driver errors; an empty history must not break the panel.
+    return res.json({ success: true, history: [], followUp: null });
   }
 };
 

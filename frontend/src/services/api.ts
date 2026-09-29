@@ -1194,11 +1194,12 @@ export const API = {
     const q = params ? new URLSearchParams(params as any).toString() : '';
     return apiFetch(`/crm/feedback-stats${q ? `?${q}` : ''}`);
   },
-  async getFeedbacks(params?: { date?: string; startDate?: string; endDate?: string; isNegative?: string; search?: string; location_id?: string | number; locationId?: string | number }) {
+  async getFeedbacks(params?: { date?: string; startDate?: string; endDate?: string; isNegative?: string; search?: string; followUp?: string; location_id?: string | number; locationId?: string | number }) {
     const q = params ? new URLSearchParams(params as any).toString() : '';
     return apiFetch(`/crm/feedbacks${q ? `?${q}` : ''}`);
   },
   async deleteFeedback(id: string) { return apiFetch(`/crm/feedbacks/${id}`, { method: 'DELETE' }); },
+  async getFeedbackFollowUpHistory(id: string) { return apiFetch(`/crm/feedbacks/${encodeURIComponent(id)}/follow-up-history`); },
   async clearAllFeedbacks(locationId?: string) {
     const q = locationId ? `?locationId=${encodeURIComponent(locationId)}` : '';
     return apiFetch(`/crm/feedbacks${q}`, { method: 'DELETE' });

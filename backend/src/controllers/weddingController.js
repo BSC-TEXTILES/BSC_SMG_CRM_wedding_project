@@ -10,6 +10,7 @@ const realtimeService = require('../services/realtimeService');
 const { encryptField, decryptRows, decryptRow } = require('../utils/crypto');
 const { parseCsv, rowsToObjects } = require('../utils/csv');
 const { parseDate } = require('../utils/dates');
+const { maxSequence, allocateCustomerCode } = require('../utils/customerCode');
 const {
   buildTemplateWorkbook,
   buildTemplateCsv,
@@ -1005,37 +1006,10 @@ class WeddingController {
 
       // Generate standardized code: BSC-WED-{LOC}-{YEAR}-{NNNNNN}
       // 6-digit sequence matching the wedding_registrations format.
-      // Collision-proof: derive the next sequence from the highest existing
-      // suffix. A short retry loop absorbs concurrent inserts.
-      const year = new Date().getFullYear();
-      const codePrefix = `BSC-WED-${locCode}-${year}-`;
-      let customerCode = null;
-      for (let attempt = 0; attempt < 6 && !customerCode; attempt++) {
-        // Check both old format (WED-*) and new format (BSC-WED-*) for sequence
-        const [lastRowsNew] = await pool.query(
-          `SELECT customer_code FROM wedding_customers WHERE customer_code LIKE ? ORDER BY id DESC LIMIT 1`,
-          [`${codePrefix}%`]
-        );
-        const [lastRowsOld] = await pool.query(
-          `SELECT customer_code FROM wedding_customers WHERE customer_code LIKE ? ORDER BY id DESC LIMIT 1`,
-          [`WED-${locCode}-${year}-%`]
-        );
-        const lastSeqNew = lastRowsNew && lastRowsNew[0]
-          ? parseInt(String(lastRowsNew[0].customer_code).slice(-6), 10) || 0
-          : 0;
-        const lastSeqOld = lastRowsOld && lastRowsOld[0]
-          ? parseInt(String(lastRowsOld[0].customer_code).slice(-4), 10) || 0
-          : 0;
-        const nextSeq = Math.max(lastSeqNew, lastSeqOld) + 1;
-        const candidate = `${codePrefix}${String(nextSeq).padStart(6, '0')}`;
-        const [exists] = await pool.query(
-          `SELECT id FROM wedding_customers WHERE customer_code = ?`,
-          [candidate]
-        );
-        if (!exists || exists.length === 0) {
-          customerCode = candidate;
-        }
-      }
+      // Collision-proof: seed from the true MAX across both customer-code
+      // formats (reading a single "highest id" row is wrong once the newest
+      // row belongs to the other format) and advance until the candidate is free.
+      const customerCode = await allocateCustomerCode(pool, locCode, 'current');
       if (!customerCode) {
         return errorRes(res, 'Unable to allocate a unique registration ID. Please try again.', [], 500);
       }
@@ -2736,16 +2710,11 @@ class WeddingController {
         const locCode = locObj?.location_code || 'BSC';
 
         if (!seqByLoc.has(rowLocation)) {
-          const [yearRows] = await pool.query(
-            `SELECT customer_code FROM wedding_customers WHERE customer_code LIKE ? ORDER BY id DESC LIMIT 1`,
-            [`%WED-${locCode}-${new Date().getFullYear()}-%`]
-          );
-          let s = 0;
-          if (yearRows && yearRows[0]) {
-            const match = String(yearRows[0].customer_code).match(/(\d+)$/);
-            if (match) s = parseInt(match[1], 10) || 0;
-          }
-          seqByLoc.set(rowLocation, s);
+          // Seed from the true MAX across both customer-code formats. Reading a
+          // single "most recent" row resets the counter as soon as that row uses
+          // the other format (BSC-WED-... vs WED-...) and the insert then fails
+          // with `Duplicate entry ... for key 'wedding_customers.customer_code'`.
+          seqByLoc.set(rowLocation, await maxSequence(pool, locCode));
         }
         const nextSeq = seqByLoc.get(rowLocation) + 1;
         seqByLoc.set(rowLocation, nextSeq);

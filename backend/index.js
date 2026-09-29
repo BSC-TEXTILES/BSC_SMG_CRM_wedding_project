@@ -706,14 +706,34 @@ if (Server) {
 // page. Instead, walk a range of ports and, when every candidate is taken,
 // keep retrying with a backoff so the process self-heals as soon as a port
 // frees up instead of dying and never coming back.
+const net = require('net');
 const PORT_SCAN_RANGE = 20;
 const PORT_SCAN_RETRY_DELAY_MS = 5000;
 const PORT_BIND_STEP_DELAY_MS = 250;
+const PORT_PROBE_TIMEOUT_MS = 750;
 let portScanCursor = 0;
 let portScanPasses = 0;
 
+// A successful listen() does not prove the port was free: Windows lets one
+// process hold `::` while another holds `0.0.0.0` on the same port, and the
+// stale instance then keeps answering `localhost` while this one believes it
+// owns the port (a split-brain that silently serves old code). Probe both
+// loopbacks first and treat the port as taken whenever anything answers.
+function isPortAccepting(port) {
+  const probe = (host) => new Promise((resolve) => {
+    const socket = net.connect({ port, host });
+    const finish = (busy) => { socket.destroy(); resolve(busy); };
+    socket.setTimeout(PORT_PROBE_TIMEOUT_MS, () => finish(false));
+    socket.once('connect', () => finish(true));
+    socket.once('error', () => finish(false));
+  });
+  return Promise.all([probe('127.0.0.1'), probe('::1')]).then((hits) => hits[0] || hits[1]);
+}
+
 function bindPort(candidate) {
-  server.listen(candidate, '0.0.0.0', () => {
+  // Deliberately no host argument: Node then listens on `::` in dual-stack
+  // mode so the bind conflicts with an existing `::` listener too.
+  server.listen(candidate, () => {
     console.log('====================================================');
     console.log(`  BSC HRMS running on port ${candidate}`);
     console.log(`  Health: http://localhost:${candidate}/health`);
@@ -724,7 +744,7 @@ function bindPort(candidate) {
   });
 }
 
-function scanPorts() {
+async function scanPorts() {
   const first = PORT;
   if (portScanCursor < first || portScanCursor >= first + PORT_SCAN_RANGE) {
     portScanCursor = first;
@@ -740,7 +760,14 @@ function scanPorts() {
       return;
     }
   }
-  bindPort(portScanCursor++);
+
+  const candidate = portScanCursor++;
+  if (await isPortAccepting(candidate)) {
+    console.warn(`[Server Recovery] Port ${candidate} is already in use; trying the next one.`);
+    setTimeout(scanPorts, PORT_BIND_STEP_DELAY_MS);
+    return;
+  }
+  bindPort(candidate);
 }
 
 if (PORT === 'passenger') {
@@ -764,7 +791,7 @@ server.on('error', (err) => {
     && (err.code === 'EADDRINUSE' || err.code === 'EACCES' || err.code === 'ENOTSUP');
 
   if (canRecover) {
-    console.warn(`[Server Recovery] ${err.code} on port ${portScanCursor}; trying the next port.`);
+    console.warn(`[Server Recovery] ${err.code} while binding; trying the next port.`);
     setTimeout(scanPorts, PORT_BIND_STEP_DELAY_MS);
     return;
   }

@@ -4,6 +4,7 @@ const { getLocationFilter, injectLocationId } = require('../middleware/auth');
 const { encryptField, decryptRows, decryptRow } = require('../utils/crypto');
 const { sendWeddingRegistrationConfirmation } = require('../config/email');
 const realtimeService = require('../services/realtimeService');
+const { maxSequence } = require('../utils/customerCode');
 const {
   isValidMobile,
   normalizeMobile,
@@ -381,26 +382,11 @@ class WeddingRegistrationController {
       const year = new Date().getFullYear();
       const codePrefix = `BSC-WED-${locCode}-${year}-`;
 
-      let startSeq = 0;
-      try {
-        const sql = `
-          SELECT MAX(seq) AS max_seq FROM (
-            SELECT CAST(SUBSTRING(registration_id, -6) AS UNSIGNED) AS seq 
-            FROM wedding_registrations 
-            WHERE registration_id LIKE ?
-            UNION ALL
-            SELECT CAST(SUBSTRING(customer_code, -6) AS UNSIGNED) AS seq 
-            FROM wedding_customers 
-            WHERE customer_code LIKE ?
-          ) AS all_seqs
-        `;
-        const [maxRows] = await pool.query(sql, [`${codePrefix}%`, `${codePrefix}%`]);
-        if (maxRows && maxRows[0] && maxRows[0].max_seq != null) {
-          startSeq = parseInt(maxRows[0].max_seq, 10) || 0;
-        }
-      } catch (seqErr) {
-        console.warn('[getNextRegistrationId max_seq fallback]', seqErr.message);
-      }
+      // One shared counter per store + year: max over BOTH code formats and
+      // BOTH tables, so the legacy WED-…-0263 continues as BSC-WED-…-000264
+      // instead of restarting from 000005. (SUBSTRING_INDEX reads the trailing
+      // number of either format; SUBSTRING(x, -6) mangles the 4-digit one.)
+      const startSeq = await maxSequence(pool, locCode, year);
 
       let registrationId = null;
       let nextSeq = startSeq + 1;
@@ -440,27 +426,8 @@ class WeddingRegistrationController {
     const year = new Date().getFullYear();
     const codePrefix = `BSC-WED-${locationCode}-${year}-`;
 
-    // 1. Query the true MAX sequence across BOTH wedding_registrations AND wedding_customers
-    let startSeq = 0;
-    try {
-      const sql = `
-        SELECT MAX(seq) AS max_seq FROM (
-          SELECT CAST(SUBSTRING(registration_id, -6) AS UNSIGNED) AS seq 
-          FROM wedding_registrations 
-          WHERE registration_id LIKE ?
-          UNION ALL
-          SELECT CAST(SUBSTRING(customer_code, -6) AS UNSIGNED) AS seq 
-          FROM wedding_customers 
-          WHERE customer_code LIKE ?
-        ) AS all_seqs
-      `;
-      const [maxRows] = await executor.query(sql, [`${codePrefix}%`, `${codePrefix}%`]);
-      if (maxRows && maxRows[0] && maxRows[0].max_seq != null) {
-        startSeq = parseInt(maxRows[0].max_seq, 10) || 0;
-      }
-    } catch (err) {
-      console.warn('[allocateUniqueIds max_seq query fallback]', err.message);
-    }
+    // 1. Seed the shared per-store + year counter (both formats, both tables).
+    const startSeq = await maxSequence(executor, locationCode, year);
 
     // Customer / registration business ID: BSC-WED-{LOC}-{YEAR}-{000001..}
     let registrationId = null;

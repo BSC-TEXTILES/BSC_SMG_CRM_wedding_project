@@ -20,6 +20,7 @@
 const pool = require('../config/db');
 const { successRes, errorRes } = require('../utils/response');
 const { encryptField } = require('../utils/crypto');
+const { allocateCustomerCode } = require('../utils/customerCode');
 
 // Mirrors the date the wedding desk should first call a landing enquiry.
 function defaultFollowUpDate() {
@@ -144,27 +145,11 @@ class LandingController {
         );
       }
 
-      // Customer ID: WED-[LOC]-[YEAR]-[SEQ] — same collision-proof pattern.
-      const year = new Date().getFullYear();
-      const codePrefix = `WED-${locCode}-${year}-`;
-      let customerCode = null;
-      for (let attempt = 0; attempt < 5 && !customerCode; attempt++) {
-        const [lastRows] = await pool.query(
-          `SELECT customer_code FROM wedding_customers WHERE customer_code LIKE ? ORDER BY id DESC LIMIT 1`,
-          [`${codePrefix}%`]
-        );
-        const lastSeq = lastRows && lastRows[0]
-          ? parseInt(String(lastRows[0].customer_code).slice(-4), 10) || 0
-          : 0;
-        const candidate = `${codePrefix}${String(lastSeq + 1).padStart(4, '0')}`;
-        const [exists] = await pool.query(
-          `SELECT id FROM wedding_customers WHERE customer_code = ?`,
-          [candidate]
-        );
-        if (!exists || exists.length === 0) {
-          customerCode = candidate;
-        }
-      }
+      // Customer ID: WED-[LOC]-[YEAR]-[SEQ] — seeded from the true MAX across
+      // both customer-code formats and advanced until the candidate is free
+      // (the old loop re-derived the same candidate on every attempt, so a
+      // collision always ended in a 500 instead of a retry).
+      const customerCode = await allocateCustomerCode(pool, locCode, 'legacy');
       if (!customerCode) {
         return errorRes(res, 'Could not allocate a unique customer code, please retry', [], 500);
       }
