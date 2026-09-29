@@ -104,7 +104,12 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
   }, [pathname]);
 
   // Single source of truth shared with RouteGuard (utils/rbac.ts)
-  const [allowed, setAllowed] = useState<string[]>(() => getRoleNavMap(role));
+  const [allowed, setAllowed] = useState<string[]>(() => {
+    if (session?.modules && Array.isArray(session.modules) && session.modules.length > 0) {
+      return resolveAllowedPages(role, null, session.modules);
+    }
+    return getRoleNavMap(role);
+  });
 
   const roleLabels: Record<string, string> = {
     'Super Admin': 'Super Administrator',
@@ -123,6 +128,7 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
     'Team Lead':   'Team Lead / Calling Desk',
     'Recruiter':   'Recruiter',
     'Interviewer': 'Interviewer Panel',
+    'HR Manager':  'HR Manager',
     'Employee':    'Employee',
     'Guest':       'Guest'
   };
@@ -137,14 +143,17 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
 
   const navItems: NavItem[] = [
     // Enterprise (Role-specific landing module at top)
-    { key: 'dashboard', href: dashboardHref, label: dashboardLabel, icon: BarChart3, section: 'Enterprise' },
+    { key: 'dashboard', href: '/dashboard', label: 'Dashboard', icon: BarChart3, section: 'Enterprise' },
+    { key: 'regional_analytics', href: '/dashboard', label: 'Regional Analytics', icon: BarChart3, section: 'Enterprise' },
     { key: 'employees', href: '/employees', label: 'Employee & Store Directory', icon: UserCheck, section: 'Enterprise' },
+    { key: 'greyhr', href: '/employees', label: 'GreyHR Sync', icon: UserCheck, section: 'Enterprise' },
     { key: 'user_management', href: '/user-management', label: 'User Management', icon: Shield, section: 'Enterprise' },
     { key: 'attendance', href: '/attendance', label: 'Attendance & Roster', icon: UserCheck, section: 'Enterprise' },
 
     // Store Operations
     { key: 'wedding_crm', href: '/wedding-crm/dashboard', label: 'Wedding CRM', icon: Sparkles, section: 'Store Operations', isNew: true },
     { key: 'wedding_registration', href: '/wedding/customer-registration', label: 'Wedding Customer Registration', icon: Heart, section: 'Store Operations' },
+    { key: 'telecaller_desk', href: '/telecaller/desk', label: 'Telecaller Calling Desk', icon: PhoneCall, section: 'Store Operations' },
     { key: 'telecaller_dashboard', href: '/telecaller-dashboard', label: 'Telecaller Dashboard', icon: BarChart3, section: 'Store Operations' },
     { key: 'wedding_operations', href: '/wedding-operations', label: 'Wedding Operations', icon: FileText, section: 'Store Operations' },
     { key: 'footfall', href: '/footfall', label: 'Hourly Footfall', icon: BarChart3, section: 'Store Operations' },
@@ -158,10 +167,12 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
     { key: 'section_allocation', href: '/section-allocation', label: 'Section Allocation', icon: UserCheck, section: 'Talent' },
     { key: 'offer', href: '/offer-process', label: 'Offer Desk', icon: FileText, section: 'Talent' },
     { key: 'doj_desk', href: '/doj-desk', label: 'DOJ Not Joined Desk', icon: UserCheck, section: 'Talent' },
+    { key: 'joining_desk', href: '/doj-desk', label: 'Store Joining Desk', icon: UserCheck, section: 'Talent' },
     { key: 'dept_hiring', href: '/department-hiring', label: 'Department Hiring Status', icon: Briefcase, section: 'Talent' },
 
     // Daily Operations
     { key: 'daily_mcheck', href: '/daily-mcheck', label: 'MCheck Store Audit', icon: SquareCheck, section: 'Daily Operations' },
+    { key: 'mcheck_audit', href: '/daily-mcheck', label: 'MCheck Store Audit', icon: SquareCheck, section: 'Daily Operations' },
     { key: 'mcheck_reports', href: '/mcheck-reports', label: 'MCheck Reports', icon: BarChart3, section: 'Daily Operations' },
     { key: 'mcheck_history', href: '/mcheck-history', label: 'MCheck History', icon: ClipboardList, section: 'Daily Operations' },
     { key: 'divert', href: '/divert', label: 'Sourcing Diverts', icon: Target, section: 'Daily Operations' },
@@ -184,12 +195,31 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
 
   useEffect(() => {
     const updateAllowed = () => {
+      // First check local stored session
+      try {
+        const stored = localStorage.getItem('bsc_user_session') || localStorage.getItem('user');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed?.modules) && parsed.modules.length > 0) {
+            setAllowed(resolveAllowedPages(role, null, parsed.modules));
+          }
+        }
+      } catch {
+        // ignore
+      }
+
       permissionsCache.get().then(({ myPerms, pageSettings }) => {
-        const userModules = myPerms?.custom && Array.isArray(myPerms.modules) ? myPerms.modules : null;
+        const userModules = myPerms?.custom && Array.isArray(myPerms.modules)
+          ? myPerms.modules
+          : (session?.modules && session.modules.length > 0 ? session.modules : null);
         setAllowed(resolveAllowedPages(role, pageSettings, userModules));
       }).catch((err) => {
         console.error('[Sidebar] Failed to load permissions:', err);
-        setAllowed(getRoleNavMap(role));
+        if (session?.modules && Array.isArray(session.modules) && session.modules.length > 0) {
+          setAllowed(resolveAllowedPages(role, null, session.modules));
+        } else {
+          setAllowed(getRoleNavMap(role));
+        }
       });
     };
 
@@ -201,10 +231,12 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
     };
 
     window.addEventListener('permissions-updated', handlePermissionsUpdated);
+    window.addEventListener('bsc_auth_changed', handlePermissionsUpdated);
     return () => {
       window.removeEventListener('permissions-updated', handlePermissionsUpdated);
+      window.removeEventListener('bsc_auth_changed', handlePermissionsUpdated);
     };
-  }, [role]);
+  }, [role, session]);
 
   const initials = session?.fullName
     ? session.fullName.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase()
@@ -333,8 +365,17 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
         <div ref={navScrollRef} className="flex-1 overflow-y-auto px-2 py-1.5 space-y-3">
           {['Enterprise', 'Store Operations', 'Talent', 'Daily Operations', 'Administration', 'Public Portals'].map(section => {
             // Strict RBAC rendering: only keys resolved for THIS user
-            const items = navItems.filter(item => item.section === section && allowed.includes(item.key));
-            if (items.length === 0) return null;
+            const rawItems = navItems.filter(item => item.section === section && allowed.includes(item.key));
+            if (rawItems.length === 0) return null;
+
+            const items: NavItem[] = [];
+            const seenHrefs = new Set<string>();
+            for (const it of rawItems) {
+              if (!seenHrefs.has(it.href)) {
+                seenHrefs.add(it.href);
+                items.push(it);
+              }
+            }
 
             return (
               <div key={section} className="space-y-0.5">

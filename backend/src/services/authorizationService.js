@@ -99,6 +99,36 @@ async function checkPermission(user, { module = null, action = 'can_view', locat
         if (!permRow && module === 'wedding_registration') {
           permRow = allUserPerms.find(p => p.module === 'wedding_crm');
         }
+        if (!permRow && module === 'telecaller_desk') {
+          permRow = allUserPerms.find(p => p.module === 'telecaller_dashboard' || p.module === 'wedding_crm');
+        }
+        if (!permRow && module === 'telecaller_dashboard') {
+          permRow = allUserPerms.find(p => p.module === 'telecaller_desk');
+        }
+        if (!permRow && module === 'joining_desk') {
+          permRow = allUserPerms.find(p => p.module === 'doj_desk');
+        }
+        if (!permRow && module === 'doj_desk') {
+          permRow = allUserPerms.find(p => p.module === 'joining_desk');
+        }
+        if (!permRow && module === 'mcheck_audit') {
+          permRow = allUserPerms.find(p => p.module === 'daily_mcheck');
+        }
+        if (!permRow && module === 'daily_mcheck') {
+          permRow = allUserPerms.find(p => p.module === 'mcheck_audit');
+        }
+        if (!permRow && module === 'greyhr') {
+          permRow = allUserPerms.find(p => p.module === 'employees');
+        }
+        if (!permRow && module === 'employees') {
+          permRow = allUserPerms.find(p => p.module === 'greyhr');
+        }
+        if (!permRow && module === 'regional_analytics') {
+          permRow = allUserPerms.find(p => p.module === 'dashboard');
+        }
+        if (!permRow && module === 'dashboard') {
+          permRow = allUserPerms.find(p => p.module === 'regional_analytics');
+        }
 
         if (!permRow) {
           return { allowed: false, reason: `No permissions configured for module: ${module}` };

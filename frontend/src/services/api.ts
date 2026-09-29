@@ -1042,6 +1042,7 @@ export const API = {
   async savePageSettings(settings: any) { return apiFetch('/settings/page-visibility', { method: 'POST', body: JSON.stringify({ settings }) }); },
   async getRoles() { return apiFetch('/settings/roles'); },
   async getDesignations() { return apiFetch('/settings/designations'); },
+  async getDepartments() { return apiFetch('/settings/departments'); },
   async getPublicDesignations() { return API.call('getPublicDesignations'); },
   async addDesignation(name: string) { return apiFetch('/settings/designations/add', { method: 'POST', body: JSON.stringify({ name }) }); },
   async deleteDesignation(name: string) { return apiFetch('/settings/designations/delete', { method: 'POST', body: JSON.stringify({ name }) }); },

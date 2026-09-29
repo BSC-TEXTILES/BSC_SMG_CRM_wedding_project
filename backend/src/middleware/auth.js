@@ -532,14 +532,11 @@ const authorize = (...roles) => {
       return errorRes(res, 'Forbidden: insufficient permissions', [], 403);
     }
     // Admin / Super Admin always have full access
-    if (['Admin', 'Super Admin'].includes(req.user.role)) {
-      return next();
-    }
-    if (roles.includes(req.user.role)) {
+    if (['Admin', 'Super Admin', 'system administrator'].includes(req.user.role)) {
       return next();
     }
 
-    // Check if user has explicit permission in user_permissions matrix
+    // Check if user has explicit records in user_permissions matrix
     try {
       const pool = require('../config/db');
       const [perms] = await pool.query(
@@ -549,22 +546,56 @@ const authorize = (...roles) => {
       if (perms && perms.length > 0) {
         const fullPath = (req.originalUrl || req.baseUrl || req.path || '').toLowerCase();
         const method = (req.method || 'GET').toUpperCase();
-        const actionField = method === 'GET' ? 'can_view' : (method === 'POST' ? 'can_add' : (method === 'DELETE' ? 'can_delete' : 'can_edit'));
+        const isExport = fullPath.includes('/export') || req.query?.export === 'true' || req.query?.format === 'csv';
+        const isApprove = fullPath.includes('/approve') || fullPath.includes('/accept');
 
-        const hasPerm = perms.some(p => {
-          if (!p[actionField]) return false;
-          const normMod = p.module.toLowerCase().replace(/_/g, '-');
-          const rawMod = p.module.toLowerCase();
-          const patterns = MODULE_TO_ROUTE_PATTERNS[p.module] || [normMod, rawMod];
-          return patterns.some(pattern => fullPath.includes(pattern)) || fullPath.includes(normMod) || fullPath.includes(rawMod);
-        });
+        let actionField = 'can_view';
+        if (isExport) actionField = 'can_export';
+        else if (isApprove) actionField = 'can_approve';
+        else if (method === 'POST') actionField = 'can_add';
+        else if (method === 'DELETE') actionField = 'can_delete';
+        else if (method === 'PUT' || method === 'PATCH') actionField = 'can_edit';
 
-        if (hasPerm) {
+        // Check if route matches any registered module pattern
+        let matchingModule = null;
+        for (const [modKey, patterns] of Object.entries(MODULE_TO_ROUTE_PATTERNS)) {
+          if (patterns.some(pattern => fullPath.includes(pattern))) {
+            matchingModule = modKey;
+            break;
+          }
+        }
+
+        if (matchingModule) {
+          let modPerm = perms.find(p => p.module === matchingModule);
+          // Check aliases
+          if (!modPerm && matchingModule === 'wedding_crm') {
+            modPerm = perms.find(p => p.module === 'telecaller_desk' || p.module === 'wedding_registration');
+          }
+          if (!modPerm && matchingModule === 'wedding_registration') {
+            modPerm = perms.find(p => p.module === 'wedding_crm');
+          }
+
+          if (modPerm) {
+            if (modPerm[actionField]) {
+              return next();
+            }
+            return errorRes(res, `Forbidden: action '${actionField.replace('can_', '')}' is not permitted for module '${matchingModule}'`, [], 403);
+          } else {
+            return errorRes(res, `Forbidden: access to module '${matchingModule}' is not permitted`, [], 403);
+          }
+        }
+
+        // If no specific module pattern matched, allow if role matches
+        if (roles.includes(req.user.role)) {
           return next();
         }
       }
     } catch (e) {
-      // Fall through to 403
+      console.warn('[authorize] user_permissions check error:', e.message);
+    }
+
+    if (roles.includes(req.user.role)) {
+      return next();
     }
 
     const { record403Violation } = require('./suspiciousActivityTracker');

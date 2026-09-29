@@ -1,5 +1,5 @@
 import { io, Socket } from 'socket.io-client';
-import { Auth } from './api';
+import { API, Auth } from './api';
 import { permissionsCache } from '../context/PermissionsCache';
 
 export type RealtimeEntity =
@@ -175,6 +175,19 @@ class RealtimeClient {
       permissionsCache.invalidate();
       window.dispatchEvent(new CustomEvent('permissions-updated', { detail: payload }));
       window.dispatchEvent(new CustomEvent('realtime:permissions', { detail: payload }));
+
+      const current = Auth.get();
+      const targetUserId = payload?.userId || payload?.id;
+      if (current && targetUserId && Number(current.id) === Number(targetUserId)) {
+        API.getMyPermissions().then((res: any) => {
+          if (res?.data?.modules) {
+            const updated = { ...current, modules: res.data.modules };
+            localStorage.setItem('bsc_user_session', JSON.stringify(updated));
+            localStorage.setItem('user', JSON.stringify(updated));
+            window.dispatchEvent(new Event('bsc_auth_changed'));
+          }
+        }).catch(() => {});
+      }
     };
 
     this.socket.on('permissions:update', handlePermissionsUpdate);

@@ -2,6 +2,7 @@ const db = require('../config/db');
 const bcrypt = require('bcryptjs');
 const { successRes, errorRes } = require('../utils/response');
 const { logAction } = require('../utils/logger');
+const { DEFAULT_DEPARTMENTS, mergeOptions } = require('../utils/directoryLists');
 const userMgmtController = require('./userManagementController');
 
 /**
@@ -288,8 +289,34 @@ const deleteInterviewQuestion = async (req, res) => {
   }
 };
 
+const getDepartments = async (req, res) => {
+  try {
+    let dbDepartments = [];
+    try {
+      const [rows] = await db.query(
+        `SELECT DISTINCT department FROM users WHERE department IS NOT NULL AND TRIM(department) <> '' ORDER BY department ASC`
+      );
+      dbDepartments = rows.map((r) => r.department);
+    } catch (e) {}
+
+    let sectionDepartments = [];
+    try {
+      const [rows] = await db.query(
+        `SELECT DISTINCT department FROM department_sections WHERE department IS NOT NULL AND TRIM(department) <> ''`
+      );
+      sectionDepartments = rows.map((r) => r.department);
+    } catch (e) {}
+
+    return res.json({ departments: mergeOptions(DEFAULT_DEPARTMENTS, [...dbDepartments, ...sectionDepartments]) });
+  } catch (err) {
+    console.error('[Settings - getDepartments] error:', err.message);
+    return res.json({ departments: DEFAULT_DEPARTMENTS });
+  }
+};
+
 const getRoles = async (req, res) => {
   try {
+
     let roles = [];
     try {
       const [rows] = await db.query(
@@ -328,5 +355,6 @@ module.exports = {
   getAllInterviewQuestions,
   addInterviewQuestion,
   deleteInterviewQuestion,
-  getRoles
+  getRoles,
+  getDepartments
 };

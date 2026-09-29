@@ -62,7 +62,8 @@ function isValidUsername(username) {
 
 // System roles recognized across the platform
 const VALID_SYSTEM_ROLES = [
-  'Super Admin', 'Admin', 'Wedding Collection Manager', 'Team Lead', 'Telecaller', 'HR', 'Manager', 'Recruiter', 'Interviewer', 'Employee', 'Greeter', 'Guest'
+  'Super Admin', 'Admin', 'Wedding Collection Manager', 'Team Lead', 'Telecaller', 'HR', 'Manager', 'Recruiter', 'Interviewer', 'Employee', 'Greeter', 'Guest',
+  'HR Manager', 'CRM Manager', 'CRM Executive', 'VM Extension Telecaller'
 ];
 
 async function isValidRole(role) {

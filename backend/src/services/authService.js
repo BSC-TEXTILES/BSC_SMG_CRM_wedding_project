@@ -208,14 +208,20 @@ class AuthService {
     // Retrieve user's explicitly assigned modules from user_permissions
     let userModules = [];
     let hasCustomModules = false;
+    let userPermissionsList = [];
     try {
-      const [permRows] = await pool.query(
-        'SELECT module FROM user_permissions WHERE user_id = ? AND can_view = TRUE',
+      const [countRows] = await pool.query(
+        'SELECT COUNT(*) AS cnt FROM user_permissions WHERE user_id = ?',
         [user.id]
       );
-      if (permRows && permRows.length > 0) {
-        userModules = permRows.map(r => r.module);
+      if (countRows && countRows[0] && countRows[0].cnt > 0) {
         hasCustomModules = true;
+        const [allPermRows] = await pool.query(
+          'SELECT module, can_view, can_add, can_edit, can_delete, can_export, can_approve FROM user_permissions WHERE user_id = ?',
+          [user.id]
+        );
+        userPermissionsList = allPermRows;
+        userModules = allPermRows.filter(r => r.can_view === 1 || r.can_view === true).map(r => r.module);
       }
     } catch (e) {
       console.warn('[AuthService] user_permissions query error:', e.message);
@@ -223,13 +229,13 @@ class AuthService {
 
     if (!hasCustomModules) {
       const userSyncService = require('./userSyncService');
+      const authorizationService = require('./authorizationService');
       if (isAdminRole) {
         userModules = userSyncService.adminModules();
       } else {
-        const rKey = userSyncService.resolveRoleKey(user.role);
-        userModules = (rKey && userSyncService.ROLE_DEFAULT_MODULES[rKey])
-          ? [...userSyncService.ROLE_DEFAULT_MODULES[rKey]]
-          : ['dashboard'];
+        const roleDefaults = authorizationService.resolveRoleDefaultPermissions(user.role);
+        userModules = roleDefaults.map(r => r.module);
+        userPermissionsList = roleDefaults;
       }
     }
 
@@ -281,7 +287,8 @@ class AuthService {
         locationName,
         isGlobalAdmin,
         allowedLocations,
-        modules: userModules
+        modules: userModules,
+        permissions: userPermissionsList
       }
     };
   }
@@ -491,14 +498,20 @@ class AuthService {
     // Retrieve user's explicitly assigned modules
     let userModules = [];
     let hasCustomModules = false;
+    let userPermissionsList = [];
     try {
-      const [permRows] = await pool.query(
-        'SELECT module FROM user_permissions WHERE user_id = ? AND can_view = TRUE',
+      const [countRows] = await pool.query(
+        'SELECT COUNT(*) AS cnt FROM user_permissions WHERE user_id = ?',
         [user.id]
       );
-      if (permRows && permRows.length > 0) {
-        userModules = permRows.map(r => r.module);
+      if (countRows && countRows[0] && countRows[0].cnt > 0) {
         hasCustomModules = true;
+        const [allPermRows] = await pool.query(
+          'SELECT module, can_view, can_add, can_edit, can_delete, can_export, can_approve FROM user_permissions WHERE user_id = ?',
+          [user.id]
+        );
+        userPermissionsList = allPermRows;
+        userModules = allPermRows.filter(r => r.can_view === 1 || r.can_view === true).map(r => r.module);
       }
     } catch (e) {
       console.warn('[AuthService] user_permissions query error:', e.message);
@@ -506,13 +519,13 @@ class AuthService {
 
     if (!hasCustomModules) {
       const userSyncService = require('./userSyncService');
+      const authorizationService = require('./authorizationService');
       if (isAdminRole) {
         userModules = userSyncService.adminModules();
       } else {
-        const rKey = userSyncService.resolveRoleKey(user.role);
-        userModules = (rKey && userSyncService.ROLE_DEFAULT_MODULES[rKey])
-          ? [...userSyncService.ROLE_DEFAULT_MODULES[rKey]]
-          : ['dashboard'];
+        const roleDefaults = authorizationService.resolveRoleDefaultPermissions(user.role);
+        userModules = roleDefaults.map(r => r.module);
+        userPermissionsList = roleDefaults;
       }
     }
 
@@ -572,7 +585,8 @@ class AuthService {
         locationName,
         isGlobalAdmin,
         allowedLocations,
-        modules: userModules
+        modules: userModules,
+        permissions: userPermissionsList
       }
     };
   }
@@ -767,13 +781,17 @@ class AuthService {
     let userModules = [];
     let hasCustomModules = false;
     try {
-      const [permRows] = await pool.query(
-        'SELECT module FROM user_permissions WHERE user_id = ? AND can_view = TRUE',
+      const [countRows] = await pool.query(
+        'SELECT COUNT(*) AS cnt FROM user_permissions WHERE user_id = ?',
         [user.id]
       );
-      if (permRows && permRows.length > 0) {
-        userModules = permRows.map(r => r.module);
+      if (countRows && countRows[0] && countRows[0].cnt > 0) {
         hasCustomModules = true;
+        const [allPermRows] = await pool.query(
+          'SELECT module, can_view FROM user_permissions WHERE user_id = ?',
+          [user.id]
+        );
+        userModules = allPermRows.filter(r => r.can_view === 1 || r.can_view === true).map(r => r.module);
       }
     } catch (e) {
       console.warn('[rotateRefreshToken] user_permissions query error:', e.message);
@@ -781,14 +799,13 @@ class AuthService {
 
     if (!hasCustomModules) {
       const userSyncService = require('./userSyncService');
+      const authorizationService = require('./authorizationService');
       const isAdminRole = ['Admin', 'Super Admin'].includes(user.role);
       if (isAdminRole) {
         userModules = userSyncService.adminModules();
       } else {
-        const rKey = userSyncService.resolveRoleKey(user.role);
-        userModules = (rKey && userSyncService.ROLE_DEFAULT_MODULES[rKey])
-          ? [...userSyncService.ROLE_DEFAULT_MODULES[rKey]]
-          : ['dashboard'];
+        const roleDefaults = authorizationService.resolveRoleDefaultPermissions(user.role);
+        userModules = roleDefaults.map(r => r.module);
       }
     }
 

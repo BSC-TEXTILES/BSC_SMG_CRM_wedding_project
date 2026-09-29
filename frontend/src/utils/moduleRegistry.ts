@@ -24,55 +24,56 @@ export interface AppModuleDefinition {
 
 export const MODULE_REGISTRY: AppModuleDefinition[] = [
   // Enterprise & Executive
-  { key: 'dashboard', label: 'Admin Dashboard', route: '/dashboard', permission: 'dashboard', section: 'Enterprise', landingPriority: 5 },
-  { key: 'regional_analytics', label: 'Regional Analytics', route: '/dashboard', permission: 'regional_analytics', section: 'Enterprise', landingPriority: 10 },
-  { key: 'employees', label: 'Employee Directory', route: '/employees', permission: 'employees', section: 'Enterprise', landingPriority: 30 },
-  { key: 'greyhr', label: 'GreyHR Sync', route: '/employees', permission: 'greyhr', section: 'Enterprise', landingPriority: 80 },
+  { key: 'dashboard', label: 'Dashboard', route: '/dashboard', permission: 'dashboard', section: 'Enterprise', landingPriority: 5, description: 'Core operational workspace, metrics and quick access hub' },
+  { key: 'regional_analytics', label: 'Regional Analytics', route: '/dashboard', permission: 'regional_analytics', section: 'Enterprise', landingPriority: 10, description: 'Multi-store regional comparative analytics' },
+  { key: 'employees', label: 'Employee Directory', route: '/employees', permission: 'employees', section: 'Enterprise', landingPriority: 30, description: 'Staff directory, branch profiles & employee records' },
+  { key: 'greyhr', label: 'GreyHR Sync', route: '/employees', permission: 'greyhr', section: 'Enterprise', landingPriority: 80, description: 'Payroll and external HRMS data synchronization' },
 
   // Store Operations — Wedding CRM
-  { key: 'telecaller_dashboard', label: 'Telecaller Dashboard', route: '/telecaller-dashboard', permission: 'telecaller_dashboard', section: 'Store Operations', landingPriority: 10 },
-  { key: 'telecaller_desk', label: 'Telecaller Desk', route: '/telecaller/desk', permission: 'telecaller_desk', section: 'Store Operations', landingPriority: 15 },
-  { key: 'wedding_crm', label: 'Wedding CRM', route: '/wedding-crm/dashboard', permission: 'wedding_crm', section: 'Store Operations', landingPriority: 20 },
-  { key: 'wedding_registration', label: 'Wedding Customer Registration', route: '/wedding/customer-registration', permission: 'wedding_registration', section: 'Store Operations', landingPriority: 25 },
-  { key: 'wedding_operations', label: 'Wedding Operations Desk', route: '/wedding-operations', permission: 'wedding_operations', section: 'Store Operations', landingPriority: 28 },
+  { key: 'wedding_crm', label: 'Wedding CRM', route: '/wedding-crm/dashboard', permission: 'wedding_crm', section: 'Store Operations', landingPriority: 20, description: 'Wedding bridal consultation CRM & lead pipeline' },
+  { key: 'wedding_registration', label: 'Wedding Customer Registration', route: '/wedding/customer-registration', permission: 'wedding_registration', section: 'Store Operations', landingPriority: 25, description: 'Front-desk customer registration & intake desk' },
+  { key: 'telecaller_desk', label: 'Telecaller Calling Desk', route: '/telecaller/desk', permission: 'telecaller_desk', section: 'Store Operations', landingPriority: 15, description: 'Active call disposition queue, reminders & dialer' },
+  { key: 'telecaller_dashboard', label: 'Telecaller Dashboard', route: '/telecaller-dashboard', permission: 'telecaller_dashboard', section: 'Store Operations', landingPriority: 10, description: 'Telecaller team performance & operational queue' },
+  { key: 'wedding_operations', label: 'Wedding Operations', route: '/wedding-operations', permission: 'wedding_operations', section: 'Store Operations', landingPriority: 28, description: 'Wedding order lifecycle & delivery management' },
 
   // Store Operations — Retail & Customer Experience
-  { key: 'footfall', label: 'Hourly Footfall', route: '/footfall', permission: 'footfall', section: 'Store Operations', landingPriority: 22 },
-  { key: 'feedback_collection', label: 'Feedback Collection', route: '/feedback-collection', permission: 'feedback_collection', section: 'Store Operations', landingPriority: 26 },
-  { key: 'feedback_list', label: 'Feedback Call Queue', route: '/feedback-list', permission: 'feedback_list', section: 'Store Operations', landingPriority: 27 },
-  { key: 'feedback_qr', label: 'Feedback QR Codes', route: '/feedback-qr-management', permission: 'feedback_qr', section: 'Store Operations', landingPriority: 35 },
-  { key: 'divert', label: 'Sourcing Diverts', route: '/divert', permission: 'divert', section: 'Store Operations', landingPriority: 40 },
-  { key: 'pm_view', label: 'Purchase Manager View', route: '/pm-view', permission: 'pm_view', section: 'Store Operations', landingPriority: 45 },
-  { key: 'vm_checklist', label: 'VM Checklist', route: '/vm-checklist', permission: 'vm_checklist', section: 'Store Operations', landingPriority: 20 },
-  { key: 'vm_dashboard', label: 'VM Dashboard', route: '/vm-dashboard', permission: 'vm_checklist', section: 'Store Operations', landingPriority: 21 },
-  { key: 'attendance', label: 'Attendance & Roster', route: '/attendance', permission: 'attendance', section: 'Store Operations', landingPriority: 35 },
+  { key: 'footfall', label: 'Hourly Footfall', route: '/footfall', permission: 'footfall', section: 'Store Operations', landingPriority: 22, description: 'Hourly customer traffic tracking by store entrance' },
+  { key: 'feedback_collection', label: 'Feedback Collection', route: '/feedback-collection', permission: 'feedback_collection', section: 'Store Operations', landingPriority: 26, description: 'Customer feedback submissions, ratings & voice of customer' },
+  { key: 'feedback_list', label: 'Feedback Call Queue', route: '/feedback-list', permission: 'feedback_list', section: 'Store Operations', landingPriority: 27, description: 'Customer resolution queue & callback management' },
+  { key: 'feedback_qr', label: 'Feedback QR Code', route: '/feedback-qr-management', permission: 'feedback_qr', section: 'Store Operations', landingPriority: 35, description: 'Store floor QR code generators & customer touchpoints' },
+  { key: 'divert', label: 'Sourcing Diverts', route: '/divert', permission: 'divert', section: 'Store Operations', landingPriority: 40, description: 'Store inventory diversion requests & tracking' },
+  { key: 'pm_view', label: 'Purchase Manager View', route: '/pm-view', permission: 'pm_view', section: 'Store Operations', landingPriority: 45, description: 'Merchandise procurement & purchase order tracking' },
+  { key: 'vm_checklist', label: 'VM Checklist', route: '/vm-checklist', permission: 'vm_checklist', section: 'Store Operations', landingPriority: 20, description: 'Visual merchandising daily checklist & audits' },
+  { key: 'vm_dashboard', label: 'VM Dashboard', route: '/vm-dashboard', permission: 'vm_checklist', section: 'Store Operations', landingPriority: 21, description: 'Visual merchandising compliance overview' },
+  { key: 'attendance', label: 'Attendance & Roster', route: '/attendance', permission: 'attendance', section: 'Store Operations', landingPriority: 35, description: 'Daily attendance logs and store shift rosters' },
 
   // Talent & HR
-  { key: 'candidates', label: 'Candidate CRM', route: '/candidates', permission: 'candidates', section: 'Talent', landingPriority: 25 },
-  { key: 'offer', label: 'Offer Desk', route: '/offer-process', permission: 'offer', section: 'Talent', landingPriority: 32 },
-  { key: 'openings', label: 'Manpower Planning', route: '/openings', permission: 'openings', section: 'Talent', landingPriority: 33 },
-  { key: 'dept_hiring', label: 'Department Hiring Status', route: '/department-hiring', permission: 'dept_hiring', section: 'Talent', landingPriority: 34 },
-  { key: 'section_allocation', label: 'Section Allocation', route: '/section-allocation', permission: 'section_allocation', section: 'Talent', landingPriority: 36 },
-  { key: 'doj_desk', label: 'DOJ Not Joined Desk', route: '/doj-desk', permission: 'doj_desk', section: 'Talent', landingPriority: 38 },
-  { key: 'joining_desk', label: 'Store Joining Desk', route: '/doj-desk', permission: 'joining_desk', section: 'Talent', landingPriority: 39 },
+  { key: 'candidates', label: 'Candidate CRM', route: '/candidates', permission: 'candidates', section: 'Talent', landingPriority: 25, description: 'Recruitment pipeline & candidate interview stages' },
+  { key: 'offer', label: 'Offer Desk', route: '/offer-process', permission: 'offer', section: 'Talent', landingPriority: 32, description: 'Job offer letter dispatch and approvals' },
+  { key: 'openings', label: 'Manpower Planning', route: '/openings', permission: 'openings', section: 'Talent', landingPriority: 33, description: 'Store headcount requisitions & vacancies' },
+  { key: 'dept_hiring', label: 'Department Hiring Status', route: '/department-hiring', permission: 'dept_hiring', section: 'Talent', landingPriority: 34, description: 'Department-wise hiring progress metrics' },
+  { key: 'section_allocation', label: 'Section Allocation', route: '/section-allocation', permission: 'section_allocation', section: 'Talent', landingPriority: 36, description: 'Floor section & department staff deployment' },
+  { key: 'doj_desk', label: 'DOJ Not Joined Desk', route: '/doj-desk', permission: 'doj_desk', section: 'Talent', landingPriority: 38, description: 'Pending candidate joinings & follow-ups' },
+  { key: 'joining_desk', label: 'Store Joining Desk', route: '/doj-desk', permission: 'joining_desk', section: 'Talent', landingPriority: 39, description: 'Store arrival & candidate joining verification' },
 
   // Daily Operations
-  { key: 'daily_mcheck', label: 'Daily MCheck', route: '/daily-mcheck', permission: 'daily_mcheck', section: 'Daily Operations', landingPriority: 20 },
-  { key: 'mcheck_reports', label: 'MCheck Reports', route: '/mcheck-reports', permission: 'mcheck_reports', section: 'Daily Operations', landingPriority: 24 },
-  { key: 'mcheck_history', label: 'MCheck History', route: '/mcheck-history', permission: 'mcheck_history', section: 'Daily Operations', landingPriority: 40 },
-  { key: 'batch_plan', label: 'Batch Plan', route: '/batch-plan', permission: 'batch_plan', section: 'Daily Operations', landingPriority: 45 },
+  { key: 'daily_mcheck', label: 'Daily MCheck', route: '/daily-mcheck', permission: 'daily_mcheck', section: 'Daily Operations', landingPriority: 20, description: 'Store opening & closing operational audits' },
+  { key: 'mcheck_reports', label: 'MCheck Reports', route: '/mcheck-reports', permission: 'mcheck_reports', section: 'Daily Operations', landingPriority: 24, description: 'MCheck compliance reports & scorecards' },
+  { key: 'mcheck_history', label: 'MCheck History', route: '/mcheck-history', permission: 'mcheck_history', section: 'Daily Operations', landingPriority: 40, description: 'Historical audit log entries & photo evidence' },
+  { key: 'mcheck_audit', label: 'MCheck Store Audit', route: '/daily-mcheck', permission: 'mcheck_audit', section: 'Daily Operations', landingPriority: 42, description: 'Live store operational compliance check' },
+  { key: 'batch_plan', label: 'Batch Plan', route: '/batch-plan', permission: 'batch_plan', section: 'Daily Operations', landingPriority: 45, description: 'Store training & batch onboarding schedule' },
 
   // Administration
-  { key: 'broadcast', label: 'Broadcast Center', route: '/broadcast-center', permission: 'broadcast', section: 'Administration', landingPriority: 50 },
-  { key: 'user_management', label: 'User Management', route: '/user-management', permission: 'user_management', section: 'Administration', landingPriority: 55 },
-  { key: 'settings', label: 'System Settings', route: '/settings', permission: 'settings', section: 'Administration', landingPriority: 60 },
-  { key: 'system_admin', label: 'System Administrator', route: '/system-admin', permission: 'system_admin', section: 'Administration', landingPriority: 65 },
+  { key: 'broadcast', label: 'Broadcast Center', route: '/broadcast-center', permission: 'broadcast', section: 'Administration', landingPriority: 50, description: 'Company-wide announcements & emergency alerts' },
+  { key: 'user_management', label: 'User Management', route: '/user-management', permission: 'user_management', section: 'Administration', landingPriority: 55, description: 'User accounts, granular permissions & security access matrix' },
+  { key: 'settings', label: 'System Settings', route: '/settings', permission: 'settings', section: 'Administration', landingPriority: 60, description: 'Portal configurations, PINs & branding controls' },
+  { key: 'system_admin', label: 'System Administrator', route: '/system-admin', permission: 'system_admin', section: 'Administration', landingPriority: 65, description: 'System health, server diagnostics & database logs' },
 
   // Kiosk / Public Facing
-  { key: 'greeter', label: 'Greeter Kiosk', route: '/greeter', permission: 'greeter', section: 'Public Portals', landingPriority: 10 },
-  { key: 'tv', label: 'Live TV Kiosk', route: '/tv', permission: 'tv', section: 'Public Portals', landingPriority: 15 },
-  { key: 'candidate_apply', label: 'Job Application Portal', route: '/apply', permission: 'candidate_apply', section: 'Public Portals', landingPriority: 90 },
-  { key: 'feedback_public', label: 'Customer Feedback Portal', route: '/feedback-public', permission: 'feedback_public', section: 'Public Portals', landingPriority: 90 }
+  { key: 'greeter', label: 'Greeter Kiosk', route: '/greeter', permission: 'greeter', section: 'Public Portals', landingPriority: 10, description: 'Customer welcome reception touchpoint' },
+  { key: 'tv', label: 'Live TV Kiosk', route: '/tv', permission: 'tv', section: 'Public Portals', landingPriority: 15, description: 'In-store digital signage and live displays' },
+  { key: 'candidate_apply', label: 'Job Applicant Registration', route: '/apply', permission: 'candidate_apply', section: 'Public Portals', landingPriority: 90, description: 'Walk-in job applicant registration kiosk' },
+  { key: 'feedback_public', label: 'Customer Feedback QR', route: '/feedback-public', permission: 'feedback_public', section: 'Public Portals', landingPriority: 90, description: 'Customer mobile self-survey portal' }
 ];
 
 /** Route -> Primary page key mapping */

@@ -5,10 +5,16 @@ import PageContainer from '../components/ui/PageContainer';
 import { API, Auth, UserSession } from '../services/api';
 import MetricCard from '../components/ui/MetricCard';
 import GlobalLocationSelector from '../components/ui/GlobalLocationSelector';
-import { Users, UserCheck, UserPlus, Clock, TriangleAlert, ArrowRight, Search, Sparkles, CalendarCheck, Building2, Footprints, MessageSquare, PhoneCall, SquareCheck, Heart, MapPin, RefreshCw, PhoneForwarded, Store, ChevronRight, Tv } from 'lucide-react';
+import {
+  Users, UserCheck, UserPlus, Clock, TriangleAlert, ArrowRight, Search, Sparkles,
+  CalendarCheck, Building2, Footprints, MessageSquare, PhoneCall, SquareCheck,
+  Heart, MapPin, RefreshCw, PhoneForwarded, Store, ChevronRight, Tv,
+  ClipboardList, Briefcase, Settings, Shield, BarChart3
+} from 'lucide-react';
 import EmployeeProfileModal from '../components/ui/EmployeeProfileModal';
-import { getRoleNavMap } from '../utils/rbac';
-import { getDefaultLandingRoute } from '../utils/moduleRegistry';
+import { getRoleNavMap, resolveAllowedPages } from '../utils/rbac';
+import { getDefaultLandingRoute, MODULE_REGISTRY } from '../utils/moduleRegistry';
+import { permissionsCache } from '../context/PermissionsCache';
 import { useLocationContext } from '../context/LocationContext';
 
 export default function DashboardPage() {
@@ -30,7 +36,13 @@ export default function DashboardPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Resolved permissions
-  const [allowed] = useState<string[]>(() => getRoleNavMap(Auth.get()?.role));
+  const [allowed, setAllowed] = useState<string[]>(() => {
+    const sess = Auth.get();
+    if (sess?.modules && Array.isArray(sess.modules) && sess.modules.length > 0) {
+      return resolveAllowedPages(sess.role, null, sess.modules);
+    }
+    return getRoleNavMap(sess?.role);
+  });
 
   // Role detection
   const roleNorm = (session?.role || '').toLowerCase().replace(/[_\s-]+/g, ' ');
@@ -43,12 +55,57 @@ export default function DashboardPage() {
   const isHRDashboard = (isHRUser && !activeView) || activeView === 'hr';
   const isManagerDashboard = (isManagerUser && !activeView) || activeView === 'manager';
 
-  // Automatically direct non-admin users to their dedicated role dashboards
+  // Permission synchronization across session & ACM updates
+  useEffect(() => {
+    const syncPerms = () => {
+      const sess = Auth.get();
+      setSession(sess);
+      try {
+        const stored = localStorage.getItem('bsc_user_session') || localStorage.getItem('user');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed?.modules) && parsed.modules.length > 0) {
+            setAllowed(resolveAllowedPages(sess?.role, null, parsed.modules));
+            return;
+          }
+        }
+      } catch {
+        // ignore
+      }
+
+      permissionsCache.get().then(({ myPerms, pageSettings }) => {
+        const userModules = myPerms?.custom && Array.isArray(myPerms.modules)
+          ? myPerms.modules
+          : (sess?.modules && sess.modules.length > 0 ? sess.modules : null);
+        setAllowed(resolveAllowedPages(sess?.role, pageSettings, userModules));
+      }).catch(() => {
+        if (sess?.modules && Array.isArray(sess.modules) && sess.modules.length > 0) {
+          setAllowed(resolveAllowedPages(sess?.role, null, sess.modules));
+        } else {
+          setAllowed(getRoleNavMap(sess?.role));
+        }
+      });
+    };
+
+    syncPerms();
+
+    window.addEventListener('bsc_auth_changed', syncPerms);
+    window.addEventListener('permissions-updated', syncPerms);
+    return () => {
+      window.removeEventListener('bsc_auth_changed', syncPerms);
+      window.removeEventListener('permissions-updated', syncPerms);
+    };
+  }, []);
+
+  // Automatically direct non-admin users to their dedicated role dashboards ONLY IF they don't have dashboard access
   useEffect(() => {
     if (!isAdminUser && session) {
-      if (isHRUser) {
+      if (allowed.includes('dashboard') || allowed.includes('regional_analytics')) {
+        return;
+      }
+      if (isHRUser && allowed.includes('dashboard')) {
         navigate('/hr-dashboard', { replace: true });
-      } else if (isManagerUser) {
+      } else if (isManagerUser && allowed.includes('dashboard')) {
         navigate('/manager-dashboard', { replace: true });
       } else {
         const target = getDefaultLandingRoute(session, allowed);
@@ -285,6 +342,46 @@ export default function DashboardPage() {
     return locMap;
   }, [employees, globalStats, weddingStats, footfallToday]);
 
+  const assignedModules = useMemo(() => {
+    const raw = MODULE_REGISTRY.filter(m => allowed.includes(m.key) && m.route !== '/dashboard');
+    const unique: typeof MODULE_REGISTRY = [];
+    const seen = new Set<string>();
+    for (const item of raw) {
+      if (!seen.has(item.route)) {
+        seen.add(item.route);
+        unique.push(item);
+      }
+    }
+    return unique;
+  }, [allowed]);
+
+  const getModuleIcon = (key: string) => {
+    switch (key) {
+      case 'wedding_crm': return Sparkles;
+      case 'wedding_registration': return Heart;
+      case 'telecaller_desk': return PhoneCall;
+      case 'telecaller_dashboard': return BarChart3;
+      case 'wedding_operations': return CalendarCheck;
+      case 'footfall': return Footprints;
+      case 'feedback_collection': return MessageSquare;
+      case 'feedback_list': return PhoneForwarded;
+      case 'feedback_qr': return ClipboardList;
+      case 'employees': return Users;
+      case 'greyhr': return UserCheck;
+      case 'candidates': return UserPlus;
+      case 'openings': return Briefcase;
+      case 'daily_mcheck':
+      case 'mcheck_audit': return SquareCheck;
+      case 'vm_checklist':
+      case 'vm_dashboard': return Store;
+      case 'user_management': return Shield;
+      case 'settings':
+      case 'system_admin': return Settings;
+      case 'tv': return Tv;
+      default: return ArrowRight;
+    }
+  };
+
   const dashboardTitle = isHRDashboard
     ? "HR Talent Dashboard"
     : isManagerDashboard
@@ -308,7 +405,7 @@ export default function DashboardPage() {
                 <span>BSC Textiles · EXECUTIVE WORKSPACE</span>
               </div>
               <h1 className="text-xl sm:text-2xl font-black text-[#182033] tracking-tight leading-tight">
-                ADMIN DASHBOARD
+                {isAdminDashboard ? 'ADMIN DASHBOARD' : 'BSC EXECUTIVE DASHBOARD'}
               </h1>
               <p className="text-xs sm:text-sm font-semibold text-[#687080] mt-1">
                 Executive &amp; Workforce Operations — Live overview of BSC Textiles across authorized locations.
@@ -333,6 +430,70 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
+
+        {/* =========================================================================
+            SECTION 1.5: ASSIGNED MODULES & QUICK WORKSPACE (Granular ACM View Modules)
+        ========================================================================== */}
+        {assignedModules.length > 0 && (
+          <div className="bg-white rounded-2xl border border-[#DFDDD7] shadow-xs p-5 sm:p-6 mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 border-b border-[#DFDDD7]/60 pb-3">
+              <div>
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#101C36]/5 text-[#101C36] text-[10px] font-black uppercase tracking-wider mb-1">
+                  <Sparkles className="w-3 h-3 text-[#C9A45C]" />
+                  <span>Configured Workspace</span>
+                </div>
+                <h2 className="text-base sm:text-lg font-black text-[#182033] tracking-tight">
+                  Assigned Modules &amp; Applications
+                </h2>
+                <p className="text-xs text-[#687080] font-medium">
+                  Direct access to all modules and tools provisioned for your account.
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-[#F6F4EF] text-[#182033] border border-[#DFDDD7]">
+                  {assignedModules.length} Active {assignedModules.length === 1 ? 'Module' : 'Modules'}
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {assignedModules.map(m => {
+                const IconComp = getModuleIcon(m.key);
+                return (
+                  <div
+                    key={m.key}
+                    onClick={() => navigate(m.route)}
+                    className="group relative bg-[#FBFBFA] hover:bg-white rounded-xl p-4 border border-[#DFDDD7] hover:border-[#C9A45C] transition-all duration-200 shadow-2xs hover:shadow-md cursor-pointer flex flex-col justify-between"
+                  >
+                    <div>
+                      <div className="flex items-start justify-between gap-2 mb-3">
+                        <div className="w-10 h-10 rounded-xl bg-[#101C36] text-[#C9A45C] flex items-center justify-center font-bold shadow-xs group-hover:scale-105 transition-transform">
+                          <IconComp className="w-5 h-5" />
+                        </div>
+                        <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-[#DFDDD7]/40 text-[#687080] group-hover:bg-[#C9A45C]/15 group-hover:text-[#8C6B2D] transition-colors">
+                          {m.section}
+                        </span>
+                      </div>
+                      <h3 className="text-sm font-bold text-[#182033] group-hover:text-[#101C36] leading-snug">
+                        {m.label}
+                      </h3>
+                      {m.description && (
+                        <p className="text-xs text-[#687080] mt-1 line-clamp-2 leading-relaxed">
+                          {m.description}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="mt-4 pt-3 border-t border-[#DFDDD7]/40 flex items-center justify-between text-xs font-bold text-[#C9A45C] group-hover:text-[#101C36] transition-colors">
+                      <span>Launch Module</span>
+                      <ArrowRight className="w-3.5 h-3.5 transform group-hover:translate-x-1 transition-transform" />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* =========================================================================
             SECTION 2: PRIMARY KPI GRID (4 Cols Desktop, 2 Cols Tablet, 1 Col Mobile)

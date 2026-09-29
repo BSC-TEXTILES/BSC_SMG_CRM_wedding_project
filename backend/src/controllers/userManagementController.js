@@ -745,31 +745,29 @@ const updatePermissions = async (req, res) => {
 
     const grantedBy = req.user ? req.user.username : 'Admin';
 
-    // Delete existing permissions and re-insert
+    // Delete existing permissions and re-insert explicit matrix records
     await db.query(`DELETE FROM user_permissions WHERE user_id = ?`, [id]);
 
     for (const perm of permissions) {
       if (!perm.module) continue;
-      // Only insert if at least one permission is granted
-      if (perm.can_view || perm.can_add || perm.can_edit || perm.can_delete || perm.can_export || perm.can_approve) {
-        await db.query(
-          `INSERT INTO user_permissions (user_id, module, can_view, can_add, can_edit, can_delete, can_export, can_approve, granted_by)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [id, perm.module, !!perm.can_view, !!perm.can_add, !!perm.can_edit,
-           !!perm.can_delete, !!perm.can_export, !!perm.can_approve, grantedBy]
-        );
-      }
+      await db.query(
+        `INSERT INTO user_permissions (user_id, module, can_view, can_add, can_edit, can_delete, can_export, can_approve, granted_by)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [id, perm.module, perm.can_view ? 1 : 0, perm.can_add ? 1 : 0, perm.can_edit ? 1 : 0,
+         perm.can_delete ? 1 : 0, perm.can_export ? 1 : 0, perm.can_approve ? 1 : 0, grantedBy]
+      );
     }
 
     invalidateUserStatusCache(id);
 
-    await _audit(req, 'UPDATE_PERMISSIONS', { userId: id, username: user.username, moduleCount: permissions.filter(p => p.can_view).length });
+    const activeViewModules = permissions.filter(p => p.can_view).map(p => p.module);
+    await _audit(req, 'UPDATE_PERMISSIONS', { userId: id, username: user.username, moduleCount: activeViewModules.length });
 
-    realtimeService.emitPermissionsChange(id, { username: user.username });
-    realtimeService.emitUserChange('PERMISSIONS', { id, username: user.username });
+    realtimeService.emitPermissionsChange(id, { username: user.username, modules: activeViewModules });
+    realtimeService.emitUserChange('PERMISSIONS', { id, username: user.username, modules: activeViewModules });
     realtimeService.emitUserChange('UPDATE', { id, username: user.username });
 
-    return successRes(res, { id }, 'Permissions updated successfully');
+    return successRes(res, { id, modules: activeViewModules }, 'Permissions updated successfully');
   } catch (err) {
     return errorRes(res, 'Failed to update permissions', [err.message], 500);
   }
@@ -899,7 +897,16 @@ const getMyPermissions = async (req, res) => {
       return successRes(res, {
         isAdmin: true,
         custom: true,
-        modules: MODULE_REGISTRY.map(m => m.key)
+        modules: MODULE_REGISTRY.map(m => m.key),
+        permissions: MODULE_REGISTRY.map(m => ({
+          module: m.key,
+          can_view: true,
+          can_add: true,
+          can_edit: true,
+          can_delete: true,
+          can_export: true,
+          can_approve: true
+        }))
       }, 'Admin full permissions');
     }
 
@@ -911,10 +918,17 @@ const getMyPermissions = async (req, res) => {
 
     if (!rows || rows.length === 0) {
       // No custom overrides set, fall back to role defaults
-      return successRes(res, { isAdmin: false, custom: false, permissions: [] }, 'Using role defaults');
+      const roleDefaults = authorizationService.resolveRoleDefaultPermissions(role);
+      const roleModules = roleDefaults.filter(r => r.can_view).map(r => r.module);
+      return successRes(res, {
+        isAdmin: false,
+        custom: false,
+        modules: roleModules,
+        permissions: roleDefaults
+      }, 'Using role defaults');
     }
 
-    const viewableModules = rows.filter(r => r.can_view).map(r => r.module);
+    const viewableModules = rows.filter(r => r.can_view === 1 || r.can_view === true).map(r => r.module);
 
     return successRes(res, {
       isAdmin: false,
@@ -923,7 +937,14 @@ const getMyPermissions = async (req, res) => {
       permissions: rows
     }, 'User custom permissions retrieved');
   } catch (err) {
-    return successRes(res, { isAdmin: false, custom: false, permissions: [] }, 'Fallback to role defaults');
+    const roleDefaults = authorizationService.resolveRoleDefaultPermissions(req.user?.role);
+    const roleModules = roleDefaults.filter(r => r.can_view).map(r => r.module);
+    return successRes(res, {
+      isAdmin: false,
+      custom: false,
+      modules: roleModules,
+      permissions: roleDefaults
+    }, 'Fallback to role defaults');
   }
 };
 

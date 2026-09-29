@@ -85,7 +85,7 @@ export const ROLE_NAV_MAP: Record<string, string[]> = {
 
 export const MODULE_KEY_TO_ROUTE: Record<string, string> = {
   dashboard: '/dashboard',
-  wedding_crm: '/wedding-crm',
+  wedding_crm: '/wedding-crm/dashboard',
   wedding_registration: '/wedding/customer-registration',
   wedding_operations: '/wedding-operations',
   telecaller_desk: '/telecaller/desk',
@@ -108,6 +108,8 @@ export const MODULE_KEY_TO_ROUTE: Record<string, string> = {
   daily_mcheck: '/daily-mcheck',
   mcheck_reports: '/mcheck-reports',
   mcheck_history: '/mcheck-history',
+  mcheck_audit: '/daily-mcheck',
+  greyhr: '/employees',
   broadcast: '/broadcast-center',
   settings: '/settings',
   system_admin: '/system-admin',
@@ -171,7 +173,15 @@ export function resolveAllowedPages(
 
   // User-specific permission overrides (exact module list assigned by Admin in Access Control Matrix / User Management)
   if (userModules && Array.isArray(userModules)) {
-    return Array.from(new Set(userModules));
+    const expanded = new Set<string>(userModules);
+    if (expanded.has('doj_desk')) expanded.add('joining_desk');
+    if (expanded.has('joining_desk')) expanded.add('doj_desk');
+    if (expanded.has('daily_mcheck')) expanded.add('mcheck_audit');
+    if (expanded.has('mcheck_audit')) expanded.add('daily_mcheck');
+    if (expanded.has('greyhr')) expanded.add('employees');
+    if (expanded.has('employees')) expanded.add('greyhr');
+    if (expanded.has('regional_analytics')) expanded.add('dashboard');
+    return Array.from(expanded);
   }
 
   // Base role defaults narrowed by database page_visibility settings if configured

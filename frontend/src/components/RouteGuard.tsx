@@ -34,9 +34,10 @@ export default function RouteGuard({ pageKey, children }: { pageKey: string; chi
       return 'allowed';
     }
 
-    // Direct token/session module list check
-    if (Array.isArray(session.modules) && session.modules.includes(pageKey)) {
-      return 'allowed';
+    // Direct token/session module list check (if user has custom ACM matrix)
+    if (Array.isArray(session.modules)) {
+      const allowed = resolveAllowedPages(session.role, null, session.modules);
+      return allowed.includes(pageKey) ? 'allowed' : 'denied';
     }
 
     // Base role navigation check
@@ -69,7 +70,9 @@ export default function RouteGuard({ pageKey, children }: { pageKey: string; chi
     permissionsCache.get().then(({ myPerms, pageSettings }) => {
       if (cancelled) return;
 
-      const userModules = myPerms?.custom && Array.isArray(myPerms.modules) ? myPerms.modules : null;
+      const userModules = myPerms?.custom && Array.isArray(myPerms.modules)
+        ? myPerms.modules
+        : (session.modules && session.modules.length > 0 ? session.modules : null);
       const allowed = resolveAllowedPages(session.role, pageSettings, userModules);
 
       // Check if pageKey is authorized
@@ -81,11 +84,12 @@ export default function RouteGuard({ pageKey, children }: { pageKey: string; chi
       setResolution('allowed');
     }).catch(() => {
       if (cancelled) return;
-      const roleKeys = getRoleNavMap(session.role);
-      if (roleKeys.includes(pageKey)) {
-        setResolution('allowed');
+      if (Array.isArray(session.modules)) {
+        const allowed = resolveAllowedPages(session.role, null, session.modules);
+        setResolution(allowed.includes(pageKey) ? 'allowed' : 'denied');
       } else {
-        setResolution('denied');
+        const roleKeys = getRoleNavMap(session.role);
+        setResolution(roleKeys.includes(pageKey) ? 'allowed' : 'denied');
       }
     });
 

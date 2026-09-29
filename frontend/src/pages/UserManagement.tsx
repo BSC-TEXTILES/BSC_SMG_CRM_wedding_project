@@ -83,7 +83,60 @@ const DEFAULT_SYSTEM_ROLES = [
   'Interviewer',
   'Employee',
   'Greeter',
-  'Guest'
+  'Guest',
+  'HR Manager',
+  'CRM Manager',
+  'CRM Executive',
+  'VM Extension Telecaller'
+];
+
+const DEFAULT_DEPARTMENTS = [
+  'Sales',
+  'HR',
+  'Cashier',
+  'Admin',
+  'Management',
+  'Operations',
+  'Marketing',
+  'IT',
+  'Customer Support',
+  'Visual Merchandising',
+  'Logistics/Stock',
+  'Telecalling',
+  'Security'
+];
+
+const DEFAULT_DESIGNATIONS = [
+  'Super Admin',
+  'Admin',
+  'Wedding Collection Manager',
+  'Team Lead',
+  'Telecaller',
+  'HR',
+  'Manager',
+  'Recruiter',
+  'Interviewer',
+  'Employee',
+  'Greeter',
+  'Guest',
+  'HR Manager',
+  'CRM Manager',
+  'CRM Executive',
+  'VM Extension Telecaller',
+  'Store Manager',
+  'Assistant Store Manager',
+  'Sales Executive',
+  'HR Executive',
+  'Cashier',
+  'Head Cashier',
+  'Floor Manager',
+  'System Admin',
+  'Admin Assistant',
+  'Team Leader',
+  'Security Guard',
+  'Visual Merchandiser',
+  'Inventory Manager',
+  'Accountant'
 ];
 
 export default function UserManagementPage() {
@@ -108,6 +161,8 @@ export default function UserManagementPage() {
   const [deptFilter, setDeptFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
   const [availableRoles, setAvailableRoles] = useState<string[]>(DEFAULT_SYSTEM_ROLES);
+  const [availableDepartments, setAvailableDepartments] = useState<string[]>(DEFAULT_DEPARTMENTS);
+  const [availableDesignations, setAvailableDesignations] = useState<string[]>(DEFAULT_DESIGNATIONS);
   const [locationFilter, setLocationFilter] = useState('ALL');
 
   // Modals state
@@ -247,11 +302,13 @@ export default function UserManagementPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [usersRes, modulesRes, locsRes, rolesRes] = await Promise.all([
+      const [usersRes, modulesRes, locsRes, rolesRes, deptsRes, desigRes] = await Promise.all([
         API.getAdminUsers(),
         API.getAdminModules().catch(() => ({ modules: [] })),
         API.getLocations().catch(() => []),
-        API.getRoles().catch(() => ({ roles: [] }))
+        API.getRoles().catch(() => ({ roles: [] })),
+        API.getDepartments().catch(() => ({ departments: DEFAULT_DEPARTMENTS })),
+        API.getDesignations().catch(() => ({ designations: [] }))
       ]);
 
       if (usersRes?.users) {
@@ -307,6 +364,27 @@ export default function UserManagementPage() {
           setAvailableRoles(Array.from(new Set([...DEFAULT_SYSTEM_ROLES, ...parsed])));
         }
       }
+
+      const mergeOptions = (defaults: string[], ...lists: any[]) => {
+        const seen = new Map<string, string>();
+        const push = (v: any) => {
+          if (v === null || v === undefined) return;
+          const text = String(v).trim();
+          if (!text) return;
+          const key = text.toLowerCase();
+          if (!seen.has(key)) seen.set(key, text);
+        };
+        defaults.forEach(push);
+        lists.forEach(list => Array.isArray(list) && list.forEach(push));
+        return Array.from(seen.values());
+      };
+
+      const userRows = usersRes?.users ?? (Array.isArray(usersRes) ? usersRes : []);
+      const apiDepartments = deptsRes?.departments ?? (Array.isArray(deptsRes) ? deptsRes : []);
+      const apiDesignations = desigRes?.designations ?? (Array.isArray(desigRes) ? desigRes : []);
+
+      setAvailableDepartments(mergeOptions(DEFAULT_DEPARTMENTS, apiDepartments, userRows.map((u: any) => u.department)));
+      setAvailableDesignations(mergeOptions(DEFAULT_DESIGNATIONS, apiDesignations, userRows.map((u: any) => u.designation)));
     } catch (err: any) {
       showToast('Error loading user management data: ' + (err.message || 'Server error'), 'error');
     } finally {
@@ -952,6 +1030,17 @@ export default function UserManagementPage() {
       await API.updateAdminUserPermissions(selectedUser.id, payload);
       permissionsCache.invalidate();
       window.dispatchEvent(new Event('permissions-updated'));
+
+      // If the currently logged in user's permissions were updated, sync session modules immediately
+      const current = Auth.get();
+      if (current && Number(current.id) === Number(selectedUser.id)) {
+        const viewableModules = payload.filter(p => p.can_view).map(p => p.module);
+        const updatedSession = { ...current, modules: viewableModules };
+        localStorage.setItem('bsc_user_session', JSON.stringify(updatedSession));
+        localStorage.setItem('user', JSON.stringify(updatedSession));
+        window.dispatchEvent(new Event('bsc_auth_changed'));
+      }
+
       showToast(`Permissions matrix for "${selectedUser.username}" saved successfully`, 'success');
       setPermModalOpen(false);
       loadData();
@@ -1852,19 +1941,9 @@ export default function UserManagementPage() {
                     className="w-full px-3 py-2 text-xs rounded-xl border border-accent/30 focus:outline-none focus:ring-2 focus:ring-accent/50 text-primary font-medium bg-white"
                   >
                     <option value="">Select Department...</option>
-                    <option value="Sales">Sales</option>
-                    <option value="HR">HR</option>
-                    <option value="Cashier">Cashier</option>
-                    <option value="Admin">Admin</option>
-                    <option value="Management">Management</option>
-                    <option value="Operations">Operations</option>
-                    <option value="Marketing">Marketing</option>
-                    <option value="IT">IT</option>
-                    <option value="Customer Support">Customer Support</option>
-                    <option value="Visual Merchandising">Visual Merchandising</option>
-                    <option value="Logistics/Stock">Logistics/Stock</option>
-                    <option value="Telecalling">Telecalling</option>
-                    <option value="Security">Security</option>
+                    {availableDepartments.map(d => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
                   </select>
                 </div>
 
@@ -1876,23 +1955,9 @@ export default function UserManagementPage() {
                     className="w-full px-3 py-2 text-xs rounded-xl border border-accent/30 focus:outline-none focus:ring-2 focus:ring-accent/50 text-primary font-medium bg-white"
                   >
                     <option value="">Select Designation...</option>
-                    <option value="Store Manager">Store Manager</option>
-                    <option value="Assistant Store Manager">Assistant Store Manager</option>
-                    <option value="Sales Executive">Sales Executive</option>
-                    <option value="HR Executive">HR Executive</option>
-                    <option value="HR Manager">HR Manager</option>
-                    <option value="Cashier">Cashier</option>
-                    <option value="Head Cashier">Head Cashier</option>
-                    <option value="Floor Manager">Floor Manager</option>
-                    <option value="Greeter">Greeter</option>
-                    <option value="System Admin">System Admin</option>
-                    <option value="Admin Assistant">Admin Assistant</option>
-                    <option value="Telecaller">Telecaller</option>
-                    <option value="Team Leader">Team Leader</option>
-                    <option value="Security Guard">Security Guard</option>
-                    <option value="Visual Merchandiser">Visual Merchandiser</option>
-                    <option value="Inventory Manager">Inventory Manager</option>
-                    <option value="Accountant">Accountant</option>
+                    {availableDesignations.map(d => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
                   </select>
 </div>
             </div>
@@ -2140,24 +2205,38 @@ export default function UserManagementPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-primary mb-1">Department</label>
-                  <input
-                    type="text"
+                  <select
                     value={editDepartment}
                     onChange={e => setEditDepartment(e.target.value)}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-accent/30 focus:outline-none focus:ring-2 focus:ring-accent/50 text-primary font-medium"
-                  />
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-accent/30 focus:outline-none focus:ring-2 focus:ring-accent/50 text-primary font-medium bg-white"
+                  >
+                    <option value="">Select Department...</option>
+                    {(editDepartment && !availableDepartments.some(d => d.toLowerCase() === editDepartment.trim().toLowerCase())
+                      ? [editDepartment.trim(), ...availableDepartments]
+                      : availableDepartments
+                    ).map(d => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-primary mb-1">Designation</label>
-                  <input
-                    type="text"
+                  <select
                     value={editDesignation}
                     onChange={e => setEditDesignation(e.target.value)}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-accent/30 focus:outline-none focus:ring-2 focus:ring-accent/50 text-primary font-medium"
-                  />
-</div>
-            </div>
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-accent/30 focus:outline-none focus:ring-2 focus:ring-accent/50 text-primary font-medium bg-white"
+                  >
+                    <option value="">Select Designation...</option>
+                    {(editDesignation && !availableDesignations.some(d => d.toLowerCase() === editDesignation.trim().toLowerCase())
+                      ? [editDesignation.trim(), ...availableDesignations]
+                      : availableDesignations
+                    ).map(d => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>

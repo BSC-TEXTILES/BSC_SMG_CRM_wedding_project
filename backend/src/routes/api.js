@@ -231,6 +231,7 @@ router.post('/settings/users/reset-password', authenticate, authorize('Admin', '
 router.get('/settings/page-visibility', settingsController.getPageSettings);
 router.post('/settings/page-visibility', authenticate, authorize('Admin', 'Super Admin'), settingsController.savePageSettings);
 router.get('/settings/roles', settingsController.getRoles);
+router.get('/settings/departments', settingsController.getDepartments);
 router.get('/admin/roles', settingsController.getRoles);
 router.get('/roles', settingsController.getRoles);
 router.get('/settings/designations', settingsController.getDesignations);

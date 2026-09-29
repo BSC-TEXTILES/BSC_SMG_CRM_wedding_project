@@ -147,8 +147,7 @@ export default function WeddingRegistrationPage() {
       if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) newErrors.email = 'Enter a valid email address';
     }
     else if (stepNum === 3) {
-      if (!form.wedding_date) newErrors.wedding_date = 'Wedding date is required';
-      else {
+      if (form.wedding_date) {
         const weddingDate = new Date(form.wedding_date);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -628,7 +627,7 @@ export default function WeddingRegistrationPage() {
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-primary mb-1">Wedding Date <span className="text-red-500">*</span></label>
+                  <label className="block text-xs font-bold text-primary mb-1">Wedding Date</label>
                   <input
                     type="date"
                     value={form.wedding_date}
