@@ -85,6 +85,8 @@ router.post('/import', canAddWedding, handleBulkImport);
 // ── Import Error Report (.xlsx) + Import History ──────────────
 router.post('/import-error-report', canViewWedding, weddingController.downloadErrorReport);
 router.get('/import-logs', canViewWedding, weddingController.getImportLogs);
+router.delete('/import-logs/:id', canViewWedding, weddingController.deleteImportLog);
+router.delete('/import-logs', canViewWedding, weddingController.clearImportLogs);
 
 // ── Duplicate Phone Check ─────────────────────────────────────
 router.post('/check-duplicate', weddingController.checkDuplicate);

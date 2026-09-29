@@ -1646,6 +1646,16 @@ export const API = {
     return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
   },
 
+  async deleteWeddingImportLog(id: number | string) {
+    const res = await apiFetch(`/wedding-crm/import-logs/${id}`, { method: 'DELETE' });
+    return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
+  },
+
+  async clearWeddingImportLogs() {
+    const res = await apiFetch('/wedding-crm/import-logs', { method: 'DELETE' });
+    return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
+  },
+
   // ── Wedding CRM: Google Sheets Integration ───────────────────
   async getGoogleSheetsStatus() {
     const res = await apiFetch('/wedding-crm/google/status');

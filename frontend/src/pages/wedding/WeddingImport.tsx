@@ -250,6 +250,41 @@ export default function WeddingImport() {
     }
   }, []);
 
+  const [deletingLogId, setDeletingLogId] = useState<number | null>(null);
+  const [clearingLogs, setClearingLogs] = useState(false);
+
+  const handleDeleteLog = async (id: number, fileName?: string) => {
+    if (!window.confirm(`Are you sure you want to delete this import history entry${fileName ? ` for "${fileName}"` : ''}? This only removes the record from import history.`)) {
+      return;
+    }
+    setDeletingLogId(id);
+    try {
+      await API.deleteWeddingImportLog(id);
+      showToast('Import history entry deleted', 'success');
+      setImportLogs(prev => prev.filter(log => log.id !== id));
+    } catch (err: any) {
+      showToast(err.message || 'Failed to delete import log', 'error');
+    } finally {
+      setDeletingLogId(null);
+    }
+  };
+
+  const handleClearLogs = async () => {
+    if (!window.confirm('Are you sure you want to clear all import history entries? This cannot be undone.')) {
+      return;
+    }
+    setClearingLogs(true);
+    try {
+      await API.clearWeddingImportLogs();
+      showToast('Import history cleared', 'success');
+      setImportLogs([]);
+    } catch (err: any) {
+      showToast(err.message || 'Failed to clear import history', 'error');
+    } finally {
+      setClearingLogs(false);
+    }
+  };
+
   // ── Load Google Sheets Status ──
   const loadGoogleStatus = React.useCallback(async () => {
     setGoogleStatusLoading(true);
@@ -2068,15 +2103,28 @@ export default function WeddingImport() {
                   <History className="w-3.5 h-3.5 text-[#B76E79]" />
                   <span>Import History</span>
                 </span>
-                <button
-                  type="button"
-                  onClick={loadImportLogs}
-                  disabled={logsLoading}
-                  className="text-[11px] font-bold text-[#4A173A] hover:text-[#6A2853] inline-flex items-center gap-1.5 underline disabled:opacity-60"
-                >
-                  {logsLoading && <Loader2 className="w-3.5 h-3.5 animate-spin text-[#B76E79]" />}
-                  Refresh History
-                </button>
+                <div className="flex items-center gap-3">
+                  {importLogs.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleClearLogs}
+                      disabled={clearingLogs}
+                      className="text-[11px] font-bold text-[#B42318] hover:text-[#8B1A12] inline-flex items-center gap-1 underline disabled:opacity-60 cursor-pointer"
+                    >
+                      {clearingLogs && <Loader2 className="w-3 h-3 animate-spin" />}
+                      Clear All History
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={loadImportLogs}
+                    disabled={logsLoading}
+                    className="text-[11px] font-bold text-[#4A173A] hover:text-[#6A2853] inline-flex items-center gap-1.5 underline disabled:opacity-60 cursor-pointer"
+                  >
+                    {logsLoading && <Loader2 className="w-3.5 h-3.5 animate-spin text-[#B76E79]" />}
+                    Refresh History
+                  </button>
+                </div>
               </div>
 
               {importLogs.length === 0 ? (
@@ -2097,7 +2145,8 @@ export default function WeddingImport() {
                         <th className="py-2.5 px-3 text-right">Imported</th>
                         <th className="py-2.5 px-3 text-right">Dupes</th>
                         <th className="py-2.5 px-3 text-right">Errors</th>
-                        <th className="py-2.5 pl-3 pr-3">Status</th>
+                        <th className="py-2.5 px-3">Status</th>
+                        <th className="py-2.5 pl-3 pr-3 text-center">Action</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[#EADBD7] text-[#2B1722] bg-[#FFFDFC]">
@@ -2148,7 +2197,7 @@ export default function WeddingImport() {
                             <td className="py-2 px-3 text-right font-mono font-bold text-[#B42318]">
                               {log.error_count ?? 0}
                             </td>
-                            <td className="py-2 pl-3 pr-3">
+                            <td className="py-2 px-3">
                               <span
                                 className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase ${
                                   String(log.status || '')
@@ -2164,6 +2213,22 @@ export default function WeddingImport() {
                               >
                                 {String(log.status || 'Completed').replace(/[\s-]+/g, ' ')}
                               </span>
+                            </td>
+                            <td className="py-2 pl-3 pr-3 text-center whitespace-nowrap">
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteLog(log.id, log.file_name)}
+                                disabled={deletingLogId === log.id}
+                                className="p-1 rounded-lg hover:bg-[#FDE8E7] text-[#6F5963] hover:text-[#B42318] transition-colors cursor-pointer disabled:opacity-50"
+                                title="Delete this import history record"
+                                aria-label="Delete import log"
+                              >
+                                {deletingLogId === log.id ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin text-[#B42318]" />
+                                ) : (
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                )}
+                              </button>
                             </td>
                           </tr>
                         );

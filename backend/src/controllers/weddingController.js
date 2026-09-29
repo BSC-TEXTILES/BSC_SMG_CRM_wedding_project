@@ -2181,6 +2181,54 @@ class WeddingController {
       console.error('[WeddingController.getImportLogs Error]', err);
       return errorRes(res, 'Failed to load import history', [err.message], 500);
     }
+  },
+
+  // ── Delete single import log entry ────────────────────────────
+  async deleteImportLog(req, res) {
+    try {
+      await ensureTables();
+      const { id } = req.params;
+      const user = req.user || {};
+
+      const [[log]] = await pool.query('SELECT * FROM wedding_import_logs WHERE id = ?', [id]);
+      if (!log) {
+        return errorRes(res, 'Import log not found', [], 404);
+      }
+
+      // Check permission: Global Admin or log creator or same store
+      if (!isGlobalImportUser(user)) {
+        if (log.user_id !== user.id && log.location_id !== user.locationId) {
+          return errorRes(res, 'You do not have permission to delete this import log', [], 403);
+        }
+      }
+
+      await pool.query('DELETE FROM wedding_import_logs WHERE id = ?', [id]);
+      return successRes(res, { id: Number(id) }, 'Import log deleted successfully.');
+    } catch (err) {
+      console.error('[WeddingController.deleteImportLog Error]', err);
+      return errorRes(res, 'Failed to delete import log', [err.message], 500);
+    }
+  },
+
+  // ── Clear all import logs within user scope ────────────────────
+  async clearImportLogs(req, res) {
+    try {
+      await ensureTables();
+      const user = req.user || {};
+      if (!isGlobalImportUser(user)) {
+        if (user.locationId) {
+          await pool.query('DELETE FROM wedding_import_logs WHERE location_id = ? OR user_id = ?', [user.locationId, user.id]);
+        } else {
+          await pool.query('DELETE FROM wedding_import_logs WHERE user_id = ?', [user.id]);
+        }
+      } else {
+        await pool.query('DELETE FROM wedding_import_logs');
+      }
+      return successRes(res, null, 'Import history cleared successfully.');
+    } catch (err) {
+      console.error('[WeddingController.clearImportLogs Error]', err);
+      return errorRes(res, 'Failed to clear import history', [err.message], 500);
+    }
   }
 
 // ── 14. Bulk Customer Import (CSV & XLSX with Robust Validation) ──
