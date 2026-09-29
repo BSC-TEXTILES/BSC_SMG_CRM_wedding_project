@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Crown, Sparkles, CheckCircle, ArrowRight, ShieldCheck, HeartHandshake } from 'lucide-react';
 import { LANDING_DATA } from '../landingData';
+import { LazyImage } from '../../../components/ui/LazyImage';
 
 export default function WeddingSuiteSection() {
   const { weddingExperience } = LANDING_DATA;
@@ -78,14 +79,12 @@ export default function WeddingSuiteSection() {
             {/* Right Column: Visual Frame */}
             <div className="lg:col-span-5 relative">
               <div className="relative rounded-3xl overflow-hidden shadow-2xl border-2 border-[#E8DFC8]/30">
-                <img
+                <LazyImage
                   src="/images/coll-bridal-1200.webp"
                   alt="Bridal Silk Consultation"
                   width={500}
                   height={420}
-                  decoding="async"
                   className="w-full h-[360px] sm:h-[420px] object-cover"
-                  loading="lazy"
                 />
                 
                 {/* Floating Glass Consultation Card */}

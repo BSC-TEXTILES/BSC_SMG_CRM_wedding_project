@@ -42,3 +42,14 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <App />
   </React.StrictMode>,
 )
+
+// Register high-performance asset caching service worker in production
+if (typeof window !== 'undefined' && 'serviceWorker' in navigator && (import.meta.env.PROD || process.env.NODE_ENV === 'production')) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').then((reg) => {
+      console.log('[BSC ServiceWorker] Active with scope:', reg.scope);
+    }).catch((err) => {
+      console.warn('[BSC ServiceWorker] Registration failed:', err);
+    });
+  });
+}

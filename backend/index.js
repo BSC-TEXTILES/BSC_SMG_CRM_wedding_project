@@ -596,6 +596,9 @@ if (fs.existsSync(distDir)) {
     setHeaders(res, filePath) {
       if (filePath.endsWith('index.html')) {
         res.setHeader('Cache-Control', 'no-cache'); // always revalidate the entry point
+      } else if (filePath.endsWith('sw.js')) {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Service-Worker-Allowed', '/');
       } else if (/\.(webp|png|jpe?g|svg|ico|woff2?|ttf|eot|webmanifest|json)$/i.test(filePath)) {
         res.setHeader('Cache-Control', 'public, max-age=2592000, immutable');
       }

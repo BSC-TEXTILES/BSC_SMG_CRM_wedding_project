@@ -324,7 +324,13 @@ function cleanQueryParams(obj: Record<string, any>): Record<string, string> {
   return out;
 }
 
+// In-Flight GET Request Deduplication Map
+const inFlightGetRequests = new Map<string, Promise<any>>();
+
 export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
+  const method = (options.method || 'GET').toUpperCase();
+  const isGet = method === 'GET';
+
   const session = Auth.get();
   const token = Auth.getToken();
   const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
@@ -383,6 +389,13 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
     ? normalizedEndpoint 
     : `${apiBase}${normalizedEndpoint.startsWith('/') ? normalizedEndpoint : `/${normalizedEndpoint}`}`;
 
+  // Deduplicate concurrent in-flight GET requests
+  const dedupKey = isGet ? `${url}__${headers['X-Location-Id'] || ''}__${token || ''}` : null;
+  if (dedupKey && inFlightGetRequests.has(dedupKey)) {
+    return inFlightGetRequests.get(dedupKey)!;
+  }
+
+  const executeFetch = async () => {
   try {
     let res = await fetch(url, {
       ...options,
@@ -483,6 +496,17 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
     }
     throw err;
   }
+  };
+
+  if (dedupKey) {
+    const promise = executeFetch().finally(() => {
+      inFlightGetRequests.delete(dedupKey);
+    });
+    inFlightGetRequests.set(dedupKey, promise);
+    return promise;
+  }
+
+  return executeFetch();
 };
 
 function normalizeLocationList(rawList: any[]): any[] {

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { LANDING_DATA, StoreLocationData } from '../landingData';
 import { MapPin, Phone, Mail, Clock, Navigation, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { LazyImage } from '../../../components/ui/LazyImage';
 
 export default function StoreLocationsSection() {
   const { stores } = LANDING_DATA;
@@ -71,16 +72,14 @@ export default function StoreLocationsSection() {
                 <div>
                   {/* Store Header Image with 3D Depth */}
                   <div className="relative h-56 sm:h-64 overflow-hidden bg-[#E8DFC8]/20">
-                    <img
+                    <LazyImage
                       src={store.image}
                       alt={store.city}
                       width={400}
                       height={256}
-                      decoding="async"
                       className="w-full h-full object-cover hover:scale-108 transition-transform duration-700 ease-out"
-                      loading="lazy"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent pointer-events-none" />
                     
                     {/* City Pill */}
                     <div className="absolute top-4 left-4">

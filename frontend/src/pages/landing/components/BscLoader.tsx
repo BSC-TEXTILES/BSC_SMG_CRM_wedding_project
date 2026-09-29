@@ -8,8 +8,15 @@ export default function BscLoader({ onComplete }: BscLoaderProps) {
   const [phase, setPhase] = useState<'logo' | 'brand' | 'fadeout' | 'done'>('logo');
 
   useEffect(() => {
+    // If loader already completed in this session, skip immediately
+    if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('bsc_app_loaded')) {
+      onComplete();
+      return;
+    }
+
     // If opened in background tab, skip directly
     if (typeof document !== 'undefined' && document.hidden) {
+      if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('bsc_app_loaded', '1');
       onComplete();
       return;
     }
@@ -19,6 +26,7 @@ export default function BscLoader({ onComplete }: BscLoaderProps) {
     const t2 = setTimeout(() => setPhase('fadeout'), isMobile ? 650 : 1100);
     const t3 = setTimeout(() => {
       setPhase('done');
+      if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('bsc_app_loaded', '1');
       onComplete();
     }, isMobile ? 950 : 1500);
 

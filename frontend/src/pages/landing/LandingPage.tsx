@@ -11,6 +11,7 @@ import ShivamoggaEventSection from './sections/ShivamoggaEventSection';
 import CraftsmanshipSection from './sections/CraftsmanshipSection';
 import ContactDesksSection from './sections/ContactDesksSection';
 import LuxuryFooter from './components/LuxuryFooter';
+import { AssetManager } from '../../utils/assetManager';
 import './landing.css';
 
 const BscThreeCanvas = lazy(() => import('./components/BscThreeCanvas'));
@@ -71,28 +72,58 @@ export default function LandingPage() {
     };
   }, []);
 
-  /* ── Track Active Section and Scroll Depth ─────────────────────────── */
+  /* ── RAF-Throttled Scroll Tracking (60 FPS, Zero Layout Thrashing) ── */
   useEffect(() => {
+    let ticking = false;
     const handleScroll = () => {
-      const currentY = window.scrollY || 0;
-      setScrollY(currentY);
-
-      const scrollPos = currentY + 200;
-      for (const id of SECTION_IDS) {
-        const el = document.getElementById(id);
-        if (el) {
-          const top = el.offsetTop;
-          const height = el.offsetHeight;
-          if (scrollPos >= top && scrollPos < top + height) {
-            setActiveSection(id);
-            break;
-          }
-        }
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          setScrollY(window.scrollY || 0);
+          ticking = false;
+        });
+        ticking = true;
       }
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  /* ── Intersection-Based Active Section Tracking & Predictive Preloading */
+  useEffect(() => {
+    if (typeof IntersectionObserver === 'undefined') return;
+
+    const sectionPreloads: Record<string, string[]> = {
+      hero: ['/images/floor.webp'],
+      legacy: ['/images/coll-sarees-1200.webp', '/images/coll-bridal-1200.webp', '/images/coll-mens-1200.webp'],
+      collections: ['/images/coll-bridal-1200.webp'],
+      wedding: ['/images/suit.webp']
+    };
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const id = entry.target.id;
+            setActiveSection(id);
+
+            // Queue upcoming section assets in idle background queue
+            const upcoming = sectionPreloads[id];
+            if (upcoming) {
+              AssetManager.preloadBatch(upcoming, 'high');
+            }
+          }
+        });
+      },
+      { rootMargin: '-10% 0px -40% 0px', threshold: 0.05 }
+    );
+
+    SECTION_IDS.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el);
+    });
+
+    return () => observer.disconnect();
   }, []);
 
   const handleNavigate = useCallback((id: string) => {

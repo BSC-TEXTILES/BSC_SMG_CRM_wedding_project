@@ -1,6 +1,7 @@
 import React from 'react';
 import { LANDING_DATA } from '../landingData';
 import { ShieldCheck, Calendar, Clock, MapPin } from 'lucide-react';
+import { LazyImage } from '../../../components/ui/LazyImage';
 
 export default function LegacySection() {
   const { legacy } = LANDING_DATA;
@@ -32,16 +33,14 @@ export default function LegacySection() {
           {/* Left Column: Authentic Photography with 3D Perspective */}
           <div className="lg:col-span-6 relative [transform-style:preserve-3d] transition-transform duration-500 hover:[transform:rotateY(-3deg)_rotateX(2deg)]">
             <div className="relative rounded-3xl overflow-hidden shadow-2xl border-2 border-[#E8DFC8]">
-              <img
+              <LazyImage
                 src="/images/floor.webp"
                 alt="BSC Textiles showroom floor"
                 width={600}
                 height={480}
-                decoding="async"
                 className="w-full h-[380px] sm:h-[480px] object-cover hover:scale-105 transition-transform duration-700 ease-out"
-                loading="lazy"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
               
               {/* Floating Glass Stamp with Z-Index Depth */}
               <div className="absolute bottom-6 left-6 right-6 p-4 sm:p-5 rounded-2xl bg-white/85 backdrop-blur-xl border border-white/60 shadow-xl flex items-center justify-between [transform:translateZ(24px)]">

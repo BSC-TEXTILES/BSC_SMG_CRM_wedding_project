@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { LANDING_DATA, CollectionItem } from '../landingData';
 import { ArrowUpRight, Sparkles, CheckCircle2, Layers } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { LazyImage } from '../../../components/ui/LazyImage';
 
 const FILTER_TAGS = ['All Collections', 'Sarees', 'Couture', 'Menswear', 'Suits', 'Home & Bath', 'Jewellery'];
 
@@ -79,16 +80,14 @@ export default function EditorialCollections() {
             >
               {/* Image Container with 3D Zoom */}
               <div className="relative h-64 sm:h-72 overflow-hidden bg-[#E8DFC8]/30">
-                <img
+                <LazyImage
                   src={item.image}
                   alt={item.title}
                   width={400}
                   height={288}
-                  decoding="async"
                   className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-700 ease-out"
-                  loading="lazy"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent opacity-80 group-hover:opacity-95 transition-opacity" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent opacity-80 group-hover:opacity-95 transition-opacity pointer-events-none" />
                 
                 {/* Floating Glass Tag */}
                 <div className="absolute top-4 left-4">
