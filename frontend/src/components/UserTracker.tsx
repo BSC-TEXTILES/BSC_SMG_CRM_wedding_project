@@ -22,6 +22,7 @@ export default function UserTracker() {
       '/feedback-public',
       '/feedback-qr',
       '/wedding-registration',
+      '/wedding/customer-registration',
       '/track',
       '/greeter',
       '/footfall',

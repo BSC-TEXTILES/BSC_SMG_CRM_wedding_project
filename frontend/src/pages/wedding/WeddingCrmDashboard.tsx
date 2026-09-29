@@ -11,7 +11,8 @@ import { useLocationContext } from '../../context/LocationContext';
 import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../../utils/sidebarState';
 import { useRealtimeSection } from '../../hooks/useRealtimeSection';
 import ToastContainer, { showToast } from '../../components/Toast';
-import { Users, UserPlus, PhoneCall, Calendar, Sparkles, TrendingUp, MapPin, Clock, PhoneForwarded, CircleCheck, TriangleAlert, Award, ArrowRight, ChevronRight, ShoppingBag, RefreshCw } from 'lucide-react';
+import { Users, UserPlus, PhoneCall, Calendar, Sparkles, TrendingUp, MapPin, Clock, PhoneForwarded, CircleCheck, TriangleAlert, Award, ArrowRight, ChevronRight, ShoppingBag, RefreshCw, History, MessageCircle } from 'lucide-react';
+import WeddingCustomerFlowModal from '../../components/wedding/WeddingCustomerFlowModal';
 
 export default function WeddingCrmDashboard() {
   const navigate = useNavigate();
@@ -53,6 +54,9 @@ export default function WeddingCrmDashboard() {
   const [upcomingWeddings, setUpcomingWeddings] = useState<any[]>([]);
   const [telecallerPerformance, setTelecallerPerformance] = useState<any[]>([]);
   const [locations, setLocations] = useState<any[]>([]);
+  const [recentCallLogs, setRecentCallLogs] = useState<any[]>([]);
+  const [flowModalOpen, setFlowModalOpen] = useState(false);
+  const [selectedCustomerForFlow, setSelectedCustomerForFlow] = useState<any>(null);
   const [selectedLocation, setSelectedLocation] = useState<number | ''>(() => {
     const sess = Auth.get();
     const isAdminRole = ['Admin', 'Super Admin', 'system administrator'].includes(sess?.role || '');
@@ -78,13 +82,14 @@ export default function WeddingCrmDashboard() {
         targetLoc = sess?.locationId ? Number(sess.locationId) : (locId ? Number(locId) : 3);
       }
 
-      const [statsRes, enhRes, locsRes, perfRes, pipeRes, upRes] = await Promise.all([
+      const [statsRes, enhRes, locsRes, perfRes, pipeRes, upRes, logsRes] = await Promise.all([
         API.getWeddingStats(targetLoc).catch(() => null),
         API.getWeddingEnhancedDashboard(targetLoc).catch(() => null),
         API.getLocations().catch(() => ({ locations: [] })),
         API.getWeddingEmployeePerformance(targetLoc).catch(() => null),
         API.getWeddingPipeline(targetLoc).catch(() => null),
-        API.getWeddingUpcoming(30, targetLoc).catch(() => null)
+        API.getWeddingUpcoming(30, targetLoc).catch(() => null),
+        API.getWeddingExportData({ type: 'call_logs', location_id: targetLoc }).catch(() => null)
       ]);
 
       if (statsRes?.data) setStats(statsRes.data);
@@ -103,6 +108,15 @@ export default function WeddingCrmDashboard() {
       if (perfRes?.data) setTelecallerPerformance(Array.isArray(perfRes.data) ? perfRes.data : []);
       if (pipeRes?.data) setPipelineData(pipeRes.data);
       if (upRes?.data) setUpcomingWeddings(Array.isArray(upRes.data) ? upRes.data : []);
+
+      const rawLogs = Array.isArray(logsRes)
+        ? logsRes
+        : (Array.isArray(logsRes?.data)
+            ? logsRes.data
+            : (Array.isArray(logsRes?.logs)
+                ? logsRes.logs
+                : (Array.isArray(logsRes?.records) ? logsRes.records : [])));
+      setRecentCallLogs(rawLogs.slice(0, 6));
     } catch (err: any) {
       showToast('Error loading wedding CRM dashboard: ' + err.message, 'error');
     } finally {
@@ -393,6 +407,140 @@ export default function WeddingCrmDashboard() {
             </Link>
           </div>
 
+          {/* Live Customer Journey & Recent Call Stream */}
+          <div className="bg-[#FFFDFC] p-5 sm:p-6 rounded-3xl border border-[#E8D9D4] shadow-xs space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-[#E8D9D4]">
+              <div>
+                <h3 className="text-sm font-bold text-[#4A173A] uppercase tracking-wider flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-[#B76E79]" />
+                  <span>Live Wedding Customer Flow & Call Activity Stream</span>
+                </h3>
+                <p className="text-xs text-[#6F5963] mt-0.5">
+                  Latest customer consultations and telecaller touchpoints with instant step progression.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Link
+                  to="/wedding-crm/calls"
+                  className="px-3.5 py-1.5 rounded-xl bg-[#FFF7F2] hover:bg-[#E8D9D4] border border-[#E8D9D4] text-xs font-bold text-[#4A173A] flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <History className="w-3.5 h-3.5 text-[#B76E79]" />
+                  <span>View All Call History</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+            </div>
+
+            {recentCallLogs.length === 0 ? (
+              <div className="text-center py-8 text-xs text-[#6F5963] bg-[#FFFAF7] rounded-2xl border border-[#E8D9D4] p-4">
+                No recent wedding call activities logged yet. Calls recorded by telecallers will appear here in real time.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                {recentCallLogs.map((log: any, idx: number) => {
+                  const badge = getStatusBadge(log.customer_status || 'New');
+                  const cleanPhone = (log.customer_mobile || log.mobile_number || '').replace(/\D/g, '');
+                  return (
+                    <div
+                      key={idx}
+                      className="p-4 rounded-2xl bg-[#FFFAF7] border border-[#E8D9D4] hover:border-[#B76E79] shadow-2xs hover:shadow-xs transition-all space-y-3 flex flex-col justify-between"
+                    >
+                      <div className="space-y-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <div className="font-bold text-sm text-[#4A173A] flex items-center gap-1">
+                              <span>{log.customer_name || 'Customer'}</span>
+                            </div>
+                            <div className="text-[10px] text-[#6F5963] font-mono mt-0.5">
+                              {log.customer_code || 'BSC-WED'} · 📍 {log.location_name || 'Store'}
+                            </div>
+                          </div>
+                          <div className="flex flex-col items-end gap-1">
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-[#F6E2E5] text-[#4A173A] border border-[#E8D9D4]">
+                              {log.call_outcome}
+                            </span>
+                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold border ${badge.bg}`}>
+                              {log.customer_status || 'New'}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Bride & Groom / Wedding Date */}
+                        <div className="p-2.5 rounded-xl bg-[#FFFDFC] border border-[#E8D9D4]/80 text-[11px] space-y-1">
+                          {(log.bride_name || log.groom_name) && (
+                            <div className="font-semibold text-[#B76E79]">
+                              {log.bride_name ? `👰 ${log.bride_name}` : ''}
+                              {log.bride_name && log.groom_name ? ' · ' : ''}
+                              {log.groom_name ? `🤵 ${log.groom_name}` : ''}
+                            </div>
+                          )}
+                          <div className="flex items-center justify-between text-[#6F5963] text-[10px]">
+                            <span>💍 {formatDateDisplay(log.wedding_date, 'TBD')}</span>
+                            <span className="font-bold text-[#198754]">₹ {log.budget || log.budget_range || 'TBD'}</span>
+                          </div>
+                          {log.remarks && (
+                            <p className="text-[#2B1722] italic pt-1 border-t border-[#E8D9D4] text-[10px] line-clamp-2">
+                              "{log.remarks}"
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Footer & Actions */}
+                      <div className="pt-2 border-t border-[#E8D9D4]/60 flex items-center justify-between text-[11px]">
+                        <span className="text-[#6F5963] text-[10px]">
+                          👤 {log.telecaller_name || 'Staff'} · {log.call_date}
+                        </span>
+
+                        <div className="flex items-center gap-1.5">
+                          {cleanPhone && (
+                            <a
+                              href={`https://wa.me/91${cleanPhone}?text=Namaste%20${encodeURIComponent(log.customer_name || 'Customer')}%2C%20greetings%20from%20BSC%20Exclusive%20Textiles!`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-1.5 bg-[#198754] hover:bg-[#16805B] text-white rounded-lg text-xs"
+                              title="WhatsApp"
+                            >
+                              <MessageCircle className="w-3 h-3" />
+                            </a>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedCustomerForFlow({
+                                id: log.customer_id || log.id,
+                                customer_id: log.customer_id || log.id,
+                                customer_code: log.customer_code,
+                                customer_name: log.customer_name,
+                                mobile_number: log.customer_mobile || log.mobile_number,
+                                bride_name: log.bride_name,
+                                groom_name: log.groom_name,
+                                wedding_date: log.wedding_date,
+                                expected_shopping_date: log.expected_shopping_date || log.expected_shopping_date_updated,
+                                preferred_shopping_category: log.preferred_shopping_category,
+                                budget: log.budget || log.budget_range,
+                                location_name: log.location_name,
+                                assigned_telecaller: log.telecaller_name || log.assigned_telecaller,
+                                customer_status: log.customer_status,
+                                priority: log.priority
+                              });
+                              setFlowModalOpen(true);
+                            }}
+                            className="px-2.5 py-1 bg-[#4A173A] hover:bg-[#6A2853] text-white rounded-lg text-[11px] font-bold shadow-2xs flex items-center gap-1 transition-colors cursor-pointer"
+                          >
+                            <TrendingUp className="w-3 h-3 text-[#E8C7A8]" />
+                            <span>View Flow</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
           {/* Two-Column Analytics Section */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left: Location Performance & Pipeline Summary */}
@@ -568,6 +716,20 @@ export default function WeddingCrmDashboard() {
               </div>
             </div>
           </div>
+
+          {/* Interactive Customer Flow Modal */}
+          {flowModalOpen && (
+            <WeddingCustomerFlowModal
+              isOpen={flowModalOpen}
+              onClose={() => setFlowModalOpen(false)}
+              customerId={selectedCustomerForFlow?.customer_id || selectedCustomerForFlow?.id}
+              initialCustomer={selectedCustomerForFlow}
+              onFlowUpdated={() => {
+                loadData(selectedLocation);
+              }}
+            />
+          )}
+
         </div>
       </PageContainer>
     </DashboardLayout>

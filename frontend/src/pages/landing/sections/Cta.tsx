@@ -66,9 +66,9 @@ export function Cta() {
         </Reveal>
 
         <Reveal variant="up" delay={260} className="cta__actions">
-          <Link to="/wedding-registration" className="btn btn--gold" data-cursor="explore">
+          <Link to="/wedding/customer-registration" className="btn btn--gold" data-cursor="explore">
             <Heart className="w-4 h-4" aria-hidden="true" />
-            <span>Register your wedding</span>
+            <span>Register for Wedding Shopping</span>
             <ArrowRight className="w-4 h-4" aria-hidden="true" />
           </Link>
           <Link to="/login" className="btn btn--onink">

@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, Clock, Search, Activity, Command, ShieldAlert, ShieldOff, Menu } from 'lucide-react';
+import { Bell, Clock, Search, Command, ShieldAlert, ShieldOff, Menu } from 'lucide-react';
 import { UserSession } from '../services/api';
 import { NotificationService } from '../services/notificationService';
 import NotificationDrawer from './ui/NotificationDrawer';
-import ActivityPanel from './ui/ActivityPanel';
 import GlobalSearchModal from './ui/GlobalSearchModal';
 import ProfileDropdown from './ui/ProfileDropdown';
 import LocationSwitcher from './ui/LocationSwitcher';
@@ -29,9 +28,21 @@ export default function Topbar({ title, breadcrumbs, hideBreadcrumbs, session, o
   const [clock, setClock] = useState<string>('');
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifOpen, setNotifOpen] = useState(false);
-  const [activityOpen, setActivityOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [bypassDevTools, setBypassDevTools] = useState(false);
+
+  // Ctrl/Cmd+K focuses the directory search. This is the only place the chord
+  // is bound — GlobalSearchModal deliberately does not listen for it too.
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setSearchOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, []);
 
   useEffect(() => {
     setBypassDevTools(localStorage.getItem('bsc_shield_bypass') === 'true');
@@ -51,25 +62,16 @@ export default function Topbar({ title, breadcrumbs, hideBreadcrumbs, session, o
       setUnreadCount(NotificationService.getUnreadCount());
     });
 
-    const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault();
-        setSearchOpen((prev) => !prev);
-      }
-    };
-    window.addEventListener('keydown', handleGlobalKeyDown);
-
     return () => {
       clearInterval(interval);
       unsub();
-      window.removeEventListener('keydown', handleGlobalKeyDown);
     };
   }, []);
 
   return (
     <>
       <header className="w-full max-w-full bg-[#FFF7F2] border-b border-[#E8D9D4] sticky top-0 z-30 shadow-xs flex-shrink-0">
-        {/* ── Row 1: Hamburger, Title, Search, Tools ────────────────────── */}
+        {/* ── Row 1: Hamburger, Title & Tools ───────────────────────────── */}
         <div className="h-14 sm:h-16 px-4 sm:px-5 lg:px-6 flex items-center justify-between gap-2">
         {/* ── Left Area: Hamburger + Title ──────────────────────────────── */}
         <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0 flex-shrink-0">
@@ -130,15 +132,6 @@ export default function Topbar({ title, breadcrumbs, hideBreadcrumbs, session, o
             <span className="font-semibold whitespace-nowrap">{clock}</span>
           </div>
 
-          {/* Activity Panel Trigger */}
-          <button
-            onClick={() => setActivityOpen(true)}
-            className="hidden sm:flex p-1.5 sm:p-2 rounded-xl text-[#2B1722] hover:bg-[#FFFDFC] border border-transparent hover:border-[#E8D9D4] transition-all"
-            title="Live Activity Intelligence"
-          >
-            <Activity className="w-4 h-4 text-[#198754]" />
-          </button>
-
           {/* DevTools Bypass Toggle (Admin roles with global scope only) */}
           {session?.isGlobalAdmin && ['Admin', 'Super Admin'].includes(session.role) && (
             <button
@@ -164,9 +157,11 @@ export default function Topbar({ title, breadcrumbs, hideBreadcrumbs, session, o
 
           {/* Notification Drawer Trigger */}
           <button
+            type="button"
             onClick={() => setNotifOpen(true)}
-            className="relative p-1.5 sm:p-2 rounded-xl text-[#2B1722] hover:bg-[#FFFDFC] border border-transparent hover:border-[#E8D9D4] transition-all"
+            className="relative p-1.5 sm:p-2 rounded-xl text-[#2B1722] hover:bg-[#FFFDFC] border border-transparent hover:border-[#E8D9D4] transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#C9A45C]"
             title="Notification Center"
+            aria-label="Open Notification Center"
           >
             <Bell className="w-4 h-4 text-[#B76E79]" />
             {unreadCount > 0 && (
@@ -180,8 +175,6 @@ export default function Topbar({ title, breadcrumbs, hideBreadcrumbs, session, o
           <ProfileDropdown
             session={session}
             onOpenNotifications={() => setNotifOpen(true)}
-            onOpenActivity={() => setActivityOpen(true)}
-            onOpenSearch={() => setSearchOpen(true)}
           />
 
           {rightElement}
@@ -189,7 +182,7 @@ export default function Topbar({ title, breadcrumbs, hideBreadcrumbs, session, o
         </div>
 
         {/* ── Row 2: Route-derived breadcrumb trail (own row → can never
-               overlap top navigation, search, notifications or profile) ── */}
+               overlap top navigation, notifications or profile) ── */}
         {!hideBreadcrumbs && (
           <div className="px-4 sm:px-5 lg:px-6 pb-1.5 bg-[#FFF7F2] border-t border-[#E8D9D4]">
             <Breadcrumbs items={crumbs} />
@@ -199,7 +192,6 @@ export default function Topbar({ title, breadcrumbs, hideBreadcrumbs, session, o
 
       {/* Drawers & Modals */}
       <NotificationDrawer isOpen={notifOpen} onClose={() => setNotifOpen(false)} />
-      <ActivityPanel isOpen={activityOpen} onClose={() => setActivityOpen(false)} />
       <GlobalSearchModal isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
     </>
   );

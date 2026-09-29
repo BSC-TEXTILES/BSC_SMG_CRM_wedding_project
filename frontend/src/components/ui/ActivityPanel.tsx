@@ -1,5 +1,8 @@
-import { useState, useEffect } from 'react';
-import { Activity, X, LogIn, LogOut } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import {
+  Activity, X, LogIn, LogOut, Eye, PlusCircle, Edit3, Trash2,
+  RefreshCw, Search, ShieldCheck, Heart, PhoneCall, CheckCircle2, Clock
+} from 'lucide-react';
 import { API } from '../../services/api';
 
 interface ActivityPanelProps {
@@ -9,14 +12,41 @@ interface ActivityPanelProps {
 
 export default function ActivityPanel({ isOpen, onClose }: ActivityPanelProps) {
   const [activities, setActivities] = useState<any[]>([]);
-  const [stats, setStats] = useState<any>(null);
+  const [stats, setStats] = useState<{ totalLogins: number; totalLogouts: number; activeUsers: number } | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'logins' | 'wedding' | 'system'>('all');
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
 
+  // ── Lock background scroll & handle Escape key ─────────────────────────
   useEffect(() => {
     if (!isOpen) return;
 
-    const fetchActivity = () => {
-      // Try to get user tracking stats and activity
-      API.getUserTrackingStats().then(res => {
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    // Focus close button on open
+    setTimeout(() => closeButtonRef.current?.focus(), 50);
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onClose]);
+
+  // ── Fetch Activity & Stats ─────────────────────────────────────────────
+  const fetchActivity = () => {
+    setIsLoading(true);
+    API.getUserTrackingStats()
+      .then((res) => {
         if (res && res.recentActivity) {
           setActivities(res.recentActivity);
           setStats({
@@ -25,126 +55,327 @@ export default function ActivityPanel({ isOpen, onClose }: ActivityPanelProps) {
             activeUsers: res.activeUsersToday || 0
           });
         }
-      }).catch(() => {
-        // Fallback to candidate activity if user tracking fails
-        API.getActivity({ limit: 10 }).then(res => {
-          if (res && res.activity) {
-            setActivities(res.activity);
-          }
-        }).catch(() => {});
+      })
+      .catch(() => {
+        API.getActivity({ limit: 30 })
+          .then((res) => {
+            if (res && res.activity) {
+              setActivities(res.activity);
+            }
+          })
+          .catch(() => {});
+      })
+      .finally(() => {
+        setIsLoading(false);
       });
-    };
+  };
 
+  useEffect(() => {
+    if (!isOpen) return;
     fetchActivity();
-    const intervalId = setInterval(fetchActivity, 10000); // 10 seconds
-
+    const intervalId = setInterval(fetchActivity, 15000);
     return () => clearInterval(intervalId);
   }, [isOpen]);
+
+  // ── Helpers ────────────────────────────────────────────────────────────
+  const formatTimelineTimestamp = (dateStr?: string) => {
+    if (!dateStr) return 'Just now';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+
+    const now = new Date();
+    const isToday = d.toDateString() === now.toDateString();
+
+    const yesterday = new Date();
+    yesterday.setDate(now.getDate() - 1);
+    const isYesterday = d.toDateString() === yesterday.toDateString();
+
+    const timeStr = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+
+    if (isToday) return `Today · ${timeStr}`;
+    if (isYesterday) return `Yesterday · ${timeStr}`;
+
+    const day = d.toLocaleDateString([], { day: 'numeric', month: 'short' });
+    return `${day} · ${timeStr}`;
+  };
+
+  const formatActionText = (action?: string, details?: any) => {
+    if (!action) return 'Accessed System';
+    const act = String(action).toUpperCase();
+    if (act === 'USER_LOGIN' || act === 'LOGIN') return 'User Logged In';
+    if (act === 'USER_LOGOUT' || act === 'LOGOUT') return 'User Logged Out';
+    if (act.includes('VIEW') || act.includes('READ')) {
+      const target = details?.page || details?.module || act.replace(/^VIEW_?/, '').replace(/^VIEWED_?/, '');
+      return `Viewed ${target ? target.replace(/_/g, ' ') : 'Workspace'}`;
+    }
+    if (act.includes('CREATE') || act.includes('ADD') || act.includes('REGISTER')) {
+      return `Created new record in ${details?.module || 'system'}`;
+    }
+    if (act.includes('UPDATE') || act.includes('EDIT')) {
+      return `Updated record in ${details?.module || 'system'}`;
+    }
+    if (act.includes('DELETE') || act.includes('REMOVE')) {
+      return `Removed record`;
+    }
+    return action.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+  };
+
+  const getActionIconConfig = (action?: string) => {
+    const act = String(action || '').toUpperCase();
+    if (act.includes('LOGIN')) {
+      return { icon: LogIn, bg: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
+    }
+    if (act.includes('LOGOUT')) {
+      return { icon: LogOut, bg: 'bg-rose-50 text-rose-700 border-rose-200' };
+    }
+    if (act.includes('WEDDING') || act.includes('CUSTOMER')) {
+      return { icon: Heart, bg: 'bg-[#B76E79]/10 text-[#B76E79] border-[#B76E79]/20' };
+    }
+    if (act.includes('CALL') || act.includes('TELECALLER')) {
+      return { icon: PhoneCall, bg: 'bg-teal-50 text-teal-700 border-teal-200' };
+    }
+    if (act.includes('CREATE') || act.includes('ADD')) {
+      return { icon: PlusCircle, bg: 'bg-amber-50 text-amber-700 border-amber-200' };
+    }
+    if (act.includes('UPDATE') || act.includes('EDIT')) {
+      return { icon: Edit3, bg: 'bg-blue-50 text-blue-700 border-blue-200' };
+    }
+    if (act.includes('VIEW')) {
+      return { icon: Eye, bg: 'bg-indigo-50 text-indigo-700 border-indigo-200' };
+    }
+    return { icon: Activity, bg: 'bg-[#101C36]/5 text-[#101C36] border-[#DFDDD7]' };
+  };
+
+  // ── Filtered Activities ────────────────────────────────────────────────
+  const filteredActivities = useMemo(() => {
+    return activities.filter((act) => {
+      if (activeFilter === 'logins') {
+        const a = String(act.action).toUpperCase();
+        if (!a.includes('LOGIN') && !a.includes('LOGOUT')) return false;
+      } else if (activeFilter === 'wedding') {
+        const a = `${act.action} ${act.module || ''}`.toUpperCase();
+        if (!a.includes('WEDDING') && !a.includes('CUSTOMER') && !a.includes('CALL')) return false;
+      } else if (activeFilter === 'system') {
+        const a = `${act.action} ${act.module || ''}`.toUpperCase();
+        if (!a.includes('SYSTEM') && !a.includes('CONFIG') && !a.includes('ADMIN')) return false;
+      }
+
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const user = String(act.username || '').toLowerCase();
+        const action = String(act.action || '').toLowerCase();
+        const mod = String(act.module || '').toLowerCase();
+        return user.includes(q) || action.includes(q) || mod.includes(q);
+      }
+      return true;
+    });
+  }, [activities, activeFilter, searchQuery]);
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
-      <div className="fixed inset-0 bg-primary/40 backdrop-blur-xs transition-opacity" onClick={onClose} />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 overflow-hidden">
+      {/* Blurred Backdrop */}
+      <div
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+        onClick={onClose}
+        aria-hidden="true"
+      />
 
-      <aside className="relative w-full max-w-sm bg-white h-full shadow-2xl flex flex-col z-10 animate-fade-in border-l border-accent-soft">
-        <div className="p-4 sm:p-5 border-b border-accent-soft bg-primary text-white flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <Activity className="w-5 h-5 text-accent" />
-            <h2 className="font-extrabold text-base tracking-tight leading-tight">Live Activity Intelligence</h2>
+      {/* Centered Timeline Modal */}
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="timeline-modal-title"
+        className="relative w-full max-w-2xl bg-white/95 backdrop-blur-xl rounded-3xl shadow-[0_25px_60px_rgba(16,28,54,0.25)] border border-[#DFDDD7] overflow-hidden flex flex-col max-h-[85vh] sm:max-h-[88vh] z-10 animate-modal-in"
+      >
+        {/* Header */}
+        <div className="p-4 sm:p-6 border-b border-[#DFDDD7] bg-[#FAF8F5]/80 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-2xl bg-[#101C36] text-[#C9A45C] flex items-center justify-center flex-shrink-0 shadow-xs border border-[#C9A45C]/30">
+              <Activity className="w-5 h-5 text-[#C9A45C]" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <h2
+                  id="timeline-modal-title"
+                  className="font-black text-base sm:text-lg tracking-tight text-[#182033] leading-tight truncate"
+                >
+                  Live Activity Intelligence
+                </h2>
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 shrink-0">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  LIVE
+                </span>
+              </div>
+              <p className="text-xs text-[#687080] font-medium mt-0.5 truncate">
+                User Activity Timeline &amp; system audit log
+              </p>
+            </div>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-black hover:text-black hover:bg-black/10">
-            <X className="w-5 h-5" />
-          </button>
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              type="button"
+              onClick={fetchActivity}
+              disabled={isLoading}
+              className="p-2 rounded-xl text-[#687080] hover:text-[#182033] hover:bg-white border border-transparent hover:border-[#DFDDD7] transition-all cursor-pointer"
+              title="Refresh timeline"
+              aria-label="Refresh activity"
+            >
+              <RefreshCw className={`w-4 h-4 text-[#C9A45C] ${isLoading ? 'animate-spin' : ''}`} />
+            </button>
+            <button
+              ref={closeButtonRef}
+              type="button"
+              onClick={onClose}
+              className="p-2 rounded-xl text-[#687080] hover:text-[#182033] hover:bg-white border border-transparent hover:border-[#DFDDD7] transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#C9A45C]"
+              aria-label="Close activity timeline"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 text-xs">
-          {/* Stats Summary */}
-          {stats && (
-            <div className="grid grid-cols-3 gap-2">
-              <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 text-center">
-                <div className="text-lg font-black text-primary">{stats.totalLogins}</div>
-                <div className="text-[10px] text-primary mt-0.5">Logins Today</div>
-              </div>
-              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-center">
-                <div className="text-lg font-black text-rose-600">{stats.totalLogouts}</div>
-                <div className="text-[10px] text-rose-600/70 mt-0.5">Logouts Today</div>
-              </div>
-              <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-center">
-                <div className="text-lg font-black text-emerald-600">{stats.activeUsers}</div>
-                <div className="text-[10px] text-emerald-600/70 mt-0.5">Active Users</div>
-              </div>
+        {/* Quick Stats Pill Row */}
+        {stats && (
+          <div className="px-4 sm:px-6 py-3 bg-[#FAF8F5]/40 border-b border-[#DFDDD7]/60 grid grid-cols-3 gap-2.5 text-center">
+            <div className="p-2.5 rounded-xl bg-white border border-[#DFDDD7]/80">
+              <span className="text-[10px] uppercase font-bold text-[#687080] block">Active Users</span>
+              <span className="text-base font-black text-[#182033]">{stats.activeUsers}</span>
             </div>
-          )}
+            <div className="p-2.5 rounded-xl bg-white border border-[#DFDDD7]/80">
+              <span className="text-[10px] uppercase font-bold text-[#687080] block">Logins Today</span>
+              <span className="text-base font-black text-emerald-700">{stats.totalLogins}</span>
+            </div>
+            <div className="p-2.5 rounded-xl bg-white border border-[#DFDDD7]/80">
+              <span className="text-[10px] uppercase font-bold text-[#687080] block">Logouts Today</span>
+              <span className="text-base font-black text-rose-700">{stats.totalLogouts}</span>
+            </div>
+          </div>
+        )}
 
-          {/* Activity Feed */}
-          <div>
-            <h3 className="font-black text-xs text-primary uppercase tracking-wider mb-2.5">User Activity Timeline</h3>
-            <div className="space-y-2.5">
-              {activities.length > 0 ? (
-                activities.map((act, idx) => {
-                  // Determine icon based on action
-                  let Icon = Activity;
-                  let colorClass = 'text-primary';
+        {/* Search & Filter Bar */}
+        <div className="p-3 sm:p-4 border-b border-[#DFDDD7]/60 space-y-2.5 bg-white">
+          <div className="relative">
+            <Search className="w-4 h-4 text-[#8B776A] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Search user, action or module..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-[#DFDDD7] bg-[#FAF8F5]/60 text-xs text-[#182033] font-medium focus:bg-white focus:outline-none focus:border-[#C9A45C] focus:ring-1 focus:ring-[#C9A45C]"
+            />
+          </div>
 
-                  if (act.action === 'USER_LOGIN') {
-                    Icon = LogIn;
-                    colorClass = 'text-emerald-600';
-                  } else if (act.action === 'USER_LOGOUT') {
-                    Icon = LogOut;
-                    colorClass = 'text-rose-600';
-                  } else if (act.action && act.action.includes('USER_ACTIVITY')) {
-                    Icon = Activity;
-                    colorClass = 'text-primary';
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
+            {[
+              { id: 'all', label: 'All Activities' },
+              { id: 'logins', label: 'Logins & Sessions' },
+              { id: 'wedding', label: 'Wedding CRM' },
+              { id: 'system', label: 'System & Admin' }
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveFilter(tab.id as any)}
+                className={`px-3 py-1 rounded-lg text-xs font-bold whitespace-nowrap transition-colors cursor-pointer ${
+                  activeFilter === tab.id
+                    ? 'bg-[#101C36] text-[#FAF7F2]'
+                    : 'text-[#687080] hover:bg-[#F6F4EF]'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Scrollable Timeline Body */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 text-xs overscroll-contain">
+          {filteredActivities.length > 0 ? (
+            <div className="relative pl-6 space-y-4 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-[#E8DFC8]">
+              {filteredActivities.map((act, idx) => {
+                let details: any = act.details;
+                try {
+                  if (typeof details === 'string') {
+                    details = JSON.parse(details);
                   }
+                } catch {
+                  // Keep as string
+                }
 
-                  // Parse details if it's JSON
-                  let details = act.details;
-                  try {
-                    if (typeof details === 'string') {
-                      details = JSON.parse(details);
-                    }
-                  } catch (e) {
-                    // Keep as string
-                  }
+                const iconConfig = getActionIconConfig(act.action);
+                const IconComponent = iconConfig.icon;
 
-                  return (
-                    <div key={idx} className="p-3 rounded-xl border border-accent-soft bg-background space-y-1">
-                      <div className="flex items-center justify-between font-bold text-primary">
-                        <span className="flex items-center gap-1.5">
-                          <Icon className={`w-4 h-4 ${colorClass}`} />
-                          <span className="font-bold">{act.username || 'Unknown User'}</span>
-                          <span className="text-primary">- {act.action}</span>
-                        </span>
-                        <span className="text-[10px] text-primary font-mono">
-                          {act.created_at ? new Date(act.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                return (
+                  <div key={idx} className="relative group">
+                    {/* Timeline Node Icon */}
+                    <div
+                      className={`absolute -left-6 top-1 w-5 h-5 rounded-full border flex items-center justify-center shadow-2xs ${iconConfig.bg}`}
+                    >
+                      <IconComponent className="w-2.5 h-2.5" />
+                    </div>
+
+                    {/* Timeline Activity Card */}
+                    <div className="p-3.5 sm:p-4 rounded-2xl border border-[#DFDDD7] bg-white hover:border-[#C9A45C] hover:shadow-sm transition-all space-y-2">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          {/* User Name */}
+                          <h4 className="font-extrabold text-sm text-[#182033] tracking-tight truncate">
+                            {act.username || 'System User'}
+                          </h4>
+                          {/* Action Description */}
+                          <p className="text-xs font-semibold text-[#5F4E44] mt-0.5">
+                            {formatActionText(act.action, details)}
+                          </p>
+                        </div>
+
+                        {/* Section / Module Tag */}
+                        <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-[#101C36]/5 text-[#101C36] border border-[#101C36]/10 whitespace-nowrap shrink-0">
+                          {act.module || details?.module || 'Workspace'}
                         </span>
                       </div>
-                      {act.module && (
-                        <p className="text-[10px] text-primary/60 font-medium">
-                          Module: {act.module}
-                        </p>
-                      )}
-                      {details && details.page && (
-                        <p className="text-[10px] text-primary/60 font-medium">
-                          Page: {details.page}
-                        </p>
-                      )}
-                      {act.ip_address && (
-                        <p className="text-[10px] text-primary/60 font-mono truncate max-w-full">
-                          IP: {act.ip_address}
-                        </p>
-                      )}
+
+                      {/* Footer Row: Timestamp + Status */}
+                      <div className="flex items-center justify-between text-[11px] text-[#8B776A] pt-2 border-t border-[#DFDDD7]/40 font-medium">
+                        <div className="flex items-center gap-1.5">
+                          <Clock className="w-3 h-3 text-[#B76E79]" />
+                          <span>{formatTimelineTimestamp(act.created_at)}</span>
+                        </div>
+                        <span className="inline-flex items-center gap-1 text-emerald-700 font-bold text-[10px]">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                          <span>Recorded</span>
+                        </span>
+                      </div>
                     </div>
-                  );
-                })
-              ) : (
-                <div className="text-center py-8 text-[#6B5D50]">No recent user activity logged.</div>
-              )}
+                  </div>
+                );
+              })}
             </div>
-          </div>
+          ) : (
+            <div className="py-12 text-center text-[#687080] space-y-2">
+              <Activity className="w-8 h-8 text-[#C9A45C]/50 mx-auto" />
+              <p className="font-bold text-sm text-[#182033]">No activities found</p>
+              <p className="text-xs">No user activities recorded for this filter.</p>
+            </div>
+          )}
         </div>
-      </aside>
+
+        {/* Modal Footer */}
+        <div className="p-3 sm:p-4 bg-[#FAF8F5]/80 border-t border-[#DFDDD7] flex items-center justify-between text-xs text-[#687080]">
+          <span className="font-medium">
+            Showing {filteredActivities.length} recorded event{filteredActivities.length === 1 ? '' : 's'}
+          </span>
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-1.5 rounded-xl border border-[#DFDDD7] bg-white hover:bg-[#101C36] hover:text-white hover:border-[#101C36] text-[#182033] font-bold text-xs transition-colors cursor-pointer"
+          >
+            Close
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

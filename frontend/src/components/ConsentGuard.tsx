@@ -7,7 +7,7 @@ const ConsentModal = lazy(() => import('./ui/ConsentModal'));
 // Public routes that don't require consent
 const PUBLIC_ROUTES = [
   '/login', '/forgot-password', '/', '/apply', '/applicants/register',
-  '/wedding-registration', '/track', '/feedback-public', '/feedback-qr',
+  '/wedding-registration', '/wedding/customer-registration', '/track', '/feedback-public', '/feedback-qr',
   '/cash-settlement', '/tv', '/greeter', '/footfall', '/madt'
 ];
 

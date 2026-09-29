@@ -4,7 +4,7 @@ import { ArrowUpRight, Sparkles, CheckCircle2, Layers } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { LazyImage } from '../../../components/ui/LazyImage';
 
-const FILTER_TAGS = ['All Collections', 'Sarees', 'Couture', 'Menswear', 'Suits', 'Home & Bath', 'Jewellery'];
+const FILTER_TAGS = ['All Collections', 'Silk Sarees', "Women's Wear", "Men's Wear", 'Suits & Sherwanis', 'Home & Towels', 'Jewellery'];
 
 export default function EditorialCollections() {
   const { collectionsOverview } = LANDING_DATA;
@@ -12,11 +12,11 @@ export default function EditorialCollections() {
 
   const filteredItems = collectionsOverview.items.filter((item) => {
     if (activeFilter === 'All Collections') return true;
-    if (activeFilter === 'Sarees') return item.id === 'sarees' || item.id === 'wedding-coll';
-    if (activeFilter === 'Couture') return item.id === 'womenswear' || item.id === 'kids' || item.id === 'dozolo';
-    if (activeFilter === 'Menswear') return item.id === 'menswear' || item.id === 'brands';
-    if (activeFilter === 'Suits') return item.id === 'suits';
-    if (activeFilter === 'Home & Bath') return item.id === 'home' || item.id === 'towels';
+    if (activeFilter === 'Silk Sarees') return item.id === 'sarees' || item.id === 'wedding-coll';
+    if (activeFilter === "Women's Wear") return item.id === 'womenswear' || item.id === 'kids' || item.id === 'dozolo';
+    if (activeFilter === "Men's Wear") return item.id === 'menswear' || item.id === 'brands';
+    if (activeFilter === 'Suits & Sherwanis') return item.id === 'suits';
+    if (activeFilter === 'Home & Towels') return item.id === 'home' || item.id === 'towels';
     if (activeFilter === 'Jewellery') return item.id === 'jewellery' || item.id === 'other';
     return true;
   });
@@ -47,7 +47,7 @@ export default function EditorialCollections() {
               to="/wedding/customer-registration"
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#1C1510] text-[#FAF7F2] text-xs font-semibold tracking-wider uppercase shadow-md hover:bg-[#32231A] transition-colors"
             >
-              <span>Book Floor Appointment</span>
+              <span>Register for Wedding Shopping</span>
               <ArrowUpRight className="w-3.5 h-3.5 text-[#E8C7A8]" />
             </Link>
           </div>

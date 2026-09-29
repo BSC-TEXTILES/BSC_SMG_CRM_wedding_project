@@ -48,6 +48,7 @@ export const ROUTE_LABELS: Record<string, string> = {
   '/mcheck-history': 'MCheck History',
   '/candidates': 'Candidate CRM',
   '/wedding-registration': 'Wedding Registration',
+  '/wedding/customer-registration': 'Wedding Registration',
   '/offer-process': 'Offer Desk',
   '/openings': 'Manpower Planning',
   '/employees': 'Employee Directory',

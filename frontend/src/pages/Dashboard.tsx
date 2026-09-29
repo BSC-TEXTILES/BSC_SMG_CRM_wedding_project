@@ -8,12 +8,12 @@ import GlobalLocationSelector from '../components/ui/GlobalLocationSelector';
 import {
   Users, UserCheck, UserPlus, Clock, TriangleAlert, ArrowRight, Search, Sparkles,
   CalendarCheck, Building2, Footprints, MessageSquare, PhoneCall, SquareCheck,
-  Heart, MapPin, RefreshCw, PhoneForwarded, Store, ChevronRight, Tv,
-  ClipboardList, Briefcase, Settings, Shield, BarChart3
+  Heart, MapPin, RefreshCw, PhoneForwarded, Store, ChevronRight, Tv, Activity
 } from 'lucide-react';
 import EmployeeProfileModal from '../components/ui/EmployeeProfileModal';
+import ActivityPanel from '../components/ui/ActivityPanel';
 import { getRoleNavMap, resolveAllowedPages } from '../utils/rbac';
-import { getDefaultLandingRoute, MODULE_REGISTRY } from '../utils/moduleRegistry';
+import { getDefaultLandingRoute } from '../utils/moduleRegistry';
 import { permissionsCache } from '../context/PermissionsCache';
 import { useLocationContext } from '../context/LocationContext';
 
@@ -142,6 +142,45 @@ export default function DashboardPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 6;
 
+  // Live Activity Intelligence & Timeline Modal
+  const [timelineOpen, setTimelineOpen] = useState(false);
+  const [trackingStats, setTrackingStats] = useState<any>(null);
+  const [recentActivities, setRecentActivities] = useState<any[]>([]);
+
+  const formatTimelineTimestamp = (dateStr?: string) => {
+    if (!dateStr) return 'Just now';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    const now = new Date();
+    const isToday = d.toDateString() === now.toDateString();
+    const yesterday = new Date();
+    yesterday.setDate(now.getDate() - 1);
+    const isYesterday = d.toDateString() === yesterday.toDateString();
+    const timeStr = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+    if (isToday) return `Today · ${timeStr}`;
+    if (isYesterday) return `Yesterday · ${timeStr}`;
+    const day = d.toLocaleDateString([], { day: 'numeric', month: 'short' });
+    return `${day} · ${timeStr}`;
+  };
+
+  const formatActionText = (action?: string, details?: any) => {
+    if (!action) return 'Accessed System';
+    const act = String(action).toUpperCase();
+    if (act === 'USER_LOGIN' || act === 'LOGIN') return 'User Logged In';
+    if (act === 'USER_LOGOUT' || act === 'LOGOUT') return 'User Logged Out';
+    if (act.includes('VIEW') || act.includes('READ')) {
+      const target = details?.page || details?.module || act.replace(/^VIEW_?/, '').replace(/^VIEWED_?/, '');
+      return `Viewed ${target ? target.replace(/_/g, ' ') : 'Workspace'}`;
+    }
+    if (act.includes('CREATE') || act.includes('ADD') || act.includes('REGISTER')) {
+      return `Created new record in ${details?.module || 'system'}`;
+    }
+    if (act.includes('UPDATE') || act.includes('EDIT')) {
+      return `Updated record in ${details?.module || 'system'}`;
+    }
+    return action.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+  };
+
   const loadData = useCallback(async (targetLoc?: string) => {
     const sess = Auth.get();
     const rNorm = (sess?.role || '').toLowerCase().replace(/[_\s-]+/g, ' ');
@@ -155,7 +194,7 @@ export default function DashboardPage() {
     setIsRefreshing(true);
 
     try {
-      const [empData, candData, ffData, divData, fbData, wedData, teleData, globData] = await Promise.all([
+      const [empData, candData, ffData, divData, fbData, wedData, teleData, globData, trackData] = await Promise.all([
         API.getEmployees(locParam ? { locationId: locParam } : undefined).catch(() => ({ employees: [] })),
         API.getCandidates({ limit: 500, ...(locParam ? { locationId: locParam } : {}) }).catch(() => ({ candidates: [] })),
         API.getFootfall(undefined, locParam).catch(() => ({ entries: [] })),
@@ -170,8 +209,16 @@ export default function DashboardPage() {
         })),
         API.getWeddingStats(locParam).catch(() => null),
         (API as any).getTelecallerStats ? (API as any).getTelecallerStats(locParam).catch(() => null) : Promise.resolve(null),
-        isAdm ? API.getGlobalStats().catch(() => ({ locations: [] })) : Promise.resolve({ locations: [] })
+        isAdm ? API.getGlobalStats().catch(() => ({ locations: [] })) : Promise.resolve({ locations: [] }),
+        API.getUserTrackingStats().catch(() => null)
       ]);
+
+      if (trackData) {
+        setTrackingStats(trackData);
+        if (Array.isArray(trackData.recentActivity)) {
+          setRecentActivities(trackData.recentActivity);
+        }
+      }
 
       if (empData && empData.employees) setEmployees(empData.employees);
       else setEmployees([]);
@@ -342,46 +389,6 @@ export default function DashboardPage() {
     return locMap;
   }, [employees, globalStats, weddingStats, footfallToday]);
 
-  const assignedModules = useMemo(() => {
-    const raw = MODULE_REGISTRY.filter(m => allowed.includes(m.key) && m.route !== '/dashboard');
-    const unique: typeof MODULE_REGISTRY = [];
-    const seen = new Set<string>();
-    for (const item of raw) {
-      if (!seen.has(item.route)) {
-        seen.add(item.route);
-        unique.push(item);
-      }
-    }
-    return unique;
-  }, [allowed]);
-
-  const getModuleIcon = (key: string) => {
-    switch (key) {
-      case 'wedding_crm': return Sparkles;
-      case 'wedding_registration': return Heart;
-      case 'telecaller_desk': return PhoneCall;
-      case 'telecaller_dashboard': return BarChart3;
-      case 'wedding_operations': return CalendarCheck;
-      case 'footfall': return Footprints;
-      case 'feedback_collection': return MessageSquare;
-      case 'feedback_list': return PhoneForwarded;
-      case 'feedback_qr': return ClipboardList;
-      case 'employees': return Users;
-      case 'greyhr': return UserCheck;
-      case 'candidates': return UserPlus;
-      case 'openings': return Briefcase;
-      case 'daily_mcheck':
-      case 'mcheck_audit': return SquareCheck;
-      case 'vm_checklist':
-      case 'vm_dashboard': return Store;
-      case 'user_management': return Shield;
-      case 'settings':
-      case 'system_admin': return Settings;
-      case 'tv': return Tv;
-      default: return ArrowRight;
-    }
-  };
-
   const dashboardTitle = isHRDashboard
     ? "HR Talent Dashboard"
     : isManagerDashboard
@@ -400,10 +407,6 @@ export default function DashboardPage() {
         <div className="bg-white rounded-2xl border border-[#DFDDD7] shadow-xs p-5 sm:p-6 mb-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="min-w-0">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#101C36] text-[#C9A45C] text-[10px] font-black uppercase tracking-widest mb-2 border border-[#C9A45C]/30">
-                <Building2 className="w-3.5 h-3.5" />
-                <span>BSC Textiles · EXECUTIVE WORKSPACE</span>
-              </div>
               <h1 className="text-xl sm:text-2xl font-black text-[#182033] tracking-tight leading-tight">
                 {isAdminDashboard ? 'ADMIN DASHBOARD' : 'BSC EXECUTIVE DASHBOARD'}
               </h1>
@@ -430,70 +433,6 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
-
-        {/* =========================================================================
-            SECTION 1.5: ASSIGNED MODULES & QUICK WORKSPACE (Granular ACM View Modules)
-        ========================================================================== */}
-        {assignedModules.length > 0 && (
-          <div className="bg-white rounded-2xl border border-[#DFDDD7] shadow-xs p-5 sm:p-6 mb-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 border-b border-[#DFDDD7]/60 pb-3">
-              <div>
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#101C36]/5 text-[#101C36] text-[10px] font-black uppercase tracking-wider mb-1">
-                  <Sparkles className="w-3 h-3 text-[#C9A45C]" />
-                  <span>Configured Workspace</span>
-                </div>
-                <h2 className="text-base sm:text-lg font-black text-[#182033] tracking-tight">
-                  Assigned Modules &amp; Applications
-                </h2>
-                <p className="text-xs text-[#687080] font-medium">
-                  Direct access to all modules and tools provisioned for your account.
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-[#F6F4EF] text-[#182033] border border-[#DFDDD7]">
-                  {assignedModules.length} Active {assignedModules.length === 1 ? 'Module' : 'Modules'}
-                </span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {assignedModules.map(m => {
-                const IconComp = getModuleIcon(m.key);
-                return (
-                  <div
-                    key={m.key}
-                    onClick={() => navigate(m.route)}
-                    className="group relative bg-[#FBFBFA] hover:bg-white rounded-xl p-4 border border-[#DFDDD7] hover:border-[#C9A45C] transition-all duration-200 shadow-2xs hover:shadow-md cursor-pointer flex flex-col justify-between"
-                  >
-                    <div>
-                      <div className="flex items-start justify-between gap-2 mb-3">
-                        <div className="w-10 h-10 rounded-xl bg-[#101C36] text-[#C9A45C] flex items-center justify-center font-bold shadow-xs group-hover:scale-105 transition-transform">
-                          <IconComp className="w-5 h-5" />
-                        </div>
-                        <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-[#DFDDD7]/40 text-[#687080] group-hover:bg-[#C9A45C]/15 group-hover:text-[#8C6B2D] transition-colors">
-                          {m.section}
-                        </span>
-                      </div>
-                      <h3 className="text-sm font-bold text-[#182033] group-hover:text-[#101C36] leading-snug">
-                        {m.label}
-                      </h3>
-                      {m.description && (
-                        <p className="text-xs text-[#687080] mt-1 line-clamp-2 leading-relaxed">
-                          {m.description}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="mt-4 pt-3 border-t border-[#DFDDD7]/40 flex items-center justify-between text-xs font-bold text-[#C9A45C] group-hover:text-[#101C36] transition-colors">
-                      <span>Launch Module</span>
-                      <ArrowRight className="w-3.5 h-3.5 transform group-hover:translate-x-1 transition-transform" />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
 
         {/* =========================================================================
             SECTION 2: PRIMARY KPI GRID (4 Cols Desktop, 2 Cols Tablet, 1 Col Mobile)
@@ -579,7 +518,123 @@ export default function DashboardPage() {
         </div>
 
         {/* =========================================================================
-            SECTION 3: STORE OPERATIONS (3 Store Cards with Active Highlights)
+            SECTION 3: LIVE ACTIVITY INTELLIGENCE (Clean, modern, professional)
+        ========================================================================== */}
+        <div className="bg-white rounded-2xl border border-[#DFDDD7] shadow-xs p-5 sm:p-6 mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#DFDDD7] pb-3 mb-4">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-[#101C36] text-[#C9A45C] flex items-center justify-center border border-[#C9A45C]/30 flex-shrink-0 shadow-xs">
+                <Activity className="w-4 h-4 text-[#C9A45C]" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-sm font-black uppercase tracking-wider text-[#182033]">
+                    Live Activity Intelligence
+                  </h2>
+                  <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 shrink-0">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    LIVE
+                  </span>
+                </div>
+                <p className="text-xs font-semibold text-[#687080] mt-0.5">
+                  Real-time user operations, security audit &amp; staff action logs
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => setTimelineOpen(true)}
+                className="px-3.5 py-1.5 rounded-xl bg-[#101C36] text-white hover:bg-[#07101F] text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer hover:border-[#C9A45C] border border-transparent focus:outline-none focus:ring-2 focus:ring-[#C9A45C]"
+                aria-label="Open User Activity Timeline"
+              >
+                <Activity className="w-3.5 h-3.5 text-[#C9A45C]" />
+                <span>User Activity Timeline</span>
+                <ChevronRight className="w-3.5 h-3.5 text-white/70" />
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-center">
+            {/* Quick Metrics */}
+            <div className="grid grid-cols-3 gap-2.5">
+              <div className="p-3 rounded-xl bg-[#F6F4EF] border border-[#DFDDD7] text-center">
+                <span className="text-[10px] uppercase font-bold text-[#687080] block">Active Today</span>
+                <span className="text-lg font-black text-[#182033]">
+                  {trackingStats?.activeUsersToday || 1}
+                </span>
+              </div>
+              <div className="p-3 rounded-xl bg-[#F6F4EF] border border-[#DFDDD7] text-center">
+                <span className="text-[10px] uppercase font-bold text-[#687080] block">Logins</span>
+                <span className="text-lg font-black text-emerald-700">
+                  {trackingStats?.totalLoginsToday || 0}
+                </span>
+              </div>
+              <div className="p-3 rounded-xl bg-[#F6F4EF] border border-[#DFDDD7] text-center">
+                <span className="text-[10px] uppercase font-bold text-[#687080] block">Logouts</span>
+                <span className="text-lg font-black text-rose-700">
+                  {trackingStats?.totalLogoutsToday || 0}
+                </span>
+              </div>
+            </div>
+
+            {/* Live Activity Snippet */}
+            <div className="lg:col-span-2 flex flex-col sm:flex-row gap-2.5">
+              {recentActivities && recentActivities.length > 0 ? (
+                recentActivities.slice(0, 2).map((act: any, idx: number) => (
+                  <button
+                    key={act.id || idx}
+                    type="button"
+                    onClick={() => setTimelineOpen(true)}
+                    className="flex-1 p-3 rounded-xl bg-[#FAF8F5]/80 hover:bg-white border border-[#DFDDD7] hover:border-[#C9A45C] transition-all text-left flex items-center justify-between gap-3 group cursor-pointer shadow-2xs"
+                    title="Click to open User Activity Timeline"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-8 h-8 rounded-lg bg-white border border-[#DFDDD7] flex items-center justify-center flex-shrink-0 group-hover:bg-[#101C36] group-hover:text-white transition-colors">
+                        <Activity className="w-4 h-4 text-[#C9A45C]" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-xs font-bold text-[#182033] truncate">
+                          {act.username || 'System User'}
+                        </div>
+                        <div className="text-[11px] text-[#687080] truncate font-medium">
+                          {formatActionText(act.action, act.details)}
+                        </div>
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-semibold text-[#8B776A] whitespace-nowrap bg-white px-2 py-0.5 rounded-md border border-[#DFDDD7] shrink-0">
+                      {formatTimelineTimestamp(act.createdAt)}
+                    </span>
+                  </button>
+                ))
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setTimelineOpen(true)}
+                  className="w-full p-3 rounded-xl bg-[#FAF8F5]/80 hover:bg-white border border-[#DFDDD7] hover:border-[#C9A45C] transition-all text-left flex items-center justify-between gap-3 group cursor-pointer shadow-2xs"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-white border border-[#DFDDD7] flex items-center justify-center flex-shrink-0">
+                      <Activity className="w-4 h-4 text-[#C9A45C]" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-[#182033]">Real-time Activity Stream Active</div>
+                      <div className="text-[11px] text-[#687080]">Click to view complete user interaction log</div>
+                    </div>
+                  </div>
+                  <span className="text-xs font-bold text-[#C9A45C] flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
+                    <span>View Timeline</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* =========================================================================
+            SECTION 4: STORE OPERATIONS (3 Store Cards with Active Highlights)
         ========================================================================== */}
         <div className="bg-white rounded-2xl border border-[#DFDDD7] shadow-xs p-5 sm:p-6 mb-6">
           <div className="flex items-center justify-between border-b border-[#DFDDD7] pb-3 mb-4">
@@ -1167,6 +1222,12 @@ export default function DashboardPage() {
             onClose={() => setSelectedEmployee(null)}
           />
         )}
+
+        {/* User Activity Timeline Centered Modal */}
+        <ActivityPanel
+          isOpen={timelineOpen}
+          onClose={() => setTimelineOpen(false)}
+        />
       </PageContainer>
     </DashboardLayout>
   );

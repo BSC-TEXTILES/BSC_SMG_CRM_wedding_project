@@ -121,6 +121,10 @@ export const CALL_TIME_OPTIONS = [
   'Any Time'
 ];
 
+export const CALL_TIMES = CALL_TIME_OPTIONS;
+export const WEDDING_STATUSES = CUSTOMER_STATUSES;
+export const CALL_STATUSES = ['Completed', 'Pending', 'Scheduled', 'In Progress', 'Cancelled'];
+
 export const BUDGET_RANGES = [
   'Below ₹25,000',
   '₹25,000 – ₹50,000',

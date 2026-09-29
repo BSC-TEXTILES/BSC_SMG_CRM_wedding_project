@@ -1,9 +1,12 @@
-import { useState, useEffect } from 'react';
-import { X, Bell, Pin, CheckCheck, Trash2, Search, Volume2, VolumeX, MessageSquare, Sliders, CircleCheck, Archive, Check, ShieldAlert } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  X, Bell, CheckCheck, Trash2, Search, Volume2, VolumeX,
+  MessageSquare, Sliders, CheckCircle, Clock, ShieldAlert, Sparkles, Filter
+} from 'lucide-react';
 import { NotificationService, SystemNotification } from '../../services/notificationService';
 import NotificationPreferencesModal from './NotificationPreferencesModal';
 import DirectMessagingModal from './DirectMessagingModal';
-import { Auth, API } from '../../services/api';
+import { Auth } from '../../services/api';
 import { showToast } from '../Toast';
 
 interface NotificationDrawerProps {
@@ -18,21 +21,36 @@ export default function NotificationDrawer({ isOpen, onClose }: NotificationDraw
   const [prefsOpen, setPrefsOpen] = useState(false);
   const [dmOpen, setDmOpen] = useState(false);
   const [soundOn, setSoundOn] = useState(() => NotificationService.isSoundEnabled());
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   const session = Auth.get();
-  const username = session?.username || 'user';
-  const isAdmin = session && ['admin', 'super admin', 'system administrator'].includes(String(session.role || '').toLowerCase());
+  const unreadCount = NotificationService.getUnreadCount();
 
+  // ── Lock background scroll & handle Escape key ─────────────────────────
   useEffect(() => {
+    if (!isOpen) return;
+
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    // Focus close button on open
+    setTimeout(() => closeButtonRef.current?.focus(), 50);
+
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
     };
-    if (isOpen) {
-      window.addEventListener('keydown', handleKeyDown);
-    }
-    return () => window.removeEventListener('keydown', handleKeyDown);
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
   }, [isOpen, onClose]);
 
+  // ── Subscribe to notification service updates ──────────────────────────
   useEffect(() => {
     const unsubscribe = NotificationService.subscribe((list) => {
       setNotifications(list);
@@ -42,7 +60,7 @@ export default function NotificationDrawer({ isOpen, onClose }: NotificationDraw
 
   if (!isOpen) return null;
 
-  const filtered = notifications.filter(n => {
+  const filtered = notifications.filter((n) => {
     if (activeTab === 'unread' && n.read) return false;
     if (activeTab === 'archived' && !n.archived) return false;
     if (activeTab !== 'archived' && n.archived) return false;
@@ -55,256 +73,292 @@ export default function NotificationDrawer({ isOpen, onClose }: NotificationDraw
     return true;
   });
 
+  const formatNotificationTime = (timestamp?: string) => {
+    if (!timestamp) return 'Just now';
+    const d = new Date(timestamp);
+    if (isNaN(d.getTime())) return timestamp;
+
+    const now = new Date();
+    const isToday = d.toDateString() === now.toDateString();
+
+    const yesterday = new Date();
+    yesterday.setDate(now.getDate() - 1);
+    const isYesterday = d.toDateString() === yesterday.toDateString();
+
+    const timeStr = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+
+    if (isToday) return `Today · ${timeStr}`;
+    if (isYesterday) return `Yesterday · ${timeStr}`;
+
+    const day = d.toLocaleDateString([], { day: 'numeric', month: 'short' });
+    return `${day} · ${timeStr}`;
+  };
+
   const getPriorityBadge = (priority: string) => {
     switch (priority) {
-      case 'critical': return <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-status-danger/15 text-status-danger border border-status-danger/30 animate-pulse">CRITICAL</span>;
-      case 'high': return <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-status-warning/15 text-status-warning border border-status-warning/30">HIGH</span>;
-      case 'low': return <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-background text-text-secondary border border-border">LOW</span>;
-      default: return <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-status-info/15 text-status-info border border-status-info/30">NORMAL</span>;
+      case 'critical':
+        return (
+          <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-rose-50 text-rose-700 border border-rose-200 animate-pulse">
+            CRITICAL
+          </span>
+        );
+      case 'high':
+        return (
+          <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-amber-50 text-amber-700 border border-amber-200">
+            HIGH
+          </span>
+        );
+      case 'low':
+        return (
+          <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-[#FAF8F5] text-[#8B776A] border border-[#DFDDD7]">
+            LOW
+          </span>
+        );
+      default:
+        return (
+          <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-blue-50 text-blue-700 border border-blue-200">
+            NORMAL
+          </span>
+        );
     }
+  };
+
+  const handleMarkAllRead = () => {
+    NotificationService.markAllAsRead();
+    showToast('All notifications marked as read', 'success');
   };
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex justify-end">
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-all cursor-pointer" onClick={onClose} />
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 overflow-hidden">
+        {/* Blurred Backdrop */}
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+          onClick={onClose}
+          aria-hidden="true"
+        />
 
-        <aside className="relative w-full max-w-md bg-card h-full max-h-[100dvh] shadow-2xl flex flex-col z-10 animate-fade-in border-l border-border">
+        {/* Centered Notification Modal */}
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="notification-modal-title"
+          className="relative w-full max-w-2xl bg-white/95 backdrop-blur-xl rounded-3xl shadow-[0_25px_60px_rgba(16,28,54,0.25)] border border-[#DFDDD7] overflow-hidden flex flex-col max-h-[85vh] sm:max-h-[88vh] z-10 animate-modal-in"
+        >
           {/* Header */}
-          <div className="p-4 sm:p-5 border-b border-accent/20 bg-primary text-white flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-primary-dark/80 text-accent-light border border-accent/20">
-                <Bell className="w-5 h-5" />
+          <div className="p-4 sm:p-6 border-b border-[#DFDDD7] bg-[#FAF8F5]/80 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-10 h-10 rounded-2xl bg-[#101C36] text-[#C9A45C] flex items-center justify-center flex-shrink-0 shadow-xs border border-[#C9A45C]/30">
+                <Bell className="w-5 h-5 text-[#C9A45C]" />
               </div>
-              <div>
-                <h2 className="font-extrabold text-base tracking-tight leading-tight text-white">Notification Center</h2>
-                <p className="text-[10.5px] text-accent-light font-semibold mt-0.5">Real-time alerts &amp; announcements</p>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <h2
+                    id="notification-modal-title"
+                    className="font-black text-base sm:text-lg tracking-tight text-[#182033] leading-tight truncate"
+                  >
+                    Notification Center
+                  </h2>
+                  {unreadCount > 0 && (
+                    <span className="px-2 py-0.5 rounded-full bg-[#B76E79] text-white text-[10px] font-black shrink-0 shadow-2xs">
+                      {unreadCount} New
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-[#687080] font-medium mt-0.5 truncate">
+                  Real-time alerts, broadcasts &amp; system updates
+                </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 shrink-0">
               <button
+                type="button"
                 onClick={() => setSoundOn(NotificationService.toggleSound())}
-                className="p-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition-colors"
-                title={soundOn ? 'Notification sound enabled (Click to mute)' : 'Notification sound muted (Click to enable)'}
+                className="p-2 rounded-xl text-[#687080] hover:text-[#182033] hover:bg-white border border-transparent hover:border-[#DFDDD7] transition-all cursor-pointer"
+                title={soundOn ? 'Notification sound enabled' : 'Notification sound muted'}
+                aria-label="Toggle sound"
               >
-                {soundOn ? <Volume2 className="w-4 h-4 text-accent-light" /> : <VolumeX className="w-4 h-4 text-rose-300" />}
+                {soundOn ? <Volume2 className="w-4 h-4 text-[#C9A45C]" /> : <VolumeX className="w-4 h-4 text-rose-500" />}
               </button>
               <button
+                type="button"
                 onClick={() => setDmOpen(true)}
-                className="p-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+                className="p-2 rounded-xl text-[#687080] hover:text-[#182033] hover:bg-white border border-transparent hover:border-[#DFDDD7] transition-all cursor-pointer"
                 title="Direct Text Messaging"
+                aria-label="Direct messaging"
               >
-                <MessageSquare className="w-4 h-4 text-accent-light" />
+                <MessageSquare className="w-4 h-4 text-[#C9A45C]" />
               </button>
               <button
+                type="button"
                 onClick={() => setPrefsOpen(true)}
-                className="p-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition-colors"
-                title="Audio & Notification Preferences"
+                className="p-2 rounded-xl text-[#687080] hover:text-[#182033] hover:bg-white border border-transparent hover:border-[#DFDDD7] transition-all cursor-pointer"
+                title="Notification Preferences"
+                aria-label="Preferences"
               >
-                <Sliders className="w-4 h-4 text-accent-light" />
+                <Sliders className="w-4 h-4 text-[#C9A45C]" />
               </button>
-              <button onClick={onClose} className="p-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition-colors">
+              <button
+                ref={closeButtonRef}
+                type="button"
+                onClick={onClose}
+                className="p-2 rounded-xl text-[#687080] hover:text-[#182033] hover:bg-white border border-transparent hover:border-[#DFDDD7] transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#C9A45C]"
+                aria-label="Close notification center"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
           </div>
 
-          {/* Search & Tabs */}
-          <div className="p-3 bg-background border-b border-border space-y-2">
-            <div className="relative">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-accent" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search alerts & broadcasts..."
-                className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-border bg-card text-xs text-text-primary font-semibold focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent"
-              />
-            </div>
-
-            <div className="flex items-center justify-between text-xs font-bold pt-1 overflow-x-auto">
-              <div className="flex items-center gap-1">
-                {[
-                  { key: 'all', label: 'All' },
-                  { key: 'unread', label: `Unread (${NotificationService.getUnreadCount()})` },
-                  { key: 'broadcasts', label: 'Broadcasts' },
-                  { key: 'system', label: 'System' },
-                  { key: 'archived', label: 'Archive' }
-                ].map(t => (
-                  <button
-                    key={t.key}
-                    onClick={() => setActiveTab(t.key as any)}
-                    className={`
-                      px-2.5 py-1 rounded-lg text-[10.5px] transition-all whitespace-nowrap
-                      ${activeTab === t.key ? 'bg-primary text-white font-extrabold' : 'text-text-secondary hover:bg-border/50'}
-                    `}
-                  >
-                    {t.label}
-                  </button>
-                ))}
+          {/* Search & Tabs Row */}
+          <div className="p-3 sm:p-4 border-b border-[#DFDDD7]/60 space-y-2.5 bg-white">
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 text-[#8B776A] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type="text"
+                  placeholder="Search alerts & broadcasts..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-[#DFDDD7] bg-[#FAF8F5]/60 text-xs text-[#182033] font-medium focus:bg-white focus:outline-none focus:border-[#C9A45C] focus:ring-1 focus:ring-[#C9A45C]"
+                />
               </div>
 
-              <button
-                onClick={() => NotificationService.markAllAsRead()}
-                className="text-[10.5px] text-accent font-extrabold hover:underline flex items-center gap-1 flex-shrink-0 ml-2"
-              >
-                <CheckCheck className="w-3.5 h-3.5" />
-                <span>Mark All Read</span>
-              </button>
+              {unreadCount > 0 && (
+                <button
+                  type="button"
+                  onClick={handleMarkAllRead}
+                  className="px-3 py-1.5 rounded-xl bg-[#FAF8F5] hover:bg-[#101C36] hover:text-white border border-[#DFDDD7] text-[#182033] text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer shrink-0"
+                >
+                  <CheckCheck className="w-3.5 h-3.5 text-[#C9A45C]" />
+                  <span className="hidden sm:inline">Mark all read</span>
+                </button>
+              )}
+            </div>
+
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
+              {[
+                { key: 'all', label: 'All Alerts' },
+                { key: 'unread', label: `Unread (${unreadCount})` },
+                { key: 'broadcasts', label: 'Broadcasts' },
+                { key: 'system', label: 'System' },
+                { key: 'archived', label: 'Archive' }
+              ].map((t) => (
+                <button
+                  key={t.key}
+                  type="button"
+                  onClick={() => setActiveTab(t.key as any)}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold whitespace-nowrap transition-colors cursor-pointer ${
+                    activeTab === t.key
+                      ? 'bg-[#101C36] text-[#FAF7F2]'
+                      : 'text-[#687080] hover:bg-[#F6F4EF]'
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* List */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          {/* Scrollable Notification List */}
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-3 text-xs overscroll-contain">
             {filtered.length > 0 ? (
-              filtered.map((n) => {
-                const isAcked = n.acknowledgedBy?.some(a => a.username === username);
-                return (
-                  <div
-                    key={n.id}
-                    className={`
-                      p-3.5 rounded-2xl border transition-all duration-150 relative space-y-2 group
-                      ${!n.read ? 'bg-accent/10 border-accent/30 shadow-xs' : 'bg-card border-border'}
-                    `}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        {!n.read && <span className="w-2 h-2 rounded-full bg-accent animate-pulse flex-shrink-0" />}
-                        <h3 className="font-extrabold text-xs text-text-primary leading-tight">{n.title}</h3>
+              filtered.map((item) => (
+                <div
+                  key={item.id}
+                  onClick={() => NotificationService.markAsRead(item.id)}
+                  className={`p-3.5 sm:p-4 rounded-2xl border transition-all cursor-pointer relative group ${
+                    !item.read
+                      ? 'bg-[#FAF8F5] border-[#C9A45C]/40 shadow-xs'
+                      : 'bg-white border-[#DFDDD7] hover:border-[#DFDDD7]/80'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3 min-w-0">
+                      <div
+                        className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 border ${
+                          !item.read
+                            ? 'bg-[#101C36] text-[#C9A45C] border-[#C9A45C]/30'
+                            : 'bg-[#F6F4EF] text-[#687080] border-[#DFDDD7]'
+                        }`}
+                      >
+                        <Bell className="w-4 h-4" />
                       </div>
-                      <div className="flex items-center gap-1">
-                        {getPriorityBadge(n.priority)}
-                        <button
-                          onClick={() => NotificationService.togglePin(n.id)}
-                          className={`p-1 rounded hover:bg-black/5 ${n.pinned ? 'text-accent' : 'text-text-muted'}`}
-                          title="Pin message"
-                        >
-                          <Pin className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => NotificationService.toggleArchive(n.id)}
-                          className={`p-1 rounded hover:bg-black/5 ${n.archived ? 'text-status-info' : 'text-text-muted'}`}
-                          title="Archive message"
-                        >
-                          <Archive className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => NotificationService.deleteNotification(n.id)}
-                          className="p-1 rounded text-text-muted hover:text-status-danger hover:bg-status-danger/10"
-                          title="Delete notification"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-
-                    <p className="text-xs text-text-secondary font-medium leading-relaxed">{n.message}</p>
-
-                    {/* Read Acknowledgement Button */}
-                    {n.requireAcknowledgement && (
-                      <div className="pt-2 border-t border-border flex items-center justify-between">
-                        {isAcked ? (
-                          <span className="text-[10px] font-black text-status-success flex items-center gap-1">
-                            <CircleCheck className="w-3.5 h-3.5" />
-                            <span>Acknowledgement Confirmed</span>
-                          </span>
-                        ) : (
-                          <button
-                            onClick={() => NotificationService.acknowledgeRead(n.id, username)}
-                            className="btn-primary px-3 py-1.5 rounded-xl text-[10.5px] font-extrabold shadow-xs"
-                          >
-                            I Have Read &amp; Acknowledge
-                          </button>
-                        )}
-                        <span className="text-[9.5px] text-text-secondary font-semibold">
-                          {(n.acknowledgedBy?.length || 0)} Acknowledgements
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Access Request Admin Approval Action */}
-                    {n.type === 'access_request' && n.actionData?.requestId && (
-                      <div className="pt-2 border-t border-border space-y-1.5">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-bold text-accent uppercase tracking-wider flex items-center gap-1">
-                            <ShieldAlert className="w-3 h-3 text-accent" />
-                            Employee Access Request
-                          </span>
-                          {n.actionData.resolved && (
-                            <span className="text-[10px] font-extrabold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                              {String(n.actionData.status || 'Resolved').toUpperCase()}
-                            </span>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-extrabold text-xs sm:text-sm text-[#182033] tracking-tight truncate">
+                            {item.title}
+                          </h4>
+                          {!item.read && (
+                            <span className="w-2 h-2 rounded-full bg-[#B76E79] shrink-0" />
                           )}
                         </div>
-                        {!n.actionData.resolved && isAdmin && (
-                          <div className="flex items-center gap-2 pt-1">
-                            <button
-                              type="button"
-                              onClick={async () => {
-                                try {
-                                  await API.resolveEmployeeAccessRequest(n.actionData.requestId, 'APPROVE');
-                                  showToast('Access request approved successfully', 'success');
-                                  NotificationService.markAsRead(n.id);
-                                } catch (err: any) {
-                                  showToast(err.message || 'Failed to approve access', 'error');
-                                }
-                              }}
-                              className="flex-1 py-1.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs flex items-center justify-center gap-1 shadow-xs cursor-pointer transition-colors"
-                            >
-                              <Check className="w-3.5 h-3.5" />
-                              <span>Approve Access</span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={async () => {
-                                try {
-                                  await API.resolveEmployeeAccessRequest(n.actionData.requestId, 'REJECT');
-                                  showToast('Access request rejected', 'info');
-                                  NotificationService.markAsRead(n.id);
-                                } catch (err: any) {
-                                  showToast(err.message || 'Failed to reject access', 'error');
-                                }
-                              }}
-                              className="py-1.5 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-extrabold text-xs flex items-center justify-center gap-1 cursor-pointer transition-colors"
-                            >
-                              <X className="w-3.5 h-3.5" />
-                              <span>Reject</span>
-                            </button>
-                          </div>
-                        )}
+                        <p className="text-xs text-[#5F4E44] font-medium mt-1 leading-relaxed line-clamp-3">
+                          {item.message}
+                        </p>
                       </div>
-                    )}
+                    </div>
 
-                    <div className="flex items-center justify-between text-[10px] text-text-secondary font-semibold pt-1">
-                      <span className="font-mono">{new Date(n.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                      {!n.read && (
-                        <button
-                          onClick={() => NotificationService.markAsRead(n.id)}
-                          className="text-accent font-extrabold hover:underline"
-                        >
-                          Mark Read
-                        </button>
-                      )}
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {getPriorityBadge(item.priority)}
                     </div>
                   </div>
-                );
-              })
-            ) : (
-              <div className="text-center py-12 space-y-2">
-                <div className="w-12 h-12 rounded-full bg-background border border-border flex items-center justify-center mx-auto text-primary">
-                  <Bell className="w-6 h-6 stroke-[1.5]" />
+
+                  {/* Notification Footer */}
+                  <div className="flex items-center justify-between text-[11px] text-[#8B776A] pt-2.5 mt-2.5 border-t border-[#DFDDD7]/40 font-medium">
+                    <div className="flex items-center gap-1.5">
+                      <Clock className="w-3 h-3 text-[#B76E79]" />
+                      <span>{formatNotificationTime(item.timestamp)}</span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white border border-[#DFDDD7] text-[#687080]">
+                        {item.category || 'General'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          NotificationService.archive(item.id);
+                        }}
+                        className="opacity-0 group-hover:opacity-100 text-[#8B776A] hover:text-[#182033] p-1 transition-opacity cursor-pointer"
+                        title="Archive notification"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                <div className="text-xs font-extrabold text-text-primary">No Notifications</div>
-                <p className="text-[11px] text-text-secondary max-w-xs mx-auto">You're all caught up! Broadcasts and alerts will appear here.</p>
+              ))
+            ) : (
+              <div className="py-12 text-center text-[#687080] space-y-2">
+                <Bell className="w-8 h-8 text-[#C9A45C]/50 mx-auto" />
+                <p className="font-bold text-sm text-[#182033]">No notifications found</p>
+                <p className="text-xs">You're completely caught up with all alerts.</p>
               </div>
             )}
           </div>
-        </aside>
+
+          {/* Modal Footer */}
+          <div className="p-3 sm:p-4 bg-[#FAF8F5]/80 border-t border-[#DFDDD7] flex items-center justify-between text-xs text-[#687080]">
+            <span className="font-medium">
+              Showing {filtered.length} notification{filtered.length === 1 ? '' : 's'}
+            </span>
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-1.5 rounded-xl border border-[#DFDDD7] bg-white hover:bg-[#101C36] hover:text-white hover:border-[#101C36] text-[#182033] font-bold text-xs transition-colors cursor-pointer"
+            >
+              Close
+            </button>
+          </div>
+        </div>
       </div>
 
+      {/* Auxiliary Modals */}
       <NotificationPreferencesModal isOpen={prefsOpen} onClose={() => setPrefsOpen(false)} />
-      <DirectMessagingModal isOpen={dmOpen} onClose={() => setDmOpen(false)} session={session} />
+      <DirectMessagingModal isOpen={dmOpen} onClose={() => setDmOpen(false)} />
     </>
   );
 }

@@ -1273,6 +1273,13 @@ class WeddingController {
       const customerNotes = req.body.customer_notes || req.body.customerNotes || req.body.initial_notes;
       const customerStatus = req.body.customer_status || req.body.customerStatus || req.body.current_status;
       const callStatus = req.body.call_status || req.body.callStatus;
+      const budget = req.body.budget !== undefined ? req.body.budget : (req.body.budget_range || req.body.budgetRange);
+      const leadSource = req.body.lead_source || req.body.leadSource;
+      const brideName = req.body.bride_name || req.body.brideName;
+      const groomName = req.body.groom_name || req.body.groomName;
+      const alternateMobile = req.body.alternate_mobile || req.body.alternateMobile || req.body.alternate_phone;
+      const weddingCity = req.body.wedding_city || req.body.weddingCity || req.body.city;
+      const locationId = req.body.location_id !== undefined ? Number(req.body.location_id) : (req.body.locationId !== undefined ? Number(req.body.locationId) : undefined);
 
       // Duplicate check if mobile is being changed
       if (mobileNumber && mobileNumber.trim() !== prev.mobile_number) {
@@ -1301,7 +1308,15 @@ class WeddingController {
           preferred_call_time = ?,
           customer_notes = ?,
           customer_status = ?,
-          call_status = ?
+          call_status = ?,
+          budget = ?,
+          budget_range = ?,
+          lead_source = ?,
+          bride_name = ?,
+          groom_name = ?,
+          alternate_mobile = ?,
+          wedding_city = ?,
+          location_id = ?
         WHERE id = ?
       `, [
         customerName ? customerName.trim() : prev.customer_name,
@@ -1318,6 +1333,14 @@ class WeddingController {
         customerNotes !== undefined ? encryptField(customerNotes) : prev.customer_notes,
         customerStatus || prev.customer_status,
         callStatus || prev.call_status,
+        budget !== undefined ? budget : prev.budget,
+        budget !== undefined ? budget : prev.budget_range,
+        leadSource !== undefined ? leadSource : prev.lead_source,
+        brideName !== undefined ? brideName : prev.bride_name,
+        groomName !== undefined ? groomName : prev.groom_name,
+        alternateMobile !== undefined ? alternateMobile : prev.alternate_mobile,
+        weddingCity !== undefined ? weddingCity : prev.wedding_city,
+        locationId !== undefined && !isNaN(locationId) && locationId > 0 ? locationId : prev.location_id,
         id
       ]);
 
@@ -2935,7 +2958,25 @@ class WeddingController {
             c.created_at,
             w.customer_code,
             w.customer_name,
+            w.bride_name,
+            w.groom_name,
             w.mobile_number,
+            w.alternate_mobile,
+            w.email,
+            w.wedding_date,
+            w.expected_shopping_date,
+            w.preferred_shopping_category,
+            w.budget,
+            w.budget_range,
+            w.lead_source,
+            w.priority,
+            w.estimated_family_size,
+            w.wedding_city,
+            w.customer_notes,
+            w.assigned_telecaller,
+            w.assigned_telecaller_id,
+            w.call_status AS current_call_status,
+            w.follow_up_date AS current_follow_up_date,
             w.customer_status,
             w.location_id,
             l.location_name,
@@ -2947,7 +2988,7 @@ class WeddingController {
           ORDER BY c.call_date DESC, c.call_time DESC, c.id DESC
         `, callParams);
 
-        decryptRows(rows, ENCRYPTED_FIELDS);
+        decryptRows(rows, [...ENCRYPTED_FIELDS, ...CALL_LOG_ENCRYPTED_FIELDS]);
 
         return successRes(res, {
           data: rows || [],
@@ -3543,14 +3584,15 @@ class WeddingController {
       );
       if (!existing || existing.length === 0) return errorRes(res, 'Customer not found', [], 404);
 
-      const { note_content, note_type } = req.body;
-      if (!note_content || !note_content.trim()) return errorRes(res, 'Note content is required', [], 400);
+      const noteText = req.body.note_content || req.body.note;
+      const note_type = req.body.note_type || 'General';
+      if (!noteText || !String(noteText).trim()) return errorRes(res, 'Note content is required', [], 400);
 
       const locationId = existing[0].location_id;
       const [result] = await pool.query(`
         INSERT INTO wedding_notes (customer_id, location_id, note_content, note_type, created_by, created_by_user_id)
         VALUES (?, ?, ?, ?, ?, ?)
-      `, [customerId, locationId, encryptField(note_content.trim()), note_type || 'General', req.user?.fullName || 'Staff', req.user?.id || null]);
+      `, [customerId, locationId, encryptField(String(noteText).trim()), note_type, req.user?.fullName || 'Staff', req.user?.id || null]);
 
       return successRes(res, { id: result.insertId }, 'Note added', 201);
     } catch (err) {

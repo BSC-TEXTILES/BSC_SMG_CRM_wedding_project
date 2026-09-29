@@ -99,7 +99,7 @@ export default function ShivamoggaEventSection() {
                 to="/wedding/customer-registration"
                 className="w-full sm:w-auto px-6 py-3.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-[#FAF7F2] text-xs font-bold uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2"
               >
-                <span>Register for Wedding Visit</span>
+                <span>Register for Wedding Shopping</span>
               </Link>
             </div>
 

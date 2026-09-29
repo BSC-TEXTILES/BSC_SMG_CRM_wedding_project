@@ -996,6 +996,13 @@ async function autoInitializeDatabase() {
       console.warn('[Auto DB Initializer] Session activity / allowed routes schema skipped:', _sessionErr.message);
     }
 
+    try {
+      const { initFeedbackTables } = require('../scripts/init_location_feedback_tables');
+      await initFeedbackTables();
+    } catch (_fbErr) {
+      console.warn('[Auto DB Initializer] Feedback tables verification notice:', _fbErr.message);
+    }
+
     console.log('[Auto DB Initializer] DATABASE FULLY INITIALIZED!');
     console.log('[Auto DB Initializer] Total Active Tables: 130+');
 

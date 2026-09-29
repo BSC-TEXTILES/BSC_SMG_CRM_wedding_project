@@ -13,7 +13,50 @@ import {
   CALL_OUTCOMES,
   getStatusBadge
 } from './weddingTypes';
-import { User, Heart, PhoneCall, MessageCircle, FileText, History, TrendingUp, ArrowLeft, Plus, X, CircleAlert, RefreshCw, Users, ExternalLink } from 'lucide-react';
+import {
+  User, Heart, PhoneCall, MessageCircle, FileText, History, TrendingUp,
+  ArrowLeft, Plus, X, CircleAlert, RefreshCw, Users, ExternalLink,
+  Edit3, MapPin, Calendar, Clock, Save, Building2
+} from 'lucide-react';
+import { STORE_LOCATIONS_LIST } from '../../config/storeLocations';
+
+const SHOPPING_CATEGORIES = [
+  'General Wedding Shopping',
+  'Bridal Silk Sarees',
+  'Groom Wear, Suits & Sherwanis',
+  'Family Wedding Trousseau',
+  'Festive & Party Wear',
+  'Temple Jewellery & Accessories',
+  'Home Furnishings & Linens'
+];
+
+const BUDGET_OPTIONS = [
+  'Not Decided',
+  'Under ₹25,000',
+  '₹25,000 - ₹50,000',
+  '₹50,000 - ₹1,00,000',
+  '₹1,00,000 - ₹2,50,000',
+  '₹2,50,000 - ₹5,00,000',
+  '₹5,00,000+'
+];
+
+const LEAD_SOURCES = [
+  'Wedding Registration',
+  'In-store Walkin',
+  'Phone Inquiry',
+  'Website',
+  'Social Media',
+  'Referral / Word of Mouth',
+  'Family Recommendation'
+];
+
+const CALL_TIMES = [
+  'Any Time',
+  'Morning (10 AM - 1 PM)',
+  'Afternoon (1 PM - 4 PM)',
+  'Evening (4 PM - 7 PM)',
+  'After 7 PM'
+];
 
 export default function WeddingCustomerDetail() {
   const { id } = useParams<{ id: string }>();
@@ -29,6 +72,28 @@ export default function WeddingCustomerDetail() {
 
   // Active Profile Section Tab
   const [activeTab, setActiveTab] = useState<'overview' | 'calls' | 'notes' | 'status_history' | 'associated_weddings'>('overview');
+
+  // Edit Customer Modal
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editForm, setEditForm] = useState({
+    customer_name: '',
+    mobile_number: '',
+    alternate_mobile: '',
+    email: '',
+    location_id: 1,
+    lead_source: 'Wedding Registration',
+    wedding_date: '',
+    expected_shopping_date: '',
+    preferred_shopping_category: 'General Wedding Shopping',
+    budget: 'Not Decided',
+    estimated_family_size: 1,
+    bride_name: '',
+    groom_name: '',
+    wedding_city: '',
+    preferred_call_time: 'Any Time',
+    customer_notes: ''
+  });
+  const [savingEdit, setSavingEdit] = useState(false);
 
   // Reassign Telecaller Modal
   const [reassignModalOpen, setReassignModalOpen] = useState(false);
@@ -89,6 +154,80 @@ export default function WeddingCustomerDetail() {
       setLoading(false);
     }
   }, [id]);
+
+  const handleOpenEdit = () => {
+    if (!customer) return;
+    setEditForm({
+      customer_name: customer.customer_name || '',
+      mobile_number: customer.mobile_number ? customer.mobile_number.replace(/\D/g, '').slice(-10) : '',
+      alternate_mobile: (customer as any).alternate_mobile ? (customer as any).alternate_mobile.replace(/\D/g, '').slice(-10) : '',
+      email: customer.email || '',
+      location_id: Number(customer.location_id) || 1,
+      lead_source: customer.lead_source || 'Wedding Registration',
+      wedding_date: customer.wedding_date ? String(customer.wedding_date).split('T')[0] : '',
+      expected_shopping_date: customer.expected_shopping_date ? String(customer.expected_shopping_date).split('T')[0] : '',
+      preferred_shopping_category: customer.preferred_shopping_category || 'General Wedding Shopping',
+      budget: customer.budget || (customer as any).budget_range || 'Not Decided',
+      estimated_family_size: Number(customer.estimated_family_size) || 1,
+      bride_name: (customer as any).bride_name || '',
+      groom_name: (customer as any).groom_name || '',
+      wedding_city: (customer as any).wedding_city || '',
+      preferred_call_time: customer.preferred_call_time || 'Any Time',
+      customer_notes: (customer as any).customer_notes || (customer as any).initial_notes || ''
+    });
+    setEditModalOpen(true);
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!customer) return;
+    if (!editForm.customer_name.trim()) {
+      showToast('Customer name is required', 'error');
+      return;
+    }
+    const cleanMobile = editForm.mobile_number.replace(/\D/g, '');
+    if (!cleanMobile || cleanMobile.length !== 10) {
+      showToast('Please enter a valid 10-digit mobile number', 'error');
+      return;
+    }
+
+    setSavingEdit(true);
+    try {
+      const payload: any = {
+        customer_name: editForm.customer_name.trim(),
+        mobile_number: `+91${cleanMobile}`,
+        alternate_mobile: editForm.alternate_mobile ? `+91${editForm.alternate_mobile.replace(/\D/g, '').slice(-10)}` : null,
+        email: editForm.email.trim() || null,
+        location_id: Number(editForm.location_id) || 1,
+        lead_source: editForm.lead_source,
+        wedding_date: editForm.wedding_date || null,
+        expected_shopping_date: editForm.expected_shopping_date || null,
+        preferred_shopping_category: editForm.preferred_shopping_category,
+        budget: editForm.budget,
+        budget_range: editForm.budget,
+        estimated_family_size: Number(editForm.estimated_family_size) || 1,
+        bride_name: editForm.bride_name.trim() || null,
+        groom_name: editForm.groom_name.trim() || null,
+        wedding_city: editForm.wedding_city.trim() || null,
+        preferred_call_time: editForm.preferred_call_time,
+        customer_notes: editForm.customer_notes.trim() || null
+      };
+
+      const res: any = await API.updateWeddingCustomer(customer.id, payload);
+      if (res?.success === false) {
+        showToast(res.message || 'Failed to update customer', 'error');
+        return;
+      }
+      showToast('Customer details updated successfully.', 'success');
+      setEditModalOpen(false);
+      await loadCustomer();
+    } catch (err: any) {
+      console.error('[handleSaveEdit Error]', err);
+      showToast(err.message || 'Failed to update customer details', 'error');
+    } finally {
+      setSavingEdit(false);
+    }
+  };
 
   const handleOpenReassign = async () => {
     try {
@@ -251,6 +390,15 @@ export default function WeddingCustomerDetail() {
                   <ArrowLeft className="w-3.5 h-3.5" />
                   <span>Back</span>
                 </Link>
+
+                <button
+                  type="button"
+                  onClick={handleOpenEdit}
+                  className="px-3.5 py-2 bg-[#B76E79] hover:bg-[#A85F6A] text-white font-semibold rounded-xl text-xs flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                >
+                  <Edit3 className="w-3.5 h-3.5 text-white" />
+                  <span>Edit Details</span>
+                </button>
 
                 <button
                   onClick={() => {
@@ -419,9 +567,19 @@ export default function WeddingCustomerDetail() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {/* Section 1: Customer Details */}
               <div className="bg-[#FFFDFC] p-5 rounded-3xl border border-[#E8D9D4] shadow-xs space-y-3 text-xs">
-                <div className="flex items-center gap-2 font-bold text-sm text-[#4A173A] border-b border-[#E8D9D4] pb-2">
-                  <User className="w-4 h-4 text-[#B76E79]" />
-                  <span>Customer Details</span>
+                <div className="flex items-center justify-between font-bold text-sm text-[#4A173A] border-b border-[#E8D9D4] pb-2">
+                  <div className="flex items-center gap-2">
+                    <User className="w-4 h-4 text-[#B76E79]" />
+                    <span>Customer Details</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleOpenEdit}
+                    className="text-xs text-[#B76E79] hover:text-[#4A173A] font-semibold flex items-center gap-1 cursor-pointer transition-colors"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                    <span>Edit</span>
+                  </button>
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between">
@@ -432,6 +590,12 @@ export default function WeddingCustomerDetail() {
                     <span className="text-[#6F5963]">Mobile Number:</span>
                     <strong className="text-[#2B1722]">{customer.mobile_number}</strong>
                   </div>
+                  {(customer as any).alternate_mobile && (
+                    <div className="flex justify-between">
+                      <span className="text-[#6F5963]">Alternate Mobile:</span>
+                      <strong className="text-[#2B1722]">{(customer as any).alternate_mobile}</strong>
+                    </div>
+                  )}
                   {customer.email && (
                     <div className="flex justify-between">
                       <span className="text-[#6F5963]">Email:</span>
@@ -457,9 +621,19 @@ export default function WeddingCustomerDetail() {
 
               {/* Section 2: Wedding & Shopping Details */}
               <div className="bg-[#FFFDFC] p-5 rounded-3xl border border-[#E8D9D4] shadow-xs space-y-3 text-xs">
-                <div className="flex items-center gap-2 font-bold text-sm text-[#4A173A] border-b border-[#E8D9D4] pb-2">
-                  <Heart className="w-4 h-4 text-[#B76E79]" />
-                  <span>Wedding & Shopping Information</span>
+                <div className="flex items-center justify-between font-bold text-sm text-[#4A173A] border-b border-[#E8D9D4] pb-2">
+                  <div className="flex items-center gap-2">
+                    <Heart className="w-4 h-4 text-[#B76E79]" />
+                    <span>Wedding & Shopping Information</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleOpenEdit}
+                    className="text-xs text-[#B76E79] hover:text-[#4A173A] font-semibold flex items-center gap-1 cursor-pointer transition-colors"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                    <span>Edit</span>
+                  </button>
                 </div>
                 <div className="space-y-2">
                   {parseDate(customer.wedding_date) ? (
@@ -482,7 +656,7 @@ export default function WeddingCustomerDetail() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-[#6F5963]">Budget Range:</span>
-                    <strong className="text-[#198754]">{customer.budget || 'Not Decided'}</strong>
+                    <strong className="text-[#198754]">{customer.budget || (customer as any).budget_range || 'Not Decided'}</strong>
                   </div>
                   {customer.estimated_family_size ? (
                     <div className="flex justify-between">
@@ -490,6 +664,24 @@ export default function WeddingCustomerDetail() {
                       <strong className="text-[#2B1722]">{customer.estimated_family_size} members</strong>
                     </div>
                   ) : null}
+                  {(customer as any).bride_name && (
+                    <div className="flex justify-between">
+                      <span className="text-[#6F5963]">Bride:</span>
+                      <strong className="text-[#2B1722]">{(customer as any).bride_name}</strong>
+                    </div>
+                  )}
+                  {(customer as any).groom_name && (
+                    <div className="flex justify-between">
+                      <span className="text-[#6F5963]">Groom:</span>
+                      <strong className="text-[#2B1722]">{(customer as any).groom_name}</strong>
+                    </div>
+                  )}
+                  {(customer as any).wedding_city && (
+                    <div className="flex justify-between">
+                      <span className="text-[#6F5963]">City / Venue:</span>
+                      <strong className="text-[#2B1722]">{(customer as any).wedding_city}</strong>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1015,6 +1207,328 @@ export default function WeddingCustomerDetail() {
                         </>
                       ) : (
                         'Confirm Assignment'
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Edit Customer Details Modal */}
+          {editModalOpen && (
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-50 animate-fade-in overflow-y-auto">
+              <div className="bg-[#FFFDFC] rounded-3xl max-w-2xl w-full p-5 sm:p-7 shadow-2xl border border-[#E8D9D4] space-y-5 animate-scale-in my-8 max-h-[92vh] flex flex-col">
+                <div className="flex items-center justify-between pb-3.5 border-b border-[#E8D9D4] shrink-0">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-xl bg-[#4A173A] text-white flex items-center justify-center">
+                      <Edit3 className="w-4 h-4 text-[#E8C7A8]" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-bold text-[#4A173A]">Edit Customer Profile</h3>
+                      <p className="text-xs text-[#6F5963]">Reg ID: {customer.customer_code} · {customer.customer_name}</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setEditModalOpen(false)}
+                    className="p-1.5 text-[#6F5963] hover:text-[#4A173A] hover:bg-[#FFF7F2] rounded-xl transition-colors cursor-pointer"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <form onSubmit={handleSaveEdit} className="space-y-5 text-xs overflow-y-auto pr-1 flex-1">
+                  {/* Section 1: Customer Contact & Showroom */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#4A173A] pb-1 border-b border-[#E8D9D4]/60">
+                      <User className="w-3.5 h-3.5 text-[#B76E79]" />
+                      <span>Customer Contact & Showroom Location</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                      <div>
+                        <label className="block text-[10.5px] font-bold uppercase text-[#6F5963] mb-1">
+                          Full Name <span className="text-rose-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={editForm.customer_name}
+                          onChange={(e) => setEditForm({ ...editForm, customer_name: e.target.value })}
+                          placeholder="Customer full name"
+                          className="w-full px-3.5 py-2.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-semibold text-xs text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10.5px] font-bold uppercase text-[#6F5963] mb-1">
+                          Mobile Number (10 Digits) <span className="text-rose-500">*</span>
+                        </label>
+                        <div className="flex rounded-xl border border-[#E8D9D4] bg-[#FFFAF7] overflow-hidden focus-within:border-[#B76E79]">
+                          <span className="px-3 py-2.5 bg-[#F6E2E5]/50 border-r border-[#E8D9D4] text-xs font-mono font-bold text-[#4A173A] select-none">
+                            +91
+                          </span>
+                          <input
+                            type="tel"
+                            inputMode="numeric"
+                            maxLength={10}
+                            required
+                            value={editForm.mobile_number}
+                            onChange={(e) => setEditForm({ ...editForm, mobile_number: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                            placeholder="9876543210"
+                            className="flex-1 px-3 py-2.5 text-xs font-mono font-semibold text-[#2B1722] bg-transparent outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[10.5px] font-bold uppercase text-[#6F5963] mb-1">
+                          Alternate Mobile (Optional)
+                        </label>
+                        <div className="flex rounded-xl border border-[#E8D9D4] bg-[#FFFAF7] overflow-hidden focus-within:border-[#B76E79]">
+                          <span className="px-3 py-2.5 bg-[#F6E2E5]/50 border-r border-[#E8D9D4] text-xs font-mono font-bold text-[#4A173A] select-none">
+                            +91
+                          </span>
+                          <input
+                            type="tel"
+                            inputMode="numeric"
+                            maxLength={10}
+                            value={editForm.alternate_mobile}
+                            onChange={(e) => setEditForm({ ...editForm, alternate_mobile: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                            placeholder="Optional alternate mobile"
+                            className="flex-1 px-3 py-2.5 text-xs font-mono font-semibold text-[#2B1722] bg-transparent outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[10.5px] font-bold uppercase text-[#6F5963] mb-1">
+                          Email Address
+                        </label>
+                        <input
+                          type="email"
+                          value={editForm.email}
+                          onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                          placeholder="customer@example.com"
+                          className="w-full px-3.5 py-2.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-semibold text-xs text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10.5px] font-bold uppercase text-[#6F5963] mb-1">
+                          Store Location Showroom <span className="text-rose-500">*</span>
+                        </label>
+                        <select
+                          value={editForm.location_id}
+                          onChange={(e) => setEditForm({ ...editForm, location_id: Number(e.target.value) })}
+                          className="w-full px-3.5 py-2.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-semibold text-xs text-[#4A173A] focus:outline-none focus:border-[#B76E79]"
+                        >
+                          {STORE_LOCATIONS_LIST.map((loc) => (
+                            <option key={loc.id} value={loc.id}>
+                              {loc.storeName} ({loc.city})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[10.5px] font-bold uppercase text-[#6F5963] mb-1">
+                          Lead Source
+                        </label>
+                        <select
+                          value={editForm.lead_source}
+                          onChange={(e) => setEditForm({ ...editForm, lead_source: e.target.value })}
+                          className="w-full px-3.5 py-2.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-semibold text-xs text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                        >
+                          {LEAD_SOURCES.map((src) => (
+                            <option key={src} value={src}>{src}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section 2: Wedding & Shopping Information */}
+                  <div className="space-y-3 pt-2">
+                    <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#4A173A] pb-1 border-b border-[#E8D9D4]/60">
+                      <Heart className="w-3.5 h-3.5 text-[#B76E79]" />
+                      <span>Wedding & Shopping Details</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                      <div>
+                        <label className="block text-[10.5px] font-bold uppercase text-[#6F5963] mb-1">
+                          Wedding Date
+                        </label>
+                        <input
+                          type="date"
+                          value={editForm.wedding_date}
+                          onChange={(e) => setEditForm({ ...editForm, wedding_date: e.target.value })}
+                          className="w-full px-3.5 py-2.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-semibold text-xs text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10.5px] font-bold uppercase text-[#6F5963] mb-1">
+                          Expected Shopping Date
+                        </label>
+                        <input
+                          type="date"
+                          value={editForm.expected_shopping_date}
+                          onChange={(e) => setEditForm({ ...editForm, expected_shopping_date: e.target.value })}
+                          className="w-full px-3.5 py-2.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-semibold text-xs text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10.5px] font-bold uppercase text-[#6F5963] mb-1">
+                          Shopping Category
+                        </label>
+                        <select
+                          value={editForm.preferred_shopping_category}
+                          onChange={(e) => setEditForm({ ...editForm, preferred_shopping_category: e.target.value })}
+                          className="w-full px-3.5 py-2.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-semibold text-xs text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                        >
+                          {SHOPPING_CATEGORIES.map((cat) => (
+                            <option key={cat} value={cat}>{cat}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[10.5px] font-bold uppercase text-[#6F5963] mb-1">
+                          Budget Range
+                        </label>
+                        <select
+                          value={editForm.budget}
+                          onChange={(e) => setEditForm({ ...editForm, budget: e.target.value })}
+                          className="w-full px-3.5 py-2.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-semibold text-xs text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                        >
+                          {BUDGET_OPTIONS.map((bg) => (
+                            <option key={bg} value={bg}>{bg}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[10.5px] font-bold uppercase text-[#6F5963] mb-1">
+                          Estimated Family Size
+                        </label>
+                        <input
+                          type="number"
+                          min={1}
+                          max={50}
+                          value={editForm.estimated_family_size}
+                          onChange={(e) => setEditForm({ ...editForm, estimated_family_size: parseInt(e.target.value, 10) || 1 })}
+                          className="w-full px-3.5 py-2.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-semibold text-xs text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10.5px] font-bold uppercase text-[#6F5963] mb-1">
+                          Wedding City / Venue
+                        </label>
+                        <input
+                          type="text"
+                          value={editForm.wedding_city}
+                          onChange={(e) => setEditForm({ ...editForm, wedding_city: e.target.value })}
+                          placeholder="e.g. Shivamogga, Belagavi, Palace Grounds"
+                          className="w-full px-3.5 py-2.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-semibold text-xs text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10.5px] font-bold uppercase text-[#6F5963] mb-1">
+                          Bride Name
+                        </label>
+                        <input
+                          type="text"
+                          value={editForm.bride_name}
+                          onChange={(e) => setEditForm({ ...editForm, bride_name: e.target.value })}
+                          placeholder="Bride's name"
+                          className="w-full px-3.5 py-2.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-semibold text-xs text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10.5px] font-bold uppercase text-[#6F5963] mb-1">
+                          Groom Name
+                        </label>
+                        <input
+                          type="text"
+                          value={editForm.groom_name}
+                          onChange={(e) => setEditForm({ ...editForm, groom_name: e.target.value })}
+                          placeholder="Groom's name"
+                          className="w-full px-3.5 py-2.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-semibold text-xs text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section 3: Telecalling & Notes */}
+                  <div className="space-y-3 pt-2">
+                    <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#4A173A] pb-1 border-b border-[#E8D9D4]/60">
+                      <PhoneCall className="w-3.5 h-3.5 text-[#B76E79]" />
+                      <span>Telecaller Follow-up & Special Notes</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                      <div>
+                        <label className="block text-[10.5px] font-bold uppercase text-[#6F5963] mb-1">
+                          Preferred Call Time
+                        </label>
+                        <select
+                          value={editForm.preferred_call_time}
+                          onChange={(e) => setEditForm({ ...editForm, preferred_call_time: e.target.value })}
+                          className="w-full px-3.5 py-2.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-semibold text-xs text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                        >
+                          {CALL_TIMES.map((time) => (
+                            <option key={time} value={time}>{time}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10.5px] font-bold uppercase text-[#6F5963] mb-1">
+                        Customer Notes & Special Requirements
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={editForm.customer_notes}
+                        onChange={(e) => setEditForm({ ...editForm, customer_notes: e.target.value })}
+                        placeholder="Add notes about trousseau requirements, color choices, VIP handling..."
+                        className="w-full px-3.5 py-2.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-medium text-xs text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Modal Footer */}
+                  <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-[#E8D9D4] shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setEditModalOpen(false)}
+                      disabled={savingEdit}
+                      className="px-4 py-2.5 rounded-xl bg-[#FFFAF7] hover:bg-[#FFF7F2] border border-[#E8D9D4] font-semibold text-xs text-[#4A173A] transition-colors cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={savingEdit}
+                      className="px-6 py-2.5 rounded-xl bg-[#4A173A] hover:bg-[#6A2853] text-white font-semibold text-xs shadow-md border border-[#B76E79]/30 flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                    >
+                      {savingEdit ? (
+                        <>
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          <span>Saving Changes...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-3.5 h-3.5 text-[#E8C7A8]" />
+                          <span>Save Changes</span>
+                        </>
                       )}
                     </button>
                   </div>

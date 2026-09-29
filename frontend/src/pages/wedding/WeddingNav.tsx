@@ -74,7 +74,7 @@ export default function WeddingNav({ currentPageTitle, breadcrumbs, actions }: W
           <div className="grid grid-cols-4 gap-1.5 pt-1 border-t border-[#E8D9D4]">
             {navLinks.slice(0, 4).map((link) => {
               const Icon = link.icon;
-              const isActive = currentPath === link.href || (link.href === '/wedding-crm/dashboard' && currentPath === '/wedding-crm');
+              const isActive = currentPath === link.href || (link.href === '/wedding-crm/dashboard' && currentPath === '/wedding-crm') || (link.href === '/wedding/customer-registration' && currentPath === '/wedding-crm/customers/new');
               return (
                 <Link
                   key={link.href}
@@ -98,7 +98,7 @@ export default function WeddingNav({ currentPageTitle, breadcrumbs, actions }: W
           <div className="flex items-center gap-1.5 min-w-max py-0.5">
             {navLinks.map((link) => {
               const Icon = link.icon;
-              const isActive = currentPath === link.href || (link.href === '/wedding-crm/dashboard' && currentPath === '/wedding-crm');
+              const isActive = currentPath === link.href || (link.href === '/wedding-crm/dashboard' && currentPath === '/wedding-crm') || (link.href === '/wedding/customer-registration' && currentPath === '/wedding-crm/customers/new');
 
               return (
                 <Link

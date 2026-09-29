@@ -74,11 +74,11 @@ export default function Wedding() {
           </ul>
 
           <Reveal variant="up" delay={120} className="wedding__cta">
-            <Link to="/wedding-registration" className="btn btn--ink" data-cursor="explore">
+            <Link to="/wedding/customer-registration" className="btn btn--ink" data-cursor="explore">
               <Crown className="w-4 h-4" aria-hidden="true" />
               <span>Register for wedding shopping</span>
             </Link>
-            <Link to="/wedding-registration" className="btn btn--ghost">
+            <Link to="/wedding/customer-registration" className="btn btn--ghost">
               <span>Book a consultation</span>
               <ArrowRight className="w-4 h-4" aria-hidden="true" />
             </Link>

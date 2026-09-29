@@ -66,8 +66,8 @@ export default function Hero({ ready, proofLine, familiesLine }: HeroProps) {
         </p>
 
         <div className="hero__cta anim" style={{ ['--d']: '960ms' } as React.CSSProperties}>
-          <Link to="/wedding-registration" className="btn btn--gold" data-cursor="explore">
-            <span>Reserve a wedding hour</span>
+          <Link to="/wedding/customer-registration" className="btn btn--gold" data-cursor="explore">
+            <span>Register for Wedding Shopping</span>
             <ArrowRight className="w-4 h-4" aria-hidden="true" />
           </Link>
           <button

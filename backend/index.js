@@ -699,6 +699,10 @@ if (Server) {
     realtimeService.init(io);
     app.set('io', io);
     app.set('realtimeService', realtimeService);
+    
+    // Initialize Broadcast background jobs (scheduled dispatch, expiry, cleanup)
+    const { initBroadcastJobs } = require('./src/jobs/broadcastJobs');
+    initBroadcastJobs(io);
   } catch (socketErr) {
     console.warn('[Socket] Failed to initialize Socket.io:', socketErr.message);
   }

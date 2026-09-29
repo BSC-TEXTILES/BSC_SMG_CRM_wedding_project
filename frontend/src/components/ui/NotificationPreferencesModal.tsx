@@ -43,86 +43,52 @@ export default function NotificationPreferencesModal({ isOpen, onClose }: Notifi
 
         <div className="space-y-4 text-xs">
           {/* Sound Enable */}
-          <div className="flex items-center justify-between p-3 rounded-2xl bg-background border border-accent-soft">
+          <div className="flex items-center justify-between p-3.5 rounded-2xl bg-[#FAF8F5] border border-[#DFDDD7]">
             <div>
-              <span className="font-bold text-primary block">Notification Audio Alerts</span>
-              <span className="text-[11px] text-primary">Play audio chime when new broadcasts or alerts arrive</span>
+              <span className="font-bold text-[#182033] block">Notification Audio Alerts</span>
+              <span className="text-[11px] text-[#687080]">Play short chime when genuinely new alerts arrive</span>
             </div>
             <input
               type="checkbox"
               checked={settings.soundEnabled}
               onChange={(e) => setSettings({ ...settings, soundEnabled: e.target.checked })}
-              className="w-4 h-4 rounded accent-primary"
+              className="w-4 h-4 rounded accent-[#C9A45C] cursor-pointer"
             />
           </div>
 
           {/* Volume Slider */}
           {settings.soundEnabled && (
-            <div className="p-3 rounded-2xl bg-background border border-accent-soft space-y-2">
-              <div className="flex justify-between font-bold text-primary">
+            <div className="p-3.5 rounded-2xl bg-[#FAF8F5] border border-[#DFDDD7] space-y-2.5">
+              <div className="flex justify-between font-bold text-[#182033]">
                 <span>Chime Volume</span>
-                <span>{Math.round(settings.volume * 100)}%</span>
+                <span className="text-[#C9A45C] font-mono">{Math.round(settings.volume * 100)}%</span>
               </div>
               <input
                 type="range"
-                min="0"
+                min="0.05"
                 max="1"
                 step="0.05"
                 value={settings.volume}
                 onChange={(e) => setSettings({ ...settings, volume: parseFloat(e.target.value) })}
-                className="w-full accent-primary"
+                className="w-full accent-[#C9A45C] cursor-pointer"
               />
-              <button
-                type="button"
-                onClick={handleTestSound}
-                className="text-[10.5px] font-extrabold text-accent hover:underline flex items-center gap-1 pt-1"
-              >
-                <Volume2 className="w-3.5 h-3.5" />
-                <span>Test Audio Chime</span>
-              </button>
+              <div className="pt-1 flex items-center justify-between">
+                <span className="text-[10.5px] text-[#8B776A]">Subtle, non-disruptive enterprise chime</span>
+                <button
+                  type="button"
+                  onClick={handleTestSound}
+                  className="text-[11px] font-extrabold text-[#C9A45C] hover:underline flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Volume2 className="w-3.5 h-3.5" />
+                  <span>Test Audio Chime</span>
+                </button>
+              </div>
             </div>
           )}
 
-          {/* Toast Enable */}
-          <div className="flex items-center justify-between p-3 rounded-2xl bg-background border border-accent-soft">
-            <div>
-              <span className="font-bold text-primary block">Desktop Toast Popups</span>
-              <span className="text-[11px] text-primary">Show bottom-right toast notification banners</span>
-            </div>
-            <input
-              type="checkbox"
-              checked={settings.desktopToastEnabled}
-              onChange={(e) => setSettings({ ...settings, desktopToastEnabled: e.target.checked })}
-              className="w-4 h-4 rounded accent-primary"
-            />
-          </div>
-
-          {/* Toast Duration */}
-          <div className="p-3 rounded-2xl bg-background border border-accent-soft space-y-1">
-            <label className="font-bold text-primary block">Toast Display Duration</label>
-            <select
-              value={settings.toastDuration}
-              onChange={(e) => setSettings({ ...settings, toastDuration: parseInt(e.target.value) })}
-              className="select-modern font-bold"
-            >
-              <option value={3}>3 Seconds</option>
-              <option value={5}>5 Seconds (Default)</option>
-              <option value={10}>10 Seconds</option>
-            </select>
-          </div>
-
-          {/* Preview Toggle */}
-          <div className="flex items-center justify-between p-3 rounded-2xl bg-background border border-accent-soft">
-            <div>
-              <span className="font-bold text-primary block">Show Message Preview</span>
-              <span className="text-[11px] text-primary">Include text snippet in notification popups</span>
-            </div>
-            <input
-              type="checkbox"
-              checked={settings.showPreview}
-              onChange={(e) => setSettings({ ...settings, showPreview: e.target.checked })}
-              className="w-4 h-4 rounded accent-primary"
-            />
+          <div className="p-3 rounded-xl bg-blue-50/50 border border-blue-100 text-[11px] text-blue-900 leading-relaxed">
+            <span className="font-bold block text-blue-950 mb-0.5">Quiet Notification Delivery</span>
+            New messages silently update your notification badge and drawer without interrupting popups. Audio alerts will chime once per new message when enabled above.
           </div>
         </div>
 

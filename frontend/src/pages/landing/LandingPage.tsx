@@ -1,201 +1,99 @@
-import React, { useCallback, useEffect, useState, Suspense, lazy } from 'react';
-import Lenis from 'lenis';
-import HeaderNav from './components/HeaderNav';
-import CinematicHero from './sections/CinematicHero';
-import LegacySection from './sections/LegacySection';
-import EditorialCollections from './sections/EditorialCollections';
-import WeddingSuiteSection from './sections/WeddingSuiteSection';
-import StoreLocationsSection from './sections/StoreLocationsSection';
-import ShivamoggaEventSection from './sections/ShivamoggaEventSection';
-import CraftsmanshipSection from './sections/CraftsmanshipSection';
-import ContactDesksSection from './sections/ContactDesksSection';
-import LuxuryFooter from './components/LuxuryFooter';
-import { AssetManager } from '../../utils/assetManager';
-import './landing.css';
+import React, { useCallback, useEffect, useState } from 'react';
+import LandingNav from './editorial/LandingNav';
+import {
+  LandingCollections,
+  LandingFooter,
+  LandingHero,
+  LandingHeritage,
+  LandingStores,
+  LandingWedding
+} from './editorial/LandingSections';
+import { prefersReducedMotion } from './editorial/useReveal';
+import './editorial/editorial.css';
 
-const BscThreeCanvas = lazy(() => import('./components/BscThreeCanvas'));
+/**
+ * Public landing page — an image-free editorial composition.
+ *
+ * Deliberately loads no photography, no WebGL canvas and no third-party smooth
+ * scroll library: the document itself is the only scroll container, so there is
+ * exactly one scrollbar and no image requests at all.
+ */
 
-const SECTION_IDS = [
-  'hero',
-  'legacy',
-  'collections',
-  'wedding',
-  'stores',
-  'shivamogga-event',
-  'about',
-  'contact'
-];
+const SECTION_IDS = ['hero', 'collections', 'wedding', 'stores', 'about', 'contact'];
 
 export default function LandingPage() {
   const [activeSection, setActiveSection] = useState('hero');
-  const [scrollY, setScrollY] = useState(0);
 
-  /* ── Document Metadata ─────────────────────────────────────────────── */
+  /* ── Document metadata ─────────────────────────────────────────────────── */
   useEffect(() => {
-    const previous = document.title;
-    document.title = 'BSC Textiles';
-    return () => {
-      document.title = previous;
-    };
-  }, []);
+    const previousTitle = document.title;
+    document.title = 'BSC Textiles — Pure Silk Sarees, Bespoke Menswear & Wedding Shopping';
 
-  /* ── Smooth Scrolling with Lenis (only on non-reduced motion) ───────── */
-  useEffect(() => {
-    const coarse = !window.matchMedia('(pointer: fine)').matches;
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (coarse || reduce) return;
-
-    let instance: Lenis | null = null;
-    let raf = 0;
-    try {
-      instance = new Lenis({
-        duration: 1.05,
-        smoothWheel: true,
-        syncTouch: false,
-        wheelMultiplier: 1,
-        easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t))
-      });
-      const loop = (time: number) => {
-        instance?.raf(time);
-        raf = requestAnimationFrame(loop);
-      };
-      raf = requestAnimationFrame(loop);
-    } catch {
-      instance = null;
+    let meta = document.querySelector<HTMLMetaElement>('meta[name="description"]');
+    const previousDescription = meta?.getAttribute('content') ?? null;
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.name = 'description';
+      document.head.appendChild(meta);
     }
+    meta.setAttribute(
+      'content',
+      'BSC Textiles — Karnataka’s heritage house for pure silk sarees, bespoke menswear, bridal trousseaus and curated luxury textiles across Belagavi, Davanagere and Shivamogga.'
+    );
 
     return () => {
-      cancelAnimationFrame(raf);
-      instance?.destroy();
+      document.title = previousTitle;
+      if (meta && previousDescription !== null) meta.setAttribute('content', previousDescription);
     };
   }, []);
 
-  /* ── RAF-Throttled Scroll Tracking (60 FPS, Zero Layout Thrashing) ── */
-  useEffect(() => {
-    let ticking = false;
-    const handleScroll = () => {
-      if (!ticking) {
-        requestAnimationFrame(() => {
-          setScrollY(window.scrollY || 0);
-          ticking = false;
-        });
-        ticking = true;
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  /* ── Intersection-Based Active Section Tracking & Predictive Preloading */
+  /* ── Active section for the navigation underline ───────────────────────── */
   useEffect(() => {
     if (typeof IntersectionObserver === 'undefined') return;
-
-    const sectionPreloads: Record<string, string[]> = {
-      hero: ['/images/floor.webp'],
-      legacy: ['/images/coll-sarees-1200.webp', '/images/womens-festive-couture.png', '/images/coll-mens-1200.webp'],
-      collections: ['/images/womens-festive-couture.png'],
-      wedding: ['/images/suit.webp']
-    };
 
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const id = entry.target.id;
-            setActiveSection(id);
-
-            // Queue upcoming section assets in idle background queue
-            const upcoming = sectionPreloads[id];
-            if (upcoming) {
-              AssetManager.preloadBatch(upcoming, 'high');
-            }
-          }
+          if (entry.isIntersecting) setActiveSection(entry.target.id);
         });
       },
-      { rootMargin: '-10% 0px -40% 0px', threshold: 0.05 }
+      { rootMargin: '-45% 0px -50% 0px', threshold: 0 }
     );
 
     SECTION_IDS.forEach((id) => {
-      const el = document.getElementById(id);
-      if (el) observer.observe(el);
+      const node = document.getElementById(id);
+      if (node) observer.observe(node);
     });
 
     return () => observer.disconnect();
   }, []);
 
+  /* ── In-page navigation ────────────────────────────────────────────────── */
   const handleNavigate = useCallback((id: string) => {
-    const el = document.getElementById(id);
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
-    }
+    const node = document.getElementById(id);
+    if (!node) return;
+    node.scrollIntoView({
+      behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+      block: 'start'
+    });
+    setActiveSection(id);
   }, []);
 
   return (
-    <div className="relative min-h-screen w-full bg-[#120B07] text-[#2B1722] selection:bg-[#B76E79] selection:text-white">
-      {/* ============================================================== */}
-      {/* 1. THREE.JS 3D SCROLL & PARTICLE CANVAS (Lazily Streamed)      */}
-      {/* ============================================================== */}
-      <Suspense fallback={null}>
-        <BscThreeCanvas scrollY={scrollY} />
-      </Suspense>
+    <div className="bsc-ed-page">
+      <a href="#main-content" className="bsc-ed-skip">Skip to main content</a>
 
-      {/* ============================================================== */}
-      {/* 2. OUTER CINEMATIC BACKGROUND (100% Full Viewport)             */}
-      {/* ============================================================== */}
-      <div className="bsc-outer-env" aria-hidden="true">
-        <img
-          src="/images/floor.webp"
-          alt=""
-          width={1920}
-          height={1080}
-          className="bsc-outer-bg-img"
-          loading="eager"
-          decoding="async"
-        />
-        <div className="bsc-outer-vignette" />
-      </div>
+      <LandingNav activeSection={activeSection} onNavigate={handleNavigate} />
 
-      {/* ============================================================== */}
-      {/* 3. CENTERED WEBSITE FRAME (Sitting Over Background)            */}
-      {/* ============================================================== */}
-      <div className="relative z-10 py-3 sm:py-6 lg:py-8">
-        <div className="bsc-main-window-frame">
-          {/* Top Minimal Navigation */}
-          <HeaderNav activeSection={activeSection} onNavigate={handleNavigate} />
+      <main id="main-content">
+        <LandingHero onNavigate={handleNavigate} />
+        <LandingCollections onNavigate={handleNavigate} />
+        <LandingHeritage />
+        <LandingWedding />
+        <LandingStores />
+      </main>
 
-          {/* Main Website Sections */}
-          <main id="main-content" className="flex flex-col">
-            {/* 1. Hero Section + Floating Glass Card + 3D Scroll Depth */}
-            <CinematicHero onScrollTo={handleNavigate} scrollY={scrollY} />
-
-            {/* 2. BSC Heritage & Legacy Visual Timeline */}
-            <LegacySection />
-
-            {/* 3. Editorial 3D Collections Gallery */}
-            <EditorialCollections />
-
-            {/* 4. Wedding Shopping & Private Suites */}
-            <WeddingSuiteSection />
-
-            {/* 5. Flagship Store Locations */}
-            <StoreLocationsSection />
-
-            {/* 6. Shivamogga Flagship Announcement */}
-            <ShivamoggaEventSection />
-
-            {/* 7. Craftsmanship & Silk Mark Guarantee */}
-            <CraftsmanshipSection />
-
-            {/* 8. Interactive Contact & Service Desks */}
-            <ContactDesksSection />
-          </main>
-
-          {/* Luxury Footer */}
-          <LuxuryFooter />
-        </div>
-      </div>
+      <LandingFooter onNavigate={handleNavigate} />
     </div>
   );
 }
-

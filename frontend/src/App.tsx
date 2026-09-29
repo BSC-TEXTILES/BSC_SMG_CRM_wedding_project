@@ -76,7 +76,7 @@ import ConnectivityBanner from './components/ConnectivityBanner';
 import ErrorBoundary from './components/ErrorBoundary';
 import ConsentGuard from './components/ConsentGuard';
 import { useUrlGuard } from './hooks/useUrlGuard';
-import './services/api';
+import { Auth } from './services/api';
 const QuickActionCenter = lazy(() => import('./components/ui/QuickActionCenter'));
 const ChatWidget = lazy(() => import('./components/ui/ChatWidget'));
 const DevToolsGuard = lazy(() => import('./components/DevToolsGuard'));
@@ -137,6 +137,25 @@ function RealtimeInvalidationSetup() {
   return null;
 }
 
+/**
+ * WeddingCustomerRegistrationDispatcher:
+ * - Authenticated CRM staff clicking "Add Customer" or navigating to /wedding/customer-registration
+ *   get the unified CRM "New Wedding Customer Form" (WeddingCustomerCreate) with store & telecaller assignment.
+ * - Public visitors / brides self-registering from marketing links get the public multi-step registration portal (WeddingRegistration).
+ */
+function WeddingCustomerRegistrationDispatcher() {
+  const isAuth = typeof Auth !== 'undefined' && typeof Auth.check === 'function' ? Auth.check() : false;
+  if (isAuth) {
+    return (
+      <RouteGuard pageKey="wedding_registration">
+        <WeddingCustomerCreate />
+      </RouteGuard>
+    );
+  }
+  return <WeddingRegistration />;
+}
+
+
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -172,7 +191,8 @@ export default function App() {
         <Route path="/wedding-crm/status-board" element={<RouteGuard pageKey="wedding_crm"><WeddingStatusBoard /></RouteGuard>} />
         <Route path="/wedding-crm/reports" element={<RouteGuard pageKey="wedding_crm"><WeddingReports /></RouteGuard>} />
         <Route path="/wedding-crm/import" element={<RouteGuard pageKey="wedding_crm"><WeddingImport /></RouteGuard>} />
-        <Route path="/wedding/customer-registration" element={<RouteGuard pageKey="wedding_registration"><WeddingCustomerCreate /></RouteGuard>} />
+        <Route path="/wedding/customer-registration" element={<WeddingCustomerRegistrationDispatcher />} />
+        <Route path="/wedding/public-registration" element={<WeddingRegistration />} />
         <Route path="/wedding-operations" element={<RouteGuard pageKey="wedding_operations"><WeddingOperationsDesk /></RouteGuard>} />
 
         {/* Telecaller Dedicated Routes */}
@@ -188,6 +208,7 @@ export default function App() {
         <Route path="/candidate-registration" element={<Navigate to="/apply" replace />} />
 
         <Route path="/footfall" element={<RouteGuard pageKey="footfall"><Footfall /></RouteGuard>} />
+        <Route path="/feedback" element={<PublicFeedback />} />
         <Route path="/feedback-public" element={<PublicFeedback />} />
         <Route path="/feedback-qr" element={<FeedbackQR />} />
         <Route path="/feedback-qr-management" element={<RouteGuard pageKey="feedback_qr"><FeedbackQRManagement /></RouteGuard>} />
@@ -206,7 +227,7 @@ export default function App() {
         <Route path="/mcheck-reports" element={<RouteGuard pageKey="mcheck_reports"><MCheckReports /></RouteGuard>} />
         <Route path="/mcheck-history" element={<RouteGuard pageKey="mcheck_history"><MCheckHistory /></RouteGuard>} />
         <Route path="/candidates" element={<RouteGuard pageKey="candidates"><Candidates /></RouteGuard>} />
-        <Route path="/wedding-registration" element={<WeddingRegistration />} />
+        <Route path="/wedding-registration" element={<Navigate to="/wedding/customer-registration" replace />} />
         <Route path="/track" element={<WeddingTracking />} />
         <Route path="/interview-panel" element={<Navigate to="/candidates" replace />} />
         <Route path="/interview-form" element={<Navigate to="/candidates" replace />} />

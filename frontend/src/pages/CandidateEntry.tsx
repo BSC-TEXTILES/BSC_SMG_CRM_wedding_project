@@ -781,10 +781,10 @@ export default function CandidateEntryPage() {
 
             <div className="pt-4 border-t border-accent-soft flex justify-center gap-3">
               <button
-                onClick={() => window.location.href = '/wedding-registration'}
+                onClick={() => window.location.href = '/wedding/customer-registration'}
                 className="btn-primary text-xs"
               >
-                Register a Wedding
+                Register for Wedding Shopping
               </button>
               <button
                 onClick={() => window.location.href = '/candidate-entry'}

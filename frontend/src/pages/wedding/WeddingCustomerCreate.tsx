@@ -383,7 +383,7 @@ export default function WeddingCustomerCreate() {
                     className="w-full px-3.5 py-2.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-semibold text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
                   >
                     <option value="">-- Choose Store --</option>
-                    {locations.map((loc) => (
+                    {(Array.isArray(locations) ? locations : []).map((loc) => (
                       <option key={loc.id} value={loc.id}>
                         📍 {loc.name}
                       </option>
@@ -580,7 +580,7 @@ export default function WeddingCustomerCreate() {
                     className="w-full px-3.5 py-2.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-semibold text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
                   >
                     <option value="">-- Select Telecaller --</option>
-                    {telecallers.map((t: any) => (
+                    {(Array.isArray(telecallers) ? telecallers : []).map((t: any) => (
                       <option key={t.id} value={String(t.id)}>
                         {t.full_name || t.name || t.username} — {t.employee_id || `EMP-${t.id}`} ({t.role})
                       </option>

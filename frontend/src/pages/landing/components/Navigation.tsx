@@ -82,8 +82,8 @@ export default function Navigation({ ready, active, isStaff, staffRoute }: Navig
               <LogIn className="w-3.5 h-3.5" />
               <span>{isStaff ? 'Workspace' : 'Staff login'}</span>
             </Link>
-            <Link to="/wedding-registration" className="btn btn--gold btn--sm">
-              <span>Reserve an hour</span>
+            <Link to="/wedding/customer-registration" className="btn btn--gold btn--sm">
+              <span>Register for Wedding Shopping</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
@@ -123,12 +123,12 @@ export default function Navigation({ ready, active, isStaff, staffRoute }: Navig
         <div className="menu__foot">
           <div className="menu__ctas">
             <Link
-              to="/wedding-registration"
+              to="/wedding/customer-registration"
               className="btn btn--gold btn--block"
               tabIndex={open ? 0 : -1}
               onClick={() => setOpen(false)}
             >
-              <span>Reserve a wedding hour</span>
+              <span>Register for Wedding Shopping</span>
               <ArrowRight className="w-4 h-4" />
             </Link>
             <Link

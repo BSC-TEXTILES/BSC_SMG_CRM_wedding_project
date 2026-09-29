@@ -62,7 +62,7 @@ export default function Stores({ withPhone = true }: { withPhone?: boolean }) {
                       Directions
                       <ArrowUpRight className="w-3.5 h-3.5" aria-hidden="true" />
                     </a>
-                    <Link to="/wedding-registration">Book this store</Link>
+                    <Link to="/wedding/customer-registration">Register for Wedding Shopping</Link>
                     <span className="store__badge">{store.badge}</span>
                   </div>
                 </div>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Settings, Volume2, VolumeX, Command, LogOut, ChevronDown, Activity, KeyRound } from 'lucide-react';
+import { Bell, Settings, Volume2, VolumeX, LogOut, ChevronDown, KeyRound } from 'lucide-react';
 import { Auth, UserSession } from '../../services/api';
 import { NotificationService } from '../../services/notificationService';
 import ChangePasswordModal from './ChangePasswordModal';
@@ -8,15 +8,11 @@ import ChangePasswordModal from './ChangePasswordModal';
 interface ProfileDropdownProps {
   session: UserSession | null;
   onOpenNotifications: () => void;
-  onOpenActivity: () => void;
-  onOpenSearch: () => void;
 }
 
 export default function ProfileDropdown({
   session,
-  onOpenNotifications,
-  onOpenActivity,
-  onOpenSearch
+  onOpenNotifications
 }: ProfileDropdownProps) {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
@@ -73,27 +69,6 @@ export default function ProfileDropdown({
               <span className="px-2 py-0.5 rounded-full bg-status-danger/10 text-status-danger text-[10px] font-black border border-status-danger/20">
                 {NotificationService.getUnreadCount()}
               </span>
-            </button>
-
-            <button
-              onClick={() => { setOpen(false); onOpenActivity(); }}
-              className="w-full flex items-center justify-between p-2 rounded-xl text-text-primary hover:bg-background transition-colors"
-            >
-              <div className="flex items-center gap-2">
-                <Activity className="w-4 h-4 text-status-success" />
-                <span>Live Activity</span>
-              </div>
-            </button>
-
-            <button
-              onClick={() => { setOpen(false); onOpenSearch(); }}
-              className="w-full flex items-center justify-between p-2 rounded-xl text-text-primary hover:bg-background transition-colors"
-            >
-              <div className="flex items-center gap-2">
-                <Command className="w-4 h-4 text-accent" />
-                <span>Global Search</span>
-              </div>
-              <span className="font-mono text-[9px] text-text-secondary bg-background border border-border px-1.5 py-0.5 rounded">Ctrl+K</span>
             </button>
 
             <button

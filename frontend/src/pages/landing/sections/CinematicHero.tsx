@@ -11,6 +11,7 @@ import {
   ChevronLeft
 } from 'lucide-react';
 import { LANDING_DATA, FloatingCardData } from '../landingData';
+import { selectShowroomCity } from './StoreLocationsSection';
 
 interface CinematicHeroProps {
   onScrollTo?: (id: string) => void;
@@ -191,13 +192,23 @@ export default function CinematicHero({ onScrollTo, scrollY = 0 }: CinematicHero
         <div className="mt-5 sm:mt-6 flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-[11px] font-medium text-[#7C6A5E]">
           <span className="flex items-center gap-1.5">
             <ShieldCheck className="w-3.5 h-3.5 text-[#B76E79]" />
-            Silk Mark Certified
+            100% Pure Silk (Silk Mark)
           </span>
           <span className="hidden sm:inline-block opacity-40">•</span>
-          <span className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => {
+              if (onScrollTo) {
+                onScrollTo('stores');
+              } else {
+                document.getElementById('stores')?.scrollIntoView({ behavior: 'smooth' });
+              }
+            }}
+            className="flex items-center gap-1.5 hover:text-[#1C1510] transition-colors cursor-pointer font-semibold"
+          >
             <Store className="w-3.5 h-3.5 text-[#B76E79]" />
-            Three Karnataka Showrooms
-          </span>
+            Davanagere · Belagavi · Shivamogga
+          </button>
           <span className="hidden sm:inline-block opacity-40">•</span>
           <span className="flex items-center gap-1.5">
             <Crown className="w-3.5 h-3.5 text-[#B76E79]" />
@@ -294,6 +305,33 @@ export default function CinematicHero({ onScrollTo, scrollY = 0 }: CinematicHero
             <p className="text-xs sm:text-[13px] leading-relaxed text-[#5F4E44] pt-1">
               {currentCard.description}
             </p>
+
+            {/* Quick Showroom Buttons for Davanagere, Belagavi, Shivamogga */}
+            {currentCard.id === 2 && (
+              <div className="pt-2 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => selectShowroomCity('davanagere')}
+                  className="px-3 py-1.5 rounded-full bg-[#1C1510] text-[#FAF7F2] text-[11px] font-bold uppercase tracking-wider hover:bg-[#32231A] transition-all cursor-pointer shadow-sm"
+                >
+                  Davanagere
+                </button>
+                <button
+                  type="button"
+                  onClick={() => selectShowroomCity('belagavi')}
+                  className="px-3 py-1.5 rounded-full bg-[#1C1510] text-[#FAF7F2] text-[11px] font-bold uppercase tracking-wider hover:bg-[#32231A] transition-all cursor-pointer shadow-sm"
+                >
+                  Belagavi
+                </button>
+                <button
+                  type="button"
+                  onClick={() => selectShowroomCity('shivamogga')}
+                  className="px-3 py-1.5 rounded-full bg-[#1C1510] text-[#FAF7F2] text-[11px] font-bold uppercase tracking-wider hover:bg-[#32231A] transition-all cursor-pointer shadow-sm"
+                >
+                  Shivamogga
+                </button>
+              </div>
+            )}
 
             <div className="pt-2 flex items-center justify-between text-[11px] font-semibold text-[#4A173A] border-t border-[#E8DFC8]/60 mt-3">
               <span className="flex items-center gap-1 text-[#B76E79]">

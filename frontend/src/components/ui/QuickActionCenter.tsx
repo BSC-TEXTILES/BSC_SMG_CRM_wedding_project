@@ -34,6 +34,7 @@ export default function QuickActionCenter() {
     location.pathname === '/' ||
     role === 'Greeter' ||
     location.pathname === '/wedding-registration' ||
+    location.pathname === '/wedding/customer-registration' ||
     location.pathname === '/track' ||
     location.pathname === '/greeter' ||
     location.pathname === '/footfall' ||
@@ -50,13 +51,13 @@ export default function QuickActionCenter() {
 
   const actions = isWeddingCrm
     ? [
-        { label: '+ Add Wedding Customer', icon: UserPlus, href: '/wedding-registration' },
+        { label: '+ Add Wedding Customer', icon: UserPlus, href: '/wedding/customer-registration' },
         { label: 'Follow-up Calendar', icon: Calendar, href: '/wedding-crm' },
         { label: 'Tracking Search', icon: Search, href: '/track', target: '_blank' },
         { label: 'Feedback QR', icon: QrCode, href: '/feedback-qr' }
       ]
     : [
-        { label: '+ Add Wedding Customer', icon: Sparkles, href: '/wedding-registration', target: '_blank' },
+        { label: '+ Add Wedding Customer', icon: Sparkles, href: '/wedding/customer-registration', target: '_blank' },
         { label: '+ Section Allocation', icon: Calendar, href: '/section-allocation' },
         { label: '+ Feedback QR', icon: QrCode, href: '/feedback-qr' },
         ...(canManageTalent

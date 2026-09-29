@@ -68,8 +68,8 @@ export default function Featured() {
               ))}
             </ul>
             <div className="featured__cta">
-              <Link to="/wedding-registration" className="btn btn--gold" data-cursor="explore">
-                <span>Book an hour on this floor</span>
+              <Link to="/wedding/customer-registration" className="btn btn--gold" data-cursor="explore">
+                <span>Register for Wedding Shopping</span>
                 <ArrowRight className="w-4 h-4" aria-hidden="true" />
               </Link>
             </div>

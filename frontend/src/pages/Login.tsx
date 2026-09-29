@@ -637,7 +637,7 @@ export default function LoginPage() {
           <div className="pt-2 border-t border-[#E8D9D4] space-y-2">
             <button
               type="button"
-              onClick={() => navigate('/wedding-registration')}
+              onClick={() => navigate('/wedding/customer-registration')}
               className="w-full py-2.5 px-4 rounded-xl bg-[#FFFAF7] border border-[#E8D9D4] hover:bg-[#FFF7F2] hover:border-[#B76E79] text-[#4A173A] font-bold text-xs tracking-wide flex items-center justify-center gap-2 transition-all shadow-2xs"
             >
               <span>Register for Wedding Shopping</span>

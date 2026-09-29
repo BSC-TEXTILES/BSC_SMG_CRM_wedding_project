@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { LANDING_DATA } from '../landingData';
-import { ShieldCheck, ArrowUp, Heart } from 'lucide-react';
+import { ShieldCheck, ArrowUp } from 'lucide-react';
+import { selectShowroomCity } from '../sections/StoreLocationsSection';
 
 export default function LuxuryFooter() {
   const scrollToTop = () => {
@@ -40,7 +40,7 @@ export default function LuxuryFooter() {
             </div>
 
             <p className="text-xs text-[#A69385] leading-relaxed max-w-sm">
-              Karnataka’s premier textile house for pure silk sarees, bespoke tailoring, bridal trousseaus, and curated home furnishings.
+              Karnataka’s trusted textile house for pure silk sarees, custom tailoring, wedding shopping, and home furnishings.
             </p>
 
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[11px] text-[#E8C7A8]">
@@ -49,20 +49,47 @@ export default function LuxuryFooter() {
             </div>
           </div>
 
-          {/* Showroom Cities Column */}
+          {/* Showroom Cities Column with Direct Single Showroom Filter Trigger */}
           <div className="md:col-span-4 space-y-3">
             <h4 className="text-xs uppercase tracking-widest font-bold text-[#E8C7A8]">
-              Showroom Flagships
+              Our Showrooms (Click to View)
             </h4>
-            <ul className="space-y-2 text-xs text-[#D4C3B5]">
+            <ul className="space-y-2.5 text-xs text-[#D4C3B5]">
               <li>
-                <strong className="text-white">Belagavi:</strong> Khade Bazar / Raviwar Peth, Tilakwadi
+                <button
+                  type="button"
+                  onClick={() => selectShowroomCity('davanagere')}
+                  className="text-left hover:text-[#E8C7A8] transition-colors cursor-pointer group flex items-start gap-1"
+                >
+                  <span className="text-[#B76E79] group-hover:translate-x-0.5 transition-transform">›</span>
+                  <span>
+                    <strong className="text-white group-hover:underline">Davanagere:</strong> Medical College Rd, MCC B Block
+                  </span>
+                </button>
               </li>
               <li>
-                <strong className="text-white">Davanagere:</strong> Mandipet / PB Road, MCC B Block
+                <button
+                  type="button"
+                  onClick={() => selectShowroomCity('belagavi')}
+                  className="text-left hover:text-[#E8C7A8] transition-colors cursor-pointer group flex items-start gap-1"
+                >
+                  <span className="text-[#B76E79] group-hover:translate-x-0.5 transition-transform">›</span>
+                  <span>
+                    <strong className="text-white group-hover:underline">Belagavi:</strong> Khade Bazar / Tilakwadi
+                  </span>
+                </button>
               </li>
               <li>
-                <strong className="text-white">Shivamogga:</strong> Nehru Road / Durgigudi Main Road
+                <button
+                  type="button"
+                  onClick={() => selectShowroomCity('shivamogga')}
+                  className="text-left hover:text-[#E8C7A8] transition-colors cursor-pointer group flex items-start gap-1"
+                >
+                  <span className="text-[#B76E79] group-hover:translate-x-0.5 transition-transform">›</span>
+                  <span>
+                    <strong className="text-white group-hover:underline">Shivamogga:</strong> BH Rd, Durgigudi
+                  </span>
+                </button>
               </li>
             </ul>
           </div>
@@ -70,20 +97,20 @@ export default function LuxuryFooter() {
           {/* Quick Nav Column */}
           <div className="md:col-span-4 space-y-3">
             <h4 className="text-xs uppercase tracking-widest font-bold text-[#E8C7A8]">
-              Navigation & Portals
+              Quick Links
             </h4>
             <div className="grid grid-cols-2 gap-2 text-xs text-[#D4C3B5]">
               <a href="#hero" className="hover:text-white transition-colors">Home</a>
-              <a href="#legacy" className="hover:text-white transition-colors">Our Legacy</a>
+              <a href="#legacy" className="hover:text-white transition-colors">Our Story</a>
               <a href="#collections" className="hover:text-white transition-colors">Collections</a>
               <a href="#wedding" className="hover:text-white transition-colors">Wedding Suite</a>
-              <a href="#stores" className="hover:text-white transition-colors">Stores</a>
-              <a href="#shivamogga-event" className="hover:text-white transition-colors">Shivamogga</a>
-              <Link to="/wedding/customer-registration" className="text-[#B76E79] hover:underline font-bold">
-                Wedding Register
+              <a href="#stores" className="hover:text-white transition-colors">Our Stores</a>
+              <a href="#shivamogga-event" className="hover:text-white transition-colors">Shivamogga Store</a>
+              <Link to="/wedding/customer-registration" className="text-[#B76E79] hover:underline font-bold col-span-2">
+                Register for Wedding Shopping
               </Link>
               <Link to="/login" className="hover:text-white transition-colors">
-                Staff Portal
+                Staff Login
               </Link>
             </div>
           </div>

@@ -277,11 +277,11 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
               <div className="font-extrabold text-sm text-white tracking-wide leading-tight truncate">BSC Textiles</div>
               <div className="text-[9px] font-bold uppercase tracking-widest mt-0.5 flex items-center gap-1 truncate text-[#E8C7A8]">
                 {activeLocationLabel ? (
-                  <span className={activeLocationLabel.includes('ALL') ? 'text-[#198754] font-extrabold truncate' : 'truncate text-[#E8C7A8]'}>
+                  <span className={activeLocationLabel.includes('ALL') ? 'text-[#C9A45C] font-extrabold truncate' : 'truncate text-[#E8C7A8]'}>
                     {activeLocationLabel}
                   </span>
                 ) : session?.isGlobalAdmin ? (
-                  <span className="text-[#198754] font-extrabold truncate">🌐 ALL LOCATIONS</span>
+                  <span className="text-[#C9A45C] font-extrabold truncate">🌐 ALL LOCATIONS</span>
                 ) : (
                   <span className="truncate text-[#E8C7A8]">📍 {(session?.locationName || locCtx?.activeLocation?.name || 'STORE').toUpperCase()}</span>
                 )}

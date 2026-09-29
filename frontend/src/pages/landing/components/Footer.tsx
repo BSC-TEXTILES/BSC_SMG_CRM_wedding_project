@@ -81,7 +81,7 @@ export default function Footer({ onNavigate }: FooterProps) {
             <h3>Help & legal</h3>
             <ul>
               <li>
-                <Link to="/wedding-registration">Register wedding</Link>
+                <Link to="/wedding/customer-registration">Register for Wedding Shopping</Link>
               </li>
               <li>
                 <Link to="/track">Track an order</Link>
