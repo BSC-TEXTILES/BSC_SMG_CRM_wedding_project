@@ -216,7 +216,8 @@ test('Session & Route-Level Security Test Suite', async (t) => {
     // Two locations that actually hold customers, discovered live
     const [locs] = await pool.query(
       `SELECT location_id, COUNT(*) AS n FROM wedding_customers
-       WHERE location_id IS NOT NULL GROUP BY location_id HAVING n > 0 ORDER BY location_id LIMIT 2`
+       WHERE location_id IS NOT NULL AND is_deleted = 0
+       GROUP BY location_id HAVING n > 0 ORDER BY location_id LIMIT 2`
     );
     assert.ok(locs.length >= 2, 'Need customers in at least two locations to test cross-branch isolation');
     const homeLocationId = locs[0].location_id;
@@ -235,11 +236,11 @@ test('Session & Route-Level Security Test Suite', async (t) => {
     // Pick a customer inside the user's branch and one outside it, so the test
     // does not depend on a particular id existing in this database
     const [ownRows] = await pool.query(
-      'SELECT id FROM wedding_customers WHERE location_id = ? ORDER BY id LIMIT 1',
+      'SELECT id FROM wedding_customers WHERE location_id = ? AND is_deleted = 0 ORDER BY id LIMIT 1',
       [homeLocationId]
     );
     const [otherRows] = await pool.query(
-      'SELECT id FROM wedding_customers WHERE location_id = ? ORDER BY id LIMIT 1',
+      'SELECT id FROM wedding_customers WHERE location_id = ? AND is_deleted = 0 ORDER BY id LIMIT 1',
       [foreignLocationId]
     );
     assert.ok(ownRows.length, `No wedding customer found in location ${homeLocationId}`);

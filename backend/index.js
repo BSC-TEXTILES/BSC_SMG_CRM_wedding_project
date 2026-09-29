@@ -15,17 +15,58 @@ const APP_ROOT = __dirname;
 const SERVER_DIR = path.join(APP_ROOT, 'server');
 
 // ── Global Crash Handlers (Mounted immediately before any other requires) ────
+// crash.log is truncated once it exceeds this size. Without a cap a restart
+// loop grows the file without bound (it has reached 4+ MB / 39k lines here).
+const CRASH_LOG_MAX_BYTES = 1024 * 1024;
+
+function writeCrashLog(msg) {
+  try {
+    const file = path.join(APP_ROOT, 'crash.log');
+    try {
+      const stat = fs.statSync(file);
+      if (stat.size > CRASH_LOG_MAX_BYTES) fs.writeFileSync(file, '');
+    } catch (e) { /* file does not exist yet */ }
+    fs.appendFileSync(file, msg);
+  } catch (e) { /* logging must never throw */ }
+}
+
+// Socket/transport errors that only affect a single already-broken request or
+// the stdout pipe. Killing the process for these is what turns a momentary
+// network blip into a proxy-level "503 Service Unavailable" page.
+const BENIGN_ERROR_CODES = new Set([
+  'EPIPE',
+  'ECONNRESET',
+  'ECONNABORTED',
+  'ECONNREFUSED',
+  'ETIMEDOUT',
+  'EAI_AGAIN',
+  'ENOTFOUND',
+  'EHOSTUNREACH',
+  'ENETUNREACH',
+  'ERR_STREAM_DESTROYED',
+  'ERR_STREAM_PREMATURE_CLOSE',
+  'ERR_STREAM_WRITE_AFTER_END',
+  'ERR_STREAM_NULL_VALUES',
+  'ERR_HTTP_HEADERS_SENT',
+  'ERR_HTTP_REQUEST_TIMEOUT',
+  'ABORT_ERR',
+  'UND_ERR_CONNECT_TIMEOUT'
+]);
+
 process.on('uncaughtException', (err) => {
-  if (err?.code === 'EPIPE') return; // Ignore benign broken pipe on stdout/stderr
+  if (BENIGN_ERROR_CODES.has(err?.code)) {
+    console.warn(`[Ignored benign exception] ${err.code} ${err.message}`);
+    return;
+  }
   const msg = `[CRITICAL uncaughtException] ${new Date().toISOString()} ${err?.code || ''} ${err?.message || err}\n${err?.stack || ''}\n`;
   console.error(msg);
-  try { fs.appendFileSync(path.join(APP_ROOT, 'crash.log'), msg); } catch(e) {}
+  writeCrashLog(msg);
   process.exit(1); // Exit so Passenger/process manager can cleanly restart
 });
 process.on('unhandledRejection', (reason) => {
   const msg = `[CRITICAL unhandledRejection] ${new Date().toISOString()} ${reason?.message || reason}\n${reason?.stack || ''}\n`;
   console.error(msg);
-  try { fs.appendFileSync(path.join(APP_ROOT, 'crash.log'), msg); } catch(e) {}
+  writeCrashLog(msg);
 });
 
 const express = require('express');
@@ -658,6 +699,50 @@ if (Server) {
   }
 }
 
+// ── Port binding ─────────────────────────────────────────────────────────────
+// A previous instance (or another service) may still hold the requested port.
+// The old behaviour was to try ONE fallback port and then process.exit(1) —
+// which is what turns a busy port into the proxy's "503 Service Unavailable"
+// page. Instead, walk a range of ports and, when every candidate is taken,
+// keep retrying with a backoff so the process self-heals as soon as a port
+// frees up instead of dying and never coming back.
+const PORT_SCAN_RANGE = 20;
+const PORT_SCAN_RETRY_DELAY_MS = 5000;
+const PORT_BIND_STEP_DELAY_MS = 250;
+let portScanCursor = 0;
+let portScanPasses = 0;
+
+function bindPort(candidate) {
+  server.listen(candidate, '0.0.0.0', () => {
+    console.log('====================================================');
+    console.log(`  BSC HRMS running on port ${candidate}`);
+    console.log(`  Health: http://localhost:${candidate}/health`);
+    if (candidate !== PORT) {
+      console.warn(`[Server Recovery] Requested port ${PORT} was busy; using ${candidate} instead.`);
+    }
+    console.log('====================================================');
+  });
+}
+
+function scanPorts() {
+  const first = PORT;
+  if (portScanCursor < first || portScanCursor >= first + PORT_SCAN_RANGE) {
+    portScanCursor = first;
+    portScanPasses += 1;
+    if (portScanPasses > 1) {
+      const summary = `[Server] No free port in ${first}-${first + PORT_SCAN_RANGE - 1} at ${new Date().toISOString()}; retrying in ${PORT_SCAN_RETRY_DELAY_MS / 1000}s\n`;
+      console.error(summary);
+      writeCrashLog(summary);
+      setTimeout(() => {
+        portScanPasses = 0;
+        scanPorts();
+      }, PORT_SCAN_RETRY_DELAY_MS);
+      return;
+    }
+  }
+  bindPort(portScanCursor++);
+}
+
 if (PORT === 'passenger') {
   server.listen('passenger', () => {
     console.log(`====================================================`);
@@ -671,39 +756,24 @@ if (PORT === 'passenger') {
     console.log(`====================================================`);
   });
 } else {
-  server.listen(PORT, () => {
-    console.log(`====================================================`);
-    console.log(`  BSC HRMS running on port ${PORT}`);
-    console.log(`  Health: http://localhost:${PORT}/health`);
-    console.log(`====================================================`);
-  });
+  scanPorts();
 }
 
-let listenErrorRecovered = false;
 server.on('error', (err) => {
-  const msg = `[Server listen error] ${new Date().toISOString()} ${err.code} ${err.message}\n`;
-  console.error(msg);
-  try { fs.appendFileSync(path.join(APP_ROOT, 'crash.log'), msg); } catch(e) {}
+  const canRecover = !isSocketPort && typeof PORT === 'number'
+    && (err.code === 'EADDRINUSE' || err.code === 'EACCES' || err.code === 'ENOTSUP');
 
-  // Prevent recursive error events if recovery also encounters an error
-  if (!listenErrorRecovered && err.code === 'EADDRINUSE' && !isSocketPort && typeof PORT === 'number') {
-    listenErrorRecovered = true;
-    const fallbackPort = PORT === 5000 ? 5001 : 5002;
-    console.warn(`[Server Recovery] Port ${PORT} in use. Attempting recovery on port ${fallbackPort}...`);
-    try { server.close(); } catch (e) {}
-
-    setTimeout(() => {
-      try {
-        server.listen(fallbackPort, '0.0.0.0', () => {
-          console.log(`[Server Recovery] BSC HRMS recovered and running on port ${fallbackPort}`);
-        });
-      } catch (recErr) {
-        console.error(`[Server Recovery] Fallback to ${fallbackPort} failed:`, recErr.message);
-        process.exit(1);
-      }
-    }, 500);
+  if (canRecover) {
+    console.warn(`[Server Recovery] ${err.code} on port ${portScanCursor}; trying the next port.`);
+    setTimeout(scanPorts, PORT_BIND_STEP_DELAY_MS);
     return;
   }
+
+  const msg = `[Server listen error] ${new Date().toISOString()} ${err.code} ${err.message}\n`;
+  console.error(msg);
+  writeCrashLog(msg);
+
+  if (err.code === 'ERR_SERVER_ALREADY_LISTEN') return;
 
   process.exit(1);
 });
