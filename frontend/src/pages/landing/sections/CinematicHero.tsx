@@ -97,42 +97,11 @@ export default function CinematicHero({ onScrollTo, scrollY = 0 }: CinematicHero
       id="hero"
       className="relative min-h-[94vh] flex flex-col items-center justify-between text-center px-4 sm:px-6 lg:px-8 pt-6 sm:pt-10 pb-12 overflow-hidden select-none [perspective:1200px]"
     >
-      {/* 3D Background Layer with Parallax Depth */}
+      {/* Subtle Atmospheric Vignette Gradients (No photo images) */}
       <div
-        className="absolute inset-0 pointer-events-none opacity-20 mix-blend-multiply bg-cover bg-center transition-transform duration-300 ease-out"
-        style={{
-          backgroundImage: `url('/images/hero-bg.webp')`,
-          transform: `scale(${bgScale}) translate3d(${mouseTilt.x * -1.5}px, ${mouseTilt.y * -1.5}px, 0)`
-        }}
+        className="absolute inset-0 pointer-events-none bg-gradient-to-b from-[#FAF7F2]/60 via-transparent to-[#FAF7F2]/95"
         aria-hidden="true"
       />
-
-      {/* Atmospheric Vignette Gradients */}
-      <div
-        className="absolute inset-0 pointer-events-none bg-gradient-to-b from-[#FAF7F2]/40 via-transparent to-[#FAF7F2]/90"
-        aria-hidden="true"
-      />
-
-      {/* Floating 3D Fabric Image Planes in Background Depth */}
-      <div
-        className="hidden lg:block absolute left-8 top-1/4 w-32 h-44 rounded-2xl overflow-hidden border border-white/40 shadow-xl opacity-40 pointer-events-none transition-transform duration-500 ease-out"
-        style={{
-          transform: `translate3d(${mouseTilt.x * 2.5}px, ${mouseTilt.y * 2.5 - scrollY * 0.15}px, 0) rotateZ(-4deg)`
-        }}
-        aria-hidden="true"
-      >
-        <img src="/images/women-real.webp" alt="" className="w-full h-full object-cover" />
-      </div>
-
-      <div
-        className="hidden lg:block absolute right-8 top-1/3 w-36 h-48 rounded-2xl overflow-hidden border border-white/40 shadow-xl opacity-40 pointer-events-none transition-transform duration-500 ease-out"
-        style={{
-          transform: `translate3d(${mouseTilt.x * -2.5}px, ${mouseTilt.y * -2.5 - scrollY * 0.12}px, 0) rotateZ(4deg)`
-        }}
-        aria-hidden="true"
-      >
-        <img src="/images/suit.webp" alt="" className="w-full h-full object-cover" />
-      </div>
 
       {/* ============================================================== */}
       {/* CENTERED HERO CONTENT (3D Depth Linked)                        */}
