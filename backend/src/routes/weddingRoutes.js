@@ -121,6 +121,14 @@ router.get('/customers/:id/full-profile', weddingController.getFullCustomerProfi
 router.put('/customers/:id', weddingController.updateCustomer);
 router.delete('/customers/:id', authorize('Admin', 'Super Admin', 'HR', 'Manager'), weddingController.deleteCustomer);
 
+// ── Telecaller Authority & Workspace ──────────────────────────
+router.put('/customers/:id/telecaller-edit', weddingController.updateCustomerByTelecaller);
+router.get('/customers/:id/timeline', weddingController.getCustomerTimeline);
+router.get('/customers/:id/whatsapp-templates', weddingController.getWhatsAppTemplates);
+router.post('/customers/:id/whatsapp-send', weddingController.sendWhatsAppMessage);
+router.get('/customers/:id/whatsapp-logs', weddingController.getWhatsAppLogs);
+router.get('/telecaller-performance', weddingController.getTelecallerPerformance);
+
 // ── Old Customers (Historical Archive) ─────────────────────────
 router.get('/old-customers', canViewWedding, weddingController.getOldCustomers);
 router.get('/old-customers/export', canViewWedding, weddingController.exportOldCustomers);

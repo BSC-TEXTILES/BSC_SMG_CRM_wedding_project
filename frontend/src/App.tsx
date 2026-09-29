@@ -79,7 +79,6 @@ import ConsentGuard from './components/ConsentGuard';
 import { useUrlGuard } from './hooks/useUrlGuard';
 import { Auth } from './services/api';
 const QuickActionCenter = lazy(() => import('./components/ui/QuickActionCenter'));
-const ChatWidget = lazy(() => import('./components/ui/ChatWidget'));
 const DevToolsGuard = lazy(() => import('./components/DevToolsGuard'));
 const SessionTimeoutGuard = lazy(() => import('./components/SessionTimeoutGuard'));
 const DesktopModeWarning = lazy(() => import('./components/DesktopModeWarning'));
@@ -119,11 +118,6 @@ function RouteChangeCleanup() {
     (document.body.style as any).webkitFilter = '';
   }, [location.pathname]);
   return null;
-}
-
-/** Renders ChatWidget for all users */
-function AuthChatWidget() {
-  return <ChatWidget />;
 }
 
 /** Sets up real-time event listeners for automatic query invalidation */
@@ -271,7 +265,6 @@ export default function App() {
       </ConsentGuard>
       <Suspense fallback={null}>
         <QuickActionCenter />
-        <AuthChatWidget />
         <SessionTimeoutGuard />
         <DevToolsGuard />
         <DesktopModeWarning />

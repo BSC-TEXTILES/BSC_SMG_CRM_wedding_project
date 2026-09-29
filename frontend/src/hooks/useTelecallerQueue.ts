@@ -10,17 +10,23 @@ export function useTelecallerQueue(locationFilter: number | '' = '') {
     completedToday: 0,
     connectedCalls: 0,
     callbackCount: 0,
+    shoppingConfirmed: 0,
+    visitsPlanned: 0,
+    myCustomers: 0,
+    overdueCount: 0,
     remainingCalls: 0,
     dailyTarget: 40
   });
 
-  const [queueRecords, setQueueRecords] = useState({
+  const [queueRecords, setQueueRecords] = useState<{ [key: string]: any[] }>({
+    priorityQueue: [],
     dueToday: [],
     overdue: [],
     callbacks: [],
     upcoming: [],
-    priority: [],
     newLeads: [],
+    shoppingConfirmed: [],
+    visitsPlanned: [],
     myQueue: []
   });
 
@@ -67,28 +73,36 @@ export function useTelecallerQueue(locationFilter: number | '' = '') {
       const q = d.queues || d;
       const s = d.summary || d.counts || d;
 
+      const priorityQueue = Array.isArray(q.priorityQueue) ? q.priorityQueue : (Array.isArray(q.priority) ? q.priority : []);
       const dueToday = Array.isArray(q.dueToday) ? q.dueToday : (Array.isArray(q.due_today) ? q.due_today : []);
       const overdue = Array.isArray(q.overdue) ? q.overdue : [];
       const callbacks = Array.isArray(q.callbackRequests) ? q.callbackRequests : (Array.isArray(q.callbacks) ? q.callbacks : []);
       const upcoming = Array.isArray(q.upcoming) ? q.upcoming : [];
-      const priority = Array.isArray(q.priorityCalls) ? q.priorityCalls : (Array.isArray(q.priority) ? q.priority : []);
       const newLeads = Array.isArray(q.newCustomers) ? q.newCustomers : (Array.isArray(q.new_customers) ? q.new_customers : []);
+      const shoppingConfirmed = Array.isArray(q.shoppingConfirmed) ? q.shoppingConfirmed : [];
+      const visitsPlanned = Array.isArray(q.visitsPlanned) ? q.visitsPlanned : [];
+      const myCustomers = Array.isArray(q.myCustomers) ? q.myCustomers : [];
 
       const currentUserName = session?.fullName || session?.username || '';
       const userRole = (session?.role || '').toLowerCase();
       const isAdminOrManager = userRole.includes('admin') || userRole.includes('manager') || session?.isGlobalAdmin;
 
-      const myQueue = [...dueToday, ...overdue, ...callbacks].filter(
-        (c: any) => c.assigned_telecaller && c.assigned_telecaller.toLowerCase().includes(currentUserName.toLowerCase())
-      );
+      let myQueue = myCustomers;
+      if (!myQueue.length) {
+        myQueue = [...dueToday, ...overdue, ...callbacks].filter(
+          (c: any) => c.assigned_telecaller && c.assigned_telecaller.toLowerCase().includes(currentUserName.toLowerCase())
+        );
+      }
 
       setQueueRecords({
+        priorityQueue,
         dueToday,
         overdue,
         callbacks,
         upcoming,
-        priority,
         newLeads,
+        shoppingConfirmed,
+        visitsPlanned,
         myQueue: myQueue.length > 0 ? myQueue : (isAdminOrManager ? [...dueToday, ...overdue] : dueToday)
       });
 
@@ -100,6 +114,10 @@ export function useTelecallerQueue(locationFilter: number | '' = '') {
         completedToday: completed,
         connectedCalls: Number(s.connectedCalls) || 0,
         callbackCount: Number(s.callbackCount) || callbacks.length,
+        shoppingConfirmed: Number(s.shoppingConfirmed) || shoppingConfirmed.length,
+        visitsPlanned: Number(s.visitsPlanned) || visitsPlanned.length,
+        myCustomers: Number(s.myCustomers) || myQueue.length,
+        overdueCount: Number(s.overdueCount) || overdue.length,
         remainingCalls: Math.max(0, target - completed),
         dailyTarget: target
       });

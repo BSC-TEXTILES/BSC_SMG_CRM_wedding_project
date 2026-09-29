@@ -1,6 +1,22 @@
 const pool = require('../config/db');
+const conn = pool;
 const { log: auditLog, AuditEvents } = require('../services/auditService');
 const crypto = require('crypto');
+
+let broadcastSchemaChecked = false;
+async function ensureBroadcastSchema() {
+  if (broadcastSchemaChecked) return;
+  try {
+    const [cols] = await pool.query("SHOW COLUMNS FROM `broadcast_messages` LIKE 'location_id'");
+    if (!cols || cols.length === 0) {
+      await pool.query("ALTER TABLE `broadcast_messages` ADD COLUMN `location_id` INT NULL AFTER `sender_name`");
+      await pool.query("ALTER TABLE `broadcast_messages` ADD INDEX `idx_broadcast_loc` (`location_id`)").catch(() => {});
+    }
+    broadcastSchemaChecked = true;
+  } catch (e) {
+    // Graceful skip if table not created yet or permission restricted
+  }
+}
 
 const AUDIENCE_GROUPS = [
   'Everyone',
@@ -189,6 +205,8 @@ exports.getBroadcasts = async (req, res) => {
       return res.json({ success: true, broadcasts: [] });
     }
     
+    await ensureBroadcastSchema();
+
     const { status, priority, category, audience, dateFrom, dateTo, page = 1, limit = 20 } = req.query;
     const offset = (page - 1) * limit;
     
@@ -220,30 +238,62 @@ exports.getBroadcasts = async (req, res) => {
       params.push(dateTo);
     }
     
-    // Location scoping for non-global admins
-    if (!req.user.isGlobalAdmin && req.user.locationId) {
-      where += ' AND bm.location_id = ?';
+    // Location scoping: global notices (location_id IS NULL) + user's branch notices
+    if (!req.user.isGlobalAdmin && req.user.locationId && broadcastSchemaChecked) {
+      where += ' AND (bm.location_id IS NULL OR bm.location_id = ?)';
       params.push(req.user.locationId);
     }
     
-    const [rows] = await conn.query(`
-      SELECT 
-        bm.*,
-        u.full_name as creator_name,
-        (SELECT COUNT(*) FROM broadcast_recipients br WHERE br.broadcast_id = bm.id) as total_recipients,
-        (SELECT COUNT(*) FROM broadcast_recipients br WHERE br.broadcast_id = bm.id AND br.read_at IS NOT NULL) as read_count,
-        (SELECT COUNT(*) FROM broadcast_recipients br WHERE br.broadcast_id = bm.id AND br.acknowledged_at IS NOT NULL) as acknowledged_count,
-        (SELECT JSON_ARRAYAGG(audience_group) FROM broadcast_audience ba WHERE ba.broadcast_id = bm.id) as audience_groups
-      FROM broadcast_messages bm
-      LEFT JOIN users u ON bm.created_by = u.id
-      ${where}
-      ORDER BY bm.created_at DESC
-      LIMIT ? OFFSET ?
-    `, [...params, parseInt(limit), parseInt(offset)]);
-    
-    const [totalResult] = await conn.query(`
-      SELECT COUNT(*) as total FROM broadcast_messages bm ${where}
-    `, params);
+    let rows = [];
+    let totalResult = [{ total: 0 }];
+
+    try {
+      [rows] = await conn.query(`
+        SELECT 
+          bm.*,
+          u.full_name as creator_name,
+          (SELECT COUNT(*) FROM broadcast_recipients br WHERE br.broadcast_id = bm.id) as total_recipients,
+          (SELECT COUNT(*) FROM broadcast_recipients br WHERE br.broadcast_id = bm.id AND br.read_at IS NOT NULL) as read_count,
+          (SELECT COUNT(*) FROM broadcast_recipients br WHERE br.broadcast_id = bm.id AND br.acknowledged_at IS NOT NULL) as acknowledged_count,
+          (SELECT JSON_ARRAYAGG(audience_group) FROM broadcast_audience ba WHERE ba.broadcast_id = bm.id) as audience_groups
+        FROM broadcast_messages bm
+        LEFT JOIN users u ON bm.created_by = u.id
+        ${where}
+        ORDER BY bm.created_at DESC
+        LIMIT ? OFFSET ?
+      `, [...params, parseInt(limit), parseInt(offset)]);
+      
+      [totalResult] = await conn.query(`
+        SELECT COUNT(*) as total FROM broadcast_messages bm ${where}
+      `, params);
+    } catch (queryErr) {
+      if (queryErr.code === 'ER_BAD_FIELD_ERROR' || queryErr.errno === 1054) {
+        // Fallback: run query without location_id filter
+        const fallbackWhere = where.replace(/ AND \(bm\.location_id IS NULL OR bm\.location_id = \?\)/g, '')
+                                  .replace(/ AND bm\.location_id = \?/g, '');
+        const fallbackParams = params.filter((_, idx) => idx !== params.length - 1);
+        [rows] = await conn.query(`
+          SELECT 
+            bm.*,
+            u.full_name as creator_name,
+            (SELECT COUNT(*) FROM broadcast_recipients br WHERE br.broadcast_id = bm.id) as total_recipients,
+            (SELECT COUNT(*) FROM broadcast_recipients br WHERE br.broadcast_id = bm.id AND br.read_at IS NOT NULL) as read_count,
+            (SELECT COUNT(*) FROM broadcast_recipients br WHERE br.broadcast_id = bm.id AND br.acknowledged_at IS NOT NULL) as acknowledged_count,
+            (SELECT JSON_ARRAYAGG(audience_group) FROM broadcast_audience ba WHERE ba.broadcast_id = bm.id) as audience_groups
+          FROM broadcast_messages bm
+          LEFT JOIN users u ON bm.created_by = u.id
+          ${fallbackWhere}
+          ORDER BY bm.created_at DESC
+          LIMIT ? OFFSET ?
+        `, [...fallbackParams, parseInt(limit), parseInt(offset)]);
+        
+        [totalResult] = await conn.query(`
+          SELECT COUNT(*) as total FROM broadcast_messages bm ${fallbackWhere}
+        `, fallbackParams);
+      } else {
+        throw queryErr;
+      }
+    }
     
     res.json({ 
       success: true, 
@@ -734,25 +784,46 @@ exports.getBroadcastStats = async (req, res) => {
       return res.json({ success: true, stats: {} });
     }
     
+    await ensureBroadcastSchema();
+
     let where = 'WHERE 1=1';
     const params = [];
     
-    if (!req.user.isGlobalAdmin && req.user.locationId) {
-      where += ' AND location_id = ?';
+    if (!req.user.isGlobalAdmin && req.user.locationId && broadcastSchemaChecked) {
+      where += ' AND (location_id IS NULL OR location_id = ?)';
       params.push(req.user.locationId);
     }
     
-    const [stats] = await conn.query(`
-      SELECT 
-        COUNT(*) as total,
-        SUM(CASE WHEN status = 'Draft' THEN 1 ELSE 0 END) as drafts,
-        SUM(CASE WHEN status = 'Scheduled' THEN 1 ELSE 0 END) as scheduled,
-        SUM(CASE WHEN status IN ('Dispatched', 'Active') THEN 1 ELSE 0 END) as dispatched,
-        SUM(CASE WHEN status = 'Expired' THEN 1 ELSE 0 END) as expired,
-        SUM(CASE WHEN status = 'Cancelled' THEN 1 ELSE 0 END) as cancelled,
-        SUM(CASE WHEN require_ack = 1 OR acknowledgement_required = 1 THEN 1 ELSE 0 END) as ack_required
-      FROM broadcast_messages ${where}
-    `, params);
+    let stats;
+    try {
+      [stats] = await conn.query(`
+        SELECT 
+          COUNT(*) as total,
+          SUM(CASE WHEN status = 'Draft' THEN 1 ELSE 0 END) as drafts,
+          SUM(CASE WHEN status = 'Scheduled' THEN 1 ELSE 0 END) as scheduled,
+          SUM(CASE WHEN status IN ('Dispatched', 'Active') THEN 1 ELSE 0 END) as dispatched,
+          SUM(CASE WHEN status = 'Expired' THEN 1 ELSE 0 END) as expired,
+          SUM(CASE WHEN status = 'Cancelled' THEN 1 ELSE 0 END) as cancelled,
+          SUM(CASE WHEN require_ack = 1 OR acknowledgement_required = 1 THEN 1 ELSE 0 END) as ack_required
+        FROM broadcast_messages ${where}
+      `, params);
+    } catch (statErr) {
+      if (statErr.code === 'ER_BAD_FIELD_ERROR' || statErr.errno === 1054) {
+        [stats] = await conn.query(`
+          SELECT 
+            COUNT(*) as total,
+            SUM(CASE WHEN status = 'Draft' THEN 1 ELSE 0 END) as drafts,
+            SUM(CASE WHEN status = 'Scheduled' THEN 1 ELSE 0 END) as scheduled,
+            SUM(CASE WHEN status IN ('Dispatched', 'Active') THEN 1 ELSE 0 END) as dispatched,
+            SUM(CASE WHEN status = 'Expired' THEN 1 ELSE 0 END) as expired,
+            SUM(CASE WHEN status = 'Cancelled' THEN 1 ELSE 0 END) as cancelled,
+            SUM(CASE WHEN require_ack = 1 OR acknowledgement_required = 1 THEN 1 ELSE 0 END) as ack_required
+          FROM broadcast_messages WHERE 1=1
+        `);
+      } else {
+        throw statErr;
+      }
+    }
     
     res.json({ success: true, stats: stats[0] });
   } catch (err) {
@@ -760,5 +831,3 @@ exports.getBroadcastStats = async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 };
-
-const conn = pool;

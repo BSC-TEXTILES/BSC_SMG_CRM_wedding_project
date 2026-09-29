@@ -128,6 +128,144 @@ function resolveLocFilter(req, tableAlias = 'w') {
   return { clause: `AND 1 = 0`, params: [] };
 }
 
+/**
+ * Status values that end a wedding journey and permanently archive the customer.
+ * Several code paths write customer_status, so every one of them is checked
+ * against this single set.
+ */
+const COMPLETION_STATUSES = new Set(['Wedding Process Completed', 'Completed']);
+
+/**
+ * Schema guards the permanent archive depends on. Both run on every boot and
+ * are no-ops once satisfied.
+ */
+async function ensureArchiveSchemaGuards() {
+  // customer_status is a restricted ENUM in deployed databases, so a completion
+  // status cannot be written at all until the domain itself allows it.
+  try {
+    const [rows] = await pool.query(`
+      SELECT COLUMN_TYPE AS def, IS_NULLABLE AS nullable, COLUMN_DEFAULT AS dflt, DATA_TYPE AS dtype
+      FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'wedding_customers' AND COLUMN_NAME = 'customer_status'
+    `);
+    const meta = rows[0];
+    if (meta && meta.dtype === 'enum') {
+      const inner = String(meta.def).slice(String(meta.def).indexOf('(') + 1, String(meta.def).lastIndexOf(')'));
+      const values = [];
+      const re = /'((?:[^']|'')*)'/g;
+      let m;
+      while ((m = re.exec(inner))) values.push(m[1].replace(/''/g, "'"));
+      const missing = Array.from(COMPLETION_STATUSES).filter((s) => !values.includes(s));
+      if (missing.length) {
+        const next = [...values, ...missing].map((s) => `'${s.replace(/'/g, "''")}'`).join(',');
+        const nullability = meta.nullable === 'NO' ? 'NOT NULL' : 'NULL';
+        const dflt = meta.dflt === null ? '' : `DEFAULT '${String(meta.dflt).replace(/'/g, "''")}'`;
+        await pool.query(`ALTER TABLE wedding_customers MODIFY COLUMN customer_status ENUM(${next}) ${nullability} ${dflt}`.trim());
+        console.log(`[Wedding CRM] customer_status extended with: ${missing.join(', ')}`);
+      }
+    }
+  } catch (e) {
+    console.warn('[Wedding CRM] customer_status enum guard skipped:', e.message);
+  }
+
+  // Archived history must survive any delete of its parent row. CASCADE would let
+  // one removal silently destroy the permanent call history.
+  try {
+    const [fks] = await pool.query(`
+      SELECT k.CONSTRAINT_NAME AS name, r.DELETE_RULE AS rule
+      FROM information_schema.KEY_COLUMN_USAGE k
+      JOIN information_schema.REFERENTIAL_CONSTRAINTS r
+        ON r.CONSTRAINT_SCHEMA = k.CONSTRAINT_SCHEMA AND r.CONSTRAINT_NAME = k.CONSTRAINT_NAME
+      WHERE k.TABLE_SCHEMA = DATABASE() AND k.TABLE_NAME = 'wedding_call_logs'
+        AND k.REFERENCED_TABLE_NAME = 'wedding_customers'
+    `);
+    const cascade = fks.filter((f) => f.rule !== 'RESTRICT' && f.rule !== 'NO ACTION');
+    for (const f of cascade) {
+      await pool.query(`ALTER TABLE wedding_call_logs DROP FOREIGN KEY \`${f.name}\``);
+    }
+    if (cascade.length) {
+      await pool.query(
+        `ALTER TABLE wedding_call_logs ADD CONSTRAINT \`fk_wed_call_logs_customer\` FOREIGN KEY (customer_id) REFERENCES wedding_customers(id) ON DELETE RESTRICT`
+      );
+      console.log('[Wedding CRM] wedding_call_logs FK converted to ON DELETE RESTRICT');
+    } else if (!fks.length) {
+      await pool.query(
+        `ALTER TABLE wedding_call_logs ADD CONSTRAINT \`fk_wed_call_logs_customer\` FOREIGN KEY (customer_id) REFERENCES wedding_customers(id) ON DELETE RESTRICT`
+      );
+      console.log('[Wedding CRM] wedding_call_logs FK added with ON DELETE RESTRICT');
+    }
+  } catch (e) {
+    console.warn('[Wedding CRM] wedding_call_logs FK guard skipped:', e.message);
+  }
+}
+
+/**
+ * Moves one customer into the permanent Old Customers archive.
+ *
+ * Shared by the completion trigger and the manual archive action so both leave
+ * an identical lifecycle, queue and audit footprint. Archived rows are never
+ * rewritten here — the full record is preserved as-is.
+ *
+ * @returns {Promise<{archived: boolean, reason?: string}>}
+ */
+async function archiveCustomerAsOld(customerId, actor, options = {}) {
+  const custRows = await pool.query(`
+    SELECT w.id, w.customer_code, w.customer_name, w.customer_status, w.lifecycle_status,
+           w.location_id, w.assigned_telecaller, l.location_code
+    FROM wedding_customers w
+    LEFT JOIN locations l ON l.id = w.location_id
+    WHERE w.id = ?
+  `, [customerId]);
+  const cust = custRows[0][0];
+  if (!cust) return { archived: false, reason: 'not_found' };
+  if (cust.lifecycle_status === 'OLD_CUSTOMER') return { archived: false, reason: 'already_archived' };
+
+  const userName = actor?.fullName || actor?.username || 'System Automation';
+  const userId = actor?.id || null;
+  const reason = options.reason || 'Wedding process completed';
+  const action = options.action || 'Moved to Old Customers';
+  const completedStatus = options.completedStatus || cust.customer_status;
+  const previousStatus = options.previousStatus || cust.customer_status;
+
+  await pool.query(`
+    UPDATE wedding_customers SET
+      lifecycle_status = 'OLD_CUSTOMER',
+      previous_status = ?,
+      archived_at = NOW(),
+      archived_by = ?,
+      archived_by_user_id = ?,
+      archive_reason = ?
+    WHERE id = ?
+  `, [previousStatus, userName, userId, reason, customerId]);
+
+  // Permanent timeline entry — kept verbatim because §36 requires this activity
+  // to remain readable in the customer's history forever.
+  const details = [
+    'Customer moved to Old Customers',
+    `Status: ${completedStatus}`,
+    `Location: ${cust.location_code || cust.location_id}`,
+    `Assigned Telecaller: ${cust.assigned_telecaller || 'Unassigned'}`,
+    `Completed By: ${userName}`,
+    `Date/Time: ${new Date().toLocaleString('en-IN')}`
+  ].join('\n');
+
+  await pool.query(`
+    INSERT INTO wedding_audit_logs (customer_id, location_id, user_name, action, details)
+    VALUES (?, ?, ?, ?, ?)
+  `, [customerId, cust.location_id, userName, action, details]);
+
+  await delCachePattern(`app:prod:wedding:customer:${customerId}:*`);
+  await delCachePattern('app:prod:wedding:dashboard:*');
+  await delCachePattern('app:prod:wedding:desk:*');
+  realtimeService.emitWeddingChange('ARCHIVED', {
+    id: customerId,
+    customer_code: cust.customer_code,
+    lifecycle_status: 'OLD_CUSTOMER'
+  }, cust.location_id);
+
+  return { archived: true, customer: cust };
+}
+
 let tablesChecked = false;
 let tablesInitPromise = null;
 async function ensureTables() {
@@ -410,11 +548,24 @@ async function ensureTables() {
       "ALTER TABLE wedding_customers ADD COLUMN consent BOOLEAN DEFAULT FALSE",
       "ALTER TABLE wedding_customers ADD COLUMN priority VARCHAR(50) DEFAULT 'Medium'",
       "ALTER TABLE wedding_customers ADD COLUMN budget VARCHAR(100) NULL",
-      "ALTER TABLE wedding_customers ADD COLUMN lead_source VARCHAR(100) DEFAULT 'Wedding Registration'"
+      "ALTER TABLE wedding_customers ADD COLUMN lead_source VARCHAR(100) DEFAULT 'Wedding Registration'",
+      "ALTER TABLE wedding_customers ADD COLUMN lifecycle_status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE'",
+      "ALTER TABLE wedding_customers ADD COLUMN archived_at DATETIME NULL",
+      "ALTER TABLE wedding_customers ADD COLUMN archived_by VARCHAR(150) NULL",
+      "ALTER TABLE wedding_customers ADD COLUMN archived_by_user_id INT NULL",
+      "ALTER TABLE wedding_customers ADD COLUMN archive_reason TEXT NULL",
+      "ALTER TABLE wedding_customers ADD COLUMN previous_status VARCHAR(50) NULL",
+      "ALTER TABLE wedding_customers ADD COLUMN previous_customer_id INT NULL"
     ];
     for (const sql of weddingCols) {
       try { await pool.query(sql); } catch(e) { /* column already exists */ }
     }
+
+    try { await pool.query("ALTER TABLE wedding_customers ADD INDEX idx_wed_lifecycle (lifecycle_status)"); } catch(e) {}
+    try { await pool.query("ALTER TABLE wedding_customers ADD INDEX idx_wed_archived_at (archived_at)"); } catch(e) {}
+    try { await pool.query("ALTER TABLE wedding_customers ADD INDEX idx_wed_prev_customer (previous_customer_id)"); } catch(e) {}
+
+    await ensureArchiveSchemaGuards();
 
     // Ensure call log columns for duration and customer response
     try {
@@ -651,7 +802,7 @@ class WeddingController {
             SUM(CASE WHEN w.customer_status IN ('Not Interested', 'Cancelled', 'Closed') THEN 1 ELSE 0 END) AS lostCustomers,
             SUM(CASE WHEN w.customer_status = 'Not Interested' THEN 1 ELSE 0 END) AS notInterested
           FROM wedding_customers w
-          WHERE w.is_deleted = 0 ${clause}
+          WHERE w.is_deleted = 0 AND (w.lifecycle_status = 'ACTIVE' OR w.lifecycle_status IS NULL) ${clause}
         `, params),
         pool.query(`
           SELECT
@@ -836,7 +987,7 @@ class WeddingController {
       // Parallelize total count and paginated rows queries
       const [[countResult], [customers]] = await Promise.all([
         pool.query(
-          `SELECT COUNT(*) as total FROM wedding_customers w WHERE ${whereSql}`,
+          `SELECT COUNT(*) as total FROM wedding_customers w LEFT JOIN locations l ON l.id = w.location_id WHERE ${whereSql}`,
           queryParams
         ),
         pool.query(`
@@ -999,6 +1150,10 @@ class WeddingController {
       // If caller explicitly wants to link to existing customer, skip duplicate block
       const forceNew = req.body.force_create_new_registration === true || req.body.link_to_existing === true;
 
+      // A forced new journey for a known mobile is a repeat customer: the prior
+      // row is left completely untouched and only referenced from the new one.
+      const linkedPreviousId = (dup && dup.length > 0 && forceNew) ? dup[0].id : null;
+
       if (dup && dup.length > 0 && !forceNew) {
         return errorRes(res, `A customer with mobile ${mobileNumber} already exists (${dup[0].customer_name} — ${dup[0].customer_code}). To create a new wedding registration for this customer, please use the "Link New Wedding Request" option.`, [{ existingCustomer: dup[0] }], 409);
       }
@@ -1008,9 +1163,24 @@ class WeddingController {
         const [u] = await pool.query(`SELECT full_name FROM users WHERE id = ?`, [assignedTelecallerId]);
         if (u && u.length > 0) assignedTelecaller = u[0].full_name;
       }
-      if (!assignedTelecaller) {
-        assignedTelecaller = req.user?.fullName || 'Staff';
-        assignedTelecallerId = req.user?.id || null;
+      if (!assignedTelecaller || assignedTelecaller === 'Staff') {
+        try {
+          const telecallerAssignmentService = require('../services/telecallerAssignmentService');
+          const autoAssigned = await telecallerAssignmentService.getEligibleTelecaller({
+            locationId,
+            connection: pool
+          });
+          if (autoAssigned) {
+            assignedTelecaller = autoAssigned.full_name;
+            assignedTelecallerId = autoAssigned.id;
+          } else {
+            assignedTelecaller = req.user?.fullName || 'Staff';
+            assignedTelecallerId = req.user?.id || null;
+          }
+        } catch (assignErr) {
+          assignedTelecaller = req.user?.fullName || 'Staff';
+          assignedTelecallerId = req.user?.id || null;
+        }
       }
 
       // Generate standardized code: BSC-WED-{LOC}-{YEAR}-{NNNNNN}
@@ -1072,6 +1242,21 @@ class WeddingController {
       ]);
 
       const newId = insertResult.insertId;
+
+      // Repeat customer: the new journey points back at the archived original so
+      // both stay separately traceable. The previous record is never modified.
+      if (forceNew && dup && dup.length > 0) {
+        await pool.query(`UPDATE wedding_customers SET previous_customer_id = ? WHERE id = ?`, [dup[0].id, newId]);
+        await pool.query(`
+          INSERT INTO wedding_audit_logs (customer_id, location_id, user_name, action, details)
+          VALUES (?, ?, ?, 'New Journey Linked', ?)
+        `, [
+          newId,
+          locationId,
+          req.user?.fullName || 'Staff',
+          `New wedding journey linked to previous customer ${dup[0].customer_name} (${dup[0].customer_code}). Previous record preserved unchanged.`
+        ]);
+      }
 
       // Audit Log
       await pool.query(`
@@ -1280,7 +1465,7 @@ class WeddingController {
       const followUpDate = followUpDateRaw === undefined ? undefined : parseDate(followUpDateRaw);
       const preferredCallTime = req.body.preferred_call_time || req.body.preferredCallTime;
       const customerNotes = req.body.customer_notes || req.body.customerNotes || req.body.initial_notes;
-      const customerStatus = req.body.customer_status || req.body.customerStatus || req.body.current_status;
+      let customerStatus = req.body.customer_status || req.body.customerStatus || req.body.current_status;
       const callStatus = req.body.call_status || req.body.callStatus;
       const budget = req.body.budget !== undefined ? req.body.budget : (req.body.budget_range || req.body.budgetRange);
       const leadSource = req.body.lead_source || req.body.leadSource;
@@ -1300,6 +1485,13 @@ class WeddingController {
         if (dup && dup.length > 0) {
           return errorRes(res, `Another customer already exists with mobile ${mobileNumber}`, [], 409);
         }
+      }
+
+      // Editing an archived record's details is allowed, but its terminal status
+      // is pinned so an edit can never quietly pull it back into the pipeline.
+      const editingArchived = prev.lifecycle_status === 'OLD_CUSTOMER';
+      if (editingArchived && customerStatus && customerStatus !== prev.customer_status) {
+        customerStatus = prev.customer_status;
       }
 
       await pool.query(`
@@ -1389,14 +1581,29 @@ class WeddingController {
       await delCachePattern(`app:prod:wedding:customer:${id}:*`);
       await delCachePattern('app:prod:wedding:dashboard:*');
 
+      let archivedNow = false;
+      if (!editingArchived && customerStatus && COMPLETION_STATUSES.has(String(customerStatus).trim())) {
+        const result = await archiveCustomerAsOld(id, req.user, {
+          completedStatus: String(customerStatus).trim(),
+          previousStatus: prev.customer_status,
+          reason: 'Wedding process completed'
+        });
+        archivedNow = result.archived;
+      }
+
       // Professional success message based on what was changed
       let successMsg = 'Customer details updated successfully.';
       if (telecallerChanged && changes.length === 0) {
         const isReassign = prev.assigned_telecaller && prev.assigned_telecaller !== 'Auto-Assigned' && prev.assigned_telecaller !== 'Staff';
         successMsg = isReassign ? 'Telecaller reassigned successfully.' : 'Telecaller assigned successfully.';
       }
+      if (archivedNow) successMsg = 'Customer completed and moved to Old Customers.';
 
-      return successRes(res, { id }, successMsg);
+      return successRes(res, {
+        id,
+        archived: archivedNow,
+        lifecycle_status: archivedNow ? 'OLD_CUSTOMER' : prev.lifecycle_status
+      }, successMsg);
     } catch (err) {
       console.error('[WeddingController.updateCustomer Error]', err);
       return errorRes(res, 'Failed to update customer', [err.message], 500);
@@ -1432,6 +1639,26 @@ class WeddingController {
       }
 
       const prev = existing[0];
+
+      // Permanent record protection. This is the control — the UI merely reflects
+      // it, so a direct API call, bulk action or script hits the same wall.
+      const isProtected = prev.lifecycle_status === 'OLD_CUSTOMER' || COMPLETION_STATUSES.has(prev.customer_status);
+      if (isProtected) {
+        await pool.query(`
+          INSERT INTO wedding_audit_logs (customer_id, location_id, user_name, action, details)
+          VALUES (?, ?, ?, 'Delete Blocked (Protected Record)', ?)
+        `, [
+          id,
+          prev.location_id,
+          req.user?.fullName || 'Staff',
+          `Deletion refused for archived customer ${prev.customer_name} (${prev.customer_code}). Lifecycle: ${prev.lifecycle_status}, Status: ${prev.customer_status}.`
+        ]);
+        return res.status(403).json({
+          success: false,
+          message: 'Completed customer records are permanently protected.',
+          code: 'OLD_CUSTOMER_PROTECTED'
+        });
+      }
 
       await pool.query(`
         UPDATE wedding_customers SET is_deleted = 1, deleted_at = NOW() WHERE id = ?
@@ -1520,6 +1747,16 @@ class WeddingController {
       }
 
       const cust = customers[0];
+
+      // Archived customers are out of the active queue server-side too, so a
+      // direct API call cannot re-open a completed journey.
+      if (cust.lifecycle_status === 'OLD_CUSTOMER') {
+        return res.status(409).json({
+          success: false,
+          message: 'This customer is archived in Old Customers. Restore the record before logging new calls.',
+          code: 'OLD_CUSTOMER_READONLY'
+        });
+      }
       // Business date in the store's timezone (IST)
       const istToday = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
       const actualCallDate = sanitizeDate(rawCallDate) || istToday;
@@ -1563,60 +1800,42 @@ class WeddingController {
       ]);
 
       // 2. Determine automated status transitions
+      const rawOutcome = String(callOutcome).trim();
       let newCustomerStatus = cust.customer_status;
-      let newCallStatus = callStatus;
+      let newCallStatus = 'Completed';
 
-      switch (callOutcome) {
-        case 'Shopping Confirmed':
-          newCustomerStatus = 'Shopping Date Confirmed';
-          newCallStatus = 'Completed';
-          break;
-        case 'Interested':
-          newCustomerStatus = 'Interested';
-          newCallStatus = 'Completed';
-          break;
-        case 'Not Interested':
-          newCustomerStatus = 'Not Interested';
-          newCallStatus = 'Completed';
-          break;
-        case 'Connected':
-          if (newCustomerStatus === 'New' || newCustomerStatus === 'Follow-up Pending') {
-            newCustomerStatus = 'Contacted';
-          }
-          newCallStatus = 'Connected';
-          break;
-        case 'Call Back Requested':
-          newCustomerStatus = 'Follow-up Pending';
-          newCallStatus = 'Call Back Requested';
-          break;
-        case 'No Answer':
-          newCallStatus = 'No Answer';
-          break;
-        case 'Busy':
-          newCallStatus = 'Busy';
-          break;
-        case 'Switched Off':
-          newCallStatus = 'Switched Off';
-          break;
-        case 'Wrong Number':
-          newCallStatus = 'Wrong Number';
-          newCustomerStatus = 'Cancelled';
-          break;
-        case 'Follow-Up Required':
-          newCustomerStatus = 'Follow-up Pending';
-          newCallStatus = 'Completed';
-          break;
-        case 'Appointment Requested':
-          newCustomerStatus = 'Appointment';
-          newCallStatus = 'Completed';
-          break;
-        case 'Converted':
-          newCustomerStatus = 'Converted';
-          newCallStatus = 'Completed';
-          break;
-        default:
-          newCallStatus = 'Completed';
-          break;
+      if (/Shopping Confirmed/i.test(rawOutcome)) {
+        newCustomerStatus = 'Shopping Date Confirmed';
+        newCallStatus = 'Completed';
+      } else if (/Visit Planned/i.test(rawOutcome)) {
+        newCustomerStatus = 'Visit Planned';
+        newCallStatus = 'Completed';
+      } else if (/Interested/i.test(rawOutcome) && !/Not Interested/i.test(rawOutcome)) {
+        newCustomerStatus = 'Interested';
+        newCallStatus = 'Completed';
+      } else if (/Not Interested/i.test(rawOutcome)) {
+        newCustomerStatus = 'Not Interested';
+        newCallStatus = 'Completed';
+      } else if (/Call Back|Contact Later|Callback/i.test(rawOutcome)) {
+        newCustomerStatus = 'Follow-up Pending';
+        newCallStatus = 'Call Back Requested';
+      } else if (/No Answer/i.test(rawOutcome)) {
+        newCallStatus = 'No Answer';
+      } else if (/Busy/i.test(rawOutcome)) {
+        newCallStatus = 'Busy';
+      } else if (/Switched Off/i.test(rawOutcome)) {
+        newCallStatus = 'Switched Off';
+      } else if (/Wrong Number/i.test(rawOutcome)) {
+        newCallStatus = 'Wrong Number';
+        newCustomerStatus = 'Cancelled';
+      } else if (/Follow-?Up Required/i.test(rawOutcome)) {
+        newCustomerStatus = 'Follow-up Pending';
+        newCallStatus = 'Completed';
+      } else if (/Connected/i.test(rawOutcome)) {
+        if (newCustomerStatus === 'New' || newCustomerStatus === 'Follow-up Pending') {
+          newCustomerStatus = 'Contacted';
+        }
+        newCallStatus = 'Connected';
       }
 
       // If caller manually passed new_customer_status, prioritize that
@@ -1630,12 +1849,33 @@ class WeddingController {
         `last_call_date = NOW()`,
         `last_call_outcome = ?`,
         `call_status = ?`,
-        `customer_status = ?`
+        `customer_status = ?`,
+        `last_contacted_by = ?`,
+        `last_contacted_by_user_id = ?`,
+        `last_updated_by = ?`,
+        `last_updated_by_user_id = ?`,
+        `updated_at = NOW()`
       ];
-      const updateParams = [callOutcome, newCallStatus, newCustomerStatus];
+      const updateParams = [
+        rawOutcome,
+        newCallStatus,
+        newCustomerStatus,
+        telecallerName,
+        telecallerId,
+        telecallerName,
+        telecallerId
+      ];
+
+      // Auto-assign telecaller if previously unassigned or 'Auto-Assigned'
+      if (!cust.assigned_telecaller_id || !cust.assigned_telecaller || cust.assigned_telecaller === 'Auto-Assigned') {
+        updateFields.push('assigned_telecaller = ?');
+        updateParams.push(telecallerName);
+        updateFields.push('assigned_telecaller_id = ?');
+        updateParams.push(telecallerId);
+      }
 
       // Schedule next follow-up if provided (unless Not Interested)
-      if (callOutcome !== 'Not Interested') {
+      if (rawOutcome !== 'Not Interested' && !/Not Interested/i.test(rawOutcome)) {
         if (nextFollowUpDate) {
           updateFields.push(`follow_up_date = ?`);
           updateParams.push(nextFollowUpDate);
@@ -1652,6 +1892,11 @@ class WeddingController {
         updateParams.push(expectedShoppingDate);
       }
 
+      if (remarks && remarks.trim()) {
+        updateFields.push(`customer_notes = CONCAT(COALESCE(customer_notes, ''), '\n[', DATE_FORMAT(NOW(), '%d %b %Y, %h:%i %p'), ' - ', ?, ']: ', ?)`);
+        updateParams.push(telecallerName, remarks.trim());
+      }
+
       updateParams.push(cust.id);
 
       await pool.query(`
@@ -1666,17 +1911,37 @@ class WeddingController {
         cust.id,
         cust.location_id,
         telecallerName,
-        `Logged call outcome: ${callOutcome}. Status: ${newCustomerStatus}. ${nextFollowUpDate ? `Next call: ${nextFollowUpDate}` : ''}`
+        `Logged call outcome: ${rawOutcome}. Status: ${newCustomerStatus}. ${nextFollowUpDate ? `Next call: ${nextFollowUpDate} (${nextFollowUpTime || 'General'})` : ''}`
       ]);
 
-      realtimeService.emitWeddingChange('CALL_LOGGED', { id: cust.id, customer_status: newCustomerStatus, call_status: newCallStatus }, cust.location_id);
+      let archivedNow = false;
+      if (COMPLETION_STATUSES.has(String(newCustomerStatus).trim())) {
+        const result = await archiveCustomerAsOld(cust.id, req.user, {
+          completedStatus: String(newCustomerStatus).trim(),
+          previousStatus: cust.customer_status,
+          reason: 'Wedding process completed'
+        });
+        archivedNow = result.archived;
+      }
+
+      deskCache.clear();
+      realtimeService.emitWeddingChange('CALL_LOGGED', {
+        id: cust.id,
+        customer_status: newCustomerStatus,
+        call_status: newCallStatus,
+        assigned_telecaller: cust.assigned_telecaller || telecallerName,
+        last_contacted_by: telecallerName
+      }, cust.location_id);
 
       return successRes(res, {
         customerId: cust.id,
-        outcome: callOutcome,
+        outcome: rawOutcome,
         customerStatus: newCustomerStatus,
-        nextFollowUpDate
-      }, 'Call activity saved successfully.');
+        archived: archivedNow,
+        lifecycle_status: archivedNow ? 'OLD_CUSTOMER' : cust.lifecycle_status,
+        nextFollowUpDate,
+        telecaller: telecallerName
+      }, archivedNow ? 'Call saved. Wedding process completed — customer moved to Old Customers.' : 'Call activity saved successfully.');
     } catch (err) {
       console.error('[WeddingController.logCall Error]', err);
       return errorRes(res, 'Failed to log call', [err.message], 500);
@@ -1741,7 +2006,7 @@ class WeddingController {
         apptParams.push(req.user.locationId);
       }
 
-      // Parallelize counters and all 7 desk queues concurrently
+      // Parallelize counters and all desk queues concurrently
       const [
         [counterRows],
         [overdue],
@@ -1750,6 +2015,8 @@ class WeddingController {
         [upcoming],
         [priorityCalls],
         [newCustomers],
+        [visitsPlanned],
+        [myCustomers],
         [todayAppointments]
       ] = await Promise.all([
         pool.query(`
@@ -1760,6 +2027,8 @@ class WeddingController {
             SUM(CASE WHEN w.call_status = 'Connected' THEN 1 ELSE 0 END) AS connectedCalls,
             SUM(CASE WHEN w.call_status = 'No Answer' AND w.follow_up_date <= CURDATE() THEN 1 ELSE 0 END) AS noAnswerCount,
             SUM(CASE WHEN w.call_status = 'Call Back Requested' THEN 1 ELSE 0 END) AS callbackCount,
+            SUM(CASE WHEN w.customer_status = 'Shopping Date Confirmed' THEN 1 ELSE 0 END) AS shoppingConfirmedCount,
+            SUM(CASE WHEN w.customer_status = 'Visit Planned' THEN 1 ELSE 0 END) AS visitsPlannedCount,
             SUM(CASE WHEN w.follow_up_date <= CURDATE() AND w.customer_status NOT IN ('Converted', 'Visited Store', 'Not Interested', 'Cancelled', 'Closed') THEN 1 ELSE 0 END) AS remainingCalls
           FROM wedding_customers w
           WHERE w.is_deleted = 0 AND (w.lifecycle_status = 'ACTIVE' OR w.lifecycle_status IS NULL) ${clause}
@@ -1808,6 +2077,31 @@ class WeddingController {
           LIMIT 40
         `, params),
         pool.query(`
+          ${baseSelect}
+          AND w.customer_status = 'Visit Planned'
+          ORDER BY w.follow_up_date ASC, w.id ASC
+          LIMIT 40
+        `, params),
+        pool.query(`
+          SELECT 
+            w.*,
+            l.location_code,
+            l.location_name,
+            CASE 
+              WHEN w.follow_up_date < CURDATE() THEN DATEDIFF(CURDATE(), w.follow_up_date)
+              ELSE 0 
+            END AS overdue_days
+          FROM wedding_customers w
+          LEFT JOIN locations l ON l.id = w.location_id
+          WHERE w.is_deleted = 0 AND (w.lifecycle_status = 'ACTIVE' OR w.lifecycle_status IS NULL) ${locClause}
+            AND (
+              w.assigned_telecaller_id = ? 
+              OR (w.assigned_telecaller IS NOT NULL AND LOWER(TRIM(w.assigned_telecaller)) = LOWER(?))
+            )
+          ORDER BY w.follow_up_date ASC, w.id DESC
+          LIMIT 100
+        `, [...locParams, req.user?.id || 0, String(req.user?.fullName || req.user?.username || '').trim()]),
+        pool.query(`
           SELECT a.*, w.customer_name, w.mobile_number, w.customer_code
           FROM wedding_appointments a
           LEFT JOIN wedding_customers w ON w.id = a.customer_id
@@ -1820,9 +2114,29 @@ class WeddingController {
       const sum = counterRows[0] || {};
 
       // Restore conversation history for the queues before returning (see ENCRYPTED_FIELDS)
-      for (const q of [overdue, dueToday, callbackRequests, upcoming, priorityCalls, newCustomers]) {
+      for (const q of [overdue, dueToday, callbackRequests, upcoming, priorityCalls, newCustomers, visitsPlanned, myCustomers]) {
         decryptRows(q, ENCRYPTED_FIELDS);
       }
+
+      // Build deduplicated Smart Priority Queue (Overdue -> Due Today -> Callbacks -> New -> Confirmed -> Upcoming)
+      const seenPriorityIds = new Set();
+      const priorityQueue = [];
+      const appendToPriority = (list, reasonTag) => {
+        (list || []).forEach(item => {
+          if (!seenPriorityIds.has(item.id)) {
+            seenPriorityIds.add(item.id);
+            priorityQueue.push({ ...item, priority_reason: reasonTag });
+          }
+        });
+      };
+
+      appendToPriority(overdue, 'Overdue Follow-up');
+      appendToPriority(dueToday, 'Due Today');
+      appendToPriority(callbackRequests, 'Callback Requested');
+      appendToPriority(newCustomers, 'New Registration');
+      appendToPriority(priorityCalls, 'Shopping Confirmed');
+      appendToPriority(visitsPlanned, 'Visit Planned');
+      appendToPriority(upcoming, 'Upcoming Call');
 
       const payload = {
         summary: {
@@ -1832,7 +2146,10 @@ class WeddingController {
           connectedCalls: Number(sum.connectedCalls) || 0,
           noAnswerCount: Number(sum.noAnswerCount) || 0,
           callbackCount: Number(sum.callbackCount) || 0,
-          remainingCalls: Number(sum.remainingCalls) || 0
+          shoppingConfirmedCount: Number(sum.shoppingConfirmedCount) || priorityCalls.length,
+          visitsPlannedCount: Number(sum.visitsPlannedCount) || visitsPlanned.length,
+          remainingCalls: Number(sum.remainingCalls) || 0,
+          myCustomersCount: myCustomers.length
         },
         counts: {
           overdue: overdue.length,
@@ -1841,8 +2158,14 @@ class WeddingController {
           callbacks: callbackRequests.length,
           callbackRequests: callbackRequests.length,
           upcoming: upcoming.length,
-          priority: priorityCalls.length,
+          priority: priorityQueue.length,
           priorityCalls: priorityCalls.length,
+          shopping_confirmed: priorityCalls.length,
+          shoppingConfirmed: priorityCalls.length,
+          visits_planned: visitsPlanned.length,
+          visitsPlanned: visitsPlanned.length,
+          my_customers: myCustomers.length,
+          myCustomers: myCustomers.length,
           new_customers: newCustomers.length,
           newCustomers: newCustomers.length,
           appointments: todayAppointments.length,
@@ -1853,6 +2176,8 @@ class WeddingController {
           remaining: Number(sum.remainingCalls) || 0
         },
         queues: {
+          priority: priorityQueue || [],
+          priorityQueue: priorityQueue || [],
           overdue: overdue || [],
           dueToday: dueToday || [],
           due_today: dueToday || [],
@@ -1860,8 +2185,12 @@ class WeddingController {
           callbacks: callbackRequests || [],
           upcoming: upcoming || [],
           priorityCalls: priorityCalls || [],
-          priority: priorityCalls || [],
+          shoppingConfirmed: priorityCalls || [],
+          visitsPlanned: visitsPlanned || [],
           newCustomers: newCustomers || [],
+          new_customers: newCustomers || [],
+          myCustomers: myCustomers || [],
+          my_customers: myCustomers || [],
           todayAppointments: todayAppointments || []
         }
       };
@@ -1902,6 +2231,7 @@ class WeddingController {
           SUM(CASE WHEN w.call_status = 'Completed' THEN 1 ELSE 0 END) AS completed_count
         FROM wedding_customers w
         WHERE w.is_deleted = 0 
+          AND (w.lifecycle_status = 'ACTIVE' OR w.lifecycle_status IS NULL)
           AND YEAR(w.follow_up_date) = ? 
           AND MONTH(w.follow_up_date) = ?
           ${locClause}
@@ -1923,6 +2253,7 @@ class WeddingController {
         FROM wedding_customers w
         LEFT JOIN locations l ON l.id = w.location_id
         WHERE w.is_deleted = 0 
+          AND (w.lifecycle_status = 'ACTIVE' OR w.lifecycle_status IS NULL)
           AND YEAR(w.follow_up_date) = ? 
           AND MONTH(w.follow_up_date) = ?
           ${locClause}
@@ -3708,6 +4039,16 @@ class WeddingController {
       const cust = existing[0];
       const oldStatus = cust.customer_status;
 
+      // Archived rows are terminal — re-activating must go through Restore so the
+      // archive always carries an intentional, audited transition.
+      if (cust.lifecycle_status === 'OLD_CUSTOMER') {
+        return res.status(409).json({
+          success: false,
+          message: 'This customer is in Old Customers. Restore the record before changing its status.',
+          code: 'OLD_CUSTOMER_READONLY'
+        });
+      }
+
       await pool.query(`UPDATE wedding_customers SET customer_status = ? WHERE id = ?`, [new_status, customerId]);
 
       await pool.query(`
@@ -3720,7 +4061,23 @@ class WeddingController {
         [customerId, cust.location_id, req.user?.fullName || 'Staff', `Status: ${oldStatus} → ${new_status}${change_reason ? '. Reason: ' + change_reason : ''}`]
       );
 
-      return successRes(res, { id: customerId, old_status: oldStatus, new_status: new_status }, 'Status updated');
+      let archived = false;
+      if (COMPLETION_STATUSES.has(String(new_status).trim())) {
+        const result = await archiveCustomerAsOld(customerId, req.user, {
+          completedStatus: String(new_status).trim(),
+          previousStatus: oldStatus,
+          reason: change_reason || 'Wedding process completed'
+        });
+        archived = result.archived;
+      }
+
+      return successRes(res, {
+        id: customerId,
+        old_status: oldStatus,
+        new_status: new_status,
+        archived,
+        lifecycle_status: archived ? 'OLD_CUSTOMER' : cust.lifecycle_status
+      }, archived ? 'Customer completed and moved to Old Customers.' : 'Status updated');
     } catch (err) {
       console.error('[WeddingController.changeStatus Error]', err);
       return errorRes(res, 'Failed to change status', [err.message], 500);
@@ -3790,7 +4147,7 @@ class WeddingController {
             SUM(CASE WHEN w.customer_status = 'Not Interested' THEN 1 ELSE 0 END) AS notInterested,
             SUM(CASE WHEN w.customer_status IN ('Cancelled','Closed') THEN 1 ELSE 0 END) AS cancelledClosed
           FROM wedding_customers w
-          WHERE w.is_deleted = 0 ${locClause}
+          WHERE w.is_deleted = 0 AND (w.lifecycle_status = 'ACTIVE' OR w.lifecycle_status IS NULL) ${locClause}
         `, params),
         pool.query(
           `SELECT COUNT(*) AS count FROM wedding_visits v WHERE v.visit_date = CURDATE() ${locClause.replace(/w\./g, 'v.')}`,
@@ -3993,24 +4350,55 @@ class WeddingController {
       const placeholders = customer_ids.map(() => '?').join(',');
       const { clause: locClause, params: locParams } = resolveLocFilter(req, '');
 
+      // Only active rows inside the caller's locations are eligible; archived
+      // records are immune to bulk edits.
+      const [eligible] = await pool.query(`
+        SELECT id, customer_status, location_id FROM wedding_customers
+        WHERE id IN (${placeholders}) AND is_deleted = 0
+          AND (lifecycle_status = 'ACTIVE' OR lifecycle_status IS NULL) ${locClause}
+      `, [...customer_ids, ...locParams]);
+
+      if (eligible.length === 0) {
+        return errorRes(res, 'No eligible customers were found for this bulk action', [], 404);
+      }
+
+      const eligibleIds = eligible.map((c) => c.id);
+      const eligiblePlaceholders = eligibleIds.map(() => '?').join(',');
+
       await pool.query(
-        `UPDATE wedding_customers SET customer_status = ? WHERE id IN (${placeholders}) AND is_deleted = 0 ${locClause}`,
-        [new_status, ...customer_ids, ...locParams]
+        `UPDATE wedding_customers SET customer_status = ? WHERE id IN (${eligiblePlaceholders})`,
+        [new_status, ...eligibleIds]
       );
 
-      for (const cid of customer_ids) {
+      for (const cust of eligible) {
         await pool.query(
-          `INSERT INTO wedding_status_history (customer_id, location_id, new_status, changed_by, changed_by_user_id) VALUES (?, 0, ?, ?, ?)`,
-          [cid, new_status, req.user?.fullName || 'Staff', req.user?.id || null]
+          `INSERT INTO wedding_status_history (customer_id, location_id, old_status, new_status, changed_by, changed_by_user_id) VALUES (?, ?, ?, ?, ?, ?)`,
+          [cust.id, cust.location_id, cust.customer_status, new_status, req.user?.fullName || 'Staff', req.user?.id || null]
         );
       }
 
       await pool.query(
         `INSERT INTO wedding_audit_logs (customer_id, location_id, user_name, action, details) VALUES (NULL, 0, ?, 'Bulk Status Update', ?)`,
-        [req.user?.fullName || 'Staff', `Updated ${customer_ids.length} customers to "${new_status}"`]
+        [req.user?.fullName || 'Staff', `Updated ${eligible.length} customers to "${new_status}"`]
       );
 
-      return successRes(res, { updated: customer_ids.length }, `Bulk updated ${customer_ids.length} customers`);
+      let archivedCount = 0;
+      if (COMPLETION_STATUSES.has(String(new_status).trim())) {
+        for (const cust of eligible) {
+          const result = await archiveCustomerAsOld(cust.id, req.user, {
+            completedStatus: String(new_status).trim(),
+            previousStatus: cust.customer_status,
+            reason: 'Bulk completion — wedding process completed'
+          });
+          if (result.archived) archivedCount++;
+        }
+      }
+
+      return successRes(res, {
+        updated: eligible.length,
+        skipped: customer_ids.length - eligible.length,
+        archived: archivedCount
+      }, archivedCount ? `Bulk updated ${eligible.length} customers, ${archivedCount} moved to Old Customers.` : `Bulk updated ${eligible.length} customers`);
     } catch (err) {
       console.error('[WeddingController.bulkUpdateStatus Error]', err);
       return errorRes(res, 'Failed to bulk update', [err.message], 500);
@@ -4116,6 +4504,17 @@ class WeddingController {
       if (!primary?.length) return errorRes(res, 'Primary customer not found', [], 404);
       if (!dup?.length) return errorRes(res, 'Duplicate customer not found', [], 404);
 
+      // Merge soft-deletes the duplicate and repoints its history, so it would
+      // both destroy an archived record and strip the permanent trail.
+      const archivedSide = [primary[0], dup[0]].find((c) => c.lifecycle_status === 'OLD_CUSTOMER');
+      if (archivedSide) {
+        return res.status(403).json({
+          success: false,
+          message: 'Completed customer records are permanently protected.',
+          code: 'OLD_CUSTOMER_PROTECTED'
+        });
+      }
+
       const tables = [
         'wedding_call_logs', 'wedding_visits', 'wedding_appointments',
         'wedding_purchases', 'wedding_notes', 'wedding_communication',
@@ -4215,16 +4614,21 @@ class WeddingController {
         ORDER BY wr.created_at DESC
       `, [normMob, cleanMob, customer.customer_code || '', customer.customer_code || '']);
 
+      // Repeat-customer journeys for the same mobile. Location-scoped like every
+      // other read, so a Davanagere user cannot see a Shivamogga customer record.
+      const { clause: assocClause, params: assocParams } = resolveLocFilter(req, 'wc');
       const [associatedCustomers] = await pool.query(`
         SELECT wc.id, wc.customer_code, wc.customer_name, wc.mobile_number, wc.wedding_date,
                wc.customer_status, wc.assigned_telecaller, wc.expected_shopping_date, wc.created_at,
+               wc.lifecycle_status, wc.previous_status, wc.archived_at, wc.archived_by,
+               wc.previous_customer_id,
                l.location_name, l.location_code
         FROM wedding_customers wc
         LEFT JOIN locations l ON l.id = wc.location_id
         WHERE (wc.mobile_number = ? OR wc.mobile_number = ?)
-          AND wc.id != ? AND wc.is_deleted = 0
+          AND wc.id != ? AND wc.is_deleted = 0 ${assocClause}
         ORDER BY wc.created_at DESC
-      `, [normMob, cleanMob, id]);
+      `, [normMob, cleanMob, id, ...assocParams]);
 
       return successRes(res, {
         customer,
@@ -4239,7 +4643,8 @@ class WeddingController {
         documents: documents || [],
         auditLogs: auditLogs || [],
         associatedRegistrations: associatedRegistrations || [],
-        associatedCustomers: associatedCustomers || []
+        associatedCustomers: associatedCustomers || [],
+        is_old_customer: customer.lifecycle_status === 'OLD_CUSTOMER'
       }, 'Full customer profile fetched successfully.');
     } catch (err) {
       console.error('[WeddingController.getFullCustomerProfile Error]', err);
@@ -4265,7 +4670,7 @@ class WeddingController {
           l.location_name, l.location_code
         FROM wedding_customers w
         LEFT JOIN locations l ON l.id = w.location_id
-        WHERE w.is_deleted = 0 ${locClause}
+        WHERE w.is_deleted = 0 AND (w.lifecycle_status = 'ACTIVE' OR w.lifecycle_status IS NULL) ${locClause}
           AND (
             LOWER(w.customer_name) LIKE ? OR
             LOWER(w.mobile_number) LIKE ? OR
@@ -4307,7 +4712,7 @@ class WeddingController {
           l.location_name
         FROM wedding_customers w
         LEFT JOIN locations l ON l.id = w.location_id
-        WHERE w.is_deleted = 0 AND w.wedding_date IS NOT NULL
+        WHERE w.is_deleted = 0 AND (w.lifecycle_status = 'ACTIVE' OR w.lifecycle_status IS NULL) AND w.wedding_date IS NOT NULL
           AND w.wedding_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL ${numDays} DAY)
           ${locClause}
         ORDER BY w.wedding_date ASC
@@ -4337,7 +4742,7 @@ class WeddingController {
       const [counts] = await pool.query(`
         SELECT w.customer_status AS status, COUNT(*) AS count
         FROM wedding_customers w
-        WHERE w.is_deleted = 0 ${locClause}
+        WHERE w.is_deleted = 0 AND (w.lifecycle_status = 'ACTIVE' OR w.lifecycle_status IS NULL) ${locClause}
         GROUP BY w.customer_status
       `, params);
 
@@ -4392,13 +4797,13 @@ class WeddingController {
         pool.query(`
           SELECT w.id, w.customer_name, w.follow_up_date AS date, 'followup' AS event_type, w.customer_status, w.assigned_telecaller
           FROM wedding_customers w
-          WHERE w.is_deleted=0 AND w.follow_up_date >= ? AND w.follow_up_date < ? ${locClause}
+          WHERE w.is_deleted=0 AND (w.lifecycle_status = 'ACTIVE' OR w.lifecycle_status IS NULL) AND w.follow_up_date >= ? AND w.follow_up_date < ? ${locClause}
           ORDER BY w.follow_up_date
         `, [start, end, ...params]),
         pool.query(`
           SELECT w.id, w.customer_name, w.wedding_date AS date, 'wedding' AS event_type, w.bride_name, w.groom_name
           FROM wedding_customers w
-          WHERE w.is_deleted=0 AND w.wedding_date IS NOT NULL AND w.wedding_date >= ? AND w.wedding_date < ? ${locClause}
+          WHERE w.is_deleted=0 AND (w.lifecycle_status = 'ACTIVE' OR w.lifecycle_status IS NULL) AND w.wedding_date IS NOT NULL AND w.wedding_date >= ? AND w.wedding_date < ? ${locClause}
           ORDER BY w.wedding_date
         `, [start, end, ...params]),
         pool.query(`
@@ -4472,7 +4877,7 @@ class WeddingController {
         queryParams.push(req.user.id, req.user.fullName || req.user.username || '');
       }
 
-      // Fast Search Filter (Customer Code, Name, Mobile, Email, Wedding City)
+      // Fast Search Filter (Customer ID, Name, Mobile, Email, Wedding City, Store Location)
       if (search && search.trim()) {
         const q = `%${search.trim().toLowerCase()}%`;
         whereClauses.push(`(
@@ -4480,9 +4885,11 @@ class WeddingController {
           w.mobile_number LIKE ? OR
           LOWER(w.customer_code) LIKE ? OR
           LOWER(COALESCE(w.email, '')) LIKE ? OR
-          LOWER(COALESCE(w.wedding_city, '')) LIKE ?
+          LOWER(COALESCE(w.wedding_city, '')) LIKE ? OR
+          LOWER(COALESCE(l.location_name, '')) LIKE ? OR
+          LOWER(COALESCE(l.location_code, '')) LIKE ?
         )`);
-        queryParams.push(q, q, q, q, q);
+        queryParams.push(q, q, q, q, q, q, q);
       }
 
       // Previous Status / Customer Status Filter
@@ -4551,6 +4958,7 @@ class WeddingController {
       }
 
       const whereSql = whereClauses.join(' AND ');
+      const fromSql = `FROM wedding_customers w LEFT JOIN locations l ON l.id = w.location_id`;
 
       // Pagination
       const limitNum = Math.min(5000, Math.max(1, parseInt(limit, 10) || 50));
@@ -4581,38 +4989,45 @@ class WeddingController {
         [customers],
         [storeStats],
         [statusStats],
-        [monthStats]
+        [monthStats],
+        [yearStats]
       ] = await Promise.all([
-        pool.query(`SELECT COUNT(*) as total FROM wedding_customers w WHERE ${whereSql}`, queryParams),
+        pool.query(`SELECT COUNT(*) as total ${fromSql} WHERE ${whereSql}`, queryParams),
         pool.query(`
           SELECT 
             w.*,
             l.location_code,
             l.location_name,
             COALESCE(w.archived_at, w.updated_at) AS display_archived_at
-          FROM wedding_customers w
-          LEFT JOIN locations l ON l.id = w.location_id
+          ${fromSql}
           WHERE ${whereSql}
           ORDER BY ${orderCol} ${orderDir}, w.id DESC
           LIMIT ? OFFSET ?
         `, [...queryParams, limitNum, offset]),
         pool.query(`
-          SELECT l.location_name, COUNT(*) as count
-          FROM wedding_customers w
-          LEFT JOIN locations l ON l.id = w.location_id
+          SELECT l.location_name, l.location_code, COUNT(*) as count
+          ${fromSql}
           WHERE ${whereSql}
-          GROUP BY l.location_name
+          GROUP BY l.id, l.location_name, l.location_code
         `, queryParams),
         pool.query(`
           SELECT COALESCE(w.previous_status, w.customer_status, 'Unspecified') as status, COUNT(*) as count
-          FROM wedding_customers w
+          ${fromSql}
           WHERE ${whereSql}
           GROUP BY COALESCE(w.previous_status, w.customer_status, 'Unspecified')
         `, queryParams),
+        // COALESCE keeps legacy rows (archived before the lifecycle columns
+        // existed) countable without letting an unrelated edit bump updated_at
+        // and re-credit the same completion to the current month.
         pool.query(`
           SELECT COUNT(*) as count
-          FROM wedding_customers w
-          WHERE ${whereSql} AND (w.archived_at >= DATE_FORMAT(CURDATE(), '%Y-%m-01') OR w.updated_at >= DATE_FORMAT(CURDATE(), '%Y-%m-01'))
+          ${fromSql}
+          WHERE ${whereSql} AND COALESCE(w.archived_at, w.updated_at) >= DATE_FORMAT(CURDATE(), '%Y-%m-01')
+        `, queryParams),
+        pool.query(`
+          SELECT COUNT(*) as count
+          ${fromSql}
+          WHERE ${whereSql} AND YEAR(COALESCE(w.archived_at, w.updated_at)) = YEAR(CURDATE())
         `, queryParams)
       ]);
 
@@ -4621,9 +5036,12 @@ class WeddingController {
 
       const stats = {
         totalOldCustomers: total,
-        byStore: (storeStats || []).map(r => ({ name: r.location_name || 'Unknown', count: Number(r.count) })),
+        byStore: (storeStats || []).map(r => ({ name: r.location_name || 'Unknown', code: r.location_code || null, count: Number(r.count) })),
         byPreviousStatus: (statusStats || []).map(r => ({ status: r.status, count: Number(r.count) })),
-        archivedThisMonth: Number(monthStats[0]?.count || 0)
+        archivedThisMonth: Number(monthStats[0]?.count || 0),
+        archivedThisYear: Number(yearStats[0]?.count || 0),
+        completedThisMonth: Number(monthStats[0]?.count || 0),
+        completedThisYear: Number(yearStats[0]?.count || 0)
       };
 
       return successRes(res, {
@@ -4664,35 +5082,18 @@ class WeddingController {
 
       const prev = existing[0];
       const archiveReason = req.body.reason || req.body.archive_reason || 'Manually moved to Old Customers';
-      const userName = req.user?.fullName || req.user?.username || 'Staff';
-      const userId = req.user?.id || null;
 
-      await pool.query(`
-        UPDATE wedding_customers SET
-          lifecycle_status = 'OLD_CUSTOMER',
-          previous_status = COALESCE(customer_status, 'New'),
-          archived_at = NOW(),
-          archived_by = ?,
-          archived_by_user_id = ?,
-          archive_reason = ?,
-          updated_at = NOW()
-        WHERE id = ?
-      `, [userName, userId, archiveReason, id]);
+      // Same routine the completion trigger uses, so a manual archive and an
+      // automatic one leave an identical lifecycle and audit footprint.
+      const result = await archiveCustomerAsOld(id, req.user, {
+        completedStatus: prev.customer_status,
+        previousStatus: prev.customer_status,
+        reason: archiveReason
+      });
 
-      // Comprehensive Audit Trail
-      await pool.query(`
-        INSERT INTO wedding_audit_logs (customer_id, location_id, user_name, action, details)
-        VALUES (?, ?, ?, 'Moved to Old Customers', ?)
-      `, [
-        id,
-        prev.location_id,
-        userName,
-        `Moved customer ${prev.customer_name} (${prev.customer_code}) to Old Customers. Previous Status: ${prev.customer_status}. Reason: "${archiveReason}"`
-      ]);
-
-      // Cache invalidation
-      await delCachePattern(`app:prod:wedding:customer:${id}:*`);
-      await delCachePattern('app:prod:wedding:dashboard:*');
+      if (!result.archived) {
+        return errorRes(res, 'Customer is already in Old Customers', [], 409);
+      }
 
       return successRes(res, {
         id,
@@ -4779,57 +5180,70 @@ class WeddingController {
     try {
       await ensureTables();
       const { clause: locClause, params } = resolveLocFilter(req, 'w');
+      const includeExpired = String(req.query.include_expired || req.body?.include_expired || '') === '1';
 
-      // Identify customers whose wedding date was >14 days ago and status is completed/converted/closed
-      // or status is closed/cancelled/not interested for >30 days
+      // Reconciliation pass for rows already at a completion status but never
+      // archived (e.g. written before the trigger existed). The normal path is
+      // event-driven in changeStatus / updateCustomer / logCall.
+      const completionList = Array.from(COMPLETION_STATUSES);
+      const statusPlaceholders = completionList.map(() => '?').join(',');
       const [candidates] = await pool.query(`
         SELECT w.id, w.customer_code, w.customer_name, w.customer_status, w.location_id
         FROM wedding_customers w
         WHERE w.is_deleted = 0
           AND (w.lifecycle_status = 'ACTIVE' OR w.lifecycle_status IS NULL)
+          AND w.customer_status IN (${statusPlaceholders})
           ${locClause}
-          AND (
-            (w.customer_status IN ('Converted', 'Visited Store', 'Shopping Date Confirmed') AND w.wedding_date IS NOT NULL AND w.wedding_date < DATE_SUB(CURDATE(), INTERVAL 14 DAY))
-            OR
-            (w.customer_status IN ('Closed', 'Cancelled', 'Not Interested') AND w.updated_at < DATE_SUB(NOW(), INTERVAL 30 DAY))
-          )
-        LIMIT 100
-      `, params);
+        LIMIT 500
+      `, [...completionList, ...params]);
 
-      if (!candidates || candidates.length === 0) {
+      // Opt-in sweep for journeys that simply ended (wedding date long past, or
+      // closed/cancelled and untouched). Not the specified trigger, so it never
+      // runs unless explicitly asked for.
+      let expiredRows = [];
+      if (includeExpired) {
+        const [rows] = await pool.query(`
+          SELECT w.id, w.customer_code, w.customer_name, w.customer_status, w.location_id
+          FROM wedding_customers w
+          WHERE w.is_deleted = 0
+            AND (w.lifecycle_status = 'ACTIVE' OR w.lifecycle_status IS NULL)
+            ${locClause}
+            AND w.customer_status NOT IN (${statusPlaceholders})
+            AND (
+              (w.customer_status = 'Converted' AND w.wedding_date IS NOT NULL AND w.wedding_date < DATE_SUB(CURDATE(), INTERVAL 14 DAY))
+              OR
+              (w.customer_status IN ('Closed', 'Cancelled', 'Not Interested') AND w.updated_at < DATE_SUB(NOW(), INTERVAL 30 DAY))
+            )
+          LIMIT 500
+        `, [...completionList, ...params]);
+        expiredRows = rows || [];
+      }
+
+      const pending = [...candidates, ...expiredRows];
+      if (pending.length === 0) {
         return successRes(res, { count: 0 }, 'No eligible customers for auto-archival at this time.');
       }
 
-      const userName = req.user?.fullName || req.user?.username || 'System Automation';
-      const ids = candidates.map(c => c.id);
-
-      await pool.query(`
-        UPDATE wedding_customers SET
-          lifecycle_status = 'OLD_CUSTOMER',
-          previous_status = customer_status,
-          archived_at = NOW(),
-          archived_by = ?,
-          archive_reason = 'Automated CRM lifecycle completion (Wedding date passed / closed)',
-          updated_at = NOW()
-        WHERE id IN (?)
-      `, [userName, ids]);
-
-      // Audit logs in batch
-      for (const c of candidates) {
-        await pool.query(`
-          INSERT INTO wedding_audit_logs (customer_id, location_id, user_name, action, details)
-          VALUES (?, ?, ?, 'Auto-Moved to Old Customers', ?)
-        `, [
-          c.id,
-          c.location_id,
-          userName,
-          `Automated archival: Customer ${c.customer_name} (${c.customer_code}) moved to Old Customers upon lifecycle completion.`
-        ]);
+      const ids = [];
+      for (const c of pending) {
+        const result = await archiveCustomerAsOld(c.id, req.user, {
+          completedStatus: c.customer_status,
+          previousStatus: c.customer_status,
+          reason: expiredRows.includes(c)
+            ? 'Automated CRM lifecycle sweep (journey ended)'
+            : 'Automated CRM lifecycle completion (Wedding process completed)'
+        });
+        if (result.archived) ids.push(c.id);
       }
 
       await delCachePattern('app:prod:wedding:*');
 
-      return successRes(res, { count: candidates.length, ids }, `Successfully moved ${candidates.length} customer(s) to Old Customers.`);
+      return successRes(res, {
+        count: ids.length,
+        ids,
+        evaluated: pending.length,
+        skipped: pending.length - ids.length
+      }, `Successfully moved ${ids.length} customer(s) to Old Customers.`);
     } catch (err) {
       console.error('[WeddingController.autoArchiveOldCustomers Error]', err);
       return errorRes(res, 'Failed to execute auto-archival', [err.message], 500);
@@ -4955,6 +5369,512 @@ class WeddingController {
     } catch (err) {
       console.error('[WeddingController.exportOldCustomers Error]', err);
       return errorRes(res, 'Failed to export old customers', [err.message], 500);
+    }
+  }
+
+  // ── Telecaller Controlled CRM Edit ──────────────────────────────────────
+  async updateCustomerByTelecaller(req, res) {
+    try {
+      const customerId = parseInt(req.params.id, 10);
+      if (!customerId) return errorRes(res, 'Customer ID is required', [], 400);
+
+      await ensureTables();
+      const userLoc = req.user ? req.user.locationId : null;
+      let locClause = '';
+      let locParams = [];
+      if (userLoc) {
+        locClause = 'AND w.location_id = ?';
+        locParams = [userLoc];
+      }
+
+      const [customers] = await pool.query(`
+        SELECT * FROM wedding_customers w WHERE w.id = ? AND w.is_deleted = 0 ${locClause}
+      `, [customerId, ...locParams]);
+
+      if (!customers || customers.length === 0) {
+        return errorRes(res, 'Customer not found or access denied', [], 404);
+      }
+
+      const cust = customers[0];
+      // Archived rows keep their terminal status; detail edits stay allowed.
+      const statusPinned = cust.lifecycle_status === 'OLD_CUSTOMER';
+      const telecallerName = req.user?.fullName || req.user?.username || 'Telecaller';
+      const telecallerId = req.user?.id || null;
+
+      const {
+        alternate_mobile,
+        preferred_call_time,
+        wedding_date,
+        expected_shopping_date,
+        preferred_shopping_category,
+        budget,
+        estimated_family_size,
+        bride_name,
+        groom_name,
+        wedding_city,
+        customer_status,
+        follow_up_date,
+        customer_notes,
+        remarks
+      } = req.body;
+
+      const updateFields = [];
+      const updateParams = [];
+      const changes = [];
+
+      if (alternate_mobile !== undefined) {
+        const clean = alternate_mobile ? alternate_mobile.replace(/\D/g, '').slice(-10) : null;
+        updateFields.push('alternate_mobile = ?');
+        updateParams.push(clean ? `+91${clean}` : null);
+        changes.push('alternate_mobile');
+      }
+
+      if (preferred_call_time !== undefined) {
+        updateFields.push('preferred_call_time = ?');
+        updateParams.push(preferred_call_time || 'Any Time');
+        changes.push('preferred_call_time');
+      }
+
+      if (wedding_date !== undefined) {
+        updateFields.push('wedding_date = ?');
+        updateParams.push(wedding_date ? String(wedding_date).slice(0, 10) : null);
+        changes.push('wedding_date');
+      }
+
+      if (expected_shopping_date !== undefined) {
+        updateFields.push('expected_shopping_date = ?');
+        updateParams.push(expected_shopping_date ? String(expected_shopping_date).slice(0, 10) : null);
+        changes.push('expected_shopping_date');
+      }
+
+      if (preferred_shopping_category !== undefined) {
+        updateFields.push('preferred_shopping_category = ?');
+        updateParams.push(preferred_shopping_category || 'General Wedding Shopping');
+        changes.push('preferred_shopping_category');
+      }
+
+      if (budget !== undefined) {
+        updateFields.push('budget = ?');
+        updateParams.push(budget || null);
+        updateFields.push('budget_range = ?');
+        updateParams.push(budget || null);
+        changes.push('budget');
+      }
+
+      if (estimated_family_size !== undefined) {
+        updateFields.push('estimated_family_size = ?');
+        updateParams.push(parseInt(estimated_family_size, 10) || 1);
+        changes.push('estimated_family_size');
+      }
+
+      if (bride_name !== undefined) {
+        updateFields.push('bride_name = ?');
+        updateParams.push(bride_name ? String(bride_name).trim() : null);
+        changes.push('bride_name');
+      }
+
+      if (groom_name !== undefined) {
+        updateFields.push('groom_name = ?');
+        updateParams.push(groom_name ? String(groom_name).trim() : null);
+        changes.push('groom_name');
+      }
+
+      if (wedding_city !== undefined) {
+        updateFields.push('wedding_city = ?');
+        updateParams.push(wedding_city ? String(wedding_city).trim() : null);
+        changes.push('wedding_city');
+      }
+
+      if (!statusPinned && customer_status !== undefined && customer_status !== cust.customer_status) {
+        updateFields.push('customer_status = ?');
+        updateParams.push(customer_status);
+        changes.push(`status: ${cust.customer_status} -> ${customer_status}`);
+      }
+
+      if (follow_up_date !== undefined) {
+        updateFields.push('follow_up_date = ?');
+        updateParams.push(follow_up_date ? String(follow_up_date).slice(0, 10) : null);
+        changes.push('follow_up_date');
+      }
+
+      if (customer_notes !== undefined || remarks !== undefined) {
+        const newNotes = customer_notes || remarks;
+        if (newNotes && newNotes.trim()) {
+          updateFields.push('customer_notes = ?');
+          updateParams.push(newNotes.trim());
+          changes.push('notes');
+        }
+      }
+
+      // Always stamp last updated by telecaller
+      updateFields.push('last_updated_by = ?');
+      updateParams.push(telecallerName);
+      updateFields.push('last_updated_by_user_id = ?');
+      updateParams.push(telecallerId);
+      updateFields.push('updated_at = NOW()');
+
+      // If customer has no telecaller, assign to editor
+      if (!cust.assigned_telecaller || cust.assigned_telecaller === 'Auto-Assigned') {
+        updateFields.push('assigned_telecaller = ?');
+        updateParams.push(telecallerName);
+        updateFields.push('assigned_telecaller_id = ?');
+        updateParams.push(telecallerId);
+      }
+
+      updateParams.push(cust.id);
+
+      await pool.query(`
+        UPDATE wedding_customers SET ${updateFields.join(', ')} WHERE id = ?
+      `, updateParams);
+
+      // Audit log
+      await pool.query(`
+        INSERT INTO wedding_audit_logs (customer_id, location_id, user_name, action, details)
+        VALUES (?, ?, ?, 'Telecaller Edit', ?)
+      `, [
+        cust.id,
+        cust.location_id,
+        telecallerName,
+        `Telecaller updated fields: ${changes.join(', ')}`
+      ]);
+
+      let archivedNow = false;
+      if (customer_status !== undefined && COMPLETION_STATUSES.has(String(customer_status).trim())) {
+        const result = await archiveCustomerAsOld(cust.id, req.user, {
+          completedStatus: String(customer_status).trim(),
+          previousStatus: cust.customer_status,
+          reason: 'Wedding process completed'
+        });
+        archivedNow = result.archived;
+      }
+
+      deskCache.clear();
+      realtimeService.emitWeddingChange('UPDATE', { id: cust.id, customer_status: customer_status || cust.customer_status }, cust.location_id);
+
+      return successRes(res, { id: cust.id, updatedFields: changes }, 'Customer details updated successfully.');
+    } catch (err) {
+      console.error('[WeddingController.updateCustomerByTelecaller Error]', err);
+      return errorRes(res, 'Failed to update customer details', [err.message], 500);
+    }
+  }
+
+  // ── Unified Customer Activity Timeline ───────────────────────────────────
+  async getCustomerTimeline(req, res) {
+    try {
+      const customerId = parseInt(req.params.id, 10);
+      if (!customerId) return errorRes(res, 'Customer ID is required', [], 400);
+
+      await ensureTables();
+      const { clause: locClause, params: locParams } = resolveLocFilter(req, 'w');
+
+      const [customers] = await pool.query(`
+        SELECT w.*, l.location_name, l.location_code
+        FROM wedding_customers w
+        LEFT JOIN locations l ON l.id = w.location_id
+        WHERE w.id = ? AND w.is_deleted = 0 ${locClause}
+      `, [customerId, ...locParams]);
+
+      if (!customers || customers.length === 0) {
+        return errorRes(res, 'Customer not found or access denied', [], 404);
+      }
+      const cust = customers[0];
+
+      // Fetch Call Logs
+      const [callLogs] = await pool.query(`
+        SELECT id, call_date, call_time, telecaller_name, call_status, call_outcome,
+               remarks, next_follow_up_date, next_follow_up_time, created_at
+        FROM wedding_call_logs
+        WHERE customer_id = ?
+        ORDER BY created_at DESC
+      `, [customerId]);
+
+      // Fetch WhatsApp Logs
+      const [whatsappLogs] = await pool.query(`
+        SELECT id, template_type, template_name, telecaller_name, recipient_mobile,
+               message_text, status, created_at
+        FROM wedding_whatsapp_logs
+        WHERE customer_id = ?
+        ORDER BY created_at DESC
+      `, [customerId]);
+
+      // Fetch Visits & Appointments
+      const [visits] = await pool.query(`
+        SELECT id, visit_date, visit_time, visitors_count, purpose, visit_status,
+               visit_result, visit_notes, created_by, created_at
+        FROM wedding_visits
+        WHERE customer_id = ?
+        ORDER BY created_at DESC
+      `, [customerId]);
+
+      // Fetch Audit Logs
+      const [auditLogs] = await pool.query(`
+        SELECT id, user_name, action, details, created_at
+        FROM wedding_audit_logs
+        WHERE customer_id = ?
+        ORDER BY created_at DESC
+      `, [customerId]);
+
+      // Decrypt any encrypted fields
+      decryptRows(callLogs, ['remarks']);
+      decryptRows(visits, ['visit_notes', 'customer_requirement']);
+
+      // Build unified chronological timeline items
+      const timeline = [];
+
+      // 1. Creation event
+      timeline.push({
+        id: `reg-${cust.id}`,
+        type: 'REGISTRATION',
+        title: 'Customer Registered',
+        actor: cust.created_by || 'Registration Desk',
+        timestamp: cust.created_at,
+        details: `Customer registered for ${cust.location_name || 'Store'}. Registration ID: ${cust.customer_code}. Wedding Date: ${cust.wedding_date ? new Date(cust.wedding_date).toISOString().split('T')[0] : 'TBD'}.`,
+        badgeColor: 'blue'
+      });
+
+      // 2. Call log events
+      (callLogs || []).forEach(c => {
+        timeline.push({
+          id: `call-${c.id}`,
+          type: 'CALL',
+          title: `Call: ${c.call_outcome}`,
+          actor: c.telecaller_name || 'Telecaller',
+          timestamp: c.created_at || c.call_date,
+          details: c.remarks ? `"${c.remarks}"` : `Call completed with outcome ${c.call_outcome}.`,
+          subdetails: c.next_follow_up_date ? `Next Follow-up scheduled for ${c.next_follow_up_date} (${c.next_follow_up_time || 'General'})` : null,
+          badgeColor: /Interested|Confirmed/i.test(c.call_outcome) ? 'emerald' : (/No Answer|Busy|Switched/i.test(c.call_outcome) ? 'amber' : 'purple')
+        });
+      });
+
+      // 3. WhatsApp events
+      (whatsappLogs || []).forEach(w => {
+        timeline.push({
+          id: `wa-${w.id}`,
+          type: 'WHATSAPP',
+          title: `WhatsApp: ${w.template_name || w.template_type}`,
+          actor: w.telecaller_name || 'Telecaller',
+          timestamp: w.created_at,
+          details: w.message_text,
+          badgeColor: 'emerald'
+        });
+      });
+
+      // 4. Visit events
+      (visits || []).forEach(v => {
+        timeline.push({
+          id: `visit-${v.id}`,
+          type: 'VISIT',
+          title: `Store Visit: ${v.visit_status}`,
+          actor: v.created_by || 'Store Staff',
+          timestamp: v.created_at || v.visit_date,
+          details: `${v.purpose || 'Store Visit'} (${v.visitors_count || 1} visitors). ${v.visit_notes || ''}`,
+          badgeColor: 'rose'
+        });
+      });
+
+      // 5. Audit logs
+      (auditLogs || []).forEach(a => {
+        if (a.action !== 'Call Logged' && a.action !== 'WhatsApp Message Sent') {
+          timeline.push({
+            id: `audit-${a.id}`,
+            type: 'AUDIT',
+            title: a.action,
+            actor: a.user_name || 'System',
+            timestamp: a.created_at,
+            details: a.details,
+            badgeColor: 'slate'
+          });
+        }
+      });
+
+      // Sort timeline newest first
+      timeline.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+      return successRes(res, { customer: cust, timeline }, 'Customer timeline loaded successfully.');
+    } catch (err) {
+      console.error('[WeddingController.getCustomerTimeline Error]', err);
+      return errorRes(res, 'Failed to fetch customer timeline', [err.message], 500);
+    }
+  }
+
+  // ── WhatsApp Location-Specific Templates ─────────────────────────────────
+  async getWhatsAppTemplates(req, res) {
+    try {
+      const customerId = parseInt(req.params.id, 10);
+      if (!customerId) return errorRes(res, 'Customer ID is required', [], 400);
+
+      const [customers] = await pool.query(`
+        SELECT w.*, l.location_name, l.location_code
+        FROM wedding_customers w
+        LEFT JOIN locations l ON l.id = w.location_id
+        WHERE w.id = ? AND w.is_deleted = 0
+      `, [customerId]);
+
+      if (!customers || customers.length === 0) {
+        return errorRes(res, 'Customer not found', [], 404);
+      }
+
+      const cust = customers[0];
+      const weddingWhatsAppService = require('../services/weddingWhatsAppService');
+      const data = weddingWhatsAppService.generateTemplatesForCustomer(cust);
+
+      return successRes(res, data, 'WhatsApp templates loaded successfully.');
+    } catch (err) {
+      console.error('[WeddingController.getWhatsAppTemplates Error]', err);
+      return errorRes(res, 'Failed to load WhatsApp templates', [err.message], 500);
+    }
+  }
+
+  async sendWhatsAppMessage(req, res) {
+    try {
+      const customerId = parseInt(req.params.id, 10);
+      const { template_type, template_name, message_text, recipient_mobile } = req.body;
+
+      if (!customerId) return errorRes(res, 'Customer ID is required', [], 400);
+      if (!message_text || !String(message_text).trim()) {
+        return errorRes(res, 'Message text cannot be empty', [], 400);
+      }
+
+      const [customers] = await pool.query(`
+        SELECT w.*, l.location_name, l.location_code
+        FROM wedding_customers w
+        LEFT JOIN locations l ON l.id = w.location_id
+        WHERE w.id = ? AND w.is_deleted = 0
+      `, [customerId]);
+
+      if (!customers || customers.length === 0) {
+        return errorRes(res, 'Customer not found', [], 404);
+      }
+      const cust = customers[0];
+
+      const telecallerName = req.user?.fullName || req.user?.username || 'Telecaller';
+      const telecallerId = req.user?.id || null;
+
+      const weddingWhatsAppService = require('../services/weddingWhatsAppService');
+      const result = await weddingWhatsAppService.logMessage({
+        customerId: cust.id,
+        customerCode: cust.customer_code,
+        locationId: cust.location_id,
+        telecallerId,
+        telecallerName,
+        recipientMobile: recipient_mobile || cust.mobile_number,
+        templateType: template_type || 'CUSTOM',
+        templateName: template_name || 'Custom Message',
+        messageText: message_text.trim()
+      });
+
+      realtimeService.emitWeddingChange('WHATSAPP_SENT', { id: cust.id, telecaller_name: telecallerName }, cust.location_id);
+
+      return successRes(res, result, 'WhatsApp message logged successfully.');
+    } catch (err) {
+      console.error('[WeddingController.sendWhatsAppMessage Error]', err);
+      return errorRes(res, 'Failed to log WhatsApp message', [err.message], 500);
+    }
+  }
+
+  async getWhatsAppLogs(req, res) {
+    try {
+      const customerId = parseInt(req.params.id, 10);
+      if (!customerId) return errorRes(res, 'Customer ID is required', [], 400);
+
+      const weddingWhatsAppService = require('../services/weddingWhatsAppService');
+      const logs = await weddingWhatsAppService.getCustomerWhatsAppLogs(customerId);
+
+      return successRes(res, { logs }, 'WhatsApp logs loaded successfully.');
+    } catch (err) {
+      console.error('[WeddingController.getWhatsAppLogs Error]', err);
+      return errorRes(res, 'Failed to fetch WhatsApp logs', [err.message], 500);
+    }
+  }
+
+  // ── Telecaller Performance Metrics ───────────────────────────────────────
+  async getTelecallerPerformance(req, res) {
+    try {
+      await ensureTables();
+      const userLoc = req.user ? req.user.locationId : null;
+      let locClause = '';
+      let locParams = [];
+      if (userLoc) {
+        locClause = 'AND u.location_id = ?';
+        locParams = [userLoc];
+      }
+
+      const [telecallerRows] = await pool.query(`
+        SELECT 
+          u.id, 
+          u.full_name, 
+          u.username, 
+          u.employee_id, 
+          u.role,
+          u.location_id,
+          l.location_name,
+          l.location_code,
+          (
+            SELECT COUNT(*) 
+            FROM wedding_customers wc 
+            WHERE wc.assigned_telecaller_id = u.id 
+              AND wc.is_deleted = 0 
+              AND (wc.lifecycle_status = 'ACTIVE' OR wc.lifecycle_status IS NULL)
+          ) AS total_assigned,
+          (
+            SELECT COUNT(*) 
+            FROM wedding_call_logs cl 
+            WHERE cl.telecaller_id = u.id 
+              AND cl.call_date = CURDATE()
+          ) AS calls_today,
+          (
+            SELECT COUNT(*) 
+            FROM wedding_customers wc 
+            WHERE wc.assigned_telecaller_id = u.id 
+              AND wc.last_call_date >= CURDATE()
+              AND wc.is_deleted = 0
+          ) AS customers_called_today,
+          (
+            SELECT COUNT(*) 
+            FROM wedding_customers wc 
+            WHERE wc.assigned_telecaller_id = u.id 
+              AND wc.follow_up_date < CURDATE()
+              AND wc.customer_status NOT IN ('Converted', 'Visited Store', 'Not Interested', 'Cancelled', 'Closed')
+              AND wc.is_deleted = 0
+          ) AS overdue_calls,
+          (
+            SELECT COUNT(*) 
+            FROM wedding_call_logs cl 
+            WHERE cl.telecaller_id = u.id 
+              AND (cl.call_outcome LIKE '%Interested%' OR cl.call_outcome LIKE '%Connected%')
+          ) AS total_connected,
+          (
+            SELECT COUNT(*) 
+            FROM wedding_call_logs cl 
+            WHERE cl.telecaller_id = u.id 
+              AND cl.call_outcome = 'No Answer'
+          ) AS total_no_answer,
+          (
+            SELECT COUNT(*) 
+            FROM wedding_customers wc 
+            WHERE wc.assigned_telecaller_id = u.id 
+              AND wc.customer_status = 'Shopping Date Confirmed'
+              AND wc.is_deleted = 0
+          ) AS shopping_confirmed,
+          (
+            SELECT COUNT(*) 
+            FROM wedding_customers wc 
+            WHERE wc.assigned_telecaller_id = u.id 
+              AND wc.customer_status IN ('Visited Store', 'Converted')
+              AND wc.is_deleted = 0
+          ) AS completed_customers
+        FROM users u
+        LEFT JOIN locations l ON l.id = u.location_id
+        WHERE u.active = TRUE
+          AND u.role IN ('Telecaller', 'CRM Executive', 'VM Extension Telecaller', 'VM Telecaller', 'Team Lead')
+          ${locClause}
+        ORDER BY calls_today DESC, total_assigned DESC
+      `, locParams);
+
+      return successRes(res, { telecallers: telecallerRows || [] }, 'Telecaller performance retrieved successfully.');
+    } catch (err) {
+      console.error('[WeddingController.getTelecallerPerformance Error]', err);
+      return errorRes(res, 'Failed to fetch telecaller performance', [err.message], 500);
     }
   }
 }

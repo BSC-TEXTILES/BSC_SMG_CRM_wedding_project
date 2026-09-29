@@ -11,6 +11,7 @@ interface ChatMessage {
 }
 
 export default function ChatWidget() {
+  return null;
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');

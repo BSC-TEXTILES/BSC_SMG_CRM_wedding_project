@@ -41,6 +41,72 @@ export interface WeddingCustomer {
   wedding_venue?: string;
   wedding_city?: string;
   alternate_mobile?: string;
+  last_contacted_by?: string;
+  last_contacted_by_user_id?: number;
+  last_updated_by?: string;
+  last_updated_by_user_id?: number;
+  shopping_requirements?: string;
+}
+
+export interface WeddingWhatsAppTemplate {
+  key: string;
+  label: string;
+  category: string;
+  text: string;
+  store_name: string;
+  store_phone: string;
+  variables: Record<string, string>;
+}
+
+export interface WeddingWhatsAppLog {
+  id: number;
+  customer_id: number;
+  customer_name?: string;
+  customer_code?: string;
+  mobile_number?: string;
+  location_id?: number;
+  location_name?: string;
+  telecaller_id?: number;
+  telecaller_name?: string;
+  template_type: string;
+  message_text: string;
+  status: 'SENT' | 'FAILED' | 'PENDING';
+  error_message?: string;
+  created_at: string;
+}
+
+export interface WeddingActivityItem {
+  id: string | number;
+  type: 'CREATED' | 'ASSIGNMENT' | 'CALL' | 'STATUS_CHANGE' | 'WHATSAPP' | 'VISIT' | 'APPOINTMENT' | 'NOTE' | 'AUDIT';
+  action: string;
+  details?: string;
+  outcome?: string;
+  remarks?: string;
+  old_value?: string;
+  new_value?: string;
+  performer_name: string;
+  performer_id?: number;
+  date_time: string;
+  meta?: any;
+}
+
+export interface TelecallerPerformanceMetric {
+  telecaller_id: number;
+  telecaller_name: string;
+  role_name?: string;
+  location_id?: number;
+  location_name?: string;
+  assignedCustomers: number;
+  callsToday: number;
+  callsCompleted: number;
+  callsPending: number;
+  overdue: number;
+  connectedCalls: number;
+  noAnswer: number;
+  followupsScheduled: number;
+  shoppingConfirmed: number;
+  visitsPlanned: number;
+  completedCustomers: number;
 }
 
 export interface WeddingStats {
@@ -101,11 +167,20 @@ export const CUSTOMER_STATUSES = [
 ];
 
 export const CALL_OUTCOMES = [
-  'Connected',
+  'Connected — Interested',
+  'Connected — Follow-up Required',
+  'Connected — Shopping Confirmed',
+  'Connected — Visit Planned',
+  'Connected — Not Interested',
   'No Answer',
   'Busy',
   'Switched Off',
   'Wrong Number',
+  'Call Back Requested',
+  'Customer Asked to Contact Later',
+  'Other',
+  // Backwards compatibility legacy values
+  'Connected',
   'Callback Requested',
   'Shopping Confirmed',
   'Visit Planned',

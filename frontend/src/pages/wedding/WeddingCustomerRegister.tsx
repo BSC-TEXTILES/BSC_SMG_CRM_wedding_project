@@ -693,19 +693,26 @@ export default function WeddingCustomerRegister() {
                           <td className="py-3 px-4">
                             {cust.assigned_telecaller && cust.assigned_telecaller !== 'Auto-Assigned' ? (
                               <div>
-                                <span className="font-semibold text-[#4A173A] text-xs">
-                                  {cust.assigned_telecaller}
-                                </span>
-                                <button
-                                  onClick={() => {
-                                    setAssignCustomer(cust);
-                                    setTargetTelecaller('');
-                                  }}
-                                  className="ml-2 text-[9px] font-bold text-[#B76E79] hover:underline"
-                                  title="Reassign Telecaller"
-                                >
-                                  Reassign
-                                </button>
+                                <div className="flex items-center">
+                                  <span className="font-semibold text-[#4A173A] text-xs">
+                                    {cust.assigned_telecaller}
+                                  </span>
+                                  <button
+                                    onClick={() => {
+                                      setAssignCustomer(cust);
+                                      setTargetTelecaller('');
+                                    }}
+                                    className="ml-2 text-[9px] font-bold text-[#B76E79] hover:underline"
+                                    title="Reassign Telecaller"
+                                  >
+                                    Reassign
+                                  </button>
+                                </div>
+                                {cust.last_contacted_by && (
+                                  <div className="text-[10px] text-[#6F5963] mt-0.5">
+                                    Last Call: <span className="font-medium text-[#2B1722]">{cust.last_contacted_by}</span>
+                                  </div>
+                                )}
                               </div>
                             ) : (
                               <button

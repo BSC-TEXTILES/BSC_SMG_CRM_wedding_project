@@ -360,7 +360,7 @@ body.menu-open { overflow: hidden; }
 /* Hero */
 .hero-wrap {
   position: relative;
-  background-image: linear-gradient(to bottom, rgba(243, 238, 231, 0.92), rgba(239, 232, 223, 0.96)), url("/images/hero-bg.jpg");
+  background-image: linear-gradient(to bottom, rgba(243, 238, 231, 0.15), rgba(239, 232, 223, 0.35)), url("/images/hero-bg.webp");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;

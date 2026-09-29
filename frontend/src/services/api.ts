@@ -1595,6 +1595,37 @@ export const API = {
     });
     return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
   },
+  async updateWeddingCustomerByTelecaller(id: number | string, payload: any) {
+    const res = await apiFetch(`/wedding-crm/customers/${id}/telecaller-edit`, {
+      method: 'PUT',
+      body: JSON.stringify(payload)
+    });
+    return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
+  },
+  async getWeddingCustomerTimeline(id: number | string) {
+    const res = await apiFetch(`/wedding-crm/customers/${id}/timeline`);
+    return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
+  },
+  async getWeddingWhatsAppTemplates(id: number | string) {
+    const res = await apiFetch(`/wedding-crm/customers/${id}/whatsapp-templates`);
+    return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
+  },
+  async sendWeddingWhatsAppMessage(id: number | string, payload: { template_type?: string; custom_message?: string; recipient_phone?: string }) {
+    const res = await apiFetch(`/wedding-crm/customers/${id}/whatsapp-send`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+    return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
+  },
+  async getWeddingWhatsAppLogs(id: number | string) {
+    const res = await apiFetch(`/wedding-crm/customers/${id}/whatsapp-logs`);
+    return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
+  },
+  async getWeddingTelecallerPerformance(params?: any) {
+    const q = params ? new URLSearchParams(cleanQueryParams(params)).toString() : '';
+    const res = await apiFetch(`/wedding-crm/telecaller-performance${q ? `?${q}` : ''}`);
+    return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
+  },
   async getWeddingCallingDesk(params?: { queue?: string; location_id?: number | string }) {
     const q = params ? new URLSearchParams(cleanQueryParams(params)).toString() : '';
     const res = await apiFetch(`/wedding-crm/calling-desk${q ? `?${q}` : ''}`);

@@ -774,6 +774,26 @@ class WeddingRegistrationController {
   async createWeddingCrmRecord(data) {
     const executor = data.connection || pool;
     try {
+      let assignedTelecaller = data.assignedTelecaller;
+      let assignedTelecallerId = data.assignedTelecallerId || null;
+
+      // Smart location-based auto-assignment if unassigned
+      if (!assignedTelecallerId || !assignedTelecaller || assignedTelecaller === 'Auto-Assigned') {
+        try {
+          const telecallerAssignmentService = require('../services/telecallerAssignmentService');
+          const autoAssigned = await telecallerAssignmentService.getEligibleTelecaller({
+            locationId: data.locationId,
+            connection: executor
+          });
+          if (autoAssigned) {
+            assignedTelecaller = autoAssigned.full_name;
+            assignedTelecallerId = autoAssigned.id;
+          }
+        } catch (assignErr) {
+          console.warn('[AutoAssign Warning in Registration]', assignErr.message);
+        }
+      }
+
       await executor.query(`
         INSERT INTO wedding_customers (
           customer_code,
@@ -817,8 +837,8 @@ class WeddingRegistrationController {
         data.expectedShoppingDate || null,
         data.preferredCategory,
         data.estimatedFamilySize,
-        data.assignedTelecaller || 'Auto-Assigned',
-        null,
+        assignedTelecaller || 'Auto-Assigned',
+        assignedTelecallerId,
         data.followUpDate,
         data.preferredCallTime,
         data.customerNotes,
