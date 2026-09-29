@@ -121,6 +121,13 @@ router.get('/customers/:id/full-profile', weddingController.getFullCustomerProfi
 router.put('/customers/:id', weddingController.updateCustomer);
 router.delete('/customers/:id', authorize('Admin', 'Super Admin', 'HR', 'Manager'), weddingController.deleteCustomer);
 
+// ── Old Customers (Historical Archive) ─────────────────────────
+router.get('/old-customers', canViewWedding, weddingController.getOldCustomers);
+router.get('/old-customers/export', canViewWedding, weddingController.exportOldCustomers);
+router.post('/old-customers/auto-archive', canAddWedding, weddingController.autoArchiveOldCustomers);
+router.post('/customers/:id/archive', canAddWedding, weddingController.moveToOldCustomers);
+router.post('/customers/:id/restore', canAddWedding, weddingController.restoreCustomer);
+
 // ── Status Management ──────────────────────────────────────────
 router.get('/customers/:id/status-history', weddingController.getStatusHistory);
 router.put('/customers/:id/status', weddingController.changeStatus);

@@ -28,6 +28,19 @@ export interface WeddingCustomer {
   overdue_days?: number;
   created_at?: string;
   updated_at?: string;
+  // Lifecycle & Old Customer Archive fields
+  lifecycle_status?: 'ACTIVE' | 'OLD_CUSTOMER' | 'ARCHIVED';
+  archived_at?: string;
+  archived_by?: string;
+  archived_by_user_id?: number;
+  archive_reason?: string;
+  previous_status?: string;
+  // Additional details
+  bride_name?: string;
+  groom_name?: string;
+  wedding_venue?: string;
+  wedding_city?: string;
+  alternate_mobile?: string;
 }
 
 export interface WeddingStats {

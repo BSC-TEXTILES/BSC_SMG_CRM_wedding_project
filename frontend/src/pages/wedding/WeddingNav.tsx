@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, UserPlus, PhoneCall, History, Calendar, Kanban, BarChart3, FileSpreadsheet, Sparkles } from 'lucide-react';
+import { LayoutDashboard, Users, UserPlus, PhoneCall, History, Calendar, Kanban, BarChart3, FileSpreadsheet, Sparkles, Archive } from 'lucide-react';
 
 interface WeddingNavProps {
   currentPageTitle: string;
@@ -21,7 +21,8 @@ export default function WeddingNav({ currentPageTitle, breadcrumbs, actions }: W
     { href: '/wedding-crm/calendar', label: 'Calendar', icon: Calendar },
     { href: '/wedding-crm/pipeline', label: 'Status Board', icon: Kanban },
     { href: '/wedding-crm/reports', label: 'Reports', icon: BarChart3 },
-    { href: '/wedding-crm/import', label: 'Import', icon: FileSpreadsheet }
+    { href: '/wedding-crm/import', label: 'Import', icon: FileSpreadsheet },
+    { href: '/wedding-crm/old-customers', label: 'Old Customers', icon: Archive }
   ];
 
   return (

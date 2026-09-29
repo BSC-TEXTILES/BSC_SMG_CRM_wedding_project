@@ -16,6 +16,11 @@ const config: Config = {
       '2xl': '1440px'   // Desktop
     },
     extend: {
+      // `xs` is used by ~50 modal/overlay backdrops across the app but is not in
+      // Tailwind's default blur scale, so `backdrop-blur-xs` compiled to nothing
+      // and those background layers silently rendered no blur at all.
+      blur: { xs: '2px' },
+      backdropBlur: { xs: '2px' },
       colors: {
         // BSC Exclusive Wedding CRM Brand Color System
         primary: {

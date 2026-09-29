@@ -1545,6 +1545,49 @@ export const API = {
     });
     return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
   },
+  async getWeddingOldCustomers(params?: {
+    search?: string;
+    location_id?: number | string;
+    telecaller_id?: number | string;
+    previous_status?: string;
+    customer_status?: string;
+    shopping_category?: string;
+    archived_from?: string;
+    archived_to?: string;
+    wedding_from?: string;
+    wedding_to?: string;
+    shopping_from?: string;
+    shopping_to?: string;
+    date_filter?: string;
+    limit?: number;
+    offset?: number;
+    page?: number;
+    sort_by?: string;
+    sort_order?: string;
+  }) {
+    const q = params ? new URLSearchParams(cleanQueryParams(params)).toString() : '';
+    const res = await apiFetch(`/wedding-crm/old-customers${q ? `?${q}` : ''}`);
+    return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
+  },
+  async moveWeddingCustomerToOld(id: number | string, reason?: string) {
+    const res = await apiFetch(`/wedding-crm/customers/${id}/archive`, {
+      method: 'POST',
+      body: JSON.stringify({ reason })
+    });
+    return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
+  },
+  async restoreWeddingOldCustomer(id: number | string) {
+    const res = await apiFetch(`/wedding-crm/customers/${id}/restore`, {
+      method: 'POST'
+    });
+    return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
+  },
+  async autoArchiveWeddingCustomers() {
+    const res = await apiFetch('/wedding-crm/old-customers/auto-archive', {
+      method: 'POST'
+    });
+    return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
+  },
   async logWeddingCall(payload: any) {
     const res = await apiFetch('/wedding-crm/log-call', {
       method: 'POST',

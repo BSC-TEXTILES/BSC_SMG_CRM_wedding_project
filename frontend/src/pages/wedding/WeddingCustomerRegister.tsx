@@ -16,7 +16,7 @@ import {
   getStatusBadge
 } from './weddingTypes';
 import LocationFilterSelect from '../../components/ui/LocationFilterSelect';
-import { UserPlus, Search, PhoneCall, UserCheck, MapPin, MessageCircle, Download, RefreshCw, ChevronLeft, ChevronRight, Eye, X, CircleCheck, CircleAlert, Trash2 } from 'lucide-react';
+import { UserPlus, Search, PhoneCall, UserCheck, MapPin, MessageCircle, Download, RefreshCw, ChevronLeft, ChevronRight, Eye, X, CircleCheck, CircleAlert, Trash2, Archive } from 'lucide-react';
 
 export default function WeddingCustomerRegister() {
   const navigate = useNavigate();
@@ -102,6 +102,27 @@ export default function WeddingCustomerRegister() {
   const [assignCustomer, setAssignCustomer] = useState<WeddingCustomer | null>(null);
   const [targetTelecaller, setTargetTelecaller] = useState('');
   const [savingAssign, setSavingAssign] = useState(false);
+
+  // Move to Old Customers Modal
+  const [customerToArchive, setCustomerToArchive] = useState<WeddingCustomer | null>(null);
+  const [archiveReason, setArchiveReason] = useState('');
+  const [archiving, setArchiving] = useState(false);
+
+  const handleMoveToOldCustomers = async () => {
+    if (!customerToArchive) return;
+    setArchiving(true);
+    try {
+      await API.moveWeddingCustomerToOld(customerToArchive.id, archiveReason || 'Manually moved to Old Customers');
+      showToast(`Customer "${customerToArchive.customer_name}" moved to Old Customers successfully.`, 'success');
+      setCustomerToArchive(null);
+      setArchiveReason('');
+      loadData();
+    } catch (err: any) {
+      showToast('Error moving customer: ' + (err.message || 'Server error'), 'error');
+    } finally {
+      setArchiving(false);
+    }
+  };
 
   // Delete Modal
   const [customerToDelete, setCustomerToDelete] = useState<WeddingCustomer | null>(null);
@@ -552,6 +573,16 @@ export default function WeddingCustomerRegister() {
                         >
                           <UserCheck className="w-3.5 h-3.5" />
                         </button>
+                        <button
+                          onClick={() => {
+                            setCustomerToArchive(cust);
+                            setArchiveReason('Completed wedding shopping / journey');
+                          }}
+                          className="p-2 rounded-xl bg-[#FAF0E6] hover:bg-[#FAF0E6]/80 text-[#B76E79] border border-[#E8D9D4] transition-colors"
+                          title="Move to Old Customers"
+                        >
+                          <Archive className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </div>
                   );
@@ -756,6 +787,18 @@ export default function WeddingCustomerRegister() {
                                 title="Assign Telecaller"
                               >
                                 <UserCheck className="w-3.5 h-3.5" />
+                              </button>
+
+                               {/* Move to Old Customers */}
+                              <button
+                                onClick={() => {
+                                  setCustomerToArchive(cust);
+                                  setArchiveReason('Completed wedding shopping / journey');
+                                }}
+                                className="shrink-0 p-1.5 rounded-lg bg-[#FAF0E6] hover:bg-[#FAF0E6]/80 text-[#B76E79] transition-colors border border-[#E8D9D4]"
+                                title="Move to Old Customers"
+                              >
+                                <Archive className="w-3.5 h-3.5" />
                               </button>
 
                               {/* Delete Customer */}
@@ -1073,6 +1116,85 @@ export default function WeddingCustomerRegister() {
                       <>
                         <Trash2 className="w-3.5 h-3.5" />
                         <span>Confirm Delete</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+          {/* Move to Old Customers Modal */}
+          {customerToArchive && (
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
+              <div className="bg-[#FFFDFC] rounded-3xl max-w-md w-full p-6 shadow-2xl border border-[#E8D9D4] space-y-4 animate-scale-in">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-[#FAF0E6] text-[#4A173A] flex items-center justify-center flex-shrink-0 border border-[#E8D9D4]">
+                    <Archive className="w-5 h-5 text-[#B76E79]" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-[#4A173A]">Move Customer to Old Customers?</h3>
+                    <p className="text-xs text-[#6F5963]">Historical archive with complete record retention</p>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-[#FFFAF7] rounded-2xl border border-[#E8D9D4] space-y-2 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-[#6F5963]">Customer Name:</span>
+                    <strong className="text-[#2B1722]">{customerToArchive.customer_name}</strong>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-[#6F5963]">Customer ID:</span>
+                    <strong className="text-[#4A173A] font-mono">{customerToArchive.customer_code}</strong>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-[#6F5963]">Mobile Number:</span>
+                    <span className="font-semibold text-[#2B1722]">{customerToArchive.mobile_number}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-[#6F5963]">Store Location:</span>
+                    <span className="font-semibold text-[#2B1722]">{customerToArchive.location_name || 'Store'}</span>
+                  </div>
+                </div>
+
+                <p className="text-[11.5px] text-[#6F5963] leading-relaxed">
+                  The customer record and complete history will remain available in the Old Customers section. You can restore this customer at any time.
+                </p>
+
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-[#4A173A] uppercase">Reason for Archiving (Optional):</label>
+                  <input
+                    type="text"
+                    value={archiveReason}
+                    onChange={(e) => setArchiveReason(e.target.value)}
+                    placeholder="e.g., Completed wedding shopping / lifecycle closed"
+                    className="w-full px-3 py-2 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl text-xs font-semibold text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#E8D9D4]">
+                  <button
+                    type="button"
+                    disabled={archiving}
+                    onClick={() => setCustomerToArchive(null)}
+                    className="px-4 py-2 rounded-xl bg-[#FFFAF7] hover:bg-[#FFF7F2] border border-[#E8D9D4] font-semibold text-[#4A173A] text-xs cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    disabled={archiving}
+                    onClick={handleMoveToOldCustomers}
+                    className="px-5 py-2 rounded-xl bg-[#4A173A] hover:bg-[#6A2853] text-white font-semibold text-xs shadow-xs flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                  >
+                    {archiving ? (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        <span>Moving...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Archive className="w-3.5 h-3.5" />
+                        <span>Move Customer</span>
                       </>
                     )}
                   </button>

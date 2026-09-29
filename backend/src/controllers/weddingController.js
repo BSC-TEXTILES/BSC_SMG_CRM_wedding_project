@@ -752,6 +752,15 @@ class WeddingController {
       const { clause: locClause, params: queryParams } = resolveLocFilter(req, 'w');
       let whereClauses = [`w.is_deleted = 0`, `1=1 ${locClause}`];
 
+      // Lifecycle status filter: default to ACTIVE customers so historical old customers don't clutter the active register
+      const lifecycleStatus = req.query.lifecycle_status;
+      if (lifecycleStatus && lifecycleStatus !== 'all') {
+        whereClauses.push(`w.lifecycle_status = ?`);
+        queryParams.push(lifecycleStatus);
+      } else if (!lifecycleStatus) {
+        whereClauses.push(`(w.lifecycle_status = 'ACTIVE' OR w.lifecycle_status IS NULL)`);
+      }
+
       // Enforce Telecaller ownership scoping: Telecallers only see their assigned customers
       if (req.user && req.user.role === 'Telecaller') {
         whereClauses.push(`(w.assigned_telecaller_id = ? OR w.assigned_telecaller = ?)`);
@@ -1722,7 +1731,7 @@ class WeddingController {
           END AS overdue_days
         FROM wedding_customers w
         LEFT JOIN locations l ON l.id = w.location_id
-        WHERE w.is_deleted = 0 ${clause}
+        WHERE w.is_deleted = 0 AND (w.lifecycle_status = 'ACTIVE' OR w.lifecycle_status IS NULL) ${clause}
       `;
 
       let apptWhere = '';
@@ -1753,7 +1762,7 @@ class WeddingController {
             SUM(CASE WHEN w.call_status = 'Call Back Requested' THEN 1 ELSE 0 END) AS callbackCount,
             SUM(CASE WHEN w.follow_up_date <= CURDATE() AND w.customer_status NOT IN ('Converted', 'Visited Store', 'Not Interested', 'Cancelled', 'Closed') THEN 1 ELSE 0 END) AS remainingCalls
           FROM wedding_customers w
-          WHERE w.is_deleted = 0 ${clause}
+          WHERE w.is_deleted = 0 AND (w.lifecycle_status = 'ACTIVE' OR w.lifecycle_status IS NULL) ${clause}
         `, params),
         pool.query(`
           ${baseSelect}
@@ -4417,6 +4426,535 @@ class WeddingController {
     } catch (err) {
       console.error('[WeddingController.getExtendedCalendar Error]', err);
       return errorRes(res, 'Failed to fetch calendar', [err.message], 500);
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // OLD CUSTOMERS (Historical CRM Lifecycle & Archives)
+  // ═══════════════════════════════════════════════════════════════════
+
+  /**
+   * Get Filtered & Paginated Old Customers with Breakdown Statistics
+   */
+  async getOldCustomers(req, res) {
+    try {
+      await ensureTables();
+      const {
+        search,
+        location_id,
+        telecaller_id,
+        previous_status,
+        customer_status,
+        shopping_category,
+        archived_from,
+        archived_to,
+        wedding_from,
+        wedding_to,
+        shopping_from,
+        shopping_to,
+        date_filter,
+        page,
+        limit = 50,
+        sort_by = 'archived_at',
+        sort_order = 'desc'
+      } = req.query;
+
+      const { clause: locClause, params: queryParams } = resolveLocFilter(req, 'w');
+      let whereClauses = [
+        `w.is_deleted = 0`,
+        `w.lifecycle_status = 'OLD_CUSTOMER'`,
+        `1=1 ${locClause}`
+      ];
+
+      // Telecaller scoping: Telecallers only see their assigned records
+      if (req.user && req.user.role === 'Telecaller') {
+        whereClauses.push(`(w.assigned_telecaller_id = ? OR w.assigned_telecaller = ?)`);
+        queryParams.push(req.user.id, req.user.fullName || req.user.username || '');
+      }
+
+      // Fast Search Filter (Customer Code, Name, Mobile, Email, Wedding City)
+      if (search && search.trim()) {
+        const q = `%${search.trim().toLowerCase()}%`;
+        whereClauses.push(`(
+          LOWER(w.customer_name) LIKE ? OR
+          w.mobile_number LIKE ? OR
+          LOWER(w.customer_code) LIKE ? OR
+          LOWER(COALESCE(w.email, '')) LIKE ? OR
+          LOWER(COALESCE(w.wedding_city, '')) LIKE ?
+        )`);
+        queryParams.push(q, q, q, q, q);
+      }
+
+      // Previous Status / Customer Status Filter
+      const targetPrevStatus = previous_status || customer_status;
+      if (targetPrevStatus && targetPrevStatus !== 'all') {
+        whereClauses.push(`(w.previous_status = ? OR w.customer_status = ?)`);
+        queryParams.push(targetPrevStatus, targetPrevStatus);
+      }
+
+      // Assigned Telecaller Filter
+      if (telecaller_id && telecaller_id !== 'all') {
+        if (!isNaN(parseInt(telecaller_id, 10))) {
+          whereClauses.push(`(w.assigned_telecaller_id = ? OR w.assigned_telecaller = ?)`);
+          queryParams.push(parseInt(telecaller_id, 10), telecaller_id);
+        } else {
+          whereClauses.push(`w.assigned_telecaller = ?`);
+          queryParams.push(telecaller_id);
+        }
+      }
+
+      // Shopping Category Filter
+      if (shopping_category && shopping_category !== 'all') {
+        whereClauses.push(`w.preferred_shopping_category LIKE ?`);
+        queryParams.push(`%${shopping_category}%`);
+      }
+
+      // Archived Date Filters
+      if (archived_from && archived_to) {
+        whereClauses.push(`DATE(w.archived_at) BETWEEN ? AND ?`);
+        queryParams.push(archived_from, archived_to);
+      } else if (archived_from) {
+        whereClauses.push(`DATE(w.archived_at) >= ?`);
+        queryParams.push(archived_from);
+      } else if (archived_to) {
+        whereClauses.push(`DATE(w.archived_at) <= ?`);
+        queryParams.push(archived_to);
+      }
+
+      // Wedding Date Filters
+      if (wedding_from && wedding_to) {
+        whereClauses.push(`w.wedding_date BETWEEN ? AND ?`);
+        queryParams.push(wedding_from, wedding_to);
+      } else if (wedding_from) {
+        whereClauses.push(`w.wedding_date >= ?`);
+        queryParams.push(wedding_from);
+      } else if (wedding_to) {
+        whereClauses.push(`w.wedding_date <= ?`);
+        queryParams.push(wedding_to);
+      }
+
+      // Expected Shopping Date Filters
+      if (shopping_from && shopping_to) {
+        whereClauses.push(`w.expected_shopping_date BETWEEN ? AND ?`);
+        queryParams.push(shopping_from, shopping_to);
+      }
+
+      // Quick Date Filter on Archived Date
+      if (date_filter === 'today') {
+        whereClauses.push(`DATE(w.archived_at) = CURDATE()`);
+      } else if (date_filter === 'this_week') {
+        whereClauses.push(`YEARWEEK(w.archived_at, 1) = YEARWEEK(CURDATE(), 1)`);
+      } else if (date_filter === 'this_month') {
+        whereClauses.push(`DATE_FORMAT(w.archived_at, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')`);
+      } else if (date_filter === 'last_month') {
+        whereClauses.push(`DATE_FORMAT(w.archived_at, '%Y-%m') = DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL 1 MONTH), '%Y-%m')`);
+      }
+
+      const whereSql = whereClauses.join(' AND ');
+
+      // Pagination
+      const limitNum = Math.min(5000, Math.max(1, parseInt(limit, 10) || 50));
+      const parsedPage = parseInt(page, 10);
+      const parsedOffset = parseInt(req.query.offset, 10);
+      const pageNum = !isNaN(parsedPage)
+        ? Math.max(1, parsedPage)
+        : (!isNaN(parsedOffset) && parsedOffset > 0
+          ? Math.floor(parsedOffset / limitNum) + 1
+          : 1);
+      const offset = (pageNum - 1) * limitNum;
+
+      // Safe sorting column
+      const validSortCols = {
+        archived_at: 'COALESCE(w.archived_at, w.updated_at)',
+        customer_name: 'w.customer_name',
+        wedding_date: 'w.wedding_date',
+        expected_shopping_date: 'w.expected_shopping_date',
+        customer_code: 'w.customer_code',
+        created_at: 'w.created_at'
+      };
+      const orderCol = validSortCols[sort_by] || 'COALESCE(w.archived_at, w.updated_at)';
+      const orderDir = String(sort_order).toLowerCase() === 'asc' ? 'ASC' : 'DESC';
+
+      // Parallelize Count, Paginated Rows, and Stats
+      const [
+        [countResult],
+        [customers],
+        [storeStats],
+        [statusStats],
+        [monthStats]
+      ] = await Promise.all([
+        pool.query(`SELECT COUNT(*) as total FROM wedding_customers w WHERE ${whereSql}`, queryParams),
+        pool.query(`
+          SELECT 
+            w.*,
+            l.location_code,
+            l.location_name,
+            COALESCE(w.archived_at, w.updated_at) AS display_archived_at
+          FROM wedding_customers w
+          LEFT JOIN locations l ON l.id = w.location_id
+          WHERE ${whereSql}
+          ORDER BY ${orderCol} ${orderDir}, w.id DESC
+          LIMIT ? OFFSET ?
+        `, [...queryParams, limitNum, offset]),
+        pool.query(`
+          SELECT l.location_name, COUNT(*) as count
+          FROM wedding_customers w
+          LEFT JOIN locations l ON l.id = w.location_id
+          WHERE ${whereSql}
+          GROUP BY l.location_name
+        `, queryParams),
+        pool.query(`
+          SELECT COALESCE(w.previous_status, w.customer_status, 'Unspecified') as status, COUNT(*) as count
+          FROM wedding_customers w
+          WHERE ${whereSql}
+          GROUP BY COALESCE(w.previous_status, w.customer_status, 'Unspecified')
+        `, queryParams),
+        pool.query(`
+          SELECT COUNT(*) as count
+          FROM wedding_customers w
+          WHERE ${whereSql} AND (w.archived_at >= DATE_FORMAT(CURDATE(), '%Y-%m-01') OR w.updated_at >= DATE_FORMAT(CURDATE(), '%Y-%m-01'))
+        `, queryParams)
+      ]);
+
+      const total = countResult[0]?.total || 0;
+      decryptRows(customers, ENCRYPTED_FIELDS);
+
+      const stats = {
+        totalOldCustomers: total,
+        byStore: (storeStats || []).map(r => ({ name: r.location_name || 'Unknown', count: Number(r.count) })),
+        byPreviousStatus: (statusStats || []).map(r => ({ status: r.status, count: Number(r.count) })),
+        archivedThisMonth: Number(monthStats[0]?.count || 0)
+      };
+
+      return successRes(res, {
+        customers: customers || [],
+        stats,
+        pagination: {
+          total,
+          page: pageNum,
+          limit: limitNum,
+          totalPages: Math.ceil(total / limitNum)
+        }
+      }, 'Old customers fetched successfully');
+    } catch (err) {
+      console.error('[WeddingController.getOldCustomers Error]', err);
+      return errorRes(res, 'Failed to fetch old customers', [err.message], 500);
+    }
+  }
+
+  /**
+   * Move Customer to Old Customers (Manual Archive)
+   */
+  async moveToOldCustomers(req, res) {
+    try {
+      await ensureTables();
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id) || id <= 0) {
+        return errorRes(res, 'Invalid customer ID provided', [], 400);
+      }
+
+      const { clause: locClause, params } = resolveLocFilter(req, 'w');
+      const [existing] = await pool.query(`
+        SELECT * FROM wedding_customers w WHERE w.id = ? AND w.is_deleted = 0 ${locClause}
+      `, [id, ...params]);
+
+      if (!existing || existing.length === 0) {
+        return errorRes(res, 'Customer not found or unauthorized', [], 404);
+      }
+
+      const prev = existing[0];
+      const archiveReason = req.body.reason || req.body.archive_reason || 'Manually moved to Old Customers';
+      const userName = req.user?.fullName || req.user?.username || 'Staff';
+      const userId = req.user?.id || null;
+
+      await pool.query(`
+        UPDATE wedding_customers SET
+          lifecycle_status = 'OLD_CUSTOMER',
+          previous_status = COALESCE(customer_status, 'New'),
+          archived_at = NOW(),
+          archived_by = ?,
+          archived_by_user_id = ?,
+          archive_reason = ?,
+          updated_at = NOW()
+        WHERE id = ?
+      `, [userName, userId, archiveReason, id]);
+
+      // Comprehensive Audit Trail
+      await pool.query(`
+        INSERT INTO wedding_audit_logs (customer_id, location_id, user_name, action, details)
+        VALUES (?, ?, ?, 'Moved to Old Customers', ?)
+      `, [
+        id,
+        prev.location_id,
+        userName,
+        `Moved customer ${prev.customer_name} (${prev.customer_code}) to Old Customers. Previous Status: ${prev.customer_status}. Reason: "${archiveReason}"`
+      ]);
+
+      // Cache invalidation
+      await delCachePattern(`app:prod:wedding:customer:${id}:*`);
+      await delCachePattern('app:prod:wedding:dashboard:*');
+
+      return successRes(res, {
+        id,
+        customer_code: prev.customer_code,
+        customer_name: prev.customer_name,
+        lifecycle_status: 'OLD_CUSTOMER',
+        previous_status: prev.customer_status,
+        archive_reason: archiveReason
+      }, 'Customer moved to Old Customers successfully.');
+    } catch (err) {
+      console.error('[WeddingController.moveToOldCustomers Error]', err);
+      return errorRes(res, 'Failed to move customer to Old Customers', [err.message], 500);
+    }
+  }
+
+  /**
+   * Restore Customer from Old Customers to Active Pipeline
+   */
+  async restoreCustomer(req, res) {
+    try {
+      await ensureTables();
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id) || id <= 0) {
+        return errorRes(res, 'Invalid customer ID provided', [], 400);
+      }
+
+      const { clause: locClause, params } = resolveLocFilter(req, 'w');
+      const [existing] = await pool.query(`
+        SELECT * FROM wedding_customers w WHERE w.id = ? AND w.is_deleted = 0 ${locClause}
+      `, [id, ...params]);
+
+      if (!existing || existing.length === 0) {
+        return errorRes(res, 'Customer not found or unauthorized', [], 404);
+      }
+
+      const prev = existing[0];
+      const userName = req.user?.fullName || req.user?.username || 'Staff';
+      const restoredStatus = prev.previous_status || prev.customer_status || 'Follow-up Pending';
+
+      await pool.query(`
+        UPDATE wedding_customers SET
+          lifecycle_status = 'ACTIVE',
+          customer_status = ?,
+          archived_at = NULL,
+          archived_by = NULL,
+          archived_by_user_id = NULL,
+          archive_reason = NULL,
+          updated_at = NOW()
+        WHERE id = ?
+      `, [restoredStatus, id]);
+
+      // Audit Trail
+      await pool.query(`
+        INSERT INTO wedding_audit_logs (customer_id, location_id, user_name, action, details)
+        VALUES (?, ?, ?, 'Customer Restored', ?)
+      `, [
+        id,
+        prev.location_id,
+        userName,
+        `Restored customer ${prev.customer_name} (${prev.customer_code}) from Old Customers to active pipeline. Status: ${restoredStatus}`
+      ]);
+
+      // Cache invalidation
+      await delCachePattern(`app:prod:wedding:customer:${id}:*`);
+      await delCachePattern('app:prod:wedding:dashboard:*');
+
+      return successRes(res, {
+        id,
+        customer_code: prev.customer_code,
+        customer_name: prev.customer_name,
+        lifecycle_status: 'ACTIVE',
+        customer_status: restoredStatus
+      }, 'Customer restored to active customer list successfully.');
+    } catch (err) {
+      console.error('[WeddingController.restoreCustomer Error]', err);
+      return errorRes(res, 'Failed to restore customer', [err.message], 500);
+    }
+  }
+
+  /**
+   * Automatic Archival: Moves completed journeys to Old Customers
+   */
+  async autoArchiveOldCustomers(req, res) {
+    try {
+      await ensureTables();
+      const { clause: locClause, params } = resolveLocFilter(req, 'w');
+
+      // Identify customers whose wedding date was >14 days ago and status is completed/converted/closed
+      // or status is closed/cancelled/not interested for >30 days
+      const [candidates] = await pool.query(`
+        SELECT w.id, w.customer_code, w.customer_name, w.customer_status, w.location_id
+        FROM wedding_customers w
+        WHERE w.is_deleted = 0
+          AND (w.lifecycle_status = 'ACTIVE' OR w.lifecycle_status IS NULL)
+          ${locClause}
+          AND (
+            (w.customer_status IN ('Converted', 'Visited Store', 'Shopping Date Confirmed') AND w.wedding_date IS NOT NULL AND w.wedding_date < DATE_SUB(CURDATE(), INTERVAL 14 DAY))
+            OR
+            (w.customer_status IN ('Closed', 'Cancelled', 'Not Interested') AND w.updated_at < DATE_SUB(NOW(), INTERVAL 30 DAY))
+          )
+        LIMIT 100
+      `, params);
+
+      if (!candidates || candidates.length === 0) {
+        return successRes(res, { count: 0 }, 'No eligible customers for auto-archival at this time.');
+      }
+
+      const userName = req.user?.fullName || req.user?.username || 'System Automation';
+      const ids = candidates.map(c => c.id);
+
+      await pool.query(`
+        UPDATE wedding_customers SET
+          lifecycle_status = 'OLD_CUSTOMER',
+          previous_status = customer_status,
+          archived_at = NOW(),
+          archived_by = ?,
+          archive_reason = 'Automated CRM lifecycle completion (Wedding date passed / closed)',
+          updated_at = NOW()
+        WHERE id IN (?)
+      `, [userName, ids]);
+
+      // Audit logs in batch
+      for (const c of candidates) {
+        await pool.query(`
+          INSERT INTO wedding_audit_logs (customer_id, location_id, user_name, action, details)
+          VALUES (?, ?, ?, 'Auto-Moved to Old Customers', ?)
+        `, [
+          c.id,
+          c.location_id,
+          userName,
+          `Automated archival: Customer ${c.customer_name} (${c.customer_code}) moved to Old Customers upon lifecycle completion.`
+        ]);
+      }
+
+      await delCachePattern('app:prod:wedding:*');
+
+      return successRes(res, { count: candidates.length, ids }, `Successfully moved ${candidates.length} customer(s) to Old Customers.`);
+    } catch (err) {
+      console.error('[WeddingController.autoArchiveOldCustomers Error]', err);
+      return errorRes(res, 'Failed to execute auto-archival', [err.message], 500);
+    }
+  }
+
+  /**
+   * Export Old Customers to Excel (.xlsx)
+   */
+  async exportOldCustomers(req, res) {
+    try {
+      await ensureTables();
+      const { search, location_id, telecaller_id, previous_status } = req.query;
+      const { clause: locClause, params: queryParams } = resolveLocFilter(req, 'w');
+
+      let whereClauses = [
+        `w.is_deleted = 0`,
+        `w.lifecycle_status = 'OLD_CUSTOMER'`,
+        `1=1 ${locClause}`
+      ];
+
+      if (search && search.trim()) {
+        const q = `%${search.trim().toLowerCase()}%`;
+        whereClauses.push(`(
+          LOWER(w.customer_name) LIKE ? OR
+          w.mobile_number LIKE ? OR
+          LOWER(w.customer_code) LIKE ? OR
+          LOWER(COALESCE(w.email, '')) LIKE ?
+        )`);
+        queryParams.push(q, q, q, q);
+      }
+
+      if (previous_status && previous_status !== 'all') {
+        whereClauses.push(`(w.previous_status = ? OR w.customer_status = ?)`);
+        queryParams.push(previous_status, previous_status);
+      }
+
+      if (telecaller_id && telecaller_id !== 'all') {
+        whereClauses.push(`(w.assigned_telecaller_id = ? OR w.assigned_telecaller = ?)`);
+        queryParams.push(telecaller_id, telecaller_id);
+      }
+
+      const whereSql = whereClauses.join(' AND ');
+
+      const [customers] = await pool.query(`
+        SELECT 
+          w.*,
+          l.location_name,
+          l.location_code
+        FROM wedding_customers w
+        LEFT JOIN locations l ON l.id = w.location_id
+        WHERE ${whereSql}
+        ORDER BY COALESCE(w.archived_at, w.updated_at) DESC
+        LIMIT 5000
+      `, queryParams);
+
+      decryptRows(customers, ENCRYPTED_FIELDS);
+
+      const workbook = new ExcelJS.Workbook();
+      workbook.creator = 'BSC Textiles Wedding CRM';
+      workbook.created = new Date();
+
+      const sheet = workbook.addWorksheet('Old Customers', {
+        views: [{ state: 'frozen', ySplit: 1 }]
+      });
+
+      sheet.columns = [
+        { header: 'Customer ID', key: 'customer_code', width: 20 },
+        { header: 'Customer Name', key: 'customer_name', width: 25 },
+        { header: 'Mobile', key: 'mobile_number', width: 16 },
+        { header: 'Email', key: 'email', width: 25 },
+        { header: 'Store Location', key: 'location_name', width: 20 },
+        { header: 'Wedding Date', key: 'wedding_date', width: 16 },
+        { header: 'Shopping Date', key: 'expected_shopping_date', width: 16 },
+        { header: 'Assigned Telecaller', key: 'assigned_telecaller', width: 22 },
+        { header: 'Previous Status', key: 'previous_status', width: 20 },
+        { header: 'Archived Date', key: 'archived_at', width: 20 },
+        { header: 'Archived By', key: 'archived_by', width: 20 },
+        { header: 'Archive Reason', key: 'archive_reason', width: 35 },
+        { header: 'Bride Name', key: 'bride_name', width: 20 },
+        { header: 'Groom Name', key: 'groom_name', width: 20 },
+        { header: 'Registered On', key: 'created_at', width: 20 }
+      ];
+
+      // Style Header row: Rich Burgundy #4A173A background with white bold text
+      sheet.getRow(1).eachCell((cell) => {
+        cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FF4A173A' }
+        };
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      });
+      sheet.getRow(1).height = 28;
+
+      // Populate Data Rows
+      (customers || []).forEach((c) => {
+        sheet.addRow({
+          customer_code: c.customer_code || `BSC-${c.id}`,
+          customer_name: c.customer_name || 'N/A',
+          mobile_number: c.mobile_number || 'N/A',
+          email: c.email || '',
+          location_name: c.location_name || 'N/A',
+          wedding_date: c.wedding_date ? new Date(c.wedding_date).toISOString().split('T')[0] : 'N/A',
+          expected_shopping_date: c.expected_shopping_date ? new Date(c.expected_shopping_date).toISOString().split('T')[0] : 'N/A',
+          assigned_telecaller: c.assigned_telecaller || 'Unassigned',
+          previous_status: c.previous_status || c.customer_status || 'New',
+          archived_at: c.archived_at ? new Date(c.archived_at).toLocaleString('en-IN') : 'N/A',
+          archived_by: c.archived_by || 'Staff',
+          archive_reason: c.archive_reason || 'Manual archival',
+          bride_name: c.bride_name || '',
+          groom_name: c.groom_name || '',
+          created_at: c.created_at ? new Date(c.created_at).toISOString().split('T')[0] : ''
+        });
+      });
+
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename="BSC_Old_Customers_${new Date().toISOString().split('T')[0]}.xlsx"`);
+
+      await workbook.xlsx.write(res);
+      res.end();
+    } catch (err) {
+      console.error('[WeddingController.exportOldCustomers Error]', err);
+      return errorRes(res, 'Failed to export old customers', [err.message], 500);
     }
   }
 }

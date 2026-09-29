@@ -16,7 +16,7 @@ import {
 import {
   User, Heart, PhoneCall, MessageCircle, FileText, History, TrendingUp,
   ArrowLeft, Plus, X, CircleAlert, RefreshCw, Users, ExternalLink,
-  Edit3, MapPin, Calendar, Clock, Save, Building2
+  Edit3, MapPin, Calendar, Clock, Save, Building2, Archive, RotateCcw
 } from 'lucide-react';
 import { STORE_LOCATIONS_LIST } from '../../config/storeLocations';
 
@@ -123,6 +123,54 @@ export default function WeddingCustomerDetail() {
   // New Note Modal
   const [noteText, setNoteText] = useState('');
   const [savingNote, setSavingNote] = useState(false);
+
+  // Old Customer Lifecycle Actions
+  const [archiveModalOpen, setArchiveModalOpen] = useState(false);
+  const [archiveReason, setArchiveReason] = useState('');
+  const [savingArchive, setSavingArchive] = useState(false);
+
+  const [restoreModalOpen, setRestoreModalOpen] = useState(false);
+  const [savingRestore, setSavingRestore] = useState(false);
+
+  const handleMoveToOld = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!customer) return;
+    setSavingArchive(true);
+    try {
+      const res: any = await API.moveWeddingCustomerToOld(customer.id, archiveReason.trim() || undefined);
+      if (res?.success === false) {
+        showToast(res.message || 'Failed to move customer to Old Customers', 'error');
+        return;
+      }
+      showToast('Customer moved to Old Customers successfully.', 'success');
+      setArchiveModalOpen(false);
+      setArchiveReason('');
+      await loadCustomer();
+    } catch (err: any) {
+      showToast(err.message || 'Error moving customer to Old Customers', 'error');
+    } finally {
+      setSavingArchive(false);
+    }
+  };
+
+  const handleRestore = async () => {
+    if (!customer) return;
+    setSavingRestore(true);
+    try {
+      const res: any = await API.restoreWeddingOldCustomer(customer.id);
+      if (res?.success === false) {
+        showToast(res.message || 'Failed to restore customer', 'error');
+        return;
+      }
+      showToast('Customer restored to active customer list successfully.', 'success');
+      setRestoreModalOpen(false);
+      await loadCustomer();
+    } catch (err: any) {
+      showToast(err.message || 'Error restoring customer', 'error');
+    } finally {
+      setSavingRestore(false);
+    }
+  };
 
   const loadCustomer = useCallback(async () => {
     if (!id) return;
@@ -378,13 +426,16 @@ export default function WeddingCustomerDetail() {
           <WeddingNav
             currentPageTitle={customer.customer_name}
             breadcrumbs={[
-              { label: 'Customer Register', href: '/wedding-crm/customers' },
+              {
+                label: customer.lifecycle_status === 'OLD_CUSTOMER' ? 'Old Customers' : 'Customer Register',
+                href: customer.lifecycle_status === 'OLD_CUSTOMER' ? '/wedding-crm/old-customers' : '/wedding-crm/customers'
+              },
               { label: customer.customer_code }
             ]}
             actions={
               <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
                 <Link
-                  to="/wedding-crm/customers"
+                  to={customer.lifecycle_status === 'OLD_CUSTOMER' ? '/wedding-crm/old-customers' : '/wedding-crm/customers'}
                   className="px-3 py-2 bg-[#FFFDFC] hover:bg-[#FFF7F2] border border-[#E8D9D4] rounded-xl text-xs font-semibold text-[#4A173A] flex items-center gap-1.5 transition-colors shadow-xs"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
@@ -448,9 +499,69 @@ export default function WeddingCustomerDetail() {
                   <TrendingUp className="w-3.5 h-3.5 text-[#E8C7A8]" />
                   <span>Update Status</span>
                 </button>
+
+                {customer.lifecycle_status === 'OLD_CUSTOMER' ? (
+                  <button
+                    type="button"
+                    onClick={() => setRestoreModalOpen(true)}
+                    className="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold rounded-xl text-xs flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                    title="Restore customer to active customer register"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Restore Customer</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setArchiveReason('');
+                      setArchiveModalOpen(true);
+                    }}
+                    className="px-3.5 py-2 bg-[#5F4B55] hover:bg-[#483740] text-white font-semibold rounded-xl text-xs flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                    title="Move to Old Customers section"
+                  >
+                    <Archive className="w-3.5 h-3.5" />
+                    <span>Move to Old Customers</span>
+                  </button>
+                )}
               </div>
             }
           />
+
+          {/* Old Customer Alert Banner */}
+          {customer.lifecycle_status === 'OLD_CUSTOMER' && (
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-amber-900 shadow-xs">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-xl bg-amber-100 flex items-center justify-center shrink-0 text-amber-800 font-bold">
+                  <Archive className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="text-xs font-bold uppercase tracking-wider text-amber-800 flex items-center gap-2">
+                    <span>Historical Old Customer Record</span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-200/80 text-amber-900 border border-amber-300">
+                      OLD CUSTOMER
+                    </span>
+                  </div>
+                  <div className="text-xs text-amber-700 mt-0.5">
+                    Archived on <span className="font-semibold">{formatDateDisplay((customer as any).archived_at, 'N/A')}</span>
+                    {(customer as any).archived_by && <span> by <span className="font-semibold">{(customer as any).archived_by}</span></span>}
+                    {(customer as any).archive_reason && <span> — <em>"{(customer as any).archive_reason}"</em></span>}
+                  </div>
+                  <div className="text-[11px] text-amber-600 mt-0.5">
+                    All call records, shopping requirements, and interaction history remain permanently intact.
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRestoreModalOpen(true)}
+                className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-xs transition-colors shrink-0 cursor-pointer"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Restore Customer</span>
+              </button>
+            </div>
+          )}
 
           {/* Customer Header Card */}
           <div className="bg-[#FFFDFC] p-5 sm:p-6 rounded-3xl border border-[#E8D9D4] shadow-xs flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -732,6 +843,53 @@ export default function WeddingCustomerDetail() {
                   </div>
                 </div>
               </div>
+
+              {/* Section 4: Archive & Lifecycle Information */}
+              {(customer.lifecycle_status === 'OLD_CUSTOMER' || (customer as any).archived_at) && (
+                <div className="bg-[#FFFDFC] p-5 rounded-3xl border border-amber-200 bg-amber-50/20 shadow-xs space-y-3 text-xs md:col-span-2 lg:col-span-3">
+                  <div className="flex items-center justify-between font-bold text-sm text-[#4A173A] border-b border-[#E8D9D4] pb-2">
+                    <div className="flex items-center gap-2">
+                      <Archive className="w-4 h-4 text-amber-700" />
+                      <span>Archive & Lifecycle Information</span>
+                    </div>
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                      {customer.lifecycle_status || 'OLD_CUSTOMER'}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-1.5">
+                      <div className="text-[11px] font-medium text-[#6F5963]">Lifecycle Status</div>
+                      <div className="font-bold text-amber-800 text-sm">{customer.lifecycle_status || 'OLD_CUSTOMER'}</div>
+                    </div>
+                    {(customer as any).previous_status && (
+                      <div className="space-y-1.5">
+                        <div className="text-[11px] font-medium text-[#6F5963]">Previous CRM Status</div>
+                        <div className="font-bold text-[#4A173A] text-sm">{(customer as any).previous_status}</div>
+                      </div>
+                    )}
+                    <div className="space-y-1.5">
+                      <div className="text-[11px] font-medium text-[#6F5963]">Archived On</div>
+                      <div className="font-semibold text-[#2B1722] text-sm">
+                        {formatDateTimeDisplay((customer as any).archived_at, 'N/A')}
+                      </div>
+                    </div>
+                    {(customer as any).archived_by && (
+                      <div className="space-y-1.5">
+                        <div className="text-[11px] font-medium text-[#6F5963]">Archived By Staff</div>
+                        <div className="font-semibold text-[#2B1722] text-sm">{(customer as any).archived_by}</div>
+                      </div>
+                    )}
+                  </div>
+                  {(customer as any).archive_reason && (
+                    <div className="pt-2 border-t border-amber-200 mt-2">
+                      <div className="text-[11px] font-semibold text-[#6F5963] mb-1">Archive Reason / Note:</div>
+                      <p className="italic text-[#2B1722] bg-white p-3 rounded-xl border border-amber-200">
+                        "{(customer as any).archive_reason}"
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -1533,6 +1691,130 @@ export default function WeddingCustomerDetail() {
                     </button>
                   </div>
                 </form>
+              </div>
+            </div>
+          )}
+
+          {/* Move to Old Customers Modal */}
+          {archiveModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+              <div className="bg-[#FFFDFC] border border-[#E8D9D4] rounded-3xl p-6 w-full max-w-md shadow-2xl space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">
+                    <Archive className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-[#4A173A]">Move Customer to Old Customers?</h3>
+                    <p className="text-xs text-[#6F5963]">
+                      The customer record and complete history will remain permanently available in the Old Customers section.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-900">
+                  <p className="font-semibold">{customer.customer_name} ({customer.customer_code})</p>
+                  <p className="text-[11px] text-amber-700 mt-0.5">
+                    This action updates the lifecycle status to <strong>OLD_CUSTOMER</strong>. No customer or call history records will be deleted.
+                  </p>
+                </div>
+
+                <form onSubmit={handleMoveToOld} className="space-y-4">
+                  <div>
+                    <label className="block text-[11px] font-bold text-[#6F5963] uppercase tracking-wider mb-1.5">
+                      Archive Reason / Note (Optional)
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={archiveReason}
+                      onChange={(e) => setArchiveReason(e.target.value)}
+                      placeholder="e.g. Wedding shopping completed, relocated, or historical lead"
+                      className="w-full px-3.5 py-2.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl text-xs text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2.5 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setArchiveModalOpen(false)}
+                      disabled={savingArchive}
+                      className="px-4 py-2 rounded-xl bg-[#FFFAF7] hover:bg-[#FFF7F2] border border-[#E8D9D4] text-xs font-semibold text-[#4A173A] transition-colors cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={savingArchive}
+                      className="px-5 py-2 rounded-xl bg-[#4A173A] hover:bg-[#6A2853] text-white text-xs font-bold shadow-md transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    >
+                      {savingArchive ? (
+                        <>
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          <span>Moving Customer...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Archive className="w-3.5 h-3.5" />
+                          <span>Move Customer</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Restore Customer Modal */}
+          {restoreModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+              <div className="bg-[#FFFDFC] border border-[#E8D9D4] rounded-3xl p-6 w-full max-w-md shadow-2xl space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">
+                    <RotateCcw className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-[#4A173A]">Restore Customer?</h3>
+                    <p className="text-xs text-[#6F5963]">
+                      Return this customer to the active Wedding Customer Register.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-xs text-emerald-900">
+                  <p className="font-semibold">{customer.customer_name} ({customer.customer_code})</p>
+                  <p className="text-[11px] text-emerald-700 mt-0.5">
+                    The customer's previous status ({(customer as any).previous_status || 'New Lead'}), call history, and requirements will be restored without creating any duplicate records.
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-end gap-2.5 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setRestoreModalOpen(false)}
+                    disabled={savingRestore}
+                    className="px-4 py-2 rounded-xl bg-[#FFFAF7] hover:bg-[#FFF7F2] border border-[#E8D9D4] text-xs font-semibold text-[#4A173A] transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleRestore}
+                    disabled={savingRestore}
+                    className="px-5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold shadow-md transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  >
+                    {savingRestore ? (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        <span>Restoring Customer...</span>
+                      </>
+                    ) : (
+                      <>
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        <span>Restore Customer</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           )}

@@ -59,6 +59,7 @@ const WeddingFollowUpCalendar = lazy(() => import('./pages/wedding/WeddingFollow
 const WeddingStatusBoard = lazy(() => import('./pages/wedding/WeddingStatusBoard'));
 const WeddingReports = lazy(() => import('./pages/wedding/WeddingReports'));
 const WeddingImport = lazy(() => import('./pages/wedding/WeddingImport'));
+const WeddingOldCustomers = lazy(() => import('./pages/wedding/WeddingOldCustomers'));
 const NoAccess = lazy(() => import('./pages/NoAccess'));
 const MadtHome = lazy(() => import('./pages/madt/MadtHome'));
 const MadtWedding = lazy(() => import('./pages/madt/MadtWedding'));
@@ -191,6 +192,7 @@ export default function App() {
         <Route path="/wedding-crm/status-board" element={<RouteGuard pageKey="wedding_crm"><WeddingStatusBoard /></RouteGuard>} />
         <Route path="/wedding-crm/reports" element={<RouteGuard pageKey="wedding_crm"><WeddingReports /></RouteGuard>} />
         <Route path="/wedding-crm/import" element={<RouteGuard pageKey="wedding_crm"><WeddingImport /></RouteGuard>} />
+        <Route path="/wedding-crm/old-customers" element={<RouteGuard pageKey="wedding_crm"><WeddingOldCustomers /></RouteGuard>} />
         <Route path="/wedding/customer-registration" element={<WeddingCustomerRegistrationDispatcher />} />
         <Route path="/wedding/public-registration" element={<WeddingRegistration />} />
         <Route path="/wedding-operations" element={<RouteGuard pageKey="wedding_operations"><WeddingOperationsDesk /></RouteGuard>} />
