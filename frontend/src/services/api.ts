@@ -825,10 +825,21 @@ export const API = {
   async getEmployeeDetails(id: string | number) {
     return apiFetch(`/employees/${id}`);
   },
+  async createEmployee(data: any) {
+    return apiFetch('/employees', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  },
   async updateEmployee(id: string | number, data: any) {
     return apiFetch(`/employees/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data)
+    });
+  },
+  async deleteEmployee(id: string | number) {
+    return apiFetch(`/employees/${id}`, {
+      method: 'DELETE'
     });
   },
   async requestEmployeeAccess(id: string | number, reason?: string) {

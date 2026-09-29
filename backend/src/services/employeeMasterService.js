@@ -109,10 +109,11 @@ async function resolveEmployeeActions(user) {
 
   // Any authenticated staff member can view the public name directory:
   const can_view = isAdmin || (source ? !!source.can_view : !['Guest', 'Customer'].includes(user.role));
-  const can_edit = isAdmin;
-  const can_delete = isAdmin;
-  const can_add = isAdmin;
-  const can_export = isAdmin || (source ? !!source.can_export : false);
+  const isManagerOrHr = ['hr', 'manager', 'store manager', 'hr manager'].includes(String(user.role || '').toLowerCase());
+  const can_edit = isAdmin || (source ? !!source.can_edit : isManagerOrHr);
+  const can_delete = isAdmin || (source ? !!source.can_delete : ['hr', 'hr manager'].includes(String(user.role || '').toLowerCase()));
+  const can_add = isAdmin || (source ? !!source.can_add : isManagerOrHr);
+  const can_export = isAdmin || (source ? !!source.can_export : true);
 
   return {
     can_view,
@@ -253,6 +254,9 @@ async function buildEmployeeQuery(req, options = {}) {
     LEFT JOIN selection_offers so ON c.app_no = so.app_no
     WHERE ${c.has('is_deleted') ? '(c.id IS NULL OR c.is_deleted = 0 OR c.is_deleted IS NULL)' : 'TRUE'}
       ${includeInactive ? '' : 'AND u.active = 1'}
+      AND LOWER(COALESCE(u.role, '')) NOT IN ('admin', 'super admin', 'system administrator', 'customer', 'guest')
+      AND LOWER(COALESCE(u.username, '')) NOT IN ('admin', 'admin@bsctextiles.com', 'ghost')
+      AND LOWER(COALESCE(u.full_name, '')) NOT LIKE '%system administrator%'
       ${locClause}
   `;
 

@@ -313,6 +313,9 @@ class CandidateController {
            FROM users u
            LEFT JOIN locations l ON l.id = u.location_id
            WHERE u.active = 1 ${clause}
+             AND LOWER(COALESCE(u.role, '')) NOT IN ('admin', 'super admin', 'system administrator', 'customer', 'guest')
+             AND LOWER(COALESCE(u.username, '')) NOT IN ('admin', 'admin@bsctextiles.com', 'ghost')
+             AND LOWER(COALESCE(u.full_name, '')) NOT LIKE '%system administrator%'
            ORDER BY LOWER(u.full_name) ASC`,
           params
         );

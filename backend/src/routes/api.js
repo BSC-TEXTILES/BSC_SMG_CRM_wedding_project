@@ -138,10 +138,10 @@ router.post('/employees/access-requests/:id/resolve', authenticate, authorize('A
 // Static /employees/... paths above must stay registered first so they are
 // never swallowed by the /employees/:id parameter route.
 router.post('/employees/bulk-import', authenticate, authorize('Admin', 'Super Admin', 'system administrator', 'Manager', 'Store Manager', 'HR', 'HR Manager'), employeeMasterController.bulkImportEmployees);
-router.post('/employees', authenticate, authorize('Admin', 'Super Admin', 'system administrator'), employeeMasterController.createEmployee);
+router.post('/employees', authenticate, authorize('Admin', 'Super Admin', 'system administrator', 'Manager', 'Store Manager', 'HR', 'HR Manager'), employeeMasterController.createEmployee);
 router.post('/employees/:id/access-request', authenticate, employeeMasterController.requestEmployeeAccess);
-router.put('/employees/:id', authenticate, authorize('Admin', 'Super Admin', 'system administrator'), employeeMasterController.updateEmployeeMaster);
-router.delete('/employees/:id', authenticate, authorize('Admin', 'Super Admin', 'system administrator'), candidateController.deleteEmployee);
+router.put('/employees/:id', authenticate, authorize('Admin', 'Super Admin', 'system administrator', 'Manager', 'Store Manager', 'HR', 'HR Manager'), employeeMasterController.updateEmployeeMaster);
+router.delete('/employees/:id', authenticate, authorize('Admin', 'Super Admin', 'system administrator', 'HR', 'HR Manager'), candidateController.deleteEmployee);
 router.get('/employees/:id', authenticate, authorizeLocationAccess(), employeeMasterController.getEmployeeProfile);
 router.get('/employees/:id/profile', authenticate, authorizeLocationAccess(), employeeDocumentController.getEmployeeProfile);
 router.post('/employees/:id/toggle-status', authenticate, authorize('Admin', 'Super Admin', 'system administrator'), employeeMasterController.toggleEmployeeStatus);

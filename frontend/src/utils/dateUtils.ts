@@ -3,8 +3,74 @@
  * Enforces Indian Standard Time (IST / Asia/Kolkata, UTC+5:30) date boundaries.
  */
 
-export const formatISTDate = (d: any): string => {
+/**
+ * Parses every date shape the CRM can receive: an ISO calendar date
+ * ('YYYY-MM-DD'), an ISO timestamp, a Date object, and the 'DD-MM-YYYY' /
+ * 'DD/MM/YYYY' forms used by the registration form and the Excel/CSV template.
+ *
+ * Returns null for anything unparseable — including the MySQL zero date
+ * '0000-00-00', which is truthy as a string but renders as "Invalid Date"
+ * through `new Date(...)`.
+ */
+export const parseDate = (value: any): Date | null => {
+  if (value === null || value === undefined || value === '') return null;
+
+  if (value instanceof Date) {
+    return isNaN(value.getTime()) ? null : value;
+  }
+
+  const v = String(value).trim();
+  if (!v) return null;
+  if (/^0{4}[-/]0{2}[-/]0{2}/.test(v)) return null;
+  if (/^0{2}[-/]0{2}[-/]0{4}$/.test(v)) return null;
+
+  // ISO calendar date or ISO timestamp: use the literal calendar day so an
+  // IST-stored date is not shifted by UTC parsing.
+  let m = v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[T\s].*)?$/);
+  if (m) {
+    const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  // DD-MM-YYYY / DD/MM/YYYY / DD.MM.YYYY
+  m = v.match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})(?:[T\s].*)?$/);
+  if (m) {
+    const d = new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  const fallback = new Date(v);
+  return isNaN(fallback.getTime()) ? null : fallback;
+};
+
+/** True when the value resolves to a real calendar date. */
+export const isValidDate = (value: any): boolean => parseDate(value) !== null;
+
+/**
+ * Display formatter. Returns the fallback (default 'Not Scheduled') whenever the
+ * value is missing or unparseable, so the UI never prints "Invalid Date".
+ */
+export const formatDateDisplay = (
+  value: any,
+  fallback: string = 'Not Scheduled',
+  options?: Intl.DateTimeFormatOptions
+): string => {
+  const d = parseDate(value);
+  if (!d) return fallback;
+  return d.toLocaleDateString('en-GB', options || { day: '2-digit', month: 'short', year: 'numeric' });
+};
+
+/** 'YYYY-MM-DD' for <input type="date"> and for API payloads. */
+export const toISODateInput = (value: any): string => {
+  const d = parseDate(value);
   if (!d) return '';
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
+/** Calendar day key ('YYYY-MM-DD') used to bucket events by day. */
+export const dateKey = (value: any): string => toISODateInput(value);
+
+export const formatISTDate = (d: any): string => {  if (!d) return '';
   if (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d.trim())) {
     return d.trim();
   }

@@ -8,6 +8,7 @@ import { API, Auth, UserSession } from '../../services/api';
 import WeddingNav from './WeddingNav';
 import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../../utils/sidebarState';
 import { useRealtimeSection } from '../../hooks/useRealtimeSection';
+import { parseDate, formatDateDisplay } from '../../utils/dateUtils';
 import {
   WeddingCustomer,
   CUSTOMER_STATUSES,
@@ -220,7 +221,7 @@ export default function WeddingCustomerRegister() {
       'Call Status': c.call_status,
       'Total Calls': c.total_calls_count || 0,
       'Last Call Outcome': c.last_call_outcome || '',
-      'Registered Date': c.created_at ? new Date(c.created_at).toLocaleDateString() : ''
+      'Registered Date': formatDateDisplay(c.created_at, '')
     }));
 
     const ws = XLSX.utils.json_to_sheet(rows);
@@ -484,7 +485,7 @@ export default function WeddingCustomerRegister() {
                           <span className="font-semibold text-[#4A173A]">Wedding:</span>{' '}
                           {cust.wedding_date ? (
                             <span className="text-[#B76E79] font-medium">
-                              {new Date(cust.wedding_date).toLocaleDateString()}
+                              {formatDateDisplay(cust.wedding_date, 'TBD')}
                             </span>
                           ) : (
                             'TBD'
@@ -496,7 +497,7 @@ export default function WeddingCustomerRegister() {
                         </div>
                         <div>
                           <span className="font-semibold text-[#4A173A]">Follow-up:</span>{' '}
-                          {cust.follow_up_date ? new Date(cust.follow_up_date).toLocaleDateString() : 'None'}
+                          {formatDateDisplay(cust.follow_up_date, 'None')}
                         </div>
                       </div>
 
@@ -590,9 +591,9 @@ export default function WeddingCustomerRegister() {
                   ) : (
                     customers.map((cust) => {
                       const badge = getStatusBadge(cust.customer_status);
+                      const followUp = parseDate(cust.follow_up_date);
                       const isOverdue =
-                        cust.follow_up_date &&
-                        new Date(cust.follow_up_date).getTime() < new Date().setHours(0, 0, 0, 0);
+                        !!followUp && followUp.getTime() < new Date().setHours(0, 0, 0, 0);
 
                       return (
                         <tr key={cust.id} className="hover:bg-[#FFF1F2] transition-colors">
@@ -625,19 +626,19 @@ export default function WeddingCustomerRegister() {
                             </span>
                           </td>
                           <td className="py-3 px-4 font-medium">
-                            {cust.wedding_date ? (
+                            {parseDate(cust.wedding_date) ? (
                               <span className="text-[#B76E79] font-medium">
-                                💍 {new Date(cust.wedding_date).toLocaleDateString()}
+                                💍 {formatDateDisplay(cust.wedding_date, 'Not specified')}
                               </span>
                             ) : (
                               <span className="text-[#9A858D]">Not specified</span>
                             )}
                           </td>
                           <td className="py-3 px-4 font-semibold text-[#4A173A]">
-                            {cust.expected_shopping_date ? (
-                              new Date(cust.expected_shopping_date).toLocaleDateString()
+                            {parseDate(cust.expected_shopping_date) ? (
+                              formatDateDisplay(cust.expected_shopping_date, 'Not Scheduled')
                             ) : (
-                              <span className="text-[#9A858D] font-normal">TBD</span>
+                              <span className="text-[#9A858D] font-normal">Not Scheduled</span>
                             )}
                           </td>
                           <td className="py-3 px-4">
@@ -676,9 +677,9 @@ export default function WeddingCustomerRegister() {
                             </span>
                           </td>
                           <td className="py-3 px-4">
-                            {cust.follow_up_date ? (
+                            {followUp ? (
                               <span className={`font-semibold ${isOverdue ? 'text-[#B42318]' : 'text-[#2B1722]'}`}>
-                                {new Date(cust.follow_up_date).toLocaleDateString()}
+                                {formatDateDisplay(cust.follow_up_date, 'None')}
                                 {isOverdue && <span className="ml-1 text-[9px] bg-[#FDE8E7] text-[#B42318] px-1 rounded uppercase font-bold">Overdue</span>}
                               </span>
                             ) : (

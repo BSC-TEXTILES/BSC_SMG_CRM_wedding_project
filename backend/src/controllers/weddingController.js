@@ -9,6 +9,7 @@ const { getLocationFilter, injectLocationId } = require('../middleware/auth');
 const realtimeService = require('../services/realtimeService');
 const { encryptField, decryptRows, decryptRow } = require('../utils/crypto');
 const { parseCsv, rowsToObjects } = require('../utils/csv');
+const { parseDate } = require('../utils/dates');
 const {
   buildTemplateWorkbook,
   buildTemplateCsv,
@@ -931,8 +932,8 @@ class WeddingController {
       }
       const email = (req.body.email || '').trim() || null;
       const alternateMobile = (req.body.alternate_mobile || req.body.alternateMobile || '').trim() || null;
-      const weddingDate = req.body.wedding_date || req.body.weddingDate || null;
-      const expectedShoppingDate = req.body.expected_shopping_date || req.body.expectedShoppingDate;
+      const weddingDate = parseDate(req.body.wedding_date || req.body.weddingDate);
+      const expectedShoppingDate = parseDate(req.body.expected_shopping_date || req.body.expectedShoppingDate);
       const preferredCategory = req.body.preferred_shopping_category || req.body.preferredShoppingCategory || (Array.isArray(req.body.shopping_categories) ? req.body.shopping_categories.join(', ') : req.body.shopping_categories) || 'General Wedding Shopping';
       const estimatedFamilySize = (req.body.estimated_family_size !== undefined && req.body.estimated_family_size !== null && req.body.estimated_family_size !== '')
         ? parseInt(req.body.estimated_family_size, 10)
@@ -943,7 +944,7 @@ class WeddingController {
       const defaultFollowUp = new Date();
       defaultFollowUp.setDate(defaultFollowUp.getDate() + 3);
       const defaultFollowUpStr = defaultFollowUp.toISOString().slice(0, 10);
-      const followUpDate = req.body.follow_up_date || req.body.followUpDate || defaultFollowUpStr;
+      const followUpDate = parseDate(req.body.follow_up_date || req.body.followUpDate) || defaultFollowUpStr;
       const preferredCallTime = req.body.preferred_call_time || req.body.preferredCallTime || 'Morning (10 AM - 1 PM)';
       const customerNotes = req.body.customer_notes || req.body.customerNotes || req.body.initial_notes || null;
       const budget = (req.body.budget || req.body.budget_range || '').trim() || null;
@@ -1273,13 +1274,19 @@ class WeddingController {
         else if (digits.length === 11 && digits.startsWith('0')) mobileNumber = `+91${digits.slice(1)}`;
       }
       const email = req.body.email;
-      const weddingDate = req.body.wedding_date || req.body.weddingDate;
-      const expectedShoppingDate = req.body.expected_shopping_date || req.body.expectedShoppingDate;
+      // `undefined` means the caller did not send the field (keep the stored
+      // value); a sent-but-empty/invalid value normalises to null so MySQL is
+      // never handed a string it would coerce to the zero date.
+      const weddingDateRaw = req.body.wedding_date ?? req.body.weddingDate;
+      const weddingDate = weddingDateRaw === undefined ? undefined : parseDate(weddingDateRaw);
+      const expectedShoppingDateRaw = req.body.expected_shopping_date ?? req.body.expectedShoppingDate;
+      const expectedShoppingDate = expectedShoppingDateRaw === undefined ? undefined : parseDate(expectedShoppingDateRaw);
       const preferredCategory = req.body.preferred_shopping_category || req.body.preferredShoppingCategory || req.body.shopping_categories;
       const estimatedFamilySize = req.body.estimated_family_size || req.body.estimatedFamilySize;
       const assignedTelecaller = req.body.assigned_telecaller || req.body.assignedTelecaller;
       const assignedTelecallerId = req.body.assigned_telecaller_id || req.body.assignedTelecallerId;
-      const followUpDate = req.body.follow_up_date || req.body.followUpDate;
+      const followUpDateRaw = req.body.follow_up_date ?? req.body.followUpDate;
+      const followUpDate = followUpDateRaw === undefined ? undefined : parseDate(followUpDateRaw);
       const preferredCallTime = req.body.preferred_call_time || req.body.preferredCallTime;
       const customerNotes = req.body.customer_notes || req.body.customerNotes || req.body.initial_notes;
       const customerStatus = req.body.customer_status || req.body.customerStatus || req.body.current_status;
@@ -1319,7 +1326,7 @@ class WeddingController {
         mobileNumber ? mobileNumber.trim() : prev.mobile_number,
         email !== undefined ? (email ? email.trim() : null) : prev.email,
         weddingDate !== undefined ? weddingDate : prev.wedding_date,
-        expectedShoppingDate !== undefined ? (expectedShoppingDate || null) : prev.expected_shopping_date,
+        expectedShoppingDate !== undefined ? expectedShoppingDate : prev.expected_shopping_date,
         preferredCategory || prev.preferred_shopping_category,
         estimatedFamilySize ? parseInt(estimatedFamilySize, 10) : prev.estimated_family_size,
         assignedTelecaller || prev.assigned_telecaller,

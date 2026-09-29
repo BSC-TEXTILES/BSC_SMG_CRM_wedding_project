@@ -8,6 +8,7 @@ import { getStatusBadge } from './weddingTypes';
 import LocationFilterSelect from '../../components/ui/LocationFilterSelect';
 import { useLocationContext } from '../../context/LocationContext';
 import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../../utils/sidebarState';
+import { useRealtimeSection } from '../../hooks/useRealtimeSection';
 import ToastContainer, { showToast } from '../../components/Toast';
 import { Users, UserPlus, PhoneCall, Calendar, Sparkles, TrendingUp, MapPin, Clock, PhoneForwarded, CircleCheck, TriangleAlert, Award, ArrowRight, ChevronRight, ShoppingBag, RefreshCw } from 'lucide-react';
 
@@ -107,6 +108,13 @@ export default function WeddingCrmDashboard() {
       setLoading(false);
     }
   }, []);
+
+  // The KPI cards are SQL aggregates over wedding_customers, call logs and
+  // appointments, so any CRM mutation has to trigger a re-read for the numbers
+  // to stay live without a manual refresh or page reload.
+  useRealtimeSection(['wedding', 'wedding_reg', 'callqueue'], () => {
+    loadData(selectedLocation);
+  });
 
   // Listen to global location changes (e.g. from Topbar)
   useEffect(() => {
