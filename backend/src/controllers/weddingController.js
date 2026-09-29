@@ -14,6 +14,7 @@ const {
   buildTemplateCsv,
   buildErrorReportWorkbook,
   HEADER_ALIASES,
+  DEFAULT_CATEGORIES,
   MAX_IMPORT_ROWS,
   TEMPLATE_FILENAME,
   TEMPLATE_FILENAME_CSV,
@@ -142,7 +143,7 @@ async function ensureTables() {
         \`mobile_number\` VARCHAR(20) NOT NULL,
         \`email\` VARCHAR(150) NULL,
         \`wedding_date\` DATE NULL,
-        \`expected_shopping_date\` DATE NOT NULL,
+        \`expected_shopping_date\` DATE NULL,
         \`preferred_shopping_category\` VARCHAR(150) NULL,
         \`estimated_family_size\` INT NULL DEFAULT 1,
         \`assigned_telecaller\` VARCHAR(150) NULL,
@@ -956,9 +957,6 @@ class WeddingController {
       if (!mobileNumber) {
         return errorRes(res, 'Mobile number is required', [], 400);
       }
-      if (!expectedShoppingDate) {
-        return errorRes(res, 'Expected shopping date is required', [], 400);
-      }
 
       // Enforce location security: branch user strictly locked to their location
       let locationId = req.user ? req.user.locationId : null;
@@ -1066,7 +1064,7 @@ class WeddingController {
         alternateMobile,
         email,
         weddingDate,
-        expectedShoppingDate,
+        expectedShoppingDate || null,
         preferredCategory,
         estimatedFamilySize,
         assignedTelecaller,
@@ -1321,7 +1319,7 @@ class WeddingController {
         mobileNumber ? mobileNumber.trim() : prev.mobile_number,
         email !== undefined ? (email ? email.trim() : null) : prev.email,
         weddingDate !== undefined ? weddingDate : prev.wedding_date,
-        expectedShoppingDate || prev.expected_shopping_date,
+        expectedShoppingDate !== undefined ? (expectedShoppingDate || null) : prev.expected_shopping_date,
         preferredCategory || prev.preferred_shopping_category,
         estimatedFamilySize ? parseInt(estimatedFamilySize, 10) : prev.estimated_family_size,
         assignedTelecaller || prev.assigned_telecaller,
@@ -2181,7 +2179,7 @@ class WeddingController {
       console.error('[WeddingController.getImportLogs Error]', err);
       return errorRes(res, 'Failed to load import history', [err.message], 500);
     }
-  },
+  }
 
   // ── Delete single import log entry ────────────────────────────
   async deleteImportLog(req, res) {
@@ -2208,7 +2206,7 @@ class WeddingController {
       console.error('[WeddingController.deleteImportLog Error]', err);
       return errorRes(res, 'Failed to delete import log', [err.message], 500);
     }
-  },
+  }
 
   // ── Clear all import logs within user scope ────────────────────
   async clearImportLogs(req, res) {
@@ -2480,21 +2478,17 @@ class WeddingController {
         ['9741234567', 'kavya suresh']
       ]);
 
-      const VALID_CRM_CATEGORIES = [
-        'Pure Silk Sarees',
-        'Bridal Lehengas',
-        'Sherwanis & Suits',
-        'Family Matching Sets',
-        'Fancy & Designer Sarees',
-        'Kids Ethnic Wear',
-        'Shirting & Suiting',
-        'Accessories & Dhotis',
-        'General Wedding Shopping'
-      ];
+      // Accepted collections must match what the downloaded template offers in
+      // its own drop-down (DEFAULT_CATEGORIES + distinct CRM values). A
+      // hard-coded list here rejected rows that were filled in correctly.
+      const VALID_CRM_CATEGORIES = Array.from(
+        new Set([...DEFAULT_CATEGORIES, ...(await getTemplateCategories())].filter(Boolean))
+      );
       const validCategoryMap = new Map(VALID_CRM_CATEGORIES.map(c => [c.toLowerCase().trim(), c]));
 
       const errors = [];
       const warnings = [];
+      const duplicateDetails = [];
       const candidates = [];
       let duplicates = 0;
       const seenInBatch = new Set();
@@ -2538,7 +2532,7 @@ class WeddingController {
 
         if (seenInBatch.has(mobile)) {
           duplicates++;
-          errors.push({ row: rowNo, customerName, mobile, reason: `Duplicate mobile ${mobile} appears multiple times in uploaded file` });
+          duplicateDetails.push({ row: rowNo, customerName, mobile, reason: `Duplicate mobile ${mobile} appears multiple times in uploaded file` });
           continue;
         }
         seenInBatch.add(mobile);
@@ -2604,21 +2598,24 @@ class WeddingController {
           budget = String(legacyBudget).substring(0, 100);
         }
 
-        // Category validation against CRM options
+        // Category validation against CRM options. The collection is optional,
+        // so an unrecognised value must not discard an otherwise valid customer:
+        // it falls back to the default and is surfaced as a warning instead.
         const categoryRaw = unwrapFormulaText(pick(row, ['preferred_shopping_category', 'preferred_collection', 'category']));
         let category = 'General Wedding Shopping';
         if (categoryRaw && categoryRaw.trim()) {
-          const matchedCategory = validCategoryMap.get(categoryRaw.trim().toLowerCase());
-          if (!matchedCategory) {
-            errors.push({
+          const normalised = categoryRaw.trim().replace(/\s+/g, ' ').toLowerCase();
+          const matchedCategory = validCategoryMap.get(normalised);
+          if (matchedCategory) {
+            category = matchedCategory;
+          } else {
+            warnings.push({
               row: rowNo,
               customerName,
               mobile: mobileForReport,
-              reason: `Invalid preferred_shopping_category "${categoryRaw}". Must be one of: ${VALID_CRM_CATEGORIES.join(', ')}`
+              reason: `Unrecognised preferred_shopping_category "${categoryRaw}" — the customer was imported as "${category}".`
             });
-            continue;
           }
-          category = matchedCategory;
         }
 
         // Telecaller validation against CRM telecallers
@@ -2681,11 +2678,15 @@ class WeddingController {
       candidates.forEach((c) => {
         const existingCode = existingByMobile.get(c.mobile);
         if (existingCode) {
+          // A duplicate is a skipped row, not a validation failure. Counting it
+          // in both buckets made the summary exceed the row count and forced the
+          // whole import to read as "Failed".
           duplicates++;
-          errors.push({
+          duplicateDetails.push({
             row: c.rowNo,
             customerName: c.customerName,
             mobile: c.mobile,
+            existingCustomerCode: existingCode,
             reason: `Mobile ${c.mobile} already registered in CRM (${existingCode})`
           });
         } else {
@@ -2714,17 +2715,7 @@ class WeddingController {
           }
         }
 
-        let shoppingDate = c.parsedShopping;
-        if (!shoppingDate) {
-          if (c.weddingDate) {
-            const wDate = new Date(c.weddingDate);
-            const sDate = new Date(wDate.getTime() - 15 * 24 * 60 * 60 * 1000);
-            const now = new Date();
-            shoppingDate = (sDate > now ? sDate : (wDate > now ? wDate : now)).toISOString().split('T')[0];
-          } else {
-            shoppingDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-          }
-        }
+        const shoppingDate = c.parsedShopping || null;
 
         const locObj = locationMap.get(String(rowLocation));
         const locCode = locObj?.location_code || 'BSC';
@@ -2897,6 +2888,7 @@ class WeddingController {
         created_at: serverTimestamp,
         insertedCodes: inserted.slice(0, 100),
         errors: errors.sort((a, b) => (a.row || 0) - (b.row || 0)),
+        duplicateDetails: duplicateDetails.sort((a, b) => (a.row || 0) - (b.row || 0)),
         warnings: warnings.sort((a, b) => (a.row || 0) - (b.row || 0)),
         summary
       }, summary);

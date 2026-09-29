@@ -9,7 +9,7 @@ export interface WeddingCustomer {
   phone?: string;
   email?: string;
   wedding_date?: string;
-  expected_shopping_date: string;
+  expected_shopping_date?: string | null;
   preferred_shopping_category?: string;
   estimated_family_size?: number;
   assigned_telecaller?: string;

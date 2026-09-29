@@ -153,7 +153,7 @@ async function createResourceData(req, res) {
 
       const customerCode = `WED-${Date.now().toString(36).toUpperCase()}-${Math.floor(Math.random() * 1000)}`;
       const followUp = expected_shopping_date || new Date().toISOString().slice(0, 10);
-      const shoppingDate = expected_shopping_date || followUp;
+      const shoppingDate = expected_shopping_date || null;
 
       const [result] = await pool.query(
         `INSERT INTO wedding_customers (customer_code, location_id, customer_name, mobile_number, expected_shopping_date, follow_up_date, preferred_shopping_category, customer_status)

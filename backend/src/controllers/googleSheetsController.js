@@ -1000,16 +1000,7 @@ class GoogleSheetsController {
           if (matched) rowLocation = matched.id;
         }
 
-        let shoppingDate = c.parsedShopping;
-        if (!shoppingDate) {
-          if (c.weddingDate) {
-            const wDate = new Date(c.weddingDate);
-            const sDate = new Date(wDate.getTime() - 15 * 86400000);
-            shoppingDate = (sDate > new Date() ? sDate : new Date()).toISOString().split('T')[0];
-          } else {
-            shoppingDate = new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0];
-          }
-        }
+        const shoppingDate = c.parsedShopping || null;
 
         const locObj = locationMap.get(String(rowLocation));
         const locCode = locObj?.location_code || 'BSC';

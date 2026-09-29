@@ -156,9 +156,7 @@ export default function WeddingCustomerCreate() {
         alternate_mobile: form.alternate_mobile.trim() || undefined,
         email: form.email.trim() || undefined,
         location_id: Number(form.location_id),
-        expected_shopping_date:
-          form.expected_shopping_date ||
-          new Date().toISOString().slice(0, 10),
+        expected_shopping_date: form.expected_shopping_date ? form.expected_shopping_date : undefined,
         preferred_shopping_category: form.preferred_shopping_category,
         budget: form.budget,
         lead_source: form.lead_source,
@@ -448,11 +446,10 @@ export default function WeddingCustomerCreate() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                 <div>
                   <label className="block font-semibold text-[#6F5963] mb-1">
-                    Expected Shopping Date *
+                    Expected Shopping Date
                   </label>
                   <input
                     type="date"
-                    required
                     value={form.expected_shopping_date}
                     onChange={(e) => handleChange('expected_shopping_date', e.target.value)}
                     className="w-full px-3.5 py-2.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-semibold text-[#2B1722] focus:outline-none focus:border-[#B76E79]"

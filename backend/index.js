@@ -367,7 +367,7 @@ app.get('/api/fix-db-schema', authenticate, authorize('Admin', 'Super Admin'), a
         \`mobile_number\` VARCHAR(20) NOT NULL,
         \`email\` VARCHAR(150) NULL,
         \`wedding_date\` DATE NULL,
-        \`expected_shopping_date\` DATE NOT NULL,
+        \`expected_shopping_date\` DATE NULL,
         \`preferred_shopping_category\` VARCHAR(150) NULL,
         \`estimated_family_size\` INT NULL DEFAULT 1,
         \`assigned_telecaller\` VARCHAR(150) NULL,
@@ -431,6 +431,7 @@ app.get('/api/fix-db-schema', authenticate, authorize('Admin', 'Super Admin'), a
         results.push({ ok: false, sql: sql.substring(0, 60), error: e.message });
       }
     }
+    await conn.query('ALTER TABLE wedding_customers MODIFY COLUMN expected_shopping_date DATE NULL DEFAULT NULL').catch(() => {});
     // Seed default page_visibility rows (idempotent)
     const defaultVisibility = [
       ['HR_dashboard','HR','dashboard',true],['HR_candidates','HR','candidates',true],

@@ -105,12 +105,15 @@ function validateWeddingRegistration(data) {
     errors.push('Please enter a valid groom contact number.');
   }
 
-  // Required dates
+  // Dates (optional)
   if (!isValidDate(d.wedding_date, { allowPast: false, required: false })) {
     errors.push('Wedding date must be a valid future date.');
   }
-  if (!isValidDate(d.preferred_shopping_date, { allowPast: false, required: true })) {
-    errors.push('A valid future preferred shopping date is required.');
+  if (!isValidDate(d.preferred_shopping_date, { allowPast: false, required: false })) {
+    errors.push('Preferred shopping date must be a valid future date.');
+  }
+  if (!isValidDate(d.expected_shopping_date, { allowPast: false, required: false })) {
+    errors.push('Expected shopping date must be a valid future date.');
   }
 
   // Numeric fields (optional but must be valid when provided)

@@ -161,8 +161,7 @@ export default function WeddingRegistrationPage() {
       if (!hasSelections) newErrors.shopping_requirements = 'Select at least one shopping requirement';
     }
     else if (stepNum === 5) {
-      if (!form.preferred_shopping_date) newErrors.preferred_shopping_date = 'Preferred shopping date is required';
-      else {
+      if (form.preferred_shopping_date) {
         const shopDate = new Date(form.preferred_shopping_date);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -745,7 +744,7 @@ export default function WeddingRegistrationPage() {
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-primary mb-1">Preferred Shopping Date <span className="text-red-500">*</span></label>
+                  <label className="block text-xs font-bold text-primary mb-1">Preferred Shopping Date</label>
                   <input
                     type="date"
                     value={form.preferred_shopping_date}
