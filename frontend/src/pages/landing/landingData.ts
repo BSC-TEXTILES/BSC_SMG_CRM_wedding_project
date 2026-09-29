@@ -355,7 +355,7 @@ export const LANDING_DATA = {
   stores: [
     {
       id: 'davanagere',
-      city: 'Davanagere Central',
+      city: 'Davanagere Exclusive',
       name: 'Medical College Rd',
       badge: 'Home & Linen Floor',
       established: 'Est. 1938',
@@ -369,11 +369,11 @@ export const LANDING_DATA = {
     },
     {
       id: 'belagavi',
-      city: 'Belagavi Flagship',
+      city: 'Belagavi Textile Mall',
       name: 'Khade Bazar · Tilakwadi',
       badge: 'Heritage Showroom & Silk Floor',
-      established: 'Est. 1938',
-      address: 'Khade Bazar / Raviwar Peth, Tilakwadi, Belagavi, Karnataka 590001',
+      established: 'Est. 2022',
+      address: '1st gate road, Shukrawar Peth Rd, Shivaji Colony, Tilakwadi, Belagavi, Karnataka 590006',
       phone: '+91 831 242 1938',
       email: 'belagavi@bsctextiles.in',
       hours: '10:30 AM – 8:30 PM · Seven days',
