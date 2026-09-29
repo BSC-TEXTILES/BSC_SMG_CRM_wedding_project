@@ -207,10 +207,34 @@ export default function CinematicHero({ onScrollTo, scrollY = 0 }: CinematicHero
       </div>
 
       {/* ============================================================== */}
+      {/* 5B. EDITORIAL BRIDAL SHOWCASE (Royal Bride Masterpiece)        */}
+      {/* ============================================================== */}
+      <div
+        className="relative z-15 w-full max-w-5xl mx-auto mt-8 sm:mt-12 transition-transform duration-500 ease-out [transform-style:preserve-3d]"
+        style={{
+          transform: `translate3d(${mouseTilt.x * -0.7}px, ${mouseTilt.y * -0.7}px, 15px) rotateX(${mouseTilt.y * -0.2}deg) rotateY(${mouseTilt.x * -0.2}deg)`
+        }}
+      >
+        <div className="relative rounded-[28px] sm:rounded-[36px] overflow-hidden shadow-[0_30px_90px_rgba(28,21,16,0.25)] border-2 border-[#E8DFC8]/80 bg-[#120B07] group">
+          <img
+            src="/images/hero_royal_bride.jpg"
+            alt="BSC Textiles — Carrying her blessings and light forward"
+            width={1024}
+            height={601}
+            fetchPriority="high"
+            decoding="async"
+            className="w-full h-auto max-h-[580px] object-cover sm:object-contain transition-transform duration-700 ease-out group-hover:scale-[1.02]"
+          />
+          {/* Subtle soft vignette overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-black/10 pointer-events-none" />
+        </div>
+      </div>
+
+      {/* ============================================================== */}
       {/* 6. FLOATING GLASS CARD (3D Depth Linked)                       */}
       {/* ============================================================== */}
       <div
-        className="relative z-20 w-full max-w-xl mx-auto mt-10 sm:mt-12 transition-transform duration-300 ease-out"
+        className="relative z-20 w-full max-w-xl mx-auto mt-8 sm:mt-10 transition-transform duration-300 ease-out"
         style={{
           transform: `translate3d(${mouseTilt.x * -0.6}px, ${mouseTilt.y * -0.6}px, 20px) rotateX(${mouseTilt.y * -0.3}deg) rotateY(${mouseTilt.x * -0.3}deg)`
         }}
