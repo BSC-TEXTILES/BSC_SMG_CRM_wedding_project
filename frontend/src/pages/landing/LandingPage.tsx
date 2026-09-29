@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import Lenis from 'lenis';
-import { API, Auth, UserSession } from '../../services/api';
 import HeaderNav from './components/HeaderNav';
+import BscThreeCanvas from './components/BscThreeCanvas';
+import BscLoader from './components/BscLoader';
 import CinematicHero from './sections/CinematicHero';
 import LegacySection from './sections/LegacySection';
 import EditorialCollections from './sections/EditorialCollections';
@@ -26,12 +27,13 @@ const SECTION_IDS = [
 
 export default function LandingPage() {
   const [activeSection, setActiveSection] = useState('hero');
+  const [scrollY, setScrollY] = useState(0);
+  const [isLoaderFinished, setIsLoaderFinished] = useState(false);
 
   /* ── Document Metadata ─────────────────────────────────────────────── */
   useEffect(() => {
     const previous = document.title;
-    document.title =
-      'BSC Exclusive — Heritage Handloom Silks, Bespoke Tailoring & Wedding Suites | Estd 1938';
+    document.title = 'BSC Textiles';
     return () => {
       document.title = previous;
     };
@@ -68,10 +70,13 @@ export default function LandingPage() {
     };
   }, []);
 
-  /* ── Track Active Section on Scroll ────────────────────────────────── */
+  /* ── Track Active Section and Scroll Depth ─────────────────────────── */
   useEffect(() => {
     const handleScroll = () => {
-      const scrollPos = window.scrollY + 200;
+      const currentY = window.scrollY || 0;
+      setScrollY(currentY);
+
+      const scrollPos = currentY + 200;
       for (const id of SECTION_IDS) {
         const el = document.getElementById(id);
         if (el) {
@@ -98,9 +103,18 @@ export default function LandingPage() {
 
   return (
     <div className="relative min-h-screen w-full bg-[#120B07] text-[#2B1722] selection:bg-[#B76E79] selection:text-white">
-      
       {/* ============================================================== */}
-      {/* 1. OUTER CINEMATIC BACKGROUND (100% Full Viewport)             */}
+      {/* 0. ELEGANT INTRO LOADER SEQUENCE                               */}
+      {/* ============================================================== */}
+      <BscLoader onComplete={() => setIsLoaderFinished(true)} />
+
+      {/* ============================================================== */}
+      {/* 1. THREE.JS 3D SCROLL & PARTICLE CANVAS                        */}
+      {/* ============================================================== */}
+      <BscThreeCanvas scrollY={scrollY} />
+
+      {/* ============================================================== */}
+      {/* 2. OUTER CINEMATIC BACKGROUND (100% Full Viewport)             */}
       {/* ============================================================== */}
       <div className="bsc-outer-env" aria-hidden="true">
         <img
@@ -114,24 +128,22 @@ export default function LandingPage() {
       </div>
 
       {/* ============================================================== */}
-      {/* 2. CENTERED WEBSITE FRAME (Sitting Over Background)            */}
+      {/* 3. CENTERED WEBSITE FRAME (Sitting Over Background)            */}
       {/* ============================================================== */}
       <div className="relative z-10 py-3 sm:py-6 lg:py-8">
         <div className="bsc-main-window-frame">
-          
           {/* Top Minimal Navigation */}
           <HeaderNav activeSection={activeSection} onNavigate={handleNavigate} />
 
           {/* Main Website Sections */}
           <main id="main-content" className="flex flex-col">
-            
-            {/* 1. Hero Section + Floating Glass Card */}
-            <CinematicHero onScrollTo={handleNavigate} />
+            {/* 1. Hero Section + Floating Glass Card + 3D Scroll Depth */}
+            <CinematicHero onScrollTo={handleNavigate} scrollY={scrollY} />
 
-            {/* 2. BSC Legacy / Counter Tradition */}
+            {/* 2. BSC Heritage & Legacy Visual Timeline */}
             <LegacySection />
 
-            {/* 3. Editorial Collections */}
+            {/* 3. Editorial 3D Collections Gallery */}
             <EditorialCollections />
 
             {/* 4. Wedding Shopping & Private Suites */}
@@ -148,15 +160,13 @@ export default function LandingPage() {
 
             {/* 8. Interactive Contact & Service Desks */}
             <ContactDesksSection />
-
           </main>
 
           {/* Luxury Footer */}
           <LuxuryFooter />
-
         </div>
       </div>
-
     </div>
   );
 }
+

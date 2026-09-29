@@ -8,24 +8,36 @@ import {
   Store,
   Crown,
   ChevronRight,
-  ChevronLeft,
-  Calendar,
-  Layers,
-  MapPin,
-  Clock
+  ChevronLeft
 } from 'lucide-react';
 import { LANDING_DATA, FloatingCardData } from '../landingData';
 
 interface CinematicHeroProps {
   onScrollTo?: (id: string) => void;
+  scrollY?: number;
 }
 
-export default function CinematicHero({ onScrollTo }: CinematicHeroProps) {
+export default function CinematicHero({ onScrollTo, scrollY = 0 }: CinematicHeroProps) {
   const cards = LANDING_DATA.floatingCards;
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const timerRef = useRef<number | null>(null);
+
+  // Mouse Parallax for subtle 3D tilt
+  const [mouseTilt, setMouseTilt] = useState({ x: 0, y: 0 });
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (window.innerWidth < 768) return;
+      const x = (e.clientX / window.innerWidth - 0.5) * 8; // -4deg to +4deg
+      const y = (e.clientY / window.innerHeight - 0.5) * -8;
+      setMouseTilt({ x, y });
+    };
+
+    window.addEventListener('mousemove', handleMouseMove, { passive: true });
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
 
   // Auto-advance the floating glass cards every 5.2 seconds
   useEffect(() => {
@@ -67,15 +79,31 @@ export default function CinematicHero({ onScrollTo }: CinematicHeroProps) {
 
   const currentCard: FloatingCardData = cards[currentCardIndex];
 
+  // 3D Scroll transformations:
+  // As scrollY increases (0 to 600px):
+  // 1. Logo decreases in scale from 1 to 0.75
+  // 2. Hero text moves slightly upward
+  // 3. Hero content opacity gently recedes
+  const scrollClamped = Math.min(Math.max(scrollY, 0), 600);
+  const progress = scrollClamped / 600;
+
+  const logoScale = 1 - progress * 0.28;
+  const contentTranslateY = -progress * 70;
+  const contentOpacity = 1 - progress * 0.45;
+  const bgScale = 1 + progress * 0.12;
+
   return (
     <section
       id="hero"
-      className="relative min-h-[90vh] sm:min-h-[94vh] flex flex-col items-center justify-between text-center px-4 sm:px-6 lg:px-8 pt-10 sm:pt-14 pb-12 overflow-hidden select-none"
+      className="relative min-h-[94vh] flex flex-col items-center justify-between text-center px-4 sm:px-6 lg:px-8 pt-6 sm:pt-10 pb-12 overflow-hidden select-none [perspective:1200px]"
     >
-      {/* Subtle Warm Photographic Overlay Texture */}
+      {/* 3D Background Layer with Parallax Depth */}
       <div
-        className="absolute inset-0 pointer-events-none opacity-25 mix-blend-multiply bg-cover bg-center transition-transform duration-[12000ms] ease-out hover:scale-105"
-        style={{ backgroundImage: `url('/images/hero-bg.webp')` }}
+        className="absolute inset-0 pointer-events-none opacity-20 mix-blend-multiply bg-cover bg-center transition-transform duration-300 ease-out"
+        style={{
+          backgroundImage: `url('/images/hero-bg.webp')`,
+          transform: `scale(${bgScale}) translate3d(${mouseTilt.x * -1.5}px, ${mouseTilt.y * -1.5}px, 0)`
+        }}
         aria-hidden="true"
       />
 
@@ -85,35 +113,79 @@ export default function CinematicHero({ onScrollTo }: CinematicHeroProps) {
         aria-hidden="true"
       />
 
+      {/* Floating 3D Fabric Image Planes in Background Depth */}
+      <div
+        className="hidden lg:block absolute left-8 top-1/4 w-32 h-44 rounded-2xl overflow-hidden border border-white/40 shadow-xl opacity-40 pointer-events-none transition-transform duration-500 ease-out"
+        style={{
+          transform: `translate3d(${mouseTilt.x * 2.5}px, ${mouseTilt.y * 2.5 - scrollY * 0.15}px, 0) rotateZ(-4deg)`
+        }}
+        aria-hidden="true"
+      >
+        <img src="/images/women-real.webp" alt="" className="w-full h-full object-cover" />
+      </div>
+
+      <div
+        className="hidden lg:block absolute right-8 top-1/3 w-36 h-48 rounded-2xl overflow-hidden border border-white/40 shadow-xl opacity-40 pointer-events-none transition-transform duration-500 ease-out"
+        style={{
+          transform: `translate3d(${mouseTilt.x * -2.5}px, ${mouseTilt.y * -2.5 - scrollY * 0.12}px, 0) rotateZ(4deg)`
+        }}
+        aria-hidden="true"
+      >
+        <img src="/images/suit.webp" alt="" className="w-full h-full object-cover" />
+      </div>
+
       {/* ============================================================== */}
-      {/* CENTERED HERO CONTENT                                          */}
+      {/* CENTERED HERO CONTENT (3D Depth Linked)                        */}
       {/* ============================================================== */}
-      <div className="relative z-10 max-w-4xl mx-auto flex flex-col items-center mt-2 sm:mt-6">
-        
+      <div
+        className="relative z-10 max-w-4xl mx-auto flex flex-col items-center mt-2 sm:mt-4 transition-transform duration-300 ease-out"
+        style={{
+          transform: `translate3d(${mouseTilt.x}px, ${contentTranslateY + mouseTilt.y}px, 0) rotateX(${mouseTilt.y * 0.5}deg) rotateY(${mouseTilt.x * 0.5}deg)`,
+          opacity: contentOpacity
+        }}
+      >
+        {/* Official BSC Textiles Master Logo with 3D Scroll Scaling */}
+        <div
+          className="mb-4 sm:mb-6 transition-transform duration-300 ease-out"
+          style={{ transform: `scale(${logoScale})` }}
+        >
+          <div className="relative group">
+            <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-full bg-white/70 backdrop-blur-md border border-[#E4D8C4] p-2.5 shadow-lg flex items-center justify-center transition-transform duration-500 group-hover:scale-105">
+              <img
+                src="/Main_logo.png"
+                alt="BSC Textiles"
+                className="w-full h-full object-contain"
+              />
+            </div>
+            <div className="absolute -inset-2 rounded-full bg-[#E8C7A8]/20 blur-md pointer-events-none -z-10" />
+          </div>
+        </div>
+
         {/* 1. Small Capsule / Badge Above Heading */}
-        <div className="inline-flex items-center gap-2 px-3.5 sm:px-4 py-1.5 rounded-full bg-white/70 backdrop-blur-md border border-[#E4D8C4] shadow-sm mb-6 sm:mb-8 transition-transform duration-300 hover:scale-105">
+        <div className="inline-flex items-center gap-2 px-3.5 sm:px-4 py-1.5 rounded-full bg-white/70 backdrop-blur-md border border-[#E4D8C4] shadow-sm mb-5 transition-transform duration-300 hover:scale-105">
           <span className="w-1.5 h-1.5 rounded-full bg-[#B76E79] animate-pulse" />
           <span className="text-[10px] sm:text-xs font-bold tracking-[0.18em] uppercase text-[#4A173A]">
             {LANDING_DATA.hero.badge}
           </span>
         </div>
 
-        {/* 2. Large Editorial Heading */}
-        <h1 className="font-serif text-4xl sm:text-6xl md:text-7xl lg:text-[84px] leading-[1.08] sm:leading-[1.04] tracking-[-0.02em] font-medium text-[#1A120C]">
-          <span>{LANDING_DATA.hero.headingLine1}</span>
-          <br />
-          <span className="italic font-normal text-[#B76E79]">
-            {LANDING_DATA.hero.headingLine2}
-          </span>
+        {/* 2. Primary Brand Heading: BSC Textiles */}
+        <h1 className="font-serif text-4xl sm:text-6xl md:text-7xl lg:text-[88px] leading-[1.04] tracking-[-0.02em] font-medium text-[#1A120C]">
+          <span>{LANDING_DATA.hero.title}</span>
         </h1>
 
-        {/* 3. Supporting Text */}
-        <p className="mt-5 sm:mt-7 max-w-xl mx-auto text-xs sm:text-sm md:text-base leading-relaxed text-[#5F4E44] font-normal tracking-wide">
+        {/* 3. Luxury Editorial Subtitle */}
+        <p className="font-serif italic text-lg sm:text-2xl md:text-3xl text-[#B76E79] mt-2 font-normal tracking-wide">
+          {LANDING_DATA.hero.subtitle}
+        </p>
+
+        {/* 4. Supporting Text */}
+        <p className="mt-4 sm:mt-5 max-w-xl mx-auto text-xs sm:text-sm md:text-base leading-relaxed text-[#5F4E44] font-normal tracking-wide">
           {LANDING_DATA.hero.supportingText}
         </p>
 
-        {/* 4. Action Buttons (Primary Dark Pill + Secondary Light Pill) */}
-        <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-center gap-3.5 sm:gap-4 w-full sm:w-auto">
+        {/* 5. Action Buttons (Primary Dark Pill + Secondary Light Pill) */}
+        <div className="mt-7 sm:mt-8 flex flex-col sm:flex-row items-center gap-3.5 sm:gap-4 w-full sm:w-auto">
           {/* Primary CTA */}
           <Link
             to={LANDING_DATA.hero.primaryCta.href}
@@ -135,7 +207,7 @@ export default function CinematicHero({ onScrollTo }: CinematicHeroProps) {
                   ?.scrollIntoView({ behavior: 'smooth' });
               }
             }}
-            className="w-full sm:w-auto px-6 py-3.5 rounded-full bg-white/60 hover:bg-white/90 backdrop-blur-md border border-[#E0D4C3] text-[#2B1B12] text-xs sm:text-sm font-semibold tracking-wider uppercase shadow-sm transition-all duration-300 hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
+            className="w-full sm:w-auto px-6 py-3.5 rounded-full bg-white/60 hover:bg-white/90 backdrop-blur-md border border-[#E0D4C3] text-[#2B1B12] text-xs sm:text-sm font-semibold tracking-wider uppercase shadow-sm transition-all duration-300 hover:scale-105 active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
           >
             <span>{LANDING_DATA.hero.secondaryCta.label}</span>
             <ChevronDown className="w-4 h-4 text-[#8B776A]" />
@@ -143,7 +215,7 @@ export default function CinematicHero({ onScrollTo }: CinematicHeroProps) {
         </div>
 
         {/* Subtle Proof Strip */}
-        <div className="mt-6 sm:mt-8 flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-[11px] font-medium text-[#7C6A5E]">
+        <div className="mt-5 sm:mt-6 flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-[11px] font-medium text-[#7C6A5E]">
           <span className="flex items-center gap-1.5">
             <ShieldCheck className="w-3.5 h-3.5 text-[#B76E79]" />
             Silk Mark Certified
@@ -162,15 +234,18 @@ export default function CinematicHero({ onScrollTo }: CinematicHeroProps) {
       </div>
 
       {/* ============================================================== */}
-      {/* 5. FLOATING GLASS CARD (LOWER-CENTER HERO)                    */}
+      {/* 6. FLOATING GLASS CARD (3D Depth Linked)                       */}
       {/* ============================================================== */}
       <div
-        className="relative z-20 w-full max-w-xl mx-auto mt-12 sm:mt-14"
+        className="relative z-20 w-full max-w-xl mx-auto mt-10 sm:mt-12 transition-transform duration-300 ease-out"
+        style={{
+          transform: `translate3d(${mouseTilt.x * -0.6}px, ${mouseTilt.y * -0.6}px, 20px) rotateX(${mouseTilt.y * -0.3}deg) rotateY(${mouseTilt.x * -0.3}deg)`
+        }}
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
       >
         <div
-          className={`relative overflow-hidden rounded-3xl bg-white/70 backdrop-blur-xl border border-white/60 p-5 sm:p-6 shadow-[0_20px_50px_rgba(28,21,16,0.12)] transition-all duration-500 transform ${
+          className={`relative overflow-hidden rounded-3xl bg-white/75 backdrop-blur-2xl border border-white/60 p-5 sm:p-6 shadow-[0_25px_60px_rgba(28,21,16,0.15)] transition-all duration-500 transform ${
             isTransitioning ? 'opacity-0 scale-[0.98] blur-[2px]' : 'opacity-100 scale-100 blur-0'
           }`}
         >
@@ -186,7 +261,7 @@ export default function CinematicHero({ onScrollTo }: CinematicHeroProps) {
               <button
                 type="button"
                 onClick={handlePrevCard}
-                className="w-7 h-7 rounded-full bg-[#FAF7F2] hover:bg-white text-[#4A173A] border border-[#E8DFC8] flex items-center justify-center transition-colors"
+                className="w-7 h-7 rounded-full bg-[#FAF7F2] hover:bg-white text-[#4A173A] border border-[#E8DFC8] flex items-center justify-center transition-colors cursor-pointer"
                 aria-label="Previous Highlight"
               >
                 <ChevronLeft className="w-3.5 h-3.5" />
@@ -194,7 +269,7 @@ export default function CinematicHero({ onScrollTo }: CinematicHeroProps) {
               <button
                 type="button"
                 onClick={handleNextCard}
-                className="w-7 h-7 rounded-full bg-[#FAF7F2] hover:bg-white text-[#4A173A] border border-[#E8DFC8] flex items-center justify-center transition-colors"
+                className="w-7 h-7 rounded-full bg-[#FAF7F2] hover:bg-white text-[#4A173A] border border-[#E8DFC8] flex items-center justify-center transition-colors cursor-pointer"
                 aria-label="Next Highlight"
               >
                 <ChevronRight className="w-3.5 h-3.5" />
@@ -240,7 +315,7 @@ export default function CinematicHero({ onScrollTo }: CinematicHeroProps) {
                 key={card.id}
                 type="button"
                 onClick={() => handleSelectCard(idx)}
-                className={`h-1.5 rounded-full transition-all duration-300 ${
+                className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
                   idx === currentCardIndex
                     ? 'w-7 bg-[#1C1510]'
                     : 'w-1.5 bg-[#D9CBBC] hover:bg-[#A69385]'

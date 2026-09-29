@@ -25,6 +25,7 @@ export interface StoreLocationData {
   established: string;
   address: string;
   phone: string;
+  email: string;
   hours: string;
   departments: string[];
   image: string;
@@ -46,28 +47,31 @@ export interface CollectionItem {
 export const LANDING_DATA = {
   brand: {
     name: 'BSC Textiles',
-    tagline: 'BSC Exclusive · Five Generations',
+    tagline: 'BSC Textiles · Five Generations of Handloom Excellence',
     established: 1938,
     years: new Date().getFullYear() - 1938,
     certification: 'Silk Mark Certified & Weaver Guild Guaranteed',
-    cities: ['Belagavi', 'Davanagere', 'Shivamogga']
+    cities: ['Belagavi', 'Davanagere', 'Shivamogga'],
+    logo: '/Main_logo.png',
+    logoSmall: '/logo.webp'
   },
 
   navigation: {
-    logo: '/logo.webp',
-    brandText: 'BSC EXCLUSIVE',
+    logo: '/Main_logo.png',
+    logoSmall: '/logo.webp',
+    brandText: 'BSC TEXTILES',
     links: [
       { id: 'hero', label: 'Home' },
-      { id: 'legacy', label: 'Legacy' },
+      { id: 'legacy', label: 'Heritage' },
       { id: 'collections', label: 'Collections' },
       { id: 'wedding', label: 'Wedding' },
       { id: 'stores', label: 'Stores' },
       { id: 'shivamogga-event', label: 'Shivamogga' },
-      { id: 'about', label: 'About BSC' },
+      { id: 'about', label: 'About' },
       { id: 'contact', label: 'Contact' }
     ],
     primaryAction: {
-      label: 'Wedding Register',
+      label: 'Register for Wedding Shopping',
       href: '/wedding/customer-registration'
     },
     staffAction: {
@@ -78,10 +82,10 @@ export const LANDING_DATA = {
 
   hero: {
     badge: 'ESTABLISHED 1938 · FIVE GENERATIONS OF EXCELLENCE',
-    headingLine1: 'Tradition.',
-    headingLine2: 'Styled for today.',
+    title: 'BSC Textiles',
+    subtitle: 'A legacy of textiles, fashion and timeless craftsmanship.',
     supportingText:
-      'Karnataka’s heritage house for pure silk sarees, bespoke menswear, bridal trousseaus, and curated luxury textiles. Five generations of authentic handloom excellence across Belagavi, Davanagere, and Shivamogga.',
+      'Karnataka’s foremost heritage house for pure silk sarees, bespoke menswear, bridal trousseaus, and curated luxury textiles. Five generations of authentic handloom excellence across Belagavi, Davanagere, and Shivamogga.',
     primaryCta: {
       label: 'Register for Wedding Shopping',
       href: '/wedding/customer-registration'
@@ -92,7 +96,7 @@ export const LANDING_DATA = {
     },
     proofItems: [
       { label: 'Silk Mark Certified Handlooms', icon: 'shield' },
-      { label: 'Three Flagship Karnataka Stores', icon: 'store' },
+      { label: 'Three Flagship Karnataka Showrooms', icon: 'store' },
       { label: 'Private Family Bridal Suites', icon: 'crown' }
     ]
   },
@@ -151,18 +155,38 @@ export const LANDING_DATA = {
   ] as FloatingCardData[],
 
   legacy: {
-    kicker: 'SINCE 1938',
+    kicker: 'SINCE 1938 · FIVE GENERATIONS',
     title: 'The Counter Tradition',
     subtitle: 'Where cloth is felt, weighed, and draped before you decide.',
     bodyParagraphs: [
       'In 1938, BSC opened its first textile counter in Karnataka with a single steadfast principle: every length of cloth must be unfolded before the family, its weave inspected under daylight, and its authenticity proven beyond doubt.',
       'Eighty-six years and five generations later, that same reverence for craftsmanship continues across Belagavi, Davanagere, and Shivamogga. We still host on-counter burn tests for pure gold and silver zari, and our master tailors still chalk fittings on the body rather than relying on standard sizing charts.'
     ],
-    milestones: [
-      { year: '1938', title: 'Belagavi Foundation', desc: 'First silk and textile counter established in historic Khade Bazar.' },
-      { year: '1978', title: 'Davanagere Expansion', desc: 'Central Karnataka flagship opened for wedding trousseaus and home furnishing.' },
-      { year: '1992', title: 'Bespoke Tailoring', desc: 'Master cutters and suit desks introduced for custom menswear & bandhgalas.' },
-      { year: '2024', title: 'Shivamogga Flagship', desc: 'State-of-the-art multi-level luxury shopping destination inaugurated.' }
+    timeline: [
+      {
+        year: '1938',
+        title: 'Founding in Khade Bazar',
+        city: 'Belagavi',
+        desc: 'First silk and textile counter established in Karnataka by the founding generation.'
+      },
+      {
+        year: '1978',
+        title: 'Central Karnataka Flagship',
+        city: 'Davanagere',
+        desc: 'Expanded with a grand showroom dedicated to wedding trousseaus and home furnishings.'
+      },
+      {
+        year: '1992',
+        title: 'Bespoke Atelier',
+        city: 'Bespoke Desk',
+        desc: 'Master cutters and suit desks introduced for custom menswear, sherwanis, and bandhgalas.'
+      },
+      {
+        year: '2024',
+        title: 'New Flagship Showroom',
+        city: 'Shivamogga',
+        desc: 'State-of-the-art multi-level luxury shopping destination inaugurated on Nehru Road.'
+      }
     ],
     stats: [
       { value: '86+', label: 'Years of Heritage', sub: 'Unbroken legacy since 1938' },
@@ -173,59 +197,59 @@ export const LANDING_DATA = {
   },
 
   collectionsOverview: {
-    kicker: 'OUR DEPARTMENTS',
-    title: 'Curated Floors for Every Occasion',
-    subtitle: 'Step into departments designed for unhurried exploration and tactile luxury.',
+    kicker: 'CURATED FLOORS',
+    title: '3D Collection Galleries',
+    subtitle: 'Step into curated departments designed for unhurried exploration and tactile luxury.',
     items: [
       {
         id: 'sarees',
         code: '01',
-        title: 'Pure Silk Sarees',
-        category: 'Bridal & Handlooms',
+        title: 'Sarees',
+        category: 'Pure Silks & Bridal Handlooms',
         description: 'Kanchipuram Korvai, Banarasi Katan, Dharmavaram, and Arani silks preserved in cedar-lined cases.',
         image: '/images/women-real.webp',
         tag: 'Silk Mark Certified',
         details: ['Kanchipuram Korvai Weaves', 'Banarasi Brocade & Zari', 'Arani Pure Silks', 'Bridal Muhurtham Sarees']
       },
       {
-        id: 'menswear',
-        code: '02',
-        title: 'Menswear & Shirting',
-        category: 'Tailored Luxury',
-        description: 'Fine Egyptian Giza cottons, pure Irish linens, Italian wools, and festive kurta ensembles.',
-        image: '/images/men.webp',
-        tag: 'Master Fit',
-        details: ['Giza Cotton Shirting', 'Pure Linen Ensembles', 'Festive Silk Kurtas', 'Formal & Casual Suiting']
-      },
-      {
-        id: 'suits',
-        code: '03',
-        title: 'Bespoke Suit Desk',
-        category: 'Custom Tailoring',
-        description: 'Bandhgalas, tuxedos, and sherwanis measured and marked directly on your posture by master drapers.',
-        image: '/images/suit.webp',
-        tag: 'Bespoke Fitting',
-        details: ['Hand-Chalked Body Fittings', 'Bespoke Sherwanis & Indo-Western', 'Royal Jodhpur Bandhgalas', 'Custom 3-Piece Tuxedos']
-      },
-      {
         id: 'womenswear',
-        code: '04',
-        title: 'Designer Womenswear',
-        category: 'Contemporary & Festive',
+        code: '02',
+        title: "Women's Collection",
+        category: 'Contemporary & Festive Couture',
         description: 'Handcrafted lehengas, bridal anarkalis, festive coordinates, and celebration wear.',
         image: '/images/coll-bridal-1200.webp',
         tag: 'Festive Couture',
         details: ['Bridal Lehengas', 'Embroidered Anarkalis', 'Festive Coordinates', 'Ready-to-Wear Silks']
       },
       {
-        id: 'jewellery',
+        id: 'menswear',
+        code: '03',
+        title: "Men's Collection",
+        category: 'Tailored Luxury & Shirting',
+        description: 'Fine Egyptian Giza cottons, pure Irish linens, Italian wools, and festive kurta ensembles.',
+        image: '/images/men.webp',
+        tag: 'Master Fit',
+        details: ['Giza Cotton Shirting', 'Pure Linen Ensembles', 'Festive Silk Kurtas', 'Formal & Casual Suiting']
+      },
+      {
+        id: 'kids',
+        code: '04',
+        title: 'Kids Collection',
+        category: 'Junior Ethnic & Celebrations',
+        description: 'Traditional silk pavadas, miniature dhotis, festive kurtas, and celebration ensembles for children.',
+        image: '/images/coll-trousseau-1200.webp',
+        tag: 'Pure & Soft Silk',
+        details: ['Pure Silk Pattu Pavadas', 'Boys Dhoti & Kurta Sets', 'Festive Occasion Wear', 'Hypoallergenic Natural Dyes']
+      },
+      {
+        id: 'brands',
         code: '05',
-        title: 'The Jewellery Suite',
-        category: 'Temple & Heirloom',
-        description: 'Traditional temple jewelry, antique gold finishes, and bridal ornaments displayed tray by tray in private suites.',
-        image: '/images/jewellery.webp',
-        tag: 'Private Viewing',
-        details: ['Temple Chokers & Haarams', 'Antique Bridal Sets', 'Jhumkas & Maang Tikkas', 'Private Consultation Room']
+        title: 'Brand Collection',
+        category: 'Curated Mill Labels',
+        description: 'Direct partnerships with India’s foremost textile mills and luxury fabric manufacturers.',
+        image: '/images/brands.webp',
+        tag: 'Verified Mills',
+        details: ['Raymond Fine Fabrics', 'Linen Club Italy', 'Arvind Luxury Cottons', 'Grasim Fine Suitings']
       },
       {
         id: 'home',
@@ -238,30 +262,70 @@ export const LANDING_DATA = {
         details: ['600+ Thread Count Bed Linen', 'Custom Jacquard Curtains', 'Sofa Fabrics & Upholstery', 'Dining Linen & Accessories']
       },
       {
-        id: 'towels',
+        id: 'jewellery',
         code: '07',
-        title: 'Luxury Towels & Bath',
-        category: 'Plush Linen',
+        title: 'Jewellery',
+        category: 'Temple & Heirloom Ornaments',
+        description: 'Traditional temple jewelry, antique gold finishes, and bridal ornaments displayed tray by tray in private suites.',
+        image: '/images/jewellery.webp',
+        tag: 'Private Viewing',
+        details: ['Temple Chokers & Haarams', 'Antique Bridal Sets', 'Jhumkas & Maang Tikkas', 'Private Consultation Room']
+      },
+      {
+        id: 'wedding-coll',
+        code: '08',
+        title: 'Wedding Collection',
+        category: 'Complete Trousseau Curation',
+        description: 'Sarees, shirting, blouse pieces, and wedding party cloth gathered in one booked consultation hour.',
+        image: '/images/wedding.webp',
+        tag: 'Complete Trousseau',
+        details: ['Bride & Groom Coordination', 'Wedding Party Sets', 'Muhurtham & Reception Silks', 'Bespoke Family Packages']
+      },
+      {
+        id: 'suits',
+        code: '09',
+        title: 'Suits',
+        category: 'Bespoke Suit Desk',
+        description: 'Bandhgalas, tuxedos, and sherwanis measured and marked directly on your posture by master drapers.',
+        image: '/images/suit.webp',
+        tag: 'Bespoke Fitting',
+        details: ['Hand-Chalked Body Fittings', 'Bespoke Sherwanis & Indo-Western', 'Royal Jodhpur Bandhgalas', 'Custom 3-Piece Tuxedos']
+      },
+      {
+        id: 'dozolo',
+        code: '10',
+        title: 'Dozolo',
+        category: 'Contemporary & Ready Fashion',
+        description: 'Modern silhouette wear, fusion Indo-Western coordinates, and ready-to-wear celebrations.',
+        image: '/images/women.webp',
+        tag: 'Modern Heritage',
+        details: ['Contemporary Silhouettes', 'Fusion Indo-Western', 'Occasion Separates', 'Modern Craftsmanship']
+      },
+      {
+        id: 'towels',
+        code: '11',
+        title: 'Towels',
+        category: 'Ultra Plush 700 GSM Linen',
         description: '700 GSM combed zero-twist Turkish cotton towels, bath sheets, and luxury spa coordinates.',
         image: '/images/towels.webp',
         tag: 'Ultra Soft 700 GSM',
         details: ['Zero-Twist Bath Towels', 'Plush Hand Towels & Mats', 'Spa Bathrobes', 'Quick-Dry Aerocore Weave']
       },
       {
-        id: 'brands',
-        code: '08',
-        title: 'Curated Mill Brands',
-        category: 'Mill Labels',
-        description: 'Direct partnerships with India’s foremost textile mills and luxury fabric manufacturers.',
-        image: '/images/brands.webp',
-        tag: 'Verified Mills',
-        details: ['Raymond Fine Fabrics', 'Linen Club Italy', 'Arvind Luxury Cottons', 'Grasim Fine Suitings']
+        id: 'other',
+        code: '12',
+        title: 'Other Collections',
+        category: 'Accessories & Draping Crafts',
+        description: 'Handcrafted dupattas, pure silk stoles, cufflinks, angavastrams, and festive accessories.',
+        image: '/images/coll-temple-1200.webp',
+        tag: 'Artisan Accents',
+        details: ['Pure Silk Stoles', 'Zari Border Angavastrams', 'Custom Cufflinks & Brooches', 'Handmade Potlis & Clutches']
       }
     ] as CollectionItem[]
   },
 
   weddingExperience: {
-    kicker: 'THE BSC WEDDING SUITE',
+    kicker: 'THE BSC WEDDING CONCIERGE',
     title: 'Curated Wedding Shopping for the Whole Family',
     subtitle: 'A dedicated consultation hour. One stylist, zero rush, every family member taken care of under one roof.',
     features: [
@@ -283,26 +347,12 @@ export const LANDING_DATA = {
       }
     ],
     cta: {
-      label: 'Book Your Wedding Suite',
+      label: 'Register for Wedding Shopping',
       href: '/wedding/customer-registration'
     }
   },
 
   stores: [
-    {
-      id: 'belagavi',
-      city: 'Belagavi Flagship',
-      name: 'Khade Bazar · Tilakwadi',
-      badge: 'Heritage Showroom & Silk Floor',
-      established: 'Est. 1938',
-      address: 'Khade Bazar / Raviwar Peth, Tilakwadi, Belagavi, Karnataka 590001',
-      phone: '+91 831 242 1938',
-      hours: '10:30 AM – 8:30 PM · Seven days',
-      departments: ['Royal Bridal Silks', 'Jewellery Suite', 'Bespoke Menswear', 'Bridal Draping Suites'],
-      image: '/images/floor.webp',
-      mapsQuery: 'BSC Textiles Khade Bazar Belagavi',
-      featured: true
-    },
     {
       id: 'davanagere',
       city: 'Davanagere Central',
@@ -311,10 +361,26 @@ export const LANDING_DATA = {
       established: 'Est. 1978',
       address: 'Mandipet / PB Road, MCC B Block, Davanagere, Karnataka 577001',
       phone: '+91 8192 221938',
+      email: 'davanagere@bsctextiles.in',
       hours: '10:30 AM – 8:00 PM · Seven days',
       departments: ['Home Furnishing', 'Luxury Towels & Linens', 'Pure Silk Sarees', 'Menswear Shirting'],
       image: '/images/home.webp',
       mapsQuery: 'BSC Textiles Mandipet Davanagere'
+    },
+    {
+      id: 'belagavi',
+      city: 'Belagavi Flagship',
+      name: 'Khade Bazar · Tilakwadi',
+      badge: 'Heritage Showroom & Silk Floor',
+      established: 'Est. 1938',
+      address: 'Khade Bazar / Raviwar Peth, Tilakwadi, Belagavi, Karnataka 590001',
+      phone: '+91 831 242 1938',
+      email: 'belagavi@bsctextiles.in',
+      hours: '10:30 AM – 8:30 PM · Seven days',
+      departments: ['Royal Bridal Silks', 'Jewellery Suite', 'Bespoke Menswear', 'Bridal Draping Suites'],
+      image: '/images/floor.webp',
+      mapsQuery: 'BSC Textiles Khade Bazar Belagavi',
+      featured: true
     },
     {
       id: 'shivamogga',
@@ -324,6 +390,7 @@ export const LANDING_DATA = {
       established: 'Est. 1992',
       address: 'Nehru Road / Durgigudi Main Road, Shivamogga, Karnataka 577201',
       phone: '+91 8182 221938',
+      email: 'shivamogga@bsctextiles.in',
       hours: '11:00 AM – 8:00 PM · Tue – Sun',
       departments: ['Bespoke Tailoring', 'Sherwanis & Bandhgalas', 'Bridal Silks', 'Festive Womenswear'],
       image: '/images/suit.webp',
@@ -355,7 +422,7 @@ export const LANDING_DATA = {
     kicker: 'OUR PROMISE',
     title: 'The Weaver’s Knot. The Master’s Eye.',
     quote: '“We do not sell cloth from a catalogue. We place the bale in your hands, test the zari before your eyes, and measure the garment on your body.”',
-    author: 'BSC Family Custodians',
+    author: 'BSC Textiles Custodians',
     points: [
       {
         title: 'Direct Weaver Partnerships',

@@ -561,19 +561,22 @@ export default function WeddingCustomerRegister() {
 
             {/* Desktop & Tablet Table (md+) */}
             <div className="hidden md:block overflow-x-auto">
-              <table className="w-full text-left text-xs text-[#2B1722]">
+              {/* min-width keeps every column at its natural size so the table
+                  scrolls horizontally on narrow laptops instead of squeezing the
+                  Actions cell until its buttons spill over neighbouring columns. */}
+              <table className="w-full min-w-[1180px] text-left text-xs text-[#2B1722]">
                 <thead className="bg-[#F8EDE8] text-[#4A173A] border-b border-[#E8D9D4] uppercase text-[10px] tracking-wider">
                   <tr>
-                    <th className="py-3 px-4 font-bold">Reg ID</th>
-                    <th className="py-3 px-4 font-bold">Customer</th>
-                    <th className="py-3 px-4 font-bold">Mobile</th>
-                    <th className="py-3 px-4 font-bold">Location</th>
-                    <th className="py-3 px-4 font-bold">Wedding Date</th>
-                    <th className="py-3 px-4 font-bold">Expected Shopping</th>
-                    <th className="py-3 px-4 font-bold">Telecaller</th>
-                    <th className="py-3 px-4 font-bold">Status</th>
-                    <th className="py-3 px-4 font-bold">Next Follow-up</th>
-                    <th className="py-3 px-4 font-bold text-right">Actions</th>
+                    <th className="py-3 px-4 font-bold whitespace-nowrap">Reg ID</th>
+                    <th className="py-3 px-4 font-bold whitespace-nowrap">Customer</th>
+                    <th className="py-3 px-4 font-bold whitespace-nowrap">Mobile</th>
+                    <th className="py-3 px-4 font-bold whitespace-nowrap">Location</th>
+                    <th className="py-3 px-4 font-bold whitespace-nowrap">Wedding Date</th>
+                    <th className="py-3 px-4 font-bold whitespace-nowrap">Expected Shopping</th>
+                    <th className="py-3 px-4 font-bold whitespace-nowrap">Telecaller</th>
+                    <th className="py-3 px-4 font-bold whitespace-nowrap">Status</th>
+                    <th className="py-3 px-4 font-bold whitespace-nowrap">Next Follow-up</th>
+                    <th className="py-3 px-4 font-bold text-right whitespace-nowrap w-[210px] border-l border-[#E8D9D4]">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#E8D9D4]">
@@ -701,12 +704,12 @@ export default function WeddingCustomerRegister() {
                               <span className="text-[#9A858D]">None</span>
                             )}
                           </td>
-                          <td className="py-3 px-4 text-right">
-                            <div className="flex items-center justify-end gap-1.5">
+                          <td className="py-3 px-4 text-right whitespace-nowrap border-l border-[#E8D9D4] align-middle">
+                            <div className="inline-flex flex-nowrap items-center justify-end gap-1.5">
                               {/* View Profile */}
                               <Link
                                 to={`/wedding-crm/customers/${cust.id}`}
-                                className="p-1.5 rounded-lg bg-[#FFFAF7] hover:bg-[#FFF7F2] text-[#4A173A] border border-[#E8D9D4] transition-colors"
+                                className="shrink-0 p-1.5 rounded-lg bg-[#FFFAF7] hover:bg-[#FFF7F2] text-[#4A173A] border border-[#E8D9D4] transition-colors"
                                 title="View Customer Profile"
                               >
                                 <Eye className="w-3.5 h-3.5 text-[#B76E79]" />
@@ -726,7 +729,7 @@ export default function WeddingCustomerRegister() {
                                     expected_shopping_date: cust.expected_shopping_date || ''
                                   });
                                 }}
-                                className="p-1.5 rounded-lg bg-[#F6E2E5] hover:bg-[#D89AA3]/30 text-[#4A173A] transition-colors border border-[#E8D9D4]"
+                                className="shrink-0 p-1.5 rounded-lg bg-[#F6E2E5] hover:bg-[#D89AA3]/30 text-[#4A173A] transition-colors border border-[#E8D9D4]"
                                 title="Log Call Outcome"
                               >
                                 <PhoneCall className="w-3.5 h-3.5" />
@@ -737,7 +740,7 @@ export default function WeddingCustomerRegister() {
                                 href={`https://wa.me/91${cust.mobile_number.replace(/\D/g, '')}?text=Namaste%20${encodeURIComponent(cust.customer_name)}%2C%20greetings%20from%20BSC%20Exclusive%20Textiles!`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="p-1.5 rounded-lg bg-[#E8F5EE] hover:bg-[#198754]/20 text-[#198754] transition-colors border border-[#198754]/20"
+                                className="shrink-0 p-1.5 rounded-lg bg-[#E8F5EE] hover:bg-[#198754]/20 text-[#198754] transition-colors border border-[#198754]/20"
                                 title="Chat on WhatsApp"
                               >
                                 <MessageCircle className="w-3.5 h-3.5" />
@@ -749,7 +752,7 @@ export default function WeddingCustomerRegister() {
                                   setAssignCustomer(cust);
                                   setTargetTelecaller(cust.assigned_telecaller || '');
                                 }}
-                                className="p-1.5 rounded-lg bg-[#FFF4D6] hover:bg-[#FFF4D6]/70 text-[#C58A18] transition-colors border border-[#C58A18]/20"
+                                className="shrink-0 p-1.5 rounded-lg bg-[#FFF4D6] hover:bg-[#FFF4D6]/70 text-[#C58A18] transition-colors border border-[#C58A18]/20"
                                 title="Assign Telecaller"
                               >
                                 <UserCheck className="w-3.5 h-3.5" />
@@ -758,7 +761,7 @@ export default function WeddingCustomerRegister() {
                               {/* Delete Customer */}
                               <button
                                 onClick={() => setCustomerToDelete(cust)}
-                                className="p-1.5 rounded-lg bg-[#FDE8E7] hover:bg-[#FDE8E7]/70 text-[#B42318] transition-colors border border-[#B42318]/20"
+                                className="shrink-0 p-1.5 rounded-lg bg-[#FDE8E7] hover:bg-[#FDE8E7]/70 text-[#B42318] transition-colors border border-[#B42318]/20"
                                 title="Delete Customer"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />

@@ -18,14 +18,18 @@ export default function LuxuryFooter() {
           {/* Brand Mark Column */}
           <div className="md:col-span-4 space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-[#FAF7F2] text-[#140D08] flex items-center justify-center font-serif text-lg font-bold">
-                B
+              <div className="p-1 rounded-xl bg-white/10 border border-white/15">
+                <img
+                  src="/Main_logo.png"
+                  alt="BSC Textiles"
+                  className="h-10 w-auto object-contain"
+                />
               </div>
               <div>
                 <span className="font-serif tracking-widest text-base font-bold text-white uppercase block">
-                  BSC EXCLUSIVE
+                  BSC TEXTILES
                 </span>
-                <span className="text-[10px] tracking-wider text-[#A69385] uppercase">
+                <span className="text-[10px] tracking-wider text-[#E8C7A8] uppercase">
                   FIVE GENERATIONS · ESTD 1938
                 </span>
               </div>

@@ -40,12 +40,14 @@ export default function HeaderNav({ activeSection = 'hero', onNavigate }: Header
           onClick={(e) => handleLinkClick('hero', e)}
           className="flex items-center gap-2.5 sm:gap-3 group select-none"
         >
-          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#1C1510] text-[#E8C7A8] flex items-center justify-center font-serif text-sm sm:text-base font-bold shadow-sm transition-transform duration-300 group-hover:scale-105">
-            B
-          </div>
+          <img
+            src="/Main_logo.png"
+            alt="BSC Textiles"
+            className="h-9 sm:h-11 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
+          />
           <div className="flex flex-col">
             <span className="font-serif tracking-widest text-xs sm:text-sm font-bold text-[#1C1510] uppercase">
-              {LANDING_DATA.navigation.brandText}
+              BSC TEXTILES
             </span>
             <span className="text-[9px] tracking-wider text-[#7A695C] uppercase font-medium -mt-0.5">
               ESTD 1938 · KARNATAKA
