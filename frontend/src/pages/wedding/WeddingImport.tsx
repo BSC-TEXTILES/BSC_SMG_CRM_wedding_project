@@ -28,6 +28,7 @@ interface ImportSummaryResult {
   importId?: number;
   insertedCodes?: string[];
   errors?: ValidationError[];
+  duplicateDetails?: ValidationError[];
   warnings?: ValidationError[];
   processingTime?: string;
   processingTimeMs?: number;
@@ -796,7 +797,11 @@ export default function WeddingImport() {
   };
 
   const handleDownloadErrorReport = async () => {
-    if (!importResult?.errors?.length) return;
+    const reportRows = [
+      ...(Array.isArray(importResult?.errors) ? importResult!.errors! : []),
+      ...(Array.isArray(importResult?.duplicateDetails) ? importResult!.duplicateDetails! : [])
+    ];
+    if (!reportRows.length) return;
     setDownloadingReport(true);
     try {
       await API.downloadWeddingErrorReport({
@@ -810,7 +815,7 @@ export default function WeddingImport() {
           errors: errorCount,
           totalRows: importResult.totalRows ?? 0
         },
-        errors: importResult.errors
+        errors: reportRows
       });
       showToast('Error report downloaded — fix the listed rows and re-upload', 'success');
     } catch (err: any) {
@@ -825,6 +830,14 @@ export default function WeddingImport() {
   const errorCount = importResult?.errorCount ?? importResult?.errors?.length ?? 0;
   const warningCount = importResult?.warningCount ?? importResult?.warnings?.length ?? 0;
   const totalRowsCount = importResult?.totalRows ?? importedCount + duplicateCount + errorCount;
+
+  // Every row the import did not create: genuine validation failures plus the
+  // duplicates that were skipped. Listed together so each one still shows its
+  // exact reason, while `errorCount` stays a true failure count.
+  const notImportedRows: ValidationError[] = [
+    ...(Array.isArray(importResult?.errors) ? importResult!.errors! : []),
+    ...(Array.isArray(importResult?.duplicateDetails) ? importResult!.duplicateDetails! : [])
+  ].sort((a, b) => (a.row || 0) - (b.row || 0));
 
   return (
     <DashboardLayout title="Import Wedding Customers">
@@ -1905,7 +1918,7 @@ export default function WeddingImport() {
 
                 {/* Actions: Download Failed Rows + rerun */}
                 <div className="flex flex-wrap items-center gap-2.5 pt-1">
-                  {errorCount > 0 && Array.isArray(importResult.errors) && importResult.errors.length > 0 && (
+                  {notImportedRows.length > 0 && (
                     <button
                       type="button"
                       onClick={handleDownloadErrorReport}
@@ -1948,14 +1961,14 @@ export default function WeddingImport() {
                 </div>
 
                 {/* Errors Detail Section (Always visible/expanded when errors exist) */}
-                {Array.isArray(importResult.errors) && importResult.errors.length > 0 && (
+                {notImportedRows.length > 0 && (
                   <div className="space-y-3 pt-3 border-t border-[#E8D9D4]">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 bg-[#FDE8E7] p-3.5 rounded-xl border border-[#B42318]/30">
                       <div className="flex items-center gap-2.5 min-w-0">
                         <CircleAlert className="w-5 h-5 text-[#B42318] shrink-0" />
                         <div>
                           <h4 className="text-xs font-black text-[#B42318]">
-                            Failed Rows & Validation Error Details ({importResult.errors.length} failed rows)
+                            Failed Rows & Validation Error Details ({notImportedRows.length} rows not imported)
                           </h4>
                           <p className="text-[11px] text-[#B42318]/80 mt-0.5">
                             Each failed row is listed below with its row number, customer name, mobile, and exact validation reason.
@@ -1977,7 +1990,7 @@ export default function WeddingImport() {
 
                     {showErrorDetails && (
                       <div className="space-y-2.5">
-                        {importResult.errors.length > 5 && (
+                        {notImportedRows.length > 5 && (
                           <div className="relative">
                             <Search className="w-4 h-4 text-[#6F5963] absolute left-3 top-1/2 -translate-y-1/2" />
                             <input
@@ -2001,7 +2014,7 @@ export default function WeddingImport() {
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-[#EADBD7] text-[11px]">
-                              {importResult.errors
+                              {notImportedRows
                                 .filter((err) => {
                                   if (!errorSearchQuery.trim()) return true;
                                   const q = errorSearchQuery.toLowerCase().trim();
