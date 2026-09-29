@@ -582,8 +582,7 @@ class WeddingRegistrationController {
       // Allow creating a new registration for the same mobile when explicitly confirmed or via public portal
       const forceNew = data.force_create_new_registration === true 
         || data.allow_duplicate === true 
-        || data.link_to_existing === true
-        || Boolean(data.existing_customer_id)
+        || data.link_to_existing === true 
         || !req.user;
 
       if (dup && dup.length > 0 && !forceNew) {
@@ -604,8 +603,9 @@ class WeddingRegistrationController {
       connection = await pool.getConnection();
       await connection.beginTransaction();
 
-      // If linking to existing customer, use that customer's code/ID as customer_id
-      const linkedCustomerId = data.existing_customer_id || data.customer_id || registrationId;
+      // Staff-side linking only: a client-supplied "Emp ID" is no longer a
+      // registration form field, so it must not become the customer_id.
+      const linkedCustomerId = data.customer_id || registrationId;
 
       const [insertResult] = await connection.query(`
         INSERT INTO wedding_registrations (

@@ -32,22 +32,13 @@ const SHOPPING_CATEGORIES = [
 const SHOPPING_TIMES = ['Morning', 'Afternoon', 'Evening', 'Flexible'];
 const CONTACT_METHODS = ['Phone Call', 'WhatsApp', 'SMS', 'Email'];
 const FOLLOWUP_TIMES = ['9 AM – 12 PM', '12 PM – 3 PM', '3 PM – 6 PM', '6 PM – 9 PM', 'Any Time'];
-const EXISTING_CUSTOMER = ['Yes', 'No'];
 
 const initialForm = {
   // Step 1: Store Location
   location_id: '',
-  // Step 2: Customer Details
+  // Step 2: Customer Details (name + phone only)
   customer_name: '',
   mobile: '',
-  alternate_mobile: '',
-  email: '',
-  gender: '',
-  age: '',
-  address: '',
-  area: '',
-  city: '',
-  pincode: '',
   // Step 3: Wedding Details
   wedding_date: '',
   wedding_date_flexibility: '',
@@ -73,9 +64,6 @@ const initialForm = {
   preferred_shopping_date: '',
   preferred_shopping_time: '',
   expected_visitors: '',
-  existing_customer: '',
-  existing_customer_id: '',
-  previous_store: '',
   preferred_contact_method: '',
   preferred_followup_time: '',
   // Step 7: Additional Information
@@ -143,8 +131,6 @@ export default function WeddingRegistrationPage() {
       if (!form.customer_name?.trim() || form.customer_name.trim().length < 2) newErrors.customer_name = 'Full name is required (minimum 2 characters)';
       if (!form.mobile?.trim()) newErrors.mobile = 'Mobile number is required';
       else if (!/^[6-9]\d{9}$/.test(form.mobile.replace(/\D/g, ''))) newErrors.mobile = 'Enter a valid 10-digit Indian mobile number';
-      if (form.alternate_mobile && !/^[6-9]\d{9}$/.test(form.alternate_mobile.replace(/\D/g, ''))) newErrors.alternate_mobile = 'Enter a valid 10-digit mobile number';
-      if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) newErrors.email = 'Enter a valid email address';
     }
     else if (stepNum === 3) {
       if (form.wedding_date) {
@@ -170,9 +156,6 @@ export default function WeddingRegistrationPage() {
       if (!form.preferred_shopping_time) newErrors.preferred_shopping_time = 'Please select preferred shopping time';
       if (!form.preferred_contact_method) newErrors.preferred_contact_method = 'Please select preferred contact method';
       if (!form.preferred_followup_time) newErrors.preferred_followup_time = 'Please select preferred follow-up time';
-      if (form.existing_customer === 'Yes') {
-        if (!form.existing_customer_id?.trim()) newErrors.existing_customer_id = 'Please enter existing Emp ID';
-      }
     }
     else if (stepNum === 6) {
       // Optional step
@@ -256,8 +239,6 @@ export default function WeddingRegistrationPage() {
       const payload = {
         ...form,
         mobile: `+91${form.mobile.replace(/\D/g, '')}`,
-        alternate_mobile: form.alternate_mobile ? `+91${form.alternate_mobile.replace(/\D/g, '')}` : null,
-        age: form.age ? parseInt(form.age, 10) : null,
         guest_count: form.guest_count ? parseInt(form.guest_count, 10) : null,
         family_size: form.family_size ? parseInt(form.family_size, 10) : null,
         bride_age: form.bride_age ? parseInt(form.bride_age, 10) : null,
@@ -569,36 +550,6 @@ export default function WeddingRegistrationPage() {
                   {errors.mobile && <p className="text-red-500 text-xs mt-1">{errors.mobile}</p>}
                   {dupWarn && <p className="text-amber-700 text-xs mt-1 bg-amber-50 p-2 rounded">{dupWarn}</p>}
                 </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-primary mb-1">Alternate Mobile</label>
-                  <div className="flex">
-                    <span className="p-2.5 bg-accent-soft/50 border border-r-0 border-accent-soft rounded-l-xl font-extrabold text-xs text-[#5D4E42] flex items-center">
-                      +91
-                    </span>
-                    <input
-                      type="tel"
-                      maxLength={10}
-                      value={form.alternate_mobile}
-                      onChange={e => { const v = e.target.value.replace(/\D/g, '').slice(0, 10); handleChange('alternate_mobile', v); }}
-                      placeholder="Optional 10-digit number"
-                      className={`input-modern rounded-l-none ${errors.alternate_mobile ? 'border-red-400' : ''}`}
-                    />
-                  </div>
-                  {errors.alternate_mobile && <p className="text-red-500 text-xs mt-1">{errors.alternate_mobile}</p>}
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-primary mb-1">Email Address</label>
-                  <input
-                    type="email"
-                    value={form.email}
-                    onChange={e => handleChange('email', e.target.value)}
-                    placeholder="name@example.com"
-                    className={`input-modern ${errors.email ? 'border-red-400' : ''}`}
-                  />
-                  {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
-                </div>
               </div>
             </div>
 
@@ -684,7 +635,7 @@ export default function WeddingRegistrationPage() {
           <div className="card-glass p-6 sm:p-8 space-y-6 animate-fade-in shadow-xl">
             <div className="border-b border-accent-soft pb-3 flex items-center gap-2">
               <ShoppingBag className="w-5 h-5 text-accent" />
-              <h2 className="text-sm font-extrabold uppercase text-primary tracking-wider">Step 5: Wedding Shopping Requirements</h2>
+              <h2 className="text-sm font-extrabold uppercase text-primary tracking-wider">Step 4: Wedding Shopping Requirements</h2>
             </div>
 
             <div className="space-y-4">
@@ -738,7 +689,7 @@ export default function WeddingRegistrationPage() {
           <div className="card-glass p-6 sm:p-8 space-y-6 animate-fade-in shadow-xl">
             <div className="border-b border-accent-soft pb-3 flex items-center gap-2">
               <Clock className="w-5 h-5 text-accent" />
-              <h2 className="text-sm font-extrabold uppercase text-primary tracking-wider">Step 6: Preferred Visit & Follow-up</h2>
+              <h2 className="text-sm font-extrabold uppercase text-primary tracking-wider">Step 5: Preferred Visit & Follow-up</h2>
             </div>
 
             <div className="space-y-4">
@@ -763,41 +714,6 @@ export default function WeddingRegistrationPage() {
                   </select>
                   {errors.preferred_shopping_time && <p className="text-red-500 text-xs mt-1">{errors.preferred_shopping_time}</p>}
                 </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-primary mb-1">Are you an existing BSC emp? <span className="text-red-500">*</span></label>
-                  <select value={form.existing_customer} onChange={e => handleChange('existing_customer', e.target.value)} className={`select-modern ${errors.existing_customer ? 'border-red-400' : ''}`}>
-                    <option value="">Select</option>
-                    {EXISTING_CUSTOMER.map(e => <option key={e} value={e}>{e}</option>)}
-                  </select>
-                  {errors.existing_customer && <p className="text-red-500 text-xs mt-1">{errors.existing_customer}</p>}
-                </div>
-
-                {form.existing_customer === 'Yes' && (
-                  <>
-                    <div>
-                      <label className="block text-xs font-bold text-primary mb-1">Existing Emp ID <span className="text-red-500">*</span></label>
-                      <input
-                        type="text"
-                        value={form.existing_customer_id}
-                        onChange={e => handleChange('existing_customer_id', e.target.value)}
-                        placeholder="Your BSC emp ID"
-                        className={`input-modern ${errors.existing_customer_id ? 'border-red-400' : ''}`}
-                      />
-                      {errors.existing_customer_id && <p className="text-red-500 text-xs mt-1">{errors.existing_customer_id}</p>}
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-primary mb-1">Previous BSC Store</label>
-                      <input
-                        type="text"
-                        value={form.previous_store}
-                        onChange={e => handleChange('previous_store', e.target.value)}
-                        placeholder="Store where you previously shopped"
-                        className="input-modern"
-                      />
-                    </div>
-                  </>
-                )}
               </div>
 
               <div className="pt-4 border-t border-accent-soft">
@@ -845,7 +761,7 @@ export default function WeddingRegistrationPage() {
           <div className="card-glass p-6 sm:p-8 space-y-6 animate-fade-in shadow-xl">
             <div className="border-b border-accent-soft pb-3 flex items-center gap-2">
               <Package className="w-5 h-5 text-accent" />
-              <h2 className="text-sm font-extrabold uppercase text-primary tracking-wider">Step 7: Additional Requirements</h2>
+              <h2 className="text-sm font-extrabold uppercase text-primary tracking-wider">Step 6: Additional Requirements</h2>
             </div>
 
             <div className="space-y-4">
@@ -881,7 +797,7 @@ export default function WeddingRegistrationPage() {
           <div className="card-glass p-6 sm:p-8 space-y-6 animate-fade-in shadow-xl">
             <div className="border-b border-accent-soft pb-3 flex items-center gap-2">
               <CircleCheck className="w-5 h-5 text-accent" />
-              <h2 className="text-sm font-extrabold uppercase text-primary tracking-wider">Step 8: Review & Submit</h2>
+              <h2 className="text-sm font-extrabold uppercase text-primary tracking-wider">Step 7: Review & Submit</h2>
             </div>
 
             <div className="space-y-4">
@@ -918,13 +834,6 @@ export default function WeddingRegistrationPage() {
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs text-primary">
                   <p><strong>Name:</strong> {form.customer_name}</p>
                   <p><strong>Mobile:</strong> +91 {form.mobile}</p>
-                  {form.alternate_mobile && <p><strong>Alt Mobile:</strong> +91 {form.alternate_mobile}</p>}
-                  <p><strong>Email:</strong> {form.email || '—'}</p>
-                  {form.gender && <p><strong>Gender:</strong> {form.gender}</p>}
-                  {form.age && <p><strong>Age:</strong> {form.age}</p>}
-                  {(form.address || form.area || form.city) && (
-                    <p className="col-span-2 sm:col-span-3"><strong>Address:</strong> {[form.address, form.area, form.city, form.pincode].filter(Boolean).join(', ')}</p>
-                  )}
                 </div>
               </div>
 
@@ -997,8 +906,6 @@ export default function WeddingRegistrationPage() {
                   <p><strong>Contact Method:</strong> {form.preferred_contact_method || '—'}</p>
                   <p><strong>Follow-up Time:</strong> {form.preferred_followup_time || '—'}</p>
                   {form.expected_visitors && <p><strong>Expected Visitors:</strong> {form.expected_visitors}</p>}
-                  {form.existing_customer && <p><strong>Existing Customer:</strong> {form.existing_customer}</p>}
-                  {form.previous_store && <p><strong>Previous Store:</strong> {form.previous_store}</p>}
                 </div>
               </div>
 
