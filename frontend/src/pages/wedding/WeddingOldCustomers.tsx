@@ -15,6 +15,49 @@ import {
   Building2, CheckCircle2, History, AlertTriangle, ArrowUpDown
 } from 'lucide-react';
 
+/**
+ * Old Customer rows are wedding_customers joined with locations, so the
+ * archive list carries the computed `display_archived_at` (COALESCE of
+ * archived_at / updated_at) that the base type does not declare.
+ */
+type ArchivedWeddingCustomer = WeddingCustomer & {
+  display_archived_at?: string | null;
+};
+
+/** The three BSC stores the archive summary cards always report on. */
+const STORE_CARDS: { code: string; label: string }[] = [
+  { code: 'BEL', label: 'Belagavi' },
+  { code: 'DAV', label: 'Davanagere' },
+  { code: 'SHI', label: 'Shivamogga' }
+];
+
+interface OldCustomerStats {
+  totalOldCustomers: number;
+  byStore: { name: string; code?: string | null; count: number }[];
+  byPreviousStatus: { status: string; count: number }[];
+  archivedThisMonth: number;
+  archivedThisYear?: number;
+  completedThisMonth?: number;
+  completedThisYear?: number;
+}
+
+/**
+ * Factual count for one store, straight out of stats.byStore. The backend only
+ * emits stores that actually have archived rows, so a missing entry is 0 —
+ * never a fabricated number and never an assumed presence.
+ */
+function storeArchiveCount(stats: OldCustomerStats, code: string, label: string): number {
+  const byCode = stats.byStore.find(
+    s => String(s.code ?? '').trim().toUpperCase() === code.toUpperCase()
+  );
+  if (byCode) return Number(byCode.count) || 0;
+  const wanted = label.trim().toLowerCase();
+  const byName = stats.byStore.find(s => String(s.name ?? '').trim().toLowerCase() === wanted);
+  if (byName) return Number(byName.count) || 0;
+  const partial = stats.byStore.find(s => String(s.name ?? '').trim().toLowerCase().includes(wanted));
+  return partial ? Number(partial.count) || 0 : 0;
+}
+
 export default function WeddingOldCustomers() {
   const navigate = useNavigate();
   const [session, setSession] = useState<UserSession | null>(() => Auth.get());
@@ -25,18 +68,16 @@ export default function WeddingOldCustomers() {
   }, []);
 
   const [loading, setLoading] = useState(true);
-  const [customers, setCustomers] = useState<WeddingCustomer[]>([]);
+  const [customers, setCustomers] = useState<ArchivedWeddingCustomer[]>([]);
   const [totalCount, setTotalCount] = useState(0);
-  const [stats, setStats] = useState<{
-    totalOldCustomers: number;
-    byStore: { name: string; count: number }[];
-    byPreviousStatus: { status: string; count: number }[];
-    archivedThisMonth: number;
-  }>({
+  const [stats, setStats] = useState<OldCustomerStats>({
     totalOldCustomers: 0,
     byStore: [],
     byPreviousStatus: [],
-    archivedThisMonth: 0
+    archivedThisMonth: 0,
+    archivedThisYear: 0,
+    completedThisMonth: 0,
+    completedThisYear: 0
   });
 
   // Filter states
@@ -71,7 +112,7 @@ export default function WeddingOldCustomers() {
   const [telecallers, setTelecallers] = useState<any[]>([]);
 
   // Modals
-  const [customerToRestore, setCustomerToRestore] = useState<WeddingCustomer | null>(null);
+  const [customerToRestore, setCustomerToRestore] = useState<ArchivedWeddingCustomer | null>(null);
   const [restoring, setRestoring] = useState(false);
   const [autoArchiving, setAutoArchiving] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -284,8 +325,8 @@ export default function WeddingOldCustomers() {
             }
           />
 
-          {/* Top KPI & Summary Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+          {/* Top KPI & Summary Cards — factual counts straight from stats */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3.5">
             <div className="bg-[#FFFDFC] p-4 rounded-2xl border border-[#E8D9D4] shadow-xs flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-[#FAF0E6] text-[#4A173A] flex items-center justify-center shrink-0 border border-[#E8D9D4]">
                 <Archive className="w-5 h-5 text-[#B76E79]" />
@@ -297,38 +338,45 @@ export default function WeddingOldCustomers() {
               </div>
             </div>
 
+            {/* One card per store — 0 when that store has no archived rows yet */}
+            {STORE_CARDS.map((store) => (
+              <div key={store.code} className="bg-[#FFFDFC] p-4 rounded-2xl border border-[#E8D9D4] shadow-xs flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[#FFF4D6] text-[#C58A18] flex items-center justify-center shrink-0 border border-[#C58A18]/20">
+                  <Building2 className="w-5 h-5 text-[#C58A18]" />
+                </div>
+                <div className="min-w-0">
+                  <span className="text-[11px] font-bold text-[#6F5963] uppercase tracking-wider block">{store.label}</span>
+                  <span className="text-xl font-black text-[#4A173A] leading-tight">
+                    {storeArchiveCount(stats, store.code, store.label)}
+                  </span>
+                  <span className="text-[10px] text-[#9A858D] block">Old Customers · {store.code}</span>
+                </div>
+              </div>
+            ))}
+
             <div className="bg-[#FFFDFC] p-4 rounded-2xl border border-[#E8D9D4] shadow-xs flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-[#E8F5EE] text-[#198754] flex items-center justify-center shrink-0 border border-[#198754]/20">
                 <CheckCircle2 className="w-5 h-5 text-[#198754]" />
               </div>
               <div className="min-w-0">
-                <span className="text-[11px] font-bold text-[#6F5963] uppercase tracking-wider block">Archived This Month</span>
-                <span className="text-xl font-black text-[#198754] leading-tight">{stats.archivedThisMonth || 0}</span>
-                <span className="text-[10px] text-[#6F5963] block">Recent Lifecycle Closures</span>
-              </div>
-            </div>
-
-            <div className="bg-[#FFFDFC] p-4 rounded-2xl border border-[#E8D9D4] shadow-xs flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#FFF4D6] text-[#C58A18] flex items-center justify-center shrink-0 border border-[#C58A18]/20">
-                <Building2 className="w-5 h-5 text-[#C58A18]" />
-              </div>
-              <div className="min-w-0">
-                <span className="text-[11px] font-bold text-[#6F5963] uppercase tracking-wider block">Locations Covered</span>
-                <div className="text-xs font-bold text-[#2B1722] truncate mt-0.5">
-                  {stats.byStore.length > 0 ? stats.byStore.map(s => `${s.name}: ${s.count}`).join(' · ') : 'All Branches'}
-                </div>
-                <span className="text-[10px] text-[#9A858D] block">Store Scoped Access</span>
+                <span className="text-[11px] font-bold text-[#6F5963] uppercase tracking-wider block">Completed This Month</span>
+                <span className="text-xl font-black text-[#198754] leading-tight">
+                  {stats.completedThisMonth ?? stats.archivedThisMonth ?? 0}
+                </span>
+                <span className="text-[10px] text-[#6F5963] block">Journeys Closed This Month</span>
               </div>
             </div>
 
             <div className="bg-[#FFFDFC] p-4 rounded-2xl border border-[#E8D9D4] shadow-xs flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-[#F6E2E5] text-[#B76E79] flex items-center justify-center shrink-0 border border-[#E8D9D4]">
-                <History className="w-5 h-5 text-[#B76E79]" />
+                <Calendar className="w-5 h-5 text-[#B76E79]" />
               </div>
               <div className="min-w-0">
-                <span className="text-[11px] font-bold text-[#6F5963] uppercase tracking-wider block">Lifecycle Status</span>
-                <span className="text-xs font-black text-[#4A173A] block mt-0.5">Permanently Retained</span>
-                <span className="text-[10px] text-[#6F5963] block">Full Call &amp; Visit Timeline Safe</span>
+                <span className="text-[11px] font-bold text-[#6F5963] uppercase tracking-wider block">Completed This Year</span>
+                <span className="text-xl font-black text-[#4A173A] leading-tight">
+                  {stats.completedThisYear ?? stats.archivedThisYear ?? 0}
+                </span>
+                <span className="text-[10px] text-[#6F5963] block">Journeys Closed This Year</span>
               </div>
             </div>
           </div>
@@ -341,7 +389,7 @@ export default function WeddingOldCustomers() {
                 <Search className="w-4 h-4 text-[#9A858D] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
                   type="text"
-                  placeholder="Search Old Customers by ID, Name, Mobile, Email, City..."
+                  placeholder="Search Old Customers by ID, Name, Mobile, Email, Wedding City, Store..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-9 pr-4 py-2 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl text-xs font-semibold text-[#2B1722] placeholder:text-[#9A858D] focus:outline-none focus:border-[#B76E79] focus:bg-white transition-all shadow-inner"
@@ -435,7 +483,7 @@ export default function WeddingOldCustomers() {
 
             {/* Quick Date Filters row */}
             <div className="flex items-center gap-2 flex-wrap pt-2 border-t border-[#E8D9D4]/50 text-xs">
-              <span className="text-[11px] font-bold text-[#6F5963] uppercase">Archived Date:</span>
+              <span className="text-[11px] font-bold text-[#6F5963] uppercase">Completed Date:</span>
               {[
                 { key: 'all', label: 'All Time' },
                 { key: 'today', label: 'Today' },
@@ -472,27 +520,32 @@ export default function WeddingOldCustomers() {
                     <th className="py-3 px-4">Customer ID</th>
                     <th className="py-3 px-4">Customer Name</th>
                     <th className="py-3 px-4">Mobile</th>
+                    <th className="py-3 px-4">Email</th>
                     <th className="py-3 px-4">Store Location</th>
                     <th className="py-3 px-4">Wedding Date</th>
                     <th className="py-3 px-4">Shopping Date</th>
+                    <th className="py-3 px-4">Shopping Category</th>
+                    <th className="py-3 px-4">Family Size</th>
                     <th className="py-3 px-4">Previous Status</th>
                     <th className="py-3 px-4">Assigned Telecaller</th>
-                    <th className="py-3 px-4">Archived Date</th>
-                    <th className="py-3 px-4">Archived By</th>
+                    <th className="py-3 px-4">Total Calls</th>
+                    <th className="py-3 px-4">Last Call</th>
+                    <th className="py-3 px-4">Completed Date</th>
+                    <th className="py-3 px-4">Completed By</th>
                     <th className="py-3 px-4 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#E8D9D4] bg-white">
                   {loading ? (
                     <tr>
-                      <td colSpan={11} className="py-16 text-center text-[#6F5963]">
+                      <td colSpan={16} className="py-16 text-center text-[#6F5963]">
                         <RefreshCw className="w-6 h-6 animate-spin text-[#B76E79] mx-auto mb-2" />
                         <span className="font-bold">Loading Old Customers...</span>
                       </td>
                     </tr>
                   ) : customers.length === 0 ? (
                     <tr>
-                      <td colSpan={11} className="py-16 text-center text-[#6F5963]">
+                      <td colSpan={16} className="py-16 text-center text-[#6F5963]">
                         <Archive className="w-10 h-10 text-[#C9A45C]/50 mx-auto mb-3" />
                         <h3 className="font-black text-sm text-[#4A173A]">No Old Customers Found</h3>
                         <p className="text-xs text-[#8B776A] mt-1">
@@ -504,6 +557,10 @@ export default function WeddingOldCustomers() {
                     customers.map((cust) => {
                       const displayStatus = cust.previous_status || cust.customer_status || 'Archived';
                       const badge = getStatusBadge(displayStatus);
+                      // Completed Date = archived_at, with the backend's computed
+                      // display_archived_at (COALESCE(archived_at, updated_at)) as
+                      // the safety net for legacy rows.
+                      const completedAt = cust.display_archived_at || cust.archived_at || cust.updated_at || null;
 
                       return (
                         <tr
@@ -547,6 +604,22 @@ export default function WeddingOldCustomers() {
                             </div>
                           </td>
 
+                          {/* Email */}
+                          <td className="py-3 px-4 font-medium text-[#2B1722]">
+                            {cust.email ? (
+                              <a
+                                href={`mailto:${cust.email}`}
+                                className="inline-flex items-center gap-1.5 text-[#4A173A] hover:text-[#B76E79] transition-colors"
+                                title={cust.email}
+                              >
+                                <Mail className="w-3 h-3 shrink-0 text-[#B76E79]" />
+                                <span className="truncate max-w-[150px] inline-block align-bottom">{cust.email}</span>
+                              </a>
+                            ) : (
+                              <span className="text-[#9A858D]">Not Recorded</span>
+                            )}
+                          </td>
+
                           {/* Store Location */}
                           <td className="py-3 px-4">
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#FFF7F2] border border-[#E8D9D4] text-[#4A173A] font-semibold text-[10.5px]">
@@ -556,13 +629,37 @@ export default function WeddingOldCustomers() {
                           </td>
 
                           {/* Wedding Date */}
-                          <td className="py-3 px-4 font-medium text-[#2B1722]">
-                            {cust.wedding_date ? formatDateDisplay(cust.wedding_date) : <span className="text-[#9A858D]">—</span>}
+                          <td className="py-3 px-4 font-medium text-[#2B1722] whitespace-nowrap">
+                            <span className={cust.wedding_date ? '' : 'text-[#9A858D]'}>
+                              {formatDateDisplay(cust.wedding_date, 'Not Recorded')}
+                            </span>
                           </td>
 
                           {/* Shopping Date */}
+                          <td className="py-3 px-4 font-medium text-[#2B1722] whitespace-nowrap">
+                            <span className={cust.expected_shopping_date ? '' : 'text-[#9A858D]'}>
+                              {formatDateDisplay(cust.expected_shopping_date, 'Not Recorded')}
+                            </span>
+                          </td>
+
+                          {/* Shopping Category */}
                           <td className="py-3 px-4 font-medium text-[#2B1722]">
-                            {cust.expected_shopping_date ? formatDateDisplay(cust.expected_shopping_date) : <span className="text-[#9A858D]">—</span>}
+                            {cust.preferred_shopping_category ? (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-[#FAF0E6] border border-[#E8D9D4] text-[#4A173A] font-semibold text-[10.5px]">
+                                {cust.preferred_shopping_category}
+                              </span>
+                            ) : (
+                              <span className="text-[#9A858D]">Not Recorded</span>
+                            )}
+                          </td>
+
+                          {/* Family Size */}
+                          <td className="py-3 px-4 font-medium text-[#2B1722]">
+                            {cust.estimated_family_size ? (
+                              <span className="font-semibold">{cust.estimated_family_size}</span>
+                            ) : (
+                              <span className="text-[#9A858D]">Not Recorded</span>
+                            )}
                           </td>
 
                           {/* Previous Customer Status */}
@@ -582,16 +679,26 @@ export default function WeddingOldCustomers() {
                             )}
                           </td>
 
-                          {/* Archived Date */}
-                          <td className="py-3 px-4 text-[#6F5963] font-medium whitespace-nowrap">
-                            {cust.archived_at ? (
-                              formatDateDisplay(cust.archived_at)
-                            ) : (
-                              cust.updated_at ? formatDateDisplay(cust.updated_at) : '—'
-                            )}
+                          {/* Total Calls */}
+                          <td className="py-3 px-4 font-medium text-[#2B1722]">
+                            <span className="font-bold text-[#4A173A]">{Number(cust.total_calls_count) || 0}</span>
                           </td>
 
-                          {/* Archived By */}
+                          {/* Last Call */}
+                          <td className="py-3 px-4 font-medium text-[#2B1722] whitespace-nowrap">
+                            <span className={cust.last_call_date ? '' : 'text-[#9A858D]'}>
+                              {formatDateDisplay(cust.last_call_date, 'No Calls')}
+                            </span>
+                          </td>
+
+                          {/* Completed Date (DATETIME) */}
+                          <td className="py-3 px-4 text-[#6F5963] font-medium whitespace-nowrap">
+                            <span className={completedAt ? '' : 'text-[#9A858D]'}>
+                              {formatDateTimeDisplay(completedAt, 'Not Recorded')}
+                            </span>
+                          </td>
+
+                          {/* Completed By */}
                           <td className="py-3 px-4 text-[#6F5963] font-medium">
                             <span className="truncate max-w-[120px] block" title={cust.archived_by || 'Staff'}>
                               {cust.archived_by || 'Staff'}

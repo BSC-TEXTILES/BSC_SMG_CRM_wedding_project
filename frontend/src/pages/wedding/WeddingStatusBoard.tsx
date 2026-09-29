@@ -68,7 +68,9 @@ const COLUMNS = [
   {
     key: 'won',
     label: '6. Won / Converted',
-    statuses: ['Won', 'Converted'],
+    // 'Wedding Process Completed' is the terminal journey step: it lands here and
+    // simultaneously moves the record into the permanent Old Customers archive.
+    statuses: ['Won', 'Converted', 'Wedding Process Completed'],
     color: 'border-[#198754]/40',
     headerBg: 'bg-[#E8F5EE]',
     countBadge: 'bg-[#198754] text-white'

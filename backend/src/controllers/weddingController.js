@@ -4417,7 +4417,7 @@ class WeddingController {
       const { clause: locClause, params: locParams } = resolveLocFilter(req, '');
 
       await pool.query(
-        `UPDATE wedding_customers SET assigned_telecaller = ?, assigned_telecaller_id = ? WHERE id IN (${placeholders}) AND is_deleted = 0 ${locClause}`,
+        `UPDATE wedding_customers SET assigned_telecaller = ?, assigned_telecaller_id = ? WHERE id IN (${placeholders}) AND is_deleted = 0 AND (lifecycle_status = 'ACTIVE' OR lifecycle_status IS NULL) ${locClause}`,
         [assigned_telecaller, assigned_telecaller_id ? parseInt(assigned_telecaller_id, 10) : null, ...customer_ids, ...locParams]
       );
 

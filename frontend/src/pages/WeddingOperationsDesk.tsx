@@ -20,6 +20,10 @@ const DB_TO_DISPLAY: Record<string, string> = {
   'Cancelled': 'Cancelled',
   'Closed': 'Completed',
   'No Response': 'Contact Pending',
+  // Canonical completion status: written/read as-is because it is the value the
+  // backend recognises (COMPLETION_STATUSES) and moves the record into the
+  // permanent Old Customers archive.
+  'Wedding Process Completed': 'Wedding Process Completed',
 };
 
 const DISPLAY_TO_DB: Record<string, string> = {
@@ -316,12 +320,18 @@ export default function WeddingOperationsDesk() {
     setSaving(true);
     try {
       const dbStatus = DISPLAY_TO_DB[newStatus] || newStatus;
-      await API.changeWeddingCustomerStatus(selectedCustomer.id, dbStatus);
-      showToast(`Status updated to ${newStatus}`, 'success');
+      const res: any = await API.changeWeddingCustomerStatus(selectedCustomer.id, dbStatus);
+      // Completion status archives the record permanently in Old Customers.
+      if (res?.archived || res?.lifecycle_status === 'OLD_CUSTOMER') {
+        showToast('Customer completed and moved to Old Customers.', 'success');
+      } else {
+        showToast(res?.message || `Status updated to ${newStatus}`, 'success');
+      }
       setStatusModalOpen(false);
       loadData();
     } catch (e: any) {
-      showToast('Error: ' + e.message, 'error');
+      // 409: archived rows are read-only until restored — show the server wording.
+      showToast(e?.message || 'Failed to update status', 'error');
     } finally {
       setSaving(false);
     }
@@ -786,6 +796,8 @@ export default function WeddingOperationsDesk() {
                   <option value="Shopping In Progress">Shopping In Progress</option>
                   <option value="Shopping Confirmed">Shopping Confirmed</option>
                   <option value="Completed">Completed</option>
+                  {/* Final journey step — archives the record permanently as an Old Customer */}
+                  <option value="Wedding Process Completed">Wedding Process Completed</option>
                   <option value="Not Interested">Not Interested</option>
                   <option value="Cancelled">Cancelled</option>
                 </select>

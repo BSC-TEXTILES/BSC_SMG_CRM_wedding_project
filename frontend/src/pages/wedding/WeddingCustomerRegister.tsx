@@ -13,10 +13,12 @@ import {
   WeddingCustomer,
   CUSTOMER_STATUSES,
   CALL_OUTCOMES,
+  isCompletionStatus,
+  ARCHIVE_PROTECTED_MESSAGE,
   getStatusBadge
 } from './weddingTypes';
 import LocationFilterSelect from '../../components/ui/LocationFilterSelect';
-import { UserPlus, Search, PhoneCall, UserCheck, MapPin, MessageCircle, Download, RefreshCw, ChevronLeft, ChevronRight, Eye, X, CircleCheck, CircleAlert, Trash2, Archive } from 'lucide-react';
+import { UserPlus, Search, PhoneCall, UserCheck, MapPin, MessageCircle, Download, RefreshCw, ChevronLeft, ChevronRight, Eye, X, CircleCheck, CircleAlert, Trash2, Archive, Lock } from 'lucide-react';
 
 export default function WeddingCustomerRegister() {
   const navigate = useNavigate();
@@ -137,7 +139,17 @@ export default function WeddingCustomerRegister() {
       setCustomerToDelete(null);
       loadData();
     } catch (err: any) {
-      showToast('Error deleting customer: ' + (err.message || 'Server error'), 'error');
+      // DELETE now answers with a JSON body carrying `message`. Completed/archived rows
+      // return 403 "Completed customer records are permanently protected." — show the
+      // server wording verbatim instead of a generic "Error deleting customer".
+      const serverMessage = err?.message || err?.data?.message || err?.response?.data?.message;
+      if (err?.status === 403) {
+        // Record stays in the register — surface the protection message, keep modal open.
+        showToast(serverMessage || ARCHIVE_PROTECTED_MESSAGE, 'error');
+      } else {
+        showToast(serverMessage || 'Server error. Please try again.', 'error');
+        setCustomerToDelete(null);
+      }
     } finally {
       setDeleting(false);
     }
@@ -796,26 +808,40 @@ export default function WeddingCustomerRegister() {
                                 <UserCheck className="w-3.5 h-3.5" />
                               </button>
 
-                               {/* Move to Old Customers */}
-                              <button
-                                onClick={() => {
-                                  setCustomerToArchive(cust);
-                                  setArchiveReason('Completed wedding shopping / journey');
-                                }}
-                                className="shrink-0 p-1.5 rounded-lg bg-[#FAF0E6] hover:bg-[#FAF0E6]/80 text-[#B76E79] transition-colors border border-[#E8D9D4]"
-                                title="Move to Old Customers"
-                              >
-                                <Archive className="w-3.5 h-3.5" />
-                              </button>
+                               {/* Move to Old Customers — hidden once the row is archived */}
+                              {cust.lifecycle_status !== 'OLD_CUSTOMER' && (
+                                <button
+                                  onClick={() => {
+                                    setCustomerToArchive(cust);
+                                    setArchiveReason('Completed wedding shopping / journey');
+                                  }}
+                                  className="shrink-0 p-1.5 rounded-lg bg-[#FAF0E6] hover:bg-[#FAF0E6]/80 text-[#B76E79] transition-colors border border-[#E8D9D4]"
+                                  title="Move to Old Customers"
+                                >
+                                  <Archive className="w-3.5 h-3.5" />
+                                </button>
+                              )}
 
-                              {/* Delete Customer */}
-                              <button
-                                onClick={() => setCustomerToDelete(cust)}
-                                className="shrink-0 p-1.5 rounded-lg bg-[#FDE8E7] hover:bg-[#FDE8E7]/70 text-[#B42318] transition-colors border border-[#B42318]/20"
-                                title="Delete Customer"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
+                              {/* Delete Customer — archived/completed records are permanently protected (403),
+                                  so the control is not offered at all. Restore the record first. */}
+                              {cust.lifecycle_status !== 'OLD_CUSTOMER' && !isCompletionStatus(cust.customer_status) ? (
+                                <button
+                                  onClick={() => setCustomerToDelete(cust)}
+                                  className="shrink-0 p-1.5 rounded-lg bg-[#FDE8E7] hover:bg-[#FDE8E7]/70 text-[#B42318] transition-colors border border-[#B42318]/20"
+                                  title="Delete Customer"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  disabled
+                                  title={ARCHIVE_PROTECTED_MESSAGE}
+                                  className="shrink-0 p-1.5 rounded-lg bg-[#F5F5F5] text-[#9A858D] border border-[#E8D9D4] cursor-not-allowed opacity-60"
+                                >
+                                  <Lock className="w-3.5 h-3.5" />
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>

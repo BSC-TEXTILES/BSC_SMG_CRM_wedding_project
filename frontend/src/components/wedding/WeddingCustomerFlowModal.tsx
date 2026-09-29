@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { API } from '../../services/api';
 import { parseDate, formatDateDisplay, formatDateTimeDisplay } from '../../utils/dateUtils';
-import { getStatusBadge, CALL_OUTCOMES, CALL_STATUSES, WEDDING_STATUSES, CALL_TIMES } from '../../pages/wedding/weddingTypes';
+import { getStatusBadge, CALL_OUTCOMES, CALL_STATUSES, WEDDING_STATUSES, CALL_TIMES, ARCHIVE_SUCCESS_MESSAGE, ARCHIVE_READONLY_MESSAGE } from '../../pages/wedding/weddingTypes';
 import { showToast } from '../Toast';
 import {
   X,
@@ -315,7 +315,11 @@ export default function WeddingCustomerFlowModal({
 
     setIsSubmitting(true);
     try {
-      await API.changeWeddingCustomerStatus(targetId, statusForm.new_status, statusForm.change_reason);
+      const res: any = await API.changeWeddingCustomerStatus(targetId, statusForm.new_status, statusForm.change_reason);
+      if (res?.success === false) {
+        showToast(res.message || 'Failed to update customer status', 'error');
+        return;
+      }
 
       const newStep: TimelineStep = {
         id: `live-status-${Date.now()}`,
@@ -331,13 +335,28 @@ export default function WeddingCustomerFlowModal({
       };
 
       setRecentSteps(prev => [newStep, ...prev]);
-      setCustomer((prev: any) => ({ ...prev, customer_status: statusForm.new_status }));
-      showToast(`Status updated to "${statusForm.new_status}" and new step added!`, 'success');
+      setCustomer((prev: any) => ({
+        ...prev,
+        customer_status: statusForm.new_status,
+        ...(res?.archived ? { lifecycle_status: 'OLD_CUSTOMER', archived_at: new Date().toISOString() } : {})
+      }));
+
+      // A completion status archives the record permanently — say so explicitly.
+      if (res?.archived || res?.lifecycle_status === 'OLD_CUSTOMER') {
+        showToast(ARCHIVE_SUCCESS_MESSAGE, 'success');
+      } else {
+        showToast(`Status updated to "${statusForm.new_status}" and new step added!`, 'success');
+      }
 
       setStatusForm(prev => ({ ...prev, change_reason: '' }));
       if (onFlowUpdated) onFlowUpdated();
     } catch (err: any) {
-      showToast('Failed to update customer status: ' + err.message, 'error');
+      // 409 OLD_CUSTOMER_READONLY — archived rows refuse status changes until restored.
+      if (err?.status === 409 || err?.data?.code === 'OLD_CUSTOMER_READONLY') {
+        showToast(err.message || ARCHIVE_READONLY_MESSAGE, 'error');
+      } else {
+        showToast(err.message || 'Failed to update customer status', 'error');
+      }
     } finally {
       setIsSubmitting(false);
     }

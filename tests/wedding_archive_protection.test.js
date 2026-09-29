@@ -32,7 +32,7 @@ async function initToken() {
   );
 }
 
-function request(method, urlPath, body) {
+function request(method, urlPath, body, extraHeaders) {
   return new Promise((resolve, reject) => {
     const payload = body === undefined ? null : JSON.stringify(body);
     const req = http.request({
@@ -45,7 +45,8 @@ function request(method, urlPath, body) {
         'Cookie': `token=${token}; _csrf=test_csrf_token_12345`,
         'x-csrf-token': 'test_csrf_token_12345',
         'Authorization': `Bearer ${token}`,
-        'x-test-bypass': 'bsc-test-secret-suite'
+        'x-test-bypass': 'bsc-test-secret-suite',
+        ...(extraHeaders || {})
       }
     }, (res) => {
       let data = '';
@@ -69,7 +70,7 @@ function assert(cond, message) {
 
 async function findRow(id) {
   const [rows] = await db.query(
-    'SELECT id, customer_code, customer_name, mobile_number, lifecycle_status, customer_status, previous_status, archived_at, archived_by, previous_customer_id FROM wedding_customers WHERE id = ?',
+    'SELECT id, customer_code, customer_name, mobile_number, location_id, lifecycle_status, customer_status, previous_status, archived_at, archived_by, previous_customer_id FROM wedding_customers WHERE id = ?',
     [id]
   );
   return rows[0];
@@ -110,9 +111,9 @@ async function run() {
       location_id: 3,
       assigned_telecaller: 'Probe Telecaller'
     });
-    assert(create.status === 200 && create.body.success, `customer created (got ${create.status} ${create.body.message})`);
-    const id = create.body.data.id;
-    createdIds.push(id);
+    const id = create.body.data?.id;
+    if (id) createdIds.push(id);
+    assert(create.status < 300 && create.body.success && !!id, `customer created (got ${create.status} ${create.body.message})`);
 
     console.log('\n--- 1. Completion status archives automatically ---');
     const change = await request('PUT', `${BASE}/customers/${id}/status`, {
@@ -151,6 +152,20 @@ async function run() {
     assert(oldList.status === 200 && oldList.body.success, `old customers list responds (got ${oldList.status})`);
     const listed = (oldList.body.data.customers || []).some((c) => c.id === id);
     assert(listed, 'present in Old Customers');
+
+    // Requirement 34: archived rows stay inside the caller's location scope.
+    const [otherLocRows] = await db.query('SELECT id FROM locations WHERE id <> ? LIMIT 1', [row.location_id]);
+    assert(!!row.location_id, `probe row has a location (${row.location_id})`);
+    assert(otherLocRows.length > 0, 'a second store location exists to scope against');
+    {
+      const otherLoc = otherLocRows[0].id;
+      const scopedAway = await request('GET', `${BASE}/old-customers?search=${mobile}&limit=100`, undefined, { 'x-location-id': String(otherLoc) });
+      const leaked = (scopedAway.body.data?.customers || []).some((c) => c.id === id);
+      assert(!leaked, `archive list scoped away from location ${otherLoc} (customer lives in ${row.location_id})`);
+      const ownScope = await request('GET', `${BASE}/old-customers?search=${mobile}&limit=100`, undefined, { 'x-location-id': String(row.location_id) });
+      assert((ownScope.body.data?.customers || []).some((c) => c.id === id), 'archive visible when scoped to the customer own location');
+    }
+
     const stats = oldList.body.data.stats || {};
     assert(typeof stats.completedThisYear === 'number', `stats expose completedThisYear (${stats.completedThisYear})`);
     assert(typeof stats.completedThisMonth === 'number', `stats expose completedThisMonth (${stats.completedThisMonth})`);
@@ -190,9 +205,9 @@ async function run() {
       location_id: 3,
       link_to_existing: true
     });
-    assert(reReg.status === 200 && reReg.body.success, `new journey created (got ${reReg.status} ${reReg.body.message})`);
-    const newId = reReg.body.data.id;
-    createdIds.push(newId);
+    const newId = reReg.body.data?.id;
+    if (newId) createdIds.push(newId);
+    assert(reReg.status < 300 && reReg.body.success && !!newId, `new journey created (got ${reReg.status} ${reReg.body.message})`);
 
     const newRow = await findRow(newId);
     const oldRow = await findRow(id);

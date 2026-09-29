@@ -48,6 +48,30 @@ export interface WeddingCustomer {
   shopping_requirements?: string;
 }
 
+/**
+ * A related / previous wedding journey for the same mobile number, returned by
+ * GET /api/wedding-crm/customers/:id/full-profile as `associatedCustomers`.
+ * Both active and permanently archived journeys stay separately traceable here.
+ */
+export interface WeddingAssociatedCustomer {
+  id: number;
+  customer_code: string;
+  customer_name?: string;
+  mobile_number?: string;
+  wedding_date?: string | null;
+  customer_status?: string;
+  assigned_telecaller?: string;
+  expected_shopping_date?: string | null;
+  created_at?: string;
+  location_name?: string;
+  location_code?: string;
+  lifecycle_status?: 'ACTIVE' | 'OLD_CUSTOMER' | 'ARCHIVED';
+  previous_status?: string | null;
+  archived_at?: string | null;
+  archived_by?: string | null;
+  previous_customer_id?: number | null;
+}
+
 export interface WeddingWhatsAppTemplate {
   key: string;
   label: string;
@@ -163,8 +187,32 @@ export const CUSTOMER_STATUSES = [
   'Visit Scheduled',
   'Visited',
   'Not Interested',
-  'Invalid Number'
+  'Invalid Number',
+  // Terminal journey status — the last step after Visit / Shopping Confirmation.
+  // Selecting this moves the customer into the permanent Old Customers archive.
+  'Wedding Process Completed'
 ];
+
+/**
+ * Status values the backend treats as "journey complete" (weddingController.js
+ * COMPLETION_STATUSES). Choosing one of these moves the customer into the
+ * immutable Old Customers archive automatically.
+ */
+export const COMPLETION_STATUSES = ['Wedding Process Completed', 'Completed'];
+
+/** Final journey status shown in every customer_status picker. */
+export const COMPLETION_STATUS = 'Wedding Process Completed';
+
+export function isCompletionStatus(status?: string) {
+  return COMPLETION_STATUSES.includes((status || '').trim());
+}
+
+/** Server messages mirrored for consistent UI feedback (see weddingController.js). */
+export const ARCHIVE_SUCCESS_MESSAGE = 'Customer completed and moved to Old Customers.';
+export const ARCHIVE_READONLY_MESSAGE =
+  'This customer is in Old Customers. Restore the record before changing its status.';
+export const ARCHIVE_PROTECTED_MESSAGE =
+  'Completed customer records are permanently protected.';
 
 export const CALL_OUTCOMES = [
   'Connected — Interested',
@@ -234,6 +282,14 @@ export const BUDGET_RANGES = [
  */
 export function getStatusBadge(status?: string) {
   const s = (status || '').toLowerCase().trim();
+  // Completed journeys render in the success palette so the archive trigger reads
+  // as a positive terminal step rather than an unclassified status.
+  if (COMPLETION_STATUSES.map((v) => v.toLowerCase()).includes(s)) {
+    return {
+      bg: 'bg-[#E8F5EE] text-[#198754] border-[#198754]/25',
+      dot: 'bg-[#198754]'
+    };
+  }
   if (s.includes('won') || s.includes('converted') || s.includes('confirm') || s.includes('visited') || s.includes('planned')) {
     return {
       bg: 'bg-[#E8F5EE] text-[#198754] border-[#198754]/25',

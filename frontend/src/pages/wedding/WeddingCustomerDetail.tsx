@@ -8,9 +8,14 @@ import WeddingNav from './WeddingNav';
 import { parseDate, formatDateDisplay, formatDateTimeDisplay } from '../../utils/dateUtils';
 import {
   WeddingCustomer,
+  WeddingAssociatedCustomer,
   CallLog,
   CUSTOMER_STATUSES,
   CALL_OUTCOMES,
+  ARCHIVE_SUCCESS_MESSAGE,
+  ARCHIVE_READONLY_MESSAGE,
+  ARCHIVE_PROTECTED_MESSAGE,
+  isCompletionStatus,
   getStatusBadge
 } from './weddingTypes';
 import {
@@ -67,7 +72,9 @@ export default function WeddingCustomerDetail() {
   const [notes, setNotes] = useState<any[]>([]);
   const [statusHistory, setStatusHistory] = useState<any[]>([]);
   const [associatedRegistrations, setAssociatedRegistrations] = useState<any[]>([]);
-  const [associatedCustomers, setAssociatedCustomers] = useState<any[]>([]);
+  const [associatedCustomers, setAssociatedCustomers] = useState<WeddingAssociatedCustomer[]>([]);
+  // Reflects GET /customers/:id/full-profile `is_old_customer` (archive membership)
+  const [isOldCustomerProfile, setIsOldCustomerProfile] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // Active Profile Section Tab
@@ -181,10 +188,9 @@ export default function WeddingCustomerDetail() {
         API.getWeddingFullProfile(id).catch(() => null)
       ]);
 
-      if (custRes?.customer) {
-        setCustomer(custRes.customer);
-      } else if (custRes?.data) {
-        setCustomer(custRes.data);
+      const loadedCustomer = custRes?.customer || custRes?.data || null;
+      if (loadedCustomer) {
+        setCustomer(loadedCustomer);
       }
 
       if (fullRes?.data) {
@@ -193,8 +199,14 @@ export default function WeddingCustomerDetail() {
         if (Array.isArray(fullRes.data.statusHistory)) setStatusHistory(fullRes.data.statusHistory);
         if (Array.isArray(fullRes.data.associatedRegistrations)) setAssociatedRegistrations(fullRes.data.associatedRegistrations);
         if (Array.isArray(fullRes.data.associatedCustomers)) setAssociatedCustomers(fullRes.data.associatedCustomers);
+        // Top-level archive flag from GET /customers/:id/full-profile
+        setIsOldCustomerProfile(
+          Boolean(fullRes.is_old_customer ?? fullRes.data.is_old_customer) ||
+          loadedCustomer?.lifecycle_status === 'OLD_CUSTOMER'
+        );
       } else if (custRes?.call_logs) {
         setCallLogs(custRes.call_logs);
+        setIsOldCustomerProfile(loadedCustomer?.lifecycle_status === 'OLD_CUSTOMER');
       }
     } catch (err: any) {
       showToast('Error loading customer details: ' + err.message, 'error');
@@ -356,12 +368,30 @@ export default function WeddingCustomerDetail() {
     if (!customer || !newStatus) return;
     setSavingStatus(true);
     try {
-      await API.changeWeddingCustomerStatus(customer.id, newStatus, statusReason);
+      const res: any = await API.changeWeddingCustomerStatus(customer.id, newStatus, statusReason);
+      if (res?.success === false) {
+        showToast(res.message || 'Failed to update customer status', 'error');
+        return;
+      }
+      // Selecting a completion status archives the record permanently on the backend.
+      if (res?.archived || res?.lifecycle_status === 'OLD_CUSTOMER') {
+        showToast(ARCHIVE_SUCCESS_MESSAGE, 'success');
+        setStatusModalOpen(false);
+        setStatusReason('');
+        await loadCustomer();
+        return;
+      }
       showToast('Customer status updated successfully.', 'success');
       setStatusModalOpen(false);
       loadCustomer();
     } catch (err: any) {
-      showToast('Error updating status: ' + err.message, 'error');
+      // 409 OLD_CUSTOMER_READONLY: archived rows refuse status changes until restored.
+      // Surface the server wording verbatim instead of a generic failure message.
+      if (err?.status === 409 || err?.data?.code === 'OLD_CUSTOMER_READONLY') {
+        showToast(err.message || ARCHIVE_READONLY_MESSAGE, 'error');
+      } else {
+        showToast(err.message || 'Error updating customer status', 'error');
+      }
     } finally {
       setSavingStatus(false);
     }
@@ -417,6 +447,13 @@ export default function WeddingCustomerDetail() {
 
   const badge = getStatusBadge(customer.customer_status);
 
+  // Archive membership: lifecycle_status from the row, or the full-profile flag.
+  // Archived records are immutable — no delete, no direct status change, no re-archive.
+  const isArchived = customer.lifecycle_status === 'OLD_CUSTOMER' || isOldCustomerProfile;
+  // Related journeys come straight from the location-scoped full-profile endpoint,
+  // so whoever may open the profile may trace them (no new permission logic added).
+  const previousJourneys = associatedCustomers.filter((c: any) => c && String(c.id) !== String(customer.id));
+
   return (
     <DashboardLayout title={customer ? `Customer Profile: ${customer.customer_name}` : 'Customer Details'}>
       <PageContainer maxWidth="full">
@@ -427,15 +464,15 @@ export default function WeddingCustomerDetail() {
             currentPageTitle={customer.customer_name}
             breadcrumbs={[
               {
-                label: customer.lifecycle_status === 'OLD_CUSTOMER' ? 'Old Customers' : 'Customer Register',
-                href: customer.lifecycle_status === 'OLD_CUSTOMER' ? '/wedding-crm/old-customers' : '/wedding-crm/customers'
+                label: isArchived ? 'Old Customers' : 'Customer Register',
+                href: isArchived ? '/wedding-crm/old-customers' : '/wedding-crm/customers'
               },
               { label: customer.customer_code }
             ]}
             actions={
               <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
                 <Link
-                  to={customer.lifecycle_status === 'OLD_CUSTOMER' ? '/wedding-crm/old-customers' : '/wedding-crm/customers'}
+                  to={isArchived ? '/wedding-crm/old-customers' : '/wedding-crm/customers'}
                   className="px-3 py-2 bg-[#FFFDFC] hover:bg-[#FFF7F2] border border-[#E8D9D4] rounded-xl text-xs font-semibold text-[#4A173A] flex items-center gap-1.5 transition-colors shadow-xs"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
@@ -500,7 +537,7 @@ export default function WeddingCustomerDetail() {
                   <span>Update Status</span>
                 </button>
 
-                {customer.lifecycle_status === 'OLD_CUSTOMER' ? (
+                {isArchived ? (
                   <button
                     type="button"
                     onClick={() => setRestoreModalOpen(true)}
@@ -529,7 +566,7 @@ export default function WeddingCustomerDetail() {
           />
 
           {/* Old Customer Alert Banner */}
-          {customer.lifecycle_status === 'OLD_CUSTOMER' && (
+          {isArchived && (
             <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-amber-900 shadow-xs">
               <div className="flex items-start gap-3">
                 <div className="w-8 h-8 rounded-xl bg-amber-100 flex items-center justify-center shrink-0 text-amber-800 font-bold">
@@ -542,13 +579,36 @@ export default function WeddingCustomerDetail() {
                       OLD CUSTOMER
                     </span>
                   </div>
-                  <div className="text-xs text-amber-700 mt-0.5">
-                    Archived on <span className="font-semibold">{formatDateDisplay((customer as any).archived_at, 'N/A')}</span>
-                    {(customer as any).archived_by && <span> by <span className="font-semibold">{(customer as any).archived_by}</span></span>}
-                    {(customer as any).archive_reason && <span> — <em>"{(customer as any).archive_reason}"</em></span>}
+
+                  {/* Completed Date / Completed By — permanent archive stamp */}
+                  <div className="flex flex-wrap gap-x-6 gap-y-1 text-[11px] text-amber-800 mt-1.5">
+                    <span>
+                      Completed Date:{' '}
+                      <strong className="font-semibold text-amber-900">
+                        {formatDateTimeDisplay((customer as any).archived_at, 'N/A')}
+                      </strong>
+                    </span>
+                    <span>
+                      Completed By:{' '}
+                      <strong className="font-semibold text-amber-900">
+                        {(customer as any).archived_by || 'N/A'}
+                      </strong>
+                    </span>
+                    {(customer as any).previous_status && (
+                      <span>
+                        Status Before Completion:{' '}
+                        <strong className="font-semibold text-amber-900">{(customer as any).previous_status}</strong>
+                      </span>
+                    )}
+                    {(customer as any).archive_reason && (
+                      <span>
+                        Reason: <em>&ldquo;{(customer as any).archive_reason}&rdquo;</em>
+                      </span>
+                    )}
                   </div>
-                  <div className="text-[11px] text-amber-600 mt-0.5">
-                    All call records, shopping requirements, and interaction history remain permanently intact.
+
+                  <div className="text-[11px] text-amber-600 mt-1">
+                    All call records, shopping requirements, and interaction history remain permanently intact. {ARCHIVE_PROTECTED_MESSAGE}
                   </div>
                 </div>
               </div>
@@ -845,7 +905,7 @@ export default function WeddingCustomerDetail() {
               </div>
 
               {/* Section 4: Archive & Lifecycle Information */}
-              {(customer.lifecycle_status === 'OLD_CUSTOMER' || (customer as any).archived_at) && (
+              {(isArchived || (customer as any).archived_at) && (
                 <div className="bg-[#FFFDFC] p-5 rounded-3xl border border-amber-200 bg-amber-50/20 shadow-xs space-y-3 text-xs md:col-span-2 lg:col-span-3">
                   <div className="flex items-center justify-between font-bold text-sm text-[#4A173A] border-b border-[#E8D9D4] pb-2">
                     <div className="flex items-center gap-2">
@@ -1095,39 +1155,92 @@ export default function WeddingCustomerDetail() {
                     </div>
                   ))}
 
-                  {/* Other CRM Customer records if any */}
-                  {associatedCustomers.map((cust) => (
-                    <div
-                      key={cust.id}
-                      className="p-4 rounded-2xl bg-[#FFFAF7] border border-[#E8D9D4] hover:border-[#B76E79] transition-all text-xs flex flex-col md:flex-row md:items-center justify-between gap-3"
-                    >
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-[#2B1722] text-sm">{cust.customer_name}</span>
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#E8F5EE] text-[#198754] border border-[#198754]/20">
-                            CRM Code: {cust.customer_code}
-                          </span>
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#FFFDFC] text-[#6F5963] border border-[#E8D9D4]">
-                            {cust.customer_status}
-                          </span>
-                        </div>
-                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-[#6F5963] text-[11px]">
-                          {parseDate(cust.wedding_date) && (
-                            <span>Wedding Date: <strong className="text-[#B76E79]">{formatDateDisplay(cust.wedding_date, 'TBD')}</strong></span>
-                          )}
-                          {cust.location_name && <span>Store: <strong>{cust.location_name}</strong></span>}
-                          <span>Telecaller: <strong>{cust.assigned_telecaller || 'Unassigned'}</strong></span>
-                        </div>
+                  {/* ── Previous / Related Journeys ─────────────────────────────
+                      Every other wedding journey on this mobile number, active or
+                      permanently archived. Both records stay separately traceable
+                      (e.g. Priya Sharma — Previous Wedding: Completed 2026, and the
+                      New Wedding Journey 2030 open as independent customer codes). */}
+                  {previousJourneys.length > 0 && (
+                    <div className="pt-1">
+                      <h4 className="text-[11px] font-bold uppercase tracking-wider text-[#4A173A] mb-2">
+                        Previous / Related Journeys ({previousJourneys.length})
+                      </h4>
+                      <div className="space-y-3">
+                        {previousJourneys.map((cust: any) => {
+                          const relatedArchived = cust.lifecycle_status === 'OLD_CUSTOMER';
+                          const relatedBadge = getStatusBadge(cust.customer_status);
+                          return (
+                            <div
+                              key={`journey-${cust.id}`}
+                              className={`p-4 rounded-2xl border text-xs flex flex-col md:flex-row md:items-center justify-between gap-3 transition-all hover:border-[#B76E79] ${
+                                relatedArchived
+                                  ? 'bg-amber-50 border-amber-200'
+                                  : 'bg-[#FFFAF7] border-[#E8D9D4]'
+                              }`}
+                            >
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="font-bold text-[#2B1722] text-sm">{cust.customer_name}</span>
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#E8F5EE] text-[#198754] border border-[#198754]/20">
+                                    CRM Code: {cust.customer_code}
+                                  </span>
+                                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium border ${relatedBadge.bg}`}>
+                                    {cust.customer_status}
+                                  </span>
+                                  {relatedArchived && (
+                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-200/80 text-amber-900 border border-amber-300">
+                                      OLD CUSTOMER
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex flex-wrap gap-x-4 gap-y-1 text-[#6F5963] text-[11px]">
+                                  {parseDate(cust.wedding_date) && (
+                                    <span>Wedding Date: <strong className="text-[#B76E79]">{formatDateDisplay(cust.wedding_date, 'TBD')}</strong></span>
+                                  )}
+                                  {cust.location_name && (
+                                    <span>Location: <strong>{cust.location_name}{cust.location_code ? ` (${cust.location_code})` : ''}</strong></span>
+                                  )}
+                                  <span>Telecaller: <strong>{cust.assigned_telecaller || 'Unassigned'}</strong></span>
+                                  <span>Registered: <strong>{formatDateDisplay(cust.created_at, 'N/A')}</strong></span>
+                                </div>
+                                {relatedArchived && (
+                                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-amber-800 pt-0.5">
+                                    <span>
+                                      Completion Date: <strong>{formatDateTimeDisplay(cust.archived_at, 'N/A')}</strong>
+                                    </span>
+                                    {cust.archived_by && (
+                                      <span>Completed By: <strong>{cust.archived_by}</strong></span>
+                                    )}
+                                    {cust.previous_status && (
+                                      <span>Previous Status: <strong>{cust.previous_status}</strong></span>
+                                    )}
+                                    {cust.previous_customer_id && (
+                                      <span>
+                                        Linked Record:{' '}
+                                        <Link
+                                          to={`/wedding-crm/customers/${cust.previous_customer_id}`}
+                                          className="font-semibold text-[#6A2853] underline underline-offset-2"
+                                        >
+                                          #{cust.previous_customer_id}
+                                        </Link>
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                              <Link
+                                to={`/wedding-crm/customers/${cust.id}`}
+                                className="px-3 py-1.5 rounded-xl bg-[#FFFDFC] hover:bg-[#FFF7F2] border border-[#E8D9D4] text-xs font-semibold text-[#4A173A] flex items-center gap-1 shrink-0"
+                              >
+                                <span>View Journey</span>
+                                <ExternalLink className="w-3 h-3" />
+                              </Link>
+                            </div>
+                          );
+                        })}
                       </div>
-                      <Link
-                        to={`/wedding-crm/customers/${cust.id}`}
-                        className="px-3 py-1.5 rounded-xl bg-[#FFFDFC] hover:bg-[#FFF7F2] border border-[#E8D9D4] text-xs font-semibold text-[#4A173A] flex items-center gap-1"
-                      >
-                        <span>View Customer</span>
-                        <ExternalLink className="w-3 h-3" />
-                      </Link>
                     </div>
-                  ))}
+                  )}
                 </div>
               )}
             </div>
@@ -1251,6 +1364,15 @@ export default function WeddingCustomerDetail() {
                 </div>
 
                 <form onSubmit={handleSaveStatus} className="space-y-4 text-xs">
+                  {isArchived && (
+                    <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900">
+                      <CircleAlert className="w-4 h-4 shrink-0 mt-0.5 text-amber-700" />
+                      <p className="text-[11px]">
+                        This record is archived in Old Customers and is read-only. {ARCHIVE_READONLY_MESSAGE}
+                      </p>
+                    </div>
+                  )}
+
                   <div>
                     <label className="block text-[10px] font-bold uppercase text-[#6F5963] mb-1">
                       New Status *
@@ -1266,6 +1388,18 @@ export default function WeddingCustomerDetail() {
                         </option>
                       ))}
                     </select>
+
+                    {/* Completion status = permanent archive. Warn before the user commits. */}
+                    {isCompletionStatus(newStatus) && !isArchived && (
+                      <div className="flex items-start gap-2 mt-2 p-3 rounded-xl bg-[#E8F5EE] border border-[#198754]/30 text-[#198754]">
+                        <Archive className="w-4 h-4 shrink-0 mt-0.5" />
+                        <p className="text-[11px] leading-relaxed">
+                          <strong>Wedding Process Completed</strong> is the final journey step. Saving it moves{' '}
+                          <strong>{customer.customer_name}</strong> into the permanent <strong>Old Customers</strong> archive —
+                          all history is preserved and the record can no longer be deleted.
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   <div>

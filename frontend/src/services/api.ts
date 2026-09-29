@@ -536,6 +536,43 @@ function normalizeLocationList(rawList: any[]): any[] {
   });
 }
 
+/**
+ * Archive metadata returned by the Wedding CRM write endpoints.
+ *
+ * The backend moves a customer into the permanent Old Customers archive as soon
+ * as customer_status becomes a completion status ('Wedding Process Completed' or
+ * the bare 'Completed' alias), so every write path that can set a status returns
+ * these two fields alongside `message`.
+ *
+ * PUT /customers/:id/status answers 409 with
+ * "This customer is in Old Customers. Restore the record before changing its status."
+ * and DELETE /customers/:id answers 403 with
+ * "Completed customer records are permanently protected."
+ * Both surface through apiFetch as `err.message` plus `err.status`.
+ */
+export interface WeddingArchiveResult {
+  success?: boolean;
+  message?: string;
+  archived?: boolean;
+  lifecycle_status?: 'ACTIVE' | 'OLD_CUSTOMER' | 'ARCHIVED';
+  data?: Record<string, any>;
+  [key: string]: any;
+}
+
+/**
+ * GET /wedding-crm/customers/:id/full-profile payload (flattened by the spread below).
+ * `associatedCustomers` carries every other journey registered on the same mobile,
+ * including permanently archived ones (lifecycle_status, archived_at, archived_by,
+ * previous_customer_id), so a repeat customer stays traceable in both directions.
+ */
+export interface WeddingFullProfileResult extends WeddingArchiveResult {
+  customer?: Record<string, any>;
+  associatedCustomers?: Record<string, any>[];
+  associatedRegistrations?: Record<string, any>[];
+  statusHistory?: Record<string, any>[];
+  is_old_customer?: boolean;
+}
+
 // Legacy Apps Script API Action Dispatcher Wrapper for 100% compatibility
 export const API = {
   fileUrl(url: string | null | undefined): string | null {
@@ -1532,14 +1569,17 @@ export const API = {
     const res = await apiFetch(`/wedding-crm/customers/${id}`);
     return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
   },
-  async updateWeddingCustomer(id: number | string, payload: any) {
+  async updateWeddingCustomer(id: number | string, payload: any): Promise<WeddingArchiveResult> {
     const res = await apiFetch(`/wedding-crm/customers/${id}`, {
       method: 'PUT',
       body: JSON.stringify(payload)
     });
     return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
   },
-  async deleteWeddingCustomer(id: number | string) {
+  async deleteWeddingCustomer(id: number | string): Promise<WeddingArchiveResult> {
+    // Completed/archived rows are immutable: the backend answers 403 with
+    // { message: 'Completed customer records are permanently protected.' }, which
+    // apiFetch rethrows as err.message — callers must surface that, not a generic error.
     const res = await apiFetch(`/wedding-crm/customers/${id}`, {
       method: 'DELETE'
     });
@@ -1870,7 +1910,7 @@ export const API = {
   },
 
   // ── Wedding CRM: Full Profile ────────────────────────────────
-  async getWeddingFullProfile(id: number | string) {
+  async getWeddingFullProfile(id: number | string): Promise<WeddingFullProfileResult> {
     const res = await apiFetch(`/wedding-crm/customers/${id}/full-profile`);
     return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
   },
@@ -1958,7 +1998,9 @@ export const API = {
     const res = await apiFetch(`/wedding-crm/customers/${customerId}/status-history`);
     return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
   },
-  async changeWeddingCustomerStatus(customerId: number | string, newStatus: string, reason?: string) {
+  // Returns `archived: true` + `lifecycle_status: 'OLD_CUSTOMER'` when newStatus is a
+  // completion status; throws 409 (OLD_CUSTOMER_READONLY) when the row is already archived.
+  async changeWeddingCustomerStatus(customerId: number | string, newStatus: string, reason?: string): Promise<WeddingArchiveResult> {
     const res = await apiFetch(`/wedding-crm/customers/${customerId}/status`, {
       method: 'PUT', body: JSON.stringify({ new_status: newStatus, change_reason: reason })
     });

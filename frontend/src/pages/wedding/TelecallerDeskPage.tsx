@@ -19,6 +19,7 @@ import {
   CALL_TIME_OPTIONS,
   BUDGET_RANGES,
   CATEGORY_OPTIONS,
+  ARCHIVE_SUCCESS_MESSAGE,
   getStatusBadge
 } from './weddingTypes';
 import LocationFilterSelect from '../../components/ui/LocationFilterSelect';
@@ -276,7 +277,7 @@ export default function TelecallerDeskPage() {
     if (!activeCustomer) return;
     setSavingCall(true);
     try {
-      await API.logWeddingCall({
+      const res: any = await API.logWeddingCall({
         customer_id: activeCustomer.id,
         call_date: new Date().toISOString().slice(0, 10),
         call_time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
@@ -290,12 +291,17 @@ export default function TelecallerDeskPage() {
         new_customer_status: callForm.new_customer_status || undefined
       });
 
-      toastManager.success(`Call result saved: ${callForm.call_outcome}. CRM updated!`);
+      // Choosing a completion status archives the record permanently on the backend.
+      if (res?.archived || res?.lifecycle_status === 'OLD_CUSTOMER') {
+        toastManager.success(ARCHIVE_SUCCESS_MESSAGE);
+      } else {
+        toastManager.success(res?.message || `Call result saved: ${callForm.call_outcome}. CRM updated!`);
+      }
       setWorkspaceOpen(false);
       setActiveCustomer(null);
       refreshQueue();
     } catch (err: any) {
-      toastManager.error('call-log', 'Error saving call outcome: ' + err.message);
+      toastManager.error('call-log', err?.message || 'Error saving call outcome');
     } finally {
       setSavingCall(false);
     }
@@ -307,13 +313,18 @@ export default function TelecallerDeskPage() {
     if (!activeCustomer) return;
     setSavingEdit(true);
     try {
-      await API.updateWeddingCustomerByTelecaller(activeCustomer.id, editForm);
-      toastManager.success('Customer details updated successfully.');
+      const res: any = await API.updateWeddingCustomerByTelecaller(activeCustomer.id, editForm);
+      if (res?.archived || res?.lifecycle_status === 'OLD_CUSTOMER') {
+        toastManager.success(ARCHIVE_SUCCESS_MESSAGE);
+      } else {
+        toastManager.success(res?.message || 'Customer details updated successfully.');
+      }
       setWorkspaceOpen(false);
       setActiveCustomer(null);
       refreshQueue();
     } catch (err: any) {
-      toastManager.error('cust-edit', 'Error updating customer: ' + err.message);
+      // Archived rows are read-only: surface the server wording (409/403) verbatim.
+      toastManager.error('cust-edit', err?.message || 'Error updating customer');
     } finally {
       setSavingEdit(false);
     }
