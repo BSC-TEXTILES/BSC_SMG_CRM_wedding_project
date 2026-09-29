@@ -172,7 +172,9 @@ export default function WeddingCustomerRegister() {
 
       if (custRes?.customers) {
         setCustomers(custRes.customers);
-        setTotalCount(custRes.total || custRes.customers.length);
+        // The API reports the full match count under `pagination.total`; reading
+        // `total` instead silently capped it at one page of rows.
+        setTotalCount(custRes.pagination?.total ?? custRes.total ?? custRes.customers.length);
       }
     } catch (err: any) {
       showToast('Error loading customer register: ' + err.message, 'error');
@@ -366,7 +368,7 @@ export default function WeddingCustomerRegister() {
                   }}
                   className="w-full px-3 py-2 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl text-xs font-medium text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
                 >
-                  <option value="">Status: All Statuses</option>
+                  <option value="">All Statuses</option>
                   {CUSTOMER_STATUSES.map((st) => (
                     <option key={st} value={st}>
                       {st}
@@ -453,7 +455,11 @@ export default function WeddingCustomerRegister() {
                   return (
                     <div
                       key={cust.id}
-                      className="p-4 space-y-3 hover:bg-[#FFF1F2]/50 transition-colors"
+                      onClick={(e) => {
+                        if ((e.target as HTMLElement).closest('a,button,input,select,textarea')) return;
+                        navigate(`/wedding-crm/customers/${cust.id}`);
+                      }}
+                      className="p-4 space-y-3 hover:bg-[#FFF1F2]/50 transition-colors cursor-pointer"
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div>
@@ -596,7 +602,16 @@ export default function WeddingCustomerRegister() {
                         !!followUp && followUp.getTime() < new Date().setHours(0, 0, 0, 0);
 
                       return (
-                        <tr key={cust.id} className="hover:bg-[#FFF1F2] transition-colors">
+                        <tr
+                          key={cust.id}
+                          onClick={(e) => {
+                            // Nested controls (links, buttons, inputs) keep their own
+                            // behaviour; only bare row clicks open the customer.
+                            if ((e.target as HTMLElement).closest('a,button,input,select,textarea')) return;
+                            navigate(`/wedding-crm/customers/${cust.id}`);
+                          }}
+                          className="hover:bg-[#FFF1F2] transition-colors cursor-pointer"
+                        >
                           <td className="py-3 px-4 font-bold text-[#4A173A]">
                             <Link
                               to={`/wedding-crm/customers/${cust.id}`}

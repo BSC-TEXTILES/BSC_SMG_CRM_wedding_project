@@ -4,6 +4,7 @@ import DashboardLayout from '../../components/layouts/DashboardLayout';
 import PageContainer from '../../components/ui/PageContainer';
 import ToastContainer, { showToast } from '../../components/Toast';
 import { API, Auth, UserSession } from '../../services/api';
+import { parseDate, formatDateDisplay } from '../../utils/dateUtils';
 import WeddingNav from './WeddingNav';
 import LocationFilterSelect from '../../components/ui/LocationFilterSelect';
 import {
@@ -150,13 +151,15 @@ export default function WeddingStatusBoard() {
   }, [loadBoard]);
 
   const isOverdue = (followUpDate?: string) => {
-    if (!followUpDate) return false;
-    return new Date(followUpDate) < new Date(new Date().toDateString());
+    const due = parseDate(followUpDate);
+    if (!due) return false;
+    return due < new Date(new Date().toDateString());
   };
 
   const isDueToday = (followUpDate?: string) => {
-    if (!followUpDate) return false;
-    return new Date(followUpDate).toDateString() === new Date().toDateString();
+    const due = parseDate(followUpDate);
+    if (!due) return false;
+    return due.toDateString() === new Date().toDateString();
   };
 
   return (
@@ -298,11 +301,11 @@ export default function WeddingStatusBoard() {
                             </div>
 
                             {/* Wedding date */}
-                            {cust.wedding_date && (
+                            {parseDate(cust.wedding_date) && (
                               <div className="text-[10px] text-[#6A2853] font-bold flex items-center gap-1">
                                 <Heart className="w-2.5 h-2.5 text-[#B76E79] fill-[#B76E79]/20" />
                                 <span>
-                                  {new Date(cust.wedding_date).toLocaleDateString('en-IN', {
+                                  {formatDateDisplay(cust.wedding_date, '', {
                                     day: '2-digit',
                                     month: 'short',
                                     year: 'numeric'
@@ -312,7 +315,7 @@ export default function WeddingStatusBoard() {
                             )}
 
                             {/* Follow-up date with urgency */}
-                            {cust.follow_up_date && (
+                            {parseDate(cust.follow_up_date) && (
                               <div
                                 className={`flex items-center gap-1 text-[10px] font-bold ${
                                   overdue
@@ -329,7 +332,7 @@ export default function WeddingStatusBoard() {
                                     : dueToday
                                     ? 'Today: '
                                     : 'Follow-up: '}
-                                  {new Date(cust.follow_up_date).toLocaleDateString('en-IN', {
+                                  {formatDateDisplay(cust.follow_up_date, '', {
                                     day: '2-digit',
                                     month: 'short'
                                   })}

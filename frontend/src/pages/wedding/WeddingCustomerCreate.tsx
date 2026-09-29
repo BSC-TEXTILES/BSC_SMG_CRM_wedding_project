@@ -4,6 +4,7 @@ import DashboardLayout from '../../components/layouts/DashboardLayout';
 import PageContainer from '../../components/ui/PageContainer';
 import ToastContainer, { showToast } from '../../components/Toast';
 import { API, Auth, UserSession } from '../../services/api';
+import { formatDateDisplay } from '../../utils/dateUtils';
 import WeddingNav from './WeddingNav';
 import {
   CATEGORY_OPTIONS,
@@ -299,7 +300,7 @@ export default function WeddingCustomerCreate() {
                       </span>
                     </div>
                     <p className="text-[11px] text-[#6F5963]">
-                      <strong className="text-[#4A173A]">{existingCustomerInfo.customer_name}</strong> was registered at <strong>{existingCustomerInfo.location_name || 'Store'}</strong> on {new Date(existingCustomerInfo.created_at).toLocaleDateString()}. (Status: {existingCustomerInfo.customer_status})
+                      <strong className="text-[#4A173A]">{existingCustomerInfo.customer_name}</strong> was registered at <strong>{existingCustomerInfo.location_name || 'Store'}</strong> on {formatDateDisplay(existingCustomerInfo.created_at, 'N/A')}. (Status: {existingCustomerInfo.customer_status})
                     </p>
                     <div className="flex flex-wrap items-center gap-2 pt-1">
                       <button

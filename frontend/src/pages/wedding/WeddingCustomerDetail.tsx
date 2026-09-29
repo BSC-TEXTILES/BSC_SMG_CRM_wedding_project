@@ -5,6 +5,7 @@ import PageContainer from '../../components/ui/PageContainer';
 import ToastContainer, { showToast } from '../../components/Toast';
 import { API, Auth, UserSession } from '../../services/api';
 import WeddingNav from './WeddingNav';
+import { parseDate, formatDateDisplay, formatDateTimeDisplay } from '../../utils/dateUtils';
 import {
   WeddingCustomer,
   CallLog,
@@ -331,16 +332,18 @@ export default function WeddingCustomerDetail() {
             </div>
 
             {/* Wedding Countdown Pill */}
-            {customer.wedding_date && (
+            {parseDate(customer.wedding_date) && (
               <div className="bg-[#F6E2E5] border border-[#E8D9D4] rounded-2xl p-3 sm:px-5 flex items-center gap-3 text-[#4A173A]">
                 <Heart className="w-6 h-6 text-[#B76E79] flex-shrink-0" />
                 <div>
                   <div className="text-[10px] font-bold uppercase text-[#6F5963]">Wedding Date</div>
-                  <div className="text-sm font-bold text-[#4A173A]">{new Date(customer.wedding_date).toLocaleDateString()}</div>
+                  <div className="text-sm font-bold text-[#4A173A]">{formatDateDisplay(customer.wedding_date, 'TBD')}</div>
                 </div>
                 {(() => {
+                  const weddingDay = parseDate(customer.wedding_date);
+                  if (!weddingDay) return null;
                   const diffDays = Math.ceil(
-                    (new Date(customer.wedding_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+                    (weddingDay.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
                   );
                   return diffDays > 0 ? (
                     <div className="ml-auto pl-3 border-l border-[#E8D9D4] text-right">
@@ -446,7 +449,7 @@ export default function WeddingCustomerDetail() {
                   <div className="flex justify-between">
                     <span className="text-[#6F5963]">Registration Date:</span>
                     <span className="text-[#2B1722] font-medium">
-                      {customer.created_at ? new Date(customer.created_at).toLocaleDateString() : 'N/A'}
+                      {formatDateDisplay(customer.created_at, 'N/A')}
                     </span>
                   </div>
                 </div>
@@ -459,18 +462,18 @@ export default function WeddingCustomerDetail() {
                   <span>Wedding & Shopping Information</span>
                 </div>
                 <div className="space-y-2">
-                  {customer.wedding_date ? (
+                  {parseDate(customer.wedding_date) ? (
                     <div className="flex justify-between">
                       <span className="text-[#6F5963]">Wedding Date:</span>
                       <strong className="text-[#B76E79]">
-                        {new Date(customer.wedding_date).toLocaleDateString()}
+                        {formatDateDisplay(customer.wedding_date, 'TBD')}
                       </strong>
                     </div>
                   ) : null}
                   <div className="flex justify-between">
                     <span className="text-[#6F5963]">Expected Shopping:</span>
                     <strong className="text-[#4A173A]">
-                      {customer.expected_shopping_date ? new Date(customer.expected_shopping_date).toLocaleDateString() : 'TBD'}
+                      {formatDateDisplay(customer.expected_shopping_date, 'TBD')}
                     </strong>
                   </div>
                   <div className="flex justify-between">
@@ -504,7 +507,7 @@ export default function WeddingCustomerDetail() {
                   <div className="flex justify-between">
                     <span className="text-[#6F5963]">Next Follow-up Date:</span>
                     <strong className="text-[#C58A18]">
-                      {customer.follow_up_date ? new Date(customer.follow_up_date).toLocaleDateString() : 'None'}
+                      {formatDateDisplay(customer.follow_up_date, 'None')}
                     </strong>
                   </div>
                   <div className="flex justify-between">
@@ -512,12 +515,28 @@ export default function WeddingCustomerDetail() {
                     <span className="text-[#2B1722] font-medium">{customer.preferred_call_time || 'Any Time'}</span>
                   </div>
                   <div className="flex justify-between">
+                    <span className="text-[#6F5963]">Call Status:</span>
+                    <span className="text-[#2B1722] font-medium">{customer.call_status || 'Not Started'}</span>
+                  </div>
+                  <div className="flex justify-between">
                     <span className="text-[#6F5963]">Total Calls Made:</span>
                     <strong className="text-[#4A173A]">{customer.total_calls_count || callLogs.length}</strong>
                   </div>
                   <div className="flex justify-between">
+                    <span className="text-[#6F5963]">Last Call Date:</span>
+                    <strong className="text-[#4A173A]">{formatDateDisplay(customer.last_call_date, 'No calls yet')}</strong>
+                  </div>
+                  <div className="flex justify-between">
                     <span className="text-[#6F5963]">Last Call Outcome:</span>
                     <strong className="text-[#4A173A]">{customer.last_call_outcome || 'Pending First Call'}</strong>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-[#6F5963]">Registered On:</span>
+                    <strong className="text-[#4A173A]">{formatDateTimeDisplay(customer.created_at, '—')}</strong>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-[#6F5963]">Last Updated:</span>
+                    <strong className="text-[#4A173A]">{formatDateTimeDisplay(customer.updated_at, '—')}</strong>
                   </div>
                 </div>
               </div>
@@ -569,9 +588,9 @@ export default function WeddingCustomerDetail() {
                         </p>
                       )}
 
-                      {log.next_follow_up_date && (
+                      {parseDate(log.next_follow_up_date) && (
                         <div className="text-[11px] text-[#C58A18] font-bold">
-                          Next follow-up scheduled for: {new Date(log.next_follow_up_date).toLocaleDateString()} ({log.next_follow_up_time || 'Any Time'})
+                          Next follow-up scheduled for: {formatDateDisplay(log.next_follow_up_date, 'None')} ({log.next_follow_up_time || 'Any Time'})
                         </div>
                       )}
                     </div>
@@ -619,7 +638,7 @@ export default function WeddingCustomerDetail() {
                     <div key={idx} className="p-3 bg-[#FFFAF7] rounded-xl border border-[#E8D9D4] text-xs space-y-1">
                       <p className="text-[#2B1722]">{n.note || n.details}</p>
                       <div className="text-[10px] text-[#6F5963] font-medium">
-                        {n.created_by || 'Staff'} · {n.created_at ? new Date(n.created_at).toLocaleString() : ''}
+                        {n.created_by || 'Staff'} · {formatDateTimeDisplay(n.created_at, '')}
                       </div>
                     </div>
                   ))}
@@ -651,7 +670,7 @@ export default function WeddingCustomerDetail() {
                       </div>
                       <div className="text-right text-[10px] text-[#6F5963] font-medium">
                         <div>{sh.user_name || 'System'}</div>
-                        <div>{sh.created_at ? new Date(sh.created_at).toLocaleDateString() : ''}</div>
+                        <div>{formatDateDisplay(sh.created_at, '')}</div>
                       </div>
                     </div>
                   ))}
@@ -686,7 +705,7 @@ export default function WeddingCustomerDetail() {
                         <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#4A173A] text-white">Current Active Record</span>
                       </div>
                       <div className="text-[#6F5963] text-[11px] mt-1">
-                        Reg ID: <strong className="text-[#4A173A]">{customer.customer_code}</strong> · Wedding Date: <strong>{customer.wedding_date ? new Date(customer.wedding_date).toLocaleDateString() : 'TBD'}</strong> · Telecaller: <strong>{customer.assigned_telecaller || 'Unassigned'}</strong>
+                        Reg ID: <strong className="text-[#4A173A]">{customer.customer_code}</strong> · Wedding Date: <strong>{formatDateDisplay(customer.wedding_date, 'TBD')}</strong> · Telecaller: <strong>{customer.assigned_telecaller || 'Unassigned'}</strong>
                       </div>
                     </div>
                     <span className="text-xs font-semibold text-[#4A173A] bg-[#FFFDFC] border border-[#E8D9D4] px-3 py-1 rounded-xl">
@@ -711,8 +730,8 @@ export default function WeddingCustomerDetail() {
                           </span>
                         </div>
                         <div className="flex flex-wrap gap-x-4 gap-y-1 text-[#6F5963] text-[11px]">
-                          {reg.wedding_date && (
-                            <span>Wedding Date: <strong className="text-[#B76E79]">{new Date(reg.wedding_date).toLocaleDateString()}</strong></span>
+                          {parseDate(reg.wedding_date) && (
+                            <span>Wedding Date: <strong className="text-[#B76E79]">{formatDateDisplay(reg.wedding_date, 'TBD')}</strong></span>
                           )}
                           {reg.bride_name && <span>Bride: <strong>{reg.bride_name}</strong></span>}
                           {reg.groom_name && <span>Groom: <strong>{reg.groom_name}</strong></span>}
@@ -721,7 +740,7 @@ export default function WeddingCustomerDetail() {
                         </div>
                       </div>
                       <div className="text-[11px] text-[#6F5963] text-right">
-                        Registered: {new Date(reg.created_at).toLocaleDateString()}
+                        Registered: {formatDateDisplay(reg.created_at, 'N/A')}
                       </div>
                     </div>
                   ))}
@@ -743,8 +762,8 @@ export default function WeddingCustomerDetail() {
                           </span>
                         </div>
                         <div className="flex flex-wrap gap-x-4 gap-y-1 text-[#6F5963] text-[11px]">
-                          {cust.wedding_date && (
-                            <span>Wedding Date: <strong className="text-[#B76E79]">{new Date(cust.wedding_date).toLocaleDateString()}</strong></span>
+                          {parseDate(cust.wedding_date) && (
+                            <span>Wedding Date: <strong className="text-[#B76E79]">{formatDateDisplay(cust.wedding_date, 'TBD')}</strong></span>
                           )}
                           {cust.location_name && <span>Store: <strong>{cust.location_name}</strong></span>}
                           <span>Telecaller: <strong>{cust.assigned_telecaller || 'Unassigned'}</strong></span>

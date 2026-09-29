@@ -5,6 +5,7 @@ import DashboardLayout from '../../components/layouts/DashboardLayout';
 import PageContainer from '../../components/ui/PageContainer';
 import ToastContainer, { showToast } from '../../components/Toast';
 import { API, Auth, UserSession } from '../../services/api';
+import { formatDateTimeDisplay } from '../../utils/dateUtils';
 import WeddingNav from './WeddingNav';
 import LocationFilterSelect from '../../components/ui/LocationFilterSelect';
 import { Download, RefreshCw, History, FileText, Loader2, Trash2 } from 'lucide-react';
@@ -320,7 +321,7 @@ export default function WeddingReports() {
                     {importLogs.map((log: any) => (
                       <tr key={log.id} className="hover:bg-[#FFF1F2] transition-colors">
                         <td className="py-2.5 pr-3 pl-3 font-mono whitespace-nowrap text-[#6F5963]">
-                          {log.created_at ? new Date(log.created_at).toLocaleString() : '—'}
+                          {formatDateTimeDisplay(log.created_at, '—')}
                         </td>
                         <td className="py-2.5 px-3 font-medium max-w-[200px] truncate text-[#4A173A]" title={log.file_name}>
                           {log.file_name || '—'}

@@ -5,6 +5,7 @@ import DashboardLayout from '../../components/layouts/DashboardLayout';
 import PageContainer from '../../components/ui/PageContainer';
 import ToastContainer, { showToast } from '../../components/Toast';
 import { API, Auth, UserSession } from '../../services/api';
+import { parseDate, formatDateDisplay } from '../../utils/dateUtils';
 import WeddingNav from './WeddingNav';
 import LocationFilterSelect from '../../components/ui/LocationFilterSelect';
 import { CALL_OUTCOMES } from './weddingTypes';
@@ -288,8 +289,8 @@ export default function WeddingCallHistory() {
 
                   <div className="flex items-center justify-between pt-1">
                     <span className="text-[11px] text-[#6F5963]">
-                      {log.next_follow_up_date ? (
-                        <span className="text-[#C58A18] font-bold">Next: {new Date(log.next_follow_up_date).toLocaleDateString()}</span>
+                      {parseDate(log.next_follow_up_date) ? (
+                        <span className="text-[#C58A18] font-bold">Next: {formatDateDisplay(log.next_follow_up_date, 'No follow-up')}</span>
                       ) : (
                         'No follow-up'
                       )}
@@ -370,9 +371,9 @@ export default function WeddingCallHistory() {
                           )}
                         </td>
                         <td className="py-3 px-4 font-semibold">
-                          {log.next_follow_up_date ? (
+                          {parseDate(log.next_follow_up_date) ? (
                             <span className="text-[#C58A18] font-bold">
-                              {new Date(log.next_follow_up_date).toLocaleDateString()}
+                              {formatDateDisplay(log.next_follow_up_date, 'None')}
                             </span>
                           ) : (
                             <span className="text-[#9A858D]">None</span>

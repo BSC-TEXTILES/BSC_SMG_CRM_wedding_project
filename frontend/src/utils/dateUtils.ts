@@ -60,8 +60,25 @@ export const formatDateDisplay = (
   return d.toLocaleDateString('en-GB', options || { day: '2-digit', month: 'short', year: 'numeric' });
 };
 
-/** 'YYYY-MM-DD' for <input type="date"> and for API payloads. */
-export const toISODateInput = (value: any): string => {
+/**
+ * Display formatter for TIMESTAMP columns (created_at / updated_at / last_call_date).
+ * Falls back rather than printing "Invalid Date".
+ */
+export const formatDateTimeDisplay = (
+  value: any,
+  fallback: string = '—'
+): string => {
+  if (value === null || value === undefined || String(value).trim() === '') return fallback;
+  if (/^0{4}[-/]0{2}[-/]0{2}/.test(String(value).trim())) return fallback;
+
+  const d = value instanceof Date ? value : new Date(value);
+  if (isNaN(d.getTime())) return fallback;
+  return d.toLocaleString('en-GB', {
+    day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+  });
+};
+
+/** 'YYYY-MM-DD' for <input type="date"> and for API payloads. */export const toISODateInput = (value: any): string => {
   const d = parseDate(value);
   if (!d) return '';
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;

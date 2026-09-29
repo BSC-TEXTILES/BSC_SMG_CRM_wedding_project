@@ -83,9 +83,7 @@ export const CUSTOMER_STATUSES = [
   'Shopping Confirmed',
   'Visit Scheduled',
   'Visited',
-  'Won',
   'Not Interested',
-  'Lost',
   'Invalid Number'
 ];
 

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import DashboardLayout from '../../components/layouts/DashboardLayout';
 import PageContainer from '../../components/ui/PageContainer';
 import { API, Auth, UserSession } from '../../services/api';
+import { formatDateDisplay } from '../../utils/dateUtils';
 import WeddingNav from './WeddingNav';
 import { getStatusBadge } from './weddingTypes';
 import LocationFilterSelect from '../../components/ui/LocationFilterSelect';
@@ -548,7 +549,7 @@ export default function WeddingCrmDashboard() {
                               <span>📍 {cust.location_name || 'Store'}</span>
                               <span>·</span>
                               <span className="text-[#B76E79] font-medium">
-                                💍 {cust.wedding_date ? new Date(cust.wedding_date).toLocaleDateString() : 'TBD'}
+                                💍 {formatDateDisplay(cust.wedding_date, 'TBD')}
                               </span>
                             </div>
                           </div>

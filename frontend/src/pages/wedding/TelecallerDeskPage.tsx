@@ -6,6 +6,7 @@ import ToastContainer from '../../components/Toast';
 import { toastManager } from '../../utils/toastManager';
 import { useTelecallerQueue } from '../../hooks/useTelecallerQueue';
 import { API, Auth, UserSession } from '../../services/api';
+import { parseDate, formatDateDisplay, toISODateInput } from '../../utils/dateUtils';
 import WeddingNav from './WeddingNav';
 import {
   WeddingCustomer,
@@ -99,9 +100,12 @@ export default function TelecallerDeskPage() {
       call_outcome: 'Connected',
       remarks: '',
       customer_response: '',
-      next_follow_up_date: cust.follow_up_date || new Date().toISOString().slice(0, 10),
+      // <input type="date"> only accepts YYYY-MM-DD, so normalise the stored
+      // value — a zero date or DD/MM/YYYY would otherwise prefill an empty
+      // picker that the telecaller then submits back.
+      next_follow_up_date: toISODateInput(cust.follow_up_date) || new Date().toISOString().slice(0, 10),
       next_follow_up_time: cust.preferred_call_time || 'Morning (10 AM - 1 PM)',
-      expected_shopping_date: cust.expected_shopping_date || '',
+      expected_shopping_date: toISODateInput(cust.expected_shopping_date),
       new_customer_status: cust.customer_status
     });
     setCallModalOpen(true);
@@ -312,9 +316,9 @@ export default function TelecallerDeskPage() {
               ) : (
                 currentList.map((cust) => {
                   const badge = getStatusBadge(cust.customer_status);
+                  const followUp = parseDate(cust.follow_up_date);
                   const isOverdue =
-                    cust.follow_up_date &&
-                    new Date(cust.follow_up_date).getTime() < new Date().setHours(0, 0, 0, 0);
+                    !!followUp && followUp.getTime() < new Date().setHours(0, 0, 0, 0);
 
                   return (
                     <div
@@ -349,19 +353,19 @@ export default function TelecallerDeskPage() {
                         <div>
                           <span className="text-[10px] text-[#6F5963] uppercase font-semibold block">Wedding Date</span>
                           <span className="font-semibold text-[#B76E79]">
-                            {cust.wedding_date ? `💍 ${new Date(cust.wedding_date).toLocaleDateString()}` : 'TBD'}
+                            {parseDate(cust.wedding_date) ? `💍 ${formatDateDisplay(cust.wedding_date, 'TBD')}` : 'TBD'}
                           </span>
                         </div>
                         <div>
                           <span className="text-[10px] text-[#6F5963] uppercase font-semibold block">Follow-up</span>
                           <span className={`font-semibold ${isOverdue ? 'text-[#B42318]' : 'text-[#2B1722]'}`}>
-                            {cust.follow_up_date ? new Date(cust.follow_up_date).toLocaleDateString() : 'None'}
+                            {formatDateDisplay(cust.follow_up_date, 'None')}
                             {isOverdue && <span className="ml-1 text-[9px] bg-[#FDE8E7] text-[#B42318] px-1 rounded font-bold">OVERDUE</span>}
                           </span>
                         </div>
                         <div className="col-span-2 flex items-center justify-between text-[11px] pt-1 border-t border-[#E8D9D4]">
                           <span className="text-[#6F5963]">Assigned: {cust.assigned_telecaller ? `👤 ${cust.assigned_telecaller}` : 'Unassigned'}</span>
-                          <span className="text-[#4A173A] font-semibold">{cust.expected_shopping_date ? `Shop: ${new Date(cust.expected_shopping_date).toLocaleDateString()}` : ''}</span>
+                          <span className="text-[#4A173A] font-semibold">{parseDate(cust.expected_shopping_date) ? `Shop: ${formatDateDisplay(cust.expected_shopping_date, 'TBD')}` : ''}</span>
                         </div>
                       </div>
 
@@ -447,9 +451,9 @@ export default function TelecallerDeskPage() {
                   ) : (
                     currentList.map((cust) => {
                       const badge = getStatusBadge(cust.customer_status);
+                      const followUp = parseDate(cust.follow_up_date);
                       const isOverdue =
-                        cust.follow_up_date &&
-                        new Date(cust.follow_up_date).getTime() < new Date().setHours(0, 0, 0, 0);
+                        !!followUp && followUp.getTime() < new Date().setHours(0, 0, 0, 0);
 
                       return (
                         <tr key={cust.id} className="hover:bg-[#FFF1F2] transition-colors">
@@ -488,17 +492,17 @@ export default function TelecallerDeskPage() {
                             📍 {cust.location_name || 'Store'}
                           </td>
                           <td className="py-3 px-4">
-                            {cust.wedding_date ? (
+                            {parseDate(cust.wedding_date) ? (
                               <span className="text-[#B76E79] font-medium">
-                                💍 {new Date(cust.wedding_date).toLocaleDateString()}
+                                💍 {formatDateDisplay(cust.wedding_date, 'TBD')}
                               </span>
                             ) : (
                               <span className="text-[#9A858D]">TBD</span>
                             )}
                           </td>
                           <td className="py-3 px-4 font-semibold text-[#4A173A]">
-                            {cust.expected_shopping_date ? (
-                              new Date(cust.expected_shopping_date).toLocaleDateString()
+                            {parseDate(cust.expected_shopping_date) ? (
+                              formatDateDisplay(cust.expected_shopping_date, 'TBD')
                             ) : (
                               <span className="text-[#9A858D] font-normal">TBD</span>
                             )}
@@ -510,9 +514,9 @@ export default function TelecallerDeskPage() {
                             </span>
                           </td>
                           <td className="py-3 px-4">
-                            {cust.follow_up_date ? (
+                            {parseDate(cust.follow_up_date) ? (
                               <span className={`font-semibold ${isOverdue ? 'text-[#B42318]' : 'text-[#2B1722]'}`}>
-                                {new Date(cust.follow_up_date).toLocaleDateString()}
+                                {formatDateDisplay(cust.follow_up_date, 'None')}
                                 {isOverdue && <span className="ml-1 text-[9px] bg-[#FDE8E7] text-[#B42318] px-1 rounded uppercase font-bold">Overdue</span>}
                               </span>
                             ) : (

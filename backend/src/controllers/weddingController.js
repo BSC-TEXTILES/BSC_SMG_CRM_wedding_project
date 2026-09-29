@@ -744,7 +744,7 @@ class WeddingController {
         search,
         startDate = req.query.from_date,
         endDate = req.query.to_date,
-        page = 1,
+        page,
         limit = 50
       } = req.query;
 
@@ -811,8 +811,16 @@ class WeddingController {
       const whereSql = whereClauses.join(' AND ');
 
       // Pagination (guard against non-numeric input — LIMIT ? must bind an integer)
-      const pageNum = Math.max(1, parseInt(page, 10) || 1);
       const limitNum = Math.min(5000, Math.max(1, parseInt(limit, 10) || 50));
+      // Callers paginate two ways: by page number, or by an explicit row offset.
+      // Honour both, otherwise a client sending `offset` is silently pinned to page 1.
+      const parsedPage = parseInt(page, 10);
+      const parsedOffset = parseInt(req.query.offset, 10);
+      const pageNum = !isNaN(parsedPage)
+        ? Math.max(1, parsedPage)
+        : (!isNaN(parsedOffset) && parsedOffset > 0
+          ? Math.floor(parsedOffset / limitNum) + 1
+          : 1);
       const offset = (pageNum - 1) * limitNum;
 
       // Parallelize total count and paginated rows queries
