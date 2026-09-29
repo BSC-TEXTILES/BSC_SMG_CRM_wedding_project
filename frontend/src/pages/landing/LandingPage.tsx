@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useState, Suspense, lazy } from 'react';
 import Lenis from 'lenis';
 import HeaderNav from './components/HeaderNav';
-import BscLoader from './components/BscLoader';
 import CinematicHero from './sections/CinematicHero';
 import LegacySection from './sections/LegacySection';
 import EditorialCollections from './sections/EditorialCollections';
@@ -30,7 +29,6 @@ const SECTION_IDS = [
 export default function LandingPage() {
   const [activeSection, setActiveSection] = useState('hero');
   const [scrollY, setScrollY] = useState(0);
-  const [isLoaderFinished, setIsLoaderFinished] = useState(false);
 
   /* ── Document Metadata ─────────────────────────────────────────────── */
   useEffect(() => {
@@ -135,11 +133,6 @@ export default function LandingPage() {
 
   return (
     <div className="relative min-h-screen w-full bg-[#120B07] text-[#2B1722] selection:bg-[#B76E79] selection:text-white">
-      {/* ============================================================== */}
-      {/* 0. ELEGANT INTRO LOADER SEQUENCE                               */}
-      {/* ============================================================== */}
-      <BscLoader onComplete={() => setIsLoaderFinished(true)} />
-
       {/* ============================================================== */}
       {/* 1. THREE.JS 3D SCROLL & PARTICLE CANVAS (Lazily Streamed)      */}
       {/* ============================================================== */}
