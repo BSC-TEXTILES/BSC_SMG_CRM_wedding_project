@@ -217,7 +217,7 @@ export const LANDING_DATA = {
         title: "Women's Collection",
         category: 'Contemporary & Festive Couture',
         description: 'Handcrafted lehengas, bridal anarkalis, festive coordinates, and celebration wear.',
-        image: '/images/coll-bridal-1200.webp',
+        image: '/images/womens-festive-couture.png',
         tag: 'Festive Couture',
         details: ['Bridal Lehengas', 'Embroidered Anarkalis', 'Festive Coordinates', 'Ready-to-Wear Silks']
       },
@@ -356,16 +356,16 @@ export const LANDING_DATA = {
     {
       id: 'davanagere',
       city: 'Davanagere Central',
-      name: 'Mandipet · PB Road',
+      name: 'Medical College Rd',
       badge: 'Home & Linen Floor',
-      established: 'Est. 1978',
-      address: 'Mandipet / PB Road, MCC B Block, Davanagere, Karnataka 577001',
+      established: 'Est. 1938',
+      address: 'Medical College Rd, MCC B Block, Kuvempu Nagar, Davangere, Karnataka 577004',
       phone: '+91 8192 221938',
       email: 'davanagere@bsctextiles.in',
       hours: '10:30 AM – 8:00 PM · Seven days',
       departments: ['Home Furnishing', 'Luxury Towels & Linens', 'Pure Silk Sarees', 'Menswear Shirting'],
       image: '/images/home.webp',
-      mapsQuery: 'BSC Textiles Mandipet Davanagere'
+      mapsQuery: 'BSC Textiles Medical College Rd Davanagere'
     },
     {
       id: 'belagavi',

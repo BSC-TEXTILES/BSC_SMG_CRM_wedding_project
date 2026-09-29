@@ -93,8 +93,8 @@ export default function LandingPage() {
 
     const sectionPreloads: Record<string, string[]> = {
       hero: ['/images/floor.webp'],
-      legacy: ['/images/coll-sarees-1200.webp', '/images/coll-bridal-1200.webp', '/images/coll-mens-1200.webp'],
-      collections: ['/images/coll-bridal-1200.webp'],
+      legacy: ['/images/coll-sarees-1200.webp', '/images/womens-festive-couture.png', '/images/coll-mens-1200.webp'],
+      collections: ['/images/womens-festive-couture.png'],
       wedding: ['/images/suit.webp']
     };
 
