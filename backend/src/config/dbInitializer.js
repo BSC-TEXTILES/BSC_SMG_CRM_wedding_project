@@ -678,6 +678,51 @@ async function autoInitializeDatabase() {
         }
       } catch (e) {}
 
+      // ─── VM Photo Management Columns & History ────────────────────────────
+      // Captions, labels, corrective actions and a display order belong to the
+      // image; the history table is what stops an edit or replacement of audit
+      // evidence from being silent. Mirrors migrations/migrate_vm_photo_management.js.
+      const vmPhotoCols = [
+        { col: 'caption', def: 'TEXT NULL' },
+        { col: 'label', def: 'VARCHAR(150) NULL' },
+        { col: 'corrective_action', def: 'TEXT NULL' },
+        { col: 'photo_order', def: 'INT DEFAULT 0' },
+        { col: 'updated_at', def: 'TIMESTAMP NULL DEFAULT NULL' },
+        { col: 'updated_by', def: 'VARCHAR(150) NULL' }
+      ];
+      for (const item of vmPhotoCols) {
+        try {
+          const [cCheck] = await pool.query(`SHOW COLUMNS FROM \`vm_checklist_photos\` LIKE '${item.col}'`);
+          if (!cCheck || cCheck.length === 0) {
+            await pool.query(`ALTER TABLE \`vm_checklist_photos\` ADD COLUMN \`${item.col}\` ${item.def}`);
+          }
+        } catch (e) {}
+      }
+
+      try {
+        await pool.query(`
+          CREATE TABLE IF NOT EXISTS \`vm_photo_history\` (
+            \`id\` INT AUTO_INCREMENT PRIMARY KEY,
+            \`photo_id\` VARCHAR(64) NOT NULL,
+            \`submission_id\` VARCHAR(64) NULL,
+            \`action\` VARCHAR(40) NOT NULL,
+            \`field\` VARCHAR(60) NULL,
+            \`old_value\` TEXT NULL,
+            \`new_value\` TEXT NULL,
+            \`old_file_name\` VARCHAR(255) NULL,
+            \`new_file_name\` VARCHAR(255) NULL,
+            \`old_file_path\` TEXT NULL,
+            \`new_file_path\` TEXT NULL,
+            \`changed_by\` VARCHAR(150) NULL,
+            \`changed_by_role\` VARCHAR(60) NULL,
+            \`changed_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX \`idx_vm_photo_hist_photo\` (\`photo_id\`),
+            INDEX \`idx_vm_photo_hist_sub\` (\`submission_id\`),
+            INDEX \`idx_vm_photo_hist_when\` (\`changed_at\`)
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        `);
+      } catch (e) {}
+
       // ─── VM Submissions Table & Columns Migration ────────────────────────
       await pool.query(`
         CREATE TABLE IF NOT EXISTS \`vmsubmissions\` (

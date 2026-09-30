@@ -87,8 +87,48 @@ function mapVmPhoto(p) {
     uploadedBy: p.uploaded_by !== undefined ? p.uploaded_by : p.uploadedBy,
     inspectionDate: p.inspection_date !== undefined ? p.inspection_date : p.inspectionDate,
     createdAt: p.created_at !== undefined ? p.created_at : p.createdAt,
-    status: p.status
+    status: p.status,
+    // Management fields: an image with no observation attached proves very little.
+    caption: p.caption !== undefined ? p.caption : (p.captionText || null),
+    label: p.label !== undefined ? p.label : (p.photoLabel || null),
+    correctiveAction: p.corrective_action !== undefined ? p.corrective_action : (p.correctiveAction || null),
+    photoOrder: Number((p.photo_order !== undefined ? p.photo_order : p.photoOrder) || 0),
+    updatedAt: p.updated_at !== undefined ? p.updated_at : (p.updatedAt || null),
+    updatedBy: p.updated_by !== undefined ? p.updated_by : (p.updatedBy || null),
+    // Present only when the query joined vmsubmissions for the admin gallery filters.
+    auditShift: p.audit_shift !== undefined ? p.audit_shift : (p.auditShift || null),
+    auditScorePercent: p.audit_score !== undefined && p.audit_score !== null ? Number(p.audit_score) : (p.auditScorePercent ?? null),
+    auditDate: p.audit_entry_date !== undefined ? p.audit_entry_date : (p.auditDate || null)
   };
+}
+
+/**
+ * Append one management action on a photo.
+ *
+ * Audit evidence must never change silently, so every upload, edit, replacement and
+ * delete records who did it, when, and which file was swapped for which. This is
+ * append-only: no code path in the app removes rows from it.
+ */
+async function recordPhotoHistory(req, { photoId, submissionId = null, action, field = null, oldValue = null, newValue = null, oldFileName = null, newFileName = null, oldFilePath = null, newFilePath = null }) {
+  try {
+    await pool.query(
+      `INSERT INTO vm_photo_history
+         (photo_id, submission_id, action, field, old_value, new_value, old_file_name, new_file_name, old_file_path, new_file_path, changed_by, changed_by_role)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        photoId, submissionId, action, field,
+        oldValue === null || oldValue === undefined ? null : String(oldValue),
+        newValue === null || newValue === undefined ? null : String(newValue),
+        oldFileName, newFileName, oldFilePath, newFilePath,
+        req?.user ? (req.user.fullName || req.user.username) : null,
+        req?.user ? req.user.role : null
+      ]
+    );
+  } catch (err) {
+    // A missing history table must not fail the user's upload; the write is logged
+    // instead so the gap is visible rather than swallowed.
+    console.error('[VM Photo History] write failed:', err.message);
+  }
 }
 
 /** Active photos of one or many audits, newest first — one query, never per audit. */
@@ -230,14 +270,34 @@ exports.uploadPhotos = async (req, res) => {
     const uploadedBy = req.user ? (req.user.fullName || req.user.name || req.user.username) : 'CRM Manager';
     const insertedPhotos = [];
 
+    // §8 display order has to live in the row, not in the client's array position,
+    // or it changes every time the list is re-read after a refresh.
+    let nextOrder = 0;
+    if (effectiveAuditId) {
+      try {
+        const [maxRow] = await pool.query(
+          'SELECT COALESCE(MAX(photo_order), 0) AS m FROM vm_checklist_photos WHERE submission_id = ? AND floor = ? AND section = ?',
+          [effectiveAuditId, floor, section]
+        );
+        nextOrder = Number(maxRow[0]?.m || 0);
+      } catch (e) {
+        nextOrder = 0;
+      }
+    }
+
+    const photoCaption = String(req.body.caption || req.body.observation || '').trim();
+    const photoLabel = String(req.body.label || '').trim();
+    const photoCorrective = String(req.body.correctiveAction || req.body.corrective_action || '').trim();
+
     for (const file of rawFiles) {
       const photoId = 'vm_photo_' + crypto.randomBytes(12).toString('hex');
       const relativePath = `/uploads/vm-checklist/${file.filename}`;
+      nextOrder += 1;
 
       await pool.query(
         `INSERT INTO vm_checklist_photos
-           (id, submission_id, location_id, location_name, floor, section, point_id, file_name, file_path, file_size, mime_type, uploaded_by, inspection_date, status)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Active')`,
+           (id, submission_id, location_id, location_name, floor, section, point_id, file_name, file_path, file_size, mime_type, uploaded_by, inspection_date, status, caption, label, corrective_action, photo_order)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Active', ?, ?, ?, ?)`,
         [
           photoId,
           effectiveAuditId,
@@ -251,9 +311,22 @@ exports.uploadPhotos = async (req, res) => {
           file.size,
           file.mimetype || 'image/jpeg',
           uploadedBy,
-          effectiveInspectionDate
+          effectiveInspectionDate,
+          photoCaption || null,
+          photoLabel || null,
+          photoCorrective || null,
+          nextOrder
         ]
       );
+
+      await recordPhotoHistory(req, {
+        photoId,
+        submissionId: effectiveAuditId,
+        action: 'UPLOADED',
+        newFileName: file.originalname,
+        newFilePath: relativePath,
+        newValue: photoCaption || null
+      });
 
       insertedPhotos.push({
         id: photoId,
@@ -272,6 +345,10 @@ exports.uploadPhotos = async (req, res) => {
         mimeType: file.mimetype || 'image/jpeg',
         uploadedBy,
         inspectionDate: effectiveInspectionDate,
+        caption: photoCaption || null,
+        label: photoLabel || null,
+        correctiveAction: photoCorrective || null,
+        photoOrder: nextOrder,
         createdAt: new Date().toISOString(),
         status: 'Active'
       });
@@ -324,6 +401,10 @@ exports.listPhotos = async (req, res) => {
       dateTo,
       inspector,
       status,
+      shift,
+      auditDate,
+      minScore,
+      maxScore,
       limit = 100,
       offset = 0
     } = req.query || {};
@@ -394,6 +475,25 @@ exports.listPhotos = async (req, res) => {
       }
     }
 
+    // §23 the admin gallery filters on the parent audit's shift and score. These
+    // reference `s`, so the count query below has to carry the same join.
+    if (shift && shift !== 'All') {
+      whereClauses.push('s.shift = ?');
+      params.push(shift);
+    }
+    if (minScore !== undefined && minScore !== '' && Number.isFinite(Number(minScore))) {
+      whereClauses.push('s.scorePercent >= ?');
+      params.push(Number(minScore));
+    }
+    if (maxScore !== undefined && maxScore !== '' && Number.isFinite(Number(maxScore))) {
+      whereClauses.push('s.scorePercent <= ?');
+      params.push(Number(maxScore));
+    }
+    if (auditDate && auditDate !== 'All') {
+      whereClauses.push('p.inspection_date = ?');
+      params.push(auditDate);
+    }
+
     const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
     const safeLimit = Math.min(Math.max(parseInt(limit, 10) || 100, 1), 500);
     const safeOffset = Math.max(parseInt(offset, 10) || 0, 0);
@@ -404,18 +504,22 @@ exports.listPhotos = async (req, res) => {
               COALESCE(l.location_code, CASE p.location_id WHEN 1 THEN 'BEL' WHEN 2 THEN 'DAV' ELSE 'SHI' END) as location_code,
               p.floor, p.section, p.point_id,
               p.file_name, p.file_path, p.file_size, p.mime_type, p.uploaded_by, p.inspection_date, p.status, p.created_at,
-              s.scorePercent, s.status as audit_status, s.shift
+              p.caption, p.label, p.corrective_action, p.photo_order, p.updated_at, p.updated_by,
+              s.scorePercent, s.status as audit_status, s.shift, s.entryDate as audit_entry_date
          FROM vm_checklist_photos p
          LEFT JOIN locations l ON l.id = p.location_id
          LEFT JOIN vmsubmissions s ON s.id = p.submission_id
          ${whereSql}
-        ORDER BY p.created_at DESC
+        ORDER BY p.photo_order ASC, p.created_at DESC
         LIMIT ? OFFSET ?`,
       [...params, safeLimit, safeOffset]
     );
 
     const [countRows] = await pool.query(
-      `SELECT COUNT(*) as total FROM vm_checklist_photos p ${whereSql}`,
+      `SELECT COUNT(*) as total
+         FROM vm_checklist_photos p
+         LEFT JOIN vmsubmissions s ON s.id = p.submission_id
+         ${whereSql}`,
       params
     );
 
@@ -517,9 +621,17 @@ exports.deletePhoto = async (req, res) => {
     }
 
     await pool.query(
-      "UPDATE vm_checklist_photos SET deleted_at = NOW(), status = 'Deleted' WHERE id = ?",
-      [photoId]
+      "UPDATE vm_checklist_photos SET deleted_at = NOW(), status = 'Deleted', updated_at = NOW(), updated_by = ? WHERE id = ?",
+      [(req.user && (req.user.fullName || req.user.username)) || 'VM', photoId]
     );
+
+    await recordPhotoHistory(req, {
+      photoId,
+      submissionId: photo.submission_id,
+      action: 'DELETED',
+      oldFileName: photo.file_name,
+      oldFilePath: photo.file_path
+    });
 
     await logAction(req.user ? req.user.username : 'VM', 'DELETE_VM_PHOTO', 'VM', {
       photoId,
@@ -609,6 +721,218 @@ exports.linkPhotosToSubmission = async (req, res) => {
   } catch (err) {
     console.error('[Link Photos Error]', err);
     return errorRes(res, 'Failed to link photos: ' + err.message, [err.message], 500);
+  }
+};
+
+/**
+ * Loads a photo and applies the same authorisation the delete path uses: a manager
+ * role or the uploader, and only within the caller's own store. Shared so that
+ * editing, replacing and deleting can never disagree about who may act.
+ */
+async function loadAuthorisedPhoto(req, res) {
+  const photoId = req.params.photoId;
+  const [rows] = await pool.query(
+    'SELECT * FROM vm_checklist_photos WHERE id = ? AND deleted_at IS NULL LIMIT 1',
+    [photoId]
+  );
+  if (!rows || rows.length === 0) {
+    res.status(404).json({ success: false, message: 'Photo not found' });
+    return null;
+  }
+  const photo = rows[0];
+
+  const userRole = (req.user && req.user.role ? String(req.user.role).trim().toLowerCase() : '');
+  const isManagerRole = ['admin', 'super admin', 'system administrator', 'crm manager', 'manager', 'store manager'].includes(userRole);
+  const identity = req.user ? [req.user.fullName, req.user.name, req.user.username].filter(Boolean) : [];
+  const isOwner = !!req.user && identity.some((v) => String(v) === String(photo.uploaded_by));
+  if (!isManagerRole && !isOwner) {
+    res.status(403).json({ success: false, message: 'Permission denied: You do not have permission to manage this audit photo' });
+    return null;
+  }
+  if (!await assertLocationAccess(req.user, photo.location_id)) {
+    res.status(403).json({ success: false, message: `Forbidden: store location ${photo.location_id} is not assigned to your account` });
+    return null;
+  }
+  return photo;
+}
+
+// ── EDIT PHOTO METADATA ─────────────────────────────────────────────
+// Changes the caption / label / observation / question link without touching the
+// image bytes, and records each changed field in the history trail.
+exports.updatePhotoMetadata = async (req, res) => {
+  try {
+    const photo = await loadAuthorisedPhoto(req, res);
+    if (!photo) return;
+
+    const { caption, observation, label, correctiveAction, corrective_action, pointId, point_id, photoOrder } = req.body || {};
+
+    // Only fields the caller actually sent are written, so a partial edit cannot
+    // blank out evidence the user never meant to change.
+    const edits = [];
+    const desired = {
+      caption: (caption !== undefined ? caption : observation),
+      label,
+      corrective_action: (correctiveAction !== undefined ? correctiveAction : corrective_action),
+      point_id: (pointId !== undefined ? pointId : point_id),
+      photo_order: photoOrder
+    };
+    for (const [column, value] of Object.entries(desired)) {
+      if (value === undefined) continue;
+      const normalised = value === null || value === '' ? null : (column === 'photo_order' ? Number(value) : String(value).trim());
+      const current = photo[column] === undefined ? null : photo[column];
+      if (String(current ?? '') === String(normalised ?? '')) continue;
+      edits.push({ column, from: current, to: normalised });
+    }
+
+    if (edits.length === 0) {
+      return res.json({ success: true, message: 'No changes to save', photo: mapVmPhoto(photo) });
+    }
+
+    const sets = edits.map((e) => `\`${e.column}\` = ?`).join(', ');
+    const params = edits.map((e) => e.to);
+    await pool.query(
+      `UPDATE vm_checklist_photos SET ${sets}, updated_at = NOW(), updated_by = ? WHERE id = ?`,
+      [...params, (req.user && (req.user.fullName || req.user.username)) || 'VM', photo.id]
+    );
+
+    for (const e of edits) {
+      await recordPhotoHistory(req, {
+        photoId: photo.id, submissionId: photo.submission_id, action: 'EDITED', field: e.column,
+        oldValue: e.from, newValue: e.to
+      });
+    }
+
+    await logAction(req.user ? req.user.username : 'VM', 'EDIT_VM_PHOTO', 'VM', {
+      photoId: photo.id, fields: edits.map((e) => e.column), floor: photo.floor, section: photo.section
+    });
+
+    const [refreshed] = await pool.query('SELECT * FROM vm_checklist_photos WHERE id = ?', [photo.id]);
+    try {
+      realtimeService.emitVmChange('UPDATE', { id: photo.submission_id || photo.id, floor: photo.floor, section: photo.section, location_id: photo.location_id }, photo.location_id);
+    } catch (wsErr) {}
+
+    return res.json({ success: true, message: 'Photo details updated successfully.', photo: mapVmPhoto(refreshed[0]) });
+  } catch (err) {
+    console.error('[Update VM Photo Metadata Error]', err);
+    return errorRes(res, 'Failed to update photo details: ' + err.message, [err.message], 500);
+  }
+};
+
+// ── REPLACE THE IMAGE ON THE SAME RECORD ────────────────────────────
+// Keeps id / submission / floor / section / question intact and swaps only the
+// bytes, so the audit relationship and the history chain survive (§14). The old
+// file is removed only after the row has been updated, so a failed write can never
+// leave a record pointing at a deleted image.
+exports.replacePhoto = async (req, res) => {
+  let savedFilePath = null;
+  try {
+    const photo = await loadAuthorisedPhoto(req, res);
+    if (!photo) return;
+
+    const file = req.file || (Array.isArray(req.files) ? req.files[0] : null);
+    if (!file) {
+      return res.status(400).json({ success: false, message: 'A replacement image file is required' });
+    }
+
+    const allowed = ['image/jpeg', 'image/jpg', 'image/png'];
+    if (!allowed.includes(String(file.mimetype).toLowerCase())) {
+      try { fs.unlinkSync(file.path); } catch (e) {}
+      return res.status(400).json({ success: false, message: 'Please upload a JPG, JPEG, or PNG image.' });
+    }
+
+    const caption = String(req.body?.caption ?? req.body?.observation ?? '').trim();
+    const nextCorrective = String(req.body?.correctiveAction ?? req.body?.corrective_action ?? '').trim();
+    savedFilePath = `/uploads/vm-checklist/${file.filename}`;
+
+    await pool.query(
+      `UPDATE vm_checklist_photos
+          SET file_name = ?, file_path = ?, file_size = ?, mime_type = ?,
+              caption = COALESCE(?, caption),
+              corrective_action = COALESCE(?, corrective_action),
+              updated_at = NOW(), updated_by = ?
+        WHERE id = ?`,
+      [
+        file.originalname, savedFilePath, file.size, file.mimetype || 'image/jpeg',
+        caption || null, nextCorrective || null,
+        (req.user && (req.user.fullName || req.user.username)) || 'VM',
+        photo.id
+      ]
+    );
+
+    await recordPhotoHistory(req, {
+      photoId: photo.id, submissionId: photo.submission_id, action: 'REPLACED',
+      oldFileName: photo.file_name, newFileName: file.originalname,
+      oldFilePath: photo.file_path, newFilePath: savedFilePath
+    });
+
+    // Row now points at the new file; the superseded image is cleaned up after.
+    if (photo.file_path && photo.file_path !== savedFilePath) {
+      try {
+        const oldAbs = path.join(uploadRoot, photo.file_path.replace(/^\/uploads\//, ''));
+        if (fs.existsSync(oldAbs)) fs.unlinkSync(oldAbs);
+      } catch (e) {
+        console.warn('[Replace VM Photo] old file cleanup failed:', e.message);
+      }
+    }
+
+    await logAction(req.user ? req.user.username : 'VM', 'REPLACE_VM_PHOTO', 'VM', {
+      photoId: photo.id, oldFile: photo.file_name, newFile: file.originalname, floor: photo.floor, section: photo.section
+    });
+
+    const [refreshed] = await pool.query('SELECT * FROM vm_checklist_photos WHERE id = ?', [photo.id]);
+    try {
+      realtimeService.emitVmChange('UPDATE', { id: photo.submission_id || photo.id, floor: photo.floor, section: photo.section, location_id: photo.location_id }, photo.location_id);
+    } catch (wsErr) {}
+
+    return res.json({ success: true, message: 'Photo replaced successfully.', photo: mapVmPhoto(refreshed[0]) });
+  } catch (err) {
+    // Storage succeeded but the database write did not: drop the orphan file.
+    if (savedFilePath) {
+      try {
+        const abs = path.join(uploadRoot, savedFilePath.replace(/^\/uploads\//, ''));
+        if (fs.existsSync(abs)) fs.unlinkSync(abs);
+      } catch (e) {}
+    }
+    console.error('[Replace VM Photo Error]', err);
+    return errorRes(res, 'Failed to replace photo: ' + err.message, [err.message], 500);
+  }
+};
+
+// ── PHOTO HISTORY ───────────────────────────────────────────────────
+exports.getPhotoHistory = async (req, res) => {
+  try {
+    const photoId = req.params.photoId;
+    const [rows] = await pool.query('SELECT * FROM vm_checklist_photos WHERE id = ? LIMIT 1', [photoId]);
+    if (!rows || rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Photo not found' });
+    }
+    if (!await assertLocationAccess(req.user, rows[0].location_id)) {
+      return res.status(403).json({ success: false, message: `Forbidden: store location ${rows[0].location_id} is not assigned to your account` });
+    }
+
+    const [hist] = await pool.query(
+      'SELECT * FROM vm_photo_history WHERE photo_id = ? ORDER BY changed_at ASC, id ASC',
+      [photoId]
+    );
+    return res.json({
+      success: true,
+      photo: mapVmPhoto(rows[0]),
+      history: (hist || []).map((h) => ({
+        id: h.id,
+        action: h.action,
+        field: h.field,
+        oldValue: h.old_value,
+        newValue: h.new_value,
+        oldFileName: h.old_file_name,
+        newFileName: h.new_file_name,
+        changedBy: h.changed_by,
+        changedByRole: h.changed_by_role,
+        changedAt: h.changed_at
+      }))
+    });
+  } catch (err) {
+    console.error('[VM Photo History Error]', err);
+    return errorRes(res, 'Failed to load photo history: ' + err.message, [err.message], 500);
   }
 };
 

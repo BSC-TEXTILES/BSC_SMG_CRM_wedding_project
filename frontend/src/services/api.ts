@@ -1461,6 +1461,25 @@ export const API = {
   async deleteVmPhoto(photoId: string) {
     return apiFetch(`/vm/photos/${photoId}`, { method: 'DELETE' });
   },
+  /** Caption, label, corrective action, question link or display order. */
+  async updateVmPhotoMetadata(photoId: string, payload: {
+    caption?: string | null; label?: string | null; correctiveAction?: string | null;
+    pointId?: string | null; photoOrder?: number;
+  }) {
+    return apiFetch(`/vm/photos/${encodeURIComponent(photoId)}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload)
+    });
+  },
+  /** Swaps the bytes on an existing photo record; the audit link is preserved. */
+  async replaceVmPhoto(photoId: string, file: File) {
+    const fd = new FormData();
+    fd.append('photo', file);
+    return apiFetch(`/vm/photos/${encodeURIComponent(photoId)}/file`, { method: 'PUT', body: fd });
+  },
+  async getVmPhotoHistory(photoId: string) {
+    return apiFetch(`/vm/photos/${encodeURIComponent(photoId)}/history`);
+  },
   async linkVmPhotos(submissionId: string, photoIds: string[]) {
     return apiFetch('/vm/photos/link', { method: 'POST', body: JSON.stringify({ submissionId, photoIds }) });
   },

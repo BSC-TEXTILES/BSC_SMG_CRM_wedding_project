@@ -1417,28 +1417,43 @@ exports.getVmFloors = async (req, res) => {
 // ── 7. CREATE VM FLOOR ──────────────────────────────────────────────────────
 exports.createVmFloor = async (req, res) => {
   try {
-    const { name, description, sections } = req.body;
+    const { name, description, sections, location_id, floor_code } = req.body;
     if (!name || !name.trim()) {
       return res.status(400).json({ success: false, message: 'Floor name is required' });
     }
-    const secList = Array.isArray(sections) ? sections.map((s) => String(s).trim()).filter(Boolean) : [];
+    const secList = Array.isArray(sections)
+      ? sections.map((s) => String(s).trim()).filter(Boolean)
+      : (typeof sections === 'string' ? sections.split(',').map((s) => s.trim()).filter(Boolean) : []);
     if (secList.length === 0) {
       return res.status(400).json({ success: false, message: 'At least one section is required for this floor' });
     }
 
-    const id = getUUID();
+    // Auto-generate floor ID slug if floor_code provided, e.g. floor_4f or sanitize name
+    const code = floor_code ? String(floor_code).trim().toLowerCase().replace(/[^a-z0-9]/g, '_') : '';
+    let id = code ? `floor_${code}` : `floor_${String(name).toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
+
+    if (!id || id === 'floor_' || id === 'floor__') {
+      id = getUUID();
+    }
+    if (id.length > 64) {
+      id = id.substring(0, 64);
+    }
+
+    const locId = location_id ? Number(location_id) : (req.user?.location_id ? Number(req.user.location_id) : 2);
+
     await pool.query(`
-      INSERT INTO vmfloors (id, name, description, sections)
-      VALUES (?, ?, ?, ?)
-      ON DUPLICATE KEY UPDATE description = VALUES(description), sections = VALUES(sections)
-    `, [id, name.trim(), description ? description.trim() : '', JSON.stringify(secList)]);
+      INSERT INTO vmfloors (id, location_id, name, description, sections)
+      VALUES (?, ?, ?, ?, ?)
+      ON DUPLICATE KEY UPDATE location_id = VALUES(location_id), description = VALUES(description), sections = VALUES(sections)
+    `, [id, locId, name.trim(), description ? description.trim() : '', JSON.stringify(secList)]);
 
     return res.json({
       success: true,
       message: 'Store floor created successfully',
-      floor: { id, name: name.trim(), description: description ? description.trim() : '', sections: secList }
+      floor: { id, location_id: locId, name: name.trim(), description: description ? description.trim() : '', sections: secList }
     });
   } catch (err) {
+    console.error('[Create VM Floor Error]', err);
     return res.status(500).json({ success: false, error: err.message });
   }
 };
@@ -1446,11 +1461,16 @@ exports.createVmFloor = async (req, res) => {
 // ── 8. DELETE VM FLOOR ──────────────────────────────────────────────────────
 exports.deleteVmFloor = async (req, res) => {
   try {
-    const floorId = req.params.id || req.body.id;
-    if (!floorId) {
-      return res.status(400).json({ success: false, message: 'Floor ID is required' });
+    const floorId = req.params.id || req.body.id || req.body.floorId;
+    const floorName = req.body.name;
+    if (!floorId && !floorName) {
+      return res.status(400).json({ success: false, message: 'Floor ID or name is required' });
     }
-    await pool.query('DELETE FROM vmfloors WHERE id = ?', [floorId]);
+    if (floorId) {
+      await pool.query('DELETE FROM vmfloors WHERE id = ? OR name = ?', [floorId, floorId]);
+    } else {
+      await pool.query('DELETE FROM vmfloors WHERE name = ?', [floorName]);
+    }
     return res.json({ success: true, message: 'Floor deleted successfully' });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
@@ -1560,6 +1580,8 @@ exports.getVmFloorSummary = async (req, res) => {
       const audited = auditedByFloor[f.name] || new Set();
 
       return {
+        id: f.id,
+        location_id: f.location_id,
         name: f.name,
         description: f.description || '',
         sections,

@@ -320,6 +320,19 @@ router.post('/vm/photos',
   vmPhotoController.uploadPhotos);
 router.get('/vm/photos', authenticate, authorizeLocationAccess(), canViewVm, vmPhotoController.listPhotos);
 router.get('/vm/photos/:photoId/file', authenticate, canViewVm, vmPhotoController.streamPhoto);
+// Replace must be declared before any bare '/:photoId' verb route it could shadow,
+// and it reuses the same size/mimetype limits as the upload path.
+router.put('/vm/photos/:photoId/file',
+  authenticate,
+  authorizeLocationAccess(),
+  canWriteVm,
+  uploadRateLimiter,
+  upload.uploadVmPhotos.single('photo'),
+  upload.verifyUploadedSignatures,
+  vmPhotoController.replacePhoto);
+router.get('/vm/photos/:photoId/history', authenticate, authorizeLocationAccess(), canViewVm, vmPhotoController.getPhotoHistory);
+// Partial metadata edit (caption, label, corrective action, question link, order).
+router.patch('/vm/photos/:photoId', authenticate, authorizeLocationAccess(), canWriteVm, vmPhotoController.updatePhotoMetadata);
 router.delete('/vm/photos/:photoId', authenticate, authorizeLocationAccess(), canWriteVm, vmPhotoController.deletePhoto);
 router.post('/vm/photos/link', authenticate, authorizeLocationAccess(), canWriteVm, vmPhotoController.linkPhotosToSubmission);
 

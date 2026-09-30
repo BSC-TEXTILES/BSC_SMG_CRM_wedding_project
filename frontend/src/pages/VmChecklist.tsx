@@ -393,6 +393,8 @@ export default function VmChecklist() {
             canAudit={canWrite}
             today={flow.today}
             checkpointCount={flow.checkpointCount}
+            isAdmin={isAdmin}
+            onFloorCreated={() => void flow.loadFloors()}
           />
         );
 

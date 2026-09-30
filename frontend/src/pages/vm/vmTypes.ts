@@ -75,6 +75,8 @@ export interface VmPhoto {
 
 /** Floor card for step 1. */
 export interface VmFloorSummary {
+  id?: string;
+  location_id?: number | null;
   name: string;
   description: string;
   sections: string[];

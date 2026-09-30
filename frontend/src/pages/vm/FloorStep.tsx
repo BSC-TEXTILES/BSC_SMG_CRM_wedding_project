@@ -1,4 +1,4 @@
-import { type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import {
   Building2,
   CalendarDays,
@@ -8,7 +8,11 @@ import {
   Clock,
   Layers,
   PencilRuler,
-  RefreshCw
+  Plus,
+  RefreshCw,
+  ShieldCheck,
+  Trash2,
+  AlertTriangle
 } from 'lucide-react';
 import type { VmFloorSummary } from './vmTypes';
 import { dashIfEmpty, formatVmDate } from './vmFlowUtils';
@@ -19,12 +23,15 @@ import {
   VmScoreDial,
   VmSectionHeader,
   VmSkeletonCard,
+  vmBtnPrimary,
   vmBtnSecondary,
   vmCard,
   vmClickableCard,
   vmLabel,
   type VmTone
 } from './VmPrimitives';
+import CreateFloorModal from './CreateFloorModal';
+import { API } from '../../services/api';
 
 interface FloorStepProps {
   /** Straight from GET /vm/floor-summary — never derived in the browser. */
@@ -38,6 +45,9 @@ interface FloorStepProps {
   /** Server Asia/Kolkata day, returned by the same endpoint. */
   today: string;
   checkpointCount: number;
+  /** Admin access: only admins can create new floors and manage floor configuration. */
+  isAdmin?: boolean;
+  onFloorCreated?: () => void;
 }
 
 /** One gutter everywhere: 1 card on a phone, 2 on a tablet, 3-4 on a wide desktop. */
@@ -54,6 +64,8 @@ const TILE = 'grid h-11 w-11 shrink-0 place-items-center rounded-2xl border bord
  * A floor card answers "what is the state of this floor" from stored rows only:
  * sections, whether a Draft is open, the last completed audit and that audit's
  * score. No audits yet means "Not audited yet" and a dash, never a fabricated 0%.
+ *
+ * Admins can configure and create new store floors with sections directly here.
  */
 export default function FloorStep({
   floors,
@@ -63,8 +75,31 @@ export default function FloorStep({
   onSelect,
   canAudit,
   today,
-  checkpointCount
+  checkpointCount,
+  isAdmin = false,
+  onFloorCreated
 }: FloorStepProps) {
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [deletingFloor, setDeletingFloor] = useState<VmFloorSummary | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const handleDeleteFloor = async () => {
+    if (!deletingFloor) return;
+    try {
+      setDeleteLoading(true);
+      setDeleteError(null);
+      await API.deleteVmFloor(deletingFloor.id || deletingFloor.name);
+      setDeletingFloor(null);
+      onFloorCreated?.();
+      onRetry();
+    } catch (err: any) {
+      setDeleteError(err?.message || 'Failed to delete floor.');
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
   if (loading) {
     return <LoadingBlock />;
   }
@@ -75,17 +110,45 @@ export default function FloorStep({
 
   if (floors.length === 0) {
     return (
-      <VmEmptyState
-        icon={<Layers className="w-5 h-5" />}
-        title="No store floors are configured yet"
-        hint="Floors and their sections come from the VM configuration. Ask a System Administrator to add them before an audit can be started."
-        action={
-          <button type="button" onClick={onRetry} className={vmBtnSecondary}>
-            <RefreshCw className="w-4 h-4 text-[#B76E79]" />
-            <span>Check again</span>
-          </button>
-        }
-      />
+      <>
+        <VmEmptyState
+          icon={<Layers className="w-5 h-5" />}
+          title="No store floors are configured yet"
+          hint={
+            isAdmin
+              ? 'As an Administrator, you can configure the store floors and sections now to start visual merchandising audits.'
+              : 'Floors and their sections come from the VM configuration. Ask a System Administrator to add them before an audit can be started.'
+          }
+          action={
+            <div className="flex flex-wrap items-center gap-2">
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={() => setIsCreateOpen(true)}
+                  className={vmBtnPrimary}
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Create First Store Floor</span>
+                </button>
+              )}
+              <button type="button" onClick={onRetry} className={vmBtnSecondary}>
+                <RefreshCw className="w-4 h-4 text-[#B76E79]" />
+                <span>Check again</span>
+              </button>
+            </div>
+          }
+        />
+        {isAdmin && (
+          <CreateFloorModal
+            isOpen={isCreateOpen}
+            onClose={() => setIsCreateOpen(false)}
+            onSuccess={() => {
+              onFloorCreated?.();
+              onRetry();
+            }}
+          />
+        )}
+      </>
     );
   }
 
@@ -93,35 +156,131 @@ export default function FloorStep({
 
   return (
     <div className="space-y-5">
-      {/* Heading plus its meta row: the pills wrap under the title on a phone rather than squeeze it. */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      {/* Heading plus its meta row & admin action */}
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <VmSectionHeader
           className="min-w-0 flex-1"
           icon={<Building2 className="w-5 h-5" />}
           title="Choose the floor to audit"
           subtitle="One card per configured floor, with its sections, open draft and last filed audit."
         />
-        <div className="flex flex-wrap items-center gap-1.5 sm:justify-end">
-          <VmPill icon={<Layers className="w-3.5 h-3.5" />}>
-            {floors.length} floor{floors.length === 1 ? '' : 's'}
-          </VmPill>
-          <VmPill icon={<ClipboardList className="w-3.5 h-3.5" />}>
-            {checkpointCount > 0 ? `${checkpointCount} checkpoints` : 'Checkpoints loading…'}
-          </VmPill>
-          {drafts > 0 && (
-            <VmPill tone="brand" icon={<PencilRuler className="w-3.5 h-3.5" />}>
-              {drafts} draft{drafts === 1 ? '' : 's'} open
-            </VmPill>
+
+        <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+          {/* Admin-only Create New Floor Action */}
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={() => setIsCreateOpen(true)}
+              className={`${vmBtnPrimary} shadow-md`}
+              title="Admin privilege: Add a new floor level and assign merchandising sections"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Create New Floor</span>
+            </button>
           )}
-          {today && <VmPill icon={<CalendarDays className="w-3.5 h-3.5" />}>{formatVmDate(today) || today}</VmPill>}
+
+          <div className="flex flex-wrap items-center gap-1.5">
+            <VmPill icon={<Layers className="w-3.5 h-3.5" />}>
+              {floors.length} floor{floors.length === 1 ? '' : 's'}
+            </VmPill>
+            <VmPill icon={<ClipboardList className="w-3.5 h-3.5" />}>
+              {checkpointCount > 0 ? `${checkpointCount} checkpoints` : 'Checkpoints loading…'}
+            </VmPill>
+            {drafts > 0 && (
+              <VmPill tone="brand" icon={<PencilRuler className="w-3.5 h-3.5" />}>
+                {drafts} draft{drafts === 1 ? '' : 's'} open
+              </VmPill>
+            )}
+            {today && <VmPill icon={<CalendarDays className="w-3.5 h-3.5" />}>{formatVmDate(today) || today}</VmPill>}
+          </div>
         </div>
       </div>
 
       <div className={CARD_GRID}>
         {floors.map((floor) => (
-          <FloorCard key={floor.name} floor={floor} canAudit={canAudit} onSelect={onSelect} />
+          <FloorCard
+            key={floor.name}
+            floor={floor}
+            canAudit={canAudit}
+            isAdmin={isAdmin}
+            onSelect={onSelect}
+            onRequestDelete={() => setDeletingFloor(floor)}
+          />
         ))}
       </div>
+
+      {/* Admin Create Floor Modal */}
+      {isAdmin && (
+        <CreateFloorModal
+          isOpen={isCreateOpen}
+          onClose={() => setIsCreateOpen(false)}
+          onSuccess={() => {
+            onFloorCreated?.();
+            onRetry();
+          }}
+        />
+      )}
+
+      {/* Admin Delete Confirmation Dialog */}
+      {isAdmin && deletingFloor && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
+          onClick={() => !deleteLoading && setDeletingFloor(null)}
+        >
+          <div
+            className="w-full max-w-md rounded-3xl bg-[#FFFDFC] border border-[#E8D9D4] p-6 shadow-2xl space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start gap-3">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-red-100 text-red-700">
+                <AlertTriangle className="w-5 h-5" />
+              </span>
+              <div>
+                <h3 className="text-[17px] font-black text-[#4A173A]">Delete Store Floor?</h3>
+                <p className="mt-1 text-[13px] font-semibold text-[#6F5963]">
+                  Are you sure you want to remove <strong className="text-[#4A173A]">"{deletingFloor.name}"</strong>?
+                  Sections and historical audit submissions will be preserved in records.
+                </p>
+              </div>
+            </div>
+
+            {deleteError && (
+              <p className="rounded-xl border border-red-200 bg-red-50 p-2.5 text-[12px] font-bold text-red-800">
+                {deleteError}
+              </p>
+            )}
+
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                disabled={deleteLoading}
+                onClick={() => setDeletingFloor(null)}
+                className={vmBtnSecondary}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={deleteLoading}
+                onClick={handleDeleteFloor}
+                className="inline-flex items-center justify-center gap-2 min-h-[44px] px-4 rounded-xl text-[13px] font-bold text-white bg-red-600 hover:bg-red-700 transition-colors shadow-sm disabled:opacity-50"
+              >
+                {deleteLoading ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Deleting…</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    <span>Delete Floor</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -129,11 +288,15 @@ export default function FloorStep({
 function FloorCard({
   floor,
   canAudit,
-  onSelect
+  isAdmin,
+  onSelect,
+  onRequestDelete
 }: {
   floor: VmFloorSummary;
   canAudit: boolean;
+  isAdmin?: boolean;
   onSelect: (name: string) => void;
+  onRequestDelete?: () => void;
 }) {
   const clickable = canAudit && floor.sections.length > 0;
   const neverAudited = floor.totalAudits === 0 || !floor.lastAuditDate;
@@ -158,10 +321,27 @@ function FloorCard({
           onSelect(floor.name);
         }
       }}
-      className={`${clickable ? `${vmClickableCard} cursor-pointer` : vmCard()} flex min-w-0 flex-col gap-3.5 p-4 sm:p-5`}
+      className={`${clickable ? `${vmClickableCard} cursor-pointer` : vmCard()} relative flex min-w-0 flex-col gap-3.5 p-4 sm:p-5`}
     >
+      {/* Admin quick actions (top right) */}
+      {isAdmin && onRequestDelete && (
+        <div className="absolute top-3.5 right-3.5 z-10">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onRequestDelete();
+            }}
+            title="Delete this floor (Admin only)"
+            className="rounded-xl border border-transparent p-1.5 text-[#6F5963] hover:border-red-200 hover:bg-red-50 hover:text-red-700 transition-colors"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
       {/* Identity: icon tile, floor name, description from the summary row. */}
-      <div className="flex min-w-0 items-start gap-3">
+      <div className="flex min-w-0 items-start gap-3 pr-6">
         <span className={TILE} aria-hidden="true">
           <Building2 className="w-5 h-5" />
         </span>
