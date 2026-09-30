@@ -497,7 +497,7 @@ export default function HistoryStep({
             <div className="space-y-3">
               {/* Desktop / tablet landscape: one aligned table with a sticky header and
                   internal scroll, so a long history never adds a second page scrollbar. */}
-              <div className="hidden max-h-[560px] overflow-auto rounded-xl border border-[#E8D9D4] bg-[#FFFDFC] lg:block">
+              <div className="hidden max-h-[560px] overflow-auto table-sticky-head rounded-xl border border-[#E8D9D4] bg-[#FFFDFC] lg:block">
                 <table className="w-full min-w-[1140px] border-collapse text-left">
                   <thead>
                     <tr>

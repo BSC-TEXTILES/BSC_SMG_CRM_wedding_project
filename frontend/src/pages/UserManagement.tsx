@@ -1333,7 +1333,7 @@ export default function UserManagementPage() {
                     )}
                   </div>
 
-                  <div className="max-h-64 overflow-auto rounded-xl border border-accent/15">
+                  <div className="max-h-64 overflow-auto table-sticky-head rounded-xl border border-accent/15">
                     <table className="w-full text-left border-collapse">
                       <thead className="bg-primary/5">
                         <tr className="text-[10px] uppercase tracking-wider text-primary/70">
@@ -1440,7 +1440,7 @@ export default function UserManagementPage() {
 
           {/* User Accounts Table */}
           <div className="card-glass overflow-hidden border border-accent/20 shadow-sm">
-            <div className="overflow-x-auto">
+            <div className="table-frame custom-scrollbar">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-primary/5 text-primary text-[11px] font-black uppercase tracking-wider border-b border-accent/20">
@@ -2435,7 +2435,7 @@ export default function UserManagementPage() {
             )}
 
             {/* Matrix Table */}
-            <div className="flex-1 overflow-y-auto p-4">
+            <div className="flex-1 overflow-y-auto p-4 table-frame custom-scrollbar">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-primary/5 text-primary text-[11px] font-black uppercase tracking-wider border-b border-accent/20 sticky top-0 bg-white/95 backdrop-blur-xs z-10">

@@ -144,7 +144,7 @@ export default function OpeningsPage() {
             )}
           </div>
 
-          <div className="card-glass p-4 overflow-x-auto">
+          <div className="card-glass p-4 table-frame custom-scrollbar">
             <table className="w-full text-left text-sm border-collapse">
               <thead>
                 <tr className="border-b border-accent-soft text-xs font-black uppercase text-[#6B5D50] tracking-wider">

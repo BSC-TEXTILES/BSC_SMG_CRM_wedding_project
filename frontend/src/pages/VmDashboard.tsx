@@ -1262,7 +1262,7 @@ export default function VmDashboard() {
 
             {/* Table */}
             <div className="card-glass bg-white border border-primary/15 rounded-2xl shadow-sm overflow-hidden">
-              <div className="overflow-x-auto">
+              <div className="table-frame custom-scrollbar">
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
                     <tr className="bg-primary/5 border-b border-primary/10 text-primary font-black uppercase text-[10px] tracking-wider">

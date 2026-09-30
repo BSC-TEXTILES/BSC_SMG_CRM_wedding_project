@@ -323,7 +323,7 @@ export default function FeedbackList() {
               <p className="text-gray-400 font-medium max-w-sm leading-relaxed">All escalated customer feedbacks have been handled or resolved.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto w-full">
+            <div className="table-frame custom-scrollbar w-full">
               <table className="w-full min-w-[900px] text-left text-xs font-semibold border-collapse">
                 <thead className="bg-primary text-white uppercase text-[10.5px] tracking-wider">
                   <tr>

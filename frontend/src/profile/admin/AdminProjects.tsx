@@ -157,7 +157,7 @@ export const AdminProjects: React.FC = () => {
 
       {/* Data Table */}
       <div className="pf-card overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="table-frame custom-scrollbar">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="border-b border-[var(--pf-border)] bg-[var(--pf-bg-alt)] text-[11px] uppercase tracking-wider text-[var(--pf-gold)] font-bold">

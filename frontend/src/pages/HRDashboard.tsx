@@ -437,7 +437,7 @@ export default function HRDashboard() {
             </div>
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="table-frame custom-scrollbar">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="border-b border-[#DFDDD7] text-[10.5px] font-black uppercase text-[#687080] bg-[#F6F4EF]/60">
@@ -532,7 +532,7 @@ export default function HRDashboard() {
             </div>
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="table-frame custom-scrollbar">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="border-b border-[#DFDDD7] text-[10.5px] font-black uppercase text-[#687080] bg-[#F6F4EF]/60">

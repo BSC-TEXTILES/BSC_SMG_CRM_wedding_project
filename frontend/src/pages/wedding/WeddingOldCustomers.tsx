@@ -513,7 +513,7 @@ export default function WeddingOldCustomers() {
 
           {/* Old Customers Main Table */}
           <div className="bg-[#FFFDFC] rounded-2xl border border-[#E8D9D4] shadow-xs overflow-hidden">
-            <div className="overflow-x-auto">
+            <div className="table-frame custom-scrollbar">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
                   <tr className="bg-[#FAF0E6] text-[#4A173A] font-black border-b border-[#E8D9D4] text-[11px] uppercase tracking-wider">

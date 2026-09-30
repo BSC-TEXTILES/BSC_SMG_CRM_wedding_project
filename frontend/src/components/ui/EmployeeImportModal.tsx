@@ -441,7 +441,7 @@ export default function EmployeeImportModal({ isOpen, onClose, onSuccess }: Empl
               </div>
 
               {/* Table */}
-              <div className="overflow-x-auto max-h-64 border border-accent-soft rounded-2xl shadow-inner bg-white">
+              <div className="overflow-x-auto table-sticky-head max-h-64 border border-accent-soft rounded-2xl shadow-inner bg-white">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead className="bg-[#FAF7F5] border-b border-accent-soft sticky top-0 z-10 text-[11px] font-black uppercase text-primary">
                     <tr>

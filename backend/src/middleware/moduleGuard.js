@@ -58,6 +58,11 @@ const requireModuleAction = (moduleName, action = 'can_view') => {
       );
     } catch (err) {
       console.error('[moduleGuard] Permission check failed:', err.message);
+      // Fail-safe: Admin roles bypass module checks and must never receive a 500 error here
+      const isAdminRole = ['Admin', 'Super Admin', 'system administrator'].includes(req.user?.role);
+      if (isAdminRole) {
+        return next();
+      }
       return errorRes(res, 'Permission check failed. Please try again.', [], 500);
     }
   };

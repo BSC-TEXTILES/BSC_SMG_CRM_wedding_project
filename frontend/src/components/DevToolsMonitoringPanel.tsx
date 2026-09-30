@@ -372,7 +372,7 @@ export default function DevToolsMonitoringPanel({ session, className = '' }: Dev
 
         {/* History Table */}
         <div className="rounded-xl border border-accent/20 overflow-hidden shadow-2xs bg-white">
-          <div className="overflow-x-auto">
+          <div className="table-frame custom-scrollbar">
             <table className="w-full text-xs text-left border-collapse">
               <thead className="bg-primary text-white text-[10px] font-black uppercase tracking-wider border-b border-accent/20">
                 <tr>

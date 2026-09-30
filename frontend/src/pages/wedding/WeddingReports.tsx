@@ -191,7 +191,7 @@ export default function WeddingReports() {
               </span>
             </div>
 
-            <div className="overflow-x-auto rounded-2xl border border-[#E8D9D4]">
+            <div className="table-frame custom-scrollbar rounded-2xl border border-[#E8D9D4]">
               <table className="w-full text-left text-xs text-[#2B1722]">
                 <thead className="bg-[#F8EDE8] text-[#4A173A] uppercase text-[10px] tracking-wider border-b border-[#E8D9D4]">
                   <tr>
@@ -301,7 +301,7 @@ export default function WeddingReports() {
                 No bulk imports recorded for your stores yet.
               </p>
             ) : (
-              <div className="overflow-x-auto rounded-2xl border border-[#E8D9D4]">
+              <div className="table-frame custom-scrollbar rounded-2xl border border-[#E8D9D4]">
                 <table className="w-full text-left text-xs">
                   <thead className="bg-[#F8EDE8] text-[#4A173A] font-black text-[11px] border-b border-[#E8D9D4]">
                     <tr>

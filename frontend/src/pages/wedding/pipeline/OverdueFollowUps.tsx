@@ -96,7 +96,7 @@ export default function OverdueFollowUps({
           </p>
         </div>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="table-frame custom-scrollbar">
           <table className="w-full min-w-[900px] border-collapse text-left">
             <thead className="bg-[#FFFAF7]">
               <tr className="border-b border-[#E8D9D4]">

@@ -665,7 +665,7 @@ export default function TelecallerDeskPage() {
           </div>
 
           {/* ── Desktop Queue Table (md+) ── */}
-          <div className="hidden md:block overflow-x-auto custom-scrollbar border border-[#E8D9D4] rounded-2xl">
+          <div className="hidden md:block table-frame custom-scrollbar border border-[#E8D9D4] rounded-2xl">
             <table className="w-full text-left text-xs text-[#2B1722] whitespace-nowrap">
               <thead className="bg-[#FFFAF7] text-[#4A173A] border-b border-[#E8D9D4] uppercase text-[10px] tracking-wider">
                 <tr>
@@ -1554,7 +1554,7 @@ export default function TelecallerDeskPage() {
                     No telecaller metrics available for the selected location.
                   </div>
                 ) : (
-                  <div className="overflow-x-auto custom-scrollbar border border-[#E8D9D4] rounded-2xl">
+                  <div className="table-frame custom-scrollbar border border-[#E8D9D4] rounded-2xl">
                     <table className="w-full text-left text-xs text-[#2B1722] whitespace-nowrap">
                       <thead className="bg-[#FFFAF7] text-[#4A173A] border-b border-[#E8D9D4] uppercase text-[10px] tracking-wider">
                         <tr>

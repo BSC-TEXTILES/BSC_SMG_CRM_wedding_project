@@ -144,7 +144,7 @@ export default function MadtDesk() {
               </div>
             </div>
           ) : (
-            <div style={{ overflowX: 'auto' }}>
+            <div className="table-frame custom-scrollbar">
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', textAlign: 'left' }}>
                 <thead>
                   <tr style={{ borderBottom: '2px solid var(--line-strong, #CCC)' }}>

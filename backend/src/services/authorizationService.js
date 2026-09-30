@@ -43,6 +43,9 @@ async function checkPermission(user, { module = null, action = 'can_view', locat
     );
 
     if (!dbUser) {
+      if (ADMIN_ROLES.includes(user.role)) {
+        return { allowed: true, reason: 'Admin role bypasses module checks' };
+      }
       return { allowed: false, reason: 'User account not found' };
     }
 

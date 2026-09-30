@@ -1092,7 +1092,7 @@ export default function DashboardPage() {
 
 {/* Desktop/Tablet Table */}
           <div className="overflow-hidden">
-            <div className="overflow-x-auto">
+            <div className="table-frame custom-scrollbar">
               <table className="w-full min-w-[720px] text-left text-xs border-collapse">
                 <colgroup>
                   <col style={{ width: '120px', minWidth: '100px' }} />

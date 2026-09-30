@@ -195,7 +195,7 @@ export default function BroadcastCenterPage() {
                   <span className="text-xs font-bold text-primary font-mono">{broadcasts.length} Broadcast Logs</span>
                 </div>
 
-                <div className="overflow-x-auto">
+                <div className="table-frame custom-scrollbar">
                   <table className="w-full text-left text-xs">
                     <thead>
                       <tr className="border-b border-accent-soft text-primary font-extrabold uppercase text-[10px] tracking-wider">

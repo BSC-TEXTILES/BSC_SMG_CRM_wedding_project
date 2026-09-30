@@ -437,7 +437,7 @@ export default function WeddingCallHistory() {
 
           {/* Desktop Call Logs Table (hidden on < md) */}
           <div className="hidden md:block bg-[#FFFDFC] rounded-2xl border border-[#E8D9D4] shadow-xs overflow-hidden">
-            <div className="overflow-x-auto">
+            <div className="table-frame custom-scrollbar">
               <table className="w-full text-left text-xs text-[#2B1722]">
                 <thead className="bg-[#F8EDE8] text-[#4A173A] uppercase text-[10px] tracking-wider border-b border-[#E8D9D4]">
                   <tr>

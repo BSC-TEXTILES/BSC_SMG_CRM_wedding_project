@@ -614,7 +614,7 @@ export default function CandidatesPage() {
 
           {/* Candidate Table Grid */}
           <div className="card-glass p-5 space-y-4">
-            <div className="overflow-x-auto">
+            <div className="table-frame custom-scrollbar">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="border-b border-accent-soft text-[10.5px] font-black uppercase text-primary tracking-wider bg-background/60">
@@ -752,7 +752,7 @@ export default function CandidatesPage() {
                 </button>
               </div>
 
-              <div className="overflow-x-auto max-h-64">
+              <div className="overflow-x-auto table-sticky-head max-h-64">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
                     <tr className="border-b border-accent-soft text-[10px] font-black uppercase text-primary">

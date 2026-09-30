@@ -1413,7 +1413,7 @@ export default function FeedbackQRManagement() {
               ) : qrCodes.length === 0 ? (
                 renderEmptyState()
               ) : (
-                <div className="overflow-x-auto">
+                <div className="table-frame custom-scrollbar">
                   <table className="w-full text-left text-xs font-semibold border-collapse">
                     <thead className="bg-primary text-white uppercase text-[10.5px] tracking-wider">
                       <tr>
@@ -1900,7 +1900,7 @@ export default function FeedbackQRManagement() {
                     <p className="text-gray-400 font-medium">This QR code has not been scanned yet.</p>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto">
+                  <div className="table-frame custom-scrollbar">
                     <table className="w-full text-left text-xs font-semibold border-collapse">
                     <thead className="bg-primary text-white uppercase text-[10.5px] tracking-wider">
                         <tr>

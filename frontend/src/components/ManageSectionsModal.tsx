@@ -231,7 +231,7 @@ export default function ManageSectionsModal({ isOpen, onClose, onSectionsUpdated
             </div>
           </div>
 
-          <div className="overflow-x-auto max-h-64 overflow-y-auto">
+          <div className="overflow-x-auto table-sticky-head max-h-64 overflow-y-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="border-b border-accent-soft text-[10.5px] font-black uppercase text-primary bg-background">

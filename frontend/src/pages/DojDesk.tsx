@@ -911,7 +911,7 @@ export default function DojDesk() {
                   </span>
                 </div>
 
-                <div className="overflow-x-auto">
+                <div className="table-frame custom-scrollbar">
                   <table className="w-full text-left text-xs">
                     <thead>
                       <tr className="bg-background/40 border-b border-accent-soft text-primary/70 font-extrabold text-[11px] uppercase tracking-wider">
@@ -1064,7 +1064,7 @@ export default function DojDesk() {
                   </span>
                 </div>
 
-                <div className="overflow-x-auto">
+                <div className="table-frame custom-scrollbar">
                   <table className="w-full text-left text-xs">
                     <thead>
                       <tr className="bg-background/40 border-b border-accent-soft text-primary/70 font-extrabold text-[11px] uppercase tracking-wider">

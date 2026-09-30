@@ -1446,7 +1446,7 @@ export default function WeddingImport() {
                                 </span>
                               </div>
 
-                              <div className="overflow-x-auto rounded-xl border border-[#E8D9D4] max-h-72">
+                              <div className="overflow-x-auto table-sticky-head rounded-xl border border-[#E8D9D4] max-h-72">
                                 <table className="w-full text-left text-[11px]">
                                   <thead className="bg-[#F8EDE8] sticky top-0 z-10">
                                     <tr className="border-b border-[#E8D9D4] text-[#4A173A] font-black">
@@ -2003,7 +2003,7 @@ export default function WeddingImport() {
                           </div>
                         )}
 
-                        <div className="max-h-80 overflow-y-auto rounded-xl border border-[#B42318]/30 bg-[#FFFDFC] text-xs shadow-2xs">
+                        <div className="max-h-80 overflow-y-auto table-sticky-head rounded-xl border border-[#B42318]/30 bg-[#FFFDFC] text-xs shadow-2xs">
                           <table className="w-full text-left">
                             <thead className="bg-[#FDE8E7] sticky top-0 z-10">
                               <tr className="border-b border-[#B42318]/20 text-[#B42318] text-[11px] font-black">
@@ -2065,7 +2065,7 @@ export default function WeddingImport() {
                     </button>
 
                     {showWarningDetails && (
-                      <div className="max-h-48 overflow-y-auto rounded-xl border border-[#6A2853]/20 bg-[#EDE7F6] p-3 text-xs">
+                      <div className="max-h-48 overflow-y-auto table-sticky-head rounded-xl border border-[#6A2853]/20 bg-[#EDE7F6] p-3 text-xs">
                         <table className="w-full text-left">
                           <thead>
                             <tr className="border-b border-[#6A2853]/20 text-[#6A2853] text-[11px] font-black">
@@ -2145,7 +2145,7 @@ export default function WeddingImport() {
                   No imports recorded for your stores yet.
                 </p>
               ) : (
-                <div className="overflow-x-auto rounded-xl border border-[#E8D9D4]">
+                <div className="table-frame custom-scrollbar rounded-xl border border-[#E8D9D4]">
                   <table className="w-full text-left text-[11px]">
                     <thead className="bg-[#F8EDE8]">
                       <tr className="border-b border-[#E8D9D4] text-[#4A173A] font-black">

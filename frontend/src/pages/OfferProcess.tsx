@@ -559,7 +559,7 @@ export default function OfferProcessPage() {
             <>
               {/* Desktop High-Fidelity Table */}
               <div className="hidden md:block bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden animate-fade-in">
-                <div className="overflow-x-auto">
+                <div className="table-frame custom-scrollbar">
                   <table className="w-full text-left text-xs border-collapse">
                     <thead>
                       <tr className="border-b border-slate-200 bg-slate-50/80 text-[10.5px] font-black uppercase text-slate-500 tracking-wider">

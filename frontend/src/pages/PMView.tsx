@@ -72,7 +72,7 @@ export default function PMView() {
           ) : diverts.length === 0 ? (
             <div className="p-8 text-center text-gray-500 font-bold">No sourcing requests found.</div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="table-frame custom-scrollbar">
               <table className="w-full text-left text-xs font-semibold">
                 <thead className="bg-primary text-white uppercase text-[10px] tracking-wider">
                   <tr>

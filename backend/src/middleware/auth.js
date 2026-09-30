@@ -346,19 +346,41 @@ const authenticate = async (req, res, next) => {
                  ON DUPLICATE KEY UPDATE active = 1, role = 'Admin'`,
                 [adminUsername, adminEmail, adminName]
               );
+              let adminUserId = decoded.id;
+              try {
+                const [adminRows] = await pool.query(
+                  `SELECT id FROM users WHERE LOWER(username) = ? OR LOWER(email) = ? LIMIT 1`,
+                  [adminUsername.toLowerCase(), adminEmail.toLowerCase()]
+                );
+                if (adminRows && adminRows.length > 0) {
+                  adminUserId = adminRows[0].id;
+                }
+              } catch (_) {}
+              dbStatus = {
+                exists: true,
+                id: adminUserId,
+                active: true,
+                locked: false,
+                role: 'Admin',
+                fullName: decoded.fullName || 'System Administrator',
+                locationId: null,
+                locationCode: null,
+                tokenVersion: 1
+              };
             } catch (healErr) {
               console.warn('[authenticate] Admin auto-heal notice:', healErr.message);
+              dbStatus = {
+                exists: true,
+                id: decoded.id,
+                active: true,
+                locked: false,
+                role: 'Admin',
+                fullName: decoded.fullName || 'System Administrator',
+                locationId: null,
+                locationCode: null,
+                tokenVersion: 1
+              };
             }
-            dbStatus = {
-              exists: true,
-              active: true,
-              locked: false,
-              role: 'Admin',
-              fullName: decoded.fullName || 'System Administrator',
-              locationId: null,
-              locationCode: null,
-              tokenVersion: 1
-            };
           } else {
             // Account not found in either users or User table
             dbStatus = { exists: false };

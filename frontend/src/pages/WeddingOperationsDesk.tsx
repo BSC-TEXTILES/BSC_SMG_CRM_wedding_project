@@ -568,7 +568,7 @@ export default function WeddingOperationsDesk() {
         </div>
 
         {/* Desktop Table (hidden on < md) */}
-        <div className="hidden md:block overflow-x-auto">
+        <div className="hidden md:block table-frame custom-scrollbar">
           <table className="w-full text-left border-collapse min-w-[900px]">
             <thead className="bg-primary text-white uppercase text-[10.5px] tracking-wider">
               <tr>

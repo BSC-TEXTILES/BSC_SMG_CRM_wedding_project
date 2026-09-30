@@ -603,7 +603,7 @@ export default function WeddingCustomerRegister() {
             </div>
 
             {/* Desktop & Tablet Table (md+) */}
-            <div className="hidden md:block overflow-x-auto">
+            <div className="hidden md:block table-frame custom-scrollbar">
               {/* min-width keeps every column at its natural size so the table
                   scrolls horizontally on narrow laptops instead of squeezing the
                   Actions cell until its buttons spill over neighbouring columns. */}

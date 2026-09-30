@@ -452,7 +452,7 @@ export default function SystemAdminPage() {
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-accent/20 overflow-hidden bg-white">
+                <div className="rounded-xl border border-accent/20 bg-white table-frame custom-scrollbar">
                   <table className="w-full text-xs">
                     <thead className="bg-primary text-white text-[10px] font-black uppercase tracking-wider">
                       <tr>
@@ -548,7 +548,7 @@ export default function SystemAdminPage() {
                   </div>
 
                   {/* Recent Auth Events Table */}
-                  <div className="rounded-xl border border-accent-soft overflow-hidden">
+                  <div className="rounded-xl border border-accent-soft table-frame custom-scrollbar">
                     <table className="w-full text-xs">
                       <thead className="bg-primary text-white">
                         <tr>
@@ -645,7 +645,7 @@ export default function SystemAdminPage() {
                   </div>
                 ) : (
                   <>
-                    <div className="overflow-x-auto rounded-xl border border-accent-soft">
+                    <div className="table-frame custom-scrollbar rounded-xl border border-accent-soft">
                       <table className="w-full text-xs">
                         <thead>
                           <tr className="bg-background border-b border-accent-soft">
@@ -801,7 +801,7 @@ export default function SystemAdminPage() {
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-accent/20 overflow-hidden bg-white">
+                <div className="rounded-xl border border-accent/20 bg-white table-frame custom-scrollbar">
                   <table className="w-full text-xs">
                     <thead className="bg-primary text-white text-[10px] font-black uppercase tracking-wider">
                       <tr>
@@ -890,7 +890,7 @@ export default function SystemAdminPage() {
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-accent/20 overflow-hidden bg-white">
+                <div className="rounded-xl border border-accent/20 bg-white table-frame custom-scrollbar">
                   <table className="w-full text-xs">
                     <thead className="bg-primary text-white text-[10px] font-black uppercase tracking-wider">
                       <tr>

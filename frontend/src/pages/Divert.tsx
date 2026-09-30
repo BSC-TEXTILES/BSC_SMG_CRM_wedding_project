@@ -701,7 +701,7 @@ export default function Divert() {
             </h3>
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="table-frame custom-scrollbar rounded-xl border border-accent/20">
             {loading ? (
               <div className="p-12 text-center text-xs text-gray-500 font-bold">Loading sourcing diverts...</div>
             ) : filteredDiverts.length === 0 ? (

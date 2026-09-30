@@ -500,7 +500,7 @@ export default function SectionAllocationPage() {
               )}
             </div>
 
-            <div className="overflow-x-auto">
+            <div className="table-frame custom-scrollbar">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="border-b border-accent-soft text-[10.5px] font-black uppercase text-primary tracking-wider bg-background/60">

@@ -499,7 +499,7 @@ export default function ApiKeyManagementPanel({ session }: ApiKeyManagementPanel
               You do not have any API keys yet. Click <strong>"Generate API Key"</strong> to request one.
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="table-frame custom-scrollbar">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="border-b border-accent-soft/40 text-muted-foreground font-semibold">
@@ -597,7 +597,7 @@ export default function ApiKeyManagementPanel({ session }: ApiKeyManagementPanel
             </div>
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="table-frame custom-scrollbar">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="border-b border-accent-soft/40 text-muted-foreground font-semibold">
@@ -730,7 +730,7 @@ export default function ApiKeyManagementPanel({ session }: ApiKeyManagementPanel
             </button>
           </div>
 
-          <div className="overflow-x-auto pt-2">
+          <div className="table-frame custom-scrollbar pt-2">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="border-b border-accent-soft/40 text-muted-foreground font-semibold">

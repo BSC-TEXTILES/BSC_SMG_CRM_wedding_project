@@ -660,7 +660,7 @@ export default function Footfall() {
             </div>
           </div>
 
-          <div className="overflow-x-auto -mx-1">
+          <div className="table-frame custom-scrollbar -mx-1">
             <table className="w-full min-w-[1080px] text-left border-collapse">
               <thead>
                 <tr className="text-[10px] uppercase tracking-wider text-primary/70 border-b border-accent-soft">
@@ -966,7 +966,7 @@ export default function Footfall() {
               These hours are counted in the daily total above but have no card in the fixed entry grid.
             </p>
 
-            <div className="overflow-x-auto -mx-1">
+            <div className="table-frame custom-scrollbar -mx-1">
               <table className="w-full min-w-[760px] text-left border-collapse">
                 <thead>
                   <tr className="text-[10px] uppercase tracking-wider text-primary/70 border-b border-accent-soft">

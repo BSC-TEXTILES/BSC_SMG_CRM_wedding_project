@@ -74,7 +74,7 @@ function resolveLocFilter(req, tableAlias = 'w') {
   const requestedLocationId = parseTargetLocation(rawParam);
 
   const isAdminRole = ['Admin', 'Super Admin', 'system administrator'].includes(req.user.role);
-  const isGlobal = isAdminRole && (!req.user.locationId || req.user.isGlobalAdmin);
+  const isGlobal = isAdminRole || (!req.user.locationId) || !!req.user.isGlobalAdmin;
 
   if (isGlobal) {
     if (requestedLocationId) {
@@ -121,7 +121,7 @@ function resolveLocFilter(req, tableAlias = 'w') {
     const placeholders = allowed.map(() => '?').join(', ');
     return {
       clause: `AND ${col} IN (${placeholders})`,
-      params: allowed
+      params: [...allowed]
     };
   }
 
@@ -6096,7 +6096,8 @@ class WeddingController {
         limit = 500
       } = req.query;
 
-      const { clause: locClause, params } = resolveLocFilter(req, 'w');
+      const { clause: locClause, params: rawLocParams } = resolveLocFilter(req, 'w');
+      const params = Array.isArray(rawLocParams) ? [...rawLocParams] : [];
       const whereClauses = [
         `w.is_deleted = 0`,
         `(w.lifecycle_status = 'ACTIVE' OR w.lifecycle_status IS NULL)`,
@@ -6106,26 +6107,26 @@ class WeddingController {
       // Telecallers are limited to their own book, same as the calling desk.
       const userRoleNorm = String(req.user?.role || '').trim().toLowerCase().replace(/[_\s-]+/g, ' ');
       if (['telecaller', 'caller', 'tele caller', 'vm extension telecaller', 'vm telecaller'].includes(userRoleNorm)) {
-        whereClauses.push(`(w.assigned_telecaller_id = ? OR LOWER(TRIM(w.assigned_telecaller)) = LOWER(?))`);
-        params.push(req.user.id, req.user.fullName || req.user.username || '');
+        whereClauses.push(`(w.assigned_telecaller_id = ? OR LOWER(TRIM(COALESCE(w.assigned_telecaller, ''))) = LOWER(?))`);
+        params.push(req.user?.id || null, String(req.user?.fullName || req.user?.username || ''));
       } else if (telecallerId && telecallerId !== 'all') {
         const asNum = parseInt(telecallerId, 10);
         if (!isNaN(asNum)) {
           whereClauses.push(`(w.assigned_telecaller_id = ? OR w.assigned_telecaller = ?)`);
-          params.push(asNum, telecallerId);
+          params.push(asNum, String(telecallerId));
         } else {
           whereClauses.push(`w.assigned_telecaller = ?`);
-          params.push(telecallerId);
+          params.push(String(telecallerId));
         }
       }
 
       if (priority && priority !== 'all') {
         whereClauses.push(`w.priority = ?`);
-        params.push(priority);
+        params.push(String(priority));
       }
       if (callStatus && callStatus !== 'all') {
         whereClauses.push(`w.call_status = ?`);
-        params.push(callStatus);
+        params.push(String(callStatus));
       }
       if (stage && stage !== 'all') {
         const keys = String(stage).split(',').map((s) => s.trim()).filter(Boolean);
@@ -6134,9 +6135,11 @@ class WeddingController {
           // 'other' is defined by exclusion, so it cannot be filtered by status list.
           if (found && found.key === 'other') {
             const known = Object.keys(STAGE_BY_STATUS);
-            acc.push(`(w.customer_status IS NULL OR LOWER(w.customer_status) NOT IN (${known.map(() => '?').join(',')}))`);
-            params.push(...known);
-          } else if (found && found.statuses.length) {
+            if (known.length > 0) {
+              acc.push(`(w.customer_status IS NULL OR LOWER(w.customer_status) NOT IN (${known.map(() => '?').join(',')}))`);
+              params.push(...known);
+            }
+          } else if (found && found.statuses && found.statuses.length > 0) {
             acc.push(`w.customer_status IN (${found.statuses.map(() => '?').join(',')})`);
             params.push(...found.statuses);
           }
@@ -6153,14 +6156,14 @@ class WeddingController {
       }
       if (followUpFrom && followUpTo) {
         whereClauses.push(`w.follow_up_date BETWEEN ? AND ?`);
-        params.push(followUpFrom, followUpTo);
+        params.push(String(followUpFrom), String(followUpTo));
       }
-      if (search && search.trim()) {
-        const q = `%${search.trim().toLowerCase()}%`;
+      if (search && String(search).trim()) {
+        const q = `%${String(search).trim().toLowerCase()}%`;
         whereClauses.push(`(
-          LOWER(w.customer_name) LIKE ? OR
-          LOWER(w.customer_code) LIKE ? OR
-          w.mobile_number LIKE ? OR
+          LOWER(COALESCE(w.customer_name, '')) LIKE ? OR
+          LOWER(COALESCE(w.customer_code, '')) LIKE ? OR
+          COALESCE(w.mobile_number, '') LIKE ? OR
           LOWER(COALESCE(w.email, '')) LIKE ? OR
           LOWER(COALESCE(w.assigned_telecaller, '')) LIKE ? OR
           LOWER(COALESCE(l.location_name, '')) LIKE ? OR
@@ -6171,6 +6174,9 @@ class WeddingController {
 
       const limitNum = Math.min(2000, Math.max(1, parseInt(limit, 10) || 500));
       const whereSql = whereClauses.join(' AND ');
+
+      // Sanitize params array to ensure no undefined values reach mysql2
+      const safeParams = params.map((p) => (p === undefined ? null : p));
 
       const [rows] = await pool.query(`
         SELECT
@@ -6227,20 +6233,21 @@ class WeddingController {
           w.follow_up_date ASC,
           w.updated_at DESC
         LIMIT ${limitNum}
-      `, params);
+      `, safeParams);
 
       // Only `latest_feedback` is encrypted-and-aliased here; the note bodies the
       // board never renders stay out of the query entirely.
       const customers = (rows || []).map((row) => ({
         ...row,
-        latest_feedback: row.latest_feedback ? decryptField(row.latest_feedback) : row.latest_feedback,
+        latest_feedback: row.latest_feedback ? decryptField(row.latest_feedback) : (row.latest_feedback || ''),
         stage_key: resolveStageKey(row.customer_status)
       }));
 
       // Counts per stage come from the same scoped row set, so the summary can
       // never disagree with the cards shown.
       const stageCounts = customers.reduce((acc, c) => {
-        acc[c.stage_key] = (acc[c.stage_key] || 0) + 1;
+        const k = c.stage_key || 'other';
+        acc[k] = (acc[k] || 0) + 1;
         return acc;
       }, {});
 
@@ -6257,7 +6264,7 @@ class WeddingController {
       }, 'Pipeline board data retrieved successfully.');
     } catch (err) {
       console.error('[WeddingController.getPipelineBoard Error]', err);
-      return errorRes(res, 'Failed to load pipeline board', [err.message], 500);
+      return errorRes(res, 'Failed to load pipeline board: ' + (err.message || 'Server error'), [err.message], 500);
     }
   }
 }

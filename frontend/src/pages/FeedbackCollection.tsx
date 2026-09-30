@@ -861,7 +861,7 @@ export default function FeedbackCollection() {
             ) : (
               <>
                 {/* Desktop table */}
-                <div className="hidden overflow-x-auto md:block">
+                <div className="hidden table-frame custom-scrollbar md:block">
                   <table className="w-full min-w-[1080px] border-collapse text-left text-xs">
                     <thead>
                       <tr className="border-b border-accent-soft bg-background text-[10px] font-black uppercase tracking-wider text-[#6F5963]">
