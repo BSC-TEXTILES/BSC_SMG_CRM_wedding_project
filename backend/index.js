@@ -647,6 +647,11 @@ app.use((err, req, res, next) => {
   if (err.type === 'entity.too.large' || err.code === 'LIMIT_FILE_SIZE') {
     return errorRes(res, 'Request payload exceeds maximum allowed size.', [], 413);
   }
+  // multer's fileFilter rejects with a plain Error — surface it as a client
+  // error so the upload form shows the real reason instead of a 500.
+  if (err.message && /Only JPG, JPEG, and PNG images are allowed/i.test(err.message)) {
+    return errorRes(res, err.message, [], 400);
+  }
   if (err.code === 'CSRF_ERROR') {
     return errorRes(res, 'Invalid CSRF token.', [], 403);
   }

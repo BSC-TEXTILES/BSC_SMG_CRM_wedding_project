@@ -33,28 +33,34 @@ function isValidDateString(v) {
   return typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) && !isNaN(Date.parse(v));
 }
 
-class LandingController {
-  /** Self-healing analytics table (same pattern as weddingController.ensureTables). */
-  async ensureEventsTable() {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS \`wedding_landing_events\` (
-        \`id\` INT AUTO_INCREMENT PRIMARY KEY,
-        \`event_name\` VARCHAR(60) NOT NULL,
-        \`section\` VARCHAR(60) NULL,
-        \`location_id\` INT NULL,
-        \`session_id\` VARCHAR(60) NOT NULL,
-        \`page_path\` VARCHAR(120) NOT NULL DEFAULT '/wedding-collections',
-        \`time_on_page_sec\` INT NULL,
-        \`scroll_depth_pct\` INT NULL,
-        \`meta\` TEXT NULL,
-        \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        INDEX \`idx_wle_event\` (\`event_name\`),
-        INDEX \`idx_wle_session\` (\`session_id\`),
-        INDEX \`idx_wle_created\` (\`created_at\`)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-    `);
-  }
+/**
+ * Self-healing analytics table (same pattern as weddingController.ensureTables).
+ *
+ * Deliberately a module function, not a class method: Express invokes route
+ * handlers detached, so `this` is undefined inside them and `this.ensure…()`
+ * threw a TypeError that the catch block absorbed as a silent 200.
+ */
+async function ensureEventsTable() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS \`wedding_landing_events\` (
+      \`id\` INT AUTO_INCREMENT PRIMARY KEY,
+      \`event_name\` VARCHAR(60) NOT NULL,
+      \`section\` VARCHAR(60) NULL,
+      \`location_id\` INT NULL,
+      \`session_id\` VARCHAR(60) NOT NULL,
+      \`page_path\` VARCHAR(120) NOT NULL DEFAULT '/wedding-collections',
+      \`time_on_page_sec\` INT NULL,
+      \`scroll_depth_pct\` INT NULL,
+      \`meta\` TEXT NULL,
+      \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      INDEX \`idx_wle_event\` (\`event_name\`),
+      INDEX \`idx_wle_session\` (\`session_id\`),
+      INDEX \`idx_wle_created\` (\`created_at\`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+}
 
+class LandingController {
   // ── 1. Public locations list ────────────────────────────────────────
   async getLocations(req, res) {
     try {
@@ -217,9 +223,7 @@ class LandingController {
         return successRes(res, { stored: 0 }, 'No events to store');
       }
 
-      await this.ensureEventsTable();
-
-      await this.ensureEventsTable();
+      await ensureEventsTable();
 
       const rows = events
         .map((ev) => {

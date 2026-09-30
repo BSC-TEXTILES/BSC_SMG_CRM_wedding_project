@@ -664,8 +664,8 @@ function parseTargetLocation(val) {
  * @param {string} tableAlias — table alias prefix (e.g. 'c' → 'c.location_id')
  * @returns {Promise<{clause: string, params: Array}>}
  */
-const getLocationFilter = async (req, tableAlias = '') => {
-  const col = tableAlias ? `${tableAlias}.location_id` : 'location_id';
+const getLocationFilter = async (req, tableAlias = '', column = 'location_id') => {
+  const col = tableAlias ? `${tableAlias}.${column}` : column;
   if (!req.user) {
     // Unauthenticated request should NEVER see data
     return { clause: `AND 1 = 0`, params: [] };

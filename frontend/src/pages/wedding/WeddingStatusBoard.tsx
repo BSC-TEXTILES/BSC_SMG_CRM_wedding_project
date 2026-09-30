@@ -1,139 +1,70 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import DashboardLayout from '../../components/layouts/DashboardLayout';
 import PageContainer from '../../components/ui/PageContainer';
 import ToastContainer, { showToast } from '../../components/Toast';
 import { API, Auth, UserSession } from '../../services/api';
-import { parseDate, formatDateDisplay } from '../../utils/dateUtils';
+import { permissionsCache } from '../../context/PermissionsCache';
+import { useRealtimeSection } from '../../hooks/useRealtimeSection';
 import WeddingNav from './WeddingNav';
 import LocationFilterSelect from '../../components/ui/LocationFilterSelect';
-import {
-  MapPin,
-  Heart,
-  RefreshCw,
-  Plus,
-  Eye,
-  CircleAlert,
-  Star
-} from 'lucide-react';
+import { RefreshCw, Plus, CircleAlert } from 'lucide-react';
+
+import PipelineCard from './pipeline/PipelineCard';
+import PipelineFilters, { EMPTY_PIPELINE_FILTERS, PipelineFilterState } from './pipeline/PipelineFilters';
+import TodaysWorkPanel from './pipeline/TodaysWorkPanel';
+import OverdueFollowUps from './pipeline/OverdueFollowUps';
+import CustomerDetailDrawer from './pipeline/CustomerDetailDrawer';
+import QuickActionModal from './pipeline/QuickActionModal';
+import { groupByStage } from './pipeline/pipelineDerived';
+import type { PipelineCustomer, PipelineStage, QuickActionKind } from './pipeline/types';
+import { STAGE_PRESENTATION } from './pipeline/types';
 
 /**
- * WeddingStatusBoard — Kanban-style pipeline view.
- * Fetches real customer cards per status column using getWeddingCustomers.
- * (getWeddingPipeline only returns counts — not suitable for card views.)
+ * Wedding Status Pipeline — daily customer workspace.
+ *
+ * One scoped board request feeds the stage columns, Today's Work and the overdue
+ * list, so the three can never disagree. Stage membership is assigned by the
+ * backend (`stage_key`), which is what stops a customer from disappearing when
+ * its status is one this screen has never seen before.
  */
 
-// Kanban columns — each maps to one or more customer_status values
-const COLUMNS = [
-  {
-    key: 'new',
-    label: '1. New Leads',
-    statuses: ['New', 'New Lead', 'Contact Pending'],
-    color: 'border-[#E8D9D4]',
-    headerBg: 'bg-[#FFFAF7]',
-    countBadge: 'bg-[#EDE7F6] text-[#6A2853]'
-  },
-  {
-    key: 'contacted',
-    label: '2. Contacted',
-    statuses: ['Contacted'],
-    color: 'border-[#E8C7A8]',
-    headerBg: 'bg-[#FFF4D6]',
-    countBadge: 'bg-[#C58A18] text-white'
-  },
-  {
-    key: 'followUp',
-    label: '3. Follow-up',
-    statuses: ['Follow-up Scheduled', 'Follow-up', 'Callback'],
-    color: 'border-[#D89AA3]',
-    headerBg: 'bg-[#F6E2E5]',
-    countBadge: 'bg-[#4A173A] text-white'
-  },
-  {
-    key: 'confirmed',
-    label: '4. Shopping Planned',
-    statuses: ['Shopping Planned', 'Shopping Confirmed', 'Visit Scheduled'],
-    color: 'border-[#B76E79]',
-    headerBg: 'bg-[#FFF7F2]',
-    countBadge: 'bg-[#B76E79] text-white'
-  },
-  {
-    key: 'visited',
-    label: '5. Visited Store',
-    statuses: ['Visited', 'Visited Store'],
-    color: 'border-[#E8C7A8]',
-    headerBg: 'bg-[#FFFAF7]',
-    countBadge: 'bg-[#6A2853] text-white'
-  },
-  {
-    key: 'won',
-    label: '6. Won / Converted',
-    // 'Wedding Process Completed' is the terminal journey step: it lands here and
-    // simultaneously moves the record into the permanent Old Customers archive.
-    statuses: ['Won', 'Converted', 'Wedding Process Completed'],
-    color: 'border-[#198754]/40',
-    headerBg: 'bg-[#E8F5EE]',
-    countBadge: 'bg-[#198754] text-white'
-  }
-];
+// Rendering hundreds of cards at once makes the board sluggish; columns expand
+// on demand instead.
+const CARDS_PER_STAGE_INIT = 30;
+const CARDS_PER_STAGE_STEP = 30;
 
 export default function WeddingStatusBoard() {
   const navigate = useNavigate();
   const [session, setSession] = useState<UserSession | null>(() => Auth.get());
 
-
   const [loading, setLoading] = useState(true);
-  const [columnData, setColumnData] = useState<Record<string, any[]>>({});
+  const [refreshing, setRefreshing] = useState(false);
+  const [customers, setCustomers] = useState<PipelineCustomer[]>([]);
+  const [stages, setStages] = useState<PipelineStage[]>([]);
+  const [today, setToday] = useState<string>('');
+  // A board request that failed is not an empty pipeline: keep the two states apart.
+  const [boardError, setBoardError] = useState<string | null>(null);
+  const [filters, setFilters] = useState<PipelineFilterState>(EMPTY_PIPELINE_FILTERS);
+  const [stageLimits, setStageLimits] = useState<Record<string, number>>({});
+
   const [locationFilter, setLocationFilter] = useState<number | ''>(() => {
     const saved = typeof localStorage !== 'undefined' ? localStorage.getItem('bsc_selected_location') : null;
     return saved && saved !== 'ALL' ? Number(saved) : '';
   });
-  const [locations, setLocations] = useState<any[]>([]);
 
-  // Listen to global location changes (e.g. from Topbar)
-  useEffect(() => {
-    const handleLocChange = (e: any) => {
-      const locId = e?.detail?.locationId;
-      const parsed = locId && locId !== 'ALL' ? Number(locId) : '';
-      setLocationFilter(parsed);
-    };
-    window.addEventListener('bsc_location_changed', handleLocChange);
-    return () => window.removeEventListener('bsc_location_changed', handleLocChange);
-  }, []);
+  const [canEdit, setCanEdit] = useState(false);
+  const [drawerCustomerId, setDrawerCustomerId] = useState<number | null>(null);
+  // Bumped to re-mount the drawer after a quick action writes to the same record.
+  const [drawerKey, setDrawerKey] = useState(0);
+  const [action, setAction] = useState<{ kind: QuickActionKind; customerId: number } | null>(null);
 
-  const loadBoard = useCallback(async () => {
-    setLoading(true);
-    try {
-      // Build params: fetch all non-deleted customers scoped to location
-      const params: Record<string, any> = { limit: 500 };
-      if (locationFilter !== '') params.location_id = locationFilter;
-
-      const [customersRes, locsRes] = await Promise.all([
-        API.getWeddingCustomers(params).catch(() => ({ customers: [] })),
-        API.getLocations().catch(() => ({ locations: [] }))
-      ]);
-
-      if (locsRes?.locations) setLocations(locsRes.locations);
-
-      const allCustomers: any[] = customersRes?.customers || customersRes?.data || [];
-
-      // Group customers into columns by matching their customer_status
-      const grouped: Record<string, any[]> = {};
-      for (const col of COLUMNS) {
-        grouped[col.key] = allCustomers.filter((c: any) =>
-          col.statuses.some(
-            (s) => (c.customer_status || '').toLowerCase() === s.toLowerCase()
-          )
-        );
-      }
-
-      setColumnData(grouped);
-    } catch (err: any) {
-      showToast('Error loading status board: ' + (err.message || 'Unknown error'), 'error');
-    } finally {
-      setLoading(false);
-    }
-  }, [locationFilter]);
+  // Latest-callback refs keep loadBoard stable so filter typing cannot retrigger it.
+  const filtersRef = useRef(filters);
+  const locationRef = useRef(locationFilter);
+  const requestSeqRef = useRef(0);
+  filtersRef.current = filters;
+  locationRef.current = locationFilter;
 
   useEffect(() => {
     if (!Auth.check()) {
@@ -142,27 +73,155 @@ export default function WeddingStatusBoard() {
     }
     const sess = Auth.get();
     setSession(sess);
-    if (sess?.locationId && !sess.isGlobalAdmin) {
-      setLocationFilter(sess.locationId);
-    }
+    if (sess?.locationId && !sess.isGlobalAdmin) setLocationFilter(sess.locationId);
+
+    let alive = true;
+    permissionsCache.get().then(() => {
+      if (alive) {
+        setCanEdit(
+          permissionsCache.canAction('wedding_crm', 'can_edit', sess?.role) ||
+          permissionsCache.canAction('wedding_crm', 'can_add', sess?.role)
+        );
+      }
+    }).catch(() => { if (alive) setCanEdit(false); });
+    return () => { alive = false; };
   }, [navigate]);
 
-  // Trigger load whenever locationFilter changes (after session is set)
+  useEffect(() => {
+    const handleLocChange = (e: any) => {
+      const locId = e?.detail?.locationId;
+      setLocationFilter(locId && locId !== 'ALL' ? Number(locId) : '');
+    };
+    window.addEventListener('bsc_location_changed', handleLocChange);
+    return () => window.removeEventListener('bsc_location_changed', handleLocChange);
+  }, []);
+
+  const loadBoard = useCallback(async ({ silent = false } = {}) => {
+    const seq = ++requestSeqRef.current;
+    if (silent) setRefreshing(true); else setLoading(true);
+
+    try {
+      const f = filtersRef.current;
+      const params: Record<string, any> = {};
+      if (f.search.trim()) params.search = f.search.trim();
+      if (f.stage && f.stage !== 'all') params.stage = f.stage;
+      if (f.telecaller_id && f.telecaller_id !== 'all') params.telecaller_id = f.telecaller_id;
+      if (f.priority && f.priority !== 'all') params.priority = f.priority;
+      if (f.call_status && f.call_status !== 'all') params.call_status = f.call_status;
+      if (f.date_preset === 'overdue') params.overdue = '1';
+      if (f.date_preset === 'today') params.due_today = '1';
+      if (f.follow_up_from && f.follow_up_to) {
+        params.follow_up_from = f.follow_up_from;
+        params.follow_up_to = f.follow_up_to;
+      }
+      if (locationRef.current !== '') params.location_id = locationRef.current;
+      params.limit = 1000;
+
+      const res = await API.getWeddingPipelineBoard(params);
+      if (seq !== requestSeqRef.current) return;
+
+      if (!res || res.success === false) throw new Error(res?.message || 'Unable to load the pipeline');
+      setCustomers(Array.isArray(res.customers) ? res.customers : []);
+      setStages(Array.isArray(res.stages) ? res.stages : []);
+      if (res.today) setToday(res.today);
+      setBoardError(null);
+    } catch (err: any) {
+      if (seq !== requestSeqRef.current) return;
+      const message = err?.message
+        ? `Unable to load the pipeline. ${err.message}`
+        : 'Unable to load the pipeline. Please try again.';
+      setBoardError(message);
+      // A failed load must not render as an empty pipeline. Keep the last good
+      // cards when only refreshing; clear them when the board was never loaded.
+      if (!silent) {
+        setCustomers([]);
+        setStages([]);
+      }
+      showToast(message, 'error');
+    } finally {
+      if (seq === requestSeqRef.current) {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    }
+  }, []);
+
   useEffect(() => {
     loadBoard();
-  }, [loadBoard]);
+  }, [loadBoard, locationFilter]);
 
-  const isOverdue = (followUpDate?: string) => {
-    const due = parseDate(followUpDate);
-    if (!due) return false;
-    return due < new Date(new Date().toDateString());
-  };
+  // Debounced server-side filtering; typing does not refetch per keystroke.
+  const filterTimerRef = useRef<any>(null);
+  const [debouncedFilters, setDebouncedFilters] = useState<PipelineFilterState>(filters);
+  useEffect(() => {
+    if (filterTimerRef.current) clearTimeout(filterTimerRef.current);
+    filterTimerRef.current = setTimeout(() => setDebouncedFilters(filters), 300);
+    return () => clearTimeout(filterTimerRef.current);
+  }, [filters]);
 
-  const isDueToday = (followUpDate?: string) => {
-    const due = parseDate(followUpDate);
-    if (!due) return false;
-    return due.toDateString() === new Date().toDateString();
-  };
+  // The mount effect above already fetched the unfiltered board, so the first
+  // render of this key must not fire a second identical request.
+  const boardKeyRef = useRef<string | null>(null);
+  const debouncedKey = JSON.stringify(debouncedFilters);
+  useEffect(() => {
+    if (boardKeyRef.current === null) {
+      boardKeyRef.current = debouncedKey;
+      return;
+    }
+    if (boardKeyRef.current === debouncedKey) return;
+    boardKeyRef.current = debouncedKey;
+    loadBoard({ silent: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedKey]);
+
+  // New calls, feedback, follow-ups or status changes elsewhere refresh only this
+  // board's data — no page reload, no lost filters.
+  useRealtimeSection(['wedding', 'callqueue', 'feedback'], () => loadBoard({ silent: true }), { debounceMs: 800 });
+
+  const grouped = useMemo(() => groupByStage(customers, stages), [customers, stages]);
+
+  const overdueCustomers = useMemo(
+    () => customers.filter((c) => (Number(c.overdue_days) || 0) > 0),
+    [customers]
+  );
+
+  const telecallerOptions = useMemo(() => {
+    const seen = new Map<number, string>();
+    customers.forEach((c) => {
+      if (c.assigned_telecaller_id && c.assigned_telecaller && !seen.has(c.assigned_telecaller_id)) {
+        seen.set(c.assigned_telecaller_id, c.assigned_telecaller);
+      }
+    });
+    return Array.from(seen.entries()).map(([id, name]) => ({ id, name }));
+  }, [customers]);
+
+  const customerById = useMemo(() => {
+    const map = new Map<number, PipelineCustomer>();
+    customers.forEach((c) => map.set(c.id, c));
+    return map;
+  }, [customers]);
+
+  // The drawer reads the stage the server assigned, the same row the card used.
+  const drawerCustomer = drawerCustomerId !== null ? customerById.get(drawerCustomerId) : undefined;
+
+  const openCustomer = useCallback((c: PipelineCustomer) => setDrawerCustomerId(c.id), []);
+  const openAction = useCallback((kind: QuickActionKind, c: PipelineCustomer) => setAction({ kind, customerId: c.id }), []);
+  const openActionById = useCallback((kind: QuickActionKind, customerId: number) => setAction({ kind, customerId }), []);
+
+  const showMore = (stageKey: string) =>
+    setStageLimits((prev) => ({ ...prev, [stageKey]: (prev[stageKey] || CARDS_PER_STAGE_INIT) + CARDS_PER_STAGE_STEP }));
+
+  const activeFilterCount = useMemo(() => {
+    let n = 0;
+    if (filters.search.trim()) n++;
+    if (filters.stage && filters.stage !== 'all') n++;
+    if (filters.telecaller_id && filters.telecaller_id !== 'all') n++;
+    if (filters.priority && filters.priority !== 'all') n++;
+    if (filters.call_status && filters.call_status !== 'all') n++;
+    if (filters.date_preset !== 'all') n++;
+    if (filters.follow_up_from && filters.follow_up_to) n++;
+    return n;
+  }, [filters]);
 
   return (
     <DashboardLayout
@@ -170,7 +229,7 @@ export default function WeddingStatusBoard() {
       breadcrumbs={[{ label: 'Wedding CRM', href: '/wedding-crm/dashboard' }, { label: 'Status Pipeline' }]}
     >
       <PageContainer maxWidth="full">
-        <div className="space-y-6">
+        <div className="space-y-5">
           <ToastContainer />
 
           <WeddingNav
@@ -182,13 +241,11 @@ export default function WeddingStatusBoard() {
                   onChange={(val) => setLocationFilter(val)}
                 />
                 <button
-                  onClick={loadBoard}
-                  disabled={loading}
-                  className="px-3.5 py-2 bg-[#FFFDFC] hover:bg-[#FFF7F2] border border-[#E8D9D4] rounded-xl text-xs font-bold text-[#4A173A] flex items-center gap-1.5 transition-colors shadow-2xs"
+                  onClick={() => loadBoard({ silent: true })}
+                  disabled={loading || refreshing}
+                  className="px-3.5 py-2 bg-[#FFFDFC] hover:bg-[#FFF7F2] border border-[#E8D9D4] rounded-xl text-xs font-bold text-[#4A173A] flex items-center gap-1.5 transition-colors shadow-2xs disabled:opacity-60"
                 >
-                  <RefreshCw
-                    className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-[#B76E79]' : 'text-[#B76E79]'}`}
-                  />
+                  <RefreshCw className={`w-3.5 h-3.5 text-[#B76E79] ${loading || refreshing ? 'animate-spin' : ''}`} />
                   <span>Refresh</span>
                 </button>
                 <Link
@@ -202,171 +259,159 @@ export default function WeddingStatusBoard() {
             }
           />
 
-          {/* Summary bar */}
-          <div className="flex gap-3 flex-wrap">
-            {COLUMNS.map((col) => {
-              const count = columnData[col.key]?.length ?? 0;
-              return (
-                <div
-                  key={col.key}
-                  className="flex items-center gap-2 bg-[#FFFDFC] border border-[#E8D9D4] rounded-2xl px-4 py-2 shadow-2xs"
-                >
-                  <span className="text-[10px] font-black text-[#6F5963] uppercase tracking-wider">
-                    {col.label}
-                  </span>
-                  <span
-                    className={`px-2 py-0.5 rounded-full text-[10px] font-black ${col.countBadge}`}
-                  >
-                    {loading ? '…' : count}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
+          <PipelineFilters
+            value={filters}
+            onChange={setFilters}
+            stages={stages}
+            telecallers={telecallerOptions}
+            busy={loading || refreshing}
+          />
 
-          {/* Kanban Board Container */}
-          <div className="overflow-x-auto pb-4 -mx-4 sm:mx-0 px-4 sm:px-0">
-            <div className="flex xl:grid xl:grid-cols-6 gap-4 min-w-[1080px] xl:min-w-0">
-              {COLUMNS.map((col) => {
-                const cards = columnData[col.key] || [];
-
-                return (
-                  <div
-                    key={col.key}
-                    className={`bg-[#FFFDFC] rounded-3xl border ${col.color} shadow-xs flex flex-col min-h-[520px] max-h-[76vh] w-[270px] xl:w-auto shrink-0 xl:shrink`}
-                  >
-                  {/* Column Header */}
-                  <div
-                    className={`flex items-center justify-between px-4 py-3 border-b border-[#E8D9D4] ${col.headerBg} rounded-t-3xl`}
-                  >
-                    <h3 className="text-[11px] font-black text-[#4A173A] uppercase tracking-wider leading-tight">
-                      {col.label}
-                    </h3>
-                    <span
-                      className={`px-2 py-0.5 rounded-full text-[10px] font-black ${col.countBadge}`}
-                    >
-                      {cards.length}
-                    </span>
-                  </div>
-
-                  {/* Cards List */}
-                  <div className="flex-1 overflow-y-auto space-y-2.5 p-3">
-                    {loading ? (
-                      <div className="py-10 text-center text-xs text-[#6F5963]">
-                        <RefreshCw className="w-4 h-4 animate-spin text-[#B76E79] mx-auto mb-1" />
-                        Loading...
-                      </div>
-                    ) : cards.length === 0 ? (
-                      <div className="py-12 text-center text-[11px] text-[#6F5963]">
-                        No customers
-                      </div>
-                    ) : (
-                      cards.map((cust: any) => {
-                        const overdue = isOverdue(cust.follow_up_date);
-                        const dueToday = isDueToday(cust.follow_up_date);
-                        const isHighPriority =
-                          cust.priority === 'High' || cust.priority === 'Urgent';
-
-                        return (
-                          <div
-                            key={cust.id}
-                            className={`p-3 rounded-2xl border transition-all group space-y-1.5 shadow-2xs ${
-                              overdue
-                                ? 'bg-[#FDE8E7] border-[#B42318]/40 hover:border-[#B42318]'
-                                : dueToday
-                                ? 'bg-[#FFF4D6] border-[#C58A18]/40 hover:border-[#C58A18]'
-                                : 'bg-[#FFFAF7] border-[#E8D9D4] hover:border-[#B76E79] hover:bg-[#FFFDFC]'
-                            }`}
-                          >
-                            {/* Name + priority flag */}
-                            <div className="flex items-start justify-between gap-1">
-                              <Link
-                                to={`/wedding-crm/customers/${cust.id}`}
-                                className="font-black text-[12px] text-[#2B1722] group-hover:text-[#4A173A] transition-colors leading-tight"
-                              >
-                                {cust.customer_name}
-                              </Link>
-                              {isHighPriority && (
-                                <Star className="w-3 h-3 text-[#B76E79] shrink-0 mt-0.5 fill-[#B76E79]" />
-                              )}
-                            </div>
-
-                            {/* Code */}
-                            <div className="text-[9px] text-[#6F5963] font-bold tracking-wide">
-                              {cust.customer_code}
-                            </div>
-
-                            {/* Location */}
-                            <div className="flex items-center gap-1 text-[10px] text-[#6F5963]">
-                              <MapPin className="w-2.5 h-2.5 text-[#B76E79]" />
-                              <span>{cust.location_name || 'Store'}</span>
-                            </div>
-
-                            {/* Wedding date */}
-                            {parseDate(cust.wedding_date) && (
-                              <div className="text-[10px] text-[#6A2853] font-bold flex items-center gap-1">
-                                <Heart className="w-2.5 h-2.5 text-[#B76E79] fill-[#B76E79]/20" />
-                                <span>
-                                  {formatDateDisplay(cust.wedding_date, '', {
-                                    day: '2-digit',
-                                    month: 'short',
-                                    year: 'numeric'
-                                  })}
-                                </span>
-                              </div>
-                            )}
-
-                            {/* Follow-up date with urgency */}
-                            {parseDate(cust.follow_up_date) && (
-                              <div
-                                className={`flex items-center gap-1 text-[10px] font-bold ${
-                                  overdue
-                                    ? 'text-[#B42318]'
-                                    : dueToday
-                                    ? 'text-[#C58A18]'
-                                    : 'text-[#6F5963]'
-                                }`}
-                              >
-                                {overdue && <CircleAlert className="w-2.5 h-2.5" />}
-                                <span>
-                                  {overdue
-                                    ? 'Overdue: '
-                                    : dueToday
-                                    ? 'Today: '
-                                    : 'Follow-up: '}
-                                  {formatDateDisplay(cust.follow_up_date, '', {
-                                    day: '2-digit',
-                                    month: 'short'
-                                  })}
-                                </span>
-                              </div>
-                            )}
-
-                            {/* Telecaller + view button */}
-                            <div className="flex items-center justify-between pt-1 border-t border-[#E8D9D4]">
-                              <span className="text-[9px] text-[#6F5963] font-semibold truncate max-w-[80px]">
-                                👤 {cust.assigned_telecaller || 'Unassigned'}
-                              </span>
-                              <Link
-                                to={`/wedding-crm/customers/${cust.id}`}
-                                className="p-1 rounded-lg bg-[#FFFDFC] border border-[#E8D9D4] hover:bg-[#FFF7F2] text-[#4A173A] transition-colors"
-                                title="View Customer Profile"
-                              >
-                                <Eye className="w-3 h-3 text-[#B76E79]" />
-                              </Link>
-                            </div>
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+          {boardError && customers.length > 0 && (
+            <div className="flex items-center justify-between gap-3 px-4 py-2.5 bg-[#FDE8E7] border border-[#B42318]/30 rounded-2xl">
+              <span className="flex items-center gap-2 text-[11px] font-bold text-[#B42318] min-w-0">
+                <CircleAlert className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">{boardError} Showing the last loaded data.</span>
+              </span>
+              <button
+                onClick={() => loadBoard()}
+                className="shrink-0 px-3 py-1 rounded-lg bg-[#B42318] hover:bg-[#8f1c14] text-white text-[10px] font-black uppercase tracking-wider transition-colors"
+              >
+                Retry
+              </button>
             </div>
-          </div>
+          )}
+
+          <TodaysWorkPanel
+            customers={customers}
+            today={today}
+            loading={loading}
+            onOpen={openCustomer}
+            onAction={openAction}
+          />
+
+          {!loading && overdueCustomers.length > 0 && (
+            <OverdueFollowUps
+              customers={overdueCustomers}
+              today={today}
+              onOpen={openCustomer}
+              onAction={openAction}
+            />
+          )}
+
+          {loading ? (
+            <div className="py-20 text-center text-xs text-[#6F5963]">
+              <RefreshCw className="w-5 h-5 animate-spin text-[#B76E79] mx-auto mb-2" />
+              Loading wedding pipeline...
+            </div>
+          ) : boardError && customers.length === 0 ? (
+            <div className="py-16 px-6 text-center bg-[#FFFDFC] border border-[#B42318]/30 rounded-3xl">
+              <CircleAlert className="w-6 h-6 text-[#B42318] mx-auto mb-3" />
+              <p className="text-sm font-black text-[#4A173A]">Unable to load the Wedding Status Pipeline.</p>
+              <p className="text-xs text-[#6F5963] mt-1 max-w-xl mx-auto break-words">{boardError}</p>
+              <button
+                onClick={() => loadBoard()}
+                className="mt-5 px-4 py-2 bg-[#4A173A] hover:bg-[#6A2853] text-white font-bold rounded-xl text-xs inline-flex items-center gap-1.5 transition-colors"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>Retry</span>
+              </button>
+            </div>
+          ) : customers.length === 0 ? (
+            <div className="py-16 text-center bg-[#FFFDFC] border border-[#E8D9D4] rounded-3xl">
+              <p className="text-sm font-black text-[#4A173A]">No customers match these filters</p>
+              <p className="text-xs text-[#6F5963] mt-1">
+                {activeFilterCount > 0 ? 'Clear the filters to see the full pipeline.' : 'New registrations will appear here automatically.'}
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto sm:overflow-x-hidden pb-4 -mx-4 sm:mx-0 px-4 sm:px-0">
+              {/* Phone: one stage at a time, 85vw wide so a 320px viewport still shows
+                  the whole card. Tablet up: a real grid, so the horizontal scroller can
+                  never clip a column and only the page owns the vertical scrollbar. */}
+              <div className="flex sm:grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 min-w-0">
+                {stages
+                  .filter((s) => s.key !== 'other' || (grouped['other'] || []).length > 0)
+                  .map((stage) => {
+                    const cards = grouped[stage.key] || [];
+                    const limit = stageLimits[stage.key] || CARDS_PER_STAGE_INIT;
+                    const presentation = STAGE_PRESENTATION[stage.key] || STAGE_PRESENTATION.other;
+
+                    return (
+                      <div
+                        key={stage.key}
+                        className={`bg-[#FFFDFC] rounded-3xl border ${presentation.accent} shadow-xs flex flex-col min-h-[320px] sm:min-h-[420px] max-h-[80vh] sm:max-h-[70vh] xl:max-h-[62vh] w-[min(85vw,330px)] sm:w-auto shrink-0 sm:shrink min-w-0`}
+                      >
+                        <div className={`flex items-center justify-between gap-2 px-4 py-3 border-b border-[#E8D9D4] ${presentation.headerBg} rounded-t-3xl sticky top-0 z-10`}>
+                          <h3 className="min-w-0 flex-1 break-words text-[11px] font-black text-[#4A173A] uppercase tracking-wider leading-tight">
+                            <span className="whitespace-nowrap">{stage.order}.</span> {stage.label}
+                          </h3>
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-black whitespace-nowrap shrink-0 ${presentation.chip}`}>
+                            {stage.count}
+                          </span>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto overscroll-contain p-3 space-y-3">
+                          {cards.length === 0 ? (
+                            <div className="py-12 text-center text-[11px] text-[#6F5963]">
+                              No customers in this stage
+                            </div>
+                          ) : (
+                            <>
+                              {cards.slice(0, limit).map((cust) => (
+                                <PipelineCard
+                                  key={cust.id}
+                                  customer={cust}
+                                  today={today}
+                                  onOpen={openCustomer}
+                                  onAction={openAction}
+                                />
+                              ))}
+                              {cards.length > limit && (
+                                <button
+                                  onClick={() => showMore(stage.key)}
+                                  className="w-full py-2 rounded-xl border border-[#E8D9D4] bg-[#FFFAF7] hover:bg-[#FFF7F2] text-[11px] font-bold text-[#4A173A] transition-colors"
+                                >
+                                  Show {Math.min(CARDS_PER_STAGE_STEP, cards.length - limit)} more of {cards.length}
+                                </button>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
         </div>
       </PageContainer>
+
+      <CustomerDetailDrawer
+        key={`drawer-${drawerCustomerId ?? 'none'}-${drawerKey}`}
+        customerId={drawerCustomerId}
+        open={drawerCustomerId !== null}
+        today={today}
+        stageKey={drawerCustomer?.stage_key ?? null}
+        canEdit={canEdit}
+        onClose={() => setDrawerCustomerId(null)}
+        onChanged={() => loadBoard({ silent: true })}
+        onAction={openActionById}
+      />
+
+      <QuickActionModal
+        kind={action?.kind ?? null}
+        customerId={action?.customerId ?? null}
+        customer={action ? customerById.get(action.customerId) ?? null : null}
+        today={today}
+        onClose={() => setAction(null)}
+        onSaved={(customerId, message) => {
+          showToast(message, 'success');
+          loadBoard({ silent: true });
+          // Re-mount an open drawer so it re-reads the record it just changed.
+          if (drawerCustomerId === customerId) setDrawerKey((k) => k + 1);
+        }}
+      />
     </DashboardLayout>
   );
 }

@@ -39,7 +39,9 @@ const CSRF_EXEMPT_PATHS = new Set([
   '/contact',
   '/api/contact',
   '/profile-site/contact',
-  '/api/profile-site/contact'
+  '/api/profile-site/contact',
+  '/crm/verify-pin',
+  '/api/crm/verify-pin'
 ]);
 
 const csrfProtection = (req, res, next) => {

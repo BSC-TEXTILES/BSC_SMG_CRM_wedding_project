@@ -155,7 +155,6 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
     { key: 'wedding_registration', href: '/wedding/customer-registration', label: 'Wedding Customer Registration', icon: Heart, section: 'Store Operations' },
     { key: 'telecaller_desk', href: '/telecaller/desk', label: 'Telecaller Calling Desk', icon: PhoneCall, section: 'Store Operations' },
     { key: 'telecaller_dashboard', href: '/telecaller-dashboard', label: 'Telecaller Dashboard', icon: BarChart3, section: 'Store Operations' },
-    { key: 'wedding_operations', href: '/wedding-operations', label: 'Wedding Operations', icon: FileText, section: 'Store Operations' },
     { key: 'footfall', href: '/footfall', label: 'Hourly Footfall', icon: BarChart3, section: 'Store Operations' },
     { key: 'feedback_collection', href: '/feedback-collection', label: 'Feedback Collection', icon: FileText, section: 'Store Operations', hint: 'View CSAT submissions' },
     { key: 'feedback_list', href: '/feedback-list', label: 'Feedback Call Queue', icon: PhoneCall, section: 'Store Operations' },

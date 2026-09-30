@@ -3,12 +3,13 @@ import { Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Users, UserPlus, PhoneCall, History, Calendar, Kanban, BarChart3, FileSpreadsheet, Sparkles, Archive } from 'lucide-react';
 
 interface WeddingNavProps {
-  currentPageTitle: string;
+  currentPageTitle?: string;
   breadcrumbs?: { label: string; href?: string }[];
   actions?: React.ReactNode;
+  hideTitleCard?: boolean;
 }
 
-export default function WeddingNav({ currentPageTitle, breadcrumbs, actions }: WeddingNavProps) {
+export default function WeddingNav({ currentPageTitle, breadcrumbs, actions, hideTitleCard = false }: WeddingNavProps) {
   const location = useLocation();
   const currentPath = location.pathname;
 
@@ -26,29 +27,31 @@ export default function WeddingNav({ currentPageTitle, breadcrumbs, actions }: W
   ];
 
   return (
-    <div className="space-y-4 mb-6">
+    <div className={`space-y-4 ${hideTitleCard ? 'mb-4' : 'mb-6'}`}>
       {/* Page Title + Quick Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-[#FFFDFC] p-4 sm:p-5 rounded-2xl border border-[#E8D9D4] shadow-xs">
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-xl bg-[#4A173A] text-[#E8C7A8] flex items-center justify-center shadow-md border border-[#B76E79]/30 flex-shrink-0">
-            <Sparkles className="w-5 h-5 text-[#E8C7A8]" />
-          </div>
-          <div>
-            <h1 className="text-xl sm:text-2xl font-black text-[#4A173A] tracking-tight leading-none">
-              {currentPageTitle}
-            </h1>
-            <div className="text-[11px] font-bold text-[#6F5963] uppercase tracking-widest mt-1">
-              BSC Textiles · WEDDING CONCIERGE & CRM
+      {!hideTitleCard && (
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-[#FFFDFC] p-4 sm:p-5 rounded-2xl border border-[#E8D9D4] shadow-xs">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-xl bg-[#4A173A] text-[#E8C7A8] flex items-center justify-center shadow-md border border-[#B76E79]/30 flex-shrink-0">
+              <Sparkles className="w-5 h-5 text-[#E8C7A8]" />
+            </div>
+            <div>
+              <h1 className="text-xl sm:text-2xl font-black text-[#4A173A] tracking-tight leading-none">
+                {currentPageTitle || 'Wedding CRM'}
+              </h1>
+              <div className="text-[11px] font-bold text-[#6F5963] uppercase tracking-widest mt-1">
+                BSC Textiles · WEDDING CONCIERGE & CRM
+              </div>
             </div>
           </div>
-        </div>
 
-        {actions && (
-          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-            {actions}
-          </div>
-        )}
-      </div>
+          {actions && (
+            <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+              {actions}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Responsive Wedding CRM Sub-Navigation */}
       <div className="bg-[#FFFDFC] p-2 rounded-2xl border border-[#E8D9D4] shadow-xs">
@@ -95,7 +98,7 @@ export default function WeddingNav({ currentPageTitle, breadcrumbs, actions }: W
         </div>
 
         {/* Desktop / Tablet Horizontal Scroll Tab Strip (sm+) */}
-        <div className="hidden sm:block overflow-x-auto scrollbar-hide max-w-full">
+        <div className="hidden sm:flex items-center justify-between gap-2 overflow-x-auto scrollbar-hide max-w-full">
           <div className="flex items-center gap-1.5 min-w-max py-0.5">
             {navLinks.map((link) => {
               const Icon = link.icon;
@@ -117,7 +120,20 @@ export default function WeddingNav({ currentPageTitle, breadcrumbs, actions }: W
               );
             })}
           </div>
+
+          {hideTitleCard && actions && (
+            <div className="flex items-center gap-2 flex-shrink-0 pl-2 border-l border-[#E8D9D4]/60">
+              {actions}
+            </div>
+          )}
         </div>
+
+        {/* Mobile Actions when Title Card is hidden */}
+        {hideTitleCard && actions && (
+          <div className="sm:hidden pt-2 border-t border-[#E8D9D4] flex items-center gap-2 flex-wrap">
+            {actions}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -7,9 +7,9 @@ const pool = require('../config/db');
 const { successRes, errorRes } = require('../utils/response');
 const { getLocationFilter, injectLocationId } = require('../middleware/auth');
 const realtimeService = require('../services/realtimeService');
-const { encryptField, decryptRows, decryptRow } = require('../utils/crypto');
+const { encryptField, decryptField, decryptRows, decryptRow } = require('../utils/crypto');
 const { parseCsv, rowsToObjects } = require('../utils/csv');
-const { parseDate } = require('../utils/dates');
+const { parseDate, getISTDateString } = require('../utils/dates');
 const { maxSequence, allocateCustomerCode } = require('../utils/customerCode');
 const {
   buildTemplateWorkbook,
@@ -30,7 +30,7 @@ const {
 } = require('../config/redisClient');
 
 // Free-text PII fields stored encrypted at rest (AES-256-GCM, see utils/crypto.js)
-const ENCRYPTED_FIELDS = ['customer_notes', 'visit_notes', 'appointment_notes', 'purchase_notes', 'note_content', 'communication_details'];
+const ENCRYPTED_FIELDS = ['customer_notes', 'visit_notes', 'appointment_notes', 'purchase_notes', 'note_content', 'communication_details', 'additional_notes'];
 const CALL_LOG_ENCRYPTED_FIELDS = ['remarks'];
 
 /**
@@ -134,6 +134,80 @@ function resolveLocFilter(req, tableAlias = 'w') {
  * against this single set.
  */
 const COMPLETION_STATUSES = new Set(['Wedding Process Completed', 'Completed']);
+
+/**
+ * Pipeline stages keyed to the statuses the database actually stores.
+ *
+ * The previous board matched statuses such as 'Shopping Planned' and
+ * 'Visit Scheduled' that no code path writes, while the real values
+ * ('Shopping Date Confirmed', 'Follow-up Pending', 'Interested', 'No Response',
+ * 'Not Interested', 'Cancelled', 'Closed') matched nothing — so a customer moved
+ * to one of those statuses disappeared from the pipeline entirely. The list
+ * below is the single source of truth: the board tags every row with a stage_key,
+ * and anything unrecognised lands in 'other' rather than vanishing.
+ */
+const PIPELINE_STAGES = [
+  { key: 'new', label: 'New Lead', order: 1, statuses: ['New', 'New Lead', 'Contact Pending'] },
+  { key: 'contacted', label: 'Contacted', order: 2, statuses: ['Contacted', 'Interested'] },
+  { key: 'follow_up', label: 'Follow-Up', order: 3, statuses: ['Follow-up Pending', 'Follow-up', 'Follow-Up Scheduled', 'Callback', 'Call Back Requested', 'No Response'] },
+  { key: 'shopping_planned', label: 'Shopping Planned', order: 4, statuses: ['Shopping Date Confirmed', 'Shopping Planned', 'Shopping Confirmed', 'Visit Scheduled', 'Visit Planned'] },
+  { key: 'visited', label: 'Visited Store', order: 5, statuses: ['Visited', 'Visited Store'] },
+  { key: 'won', label: 'Won / Converted', order: 6, statuses: ['Won', 'Converted', ...Array.from(COMPLETION_STATUSES)] },
+  { key: 'not_moving', label: 'Not Moving Forward', order: 7, statuses: ['Not Interested', 'Cancelled', 'Closed', 'Invalid Number'] },
+  { key: 'other', label: 'Needs Review', order: 8, statuses: [] }
+];
+
+const STAGE_BY_STATUS = PIPELINE_STAGES.reduce((acc, stage) => {
+  stage.statuses.forEach((s) => { acc[s.toLowerCase()] = stage.key; });
+  return acc;
+}, {});
+
+function resolveStageKey(status) {
+  return STAGE_BY_STATUS[String(status || '').trim().toLowerCase()] || 'other';
+}
+
+/**
+ * The six visible pipeline stages, in display order. Every pipeline screen
+ * (Status Board, dashboard funnel, pipeline API) derives its counts from the
+ * customer_status of the customer record through this single definition, so
+ * no screen can ever disagree with any other.
+ */
+const VISIBLE_PIPELINE_STAGES = PIPELINE_STAGES.filter((s) => s.order <= 6);
+
+/**
+ * Pipeline status authority.
+ *
+ * The CRM Manager is the status controller: only this role (plus the
+ * system-admin roles that bypass every module check in this app) may change a
+ * customer's pipeline status — manually, in bulk, or through any API. Every
+ * write path below checks this, server-side, so a frontend state tamper or a
+ * direct API call cannot move a customer to another stage.
+ */
+const STATUS_CONTROLLER_ROLES = ['CRM Manager', 'Admin', 'Super Admin', 'system administrator'];
+
+function canControlPipelineStatus(user) {
+  if (!user || !user.role) return false;
+  const norm = String(user.role).trim().toLowerCase().replace(/[_\s-]+/g, ' ');
+  return STATUS_CONTROLLER_ROLES.map((r) => r.toLowerCase()).includes(norm);
+}
+
+/**
+ * Canonical customer_status values (single source of truth for manual edits).
+ * Normalizing incoming values against this set prevents spelling/case drift
+ * (e.g. 'contacted' vs 'Contacted') from fragmenting the pipeline counts.
+ */
+const CANONICAL_STATUS_INDEX = {};
+PIPELINE_STAGES.forEach((stage) => {
+  stage.statuses.forEach((s) => { CANONICAL_STATUS_INDEX[s.toLowerCase()] = s; });
+});
+CANONICAL_STATUS_INDEX['new lead'] = 'New Lead';
+
+/** Returns the canonical status for an incoming value, or null if unknown. */
+function normalizeStatusValue(value) {
+  const key = String(value || '').trim().toLowerCase();
+  if (!key) return null;
+  return CANONICAL_STATUS_INDEX[key] || null;
+}
 
 /**
  * Schema guards the permanent archive depends on. Both run on every boot and
@@ -264,6 +338,103 @@ async function archiveCustomerAsOld(customerId, actor, options = {}) {
   }, cust.location_id);
 
   return { archived: true, customer: cust };
+}
+
+/**
+ * Journey fields a CRM Manager can edit from the status board that the original
+ * updateCustomer never persisted. Whitelisted: anything not listed here cannot be
+ * written through the extended path, so archival and lifecycle columns stay safe.
+ */
+const EXTENSIBLE_CUSTOMER_FIELDS = [
+  { column: 'priority', type: 'text' },
+  { column: 'preferred_contact_method', type: 'text' },
+  { column: 'preferred_followup_time', type: 'text' },
+  { column: 'additional_notes', type: 'encrypted' },
+  { column: 'bride_age', type: 'int' },
+  { column: 'bride_contact', type: 'text' },
+  { column: 'bride_shopping_required', type: 'bool' },
+  { column: 'groom_age', type: 'int' },
+  { column: 'groom_contact', type: 'text' },
+  { column: 'groom_shopping_required', type: 'bool' },
+  { column: 'wedding_date_flexibility', type: 'text' },
+  { column: 'wedding_venue', type: 'text' },
+  { column: 'wedding_type', type: 'text' },
+  { column: 'wedding_functions', type: 'json' },
+  { column: 'guest_count', type: 'int' },
+  { column: 'shopping_requirements', type: 'json' },
+  { column: 'preferred_shopping_date', type: 'date' },
+  { column: 'preferred_shopping_time', type: 'text' },
+  { column: 'expected_visitors', type: 'int' }
+];
+
+function camelCase(column) {
+  return column.replace(/_([a-z0-9])/g, (_, c) => c.toUpperCase());
+}
+
+/**
+ * Builds the SET list for the extended fields.
+ * Returns { sets, params, error } — error is a plain-English message so the
+ * caller can reject a bad value instead of silently dropping it.
+ */
+function buildExtendedFieldUpdate(body) {
+  const sets = [];
+  const params = [];
+
+  for (const field of EXTENSIBLE_CUSTOMER_FIELDS) {
+    const incoming = body[field.column] !== undefined ? body[field.column] : body[camelCase(field.column)];
+    if (incoming === undefined) continue;
+
+    if (field.type === 'int') {
+      if (incoming === '' || incoming === null) {
+        sets.push(`${field.column} = ?`); params.push(null); continue;
+      }
+      const num = Number(incoming);
+      if (!Number.isInteger(num)) return { error: `Enter a whole number for ${camelCase(field.column)}.` };
+      sets.push(`${field.column} = ?`); params.push(num); continue;
+    }
+
+    if (field.type === 'date') {
+      if (incoming === '' || incoming === null) {
+        sets.push(`${field.column} = ?`); params.push(null); continue;
+      }
+      const parsed = parseDate(incoming);
+      if (!parsed) return { error: `Enter a valid date for ${camelCase(field.column)}.` };
+      sets.push(`${field.column} = ?`); params.push(parsed); continue;
+    }
+
+    if (field.type === 'bool') {
+      const truthy = incoming === true || incoming === 1 || incoming === '1' ||
+        (typeof incoming === 'string' && ['true', 'yes'].includes(incoming.toLowerCase()));
+      sets.push(`${field.column} = ?`); params.push(truthy ? 1 : 0); continue;
+    }
+
+    if (field.type === 'json') {
+      if (incoming === '' || incoming === null) {
+        sets.push(`${field.column} = ?`); params.push(null); continue;
+      }
+      if (typeof incoming === 'string') {
+        try {
+          JSON.parse(incoming);
+          sets.push(`${field.column} = ?`); params.push(incoming);
+        } catch {
+          return { error: `${camelCase(field.column)} must be valid JSON.` };
+        }
+        continue;
+      }
+      sets.push(`${field.column} = ?`); params.push(JSON.stringify(incoming)); continue;
+    }
+
+    if (field.type === 'encrypted') {
+      sets.push(`${field.column} = ?`);
+      params.push(incoming === null || incoming === '' ? null : encryptField(String(incoming)));
+      continue;
+    }
+
+    sets.push(`${field.column} = ?`);
+    params.push(incoming === null || incoming === '' ? null : String(incoming).trim());
+  }
+
+  return { sets, params, error: null };
 }
 
 let tablesChecked = false;
@@ -1545,11 +1716,28 @@ class WeddingController {
         id
       ]);
 
+      // Journey fields the main statement above has never carried. Applied as a
+      // second, whitelisted update so a partial edit cannot blank stored data.
+      const extended = buildExtendedFieldUpdate(req.body);
+      if (extended.error) {
+        return errorRes(res, extended.error, [], 400);
+      }
+      if (extended.sets.length) {
+        await pool.query(
+          `UPDATE wedding_customers SET ${extended.sets.join(', ')} WHERE id = ?`,
+          [...extended.params, id]
+        );
+      }
+
       // Audit log — separate telecaller assignment tracking
       const changes = [];
       if (customerStatus && customerStatus !== prev.customer_status) changes.push(`Status: ${prev.customer_status} → ${customerStatus}`);
       if (followUpDate && followUpDate !== prev.follow_up_date) changes.push(`Follow-up: ${prev.follow_up_date} → ${followUpDate}`);
       if (expectedShoppingDate && expectedShoppingDate !== prev.expected_shopping_date) changes.push(`Shopping Date: ${prev.expected_shopping_date} → ${expectedShoppingDate}`);
+      extended.sets.forEach((s) => {
+        const column = s.split(' = ')[0];
+        changes.push(`${camelCase(column)} updated`);
+      });
 
       // Track telecaller assignment/reassignment as a distinct audit action
       const telecallerChanged = assignedTelecaller && assignedTelecaller !== prev.assigned_telecaller;
@@ -5875,6 +6063,201 @@ class WeddingController {
     } catch (err) {
       console.error('[WeddingController.getTelecallerPerformance Error]', err);
       return errorRes(res, 'Failed to fetch telecaller performance', [err.message], 500);
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // PIPELINE BOARD (redesigned status pipeline workspace)
+  // ═══════════════════════════════════════════════════════════════════
+
+  /**
+   * Active pipeline customers with their history counts in a single query.
+   *
+   * The board cards need calls, follow-ups, feedback, visits and notes per
+   * customer. Doing that from the client would be one request per card, so the
+   * aggregates are resolved here. Location scoping uses the same
+   * resolveLocFilter every other wedding read uses — it is enforced server-side,
+   * not by hiding rows in the UI.
+   */
+  async getPipelineBoard(req, res) {
+    try {
+      await ensureTables();
+
+      const {
+        search,
+        telecaller_id: telecallerId,
+        priority,
+        call_status: callStatus,
+        stage,
+        overdue,
+        due_today: dueToday,
+        follow_up_from: followUpFrom,
+        follow_up_to: followUpTo,
+        limit = 500
+      } = req.query;
+
+      const { clause: locClause, params } = resolveLocFilter(req, 'w');
+      const whereClauses = [
+        `w.is_deleted = 0`,
+        `(w.lifecycle_status = 'ACTIVE' OR w.lifecycle_status IS NULL)`,
+        `1=1 ${locClause}`
+      ];
+
+      // Telecallers are limited to their own book, same as the calling desk.
+      const userRoleNorm = String(req.user?.role || '').trim().toLowerCase().replace(/[_\s-]+/g, ' ');
+      if (['telecaller', 'caller', 'tele caller', 'vm extension telecaller', 'vm telecaller'].includes(userRoleNorm)) {
+        whereClauses.push(`(w.assigned_telecaller_id = ? OR LOWER(TRIM(w.assigned_telecaller)) = LOWER(?))`);
+        params.push(req.user.id, req.user.fullName || req.user.username || '');
+      } else if (telecallerId && telecallerId !== 'all') {
+        const asNum = parseInt(telecallerId, 10);
+        if (!isNaN(asNum)) {
+          whereClauses.push(`(w.assigned_telecaller_id = ? OR w.assigned_telecaller = ?)`);
+          params.push(asNum, telecallerId);
+        } else {
+          whereClauses.push(`w.assigned_telecaller = ?`);
+          params.push(telecallerId);
+        }
+      }
+
+      if (priority && priority !== 'all') {
+        whereClauses.push(`w.priority = ?`);
+        params.push(priority);
+      }
+      if (callStatus && callStatus !== 'all') {
+        whereClauses.push(`w.call_status = ?`);
+        params.push(callStatus);
+      }
+      if (stage && stage !== 'all') {
+        const keys = String(stage).split(',').map((s) => s.trim()).filter(Boolean);
+        const mapped = keys.reduce((acc, k) => {
+          const found = PIPELINE_STAGES.find((s) => s.key === k);
+          // 'other' is defined by exclusion, so it cannot be filtered by status list.
+          if (found && found.key === 'other') {
+            const known = Object.keys(STAGE_BY_STATUS);
+            acc.push(`(w.customer_status IS NULL OR LOWER(w.customer_status) NOT IN (${known.map(() => '?').join(',')}))`);
+            params.push(...known);
+          } else if (found && found.statuses.length) {
+            acc.push(`w.customer_status IN (${found.statuses.map(() => '?').join(',')})`);
+            params.push(...found.statuses);
+          }
+          return acc;
+        }, []);
+        if (mapped.length) whereClauses.push(`(${mapped.join(' OR ')})`);
+        else whereClauses.push(`1 = 0`);
+      }
+      if (overdue === '1') {
+        whereClauses.push(`w.follow_up_date IS NOT NULL AND w.follow_up_date < CURDATE()`);
+      }
+      if (dueToday === '1') {
+        whereClauses.push(`w.follow_up_date = CURDATE()`);
+      }
+      if (followUpFrom && followUpTo) {
+        whereClauses.push(`w.follow_up_date BETWEEN ? AND ?`);
+        params.push(followUpFrom, followUpTo);
+      }
+      if (search && search.trim()) {
+        const q = `%${search.trim().toLowerCase()}%`;
+        whereClauses.push(`(
+          LOWER(w.customer_name) LIKE ? OR
+          LOWER(w.customer_code) LIKE ? OR
+          w.mobile_number LIKE ? OR
+          LOWER(COALESCE(w.email, '')) LIKE ? OR
+          LOWER(COALESCE(w.assigned_telecaller, '')) LIKE ? OR
+          LOWER(COALESCE(l.location_name, '')) LIKE ? OR
+          LOWER(COALESCE(l.location_code, '')) LIKE ?
+        )`);
+        params.push(q, q, q, q, q, q, q);
+      }
+
+      const limitNum = Math.min(2000, Math.max(1, parseInt(limit, 10) || 500));
+      const whereSql = whereClauses.join(' AND ');
+
+      const [rows] = await pool.query(`
+        SELECT
+          w.id,
+          w.customer_code,
+          w.customer_name,
+          w.mobile_number,
+          w.alternate_mobile,
+          w.email,
+          w.location_id,
+          w.customer_status,
+          w.call_status,
+          w.priority,
+          w.wedding_date,
+          w.expected_shopping_date,
+          w.preferred_shopping_category,
+          w.estimated_family_size,
+          w.assigned_telecaller,
+          w.assigned_telecaller_id,
+          w.follow_up_date,
+          w.preferred_call_time,
+          w.preferred_followup_time,
+          w.preferred_contact_method,
+          w.total_calls_count,
+          w.last_call_date,
+          w.last_call_outcome,
+          w.last_contacted_by,
+          w.bride_name,
+          w.groom_name,
+          w.wedding_venue,
+          w.wedding_city,
+          w.wedding_type,
+          w.budget,
+          w.budget_range,
+          w.lead_source,
+          w.created_at,
+          w.updated_at,
+          l.location_name,
+          l.location_code,
+          DATEDIFF(CURDATE(), w.follow_up_date) AS overdue_days,
+          (SELECT COUNT(*) FROM wedding_call_logs cl WHERE cl.customer_id = w.id) AS calls_logged,
+          (SELECT COUNT(*) FROM wedding_communication cm WHERE cm.customer_id = w.id AND cm.communication_type = 'Follow-Up') AS followups_logged,
+          (SELECT COUNT(*) FROM wedding_communication cm WHERE cm.customer_id = w.id AND cm.communication_type = 'Feedback') AS feedback_count,
+          (SELECT cm.communication_details FROM wedding_communication cm
+            WHERE cm.customer_id = w.id AND cm.communication_type = 'Feedback'
+            ORDER BY cm.id DESC LIMIT 1) AS latest_feedback,
+          (SELECT COUNT(*) FROM wedding_visits v WHERE v.customer_id = w.id) AS visits_count,
+          (SELECT COUNT(*) FROM wedding_notes n WHERE n.customer_id = w.id) AS notes_count
+        FROM wedding_customers w
+        LEFT JOIN locations l ON l.id = w.location_id
+        WHERE ${whereSql}
+        ORDER BY
+          CASE WHEN w.follow_up_date IS NULL THEN 1 ELSE 0 END ASC,
+          w.follow_up_date ASC,
+          w.updated_at DESC
+        LIMIT ${limitNum}
+      `, params);
+
+      // Only `latest_feedback` is encrypted-and-aliased here; the note bodies the
+      // board never renders stay out of the query entirely.
+      const customers = (rows || []).map((row) => ({
+        ...row,
+        latest_feedback: row.latest_feedback ? decryptField(row.latest_feedback) : row.latest_feedback,
+        stage_key: resolveStageKey(row.customer_status)
+      }));
+
+      // Counts per stage come from the same scoped row set, so the summary can
+      // never disagree with the cards shown.
+      const stageCounts = customers.reduce((acc, c) => {
+        acc[c.stage_key] = (acc[c.stage_key] || 0) + 1;
+        return acc;
+      }, {});
+
+      return successRes(res, {
+        customers,
+        total: customers.length,
+        stages: PIPELINE_STAGES.map(({ key, label, order }) => ({
+          key,
+          label,
+          order,
+          count: stageCounts[key] || 0
+        })),
+        today: getISTDateString()
+      }, 'Pipeline board data retrieved successfully.');
+    } catch (err) {
+      console.error('[WeddingController.getPipelineBoard Error]', err);
+      return errorRes(res, 'Failed to load pipeline board', [err.message], 500);
     }
   }
 }

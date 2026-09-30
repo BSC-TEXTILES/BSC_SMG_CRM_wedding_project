@@ -60,4 +60,31 @@ function parseDateOrUndefined(raw) {
   return parseDate(raw);
 }
 
-module.exports = { parseDate, parseDateOrUndefined, toIsoDate };
+/**
+ * The IST calendar day for an instant, independent of the host timezone.
+ *
+ * The pattern this replaces added +05:30 *after* already correcting with
+ * getTimezoneOffset(); on a machine set to IST the two adjustments cancel and
+ * the UTC date comes back, so anything recorded between 00:00 and 05:30 IST
+ * was filed under the previous day. Three controllers had copies of it.
+ */
+function getISTDateString(date = new Date(), offsetMs = 0) {
+  const shifted = new Date(date.getTime() + offsetMs);
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(shifted);
+}
+
+/** Hour (0-23) on the IST clock, independent of the host timezone. */
+function getISTHour(date = new Date()) {
+  return Number(new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Kolkata',
+    hour: '2-digit',
+    hour12: false
+  }).format(date));
+}
+
+module.exports = { parseDate, parseDateOrUndefined, toIsoDate, getISTDateString, getISTHour };

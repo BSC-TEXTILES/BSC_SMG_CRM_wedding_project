@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import DashboardLayout from '../components/layouts/DashboardLayout';
 import { Target, Plus, Search, Filter, Clock, Download, X, Eye, FileText, CircleCheck, ShoppingBag, ShieldCheck, UserCheck, TrendingUp, Sparkles, CircleX, Upload } from 'lucide-react';
 import { API } from '../services/api';
@@ -6,6 +6,142 @@ import { showToast } from '../components/Toast';
 import MetricCard from '../components/ui/MetricCard';
 import ModalPortal from '../components/ui/ModalPortal';
 import * as XLSX from 'xlsx';
+
+/**
+ * Field length ceilings for the raise form.
+ *
+ * These mirror the real column widths of the `Diverts` table so the browser can
+ * warn the user with a precise message instead of letting the API reject the
+ * write (or, worse, silently truncate it). `productWanted` is a TEXT column in
+ * the database — 500 is a product-UX ceiling, not a storage limit.
+ */
+const LIMITS = {
+  productWanted: 500,
+  priceRange: 128,
+  size: 64,
+  colour: 64,
+  otherProductDetails: 2000,
+  remarks: 2000,
+  customerName: 150
+} as const;
+
+const REASON_CODES = [
+  { value: 'OUT_OF_STOCK', label: 'Out of Stock' },
+  { value: 'COLOR_UNAVAILABLE', label: 'Color Unavailable' },
+  { value: 'SIZE_MISSING', label: 'Size Missing' },
+  { value: 'PRICE_HIGH', label: 'Price High' },
+  { value: 'SPECIAL_DESIGN', label: 'Special Design Request' }
+];
+
+const FALLBACK_SECTIONS = ['Ground Floor Saree', '1st Floor Saree', 'Ladies', 'Kids', 'Mens'];
+
+interface RaiseDivertForm {
+  productWanted: string;
+  sectionId: string;
+  size: string;
+  colour: string;
+  otherProductDetails: string;
+  quantity: string;
+  priceRange: string;
+  reasonCode: string;
+  requiredByDate: string;
+  remarks: string;
+  customerName: string;
+  customerMobile: string;
+}
+
+type RaiseFormErrors = Partial<Record<keyof RaiseDivertForm, string>>;
+
+const createEmptyForm = (): RaiseDivertForm => ({
+  productWanted: '',
+  sectionId: '',
+  size: '',
+  colour: '',
+  otherProductDetails: '',
+  quantity: '1',
+  priceRange: '',
+  reasonCode: 'OUT_OF_STOCK',
+  requiredByDate: '',
+  remarks: '',
+  customerName: '',
+  customerMobile: ''
+});
+
+/** Rejects impossible calendar dates such as 2026-02-31 or 2026-13-01. */
+function isValidDateString(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const [y, m, d] = value.split('-').map(Number);
+  const parsed = new Date(y, m - 1, d);
+  return parsed.getFullYear() === y && parsed.getMonth() === m - 1 && parsed.getDate() === d;
+}
+
+function validateRaiseForm(form: RaiseDivertForm): RaiseFormErrors {
+  const errors: RaiseFormErrors = {};
+
+  const product = form.productWanted.trim();
+  if (!product) {
+    errors.productWanted = 'Product / Fabric Requested is required.';
+  } else if (product.length > LIMITS.productWanted) {
+    errors.productWanted = `Maximum ${LIMITS.productWanted} characters allowed.`;
+  }
+
+  const qtyRaw = form.quantity.trim();
+  if (!qtyRaw) {
+    errors.quantity = 'Quantity Requested is required.';
+  } else if (!/^\d+$/.test(qtyRaw)) {
+    errors.quantity = 'Quantity must be a whole number greater than 0.';
+  } else {
+    const qty = Number(qtyRaw);
+    if (!Number.isSafeInteger(qty)) errors.quantity = 'Quantity must be a whole number greater than 0.';
+    else if (qty <= 0) errors.quantity = 'Quantity must be greater than 0.';
+    else if (qty > 99999) errors.quantity = 'Quantity must be 99,999 or less.';
+  }
+
+  if (form.priceRange.trim().length > LIMITS.priceRange) {
+    errors.priceRange = `Maximum ${LIMITS.priceRange} characters allowed.`;
+  }
+  if (form.size.trim().length > LIMITS.size) {
+    errors.size = `Maximum ${LIMITS.size} characters allowed.`;
+  }
+  if (form.colour.trim().length > LIMITS.colour) {
+    errors.colour = `Maximum ${LIMITS.colour} characters allowed.`;
+  }
+  if (form.otherProductDetails.length > LIMITS.otherProductDetails) {
+    errors.otherProductDetails = `Maximum ${LIMITS.otherProductDetails} characters allowed.`;
+  }
+  if (form.remarks.length > LIMITS.remarks) {
+    errors.remarks = `Maximum ${LIMITS.remarks} characters allowed.`;
+  }
+  if (form.customerName.trim().length > LIMITS.customerName) {
+    errors.customerName = `Maximum ${LIMITS.customerName} characters allowed.`;
+  }
+
+  const mobile = form.customerMobile.trim();
+  if (mobile && !/^\d{10}$/.test(mobile)) {
+    errors.customerMobile = 'Enter a valid 10-digit mobile number.';
+  }
+
+  if (form.requiredByDate && !isValidDateString(form.requiredByDate)) {
+    errors.requiredByDate = 'Enter a valid required-by date.';
+  }
+
+  return errors;
+}
+
+/** Inline validation message tied to a field via aria-describedby. */
+function FieldError({ id, message }: { id: string; message?: string }) {
+  if (!message) return null;
+  return (
+    <p id={id} role="alert" className="mt-1 text-[11px] font-bold text-rose-600">
+      {message}
+    </p>
+  );
+}
+
+/** Applies the error outline only when the field actually has an error. */
+function controlClass(base: string, hasError?: boolean): string {
+  return hasError ? `${base} border-rose-500` : base;
+}
 
 export default function Divert() {
   const [diverts, setDiverts] = useState<any[]>([]);
@@ -22,24 +158,41 @@ export default function Divert() {
   const [fromDate, setFromDate] = useState<string>('');
   const [toDate, setToDate] = useState<string>('');
 
-  // Raise Form State
-  const [productWanted, setProductWanted] = useState<string>('');
-  const [sectionId, setSectionId] = useState<string>('');
-  const [size, setSize] = useState<string>('');
-  const [colour, setColour] = useState<string>('');
-  const [otherProductDetails, setOtherProductDetails] = useState<string>('');
-  const [quantity, setQuantity] = useState<number>(1);
-  const [priceRange, setPriceRange] = useState<string>('');
-  const [reasonCode, setReasonCode] = useState<string>('OUT_OF_STOCK');
-  const [requiredByDate, setRequiredByDate] = useState<string>('');
+  // Raise Form State — single controlled object so no field can go stale or
+  // leak between opens, plus a per-field error map shown inline.
+  const [form, setForm] = useState<RaiseDivertForm>(createEmptyForm);
+  const [formErrors, setFormErrors] = useState<RaiseFormErrors>({});
   const [referenceImageFile, setReferenceImageFile] = useState<File | null>(null);
   const [referenceImagePreview, setReferenceImagePreview] = useState<string>('');
-  const [remarks, setRemarks] = useState<string>('');
-  const [customerName, setCustomerName] = useState<string>('');
-  const [customerMobile, setCustomerMobile] = useState<string>('');
+  const [uploadingImage, setUploadingImage] = useState<boolean>(false);
   const [creating, setCreating] = useState<boolean>(false);
+  const [confirmDiscard, setConfirmDiscard] = useState<boolean>(false);
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const previewUrlRef = useRef<string>('');
+
+  const emptyForm = useMemo<RaiseDivertForm>(() => createEmptyForm(), []);
+  const isDirty = useMemo(
+    () => JSON.stringify(form) !== JSON.stringify(emptyForm) || referenceImageFile !== null,
+    [form, emptyForm, referenceImageFile]
+  );
+
+  const setField = React.useCallback(<K extends keyof RaiseDivertForm>(key: K, value: RaiseDivertForm[K]) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+    setFormErrors((prev) => {
+      if (!prev[key]) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+  }, []);
+
+  const releasePreview = () => {
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = '';
+    }
+  };
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -59,45 +212,93 @@ export default function Divert() {
       return;
     }
 
-    setReferenceImageFile(file);
+    // Replace any previously generated object URL so previews never leak.
+    releasePreview();
     const objectUrl = URL.createObjectURL(file);
+    previewUrlRef.current = objectUrl;
+    setReferenceImageFile(file);
     setReferenceImagePreview(objectUrl);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleRemoveImage = () => {
-    if (referenceImagePreview) {
-      URL.revokeObjectURL(referenceImagePreview);
-    }
+    releasePreview();
     setReferenceImageFile(null);
     setReferenceImagePreview('');
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const resetForm = () => {
-    setProductWanted('');
-    setSectionId('');
-    setSize('');
-    setColour('');
-    setOtherProductDetails('');
-    setQuantity(1);
-    setPriceRange('');
-    setReasonCode('OUT_OF_STOCK');
-    setRequiredByDate('');
-    handleRemoveImage();
-    setRemarks('');
-    setCustomerName('');
-    setCustomerMobile('');
+    setForm(createEmptyForm());
+    setFormErrors({});
+    releasePreview();
+    setReferenceImageFile(null);
+    setReferenceImagePreview('');
+    setUploadingImage(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
+
+  const openRaiseModal = () => {
+    // Always start from a clean slate — a previous draft must never surface here.
+    resetForm();
+    setConfirmDiscard(false);
+    setShowRaiseModal(true);
+  };
+
+  const closeRaiseModal = React.useCallback(() => {
+    setShowRaiseModal(false);
+    setConfirmDiscard(false);
+    resetForm();
+  }, []);
+
+  /** Backdrop / Escape / header ✕ / Cancel all funnel through here. */
+  const requestCloseRaiseModal = React.useCallback(() => {
+    if (creating) {
+      showToast('Please wait — the sourcing request is still being created.', 'info');
+      return;
+    }
+    if (isDirty) {
+      setConfirmDiscard(true);
+      return;
+    }
+    closeRaiseModal();
+  }, [creating, isDirty, closeRaiseModal]);
+
+  // Escape must dismiss only the discard prompt while it is open, never the
+  // whole form. Capture phase runs before ModalPortal's window listener.
+  useEffect(() => {
+    if (!confirmDiscard) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        setConfirmDiscard(false);
+      }
+    };
+    window.addEventListener('keydown', handler, true);
+    return () => window.removeEventListener('keydown', handler, true);
+  }, [confirmDiscard]);
+
+  // Revoke the generated preview URL if the modal unmounts mid-session.
+  useEffect(() => () => { releasePreview(); }, []);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [divRes, secRes] = await Promise.all([
-        API.getDiverts().catch(() => ({ diverts: [] })),
-        API.getSections().catch(() => ({ sections: [] }))
-      ]);
-      if (divRes && divRes.diverts) setDiverts(divRes.diverts);
-      if (secRes && secRes.sections) setSections(secRes.sections);
+      const [divRes, secRes] = await Promise.allSettled([API.getDiverts(), API.getSections()]);
+
+      if (divRes.status === 'fulfilled' && divRes.value && Array.isArray(divRes.value.diverts)) {
+        setDiverts(divRes.value.diverts);
+      } else if (divRes.status === 'rejected') {
+        console.error('Error fetching sourcing diverts:', divRes.reason);
+        showToast(divRes.reason?.message || 'Unable to load sourcing diverts. Please try again.', 'error');
+      }
+
+      if (secRes.status === 'fulfilled' && secRes.value && Array.isArray(secRes.value.sections)) {
+        setSections(secRes.value.sections);
+      } else if (secRes.status === 'rejected') {
+        // Sections are cosmetic here — the static fallback list still renders.
+        console.error('Error fetching store sections:', secRes.reason);
+      }
     } catch (err) {
       console.error('Error fetching divert data:', err);
     } finally {
@@ -109,52 +310,82 @@ export default function Divert() {
     fetchData();
   }, []);
 
+  const focusFirstInvalidField = (errors: RaiseFormErrors) => {
+    const firstKey = Object.keys(errors)[0];
+    if (!firstKey) return;
+    requestAnimationFrame(() => {
+      const el = document.querySelector<HTMLElement>(`[data-field="${firstKey}"]`);
+      if (el) {
+        el.focus({ preventScroll: true });
+        el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      }
+    });
+  };
+
   const handleCreateDivert = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!productWanted.trim()) {
-      showToast('Product / Fabric Requested is required.', 'error');
+    // Hard guard against double-click / Enter-key double submits.
+    if (creating) return;
+
+    const errors = validateRaiseForm(form);
+    setFormErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      focusFirstInvalidField(errors);
+      showToast('Please correct the highlighted fields before submitting.', 'error');
       return;
     }
+
     setCreating(true);
     try {
       let uploadedImageUrl = '';
       if (referenceImageFile) {
         try {
+          setUploadingImage(true);
           const uploadRes = await API.uploadDivertImage(referenceImageFile);
           if (uploadRes && uploadRes.fileUrl) {
             uploadedImageUrl = uploadRes.fileUrl;
+          } else {
+            throw new Error('The image upload did not return a file URL.');
           }
         } catch (uploadErr: any) {
           console.error('Reference image upload failed:', uploadErr);
-          showToast(uploadErr?.message || 'Failed to upload reference image', 'error');
-          setCreating(false);
+          showToast(uploadErr?.message || 'Failed to upload reference image. Please try again.', 'error');
+          // Keep the form open and the picked file so the user can retry.
           return;
+        } finally {
+          setUploadingImage(false);
         }
       }
 
-      await API.createDivert({
-        sectionId,
-        productWanted: productWanted.trim(),
-        quantity,
-        priceRange,
-        reasonCode,
-        size: size.trim() || undefined,
-        colour: colour.trim() || undefined,
-        other_product_details: otherProductDetails.trim() || undefined,
-        required_by_date: requiredByDate || undefined,
+      const created = await API.createDivert({
+        sectionId: form.sectionId.trim() || undefined,
+        productWanted: form.productWanted.trim(),
+        quantity: Number(form.quantity.trim()),
+        priceRange: form.priceRange.trim() || undefined,
+        reasonCode: form.reasonCode,
+        size: form.size.trim() || undefined,
+        colour: form.colour.trim() || undefined,
+        other_product_details: form.otherProductDetails.trim() || undefined,
+        required_by_date: form.requiredByDate || undefined,
         reference_image: uploadedImageUrl || undefined,
-        remarks: remarks.trim() || undefined,
-        customerName: customerName.trim() || undefined,
-        customerMobile: customerMobile.length === 10 ? `+91${customerMobile}` : (customerMobile.trim() || undefined),
+        remarks: form.remarks.trim() || undefined,
+        customerName: form.customerName.trim() || undefined,
+        customerMobile: form.customerMobile.trim() || undefined,
         createdBy: 'Floor Staff'
       });
-      showToast('Sourcing divert request raised successfully.', 'success');
-      setShowRaiseModal(false);
-      resetForm();
+
+      // Defensive: a 200 that reports failure must not be treated as success.
+      if (created && created.success === false) {
+        throw new Error(created.error || created.message || 'Unable to create sourcing request. Please try again.');
+      }
+
+      showToast('Sourcing request created successfully.', 'success');
+      closeRaiseModal();
       fetchData();
     } catch (err: any) {
-      console.error(err);
-      showToast(err?.message || 'Unable to raise sourcing divert request. Please try again.', 'error');
+      console.error('Unable to create sourcing divert:', err);
+      showToast(err?.message || 'Unable to create sourcing request. Please try again.', 'error');
+      // Deliberately leave the modal open so nothing the user typed is lost.
     } finally {
       setCreating(false);
     }
@@ -323,8 +554,9 @@ export default function Divert() {
               <Download className="w-4 h-4" /> Export Report
             </button>
             <button
-              onClick={() => setShowRaiseModal(true)}
-              className="btn-gold text-xs py-2 px-4 flex items-center gap-2 shadow-sm"
+              type="button"
+              onClick={openRaiseModal}
+              className="btn-gold text-xs py-2 px-4 flex items-center gap-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent"
             >
               <Plus className="w-4 h-4" />
               <span>Raise Sourcing Divert</span>
@@ -571,36 +803,45 @@ export default function Divert() {
         {/* Raise New Sourcing Divert Modal */}
         <ModalPortal
           isOpen={showRaiseModal}
-          onClose={() => {
-            setShowRaiseModal(false);
-            resetForm();
-          }}
+          onClose={requestCloseRaiseModal}
+          closeOnEsc={!confirmDiscard}
           ariaLabel="Raise New Sourcing Divert"
         >
-          <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full overflow-hidden border border-accent/40 flex flex-col max-h-[90vh]">
-            <div className="bg-primary text-white p-5 flex items-center justify-between border-b border-accent/30">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-accent text-white font-black text-lg flex items-center justify-center shadow-md">
+          {/*
+            Header + scrollable body + fixed footer. The <form> itself is the
+            flex column so the footer buttons stay reachable no matter how long
+            the form gets, while the body scrolls inside the viewport.
+          */}
+          <form
+            onSubmit={handleCreateDivert}
+            noValidate
+            onMouseDown={(e) => e.stopPropagation()}
+            className="relative bg-white rounded-3xl shadow-2xl w-full max-w-2xl border border-accent/40 flex flex-col max-h-[90vh] overflow-hidden"
+          >
+            {/* ── HEADER (fixed) ─────────────────────────────── */}
+            <div className="shrink-0 bg-primary text-white p-5 flex items-center justify-between border-b border-accent/30">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 shrink-0 rounded-xl bg-accent text-white font-black text-lg flex items-center justify-center shadow-md">
                   <Target className="w-5 h-5" />
                 </div>
-                <div>
-                  <h3 className="font-extrabold text-white text-base">Raise New Sourcing Divert</h3>
-                  <p className="text-xs text-accent font-medium">Capture complete merchandise sourcing requirement</p>
+                <div className="min-w-0">
+                  <h3 className="font-extrabold text-white text-base truncate">Raise New Sourcing Divert</h3>
+                  <p className="text-xs text-accent font-medium truncate">Capture complete merchandise sourcing requirement</p>
                 </div>
               </div>
 
               <button
-                onClick={() => {
-                  setShowRaiseModal(false);
-                  resetForm();
-                }}
-                className="p-2 rounded-xl bg-white/10 text-white hover:bg-white/20"
+                type="button"
+                onClick={requestCloseRaiseModal}
+                aria-label="Close raise sourcing divert form"
+                className="p-2 shrink-0 rounded-xl bg-white/10 text-white hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/60"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleCreateDivert} className="flex-1 overflow-y-auto p-6 space-y-4 text-xs bg-background">
+            {/* ── SCROLLABLE FORM BODY ───────────────────────── */}
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 sm:p-6 space-y-4 text-xs bg-background" style={{ WebkitOverflowScrolling: 'touch' }}>
 
               {/* SECTION 1 — PRODUCT DETAILS */}
               <div className="bg-white p-4 rounded-2xl border border-accent-soft space-y-3 shadow-xs">
@@ -612,67 +853,107 @@ export default function Divert() {
                 </div>
 
                 <div>
-                  <label className="block font-bold text-primary mb-1">Product / Fabric Requested *</label>
+                  <label htmlFor="divert-product" className="block font-bold text-primary mb-1">
+                    Product / Fabric Requested *
+                  </label>
                   <input
+                    id="divert-product"
+                    data-field="productWanted"
                     type="text"
                     required
+                    autoFocus
+                    autoComplete="off"
+                    spellCheck="false"
+                    maxLength={LIMITS.productWanted}
                     placeholder="e.g. Pure Kanjivaram Silk Saree (Bottle Green / Gold Zari border)"
-                    value={productWanted}
-                    onChange={(e) => setProductWanted(e.target.value)}
-                    className="input-modern font-extrabold text-primary w-full"
+                    value={form.productWanted}
+                    onChange={(e) => setField('productWanted', e.target.value)}
+                    onFocus={(e) => e.target.select()}
+                    aria-invalid={formErrors.productWanted ? true : undefined}
+                    aria-describedby={formErrors.productWanted ? 'err-productWanted' : undefined}
+                    className={controlClass('input-modern font-extrabold text-primary w-full', !!formErrors.productWanted)}
                   />
+                  <FieldError id="err-productWanted" message={formErrors.productWanted} />
+                  {!formErrors.productWanted && form.productWanted.length > 0 && (
+                    <p className={`mt-1 text-[10px] font-bold ${form.productWanted.length >= LIMITS.productWanted ? 'text-rose-600' : 'text-[#5D4E42]/70'}`}>
+                      {form.productWanted.length} / {LIMITS.productWanted} characters
+                    </p>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="block font-bold text-primary mb-1">Store Section</label>
+                    <label htmlFor="divert-section" className="block font-bold text-primary mb-1">Store Section</label>
                     <select
-                      value={sectionId}
-                      onChange={(e) => setSectionId(e.target.value)}
-                      className="select-modern font-bold w-full"
+                      id="divert-section"
+                      data-field="sectionId"
+                      value={form.sectionId}
+                      onChange={(e) => setField('sectionId', e.target.value)}
+                      className={controlClass('select-modern font-bold w-full', !!formErrors.sectionId)}
                     >
                       <option value="">Select Floor Section</option>
-                      <option value="Ground Floor Saree">Ground Floor Saree</option>
-                      <option value="1st Floor Saree">1st Floor Saree</option>
-                      <option value="Ladies">Ladies</option>
-                      <option value="Kids">Kids</option>
-                      <option value="Mens">Mens</option>
-                      {sections.filter(s => !['Ground Floor Saree', '1st Floor Saree', 'Ladies', 'Kids', 'Mens'].includes(s.name)).map(s => (
-                        <option key={s.id} value={s.name || s.id}>{s.name}</option>
+                      {FALLBACK_SECTIONS.map((name) => (
+                        <option key={name} value={name}>{name}</option>
                       ))}
+                      {sections
+                        .filter((s) => s?.name && !FALLBACK_SECTIONS.includes(s.name))
+                        .map((s) => (
+                          <option key={s.id || s.name} value={String(s.name)}>{s.name}</option>
+                        ))}
                     </select>
+                    <FieldError id="err-sectionId" message={formErrors.sectionId} />
                   </div>
                   <div>
-                    <label className="block font-bold text-primary mb-1">Size</label>
+                    <label htmlFor="divert-size" className="block font-bold text-primary mb-1">Size</label>
                     <input
+                      id="divert-size"
+                      data-field="size"
                       type="text"
+                      autoComplete="off"
+                      maxLength={LIMITS.size}
                       placeholder="e.g. 42 / XL / Free Size"
-                      value={size}
-                      onChange={(e) => setSize(e.target.value)}
-                      className="input-modern w-full"
+                      value={form.size}
+                      onChange={(e) => setField('size', e.target.value)}
+                      aria-invalid={formErrors.size ? true : undefined}
+                      aria-describedby={formErrors.size ? 'err-size' : undefined}
+                      className={controlClass('input-modern w-full', !!formErrors.size)}
                     />
+                    <FieldError id="err-size" message={formErrors.size} />
                   </div>
                   <div>
-                    <label className="block font-bold text-primary mb-1">Colour</label>
+                    <label htmlFor="divert-colour" className="block font-bold text-primary mb-1">Colour</label>
                     <input
+                      id="divert-colour"
+                      data-field="colour"
                       type="text"
+                      autoComplete="off"
+                      maxLength={LIMITS.colour}
                       placeholder="e.g. Bottle Green / Wine"
-                      value={colour}
-                      onChange={(e) => setColour(e.target.value)}
-                      className="input-modern w-full"
+                      value={form.colour}
+                      onChange={(e) => setField('colour', e.target.value)}
+                      aria-invalid={formErrors.colour ? true : undefined}
+                      aria-describedby={formErrors.colour ? 'err-colour' : undefined}
+                      className={controlClass('input-modern w-full', !!formErrors.colour)}
                     />
+                    <FieldError id="err-colour" message={formErrors.colour} />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block font-bold text-primary mb-1">Other Product Details</label>
+                  <label htmlFor="divert-other-details" className="block font-bold text-primary mb-1">Other Product Details</label>
                   <textarea
-                    rows={2}
+                    id="divert-other-details"
+                    data-field="otherProductDetails"
+                    rows={3}
+                    maxLength={LIMITS.otherProductDetails}
                     placeholder="Design, Pattern, Border, Fabric details, Special requirements..."
-                    value={otherProductDetails}
-                    onChange={(e) => setOtherProductDetails(e.target.value)}
-                    className="textarea-modern w-full text-xs"
+                    value={form.otherProductDetails}
+                    onChange={(e) => setField('otherProductDetails', e.target.value)}
+                    aria-invalid={formErrors.otherProductDetails ? true : undefined}
+                    aria-describedby={formErrors.otherProductDetails ? 'err-otherProductDetails' : undefined}
+                    className={controlClass('textarea-modern w-full text-xs', !!formErrors.otherProductDetails)}
                   />
+                  <FieldError id="err-otherProductDetails" message={formErrors.otherProductDetails} />
                 </div>
               </div>
 
@@ -687,50 +968,74 @@ export default function Divert() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block font-bold text-primary mb-1">Quantity Requested</label>
+                    <label htmlFor="divert-quantity" className="block font-bold text-primary mb-1">Quantity Requested</label>
                     <input
-                      type="number"
-                      min="1"
-                      value={quantity}
-                      onChange={(e) => setQuantity(parseInt(e.target.value, 10) || 1)}
-                      className="input-modern font-mono font-bold w-full"
+                      id="divert-quantity"
+                      data-field="quantity"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      autoComplete="off"
+                      required
+                      value={form.quantity}
+                      onChange={(e) => {
+                        const cleaned = e.target.value.replace(/[^\d]/g, '').slice(0, 5);
+                        setField('quantity', cleaned || '');
+                      }}
+                      aria-invalid={formErrors.quantity ? true : undefined}
+                      aria-describedby={formErrors.quantity ? 'err-quantity' : undefined}
+                      className={controlClass('input-modern font-mono font-bold w-full', !!formErrors.quantity)}
                     />
+                    <FieldError id="err-quantity" message={formErrors.quantity} />
                   </div>
                   <div>
-                    <label className="block font-bold text-primary mb-1">Target Price Range</label>
+                    <label htmlFor="divert-price" className="block font-bold text-primary mb-1">Target Price Range</label>
                     <input
+                      id="divert-price"
+                      data-field="priceRange"
                       type="text"
+                      autoComplete="off"
+                      maxLength={LIMITS.priceRange}
                       placeholder="e.g. ₹5,000 - ₹8,000"
-                      value={priceRange}
-                      onChange={(e) => setPriceRange(e.target.value)}
-                      className="input-modern w-full"
+                      value={form.priceRange}
+                      onChange={(e) => setField('priceRange', e.target.value)}
+                      aria-invalid={formErrors.priceRange ? true : undefined}
+                      aria-describedby={formErrors.priceRange ? 'err-priceRange' : undefined}
+                      className={controlClass('input-modern w-full', !!formErrors.priceRange)}
                     />
+                    <FieldError id="err-priceRange" message={formErrors.priceRange} />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block font-bold text-primary mb-1">Reason Code</label>
+                    <label htmlFor="divert-reason" className="block font-bold text-primary mb-1">Reason Code</label>
                     <select
-                      value={reasonCode}
-                      onChange={(e) => setReasonCode(e.target.value)}
-                      className="select-modern font-bold w-full"
+                      id="divert-reason"
+                      data-field="reasonCode"
+                      value={form.reasonCode}
+                      onChange={(e) => setField('reasonCode', e.target.value)}
+                      className={controlClass('select-modern font-bold w-full', !!formErrors.reasonCode)}
                     >
-                      <option value="OUT_OF_STOCK">Out of Stock</option>
-                      <option value="COLOR_UNAVAILABLE">Color Unavailable</option>
-                      <option value="SIZE_MISSING">Size Missing</option>
-                      <option value="PRICE_HIGH">Price High</option>
-                      <option value="SPECIAL_DESIGN">Special Design Request</option>
+                      {REASON_CODES.map((r) => (
+                        <option key={r.value} value={r.value}>{r.label}</option>
+                      ))}
                     </select>
+                    <FieldError id="err-reasonCode" message={formErrors.reasonCode} />
                   </div>
                   <div>
-                    <label className="block font-bold text-primary mb-1">Required-by Date (Optional)</label>
+                    <label htmlFor="divert-required-date" className="block font-bold text-primary mb-1">Required-by Date (Optional)</label>
                     <input
+                      id="divert-required-date"
+                      data-field="requiredByDate"
                       type="date"
-                      value={requiredByDate}
-                      onChange={(e) => setRequiredByDate(e.target.value)}
-                      className="input-modern font-mono text-xs w-full"
+                      value={form.requiredByDate}
+                      onChange={(e) => setField('requiredByDate', e.target.value)}
+                      aria-invalid={formErrors.requiredByDate ? true : undefined}
+                      aria-describedby={formErrors.requiredByDate ? 'err-requiredByDate' : undefined}
+                      className={controlClass('input-modern font-mono text-xs w-full', !!formErrors.requiredByDate)}
                     />
+                    <FieldError id="err-requiredByDate" message={formErrors.requiredByDate} />
                   </div>
                 </div>
               </div>
@@ -745,20 +1050,29 @@ export default function Divert() {
                 </div>
 
                 <div>
-                  <label className="block font-bold text-primary mb-1">Reference Image (Optional, max 5 MB)</label>
+                  <span className="block font-bold text-primary mb-1" id="divert-ref-image-label">
+                    Reference Image (Optional, max 5 MB)
+                  </span>
+                  {/*
+                    The file input stays mounted for the whole life of the form so
+                    the "Replace" control can re-open the picker while a preview is
+                    showing (a conditionally-rendered input cannot be targeted by
+                    htmlFor once it is unmounted).
+                  */}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/jpg"
+                    onChange={handleImageSelect}
+                    className="hidden"
+                    id="divert-ref-image"
+                    aria-labelledby="divert-ref-image-label"
+                  />
                   {!referenceImagePreview ? (
                     <div className="flex flex-wrap items-center gap-3">
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/jpeg,image/png,image/jpg"
-                        onChange={handleImageSelect}
-                        className="hidden"
-                        id="divert-ref-image"
-                      />
                       <label
                         htmlFor="divert-ref-image"
-                        className="cursor-pointer px-4 py-2.5 rounded-xl border border-dashed border-accent-soft hover:border-accent bg-background text-primary font-bold text-xs flex items-center gap-2 transition-all hover:bg-white"
+                        className="cursor-pointer px-4 py-2.5 rounded-xl border border-dashed border-accent-soft hover:border-accent bg-background text-primary font-bold text-xs flex items-center gap-2 transition-all hover:bg-white focus-within:ring-2 focus-within:ring-accent/40"
                       >
                         <Upload className="w-4 h-4 text-accent" />
                         <span>Upload Reference Photo (JPG, PNG)</span>
@@ -769,36 +1083,55 @@ export default function Divert() {
                     <div className="flex items-center gap-3 p-2.5 rounded-xl border border-accent-soft bg-background">
                       <img
                         src={referenceImagePreview}
-                        alt="Reference Preview"
-                        className="w-16 h-16 object-cover rounded-lg border border-accent/40 shadow-xs"
+                        alt="Reference preview"
+                        className="w-16 h-16 shrink-0 object-cover rounded-lg border border-accent/40 shadow-xs"
                       />
                       <div className="flex-1 min-w-0">
                         <div className="font-bold text-primary truncate text-xs">{referenceImageFile?.name}</div>
                         <div className="text-[10px] text-[#5D4E42]">
-                          {referenceImageFile ? (referenceImageFile.size / 1024).toFixed(1) + ' KB' : ''}
+                          {referenceImageFile ? `${(referenceImageFile.size / 1024).toFixed(1)} KB` : ''}
+                          {uploadingImage ? ' · Uploading…' : ''}
                         </div>
                       </div>
-                      <button
-                        type="button"
-                        onClick={handleRemoveImage}
-                        className="p-1.5 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100"
-                        title="Remove image"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <label
+                          htmlFor="divert-ref-image"
+                          className="cursor-pointer p-1.5 rounded-lg bg-white text-primary border border-accent-soft hover:bg-background"
+                          title="Replace image"
+                        >
+                          <Upload className="w-4 h-4" />
+                          <span className="sr-only">Replace reference image</span>
+                        </label>
+                        <button
+                          type="button"
+                          onClick={handleRemoveImage}
+                          disabled={uploadingImage}
+                          className="p-1.5 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 disabled:opacity-50"
+                          title="Remove image"
+                        >
+                          <X className="w-4 h-4" />
+                          <span className="sr-only">Remove reference image</span>
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
 
                 <div>
-                  <label className="block font-bold text-primary mb-1">Remarks / Notes</label>
+                  <label htmlFor="divert-remarks" className="block font-bold text-primary mb-1">Remarks / Notes</label>
                   <textarea
-                    rows={2}
+                    id="divert-remarks"
+                    data-field="remarks"
+                    rows={3}
+                    maxLength={LIMITS.remarks}
                     placeholder="Enter additional remarks or sourcing notes..."
-                    value={remarks}
-                    onChange={(e) => setRemarks(e.target.value)}
-                    className="textarea-modern w-full text-xs"
+                    value={form.remarks}
+                    onChange={(e) => setField('remarks', e.target.value)}
+                    aria-invalid={formErrors.remarks ? true : undefined}
+                    aria-describedby={formErrors.remarks ? 'err-remarks' : undefined}
+                    className={controlClass('textarea-modern w-full text-xs', !!formErrors.remarks)}
                   />
+                  <FieldError id="err-remarks" message={formErrors.remarks} />
                 </div>
               </div>
 
@@ -812,55 +1145,118 @@ export default function Divert() {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block font-bold text-primary mb-1">Customer Full Name</label>
+                    <label htmlFor="divert-customer-name" className="block font-bold text-primary mb-1">Customer Full Name</label>
                     <input
+                      id="divert-customer-name"
+                      data-field="customerName"
                       type="text"
+                      autoComplete="name"
+                      maxLength={LIMITS.customerName}
                       placeholder="e.g. Anitha Kumar"
-                      value={customerName}
-                      onChange={(e) => setCustomerName(e.target.value)}
-                      className="input-modern font-bold w-full"
+                      value={form.customerName}
+                      onChange={(e) => setField('customerName', e.target.value)}
+                      aria-invalid={formErrors.customerName ? true : undefined}
+                      aria-describedby={formErrors.customerName ? 'err-customerName' : undefined}
+                      className={controlClass('input-modern font-bold w-full', !!formErrors.customerName)}
                     />
+                    <FieldError id="err-customerName" message={formErrors.customerName} />
                   </div>
                   <div>
-                    <label className="block font-bold text-primary mb-1">Customer Mobile Phone</label>
+                    <label htmlFor="divert-customer-mobile" className="block font-bold text-primary mb-1">Customer Mobile Phone</label>
                     <div className="flex">
                       <span className="p-2.5 bg-accent-soft/50 border border-r-0 border-accent-soft rounded-l-xl font-extrabold text-xs text-[#5D4E42] flex items-center">
                         +91
                       </span>
                       <input
+                        id="divert-customer-mobile"
+                        data-field="customerMobile"
                         type="tel"
+                        inputMode="numeric"
+                        autoComplete="tel-national"
                         maxLength={10}
                         placeholder="10-digit mobile number"
-                        value={customerMobile}
-                        onChange={(e) => setCustomerMobile(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                        className="input-modern font-mono rounded-l-none w-full"
+                        value={form.customerMobile}
+                        onChange={(e) => setField('customerMobile', e.target.value.replace(/\D/g, '').slice(0, 10))}
+                        aria-invalid={formErrors.customerMobile ? true : undefined}
+                        aria-describedby={formErrors.customerMobile ? 'err-customerMobile' : undefined}
+                        className={controlClass('input-modern font-mono rounded-l-none w-full', !!formErrors.customerMobile)}
                       />
                     </div>
+                    <FieldError id="err-customerMobile" message={formErrors.customerMobile} />
                   </div>
                 </div>
               </div>
+            </div>
+            {/* ── END SCROLLABLE FORM BODY ───────────────────── */}
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-accent-soft">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowRaiseModal(false);
-                    resetForm();
-                  }}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-[#5D4E42] bg-white border border-accent-soft hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={creating}
-                  className="btn-gold text-xs py-2 px-5 font-black shadow-md disabled:opacity-50 flex items-center gap-1.5"
-                >
-                  {creating ? 'Raising Request...' : 'Raise Sourcing Request'}
-                </button>
+            {/* ── FIXED FOOTER ───────────────────────────────── */}
+            <div className="shrink-0 px-4 sm:px-6 py-4 bg-white border-t border-accent-soft flex flex-col-reverse sm:flex-row items-stretch sm:items-center sm:justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  if (creating) {
+                    showToast('Please wait — the sourcing request is still being created.', 'info');
+                    return;
+                  }
+                  // Always close on Cancel — skip dirty check for better UX
+                  closeRaiseModal();
+                }}
+                className="px-5 py-3 sm:py-2 rounded-xl text-xs font-bold text-[#5D4E42] bg-white border border-accent-soft hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-accent/40 active:scale-[0.97] transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={creating || uploadingImage}
+                aria-busy={creating}
+                className="btn-gold text-xs py-3 sm:py-2 px-5 font-black shadow-md disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent active:scale-[0.97] transition-all"
+              >
+                {creating && (
+                  <svg className="animate-spin w-4 h-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                )}
+                {creating ? 'Creating Request...' : uploadingImage ? 'Uploading Image...' : 'Raise Sourcing Request'}
+              </button>
+            </div>
+
+            {/* ── UNSAVED CHANGES CONFIRMATION ───────────────── */}
+            {confirmDiscard && (
+              <div
+                role="alertdialog"
+                aria-modal="true"
+                aria-labelledby="divert-discard-title"
+                className="absolute inset-0 z-20 bg-white/85 backdrop-blur-[2px] flex items-center justify-center p-5"
+              >
+                <div className="bg-white rounded-2xl border border-accent-soft shadow-2xl p-5 max-w-sm w-full space-y-3">
+                  <h4 id="divert-discard-title" className="font-extrabold text-primary text-sm">
+                    You have unsaved changes. Discard them?
+                  </h4>
+                  <p className="text-xs text-[#5D4E42]">
+                    Everything you have entered in this form will be lost. This cannot be undone.
+                  </p>
+                  <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-1">
+                    <button
+                      type="button"
+                      autoFocus
+                      onClick={() => setConfirmDiscard(false)}
+                      className="px-4 py-2.5 sm:py-2 rounded-xl text-xs font-bold text-primary bg-white border border-accent-soft hover:bg-background focus:outline-none focus:ring-2 focus:ring-accent/40"
+                    >
+                      Continue Editing
+                    </button>
+                    <button
+                      type="button"
+                      onClick={closeRaiseModal}
+                      className="px-4 py-2.5 sm:py-2 rounded-xl text-xs font-black bg-rose-600 text-white hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-400"
+                    >
+                      Discard Changes
+                    </button>
+                  </div>
+                </div>
               </div>
-            </form>
-          </div>
+            )}
+          </form>
         </ModalPortal>
 
         {/* Centered Details Popup Modal Card */}

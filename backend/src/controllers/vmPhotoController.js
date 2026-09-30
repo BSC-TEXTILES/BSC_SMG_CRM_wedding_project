@@ -7,24 +7,101 @@ const { logAction } = require('../utils/logger');
 const { getLocationFilter, injectLocationId } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 const realtimeService = require('../services/realtimeService');
+const { getISTDateString } = require('../utils/dates');
 
 const uploadRoot = upload.uploadDir || path.join(__dirname, '../../uploads');
 
+/** Roles that are not pinned to a single store and may act anywhere. */
+const VM_BYPASS_ROLES = ['admin', 'super admin', 'system administrator'];
+
 /**
- * Asserts location access permission for the requesting user against target location.
- * Admins, Managers, Store Managers, Floor Managers, and VM roles have full audit permissions.
+ * Asserts that the requesting user may act on the given store location.
+ *
+ * This used to end in an unconditional `return true`, so it read like enforcement
+ * and enforced nothing: any signed-in user could file photos against another
+ * store. The rule now matches the semantics of getLocationFilter()/
+ * injectLocationId() in middleware/auth.js:
+ *   • Admin / Super Admin / System Administrator — no location pin.
+ *   • Manager / Store Manager / Floor Manager / VM / CRM Manager and everyone
+ *     else — only their own location, or one granted through user_locations.
+ * A missing or unparsable target is denied rather than waved through.
+ *
+ * @returns {Promise<boolean>}
  */
-function assertLocationAccess(reqUser, targetLocationId) {
+async function assertLocationAccess(reqUser, targetLocationId) {
   if (!reqUser) return false;
-  const role = reqUser.role || '';
-  if (['Admin', 'Super Admin', 'Manager', 'Store Manager', 'Floor Manager', 'VM'].includes(role)) {
-    return true;
+
+  const role = String(reqUser.role || '').trim().toLowerCase();
+  if (VM_BYPASS_ROLES.includes(role)) return true;
+
+  const target = Number(targetLocationId);
+  if (!Number.isFinite(target) || target <= 0) return false;
+
+  if (Number(reqUser.locationId) === target) return true;
+
+  const allowed = Array.isArray(reqUser.allowedLocations) ? reqUser.allowedLocations.map(Number) : [];
+  if (allowed.includes(target)) return true;
+
+  // Multi-location grants live in user_locations, exactly like getLocationFilter reads them.
+  try {
+    const [rows] = await pool.query('SELECT location_id FROM user_locations WHERE user_id = ?', [reqUser.id]);
+    return (rows || []).some(r => Number(r.location_id) === target);
+  } catch (err) {
+    // Junction table unavailable — a user we cannot verify is a user we must deny.
+    return false;
   }
-  if (!targetLocationId) return true;
-  if (reqUser.locationId && Number(reqUser.locationId) === Number(targetLocationId)) return true;
-  if (Array.isArray(reqUser.allowedLocations) && reqUser.allowedLocations.includes(Number(targetLocationId))) return true;
-  return true;
 }
+
+/**
+ * The store an audit/photo belongs to: an explicit request value first (admins may
+ * target any store; restricted users are caught by assertLocationAccess), then the
+ * clamped injectLocationId() resolution, then the account's own store.
+ */
+function resolveAuditLocationId(req) {
+  const body = req.body || {};
+  const requested = Number(body.locationId || body.location_id) || null;
+  return requested || injectLocationId(req) || (req.user ? Number(req.user.locationId) : null) || null;
+}
+
+/**
+ * One photo row → the camelCase `VmPhoto` the frontend contract declares
+ * (frontend/src/pages/vm/vmTypes.ts). The legacy keys the old page reads
+ * (fileUrl / streamUrl / original_name) stay, so this is add-only.
+ */
+function mapVmPhoto(p) {
+  return {
+    id: p.id,
+    submissionId: p.submission_id !== undefined ? p.submission_id : p.submissionId,
+    locationId: p.location_id !== undefined ? p.location_id : p.locationId,
+    locationName: p.location_name !== undefined ? p.location_name : p.locationName,
+    floor: p.floor,
+    section: p.section,
+    pointId: p.point_id !== undefined ? p.point_id : p.pointId,
+    fileName: p.file_name !== undefined ? p.file_name : p.fileName,
+    original_name: p.file_name !== undefined ? p.file_name : p.fileName,
+    fileUrl: p.file_path !== undefined ? p.file_path : p.filePath,
+    url: `/api/vm/photos/${p.id}/file`,
+    streamUrl: `/api/vm/photos/${p.id}/file`,
+    fileSize: Number((p.file_size !== undefined ? p.file_size : p.fileSize) || 0),
+    mimeType: p.mime_type !== undefined ? p.mime_type : p.mimeType,
+    uploadedBy: p.uploaded_by !== undefined ? p.uploaded_by : p.uploadedBy,
+    inspectionDate: p.inspection_date !== undefined ? p.inspection_date : p.inspectionDate,
+    createdAt: p.created_at !== undefined ? p.created_at : p.createdAt,
+    status: p.status
+  };
+}
+
+/** Active photos of one or many audits, newest first — one query, never per audit. */
+async function getVmPhotos(submissionIds = []) {
+  const ids = (Array.isArray(submissionIds) ? submissionIds : [submissionIds]).filter(Boolean);
+  if (ids.length === 0) return [];
+  const [rows] = await pool.query(
+    "SELECT * FROM vm_checklist_photos WHERE submission_id IN (?) AND status != 'Deleted' AND deleted_at IS NULL ORDER BY created_at DESC",
+    [ids]
+  );
+  return (rows || []).map(mapVmPhoto);
+}
+
 
 // ── 1. UPLOAD VM CHECKLIST PHOTO(S) ─────────────────────────────────
 exports.uploadPhotos = async (req, res) => {
@@ -72,7 +149,9 @@ exports.uploadPhotos = async (req, res) => {
     } = req.body || {};
 
     const effectiveAuditId = submissionId || submission_id || null;
-    const effectiveInspectionDate = inspectionDate || inspection_date || new Date().toISOString().split('T')[0];
+    // The audit day is the Asia/Kolkata calendar day. toISOString() is UTC, so every
+    // photo uploaded between 00:00 and 05:29 IST was filed under yesterday.
+    const effectiveInspectionDate = inspectionDate || inspection_date || getISTDateString();
 
     // Check section image count limit
     if (rawFiles.length > MAX_IMAGES_PER_SECTION) {
@@ -97,11 +176,43 @@ exports.uploadPhotos = async (req, res) => {
       }
     }
 
-    const effectiveLocationId = Number(req.body.locationId) || Number(req.body.location_id) || injectLocationId(req) || (req.user && req.user.locationId) || 1;
+    const effectiveLocationId = resolveAuditLocationId(req);
 
-    if (!assertLocationAccess(req.user, effectiveLocationId)) {
+    // Photos cannot be attached to an audit that does not exist, and the audit's own
+    // store is authoritative: a mismatched body locationId must not move evidence to
+    // another store.
+    let targetAudit = null;
+    if (effectiveAuditId) {
+      const [auditRows] = await pool.query(
+        'SELECT id, location_id, floor, section, status FROM vmsubmissions WHERE id = ? LIMIT 1',
+        [effectiveAuditId]
+      );
+      if (!auditRows || auditRows.length === 0) {
+        rawFiles.forEach(f => { try { fs.unlinkSync(f.path); } catch (e) {} });
+        return res.status(404).json({ success: false, message: `VM audit "${effectiveAuditId}" not found` });
+      }
+      targetAudit = auditRows[0];
+    }
+
+    const sameLocation = !effectiveAuditId ||
+      !targetAudit ||
+      !effectiveLocationId ||
+      Number(targetAudit.location_id) === Number(effectiveLocationId);
+
+    if (!sameLocation) {
       rawFiles.forEach(f => { try { fs.unlinkSync(f.path); } catch (e) {} });
-      return res.status(403).json({ success: false, message: 'You do not have permission to upload photos for this store location' });
+      return res.status(400).json({
+        success: false,
+        message: `Photo store location ${effectiveLocationId} does not match audit location ${targetAudit.location_id}`
+      });
+    }
+
+    if (!await assertLocationAccess(req.user, effectiveLocationId || (targetAudit && targetAudit.location_id))) {
+      rawFiles.forEach(f => { try { fs.unlinkSync(f.path); } catch (e) {} });
+      return res.status(403).json({
+        success: false,
+        message: `Access denied: store location ${effectiveLocationId} is not assigned to your account. Photos can only be attached to an audit of your own store.`
+      });
     }
 
     // Resolve location name
@@ -155,6 +266,7 @@ exports.uploadPhotos = async (req, res) => {
         fileName: file.originalname,
         original_name: file.originalname,
         fileUrl: relativePath,
+        url: `/api/vm/photos/${photoId}/file`,
         streamUrl: `/api/vm/photos/${photoId}/file`,
         fileSize: file.size,
         mimeType: file.mimetype || 'image/jpeg',
@@ -228,8 +340,11 @@ exports.listPhotos = async (req, res) => {
 
     if (locationId && locationId !== 'All') {
       const locNum = Number(locationId);
-      if (!assertLocationAccess(req.user, locNum)) {
-        return res.status(403).json({ success: false, message: 'Access denied for requested store location' });
+      if (!await assertLocationAccess(req.user, locNum)) {
+        return res.status(403).json({
+          success: false,
+          message: `Access denied: store location ${locNum} is not assigned to your account`
+        });
       }
       whereClauses.push('p.location_id = ?');
       params.push(locNum);
@@ -305,27 +420,13 @@ exports.listPhotos = async (req, res) => {
     );
 
     const photos = (rows || []).map(r => ({
-      id: r.id,
-      submissionId: r.submission_id,
-      locationId: r.location_id,
-      locationName: r.location_name,
+      ...mapVmPhoto(r),
       locationCode: r.location_code,
-      floor: r.floor,
-      section: r.section,
-      pointId: r.point_id,
-      fileName: r.file_name,
-      original_name: r.file_name,
-      fileUrl: r.file_path,
-      streamUrl: `/api/vm/photos/${r.id}/file`,
-      fileSize: Number(r.file_size || 0),
-      mimeType: r.mime_type,
-      uploadedBy: r.uploaded_by,
-      inspectionDate: r.inspection_date || (r.created_at ? new Date(r.created_at).toISOString().split('T')[0] : null),
+      inspectionDate: r.inspection_date || (r.created_at ? String(r.created_at).slice(0, 10) : null),
       status: r.status,
       scorePercent: r.scorePercent !== null && r.scorePercent !== undefined ? Number(r.scorePercent) : null,
       auditStatus: r.audit_status || 'Completed',
-      shift: r.shift || 'Opening',
-      createdAt: r.created_at
+      shift: r.shift || 'Opening'
     }));
 
     return res.json({
@@ -356,8 +457,8 @@ exports.streamPhoto = async (req, res) => {
     const photo = rows[0];
 
     // Assert requesting user has permission for this photo's store location
-    if (!assertLocationAccess(req.user, photo.location_id)) {
-      return res.status(403).send('Forbidden: You do not have permission to view photos from this store location');
+    if (!await assertLocationAccess(req.user, photo.location_id)) {
+      return res.status(403).send(`Forbidden: store location ${photo.location_id} is not assigned to your account`);
     }
 
     const cleanPath = String(photo.file_path || '').replace(/^\//, '');
@@ -396,7 +497,11 @@ exports.deletePhoto = async (req, res) => {
     const photo = rows[0];
     const userRole = (req.user && req.user.role ? String(req.user.role).trim().toLowerCase() : '');
     const isManagerRole = ['admin', 'super admin', 'system administrator', 'crm manager', 'manager', 'store manager'].includes(userRole);
-    const isOwner = req.user && (req.user.username === photo.uploaded_by || req.user.id === photo.user_id);
+    // vm_checklist_photos has no user_id column — uploaded_by stores the person's name,
+    // so ownership is matched on that (against both name and username) rather than on an
+    // id that never existed on this table.
+    const identity = req.user ? [req.user.fullName, req.user.name, req.user.username].filter(Boolean) : [];
+    const isOwner = !!req.user && identity.some(v => String(v) === String(photo.uploaded_by));
     if (!isManagerRole && !isOwner) {
       return res.status(403).json({
         success: false,
@@ -404,8 +509,11 @@ exports.deletePhoto = async (req, res) => {
       });
     }
 
-    if (!assertLocationAccess(req.user, photo.location_id)) {
-      return res.status(403).json({ success: false, message: 'Forbidden: You do not have permission to delete photos from this store location' });
+    if (!await assertLocationAccess(req.user, photo.location_id)) {
+      return res.status(403).json({
+        success: false,
+        message: `Forbidden: store location ${photo.location_id} is not assigned to your account`
+      });
     }
 
     await pool.query(
@@ -448,22 +556,66 @@ exports.linkPhotosToSubmission = async (req, res) => {
       return res.status(400).json({ success: false, message: 'submissionId and photoIds array are required' });
     }
 
-    const placeholders = photoIds.map(() => '?').join(', ');
-    if (inspectionDate) {
-      await pool.query(
-        `UPDATE vm_checklist_photos SET submission_id = ?, inspection_date = ? WHERE id IN (${placeholders})`,
-        [submissionId, inspectionDate, ...photoIds]
-      );
-    } else {
-      await pool.query(
-        `UPDATE vm_checklist_photos SET submission_id = ? WHERE id IN (${placeholders})`,
-        [submissionId, ...photoIds]
-      );
+    const [auditRows] = await pool.query(
+      'SELECT id, location_id, status FROM vmsubmissions WHERE id = ? LIMIT 1',
+      [submissionId]
+    );
+    if (!auditRows || auditRows.length === 0) {
+      return res.status(404).json({ success: false, message: `VM audit "${submissionId}" not found` });
+    }
+    const audit = auditRows[0];
+
+    if (!await assertLocationAccess(req.user, audit.location_id)) {
+      return res.status(403).json({
+        success: false,
+        message: `Access denied: store location ${audit.location_id} is not assigned to your account`
+      });
     }
 
-    return res.json({ success: true, message: 'Photos linked to submission successfully' });
+    const placeholders = photoIds.map(() => '?').join(', ');
+    const [photoRows] = await pool.query(
+      `SELECT id, location_id FROM vm_checklist_photos WHERE id IN (${placeholders}) AND deleted_at IS NULL`,
+      photoIds
+    );
+    if (!photoRows || photoRows.length !== photoIds.length) {
+      return res.status(400).json({ success: false, message: 'One or more photos do not exist and cannot be linked' });
+    }
+    // A photo shot in one store must never be re-filed as evidence in another.
+    const foreign = photoRows.filter(p => Number(p.location_id) !== Number(audit.location_id));
+    if (foreign.length > 0) {
+      return res.status(403).json({
+        success: false,
+        message: `Photos from another store location cannot be linked to this audit: ${foreign.map(p => p.id).join(', ')}`
+      });
+    }
+
+    const linkDate = inspectionDate || getISTDateString();
+    await pool.query(
+      `UPDATE vm_checklist_photos SET submission_id = ?, inspection_date = ? WHERE id IN (${placeholders})`,
+      [submissionId, linkDate, ...photoIds]
+    );
+
+    await logAction(req.user ? req.user.username : 'VM', 'LINK_VM_PHOTOS', 'VM', {
+      submissionId,
+      locationId: audit.location_id,
+      photoCount: photoIds.length
+    });
+
+    return res.json({
+      success: true,
+      message: 'Photos linked to submission successfully',
+      photos: await getVmPhotos(submissionId)
+    });
   } catch (err) {
     console.error('[Link Photos Error]', err);
     return errorRes(res, 'Failed to link photos: ' + err.message, [err.message], 500);
   }
 };
+
+// Shared with vmController so the audit flow and the photo flow cannot drift apart
+// on who may act on which store, or on how a photo row is presented to the client.
+exports.assertLocationAccess = assertLocationAccess;
+exports.resolveAuditLocationId = resolveAuditLocationId;
+exports.mapVmPhoto = mapVmPhoto;
+exports.getVmPhotos = getVmPhotos;
+

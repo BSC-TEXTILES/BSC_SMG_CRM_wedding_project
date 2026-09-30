@@ -1,9 +1,12 @@
 const db = require('../config/db');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const { getJwtSecret } = require('../utils/secrets');
 const { getLocationFilter, injectLocationId, getEffectiveLocationId, parseTargetLocation } = require('../middleware/auth');
 const realtimeService = require('../services/realtimeService');
 const { getCache, setCache } = require('../config/redisClient');
 const { resolveStoreLocation, STORE_LOCATIONS } = require('../config/storeLocations');
+const dateUtils = require('../utils/dates');
 
 // Singleton promise to ensure CRM schema tables exist once at boot without blocking request pipelines
 let crmTablesChecked = false;
@@ -104,19 +107,29 @@ async function ensureCrmTables() {
         await db.query(`
           CREATE TABLE IF NOT EXISTS Diverts (
             id VARCHAR(64) PRIMARY KEY,
-            entryDate VARCHAR(16),
-            sectionId VARCHAR(64),
-            productWanted VARCHAR(255),
+            location_id INT NOT NULL DEFAULT 2,
+            refNo INT NOT NULL AUTO_INCREMENT,
+            entryDate DATE NOT NULL,
+            sectionId VARCHAR(150),
+            productWanted TEXT NOT NULL,
             quantity INT DEFAULT 1,
-            priceRange VARCHAR(64),
+            priceRange VARCHAR(128),
             reasonCode VARCHAR(64) DEFAULT 'OUT_OF_STOCK',
-            customerName VARCHAR(255),
+            customerName VARCHAR(150),
             customerMobile VARCHAR(32),
             status VARCHAR(32) DEFAULT 'open',
-            locationId INT DEFAULT 2,
-            createdBy VARCHAR(255),
+            createdBy VARCHAR(100),
+            pmNotes TEXT,
+            size VARCHAR(64),
+            colour VARCHAR(64),
+            other_product_details TEXT,
+            required_by_date VARCHAR(32),
+            reference_image VARCHAR(512),
+            remarks TEXT,
             createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            UNIQUE KEY uniq_diverts_refNo (refNo),
+            KEY idx_diverts_loc (location_id)
           ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         `).catch(() => {});
         await db.query(`
@@ -160,10 +173,7 @@ function getUUID() {
 }
 
 function getISTDateString() {
-  const now = new Date();
-  const istOffset = 5.5 * 60 * 60 * 1000;
-  const istDate = new Date(now.getTime() + (now.getTimezoneOffset() * 60000) + istOffset);
-  return istDate.toISOString().split('T')[0];
+  return dateUtils.getISTDateString();
 }
 
 /**
@@ -179,9 +189,7 @@ function toFootfallDateOrNull(value) {
 }
 
 function getISTHour() {
-  const now = new Date();
-  const istDate = new Date(now.getTime() + (now.getTimezoneOffset() * 60000) + 5.5 * 60 * 60 * 1000);
-  return istDate.getUTCHours();
+  return dateUtils.getISTHour();
 }
 
 function getISTTimeString(d = new Date()) {
@@ -272,12 +280,33 @@ exports.verifyPin = async (req, res) => {
     if (!['tv', 'cash', 'greeter'].includes(type) || !pin) {
       return res.status(400).json({ success: false, message: 'PIN type and value are required' });
     }
-    const [rows] = await db.query('SELECT settingValue FROM Setting WHERE settingKey = ?', [key]);
+    const locId = Number(req.body.locationId || req.body.location_id) || 1;
     const supplied = String(pin).trim();
 
-    if (rows.length === 0) {
-      // First use: no PIN configured yet. The documented factory default
-      // '1234' is accepted once and immediately persisted as a bcrypt hash.
+    // Check kiosk_pins table first (location-specific active PINs or global PINs)
+    let candidateHashes = [];
+    try {
+      const [kioskRows] = await db.query(
+        'SELECT pin_hash FROM kiosk_pins WHERE pin_type = ? AND status = "Active" AND (location_id = ? OR location_id IS NULL) ORDER BY location_id DESC',
+        [type, locId]
+      );
+      if (kioskRows && kioskRows.length > 0) {
+        candidateHashes.push(...kioskRows.map((r) => r.pin_hash));
+      }
+    } catch (e) {
+      // kiosk_pins query error ignored if table missing
+    }
+
+    // Check Setting table
+    try {
+      const [rows] = await db.query('SELECT settingValue FROM Setting WHERE settingKey = ?', [key]);
+      if (rows && rows.length > 0 && rows[0].settingValue) {
+        candidateHashes.push(rows[0].settingValue);
+      }
+    } catch (e) {}
+
+    // First use: if no PIN configured anywhere yet, factory default '1234' is accepted and hashed
+    if (candidateHashes.length === 0) {
       if (supplied === '1234') {
         const hash = await bcrypt.hash('1234', 12);
         await db.query(
@@ -285,16 +314,43 @@ exports.verifyPin = async (req, res) => {
            ON DUPLICATE KEY UPDATE settingValue = VALUES(settingValue)`,
           [key, hash]
         );
-        return res.json({ success: true, message: 'PIN Verified' });
+        candidateHashes.push(hash);
+      } else {
+        return res.status(401).json({ success: false, message: 'Incorrect kiosk password. Please try again.' });
       }
-      return res.status(401).json({ success: false, message: 'Invalid PIN' });
     }
 
-    const ok = await bcrypt.compare(supplied, rows[0].settingValue).catch(() => false);
-    if (ok) {
-      return res.json({ success: true, message: 'PIN Verified' });
+    let ok = false;
+    for (const h of candidateHashes) {
+      if (await bcrypt.compare(supplied, h).catch(() => false)) {
+        ok = true;
+        break;
+      }
     }
-    return res.status(401).json({ success: false, message: 'Invalid PIN' });
+
+    if (ok) {
+      const locNames = {
+        1: { code: 'BEL', name: 'Belagavi' },
+        2: { code: 'DAV', name: 'Davanagere' },
+        3: { code: 'SHI', name: 'Shivamogga' }
+      };
+      const locMeta = locNames[locId] || { code: 'BEL', name: 'Belagavi' };
+      const expiresAt = Date.now() + 8 * 60 * 60 * 1000; // 8 hours kiosk session
+      const token = jwt.sign(
+        { id: 9999, username: 'tv-kiosk', role: 'Staff', fullName: 'Showroom TV Kiosk', locationId: locId },
+        getJwtSecret(),
+        { expiresIn: '8h' }
+      );
+      return res.json({
+        success: true,
+        message: 'Live TV Kiosk unlocked.',
+        token,
+        expiresAt,
+        location: { id: locId, code: locMeta.code, name: locMeta.name }
+      });
+    }
+
+    return res.status(401).json({ success: false, message: 'Incorrect kiosk password. Please try again.' });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
   }
@@ -365,9 +421,86 @@ exports.getFootfall = async (req, res) => {
   }
 };
 
+/**
+ * Roles allowed to correct an existing footfall figure outright. Everyone else
+ * (the greeter kiosk) may only add to or subtract from the current hour. This is
+ * enforced here, not by hiding buttons.
+ */
+const FOOTFALL_MANAGEMENT_ROLES = ['Admin', 'Super Admin', 'System Administrator', 'Manager', 'Store Manager'];
+
+const SOURCE_GREETER = 'Greeter Kiosk';
+const SOURCE_ADMIN = 'Admin Entry';
+
+function isFootfallManager(req) {
+  const role = String(req.user?.role || '').trim().toLowerCase();
+  return FOOTFALL_MANAGEMENT_ROLES.some((r) => r.toLowerCase() === role);
+}
+
+/** Strict validation: reject bad input instead of silently defaulting it. */
+function validateFootfallSlot(entryDate, slotHour) {
+  if (entryDate !== undefined && entryDate !== null && String(entryDate).trim() !== '') {
+    if (!toFootfallDateOrNull(entryDate)) {
+      return { error: 'Enter a valid date in YYYY-MM-DD format.' };
+    }
+  }
+  if (slotHour !== undefined && slotHour !== null && String(slotHour).trim() !== '') {
+    const hour = Number(slotHour);
+    if (!Number.isInteger(hour) || hour < 0 || hour > 23) {
+      return { error: 'Enter an hour between 0 and 23.' };
+    }
+  }
+  return { error: null };
+}
+
+async function recordFootfallHistory(conn, { entryId, locationId, entryDate, slotHour, field, oldValue, newValue, actor, action = 'Edited', reason = null }) {
+  if (String(oldValue) === String(newValue)) return;
+  await conn.query(
+    `INSERT INTO footfall_edit_history
+       (entry_id, location_id, entryDate, slotHour, field_changed, old_value, new_value, action, edited_by, edited_by_role, reason)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      entryId, locationId, entryDate, slotHour, field,
+      oldValue === null || oldValue === undefined ? null : String(oldValue),
+      newValue === null || newValue === undefined ? null : String(newValue),
+      action,
+      actor?.fullName || actor?.username || 'Staff',
+      actor?.role || null,
+      reason
+    ]
+  );
+}
+
 exports.upsertFootfall = async (req, res) => {
+  const conn = await db.getConnection();
   try {
-    const { entryDate, slotHour, visitors, remarks, submittedBy } = req.body;
+    const { entryDate, slotHour, visitors, remarks, submittedBy, reason } = req.body;
+
+    const invalid = validateFootfallSlot(entryDate, slotHour);
+    if (invalid.error) return res.status(400).json({ success: false, message: invalid.error });
+
+    // 'increment' keeps a running count server-side. The kiosk previously sent a
+    // number it had added up in the browser, so two people clicking at the same
+    // time overwrote each other and visitors went missing.
+    const mode = String(req.body.mode || 'set').toLowerCase() === 'increment' ? 'increment' : 'set';
+    const delta = Number(req.body.delta !== undefined ? req.body.delta : visitors);
+
+    if (mode === 'set') {
+      if (!isFootfallManager(req)) {
+        return res.status(403).json({
+          success: false,
+          message: 'Only management can correct a footfall count. Use add or remove instead.'
+        });
+      }
+      if (visitors === undefined || visitors === null || visitors === '' || Number.isNaN(Number(visitors))) {
+        return res.status(400).json({ success: false, message: 'Footfall count is required.' });
+      }
+      if (Number(visitors) < 0) {
+        return res.status(400).json({ success: false, message: 'Footfall count cannot be negative.' });
+      }
+    } else if (!Number.isInteger(delta) || delta === 0) {
+      return res.status(400).json({ success: false, message: 'Enter a whole number of visitors to add or remove.' });
+    }
+
     let locationId = injectLocationId(req);
     if (!locationId && (req.body.location_id || req.body.locationId)) {
       locationId = Number(req.body.location_id || req.body.locationId) || null;
@@ -391,32 +524,287 @@ exports.upsertFootfall = async (req, res) => {
 
     const targetDate = toFootfallDateOrNull(entryDate) || getISTDateString();
     const targetHour = (slotHour !== undefined && slotHour !== null && !isNaN(Number(slotHour))) ? Number(slotHour) : getISTHour();
-    const targetVisitors = Math.max(0, Number(visitors) || 0);
     const targetRemarks = String(remarks || '').trim();
-    const targetSubmittedBy = String(submittedBy || req.user?.fullName || req.user?.username || 'Staff').trim();
+    const actorName = String(submittedBy || req.user?.fullName || req.user?.username || 'Staff').trim();
+    const actorRole = String(req.user?.role || 'Staff').trim();
+    const source = isFootfallManager(req) ? SOURCE_ADMIN : SOURCE_GREETER;
 
-    const id = getUUID();
-    await db.query(`
-      INSERT INTO FootfallEntries (id, location_id, entryDate, slotHour, visitors, remarks, submittedBy)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-      ON DUPLICATE KEY UPDATE visitors = VALUES(visitors), remarks = VALUES(remarks), submittedBy = VALUES(submittedBy), updatedAt = CURRENT_TIMESTAMP
-    `, [id, locationId, targetDate, targetHour, targetVisitors, targetRemarks, targetSubmittedBy]);
+    await conn.beginTransaction();
+
+    const [existing] = await conn.query(
+      `SELECT * FROM FootfallEntries WHERE location_id = ? AND entryDate = ? AND slotHour = ? FOR UPDATE`,
+      [locationId, targetDate, targetHour]
+    );
+    const before = existing[0] || null;
+    const oldVisitors = before ? Number(before.visitors) : 0;
+    const newVisitors = mode === 'increment' ? Math.max(0, oldVisitors + delta) : Math.max(0, Number(visitors));
+    const entryId = before ? before.id : getUUID();
+
+    if (before) {
+      await conn.query(
+        `UPDATE FootfallEntries
+         SET visitors = ?, remarks = ?, submittedBy = ?,
+             updated_by = ?, updated_by_role = ?, updatedAt = CURRENT_TIMESTAMP
+         WHERE id = ?`,
+        [newVisitors, targetRemarks || before.remarks, before.submittedBy || actorName, actorName, actorRole, entryId]
+      );
+    } else {
+      await conn.query(
+        `INSERT INTO FootfallEntries
+           (id, location_id, entryDate, slotHour, visitors, remarks, submittedBy, entry_source, created_by, created_by_role, updated_by, updated_by_role)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [entryId, locationId, targetDate, targetHour, newVisitors, targetRemarks, actorName, source, actorName, actorRole, actorName, actorRole]
+      );
+    }
+
+    await recordFootfallHistory(conn, {
+      entryId, locationId, entryDate: targetDate, slotHour: targetHour,
+      field: 'visitors', oldValue: oldVisitors, newValue: newVisitors,
+      actor: req.user, action: before ? (mode === 'increment' ? 'Adjusted' : 'Edited') : 'Created',
+      reason: reason ? String(reason).slice(0, 255) : (mode === 'increment' ? `Delta ${delta > 0 ? '+' : ''}${delta}` : null)
+    });
+
+    if (before && targetRemarks && targetRemarks !== String(before.remarks || '')) {
+      await recordFootfallHistory(conn, {
+        entryId, locationId, entryDate: targetDate, slotHour: targetHour,
+        field: 'remarks', oldValue: before.remarks, newValue: targetRemarks, actor: req.user
+      });
+    }
+
+    await conn.commit();
+
+    const [savedRows] = await conn.query(
+      `SELECT id, location_id, entryDate, slotHour, visitors, remarks, submittedBy,
+              entry_source, created_by, created_by_role, updated_by, updated_by_role, createdAt, updatedAt
+       FROM FootfallEntries WHERE id = ?`,
+      [entryId]
+    );
+    const [totalRows] = await conn.query(
+      `SELECT COALESCE(SUM(visitors), 0) AS totalVisitors, COUNT(*) AS entryCount
+       FROM FootfallEntries WHERE entryDate = ? AND location_id = ?`,
+      [targetDate, locationId]
+    );
+
+    const saved = savedRows[0] || null;
 
     // Emit Socket.IO push event for zero-latency screen updates
     const io = req.app.get('io');
     if (io) {
-      io.emit('footfall:updated', { location_id: locationId, entryDate: targetDate, slotHour: targetHour, visitors: targetVisitors, remarks: targetRemarks, submittedBy: targetSubmittedBy });
+      io.emit('footfall:updated', {
+        entry_id: entryId,
+        location_id: locationId,
+        entryDate: targetDate,
+        slotHour: targetHour,
+        visitors: newVisitors,
+        remarks: saved?.remarks ?? targetRemarks,
+        submittedBy: actorName,
+        source: saved?.entry_source || source,
+        updatedBy: actorName,
+        action: before ? 'updated' : 'created'
+      });
     }
     realtimeService.emitEntityChange({
       entity: 'FOOTFALL',
       action: 'UPDATE',
       locationId,
-      meta: { entryDate: targetDate, slotHour: targetHour, visitors: targetVisitors }
+      meta: { entryDate: targetDate, slotHour: targetHour, visitors: newVisitors, source }
     });
 
-    return res.json({ success: true, message: 'Footfall slot updated successfully', location_id: locationId });
+    return res.json({
+      success: true,
+      message: before ? 'Footfall entry updated successfully.' : 'Footfall entry saved successfully.',
+      location_id: locationId,
+      entry: saved,
+      entryDate: targetDate,
+      previousVisitors: oldVisitors,
+      mode,
+      todayTotal: Number(totalRows[0]?.totalVisitors || 0),
+      entryCount: Number(totalRows[0]?.entryCount || 0)
+    });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
+    await conn.rollback().catch(() => {});
+    console.error('[Footfall upsert error]', err);
+    return res.status(500).json({ success: false, message: 'Unable to save footfall entry. Please try again.', error: err.message });
+  } finally {
+    conn.release();
+  }
+};
+
+/** Today's (or any day's) entries with origin and editor, for the kiosk and management lists. */
+exports.listFootfallEntries = async (req, res) => {
+  try {
+    const dateParam = req.query.date || req.query.entryDate;
+    const invalid = validateFootfallSlot(dateParam);
+    if (invalid.error) return res.status(400).json({ success: false, message: invalid.error });
+    const targetDate = toFootfallDateOrNull(dateParam) || getISTDateString();
+
+    const { clause: locClause, params: locParams } = await getLocationFilter(req, 'f');
+    const sourceFilter = String(req.query.source || '').trim();
+    const greeterFilter = String(req.query.greeter || '').trim();
+
+    const where = [`f.entryDate = ?`, `1=1 ${locClause}`];
+    const params = [targetDate, ...locParams];
+
+    if (sourceFilter && sourceFilter !== 'all') {
+      where.push(`f.entry_source = ?`);
+      params.push(sourceFilter);
+    }
+    if (greeterFilter && greeterFilter !== 'all') {
+      where.push(`(f.created_by = ? OR f.submittedBy = ?)`);
+      params.push(greeterFilter, greeterFilter);
+    }
+
+    const [rows] = await db.query(`
+      SELECT f.*, l.location_name, l.location_code,
+             (SELECT COUNT(*) FROM footfall_edit_history h WHERE h.entry_id = f.id) AS edit_count,
+             (SELECT MAX(h.created_at) FROM footfall_edit_history h WHERE h.entry_id = f.id) AS last_edited_at
+      FROM FootfallEntries f
+      LEFT JOIN locations l ON l.id = f.location_id
+      WHERE ${where.join(' AND ')}
+      ORDER BY f.slotHour ASC
+    `, params);
+
+    const totalVisitors = rows.reduce((sum, r) => sum + (Number(r.visitors) || 0), 0);
+
+    return res.json({
+      success: true,
+      date: targetDate,
+      entries: rows,
+      totalVisitors,
+      sources: [SOURCE_GREETER, SOURCE_ADMIN]
+    });
+  } catch (err) {
+    console.error('[Footfall list error]', err);
+    return res.status(500).json({ success: false, message: 'Unable to load footfall entries. Please try again.', error: err.message });
+  }
+};
+
+/** Edit a specific record by id so a correction updates the row, never adds one. */
+exports.updateFootfallEntry = async (req, res) => {
+  const conn = await db.getConnection();
+  try {
+    if (!isFootfallManager(req)) {
+      return res.status(403).json({ success: false, message: 'Only management users can correct a footfall record.' });
+    }
+
+    const id = String(req.params.id || '').trim();
+    if (!id) return res.status(400).json({ success: false, message: 'Footfall record id is required.' });
+
+    const { visitors, entryDate, slotHour, location_id: locationIdParam, remarks, reason } = req.body;
+    const invalid = validateFootfallSlot(entryDate, slotHour);
+    if (invalid.error) return res.status(400).json({ success: false, message: invalid.error });
+    if (visitors !== undefined && (Number.isNaN(Number(visitors)) || Number(visitors) < 0)) {
+      return res.status(400).json({ success: false, message: 'Footfall count cannot be negative.' });
+    }
+
+    const { clause: locClause, params: locParams } = await getLocationFilter(req, 'fe');
+
+    await conn.beginTransaction();
+
+    // The location clause is part of the lookup, so a cross-store id cannot be edited.
+    const [rows] = await conn.query(`
+      SELECT fe.* FROM FootfallEntries fe
+      WHERE fe.id = ? ${locClause}
+      FOR UPDATE
+    `, [id, ...locParams]);
+
+    if (!rows.length) {
+      await conn.rollback();
+      return res.status(404).json({ success: false, message: 'Footfall record not found or outside your store locations.' });
+    }
+    const before = rows[0];
+
+    const nextVisitors = visitors === undefined ? Number(before.visitors) : Math.max(0, Number(visitors));
+    const nextDate = toFootfallDateOrNull(entryDate) || before.entryDate;
+    const nextHour = slotHour === undefined || slotHour === null || slotHour === '' ? before.slotHour : Number(slotHour);
+    const nextLocation = locationIdParam === undefined || locationIdParam === null || locationIdParam === ''
+      ? before.location_id : Number(locationIdParam);
+    const nextRemarks = remarks === undefined ? before.remarks : String(remarks).trim();
+
+    if (Number.isInteger(nextHour) && (nextHour < 0 || nextHour > 23)) {
+      await conn.rollback();
+      return res.status(400).json({ success: false, message: 'Enter an hour between 0 and 23.' });
+    }
+    if (nextLocation !== before.location_id) {
+      const [allowed] = await conn.query('SELECT id FROM locations WHERE id = ?', [nextLocation]);
+      if (!allowed.length) {
+        await conn.rollback();
+        return res.status(400).json({ success: false, message: 'That store location does not exist.' });
+      }
+    }
+
+    await conn.query(
+      `UPDATE FootfallEntries
+       SET visitors = ?, entryDate = ?, slotHour = ?, location_id = ?, remarks = ?,
+           updated_by = ?, updated_by_role = ?, updatedAt = CURRENT_TIMESTAMP
+       WHERE id = ?`,
+      [nextVisitors, nextDate, nextHour, nextLocation, nextRemarks,
+        req.user?.fullName || req.user?.username || 'Staff', req.user?.role || 'Staff', id]
+    );
+
+    const actor = req.user;
+    const meta = { entryId: id, locationId: nextLocation, entryDate: nextDate, slotHour: nextHour, actor, reason: reason ? String(reason).slice(0, 255) : null };
+    await recordFootfallHistory(conn, { ...meta, field: 'visitors', oldValue: before.visitors, newValue: nextVisitors });
+    await recordFootfallHistory(conn, { ...meta, field: 'entryDate', oldValue: before.entryDate, newValue: nextDate });
+    await recordFootfallHistory(conn, { ...meta, field: 'slotHour', oldValue: before.slotHour, newValue: nextHour });
+    await recordFootfallHistory(conn, { ...meta, field: 'location_id', oldValue: before.location_id, newValue: nextLocation });
+    await recordFootfallHistory(conn, { ...meta, field: 'remarks', oldValue: before.remarks, newValue: nextRemarks });
+
+    await conn.commit();
+
+    const [after] = await conn.query('SELECT * FROM FootfallEntries WHERE id = ?', [id]);
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('footfall:updated', {
+        entry_id: id,
+        location_id: after[0]?.location_id,
+        entryDate: after[0]?.entryDate,
+        slotHour: after[0]?.slotHour,
+        visitors: after[0]?.visitors,
+        source: after[0]?.entry_source,
+        updatedBy: actor?.fullName || 'Staff',
+        action: 'corrected'
+      });
+    }
+    realtimeService.emitEntityChange({ entity: 'FOOTFALL', action: 'UPDATE', locationId: after[0]?.location_id, meta: { corrected: true, id } });
+
+    return res.json({
+      success: true,
+      message: 'Footfall entry updated successfully.',
+      entry: after[0] || null,
+      previous: { visitors: before.visitors, entryDate: before.entryDate, slotHour: before.slotHour, location_id: before.location_id }
+    });
+  } catch (err) {
+    await conn.rollback().catch(() => {});
+    console.error('[Footfall update error]', err);
+    return res.status(500).json({ success: false, message: 'Unable to update footfall entry. Please try again.', error: err.message });
+  } finally {
+    conn.release();
+  }
+};
+
+/** Who changed what, for management review. */
+exports.getFootfallEditHistory = async (req, res) => {
+  try {
+    const id = String(req.params.id || '').trim();
+    if (!id) return res.status(400).json({ success: false, message: 'Footfall record id is required.' });
+
+    const { clause: locClause, params: locParams } = await getLocationFilter(req, 'fe');
+    const [entryRows] = await db.query(`SELECT fe.* FROM FootfallEntries fe WHERE fe.id = ? ${locClause}`, [id, ...locParams]);
+    if (!entryRows.length) {
+      return res.status(404).json({ success: false, message: 'Footfall record not found or outside your store locations.' });
+    }
+
+    const [history] = await db.query(
+      `SELECT field_changed, old_value, new_value, action, edited_by, edited_by_role, reason, created_at
+       FROM footfall_edit_history WHERE entry_id = ? ORDER BY id DESC LIMIT 200`,
+      [id]
+    );
+
+    return res.json({ success: true, entry: entryRows[0], history });
+  } catch (err) {
+    console.error('[Footfall history error]', err);
+    return res.status(500).json({ success: false, message: 'Unable to load the edit history. Please try again.', error: err.message });
   }
 };
 
@@ -1230,44 +1618,150 @@ exports.updateCallQueue = async (req, res) => {
 };
 
 // ── Sourcing Diverts ────────────────────────────────────────
+
+/**
+ * Column widths the raise form validates against. Kept in one place so the
+ * HTTP layer can answer 400 with a precise message instead of letting MySQL's
+ * STRICT_TRANS_TABLES turn an over-long value into a 500.
+ */
+const DIVERT_LIMITS = {
+  productWanted: 500,
+  sectionId: 150,
+  priceRange: 128,
+  reasonCode: 64,
+  size: 64,
+  colour: 64,
+  customerName: 150,
+  customerMobile: 32,
+  createdBy: 100,
+  freeText: 5000
+};
+
+const DIVERT_DDL = `
+  CREATE TABLE IF NOT EXISTS Diverts (
+    id VARCHAR(64) PRIMARY KEY,
+    location_id INT NOT NULL DEFAULT 2,
+    refNo INT NOT NULL AUTO_INCREMENT,
+    entryDate DATE NOT NULL,
+    sectionId VARCHAR(150),
+    productWanted TEXT NOT NULL,
+    quantity INT DEFAULT 1,
+    priceRange VARCHAR(128),
+    reasonCode VARCHAR(64) DEFAULT 'OUT_OF_STOCK',
+    customerName VARCHAR(150),
+    customerMobile VARCHAR(32),
+    status VARCHAR(32) DEFAULT 'open',
+    createdBy VARCHAR(100),
+    pmNotes TEXT,
+    size VARCHAR(64),
+    colour VARCHAR(64),
+    other_product_details TEXT,
+    required_by_date VARCHAR(32),
+    reference_image VARCHAR(512),
+    remarks TEXT,
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uniq_diverts_refNo (refNo),
+    KEY idx_diverts_loc (location_id)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+`;
+
+const DIVERT_UPDATES_DDL = `
+  CREATE TABLE IF NOT EXISTS DivertUpdates (
+    id VARCHAR(50) PRIMARY KEY,
+    divertId VARCHAR(50) NOT NULL,
+    status VARCHAR(20) NOT NULL,
+    note TEXT NULL,
+    actorId VARCHAR(50) NULL,
+    actorRole VARCHAR(50) NULL,
+    createdAt TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    KEY idx_divert_updates_divert (divertId)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+`;
+
+/** Widen-only ALTERs for installs provisioned by older builds. Never throws. */
+const DIVERT_WIDEN_COLUMNS = [
+  ['sectionId', 150],
+  ['priceRange', 128],
+  ['createdBy', 100],
+  ['reasonCode', 64],
+  ['customerName', 150],
+  ['size', 64],
+  ['colour', 64]
+];
+
+let divertSchemaReady = false;
+let divertSchemaPromise = null;
+
+/**
+ * Creates/repairs the Diverts table once per process. Widening ALTERs only run
+ * against installs provisioned by older builds and are strictly size-increasing,
+ * so existing sourcing divert records are never rewritten or dropped.
+ * Never rejects: a schema hiccup must not take the read path down with it.
+ */
+async function ensureDivertSchema() {
+  if (divertSchemaReady) return;
+  if (!divertSchemaPromise) {
+    divertSchemaPromise = (async () => {
+      await db.query(DIVERT_DDL);
+      await db.query(DIVERT_UPDATES_DDL);
+
+      const [cols] = await db.query(
+        `SELECT COLUMN_NAME AS col, CHARACTER_MAXIMUM_LENGTH AS len
+           FROM information_schema.COLUMNS
+          WHERE TABLE_SCHEMA = DATABASE()
+            AND TABLE_NAME = 'Diverts'
+            AND DATA_TYPE = 'varchar'`
+      );
+      const current = new Map((cols || []).map((r) => [r.col, Number(r.len) || 0]));
+      for (const [column, size] of DIVERT_WIDEN_COLUMNS) {
+        if (current.has(column) && current.get(column) < size) {
+          await db.query(`ALTER TABLE Diverts MODIFY \`${column}\` VARCHAR(${size}) NULL`);
+        }
+      }
+
+      divertSchemaReady = true;
+    })().catch((err) => {
+      // Drop the cached promise so the next request retries.
+      divertSchemaPromise = null;
+      console.warn('[ensureDivertSchema]', err.message);
+    });
+  }
+  await divertSchemaPromise;
+}
+
+function divertBadRequest(res, message) {
+  return res.status(400).json({ success: false, message, error: message });
+}
+
+function isValidDateOnly(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const [y, m, d] = value.split('-').map(Number);
+  const parsed = new Date(y, m - 1, d);
+  return parsed.getFullYear() === y && parsed.getMonth() === m - 1 && parsed.getDate() === d;
+}
+
 exports.getDiverts = async (req, res) => {
   try {
-    await db.query(`
-      CREATE TABLE IF NOT EXISTS Diverts (
-        id VARCHAR(64) PRIMARY KEY,
-        location_id INT DEFAULT 1,
-        entryDate VARCHAR(16),
-        sectionId VARCHAR(64),
-        productWanted VARCHAR(255),
-        quantity INT DEFAULT 1,
-        priceRange VARCHAR(64),
-        reasonCode VARCHAR(64) DEFAULT 'OUT_OF_STOCK',
-        customerName VARCHAR(255),
-        customerMobile VARCHAR(32),
-        status VARCHAR(32) DEFAULT 'open',
-        createdBy VARCHAR(255),
-        pmNotes TEXT,
-        size VARCHAR(64),
-        colour VARCHAR(64),
-        other_product_details TEXT,
-        required_by_date VARCHAR(32),
-        reference_image VARCHAR(512),
-        remarks TEXT,
-        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-    `).catch(() => {});
+    await ensureDivertSchema();
 
     const { clause: locClause, params: locParams } = await getLocationFilter(req, 'Diverts');
     const [rows] = await db.query(`SELECT * FROM Diverts WHERE 1=1 ${locClause} ORDER BY createdAt DESC`, locParams);
     return res.json({ success: true, diverts: rows || [] });
   } catch (err) {
-    return res.json({ success: true, diverts: [] });
+    console.error('[getDiverts ERROR]', err);
+    return res.status(500).json({
+      success: false,
+      message: 'Unable to load sourcing diverts. Please try again.',
+      error: 'Unable to load sourcing diverts. Please try again.'
+    });
   }
 };
 
 exports.createDivert = async (req, res) => {
   try {
+    await ensureDivertSchema();
+
     const {
       sectionId,
       productWanted,
@@ -1283,16 +1777,73 @@ exports.createDivert = async (req, res) => {
       required_by_date,
       reference_image,
       remarks
-    } = req.body;
+    } = req.body || {};
 
-    if (!productWanted || !String(productWanted).trim()) {
-      return res.status(400).json({ success: false, error: 'Product / Fabric Requested is required.' });
+    // ── Validation ────────────────────────────────────────────
+    const product = productWanted == null ? '' : String(productWanted).trim();
+    if (!product) return divertBadRequest(res, 'Product / Fabric Requested is required.');
+    if (product.length > DIVERT_LIMITS.productWanted) {
+      return divertBadRequest(res, `Product / Fabric Requested: maximum ${DIVERT_LIMITS.productWanted} characters allowed.`);
     }
 
+    const qty = Number.parseInt(quantity, 10);
+    if (!Number.isFinite(qty) || qty < 1) return divertBadRequest(res, 'Quantity must be greater than 0.');
+    if (qty > 99999) return divertBadRequest(res, 'Quantity must be 99999 or less.');
+
+    const section = sectionId == null ? '' : String(sectionId).trim();
+    if (section.length > DIVERT_LIMITS.sectionId) {
+      return divertBadRequest(res, `Store Section: maximum ${DIVERT_LIMITS.sectionId} characters allowed.`);
+    }
+
+    const price = priceRange == null ? '' : String(priceRange).trim();
+    if (price.length > DIVERT_LIMITS.priceRange) {
+      return divertBadRequest(res, `Target Price Range: maximum ${DIVERT_LIMITS.priceRange} characters allowed.`);
+    }
+
+    const reason = (reasonCode == null ? '' : String(reasonCode).trim()) || 'OUT_OF_STOCK';
+    if (reason.length > DIVERT_LIMITS.reasonCode) {
+      return divertBadRequest(res, `Reason Code: maximum ${DIVERT_LIMITS.reasonCode} characters allowed.`);
+    }
+
+    const sizeStr = size == null ? '' : String(size).trim();
+    if (sizeStr.length > DIVERT_LIMITS.size) {
+      return divertBadRequest(res, `Size: maximum ${DIVERT_LIMITS.size} characters allowed.`);
+    }
+
+    const colourStr = colour == null ? '' : String(colour).trim();
+    if (colourStr.length > DIVERT_LIMITS.colour) {
+      return divertBadRequest(res, `Colour: maximum ${DIVERT_LIMITS.colour} characters allowed.`);
+    }
+
+    const custName = customerName == null ? '' : String(customerName).trim();
+    if (custName.length > DIVERT_LIMITS.customerName) {
+      return divertBadRequest(res, `Customer Full Name: maximum ${DIVERT_LIMITS.customerName} characters allowed.`);
+    }
+
+    const reqDateRaw = required_by_date == null ? '' : String(required_by_date).trim();
+    if (reqDateRaw && !isValidDateOnly(reqDateRaw)) {
+      return divertBadRequest(res, 'Required-by Date must be a valid date in YYYY-MM-DD format.');
+    }
+
+    const otherDetails = other_product_details == null ? '' : String(other_product_details).trim();
+    const remarksStr = remarks == null ? '' : String(remarks).trim();
+    if (otherDetails.length > DIVERT_LIMITS.freeText) {
+      return divertBadRequest(res, `Other Product Details: maximum ${DIVERT_LIMITS.freeText} characters allowed.`);
+    }
+    if (remarksStr.length > DIVERT_LIMITS.freeText) {
+      return divertBadRequest(res, `Remarks / Notes: maximum ${DIVERT_LIMITS.freeText} characters allowed.`);
+    }
+
+    const reference = reference_image == null ? '' : String(reference_image).trim();
+    if (reference && reference.length > 512) {
+      return divertBadRequest(res, 'Reference image path is too long.');
+    }
+
+    // ── Normalisation ─────────────────────────────────────────
     const locationId = injectLocationId(req) || (req.user && req.user.locationId) || 1;
     const id = getUUID();
-    const entryDate = new Date().toISOString().split('T')[0];
-    
+    const entryDate = dateUtils.getISTDateString().slice(0, 10);
+
     // Normalize phone to +91 format if provided
     let customerMobile = rawMobile ? String(rawMobile).trim() : '';
     if (customerMobile) {
@@ -1300,10 +1851,18 @@ exports.createDivert = async (req, res) => {
       if (digits.length === 10) customerMobile = `+91${digits}`;
       else if (digits.length === 12 && digits.startsWith('91')) customerMobile = `+${digits}`;
       else if (digits.length === 11 && digits.startsWith('0')) customerMobile = `+91${digits.slice(1)}`;
+      else return divertBadRequest(res, 'Customer Mobile Phone must be a valid 10-digit number.');
+      if (customerMobile.length > DIVERT_LIMITS.customerMobile) {
+        return divertBadRequest(res, 'Customer Mobile Phone is invalid.');
+      }
     }
 
-    const creatorName = req.user?.fullName || req.user?.name || createdBy || 'Floor Staff';
-    
+    const creatorName = clampToColumn(
+      req.user?.fullName || req.user?.name || createdBy || 'Floor Staff',
+      'Diverts',
+      'createdBy'
+    ) || 'Floor Staff';
+
     await db.query(`
       INSERT INTO Diverts (
         id, location_id, entryDate, sectionId, productWanted, quantity, priceRange, reasonCode,
@@ -1315,43 +1874,47 @@ exports.createDivert = async (req, res) => {
       id,
       locationId,
       entryDate,
-      sectionId || null,
-      String(productWanted).trim(),
-      parseInt(quantity, 10) || 1,
-      priceRange || '',
-      reasonCode || 'OUT_OF_STOCK',
-      customerName ? String(customerName).trim() : '',
+      section || null,
+      product,
+      qty,
+      price,
+      reason,
+      custName,
       customerMobile,
       creatorName,
-      size ? String(size).trim() : null,
-      colour ? String(colour).trim() : null,
-      other_product_details ? String(other_product_details).trim() : null,
-      required_by_date ? String(required_by_date).trim() : null,
-      reference_image || null,
-      remarks ? String(remarks).trim() : null
+      sizeStr || null,
+      colourStr || null,
+      otherDetails || null,
+      reqDateRaw || null,
+      reference || null,
+      remarksStr || null
     ]);
 
     const updateId = getUUID();
     await db.query(`
       INSERT INTO DivertUpdates (id, divertId, status, note, actorId, actorRole)
       VALUES (?, ?, 'open', 'Sourcing divert raised by staff', ?, 'Staff')
-    `, [updateId, id, creatorName]);
+    `, [updateId, id, clampToColumn(creatorName, 'DivertUpdates', 'actorId') || 'Staff']);
 
     const io = req.app.get('io');
     if (io) {
       io.emit('divert:created', {
         id,
-        productWanted: String(productWanted).trim(),
-        quantity: parseInt(quantity, 10) || 1,
+        productWanted: product,
+        quantity: qty,
         createdBy: creatorName,
-        message: `URGENT DIVERT: New stock request for ${String(productWanted).trim()} (Qty: ${parseInt(quantity, 10) || 1}) created by ${creatorName}`
+        message: `URGENT DIVERT: New stock request for ${product} (Qty: ${qty}) created by ${creatorName}`
       });
     }
 
     return res.json({ success: true, message: 'Divert created successfully', id });
   } catch (err) {
     console.error('[createDivert ERROR]', err);
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({
+      success: false,
+      message: 'Unable to create sourcing request. Please try again.',
+      error: err.message
+    });
   }
 };
 
@@ -1436,10 +1999,17 @@ exports.exportDiverts = async (req, res) => {
 
 exports.updateDivert = async (req, res) => {
   try {
+    await ensureDivertSchema();
     const { id, status, pmNotes, actorRole, actorId } = req.body;
+    if (!id || !String(id).trim()) {
+      return res.status(400).json({ success: false, message: 'Sourcing request id is required.', error: 'Sourcing request id is required.' });
+    }
+    if (!status || !String(status).trim()) {
+      return res.status(400).json({ success: false, message: 'Sourcing request status is required.', error: 'Sourcing request status is required.' });
+    }
     await db.query(`
       UPDATE Diverts SET status = ?, pmNotes = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?
-    `, [status, pmNotes || '', id]);
+    `, [clampToColumn(status, 'Diverts', 'status'), pmNotes ? String(pmNotes) : '', id]);
 
     const updateId = getUUID();
     await db.query(`
@@ -2195,4 +2765,318 @@ exports.clearChatMessages = async (req, res) => {
     return res.json({ success: true, message: 'Chat history cleared' });
   }
 };
+
+// ── Live TV Display Kiosk Endpoint ──────────────────────────
+exports.getTvDisplayData = async (req, res) => {
+  try {
+    const rawLoc = req.query.locationId || req.query.location_id || req.headers['x-location-id'] || req.user?.locationId || 1;
+    let targetLocId = Number(rawLoc);
+    if (![1, 2, 3].includes(targetLocId)) targetLocId = 1;
+
+    // 1. Fetch Store Location Profile
+    const [storeRows] = await db.query(
+      'SELECT id, location_code, location_name, store_name, address, phone FROM locations WHERE id = ? LIMIT 1',
+      [targetLocId]
+    ).catch(() => [[]]);
+    
+    const storeInfo = storeRows[0] || {
+      id: targetLocId,
+      location_code: targetLocId === 1 ? 'BEL' : targetLocId === 2 ? 'DAV' : 'SHI',
+      location_name: targetLocId === 1 ? 'Belagavi' : targetLocId === 2 ? 'Davanagere' : 'Shivamogga',
+      store_name: 'BSC Textiles Pvt Ltd',
+      address: 'BSC Textiles Showroom',
+      phone: '+91 831 242 1938'
+    };
+
+    // 2. Store Operating Hours & Real-time Status
+    const [settingRows] = await db.query(
+      "SELECT settingKey, settingValue FROM Setting WHERE settingKey IN ('open_hour', 'close_hour', 'company_name')"
+    ).catch(() => [[]]);
+    const settingsMap = {};
+    (settingRows || []).forEach(r => { settingsMap[r.settingKey] = r.settingValue; });
+
+    const openHour = parseInt(settingsMap['open_hour'] || '10', 10);
+    const closeHour = parseInt(settingsMap['close_hour'] || '22', 10);
+
+    // IST time calculation
+    const now = new Date();
+    const istTimeStr = now.toLocaleTimeString('en-US', { timeZone: 'Asia/Kolkata', hour12: false, hour: '2-digit', minute: '2-digit' });
+    const [istH, istM] = (istTimeStr || '').split(':').map(Number);
+    const currentIstHour = isNaN(istH) ? now.getHours() : istH;
+    const currentIstMinutes = isNaN(istM) ? now.getMinutes() : istM;
+
+    const currentDecimalTime = currentIstHour + currentIstMinutes / 60;
+    const isOpen = currentDecimalTime >= openHour && currentDecimalTime < (closeHour - 0.5);
+
+    const formatHourDisplay = (h) => {
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      const hr = h % 12 === 0 ? 12 : h % 12;
+      return `${String(hr).padStart(2, '0')}:00 ${ampm}`;
+    };
+
+    const storeStatus = {
+      isOpen,
+      statusText: isOpen ? 'OPEN' : 'CLOSED',
+      openTime: formatHourDisplay(openHour),
+      closeTime: formatHourDisplay(closeHour),
+      currentHour: currentIstHour,
+      timeZone: 'IST (Asia/Kolkata)'
+    };
+
+    // 3. Today's Footfall & Hourly Distribution
+    const istDate = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }); // YYYY-MM-DD
+    const [footfallRows] = await db.query(
+      'SELECT slotHour, visitors, remarks FROM FootfallEntries WHERE entryDate = ? AND location_id = ? ORDER BY slotHour ASC',
+      [istDate, targetLocId]
+    ).catch(() => [[]]);
+
+    const hourMap = {};
+    let todayFootfallTotal = 0;
+    (footfallRows || []).forEach(r => {
+      const hr = Number(r.slotHour);
+      const v = Number(r.visitors) || 0;
+      hourMap[hr] = (hourMap[hr] || 0) + v;
+      todayFootfallTotal += v;
+    });
+
+    const currentHourVisitors = hourMap[currentIstHour] || 0;
+
+    let peakHour = null;
+    let maxVisitors = 0;
+    for (const [hr, v] of Object.entries(hourMap)) {
+      if (v > maxVisitors) {
+        maxVisitors = v;
+        const hNum = Number(hr);
+        const ampm = hNum >= 12 ? 'PM' : 'AM';
+        const h12 = hNum % 12 === 0 ? 12 : hNum % 12;
+        peakHour = { hour: hNum, label: `${h12} ${ampm}`, visitors: v };
+      }
+    }
+
+    const hourlyDistribution = [];
+    let slotsElapsed = 0;
+    for (let h = openHour; h <= Math.min(closeHour, 22); h++) {
+      const v = hourMap[h] || 0;
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      const h12 = h % 12 === 0 ? 12 : h % 12;
+      const isCurrent = h === currentIstHour;
+      if (h <= currentIstHour) slotsElapsed++;
+      hourlyDistribution.push({
+        hour: h,
+        label: `${h12} ${ampm}`,
+        visitors: v,
+        isCurrent,
+        isPeak: peakHour && peakHour.hour === h && peakHour.visitors > 0
+      });
+    }
+
+    const hourlyAverage = slotsElapsed > 0 ? Math.round(todayFootfallTotal / slotsElapsed) : todayFootfallTotal;
+
+    const footfallData = {
+      todayTotal: todayFootfallTotal,
+      currentHourVisitors,
+      hourlyAverage,
+      peakHour: peakHour || (todayFootfallTotal > 0 ? { hour: currentIstHour, label: `${currentIstHour % 12 || 12} ${currentIstHour >= 12 ? 'PM' : 'AM'}`, visitors: currentHourVisitors } : null),
+      distribution: hourlyDistribution
+    };
+
+    // 4. Customer Feedback / CSAT
+    let feedbackTable = 'BSC_Feedback_Belagavi';
+    if (targetLocId === 2) feedbackTable = 'BSC_Feedback_Davanagere';
+    if (targetLocId === 3) feedbackTable = 'BSC_Feedback_Shivamogga';
+
+    const [fbSummary] = await db.query(`
+      SELECT 
+        COUNT(*) as total,
+        SUM(CASE WHEN isNegative = 1 THEN 1 ELSE 0 END) as negCount,
+        SUM(CASE WHEN isNegative = 0 OR isNegative IS NULL THEN 1 ELSE 0 END) as posCount,
+        AVG(CASE 
+          WHEN overallRating IS NOT NULL THEN overallRating
+          WHEN JSON_EXTRACT(answers, '$.q1') = '"Very satisfied"' THEN 5
+          WHEN JSON_EXTRACT(answers, '$.q1') = '"Satisfied"' THEN 4
+          WHEN JSON_EXTRACT(answers, '$.q1') = '"Neutral"' THEN 3
+          WHEN JSON_EXTRACT(answers, '$.q1') = '"Dissatisfied"' THEN 2
+          WHEN JSON_EXTRACT(answers, '$.q1') = '"Very dissatisfied"' THEN 1
+          ELSE NULL
+        END) as avgRating
+      FROM \`${feedbackTable}\`
+    `).catch(() => [[{ total: 0, negCount: 0, posCount: 0, avgRating: 5.0 }]]);
+
+    const [todayFbRows] = await db.query(
+      `SELECT COUNT(*) as todayTotal FROM \`${feedbackTable}\` WHERE DATE(created_at) = ?`,
+      [istDate]
+    ).catch(() => [[{ todayTotal: 0 }]]);
+
+    const totalFeedback = Number(fbSummary[0]?.total) || 0;
+    const negFeedback = Number(fbSummary[0]?.negCount) || 0;
+    const posFeedback = Number(fbSummary[0]?.posCount) || Math.max(0, totalFeedback - negFeedback);
+    const csatPercent = totalFeedback > 0 ? Math.round((posFeedback / totalFeedback) * 100) : null;
+    const averageRating = totalFeedback > 0 && fbSummary[0]?.avgRating ? Number(fbSummary[0].avgRating).toFixed(1) : null;
+    const responsesToday = Number(todayFbRows[0]?.todayTotal) || 0;
+
+    const csatData = {
+      satisfactionPct: csatPercent,
+      totalFeedback,
+      responsesToday,
+      averageRating: averageRating ? `${averageRating} / 5.0` : null,
+      positiveCount: posFeedback,
+      negativeCount: negFeedback
+    };
+
+    // 5. Active Sourcing Diverts
+    const [divertRows] = await db.query(
+      `SELECT id, productWanted, quantity, priceRange, status, sectionId, createdAt, remarks 
+       FROM Diverts 
+       WHERE location_id = ? 
+       ORDER BY createdAt DESC 
+       LIMIT 15`,
+      [targetLocId]
+    ).catch(() => [[]]);
+
+    const activeDiverts = (divertRows || []).filter(d => 
+      ['open', 'sourcing', 'Open', 'In Progress', 'in progress'].includes(d.status)
+    );
+    const urgentDiverts = activeDiverts.filter(d => 
+      (d.remarks && d.remarks.toLowerCase().includes('urgent')) ||
+      (d.productWanted && d.productWanted.toLowerCase().includes('urgent'))
+    );
+    const completedToday = (divertRows || []).filter(d => 
+      ['Completed', 'completed', 'resolved'].includes(d.status) &&
+      d.createdAt && String(d.createdAt).startsWith(istDate)
+    );
+
+    const divertData = {
+      totalActive: activeDiverts.length,
+      urgentCount: urgentDiverts.length,
+      inProgressCount: activeDiverts.filter(d => ['In Progress', 'in progress'].includes(d.status)).length,
+      completedTodayCount: completedToday.length,
+      recentDiverts: activeDiverts.slice(0, 4).map(d => ({
+        id: d.id,
+        product: d.productWanted,
+        quantity: d.quantity || 1,
+        section: d.sectionId || 'Floor',
+        status: d.status
+      }))
+    };
+
+    // 6. Live Operations Feed (Real Application Events)
+    const [auditEvents] = await db.query(`
+      SELECT id, action, module, username, details, location_id, created_at 
+      FROM audit_logs 
+      WHERE action NOT LIKE '%Page Navigation%' 
+        AND action NOT LIKE '%GET_%' 
+        AND action NOT LIKE '%CHECK_%'
+        AND (location_id IS NULL OR location_id = ?)
+      ORDER BY created_at DESC 
+      LIMIT 12
+    `, [targetLocId]).catch(() => [[]]);
+
+    const formattedEvents = (auditEvents || []).map(evt => {
+      let desc = '';
+      let type = 'OPERATIONS';
+      let title = evt.action.replace(/_/g, ' ');
+
+      let detailsObj = null;
+      try {
+        if (typeof evt.details === 'string' && evt.details.startsWith('{')) {
+          detailsObj = JSON.parse(evt.details);
+        }
+      } catch (e) {}
+
+      const act = evt.action.toUpperCase();
+      if (act.includes('FOOTFALL')) {
+        type = 'FOOTFALL';
+        title = 'Footfall Recorded';
+        desc = detailsObj?.visitors ? `+${detailsObj.visitors} visitors recorded` : 'Entrance sensor updated';
+      } else if (act.includes('VM')) {
+        type = 'VM_AUDIT';
+        title = act.includes('PHOTO') ? 'VM Inspection Photo' : 'VM Checklist Audit';
+        desc = detailsObj?.section ? `${detailsObj.floor || 'Floor'} · ${detailsObj.section}${detailsObj.scorePercent ? ` (${detailsObj.scorePercent}% score)` : ''}` : 'Visual merchandising check';
+      } else if (act.includes('DIVERT')) {
+        type = 'DIVERT';
+        title = 'Sourcing Divert';
+        desc = detailsObj?.productWanted ? `Item: ${detailsObj.productWanted}` : 'Floor divert action taken';
+      } else if (act.includes('JOINED') || act.includes('DOJ')) {
+        type = 'STAFF';
+        title = 'Store Onboarding';
+        desc = detailsObj?.appNo ? `Staff: ${detailsObj.appNo} (${detailsObj.department || 'Retail Store'})` : 'Candidate onboarding action';
+      } else if (act.includes('FEEDBACK') || act.includes('CSAT')) {
+        type = 'FEEDBACK';
+        title = 'Customer Feedback';
+        desc = 'Customer sentiment survey recorded';
+      } else if (act.includes('LOGIN')) {
+        type = 'SECURITY';
+        title = 'Store Staff On Duty';
+        desc = `${evt.username || 'Staff'} authenticated to terminal`;
+      } else {
+        desc = typeof evt.details === 'string' ? evt.details.slice(0, 70) : 'System operation executed';
+      }
+
+      const evDate = new Date(evt.created_at);
+      const evTime = evDate.toLocaleTimeString('en-US', {
+        timeZone: 'Asia/Kolkata',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
+
+      return {
+        id: evt.id,
+        time: evTime,
+        type,
+        title,
+        description: desc,
+        location: storeInfo.location_name
+      };
+    });
+
+    // 7. Active Broadcast Notice
+    const [broadcastRows] = await db.query(`
+      SELECT id, title, subject, message, priority, category, created_at, expires_at 
+      FROM broadcast_messages 
+      WHERE (location_id IS NULL OR location_id = ?) 
+        AND (status = 'APPROVED' OR status = 'Dispatched')
+        AND (expires_at IS NULL OR expires_at > NOW())
+      ORDER BY pinned DESC, created_at DESC 
+      LIMIT 3
+    `, [targetLocId]).catch(() => [[]]);
+
+    let activeBroadcast = null;
+    if (broadcastRows && broadcastRows.length > 0) {
+      const topB = broadcastRows[0];
+      activeBroadcast = {
+        id: topB.id,
+        title: topB.title,
+        message: topB.message,
+        priority: topB.priority || 'normal',
+        category: topB.category || 'General',
+        createdAt: topB.created_at
+      };
+    } else {
+      activeBroadcast = {
+        id: 0,
+        title: `Welcome to BSC Textiles · ${storeInfo.location_name}`,
+        message: `Welcome to BSC Textiles · ${storeInfo.location_name} Showroom · Premium Sarees, Menswear, Women & Kids Wear Collections · Store Floor Active`,
+        priority: 'normal',
+        category: 'Welcome'
+      };
+    }
+
+    return res.json({
+      success: true,
+      timestamp: new Date().toISOString(),
+      store: storeInfo,
+      status: storeStatus,
+      footfall: footfallData,
+      csat: csatData,
+      diverts: divertData,
+      feed: formattedEvents,
+      broadcast: activeBroadcast
+    });
+  } catch (err) {
+    console.error('[getTvDisplayData ERROR]', err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+};
+
 

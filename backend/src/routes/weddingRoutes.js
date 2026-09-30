@@ -99,6 +99,7 @@ router.get('/dashboard/enhanced', weddingController.getEnhancedDashboardStats);
 router.get('/dashboard/charts', weddingController.getDashboardCharts);
 router.get('/employee-performance', weddingController.getEmployeePerformance);
 router.get('/pipeline', weddingController.getStatusPipeline);
+router.get('/pipeline/board', canViewWedding, weddingController.getPipelineBoard);
 router.get('/upcoming-weddings', weddingController.getUpcomingWeddings);
 
 // ── Advanced Search ────────────────────────────────────────────

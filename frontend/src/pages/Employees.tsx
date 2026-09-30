@@ -520,18 +520,6 @@ export default function EmployeesPage() {
             </div>
 
             <div className="flex items-center gap-2.5 flex-wrap w-full md:w-auto">
-              {isAdminOrManager && (
-                <button
-                  type="button"
-                  onClick={() => setShowAddModal(true)}
-                  className="btn-gold text-xs px-4 py-2 font-black flex items-center gap-1.5 cursor-pointer shadow-md shrink-0"
-                  title="Add new employee to directory"
-                >
-                  <UserPlus className="w-4 h-4" />
-                  <span>+ Add Employee</span>
-                </button>
-              )}
-
               <button
                 type="button"
                 onClick={handleExportDirectory}

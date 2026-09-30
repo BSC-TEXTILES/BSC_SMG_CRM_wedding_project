@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Settings, Volume2, VolumeX, LogOut, ChevronDown, KeyRound } from 'lucide-react';
+import { Activity, Bell, Settings, Volume2, VolumeX, LogOut, ChevronDown, KeyRound } from 'lucide-react';
 import { Auth, UserSession } from '../../services/api';
 import { NotificationService } from '../../services/notificationService';
 import ChangePasswordModal from './ChangePasswordModal';
+import ActivityPanel from './ActivityPanel';
 
 interface ProfileDropdownProps {
   session: UserSession | null;
@@ -18,6 +19,16 @@ export default function ProfileDropdown({
   const [open, setOpen] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(NotificationService.isSoundEnabled());
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+  const [activityOpen, setActivityOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(() => NotificationService.getUnreadCount());
+
+  // Re-render the badge while the menu is open instead of freezing whatever the
+  // last render happened to read.
+  useEffect(() => {
+    if (!open) return;
+    setUnreadCount(NotificationService.getUnreadCount());
+    return NotificationService.subscribe(() => setUnreadCount(NotificationService.getUnreadCount()));
+  }, [open]);
 
   const role = session?.role || 'HR';
   const initials = session?.fullName
@@ -67,7 +78,23 @@ export default function ProfileDropdown({
                 <span>Notifications</span>
               </div>
               <span className="px-2 py-0.5 rounded-full bg-status-danger/10 text-status-danger text-[10px] font-black border border-status-danger/20">
-                {NotificationService.getUnreadCount()}
+                {unreadCount}
+              </span>
+            </button>
+
+            {/* Live Activities — reuses the existing activity timeline */}
+            <button
+              onClick={() => { setOpen(false); setActivityOpen(true); }}
+              className="w-full flex items-center justify-between p-2 rounded-xl text-text-primary hover:bg-background transition-colors cursor-pointer"
+              aria-label="Open live activities"
+            >
+              <div className="flex items-center gap-2">
+                <Activity className="w-4 h-4 text-status-success" />
+                <span>Live Activities</span>
+              </div>
+              <span className="inline-flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wide text-status-success">
+                <span className="w-1.5 h-1.5 rounded-full bg-status-success animate-pulse" />
+                Live
               </span>
             </button>
 
@@ -119,6 +146,12 @@ export default function ProfileDropdown({
         isOpen={changePasswordOpen}
         onClose={() => setChangePasswordOpen(false)}
         session={session}
+      />
+
+      {/* Live Activities timeline */}
+      <ActivityPanel
+        isOpen={activityOpen}
+        onClose={() => setActivityOpen(false)}
       />
     </div>
   );

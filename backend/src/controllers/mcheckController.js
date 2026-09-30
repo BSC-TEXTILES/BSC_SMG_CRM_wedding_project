@@ -5,12 +5,10 @@
 
 const db = require('../config/db');
 const { getLocationFilter, injectLocationId, getEffectiveLocationId } = require('../middleware/auth');
+const dateUtils = require('../utils/dates');
 
 function getISTDateString(offset = 0) {
-  const now = new Date();
-  const istOffset = 5.5 * 60 * 60 * 1000;
-  const istDate = new Date(now.getTime() + (now.getTimezoneOffset() * 60000) + istOffset + offset);
-  return istDate.toISOString().split('T')[0];
+  return dateUtils.getISTDateString(new Date(), offset);
 }
 
 function formatDateForDisplay(dateStr) {

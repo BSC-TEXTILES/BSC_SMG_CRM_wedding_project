@@ -1075,7 +1075,7 @@ class WeddingRegistrationController {
           wr.mobile,
           wr.email,
           wr.location_code,
-          wr.location_name,
+          l.location_name,
           wr.wedding_date,
           wr.preferred_shopping_date,
           wr.budget_range,

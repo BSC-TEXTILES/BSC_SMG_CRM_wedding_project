@@ -358,7 +358,7 @@ export default function NotificationDrawer({ isOpen, onClose }: NotificationDraw
 
       {/* Auxiliary Modals */}
       <NotificationPreferencesModal isOpen={prefsOpen} onClose={() => setPrefsOpen(false)} />
-      <DirectMessagingModal isOpen={dmOpen} onClose={() => setDmOpen(false)} />
+      <DirectMessagingModal isOpen={dmOpen} onClose={() => setDmOpen(false)} session={session} />
     </>
   );
 }

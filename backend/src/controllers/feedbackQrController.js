@@ -1,5 +1,6 @@
 const db = require('../config/db');
 const { getEffectiveLocationId, getLocationFilter, parseTargetLocation } = require('../middleware/auth');
+const dateUtils = require('../utils/dates');
 let QRCode = null;
 try {
   QRCode = require('qrcode');
@@ -18,10 +19,7 @@ function getUUID() {
 }
 
 function getISTDateString() {
-  const now = new Date();
-  const istOffset = 5.5 * 60 * 60 * 1000;
-  const istDate = new Date(now.getTime() + (now.getTimezoneOffset() * 60000) + istOffset);
-  return istDate.toISOString().split('T')[0];
+  return dateUtils.getISTDateString();
 }
 
 function getISTTimeString(d = new Date()) {

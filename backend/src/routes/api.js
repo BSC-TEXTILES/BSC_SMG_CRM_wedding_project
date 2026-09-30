@@ -126,6 +126,7 @@ router.get('/openings', candidateController.getOpenings);
 router.post('/openings/update', authenticate, authorize('Admin', 'Super Admin'), candidateController.updateOpening);
 router.get('/employees', authenticate, authorizeLocationAccess(), candidateController.getEmployees);
 router.get('/employees/not-joined', authenticate, authorizeLocationAccess(), candidateController.getNotJoinedDesk);
+router.get('/employees/not-joined/:appNo/history', authenticate, authorizeLocationAccess(), candidateController.getCandidateDojHistory);
 router.post('/employees/not-joined/action', authenticate, authorizeLocationAccess(), candidateController.handleNotJoinedAction);
 router.get('/employees/joined-store', authenticate, authorizeLocationAccess(), candidateController.getJoinedStoreDirectory);
 router.post('/employees/bulk', authenticate, authorize('Admin', 'Super Admin', 'HR'), candidateController.bulkAddEmployees);
@@ -245,10 +246,15 @@ router.post('/settings/questions/delete', authenticate, authorize('Admin', 'Supe
 router.get('/crm/settings', authenticate, crmController.getSettings);
 router.post('/crm/settings/update', authenticate, authorize('Admin', 'Super Admin'), crmController.updateSettings);
 router.post('/crm/verify-pin', kioskPinRateLimiter, crmController.verifyPin);
+router.get('/crm/tv-display', optionalAuthenticate, crmController.getTvDisplayData);
 router.get('/crm/sections', authenticate, crmController.getSections);
 
 router.get('/crm/footfall', authenticate, authorizeLocationAccess(), crmController.getFootfall);
 router.post('/crm/footfall/upsert', authenticate, authorizeLocationAccess(), crmController.upsertFootfall);
+// '/entry/:id' is kept distinct from '/entries' so neither route can shadow the other.
+router.get('/crm/footfall/entries', authenticate, authorizeLocationAccess(), crmController.listFootfallEntries);
+router.put('/crm/footfall/entry/:id', authenticate, authorizeLocationAccess(), crmController.updateFootfallEntry);
+router.get('/crm/footfall/entry/:id/history', authenticate, authorizeLocationAccess(), crmController.getFootfallEditHistory);
 
 router.get('/crm/feedback-questions', optionalAuthenticate, crmController.getFeedbackQuestions);
 router.get('/crm/feedback-stats', authenticate, authorizeLocationAccess(), crmController.getFeedbackStats);
@@ -275,14 +281,30 @@ router.get('/cash', authenticate, authorizeLocationAccess(), crmController.getCa
 router.post('/cash/save', authenticate, authorizeLocationAccess(), crmController.saveCashSettlement);
 
 // ── Visual Merchandising (VM) Routes ──────────────────────────
-router.get('/vm/dashboard', authenticate, authorizeLocationAccess(), vmController.getVmDashboard);
-router.get('/vm/audits', authenticate, authorizeLocationAccess(), vmController.getVmAudits);
-router.get('/vm/audits/export', authenticate, authorizeLocationAccess(), vmController.exportVmAudits);
-router.get('/vm/audits/:id', authenticate, authorizeLocationAccess(), vmController.getVmAuditDetail);
-router.get('/vm/submissions', authenticate, authorizeLocationAccess(), vmController.getVmAudits);
-router.post('/vm/submit', authenticate, authorizeLocationAccess(), vmController.submitVm);
-router.get('/vm/points', authenticate, vmController.getVmPoints);
-router.get('/vm/floors', authenticate, vmController.getVmFloors);
+// Module permission is enforced here, not only by hiding buttons in the UI:
+// reads need vm_checklist/can_view, every write needs vm_checklist/can_add.
+// (Admin / Super Admin / System Administrator bypass module checks; other roles
+// are granted through the Access Control Matrix.)
+const { requireModuleAction } = require('../middleware/moduleGuard');
+const canViewVm = requireModuleAction('vm_checklist', 'can_view');
+const canWriteVm = requireModuleAction('vm_checklist', 'can_add');
+
+// LITERAL paths are registered before any '/:id' path, or Express hands the
+// literal to the parameterised handler ('/vm/audits/draft' becoming audit
+// "draft") — this exact shadowing already bit /crm/diverts/updates once.
+router.get('/vm/dashboard', authenticate, authorizeLocationAccess(), canViewVm, vmController.getVmDashboard);
+router.get('/vm/floor-summary', authenticate, authorizeLocationAccess(), canViewVm, vmController.getVmFloorSummary);
+router.get('/vm/audits', authenticate, authorizeLocationAccess(), canViewVm, vmController.getVmAudits);
+router.get('/vm/audits/export', authenticate, authorizeLocationAccess(), canViewVm, vmController.exportVmAudits);
+router.post('/vm/audits/draft', authenticate, authorizeLocationAccess(), canWriteVm, vmController.createOrResumeVmDraft);
+router.get('/vm/attention', authenticate, authorizeLocationAccess(), canViewVm, vmController.getVmAttention);
+router.get('/vm/submissions', authenticate, authorizeLocationAccess(), canViewVm, vmController.getVmAudits);
+router.get('/vm/audits/:id', authenticate, authorizeLocationAccess(), canViewVm, vmController.getVmAuditDetail);
+router.put('/vm/audits/:id/draft', authenticate, authorizeLocationAccess(), canWriteVm, vmController.saveVmDraft);
+router.post('/vm/audits/:id/submit', authenticate, authorizeLocationAccess(), canWriteVm, vmController.submitVmAudit);
+router.post('/vm/submit', authenticate, authorizeLocationAccess(), canWriteVm, vmController.submitVm);
+router.get('/vm/points', authenticate, canViewVm, vmController.getVmPoints);
+router.get('/vm/floors', authenticate, canViewVm, vmController.getVmFloors);
 router.post('/vm/floors', authenticate, authorize('Admin', 'Super Admin'), vmController.createVmFloor);
 router.post('/vm/floors/delete', authenticate, authorize('Admin', 'Super Admin'), vmController.deleteVmFloor);
 router.delete('/vm/floors/:id', authenticate, authorize('Admin', 'Super Admin'), vmController.deleteVmFloor);
@@ -290,14 +312,16 @@ router.delete('/vm/floors/:id', authenticate, authorize('Admin', 'Super Admin'),
 // ── VM Checklist Photos ──────────────────────────────────────
 router.post('/vm/photos',
   authenticate,
+  authorizeLocationAccess(),
+  canWriteVm,
   uploadRateLimiter,
   upload.uploadVmPhotos.fields([{ name: 'photos', maxCount: 10 }, { name: 'photo', maxCount: 1 }, { name: 'file', maxCount: 1 }]),
   upload.verifyUploadedSignatures,
   vmPhotoController.uploadPhotos);
-router.get('/vm/photos', authenticate, authorizeLocationAccess(), vmPhotoController.listPhotos);
-router.get('/vm/photos/:photoId/file', authenticate, vmPhotoController.streamPhoto);
-router.delete('/vm/photos/:photoId', authenticate, authorizeLocationAccess(), vmPhotoController.deletePhoto);
-router.post('/vm/photos/link', authenticate, authorizeLocationAccess(), vmPhotoController.linkPhotosToSubmission);
+router.get('/vm/photos', authenticate, authorizeLocationAccess(), canViewVm, vmPhotoController.listPhotos);
+router.get('/vm/photos/:photoId/file', authenticate, canViewVm, vmPhotoController.streamPhoto);
+router.delete('/vm/photos/:photoId', authenticate, authorizeLocationAccess(), canWriteVm, vmPhotoController.deletePhoto);
+router.post('/vm/photos/link', authenticate, authorizeLocationAccess(), canWriteVm, vmPhotoController.linkPhotosToSubmission);
 
 // ── Broadcast Routes ─────────────────────────────────────────
 router.get('/broadcasts', optionalAuthenticate, broadcastController.getBroadcasts);

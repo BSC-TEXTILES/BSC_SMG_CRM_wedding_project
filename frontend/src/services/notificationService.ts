@@ -744,8 +744,31 @@ class NotificationEngine {
     }
   }
 
+  /**
+   * Archive / restore a notification. The drawer's Archive tab filters on
+   * `archived`, which nothing used to set, so that tab was always empty and the
+   * row button called a method that did not exist.
+   */
+  public archive(id: string): void {
+    const item = this.notifications.find((n) => n.id === id);
+    if (!item || item.archived) return;
+    item.archived = true;
+    item.read = true;
+    this.notifyListeners();
+  }
+
+  public unarchive(id: string): void {
+    const item = this.notifications.find((n) => n.id === id);
+    if (!item || !item.archived) return;
+    item.archived = false;
+    this.notifyListeners();
+  }
+
   public toggleArchive(id: string): void {
-    this.markAsRead(id);
+    const item = this.notifications.find((n) => n.id === id);
+    if (!item) return;
+    if (item.archived) this.unarchive(id);
+    else this.archive(id);
   }
 
   public sendDirectMessage(toUserId: string, recipientName?: string, content?: string, senderId?: string, senderName?: string) {

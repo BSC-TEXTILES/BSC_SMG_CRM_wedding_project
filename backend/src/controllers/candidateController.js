@@ -540,17 +540,27 @@ class CandidateController {
     try {
       const db = require('../config/db');
       const { clause: locClause, params: locParams } = await getLocationFilter(req, 'c');
-      const { search, status, overdueOnly } = req.query;
+      const { search, status, overdueOnly, filterType, department, locationId } = req.query;
 
       let sql = `
         SELECT 
           c.app_no,
           c.name,
           c.phone,
+          c.email,
           c.designation,
           c.department,
           c.section,
+          c.source,
+          c.referrer,
+          c.reporting_manager,
+          c.salary,
+          c.experience,
+          c.qualification,
+          c.city_state,
+          c.remarks as candidate_remarks,
           c.status as candidate_status,
+          COALESCE(c.created_at, so.created_at) as offer_date,
           COALESCE(so.est_doj, c.offered_doj) as scheduled_doj,
           so.status as offer_status,
           so.notice_period,
@@ -563,7 +573,11 @@ class CandidateController {
             WHEN COALESCE(so.est_doj, c.offered_doj) < CURDATE() THEN 'Overdue'
             WHEN COALESCE(so.est_doj, c.offered_doj) = CURDATE() THEN 'Joining Today'
             ELSE 'Upcoming'
-          END as doj_urgency
+          END as doj_urgency,
+          (SELECT created_at FROM candidate_doj_history WHERE app_no = c.app_no AND event_type = 'FOLLOW_UP' ORDER BY id DESC LIMIT 1) as last_followup_date,
+          (SELECT contact_result FROM candidate_doj_history WHERE app_no = c.app_no AND event_type = 'FOLLOW_UP' ORDER BY id DESC LIMIT 1) as last_contact_result,
+          (SELECT remarks FROM candidate_doj_history WHERE app_no = c.app_no AND event_type = 'FOLLOW_UP' ORDER BY id DESC LIMIT 1) as last_followup_remarks,
+          (SELECT reason FROM candidate_doj_history WHERE app_no = c.app_no AND event_type = 'FOLLOW_UP' ORDER BY id DESC LIMIT 1) as next_action
         FROM candidates c
         LEFT JOIN locations l ON l.id = c.location_id
         LEFT JOIN selection_offers so ON c.app_no = so.app_no
@@ -575,33 +589,75 @@ class CandidateController {
       `;
       const params = [...locParams];
 
+      if (locationId && locationId !== 'all') {
+        sql += ` AND c.location_id = ?`;
+        params.push(locationId);
+      }
+
+      if (department && department !== 'all') {
+        sql += ` AND LOWER(COALESCE(c.department, '')) = LOWER(?)`;
+        params.push(department);
+      }
+
       if (status && status !== 'all') {
         sql += ` AND (so.status = ? OR c.status = ?)`;
         params.push(status, status);
       }
 
-      if (overdueOnly === 'true' || overdueOnly === true) {
+      if (overdueOnly === 'true' || overdueOnly === true || filterType === 'overdue') {
         sql += ` AND COALESCE(so.est_doj, c.offered_doj) < CURDATE()`;
+      } else if (filterType === 'today') {
+        sql += ` AND COALESCE(so.est_doj, c.offered_doj) = CURDATE()`;
+      } else if (filterType === 'upcoming') {
+        sql += ` AND COALESCE(so.est_doj, c.offered_doj) > CURDATE()`;
       }
 
       if (search) {
-        sql += ` AND (c.name LIKE ? OR c.app_no LIKE ? OR c.phone LIKE ? OR c.designation LIKE ?)`;
+        sql += ` AND (c.name LIKE ? OR c.app_no LIKE ? OR c.phone LIKE ? OR c.designation LIKE ? OR c.department LIKE ?)`;
         const s = `%${search}%`;
-        params.push(s, s, s, s);
+        params.push(s, s, s, s, s);
       }
 
       sql += ` ORDER BY COALESCE(so.est_doj, c.offered_doj) ASC`;
 
       const [rows] = await db.query(sql, params);
 
-      const total = rows.length;
-      const overdue = rows.filter(r => r.doj_urgency === 'Overdue').length;
-      const today = rows.filter(r => r.doj_urgency === 'Joining Today').length;
-      const upcoming = rows.filter(r => r.doj_urgency === 'Upcoming').length;
+      // Compute stats for all pending candidates in scope without filterType restriction
+      let statsSql = `
+        SELECT 
+          COUNT(*) as total,
+          SUM(CASE WHEN COALESCE(so.est_doj, c.offered_doj) < CURDATE() THEN 1 ELSE 0 END) as overdue,
+          SUM(CASE WHEN COALESCE(so.est_doj, c.offered_doj) = CURDATE() THEN 1 ELSE 0 END) as today,
+          SUM(CASE WHEN COALESCE(so.est_doj, c.offered_doj) > CURDATE() THEN 1 ELSE 0 END) as upcoming
+        FROM candidates c
+        LEFT JOIN selection_offers so ON c.app_no = so.app_no
+        WHERE (c.is_deleted = 0 OR c.is_deleted IS NULL)
+          AND (c.offered_doj IS NOT NULL OR so.est_doj IS NOT NULL)
+          AND COALESCE(so.status, c.status) NOT IN ('Joined', 'Offer Rejected', 'Rejected', 'Not Joined')
+          AND c.app_no NOT IN (SELECT candidate_app_no FROM users WHERE candidate_app_no IS NOT NULL AND active = 1)
+          ${locClause}
+      `;
+      const [statsRows] = await db.query(statsSql, locParams);
+      const statsBase = statsRows[0] || {};
+      const total = Number(statsBase.total) || 0;
+      const overdue = Number(statsBase.overdue) || 0;
+      const today = Number(statsBase.today) || 0;
+      const upcoming = Number(statsBase.upcoming) || 0;
+
+      // Active Store Staff count (across permitted locations)
+      const { clause: uLocClause, params: uLocParams } = await getLocationFilter(req, 'u');
+      const [activeStaffRows] = await db.query(
+        `SELECT COUNT(*) as cnt FROM users u WHERE u.active = 1 ${uLocClause}
+         AND LOWER(COALESCE(u.role, '')) NOT IN ('admin', 'super admin', 'system administrator', 'customer', 'guest')
+         AND LOWER(COALESCE(u.username, '')) NOT IN ('admin', 'admin@bsctextiles.com', 'ghost')
+         AND LOWER(COALESCE(u.full_name, '')) NOT LIKE '%system administrator%'`,
+        uLocParams
+      );
+      const activeStaff = Number(activeStaffRows[0]?.cnt) || 0;
 
       return res.json({
         success: true,
-        stats: { total, overdue, today, upcoming },
+        stats: { total, overdue, today, upcoming, activeStaff },
         candidates: rows
       });
     } catch (err) {
@@ -613,33 +669,306 @@ class CandidateController {
   async handleNotJoinedAction(req, res) {
     try {
       const db = require('../config/db');
-      const { appNo, action, new_doj, reason } = req.body;
-      if (!appNo || !action) {
-        return res.status(400).json({ success: false, message: 'appNo and action are required' });
+      const { 
+        appNo, 
+        action, 
+        new_doj, 
+        reporting_time, 
+        reason, 
+        remarks, 
+        contact_result, 
+        candidate_response, 
+        next_action, 
+        next_followup_date,
+        actual_doj,
+        department,
+        designation,
+        section,
+        location_id,
+        reporting_manager,
+        employee_id,
+        joining_remarks,
+        verification_status
+      } = req.body;
+
+      if (!action) {
+        return res.status(400).json({ success: false, message: 'Action is required' });
       }
 
       const now = new Date();
-      const username = req.user ? req.user.username : 'HR';
+      const username = req.user ? (req.user.fullName || req.user.username) : 'HR Operations';
 
+      // Action: Quick Add / Schedule new candidate for DOJ from the desk
+      if (action === 'quick_add_doj' || action === 'schedule_doj') {
+        const { name, phone, email, offered_doj, salary, notice_period } = req.body;
+        if (!name || !phone || !offered_doj) {
+          return res.status(400).json({ success: false, message: 'Name, phone, and offered DOJ date are required' });
+        }
+
+        // Generate app_no
+        const [lastRow] = await db.query('SELECT app_no FROM candidates ORDER BY id DESC LIMIT 1');
+        let nextNum = 1001;
+        if (lastRow && lastRow[0]?.app_no) {
+          const m = String(lastRow[0].app_no).match(/\d+/);
+          if (m) nextNum = parseInt(m[0], 10) + 1;
+        }
+        const assignedAppNo = appNo || `BSC-${nextNum}`;
+
+        const locId = location_id || req.user?.locationId || 1;
+        let locCode = 'SHI';
+        try {
+          const [lRow] = await db.query('SELECT location_code FROM locations WHERE id = ? LIMIT 1', [locId]);
+          if (lRow && lRow[0]?.location_code) locCode = lRow[0].location_code;
+        } catch (e) {}
+
+        await db.query(
+          `INSERT INTO candidates 
+            (app_no, name, phone, email, designation, department, section, location_id, location_code, offered_doj, salary, notice_period, reporting_manager, remarks, status, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Offer Accepted', ?, ?)`,
+          [
+            assignedAppNo,
+            name,
+            phone,
+            email || null,
+            designation || 'Retail Associate',
+            department || 'Store Operations',
+            section || null,
+            locId,
+            locCode,
+            offered_doj,
+            salary || null,
+            notice_period || 'Immediate',
+            reporting_manager || null,
+            remarks || 'DOJ scheduled via DOJ Desk',
+            now,
+            now
+          ]
+        );
+
+        await db.query(
+          `INSERT INTO selection_offers 
+            (app_no, name, designation, status, est_doj, notice_period, department, reporting_manager, section, salary, location_id, created_at, updated_at)
+           VALUES (?, ?, ?, 'Offer Accepted', ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            assignedAppNo,
+            name,
+            designation || 'Retail Associate',
+            offered_doj,
+            notice_period || 'Immediate',
+            department || 'Store Operations',
+            reporting_manager || null,
+            section || null,
+            salary || null,
+            locId,
+            now,
+            now
+          ]
+        );
+
+        await db.query(
+          `INSERT INTO candidate_doj_history
+            (app_no, event_type, new_doj, reporting_time, reason, remarks, performed_by, created_at)
+           VALUES (?, 'DOJ_SCHEDULED', ?, ?, ?, ?, ?, ?)`,
+          [assignedAppNo, offered_doj, reporting_time || '10:00 AM', 'Initial DOJ scheduled', remarks || 'Scheduled via DOJ Desk', username, now]
+        );
+
+        await logAction(username, 'SCHEDULE_DOJ', 'DOJ_DESK', { appNo: assignedAppNo, name, offered_doj });
+        return res.json({ success: true, message: `Candidate ${name} (${assignedAppNo}) scheduled for DOJ on ${offered_doj}!`, appNo: assignedAppNo });
+      }
+
+      if (!appNo) {
+        return res.status(400).json({ success: false, message: 'appNo is required' });
+      }
+
+      // Action: Reschedule DOJ
       if (action === 'reschedule') {
         if (!new_doj) {
-          return res.status(400).json({ success: false, message: 'new_doj is required for reschedule' });
+          return res.status(400).json({ success: false, message: 'New DOJ date is required for rescheduling' });
         }
+
+        // Get previous DOJ
+        const [candRows] = await db.query('SELECT offered_doj, name, location_id FROM candidates WHERE app_no = ? LIMIT 1', [appNo]);
+        const prevDoj = candRows[0]?.offered_doj ? new Date(candRows[0].offered_doj).toISOString().split('T')[0] : null;
+
         await db.query(`UPDATE candidates SET offered_doj = ?, updated_at = ? WHERE app_no = ?`, [new_doj, now, appNo]);
-        await db.query(`UPDATE selection_offers SET est_doj = ?, remarks = CONCAT(COALESCE(remarks, ''), '\nRescheduled DOJ: ', ?, ' Reason: ', ?), updated_at = ? WHERE app_no = ?`, [new_doj, new_doj, reason || 'No reason specified', now, appNo]);
-        await logAction(username, 'RESCHEDULE_DOJ', 'NOT_JOINED_DESK', { appNo, new_doj, reason });
-        return res.json({ success: true, message: 'DOJ rescheduled successfully' });
-      } else if (action === 'mark_not_joining') {
-        await db.query(`UPDATE candidates SET status = 'Not Joined', remarks = CONCAT(COALESCE(remarks, ''), '\nNot Joining: ', ?), updated_at = ? WHERE app_no = ?`, [reason || 'Not Joined', now, appNo]);
-        await db.query(`UPDATE selection_offers SET status = 'Offer Rejected', remarks = CONCAT(COALESCE(remarks, ''), '\nNot Joined: ', ?), updated_at = ? WHERE app_no = ?`, [reason || 'Not Joined', now, appNo]);
-        await logAction(username, 'MARK_NOT_JOINING', 'NOT_JOINED_DESK', { appNo, reason });
+        await db.query(
+          `UPDATE selection_offers SET est_doj = ?, remarks = CONCAT(COALESCE(remarks, ''), '\nRescheduled DOJ: ', ?, ' Reason: ', ?), updated_at = ? WHERE app_no = ?`,
+          [new_doj, new_doj, reason || remarks || 'No reason specified', now, appNo]
+        );
+
+        await db.query(
+          `INSERT INTO candidate_doj_history
+            (app_no, event_type, previous_doj, new_doj, reporting_time, reason, remarks, performed_by, created_at)
+           VALUES (?, 'DOJ_RESCHEDULED', ?, ?, ?, ?, ?, ?, ?)`,
+          [appNo, prevDoj, new_doj, reporting_time || null, reason || 'DOJ Rescheduled', remarks || null, username, now]
+        );
+
+        await logAction(username, 'RESCHEDULE_DOJ', 'DOJ_DESK', { appNo, prevDoj, new_doj, reason, reporting_time });
+        return res.json({ success: true, message: `Date of Joining successfully updated to ${new_doj}` });
+      }
+
+      // Action: Follow-Up
+      if (action === 'follow_up') {
+        const contactResult = contact_result || 'Call Connected';
+        const candResponse = candidate_response || remarks || 'Followed up with candidate';
+        const nextAction = next_action || 'Continue follow-up';
+
+        await db.query(
+          `INSERT INTO candidate_doj_history
+            (app_no, event_type, contact_result, candidate_response, reason, new_doj, remarks, performed_by, created_at)
+           VALUES (?, 'FOLLOW_UP', ?, ?, ?, ?, ?, ?, ?)`,
+          [appNo, contactResult, candResponse, nextAction, next_followup_date || null, remarks || null, username, now]
+        );
+
+        await db.query(
+          `UPDATE candidates SET remarks = CONCAT(COALESCE(remarks, ''), '\nFollow-up: ', ?), updated_at = ? WHERE app_no = ?`,
+          [`[${now.toLocaleDateString()}] ${contactResult}: ${candResponse}`, now, appNo]
+        );
+
+        await logAction(username, 'CANDIDATE_FOLLOW_UP', 'DOJ_DESK', { appNo, contactResult, nextAction });
+        return res.json({ success: true, message: 'Follow-up activity recorded successfully' });
+      }
+
+      // Action: Mark Not Joining
+      if (action === 'mark_not_joining') {
+        const dropReason = reason || remarks || 'Candidate confirmed not joining';
+        await db.query(`UPDATE candidates SET status = 'Not Joined', remarks = CONCAT(COALESCE(remarks, ''), '\nNot Joining: ', ?), updated_at = ? WHERE app_no = ?`, [dropReason, now, appNo]);
+        await db.query(`UPDATE selection_offers SET status = 'Offer Rejected', remarks = CONCAT(COALESCE(remarks, ''), '\nNot Joined: ', ?), updated_at = ? WHERE app_no = ?`, [dropReason, now, appNo]);
+
+        await db.query(
+          `INSERT INTO candidate_doj_history
+            (app_no, event_type, reason, remarks, performed_by, created_at)
+           VALUES (?, 'NOT_JOINING', ?, ?, ?, ?)`,
+          [appNo, dropReason, remarks || null, username, now]
+        );
+
+        await logAction(username, 'MARK_NOT_JOINING', 'DOJ_DESK', { appNo, reason: dropReason });
         return res.json({ success: true, message: 'Candidate marked as Not Joining' });
-      } else if (action === 'mark_joined') {
-        const actualDoj = new_doj || now.toISOString().split('T')[0];
-        await db.query(`UPDATE candidates SET status = 'Joined', offered_doj = ?, updated_at = ? WHERE app_no = ?`, [actualDoj, now, appNo]);
-        await db.query(`UPDATE selection_offers SET status = 'Joined', actual_doj = ?, updated_at = ? WHERE app_no = ?`, [actualDoj, now, appNo]);
-        await logAction(username, 'MARK_JOINED', 'NOT_JOINED_DESK', { appNo, actualDoj });
-        return res.json({ success: true, message: 'Candidate marked as Joined' });
+      }
+
+      // Action: Mark Joined
+      if (action === 'mark_joined') {
+        const effectiveDoj = actual_doj || new_doj || now.toISOString().split('T')[0];
+        
+        // 1. Fetch existing candidate info
+        const [candRows] = await db.query(
+          `SELECT c.*, l.location_name, l.location_code FROM candidates c
+           LEFT JOIN locations l ON l.id = c.location_id
+           WHERE c.app_no = ? LIMIT 1`,
+          [appNo]
+        );
+        const cand = candRows[0] || {};
+
+        const effectiveDept = department || cand.department || 'Store Operations';
+        const effectiveDesig = designation || cand.designation || 'Retail Associate';
+        const effectiveSec = section || cand.section || null;
+        const effectiveLocId = location_id || cand.location_id || 1;
+        const effectiveLocCode = cand.location_code || 'SHI';
+        const effectiveRepMgr = reporting_manager || cand.reporting_manager || null;
+
+        // 2. Update candidate & offer status
+        await db.query(`UPDATE candidates SET status = 'Joined', offered_doj = ?, updated_at = ? WHERE app_no = ?`, [effectiveDoj, now, appNo]);
+        await db.query(`UPDATE selection_offers SET status = 'Joined', actual_doj = ?, updated_at = ? WHERE app_no = ?`, [effectiveDoj, now, appNo]);
+
+        // 3. Sync to employees table (avoiding duplicates)
+        const [existingEmp] = await db.query(
+          'SELECT id, employee_id FROM employees WHERE app_no = ? OR phone = ? LIMIT 1',
+          [appNo, cand.phone]
+        );
+
+        let finalEmpCode = employee_id || existingEmp[0]?.employee_id || null;
+        if (!finalEmpCode) {
+          // Generate EMP-XXXX code
+          const [maxEmp] = await db.query('SELECT employee_id FROM employees WHERE employee_id LIKE "EMP-%" ORDER BY id DESC LIMIT 1');
+          let nextId = 5010;
+          if (maxEmp && maxEmp[0]?.employee_id) {
+            const num = parseInt(String(maxEmp[0].employee_id).replace(/\D+/g, ''), 10);
+            if (!isNaN(num)) nextId = num + 1;
+          }
+          finalEmpCode = `EMP-${nextId}`;
+        }
+
+        if (existingEmp.length > 0) {
+          await db.query(
+            `UPDATE employees SET 
+              name = ?, email = COALESCE(?, email), phone = ?, department = ?, designation = ?, section = ?, branch = ?, status = 'Active', joining_date = ?, updated_at = ?
+             WHERE id = ?`,
+            [cand.name || 'Store Staff', cand.email, cand.phone || '', effectiveDept, effectiveDesig, effectiveSec, effectiveLocCode, effectiveDoj, now, existingEmp[0].id]
+          );
+        } else {
+          await db.query(
+            `INSERT INTO employees 
+              (employee_id, app_no, name, email, phone, department, designation, section, branch, status, joining_date, salary, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Active', ?, ?, ?, ?)`,
+            [
+              finalEmpCode,
+              appNo,
+              cand.name || 'Store Staff',
+              cand.email || null,
+              cand.phone || '',
+              effectiveDept,
+              effectiveDesig,
+              effectiveSec,
+              effectiveLocCode,
+              effectiveDoj,
+              cand.salary || null,
+              now,
+              now
+            ]
+          );
+        }
+
+        // 4. Sync/Update users table as active store staff
+        const [existingUser] = await db.query(
+          'SELECT id FROM users WHERE candidate_app_no = ? OR (phone = ? AND phone IS NOT NULL AND phone != "") LIMIT 1',
+          [appNo, cand.phone]
+        );
+
+        if (existingUser.length > 0) {
+          await db.query(
+            `UPDATE users SET 
+              active = 1, department = ?, designation = ?, section = ?, location_id = ?, joining_date = ?, employee_id = COALESCE(employee_id, ?), updated_at = ?
+             WHERE id = ?`,
+            [effectiveDept, effectiveDesig, effectiveSec, effectiveLocId, effectiveDoj, finalEmpCode, now, existingUser[0].id]
+          );
+        } else if (cand.name && cand.phone) {
+          const userSlug = (cand.name.toLowerCase().replace(/[^a-z0-9]/g, '') + '_' + appNo.replace(/\D+/g, '')).slice(0, 30);
+          await db.query(
+            `INSERT INTO users 
+              (username, password, full_name, phone, email, department, designation, section, role, active, location_id, employee_id, candidate_app_no, joining_date, created_at, updated_at)
+             VALUES (?, 'BSC_STORE_STAFF_PLACEHOLDER_HASH', ?, ?, ?, ?, ?, ?, 'Staff', 1, ?, ?, ?, ?, ?, ?)`,
+            [
+              userSlug,
+              cand.name,
+              cand.phone,
+              cand.email || null,
+              effectiveDept,
+              effectiveDesig,
+              effectiveSec,
+              effectiveLocId,
+              finalEmpCode,
+              appNo,
+              effectiveDoj,
+              now,
+              now
+            ]
+          );
+        }
+
+        // 5. Record joining in candidate_doj_history
+        await db.query(
+          `INSERT INTO candidate_doj_history
+            (app_no, event_type, new_doj, reporting_time, verification_status, remarks, performed_by, created_at)
+           VALUES (?, 'MARKED_JOINED', ?, ?, ?, ?, ?, ?)`,
+          [appNo, effectiveDoj, reporting_time || '10:00 AM', verification_status || 'Verified', joining_remarks || remarks || 'Successfully joined store', username, now]
+        );
+
+        await logAction(username, 'MARK_JOINED', 'DOJ_DESK', { appNo, actualDoj: effectiveDoj, empCode: finalEmpCode, department: effectiveDept });
+        return res.json({ 
+          success: true, 
+          message: `${cand.name || appNo} successfully marked as Joined! Employee record created (${finalEmpCode}).`,
+          employeeCode: finalEmpCode
+        });
       }
 
       return res.status(400).json({ success: false, message: `Unknown action: ${action}` });
@@ -649,50 +978,161 @@ class CandidateController {
     }
   }
 
+  // ── Candidate DOJ History & Detail ────────────────────────────
+  async getCandidateDojHistory(req, res) {
+    try {
+      const db = require('../config/db');
+      const { appNo } = req.params;
+      if (!appNo) {
+        return res.status(400).json({ success: false, message: 'appNo is required' });
+      }
+
+      const [candRows] = await db.query(
+        `SELECT 
+          c.*,
+          l.location_name,
+          l.location_code,
+          so.status as offer_status,
+          so.est_doj,
+          so.actual_doj,
+          so.notice_period as offer_notice_period,
+          so.remarks as offer_remarks
+        FROM candidates c
+        LEFT JOIN locations l ON l.id = c.location_id
+        LEFT JOIN selection_offers so ON so.app_no = c.app_no
+        WHERE c.app_no = ? LIMIT 1`,
+        [appNo]
+      );
+
+      if (!candRows || candRows.length === 0) {
+        return res.status(404).json({ success: false, message: 'Candidate not found' });
+      }
+
+      const candidate = candRows[0];
+
+      // Fetch history events
+      const [historyRows] = await db.query(
+        `SELECT * FROM candidate_doj_history WHERE app_no = ? ORDER BY created_at DESC, id DESC`,
+        [appNo]
+      );
+
+      return res.json({
+        success: true,
+        candidate,
+        history: historyRows || []
+      });
+    } catch (err) {
+      console.error('[getCandidateDojHistory ERROR]', err);
+      return res.status(500).json({ success: false, error: err.message });
+    }
+  }
+
   async getJoinedStoreDirectory(req, res) {
     try {
       const db = require('../config/db');
-      const { clause: locClause, params: locParams } = await getLocationFilter(req, 'c');
-      const { search, department } = req.query;
+      const { clause: locClause, params: locParams } = await getLocationFilter(req, 'u');
+      const { search, department, locationId } = req.query;
 
+      // Query active non-admin users in store directory
       let sql = `
         SELECT 
-          c.app_no,
-          COALESCE(u.employee_id, c.app_no) as emp_code,
-          c.name,
-          COALESCE(c.designation, u.designation) as designation,
-          COALESCE(c.department, u.department) as department,
-          COALESCE(c.section, u.section) as section,
-          COALESCE(so.actual_doj, c.offered_doj, u.created_at) as joined_date,
-          c.location_id,
+          u.id,
+          COALESCE(u.employee_id, CONCAT('EMP-', LPAD(u.id, 4, '0'))) as emp_code,
+          u.full_name as name,
+          u.phone,
+          u.email,
+          COALESCE(u.designation, 'Store Associate') as designation,
+          COALESCE(u.department, 'Store Operations') as department,
+          u.section,
+          COALESCE(u.joining_date, u.actual_doj, u.created_at) as joined_date,
+          u.location_id,
           l.location_name,
           l.location_code,
-          'Active Staff' as staff_status
-        FROM candidates c
-        LEFT JOIN locations l ON l.id = c.location_id
-        LEFT JOIN selection_offers so ON c.app_no = so.app_no
-        LEFT JOIN users u ON u.candidate_app_no = c.app_no OR (c.phone = u.phone AND c.phone IS NOT NULL)
-        WHERE (c.is_deleted = 0 OR c.is_deleted IS NULL)
-          AND (c.status = 'Joined' OR so.status = 'Joined' OR (u.active = 1 AND u.id IS NOT NULL))
+          u.reporting_manager,
+          u.candidate_app_no as app_no,
+          'Active Staff' as staff_status,
+          'Verified' as joining_verification
+        FROM users u
+        LEFT JOIN locations l ON l.id = u.location_id
+        WHERE u.active = 1
+          AND LOWER(COALESCE(u.role, '')) NOT IN ('admin', 'super admin', 'system administrator', 'customer', 'guest')
+          AND LOWER(COALESCE(u.username, '')) NOT IN ('admin', 'admin@bsctextiles.com', 'ghost')
+          AND LOWER(COALESCE(u.full_name, '')) NOT LIKE '%system administrator%'
           ${locClause}
       `;
       const params = [...locParams];
 
+      if (locationId && locationId !== 'all') {
+        sql += ` AND u.location_id = ?`;
+        params.push(locationId);
+      }
+
       if (department && department !== 'all') {
-        sql += ` AND (c.department = ? OR u.department = ?)`;
-        params.push(department, department);
+        sql += ` AND LOWER(COALESCE(u.department, '')) = LOWER(?)`;
+        params.push(department);
       }
 
       if (search) {
-        sql += ` AND (c.name LIKE ? OR c.app_no LIKE ? OR u.employee_id LIKE ? OR c.designation LIKE ?)`;
+        sql += ` AND (u.full_name LIKE ? OR u.employee_id LIKE ? OR u.phone LIKE ? OR u.designation LIKE ? OR u.department LIKE ?)`;
         const s = `%${search}%`;
-        params.push(s, s, s, s);
+        params.push(s, s, s, s, s);
       }
 
-      sql += ` ORDER BY COALESCE(so.actual_doj, c.offered_doj, u.created_at) DESC`;
+      sql += ` ORDER BY COALESCE(u.joining_date, u.created_at) DESC`;
 
       const [rows] = await db.query(sql, params);
-      return res.json({ success: true, count: rows.length, employees: rows });
+
+      // Also include any candidates marked Joined who are not yet in users table
+      const { clause: cLocClause, params: cLocParams } = await getLocationFilter(req, 'c');
+      let candSql = `
+        SELECT 
+          c.id,
+          COALESCE(so.app_no, c.app_no) as emp_code,
+          c.name,
+          c.phone,
+          c.email,
+          c.designation,
+          c.department,
+          c.section,
+          COALESCE(so.actual_doj, c.offered_doj, c.updated_at) as joined_date,
+          c.location_id,
+          l.location_name,
+          l.location_code,
+          c.reporting_manager,
+          c.app_no,
+          'Active Staff' as staff_status,
+          'Verified' as joining_verification
+        FROM candidates c
+        LEFT JOIN locations l ON l.id = c.location_id
+        LEFT JOIN selection_offers so ON c.app_no = so.app_no
+        WHERE (c.is_deleted = 0 OR c.is_deleted IS NULL)
+          AND (c.status = 'Joined' OR so.status = 'Joined')
+          AND c.app_no NOT IN (SELECT candidate_app_no FROM users WHERE candidate_app_no IS NOT NULL)
+          AND (c.phone IS NULL OR c.phone NOT IN (SELECT phone FROM users WHERE phone IS NOT NULL AND phone != ''))
+          ${cLocClause}
+      `;
+      const candParams = [...cLocParams];
+
+      if (locationId && locationId !== 'all') {
+        candSql += ` AND c.location_id = ?`;
+        candParams.push(locationId);
+      }
+
+      if (department && department !== 'all') {
+        candSql += ` AND LOWER(COALESCE(c.department, '')) = LOWER(?)`;
+        candParams.push(department);
+      }
+
+      if (search) {
+        candSql += ` AND (c.name LIKE ? OR c.app_no LIKE ? OR c.phone LIKE ? OR c.designation LIKE ? OR c.department LIKE ?)`;
+        const s = `%${search}%`;
+        candParams.push(s, s, s, s, s);
+      }
+
+      const [candRows] = await db.query(candSql, candParams);
+      const combined = [...rows, ...candRows];
+
+      return res.json({ success: true, count: combined.length, employees: combined });
     } catch (err) {
       console.error('[getJoinedStoreDirectory ERROR]', err);
       return res.status(500).json({ success: false, error: err.message });
@@ -701,3 +1141,4 @@ class CandidateController {
 }
 
 module.exports = new CandidateController();
+

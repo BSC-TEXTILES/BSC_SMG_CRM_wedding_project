@@ -150,7 +150,8 @@ exports.getGlobalStats = async (req, res) => {
 // ── Store Directory (Sanitized Store-Level Directory — Zero Employee PII) ──
 exports.getStoreDirectory = async (req, res) => {
   try {
-    const { clause: locClause, params: locParams } = await getLocationFilter(req, 'l');
+    // The locations table's own key is `id`, not `location_id`.
+    const { clause: locClause, params: locParams } = await getLocationFilter(req, 'l', 'id');
     const { search } = req.query || {};
 
     let sql = `
@@ -227,7 +228,8 @@ exports.getStoreDirectory = async (req, res) => {
 // ── Export Store Directory (Sanitized — Zero Employee PII) ──
 exports.exportStoreDirectory = async (req, res) => {
   try {
-    const { clause: locClause, params: locParams } = await getLocationFilter(req, 'l');
+    // The locations table's own key is `id`, not `location_id`.
+    const { clause: locClause, params: locParams } = await getLocationFilter(req, 'l', 'id');
 
     const [rows] = await db.query(`
       SELECT 

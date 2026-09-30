@@ -714,7 +714,17 @@ async function autoInitializeDatabase() {
         // before those columns existed never received them and every VM read that
         // selects s.updatedAt fails.
         { col: 'createdAt', def: 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP' },
-        { col: 'updatedAt', def: 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP' }
+        { col: 'updatedAt', def: 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP' },
+        // ── Guided audit flow (additive only; see migrations/migrate_vm_audit_flow.js) ──
+        // N/A answers are excluded from the score denominator, so they need their
+        // own counter instead of being folded into failed_count.
+        { col: 'na_count', def: 'INT DEFAULT 0' },
+        // Questions in the active checklist the auditor never answered.
+        { col: 'unrated_count', def: 'INT DEFAULT 0' },
+        // Drafts are per auditor, so idempotency cannot rely on submittedBy alone.
+        { col: 'auditor_user_id', def: 'INT NULL' },
+        { col: 'submittedAt', def: 'TIMESTAMP NULL DEFAULT NULL' },
+        { col: 'updatedBy', def: 'VARCHAR(100) NULL' }
       ];
       for (const item of ensureVmSubCols) {
         try {
@@ -724,6 +734,19 @@ async function autoInitializeDatabase() {
           }
         } catch (e) {}
       }
+
+      // Draft lookup is (location, floor, section, shift, IST date, auditor) and every
+      // dashboard/list read filters on status, so status belongs in the same index.
+      try {
+        const [draftIdx] = await pool.query(
+          `SELECT INDEX_NAME FROM information_schema.STATISTICS
+            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'vmsubmissions'
+              AND INDEX_NAME = 'idx_vmsub_draft_lookup'`
+        );
+        if (!draftIdx || draftIdx.length === 0) {
+          await pool.query(`ALTER TABLE \`vmsubmissions\` ADD INDEX \`idx_vmsub_draft_lookup\` (\`location_id\`, \`floor\`, \`section\`, \`shift\`, \`entryDate\`, \`status\`)`);
+        }
+      } catch (e) {}
 
       // ─── VM Submission Entries Table ────────────────────────────────────
       await pool.query(`
@@ -735,11 +758,44 @@ async function autoInitializeDatabase() {
           \`score\` VARCHAR(20) NOT NULL DEFAULT 'Pass',
           \`remarks\` TEXT NULL,
           \`photoUrl\` TEXT NULL,
+          \`comment\` TEXT NULL,
+          \`observation\` TEXT NULL,
+          \`corrective_action\` TEXT NULL,
+          \`position\` INT DEFAULT 0,
           \`createdAt\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           INDEX \`idx_vmentries_sub\` (\`submissionId\`),
-          INDEX \`idx_vmentries_point\` (\`pointId\`)
+          INDEX \`idx_vmentries_point\` (\`pointId\`),
+          INDEX \`idx_vmentries_sub_point\` (\`submissionId\`, \`pointId\`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
       `);
+
+      // Every note belongs to one checkpoint, never to the audit as a whole, so the
+      // answer row carries its own comment / observation / corrective action.
+      const ensureVmEntryCols = [
+        { col: 'comment', def: 'TEXT NULL' },
+        { col: 'observation', def: 'TEXT NULL' },
+        { col: 'corrective_action', def: 'TEXT NULL' },
+        { col: 'position', def: 'INT DEFAULT 0' }
+      ];
+      for (const item of ensureVmEntryCols) {
+        try {
+          const [cCheck] = await pool.query(`SHOW COLUMNS FROM \`vmsubmissionentries\` LIKE '${item.col}'`);
+          if (!cCheck || cCheck.length === 0) {
+            await pool.query(`ALTER TABLE \`vmsubmissionentries\` ADD COLUMN \`${item.col}\` ${item.def}`);
+          }
+        } catch (e) {}
+      }
+
+      try {
+        const [entryIdx] = await pool.query(
+          `SELECT INDEX_NAME FROM information_schema.STATISTICS
+            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'vmsubmissionentries'
+              AND INDEX_NAME = 'idx_vmentries_sub_point'`
+        );
+        if (!entryIdx || entryIdx.length === 0) {
+          await pool.query('ALTER TABLE `vmsubmissionentries` ADD INDEX `idx_vmentries_sub_point` (`submissionId`, `pointId`)');
+        }
+      } catch (e) {}
 
       // ─── VM Floors Table & Default Seed ─────────────────────────────────
       await pool.query(`

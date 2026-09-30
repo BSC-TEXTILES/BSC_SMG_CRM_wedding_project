@@ -27,6 +27,8 @@ router.get('/wedding-registrations/stats', weddingRegistrationController.getDash
 
 // Registration CRUD
 router.get('/wedding-registrations', weddingRegistrationController.getRegistrations);
+// Must precede /:id — otherwise 'export' is captured as an id and parseInt gives NaN
+router.get('/wedding-registrations/export', weddingRegistrationController.exportRegistrations);
 router.get('/wedding-registrations/:id', weddingRegistrationController.getRegistrationById);
 router.post('/wedding-registrations', weddingRegistrationController.createRegistration);
 router.put('/wedding-registrations/:id', weddingRegistrationController.updateRegistration);
@@ -35,8 +37,5 @@ router.post('/wedding-registrations/:id/resend-email', weddingRegistrationContro
 
 // Duplicate Check
 router.post('/wedding-registrations/check-duplicate', weddingRegistrationController.checkDuplicate);
-
-// Export
-router.get('/wedding-registrations/export', weddingRegistrationController.exportRegistrations);
 
 module.exports = router;

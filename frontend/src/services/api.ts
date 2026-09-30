@@ -450,10 +450,18 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
         throw error;
       }
       const errorData = await res.json().catch(() => ({}));
-      // Provide user-friendly error messages based on status code
-      let errorMessage = errorData.message;
+      // Backend errors arrive either as `message` or as a plain-string `error`
+      // (some routes send `error: { code, message }`). Resolve both so callers
+      // surface the real validation text instead of a generic status message.
+      let errorMessage: string | undefined =
+        errorData.message ||
+        (typeof errorData.error === 'string' ? errorData.error : errorData.error?.message);
       if (!errorMessage) {
         switch (res.status) {
+          case 400:
+          case 422:
+            errorMessage = 'Please review the highlighted fields and correct them before trying again.';
+            break;
           case 401:
             errorMessage = 'Authentication failed. Please check your credentials.';
             break;
@@ -463,6 +471,12 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
           case 404:
             errorMessage = 'The requested resource was not found. Please contact your administrator.';
             break;
+          case 409:
+            errorMessage = 'This request conflicts with existing data. Please refresh and try again.';
+            break;
+          case 413:
+            errorMessage = 'The uploaded file is too large.';
+            break;
           case 423:
             errorMessage = 'Account temporarily locked due to too many failed attempts. Please try again later.';
             break;
@@ -471,7 +485,7 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
             break;
           case 500:
           case 503:
-            errorMessage = errorData?.error || errorData?.message || 'Server error. Please try again or contact your administrator.';
+            errorMessage = 'Server error. Please try again or contact your administrator.';
             break;
           default:
             errorMessage = `Request failed. Please try again. (Error: ${res.status})`;
@@ -1226,7 +1240,18 @@ export const API = {
   // CRM Store Operations
   async getCrmSettings() { return apiFetch('/crm/settings'); },
   async updateCrmSettings(payload: any) { return apiFetch('/crm/settings/update', { method: 'POST', body: JSON.stringify(payload) }); },
-  async verifyPin(payload: { type: string; pin: string }) { return apiFetch('/crm/verify-pin', { method: 'POST', body: JSON.stringify(payload) }); },
+  async verifyPin(payload: { type: string; pin: string; locationId?: number | string }) { return apiFetch('/crm/verify-pin', { method: 'POST', body: JSON.stringify(payload) }); },
+  /**
+   * The TV board is a kiosk surface: it carries the bearer token issued by a correct
+   * PIN instead of relying on a logged-in admin session, and the server scopes every
+   * figure to the location bound inside that token.
+   */
+  async getTvDisplayData(locationId?: string | number, kioskToken?: string | null) {
+    const q = locationId ? `?locationId=${encodeURIComponent(String(locationId))}` : '';
+    // A stale Authorization header from the app session must not outrank the kiosk
+    // token, so this is sent as an explicit override rather than relying on apiFetch.
+    return apiFetch(`/crm/tv-display${q}`, kioskToken ? { headers: { Authorization: `Bearer ${kioskToken}` } } : {});
+  },
   async getSections() { return apiFetch('/crm/sections'); },
   async getFootfall(date?: string, locationId?: string | number) {
     const p: any = {};
@@ -1234,6 +1259,31 @@ export const API = {
     if (locationId) p.locationId = locationId;
     const q = new URLSearchParams(cleanQueryParams(p)).toString();
     return apiFetch(`/crm/footfall${q ? `?${q}` : ''}`);
+  },
+  /** Today's entries with origin and editor, for the kiosk list and management filters. */
+  async getFootfallEntries(params?: { date?: string; locationId?: number | string; source?: string; greeter?: string }) {
+    const p: Record<string, string> = {};
+    if (params?.date) p.date = params.date;
+    if (params?.locationId) p.locationId = String(params.locationId);
+    if (params?.source && params.source !== 'all') p.source = params.source;
+    if (params?.greeter && params.greeter !== 'all') p.greeter = params.greeter;
+    const q = new URLSearchParams(cleanQueryParams(p)).toString();
+    const res = await apiFetch(`/crm/footfall/entries${q ? `?${q}` : ''}`);
+    return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
+  },
+  /** Correct a specific record by id — updates the existing row, never inserts one. */
+  async updateFootfallEntry(id: string, payload: {
+    visitors?: number; entryDate?: string; slotHour?: number;
+    location_id?: number; remarks?: string; reason?: string;
+  }) {
+    const res = await apiFetch(`/crm/footfall/entry/${encodeURIComponent(id)}`, {
+      method: 'PUT', body: JSON.stringify(payload)
+    });
+    return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
+  },
+  async getFootfallEntryHistory(id: string) {
+    const res = await apiFetch(`/crm/footfall/entry/${encodeURIComponent(id)}/history`);
+    return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
   },
   async upsertFootfall(payload: any) {
     const bodyPayload = { ...payload };
@@ -1417,6 +1467,39 @@ export const API = {
   getVmPhotoFileUrl(photoId: string) {
     const apiBase = getApiBase();
     return `${apiBase}/vm/photos/${photoId}/file`;
+  },
+
+  // ── VM guided audit flow (see frontend/src/pages/vm/vmTypes.ts) ──
+  /** Step 1 cards: sections, last audit date, latest score and open drafts. */
+  async getVmFloorSummary() {
+    return apiFetch('/vm/floor-summary');
+  },
+  /** Idempotent per user + location + floor + section + shift + IST date. */
+  async createOrResumeVmDraft(payload: { floor: string; section: string; shift: string }) {
+    return apiFetch('/vm/audits/draft', { method: 'POST', body: JSON.stringify(payload) });
+  },
+  /** Debounced autosave of answers, comments and corrective actions. */
+  async saveVmDraft(auditId: string, payload: { shift?: string; entries: unknown[] }) {
+    return apiFetch(`/vm/audits/${encodeURIComponent(auditId)}/draft`, {
+      method: 'PUT',
+      body: JSON.stringify(payload)
+    });
+  },
+  /** Server re-computes the score and rejects unanswered questions. */
+  async submitVmAudit(auditId: string, payload: { confirm: true }) {
+    return apiFetch(`/vm/audits/${encodeURIComponent(auditId)}/submit`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  },
+  async getVmAttention(params?: { dateFrom?: string; dateTo?: string; locationId?: number | string }) {
+    const q = params ? new URLSearchParams(cleanQueryParams(params)).toString() : '';
+    return apiFetch(`/vm/attention${q ? `?${q}` : ''}`);
+  },
+  /** Photos already stored for one section, optionally scoped to a single audit. */
+  async getVmSectionPhotos(params: { floor: string; section: string; submissionId?: string; date?: string }) {
+    const q = new URLSearchParams(cleanQueryParams(params as Record<string, unknown>)).toString();
+    return apiFetch(`/vm/photos?${q}`);
   },
 
   // Chat (Gemini AI)
@@ -1868,6 +1951,29 @@ export const API = {
   },
 
   // ── Wedding CRM: Pipeline ────────────────────────────────────
+  /**
+   * Redesigned pipeline workspace feed: active customers with their call,
+   * follow-up, feedback, visit and note counts resolved server-side in one
+   * query, each row tagged with its stage_key and a per-stage count.
+   */
+  async getWeddingPipelineBoard(params?: {
+    search?: string;
+    stage?: string;
+    telecaller_id?: number | string;
+    priority?: string;
+    call_status?: string;
+    overdue?: '1';
+    due_today?: '1';
+    follow_up_from?: string;
+    follow_up_to?: string;
+    location_id?: number | string;
+    limit?: number;
+  }) {
+    const q = params ? new URLSearchParams(cleanQueryParams(params)).toString() : '';
+    const res = await apiFetch(`/wedding-crm/pipeline/board${q ? `?${q}` : ''}`);
+    return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
+  },
+
   async getWeddingPipeline(locationId?: number | string) {
     const q = locationId ? `?location_id=${locationId}` : '';
     const res = await apiFetch(`/wedding-crm/pipeline${q}`);

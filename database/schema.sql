@@ -570,8 +570,11 @@ CREATE TABLE IF NOT EXISTS `Sections` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 37. FootfallEntries (Hourly Store Visitor Tracking)
+-- Uniqueness must include location_id: a per-(date, slot) key lets one store's
+-- save overwrite another store's via ON DUPLICATE KEY UPDATE.
 CREATE TABLE IF NOT EXISTS `FootfallEntries` (
   `id` VARCHAR(50) PRIMARY KEY,
+  `location_id` INT NOT NULL DEFAULT 2,
   `entryDate` DATE NOT NULL,
   `slotHour` INT NOT NULL,
   `visitors` INT NOT NULL DEFAULT 0,
@@ -579,7 +582,8 @@ CREATE TABLE IF NOT EXISTS `FootfallEntries` (
   `submittedBy` VARCHAR(100) NULL,
   `createdAt` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `updatedAt` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  UNIQUE KEY `idx_date_slot` (`entryDate`, `slotHour`)
+  UNIQUE KEY `idx_loc_date_slot` (`location_id`, `entryDate`, `slotHour`),
+  INDEX `idx_footfall_date` (`entryDate`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 38. DailySummaries (Daily Store Operational Bill Tallies)
@@ -641,22 +645,33 @@ CREATE TABLE IF NOT EXISTS `DivertReasons` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 43. Diverts (Merchandise Sourcing Divert Requests)
+-- Column list mirrors what crmController.createDivert writes. Keep the two in
+-- sync: a missing column here makes every sourcing divert INSERT fail on a
+-- fresh install even though the API answers 200 for reads.
 CREATE TABLE IF NOT EXISTS `Diverts` (
-  `id` VARCHAR(50) PRIMARY KEY,
+  `id` VARCHAR(64) PRIMARY KEY,
+  `location_id` INT NOT NULL DEFAULT 2,
   `refNo` INT AUTO_INCREMENT UNIQUE KEY,
   `entryDate` DATE NOT NULL,
-  `sectionId` VARCHAR(50) NULL,
+  `sectionId` VARCHAR(150) NULL,
   `productWanted` TEXT NOT NULL,
   `quantity` INT DEFAULT 1,
-  `priceRange` VARCHAR(50) NULL,
-  `reasonCode` VARCHAR(50) NULL,
+  `priceRange` VARCHAR(128) NULL,
+  `reasonCode` VARCHAR(64) NULL DEFAULT 'OUT_OF_STOCK',
   `customerName` VARCHAR(150) NULL,
-  `customerMobile` VARCHAR(20) NULL,
-  `status` VARCHAR(20) DEFAULT 'open',
+  `customerMobile` VARCHAR(32) NULL,
+  `status` VARCHAR(32) NULL DEFAULT 'open',
+  `createdBy` VARCHAR(100) NULL,
   `pmNotes` TEXT NULL,
-  `createdBy` VARCHAR(50) NULL,
+  `size` VARCHAR(64) NULL,
+  `colour` VARCHAR(64) NULL,
+  `other_product_details` TEXT NULL,
+  `required_by_date` VARCHAR(32) NULL,
+  `reference_image` VARCHAR(512) NULL,
+  `remarks` TEXT NULL,
   `createdAt` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  `updatedAt` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `updatedAt` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  KEY `idx_diverts_loc` (`location_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 44. DivertUpdates (Audit Log Trail for Sourcing Diverts)
@@ -667,7 +682,8 @@ CREATE TABLE IF NOT EXISTS `DivertUpdates` (
   `note` TEXT NULL,
   `actorId` VARCHAR(50) NULL,
   `actorRole` VARCHAR(50) NULL,
-  `createdAt` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  `createdAt` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  KEY `idx_divert_updates_divert` (`divertId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 45. CashSettlements (Daily POS Counter Cash Settlement Headers)

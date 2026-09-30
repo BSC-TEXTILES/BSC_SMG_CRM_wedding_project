@@ -170,6 +170,9 @@ export interface CallLog {
   call_status: string;
   call_outcome: string;
   remarks?: string;
+  // Both are real wedding_call_logs columns returned by SELECT *.
+  customer_response?: string;
+  call_duration?: string;
   next_follow_up_date?: string;
   next_follow_up_time?: string;
   expected_shopping_date_updated?: string;
