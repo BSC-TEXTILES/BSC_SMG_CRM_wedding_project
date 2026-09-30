@@ -97,7 +97,11 @@ interface SavedPhotoTileProps {
   onView: () => void;
   onRemove: () => void;
   onReplace: () => void;
+  onSaveCaption: (photo: VmPhoto, caption: string) => void;
 }
+
+/** Mirrors the server's own cap so a long note is stopped here, not lost on save. */
+const MAX_CAPTION_LENGTH = 500;
 
 function SavedPhotoTile({
   photo,
@@ -107,9 +111,13 @@ function SavedPhotoTile({
   canEdit,
   onView,
   onRemove,
-  onReplace
+  onReplace,
+  onSaveCaption
 }: SavedPhotoTileProps) {
   const [broken, setBroken] = useState(false);
+  const [captionOpen, setCaptionOpen] = useState(false);
+  const [draftCaption, setDraftCaption] = useState(photo.caption || '');
+  const [savingCaption, setSavingCaption] = useState(false);
 
   return (
     <div className="rounded-xl border border-[#E8D9D4] bg-white overflow-hidden flex flex-col shadow-[0_1px_2px_rgba(74,23,58,0.06)]">
@@ -148,6 +156,55 @@ function SavedPhotoTile({
           {photo.pointId ? ' · question' : ' · section'}
           {formatPhotoDate(photo.inspectionDate) ? ` · ${formatPhotoDate(photo.inspectionDate)}` : ''}
         </p>
+
+        {/* §27 the observation belongs to this image, so it is shown and edited here
+            rather than folded into a general audit note. */}
+        {photo.caption ? (
+          <p className="text-[11px] font-semibold text-[#4A173A] leading-snug line-clamp-2" title={photo.caption}>
+            “{photo.caption}”
+          </p>
+        ) : null}
+        {canEdit && (
+          <button
+            type="button"
+            onClick={() => { setDraftCaption(photo.caption || ''); setCaptionOpen((v) => !v); }}
+            aria-expanded={captionOpen}
+            className="self-start inline-flex items-center gap-1 text-[11px] font-bold text-[#6A2853] hover:underline cursor-pointer"
+          >
+            <Info className="w-3.5 h-3.5" />
+            {photo.caption ? 'Edit observation' : 'Add observation'}
+          </button>
+        )}
+        {captionOpen && canEdit && (
+          <div className="space-y-1">
+            <textarea
+              value={draftCaption}
+              onChange={(e) => setDraftCaption(e.target.value)}
+              rows={2}
+              maxLength={MAX_CAPTION_LENGTH}
+              placeholder="What does this photo show? e.g. Rack 4 needs realignment."
+              className="w-full rounded-lg border border-[#E8D9D4] bg-[#FFFAF7] px-2 py-1.5 text-[11px] font-semibold text-[#2B1722] focus:border-[#B76E79] focus:outline-none resize-y"
+            />
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                disabled={savingCaption}
+                onClick={() => { setSavingCaption(true); onSaveCaption(photo, draftCaption.trim()); }}
+                className="flex-1 min-h-[36px] inline-flex items-center justify-center gap-1 rounded-lg bg-[#4A173A] text-white text-[11px] font-bold disabled:opacity-50 cursor-pointer"
+              >
+                {savingCaption ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CircleCheck className="w-3.5 h-3.5" />}
+                Save
+              </button>
+              <button
+                type="button"
+                onClick={() => setCaptionOpen(false)}
+                className="min-h-[36px] px-2 rounded-lg border border-[#E8D9D4] bg-white text-[#4A173A] text-[11px] font-bold cursor-pointer"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="mt-auto flex items-center gap-1 pt-1">
           <button

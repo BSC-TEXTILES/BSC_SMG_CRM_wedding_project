@@ -69,7 +69,14 @@ export interface VmPhoto {
   uploadedBy?: string | null;
   inspectionDate?: string | null;
   createdAt?: string | null;
-  /** Server-built URL for GET /vm/photos/:id/file. */
+  /** Short observation recorded against this image (not a general audit note). */
+  caption?: string | null;
+  label?: string | null;
+  correctiveAction?: string | null;
+  photoOrder?: number;
+  updatedAt?: string | null;
+  updatedBy?: string | null;
+  /** Server image route; authenticated, never a blob/object URL. */
   url: string;
 }
 
