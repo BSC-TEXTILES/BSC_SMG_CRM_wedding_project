@@ -2,7 +2,8 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 
-const API_TARGET = process.env.VITE_API_URL || 'http://localhost:5000';
+// Backend target for Vite proxy (dev only). In production, the frontend is served by the backend.
+const API_TARGET = process.env.VITE_BACKEND_URL || 'http://localhost:5000';
 
 /**
  * When the API server is not running, the proxy used to hand the browser a bare
@@ -42,6 +43,7 @@ export default defineConfig({
   },
   server: {
     port: 3000,
+    host: '0.0.0.0',
     proxy: {
       '/api': {
         target: API_TARGET,

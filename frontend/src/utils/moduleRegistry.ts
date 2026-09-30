@@ -242,10 +242,11 @@ export function getDefaultLandingRoute(
     }
 
     // Visual Merchandiser (VM)
-    if (norm === 'vm' || norm === 'visual merchandiser') {
+    if (norm === 'vm' || norm === 'visual merchandiser' || norm.includes('vm')) {
+      if (allowedModules.includes('vm_dashboard')) return '/vm-dashboard';
       if (allowedModules.includes('vm_checklist')) return '/vm-checklist';
       if (allowedModules.includes('footfall')) return '/footfall';
-      if (allowedModules.includes('dashboard')) return '/dashboard';
+      if (allowedModules.includes('dashboard')) return '/vm-dashboard';
     }
 
     // HR
@@ -302,8 +303,8 @@ export function getDefaultLandingRoute(
   if (norm.includes('wedding') || norm.includes('crm manager')) {
     return roleKeys.includes('wedding_crm') ? '/wedding-crm/dashboard' : (roleKeys.includes('telecaller_dashboard') ? '/telecaller-dashboard' : '/no-access');
   }
-  if (norm === 'vm' || norm === 'visual merchandiser') {
-    return '/vm-checklist';
+  if (norm === 'vm' || norm === 'visual merchandiser' || norm.includes('vm')) {
+    return roleKeys.includes('vm_dashboard') ? '/vm-dashboard' : '/vm-checklist';
   }
   if (norm === 'greeter') {
     return roleKeys.includes('greeter') ? '/greeter' : '/footfall';

@@ -86,19 +86,19 @@ export default function FeedbackList() {
   useEffect(() => {
     fetchCallQueue();
 
-    // Socket.IO Push Listener for instant 0ms latency synchronization
-    const socket = io({ path: '/socket.io', autoConnect: true });
-    socket.on('feedback:negative', () => fetchCallQueue());
-    socket.on('feedback:submitted', () => fetchCallQueue());
-    socket.on('callqueue:updated', () => fetchCallQueue());
+    // Real-time synchronization via shared realtimeClient
+    const handleFeedbackSync = () => fetchCallQueue();
+    window.addEventListener('realtime:feedback', handleFeedbackSync);
+    window.addEventListener('realtime:callqueue', handleFeedbackSync);
 
-    // Auto-refresh call queue every 5 seconds for real-time synchronization
+    // Controlled interval fallback
     const interval = setInterval(() => {
       fetchCallQueue();
-    }, 5000);
+    }, 15000);
 
     return () => {
-      socket.disconnect();
+      window.removeEventListener('realtime:feedback', handleFeedbackSync);
+      window.removeEventListener('realtime:callqueue', handleFeedbackSync);
       clearInterval(interval);
     };
   }, [fetchCallQueue]);

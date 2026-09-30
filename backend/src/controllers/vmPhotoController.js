@@ -95,10 +95,15 @@ function mapVmPhoto(p) {
     photoOrder: Number((p.photo_order !== undefined ? p.photo_order : p.photoOrder) || 0),
     updatedAt: p.updated_at !== undefined ? p.updated_at : (p.updatedAt || null),
     updatedBy: p.updated_by !== undefined ? p.updated_by : (p.updatedBy || null),
-    // Present only when the query joined vmsubmissions for the admin gallery filters.
-    auditShift: p.audit_shift !== undefined ? p.audit_shift : (p.auditShift || null),
-    auditScorePercent: p.audit_score !== undefined && p.audit_score !== null ? Number(p.audit_score) : (p.auditScorePercent ?? null),
-    auditDate: p.audit_entry_date !== undefined ? p.audit_entry_date : (p.auditDate || null)
+    // Present when the query joined vmsubmissions for the admin gallery filters.
+    // listPhotos aliases those columns as `shift` / `scorePercent` / `entryDate`,
+    // so both spellings are read here rather than guessing which caller ran.
+    auditShift: p.audit_shift !== undefined ? p.audit_shift : (p.shift ?? p.auditShift ?? null),
+    auditScorePercent: (() => {
+      const raw = p.audit_score !== undefined ? p.audit_score : (p.scorePercent ?? p.auditScorePercent);
+      return raw === null || raw === undefined ? null : Number(raw);
+    })(),
+    auditDate: p.audit_entry_date !== undefined ? p.audit_entry_date : (p.entryDate ?? p.auditDate ?? null)
   };
 }
 
@@ -151,10 +156,25 @@ exports.uploadPhotos = async (req, res) => {
       return res.status(400).json({ success: false, message: 'No photo image file was provided' });
     }
 
-    // Server-side role check: CRM Managers, Managers, VM, and System Administrators (plus Super Admin / Admin)
-    const allowedRoles = ['admin', 'super admin', 'system administrator', 'crm manager', 'manager', 'store manager', 'floor manager', 'vm'];
+    // Server-side role check: CRM Managers, Managers, VM, Visual Merchandisers, VM Extension Telecaller, and Administrators
+    const allowedRoles = [
+      'admin',
+      'super admin',
+      'system administrator',
+      'crm manager',
+      'manager',
+      'store manager',
+      'floor manager',
+      'vm',
+      'visual merchandiser',
+      'vm extension telecaller',
+      'vm telecaller',
+      'vm auditor',
+      'auditor'
+    ];
     const userRole = (req.user && req.user.role ? String(req.user.role).trim().toLowerCase() : '');
-    if (!allowedRoles.includes(userRole)) {
+    const isVmRole = userRole.includes('vm') || userRole.includes('merchandis');
+    if (!allowedRoles.includes(userRole) && !isVmRole) {
       rawFiles.forEach(f => { try { fs.unlinkSync(f.path); } catch (e) {} });
       return res.status(403).json({
         success: false,

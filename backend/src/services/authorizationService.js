@@ -182,16 +182,21 @@ function resolveRoleDefaultPermissions(role) {
   const fullControl = ['Manager', 'CRM Manager', 'Floor Manager'].includes(matchedRoleKey || '');
   const hrRights = matchedRoleKey === 'HR';
   const teleRights = ['Telecaller', 'CRM Executive', 'VM Extension Telecaller'].includes(matchedRoleKey || '');
+  const vmRights = ['VM', 'Visual Merchandiser', 'VM Extension Telecaller'].includes(matchedRoleKey || '') ||
+                   String(role).toLowerCase().includes('vm') || String(role).toLowerCase().includes('merchandis');
 
-  return getDefaultModulesForRole(role).map(module => ({
-    module,
-    can_view: true,
-    can_add: fullControl || hrRights || teleRights,
-    can_edit: fullControl || hrRights || teleRights,
-    can_delete: fullControl,
-    can_export: fullControl || hrRights,
-    can_approve: fullControl || hrRights
-  }));
+  return getDefaultModulesForRole(role).map(module => {
+    const isVmModule = module === 'vm_checklist' || module === 'vm_dashboard';
+    return {
+      module,
+      can_view: true,
+      can_add: fullControl || hrRights || teleRights || (vmRights && isVmModule),
+      can_edit: fullControl || hrRights || teleRights || (vmRights && isVmModule),
+      can_delete: fullControl,
+      can_export: fullControl || hrRights || (vmRights && isVmModule),
+      can_approve: fullControl || hrRights
+    };
+  });
 }
 
 const LOCATION_CODE_MAP = {

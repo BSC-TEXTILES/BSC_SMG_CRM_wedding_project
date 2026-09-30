@@ -61,7 +61,7 @@ export const ROLE_NAV_MAP: Record<string, string[]> = {
     'dashboard', 'wedding_crm', 'telecaller_dashboard', 'telecaller_desk', 'wedding_registration'
   ],
   'VM Extension Telecaller': [
-    'dashboard', 'wedding_crm', 'telecaller_dashboard', 'telecaller_desk', 'wedding_registration'
+    'dashboard', 'wedding_crm', 'telecaller_dashboard', 'telecaller_desk', 'wedding_registration', 'vm_checklist', 'vm_dashboard'
   ],
   'Floor Manager': [
     'wedding_crm', 'wedding_operations', 'wedding_registration', 'telecaller_desk', 'telecaller_dashboard', 'candidate_apply', 'footfall', 

@@ -375,7 +375,12 @@ export default function TVDisplay() {
 
     let socket: Socket | null = null;
     try {
-      socket = io({ path: '/socket.io', autoConnect: true });
+      socket = io(window.location.origin, {
+        path: '/socket.io',
+        transports: ['websocket', 'polling'],
+        query: tvLocationId ? { locationId: String(tvLocationId) } : undefined,
+        autoConnect: true
+      });
 
       socket.on('footfall:updated', (data: any) => {
         if (!data.location_id || Number(data.location_id) === Number(tvLocationId)) {

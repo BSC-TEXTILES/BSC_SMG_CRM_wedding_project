@@ -97,24 +97,40 @@ export default function DashboardPage() {
     };
   }, []);
 
-  // Automatically direct non-admin users to their dedicated role dashboards ONLY IF they don't have dashboard access
+  const isVMUser = ['vm', 'visual merchandiser', 'vm extension telecaller', 'vm telecaller', 'vm auditor'].includes(roleNorm);
+  const isTelecallerUser = ['telecaller', 'caller', 'crm executive'].includes(roleNorm);
+
+  // Automatically direct non-admin users to their dedicated role dashboards
   useEffect(() => {
     if (!isAdminUser && session) {
+      if (!activeView) {
+        if (isHRUser) {
+          navigate('/hr-dashboard', { replace: true });
+          return;
+        }
+        if (isManagerUser) {
+          navigate('/manager-dashboard', { replace: true });
+          return;
+        }
+        if (isVMUser) {
+          navigate('/vm-dashboard', { replace: true });
+          return;
+        }
+        if (isTelecallerUser) {
+          navigate('/telecaller-dashboard', { replace: true });
+          return;
+        }
+      }
+
       if (allowed.includes('dashboard') || allowed.includes('regional_analytics')) {
         return;
       }
-      if (isHRUser && allowed.includes('dashboard')) {
-        navigate('/hr-dashboard', { replace: true });
-      } else if (isManagerUser && allowed.includes('dashboard')) {
-        navigate('/manager-dashboard', { replace: true });
-      } else {
-        const target = getDefaultLandingRoute(session, allowed);
-        if (target && target !== '/dashboard' && target !== '/no-access') {
-          navigate(target, { replace: true });
-        }
+      const target = getDefaultLandingRoute(session, allowed);
+      if (target && target !== '/dashboard' && target !== '/no-access') {
+        navigate(target, { replace: true });
       }
     }
-  }, [isHRUser, isManagerUser, isAdminUser, session, allowed, navigate]);
+  }, [isHRUser, isManagerUser, isVMUser, isTelecallerUser, isAdminUser, session, allowed, activeView, navigate]);
 
   // Employees & Operational Stats
   const [employees, setEmployees] = useState<any[]>([]);

@@ -40,32 +40,71 @@ class RealtimeClient {
    * proxy forwards /socket.io to the local backend, and in production it
    * resolves to the deployed host. No backend URL is ever baked into the bundle.
    */
-  public connect(): void {
-    if (this.socket?.connected) return;
+  public connect(customLocationId?: number | string | null): void {
+    if (this.socket?.connected) {
+      if (customLocationId) {
+        this.setLocation(customLocationId);
+      }
+      return;
+    }
     if (typeof window === 'undefined') return;
     if (this.gaveUp) return;
-    if (!this.socket) this.open();
+    if (!this.socket) this.open(customLocationId);
   }
 
-  private open(): void {
+  public setLocation(locId: number | string | null): void {
+    if (!locId) return;
+    const clean = String(locId).trim();
+    if (clean && clean !== 'null' && clean !== 'undefined' && this.socket?.connected) {
+      this.socket.emit('join_location', clean);
+    }
+  }
+
+  private open(customLocationId?: number | string | null): void {
     this.clearRetry();
+
+    const session = Auth.get();
+    const token = Auth.getToken();
+
+    // Check if public/kiosk route (TV display, greeter, public feedback, job apply)
+    const isPublicContext = typeof window !== 'undefined' && (
+      window.location.pathname.startsWith('/tv') ||
+      window.location.pathname.startsWith('/greeter') ||
+      window.location.pathname.startsWith('/feedback-public') ||
+      window.location.pathname.startsWith('/apply')
+    );
+
+    // If not authenticated and not a public context, wait until user signs in
+    if (!session && !isPublicContext) {
+      return;
+    }
+
+    // Determine clean, non-empty location ID
+    const query: Record<string, string> = {};
+    const rawLoc = customLocationId ?? session?.locationId ?? (typeof localStorage !== 'undefined' ? localStorage.getItem('bsc_selected_location') : null);
+    
+    if (rawLoc && rawLoc !== 'ALL' && rawLoc !== 'null' && rawLoc !== 'undefined' && String(rawLoc).trim() !== '') {
+      query.locationId = String(rawLoc).trim();
+    } else if (session?.isGlobalAdmin || ['Admin', 'Super Admin'].includes(session?.role || '')) {
+      query.locationId = 'ALL';
+    }
 
     this.socket = io(window.location.origin, {
       path: '/socket.io',
-      transports: ['polling', 'websocket'],
-      // Reconnection is driven by `scheduleRetry` below so that a backend that
-      // is down produces a bounded number of handshake attempts.
+      transports: ['websocket', 'polling'],
       reconnection: false,
       timeout: 10000,
-      query: { locationId: Auth.get()?.locationId ?? '' }
+      auth: token ? { token } : undefined,
+      ...(Object.keys(query).length > 0 ? { query } : {})
     });
 
     this.socket.on('connect', () => {
       this.isConnected = true;
       this.connectFailures = 0;
-      const session = Auth.get();
-      if (session?.locationId) {
-        this.socket?.emit('join_location', session.locationId);
+      const currentSession = Auth.get();
+      const effectiveLoc = customLocationId ?? currentSession?.locationId;
+      if (effectiveLoc) {
+        this.socket?.emit('join_location', effectiveLoc);
       }
       this.socketListeners.forEach((cb) => {
         try { if (this.socket) cb(this.socket); } catch { /* a broken listener must not kill the socket */ }

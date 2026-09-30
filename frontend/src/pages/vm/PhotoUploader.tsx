@@ -97,7 +97,7 @@ interface SavedPhotoTileProps {
   onView: () => void;
   onRemove: () => void;
   onReplace: () => void;
-  onSaveCaption: (photo: VmPhoto, caption: string) => void;
+  onSaveCaption: (photo: VmPhoto, caption: string) => Promise<void> | void;
 }
 
 /** Mirrors the server's own cap so a long note is stopped here, not lost on save. */
@@ -189,7 +189,7 @@ function SavedPhotoTile({
               <button
                 type="button"
                 disabled={savingCaption}
-                onClick={() => { setSavingCaption(true); onSaveCaption(photo, draftCaption.trim()); }}
+                onClick={async () => { setSavingCaption(true); try { await onSaveCaption(photo, draftCaption.trim()); setCaptionOpen(false); } finally { setSavingCaption(false); } }}
                 className="flex-1 min-h-[36px] inline-flex items-center justify-center gap-1 rounded-lg bg-[#4A173A] text-white text-[11px] font-bold disabled:opacity-50 cursor-pointer"
               >
                 {savingCaption ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CircleCheck className="w-3.5 h-3.5" />}
@@ -1045,6 +1045,23 @@ export default function PhotoUploader(props: PhotoUploaderProps) {
     }
   };
 
+  /**
+   * Saves an observation against one image. The server is authoritative — the list
+   * is re-read afterwards rather than trusting the optimistic value — so a failed
+   * PATCH can never leave a caption on screen that was never stored.
+   */
+  const handleSaveCaption = async (photo: VmPhoto, caption: string) => {
+    try {
+      const res: any = await API.updateVmPhotoMetadata(photo.id, { caption: caption || null });
+      if (res && res.success === false) throw new Error(res.message || 'save failed');
+      await loadSectionPhotos();
+      showToast('Photo details updated successfully.', 'success');
+    } catch (err) {
+      const message = errorFromUnknown(err, 'Unable to save the photo observation.').message;
+      showToast(message, 'error');
+    }
+  };
+
   const startReplace = (photo: VmPhoto) => {
     if (disabled) return;
     replaceTargetRef.current = photo;
@@ -1352,6 +1369,7 @@ export default function PhotoUploader(props: PhotoUploaderProps) {
               onView={() => openViewer(index, photo)}
               onRemove={() => setConfirmPhoto(photo)}
               onReplace={() => startReplace(photo)}
+              onSaveCaption={handleSaveCaption}
             />
           ))}
           {visiblePending.map((attempt, index) => (

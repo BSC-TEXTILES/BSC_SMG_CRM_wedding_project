@@ -272,8 +272,15 @@ export default function VmCameraModal({
           </button>
         </div>
 
-        {/* Modal Camera Viewport */}
-        <div className="relative bg-black flex-1 flex items-center justify-center min-h-[340px] sm:min-h-[420px] overflow-hidden">
+        {/* Modal Camera Viewport.
+            The tall black frame only makes sense when something is being shown in
+            it. In the error state it left ~400px of empty black above a two-line
+            message, so the height is now conditional and the modal hugs its content. */}
+        <div
+          className={`relative bg-black flex-1 flex items-center justify-center overflow-hidden ${
+            cameraState === 'error' ? 'min-h-0 px-2 py-1' : 'min-h-[340px] sm:min-h-[420px]'
+          }`}
+        >
           {/* Hidden Canvas for Frame Capture */}
           <canvas ref={canvasRef} className="hidden" />
 
