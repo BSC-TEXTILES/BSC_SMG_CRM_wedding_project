@@ -1059,7 +1059,7 @@ export default function FeedbackQRManagement() {
           <head>
             <title>Print QR Code - ${qr.name}</title>
             <style>
-              body { font-family: 'Inter', sans-serif; text-align: center; padding: 20px; }
+              body { font-family: 'Manrope', sans-serif; text-align: center; padding: 20px; }
               .qr-container { display: inline-block; padding: 20px; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
               img { max-width: 300px; }
               h2 { color: #3D2B1F; margin-bottom: 8px; }

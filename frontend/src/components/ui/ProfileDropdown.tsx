@@ -123,10 +123,10 @@ export default function ProfileDropdown({
           {initials}
         </div>
         <div className="hidden sm:block text-left min-w-0">
-          <div className="font-bold text-xs text-[#182033] leading-tight truncate max-w-[130px] md:max-w-[180px] lg:max-w-[220px]">
+          <div className="font-bold text-[13px] text-[#182033] leading-tight truncate max-w-[130px] md:max-w-[180px] lg:max-w-[220px]">
             {displayName}
           </div>
-          <div className="text-[10px] text-[#C9A45C] font-bold uppercase tracking-wider mt-0.5">
+          <div className="text-[11.5px] text-[#C9A45C] font-semibold uppercase tracking-wider mt-0.5">
             {role}
           </div>
         </div>
@@ -153,14 +153,14 @@ export default function ProfileDropdown({
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-1.5">
-                  <span className="font-bold text-xs sm:text-sm text-[#182033] truncate leading-tight">
+                  <span className="font-bold text-[13px] text-[#182033] truncate leading-tight">
                     {displayName}
                   </span>
-                  <span className="px-2 py-0.5 rounded-md bg-[#123C35]/10 border border-[#123C35]/15 text-[#123C35] text-[9.5px] font-bold uppercase tracking-wider shrink-0">
+                  <span className="px-2 py-0.5 rounded-md bg-[#123C35]/10 border border-[#123C35]/15 text-[#123C35] text-[11px] font-semibold uppercase tracking-wider shrink-0">
                     {role}
                   </span>
                 </div>
-                <p className="text-[11px] text-[#687080] font-medium truncate mt-0.5" title={emailDisplay}>
+                <p className="text-[11.5px] text-[#687080] font-medium truncate mt-0.5" title={emailDisplay}>
                   {emailDisplay}
                 </p>
               </div>

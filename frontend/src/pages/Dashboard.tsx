@@ -429,13 +429,13 @@ export default function DashboardPage() {
         <div className="bg-white rounded-2xl border border-[#E2DDD2] shadow-xs px-5 py-4 sm:px-6 sm:py-5 mb-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="min-w-0">
-              <h2 className="text-xl sm:text-2xl font-bold text-[#182033] tracking-tight leading-tight">
-                {isAdminDashboard ? 'ADMIN DASHBOARD' : 'BSC EXECUTIVE DASHBOARD'}
+              <h2 className="page-title">
+                {isAdminDashboard ? 'Admin Dashboard' : 'BSC Executive Dashboard'}
               </h2>
-              <p className="text-xs sm:text-sm font-semibold text-[#123C35] mt-0.5">
+              <p className="text-[16px] font-semibold text-[#123C35] mt-1">
                 Executive &amp; Workforce Operations
               </p>
-              <p className="text-xs text-[#687080] font-medium mt-0.5">
+              <p className="page-subtitle mt-0.5">
                 Live overview of BSC Textiles across authorized locations.
               </p>
             </div>

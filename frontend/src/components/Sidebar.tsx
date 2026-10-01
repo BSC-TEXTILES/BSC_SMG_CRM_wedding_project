@@ -290,10 +290,10 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
               />
             </div>
             <div className="min-w-0">
-              <div className="font-bold text-sm text-white tracking-wider leading-tight uppercase truncate">
+              <div className="font-extrabold text-[15px] text-white tracking-wider leading-tight uppercase truncate">
                 BSC Textiles
               </div>
-              <div className="text-[10px] font-semibold uppercase tracking-wider mt-0.5 flex items-center gap-1 truncate text-[#E4CB92]">
+              <div className="text-[11px] font-bold uppercase tracking-wider mt-0.5 flex items-center gap-1 truncate text-[#E4CB92]">
                 <Globe className="w-2.5 h-2.5 text-[#C9A45C] shrink-0" />
                 <span className="truncate">{activeLocationLabel}</span>
               </div>
@@ -366,10 +366,10 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
           </div>
           {!collapsed && (
             <div className="overflow-hidden flex-1 min-w-0">
-              <div className="font-bold text-xs text-white truncate">
+              <div className="font-bold text-[13px] text-white truncate">
                 {session?.fullName || 'System Administrator'}
               </div>
-              <div className="text-[10px] text-[#E4CB92] font-semibold truncate mt-0.5">
+              <div className="text-[11.5px] text-[#E4CB92] font-semibold truncate mt-0.5">
                 {roleLabels[role] || role}
               </div>
             </div>
@@ -419,7 +419,7 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
                         title={item.hint ? `${item.label} — ${item.hint}` : item.label}
                         data-active={isActive ? 'true' : undefined}
                         className={`
-                          flex items-center rounded-xl text-xs font-semibold transition-colors duration-150 group relative
+                          flex items-center rounded-xl text-[14px] font-semibold transition-colors duration-150 group relative
                           ${collapsed ? 'justify-center p-2.5 my-1' : 'px-3 py-2.5 justify-between my-0.5'}
                           ${isActive
                             ? 'bg-[#C9A45C] text-[#0B2924] font-bold shadow-sm'

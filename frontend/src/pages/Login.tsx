@@ -453,8 +453,8 @@ export default function LoginPage() {
         {!show2fa ? (
           <form onSubmit={handleLogin} className="login-form p-6 sm:p-7 space-y-4 sm:space-y-5">
           <div>
-            <h3 className="text-xl font-black text-[#123C35] tracking-tight">Welcome Back</h3>
-            <p className="text-xs text-[#65716C] font-medium mt-1">Sign in with your authorized system credentials. Your location will be loaded automatically.</p>
+            <h3 className="text-[22px] font-bold text-[#123C35] tracking-tight">Welcome Back</h3>
+            <p className="text-[13px] text-[#687080] font-normal mt-1">Sign in with your authorized system credentials. Your location will be loaded automatically.</p>
           </div>
 
 
@@ -484,7 +484,7 @@ export default function LoginPage() {
           )}
 
           <div className="space-y-1.5">
-            <label className="block text-[11px] font-bold uppercase tracking-wider text-[#17201D]">
+            <label className="block text-[13px] font-semibold text-[#182033]">
               Username / Email
             </label>
             <div className="relative">
@@ -498,14 +498,14 @@ export default function LoginPage() {
                 onChange={(e) => setUsername(e.target.value)}
                 onBlur={() => { if (username.trim()) checkServerLock(username.trim()); }}
                 placeholder="Enter your username or email"
-                className="input-modern w-full !pl-10 pr-4 text-xs font-semibold"
+                className="input-modern w-full !pl-10 pr-4 text-[14px] font-medium"
                 required
               />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <label className="block text-[11px] font-bold uppercase tracking-wider text-[#17201D]">
+            <label className="block text-[13px] font-semibold text-[#182033]">
               Password
             </label>
             <div className="relative">
@@ -518,7 +518,7 @@ export default function LoginPage() {
                 disabled={isLocked && lockRemainingSeconds > 0}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••••"
-                className="input-modern w-full !pl-10 !pr-10 text-xs font-semibold"
+                className="input-modern w-full !pl-10 !pr-10 text-[14px] font-medium"
                 required
               />
               <button
@@ -533,7 +533,7 @@ export default function LoginPage() {
           </div>
 
           <div className="space-y-1.5">
-            <label className="block text-[11px] font-bold uppercase tracking-wider text-[#17201D]">
+            <label className="block text-[13px] font-semibold text-[#182033]">
               Security Code
             </label>
             <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">

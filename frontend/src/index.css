@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -9,7 +9,7 @@
      BSC EXCLUSIVE ENTERPRISE SUITE BRAND COLOR SYSTEM
      FOREST GREEN + CHAMPAGNE GOLD + WARM CREAM
      ================================================== */
-  --font-family: 'Inter', sans-serif;
+  --font-family: 'Manrope', sans-serif;
   --color-primary: #123C35;          /* Forest Green (Primary Brand) */
   --color-primary-dark: #0B2924;     /* Deep Forest */
   --color-primary-medium: #1D5148;   /* Primary Medium */
@@ -128,8 +128,10 @@ html {
   box-sizing: inherit;
 }
 
-body {
-  font-family: 'Inter', sans-serif;
+html,
+body,
+#root {
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background-color: var(--bg);
   color: var(--text-main);
   min-height: 100vh;
@@ -146,7 +148,7 @@ body {
 }
 
 input, button, select, textarea, optgroup {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Manrope', sans-serif;
 }
 
 /* Sidebar color classes */
@@ -194,63 +196,123 @@ html, #root, * {
 }
 
 /* ==================================================
-   ENTERPRISE TYPOGRAPHY SYSTEM
+   ENTERPRISE TYPOGRAPHY SYSTEM (MANROPE)
    ================================================== */
 .page-title, .typography-page-title {
-  font-family: 'Inter', sans-serif !important;
-  font-size: 24px !important;
-  font-weight: 700 !important;
+  font-family: 'Manrope', sans-serif !important;
+  font-size: 26px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.02em !important;
   line-height: 1.25 !important;
   color: #182033;
 }
+@media (max-width: 991px) {
+  .page-title, .typography-page-title {
+    font-size: 23px !important;
+  }
+}
+@media (max-width: 575px) {
+  .page-title, .typography-page-title {
+    font-size: 21px !important;
+  }
+}
+
+.page-subtitle, .typography-page-subtitle {
+  font-family: 'Manrope', sans-serif !important;
+  font-size: 16px !important;
+  font-weight: 500 !important;
+  line-height: 1.45 !important;
+  color: #687080 !important;
+}
+
 .section-title, .typography-section-title {
-  font-family: 'Inter', sans-serif !important;
+  font-family: 'Manrope', sans-serif !important;
   font-size: 19px !important;
-  font-weight: 600 !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.015em !important;
   line-height: 1.3 !important;
   color: #182033;
 }
+@media (max-width: 575px) {
+  .section-title, .typography-section-title {
+    font-size: 17.5px !important;
+  }
+}
+
 .card-title, .typography-card-title {
-  font-family: 'Inter', sans-serif !important;
-  font-size: 14.5px !important;
-  font-weight: 600 !important;
+  font-family: 'Manrope', sans-serif !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.02em !important;
   line-height: 1.4 !important;
   color: #182033;
 }
+
 .body-text, .typography-body {
-  font-family: 'Inter', sans-serif !important;
+  font-family: 'Manrope', sans-serif !important;
   font-size: 14px !important;
   font-weight: 400 !important;
-  line-height: 1.5 !important;
+  line-height: 1.55 !important;
   color: #182033;
 }
-.secondary-text, .typography-secondary {
-  font-family: 'Inter', sans-serif !important;
+
+.secondary-text, .typography-secondary, .small-desc {
+  font-family: 'Manrope', sans-serif !important;
   font-size: 13px !important;
   font-weight: 400 !important;
-  line-height: 1.4 !important;
-  color: #687080;
+  line-height: 1.45 !important;
+  color: #687080 !important;
 }
+
 .small-label, .typography-small-label {
-  font-family: 'Inter', sans-serif !important;
+  font-family: 'Manrope', sans-serif !important;
   font-size: 11.5px !important;
   font-weight: 600 !important;
+  letter-spacing: 0.05em !important;
   line-height: 1.3 !important;
   color: #687080;
 }
+
 .stat-number, .typography-stat-number {
-  font-family: 'Inter', sans-serif !important;
-  font-size: 32px !important;
-  font-weight: 700 !important;
+  font-family: 'Manrope', sans-serif !important;
+  font-size: 34px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.03em !important;
   line-height: 1.1 !important;
   color: #182033;
 }
+@media (max-width: 575px) {
+  .stat-number, .typography-stat-number {
+    font-size: 28px !important;
+  }
+}
+
 .table-header-text, .typography-table-header {
-  font-family: 'Inter', sans-serif !important;
+  font-family: 'Manrope', sans-serif !important;
   font-size: 11.5px !important;
-  font-weight: 600 !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.04em !important;
   line-height: 1.2 !important;
   color: #182033;
+}
+
+.table-cell-text {
+  font-family: 'Manrope', sans-serif !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  color: #182033;
+}
+.table-cell-primary {
+  font-family: 'Manrope', sans-serif !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: #182033;
+}
+.table-cell-secondary {
+  font-family: 'Manrope', sans-serif !important;
+  font-size: 12px !important;
+  font-weight: 400 !important;
+  color: #687080;
 }
 
 /* ==================================================
@@ -286,7 +348,7 @@ html, #root, * {
   gap: 5px;
   padding: 4px 9px;
   border-radius: 999px;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Manrope', sans-serif;
   font-size: 11.5px;
   font-weight: 600;
   line-height: 1.1;
@@ -407,7 +469,7 @@ html, #root, * {
 }
 
 /* ==================================================
-   INPUT SYSTEM (Height 40-44px, Border #E2DDD2, Radius 10-12px, Inter 14px)
+   INPUT SYSTEM (Height 40-44px, Border #E2DDD2, Radius 10-12px, Manrope 14px 500)
    ================================================== */
 @layer components {
   .input-enterprise, .input-modern, .select-modern, .textarea-modern {
@@ -418,9 +480,9 @@ html, #root, * {
     border: 1px solid #E2DDD2;
     background-color: #FFFFFF;
     color: #182033;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Manrope', sans-serif;
     font-size: 14px;
-    font-weight: 400;
+    font-weight: 500;
     line-height: 1.5;
     transition: all 0.15s ease-in-out;
   }
@@ -466,7 +528,7 @@ input[class*="pr-12"], select[class*="pr-12"], .input-modern[class*="pr-12"] { p
 }
 
 /* ==================================================
-   BUTTON SYSTEM (Height 40-44px, Radius 10-12px, Inter 13-14px 600)
+   BUTTON SYSTEM (Height 40-44px, Radius 10-12px, Manrope 13px 600)
    ================================================== */
 /* PRIMARY BUTTON: Background: #123C35, Text: #FFFFFF, Hover: #0B2924 */
 .btn-primary {
@@ -476,8 +538,8 @@ input[class*="pr-12"], select[class*="pr-12"], .input-modern[class*="pr-12"] { p
   gap: 8px;
   background-color: #123C35;
   color: #FFFFFF;
-  font-family: 'Inter', sans-serif;
-  font-size: 13.5px;
+  font-family: 'Manrope', sans-serif;
+  font-size: 13px;
   font-weight: 600;
   height: 42px;
   padding: 0 18px;
@@ -514,8 +576,8 @@ input[class*="pr-12"], select[class*="pr-12"], .input-modern[class*="pr-12"] { p
   gap: 8px;
   background-color: #FFFFFF;
   color: #123C35;
-  font-family: 'Inter', sans-serif;
-  font-size: 13.5px;
+  font-family: 'Manrope', sans-serif;
+  font-size: 13px;
   font-weight: 600;
   height: 42px;
   padding: 0 18px;
@@ -547,8 +609,8 @@ input[class*="pr-12"], select[class*="pr-12"], .input-modern[class*="pr-12"] { p
   gap: 8px;
   background-color: #C9A45C;
   color: #0B2924;
-  font-family: 'Inter', sans-serif;
-  font-size: 13.5px;
+  font-family: 'Manrope', sans-serif;
+  font-size: 13px;
   font-weight: 600;
   height: 42px;
   padding: 0 18px;
@@ -582,8 +644,8 @@ input[class*="pr-12"], select[class*="pr-12"], .input-modern[class*="pr-12"] { p
   gap: 8px;
   background-color: #FEE2E2;
   color: #C62828;
-  font-family: 'Inter', sans-serif;
-  font-size: 13.5px;
+  font-family: 'Manrope', sans-serif;
+  font-size: 13px;
   font-weight: 600;
   height: 42px;
   padding: 0 18px;
@@ -615,8 +677,8 @@ input[class*="pr-12"], select[class*="pr-12"], .input-modern[class*="pr-12"] { p
   gap: 8px;
   background-color: transparent;
   color: #182033;
-  font-family: 'Inter', sans-serif;
-  font-size: 13.5px;
+  font-family: 'Manrope', sans-serif;
+  font-size: 13px;
   font-weight: 600;
   height: 42px;
   padding: 0 16px;
@@ -648,8 +710,8 @@ input[class*="pr-12"], select[class*="pr-12"], .input-modern[class*="pr-12"] { p
   border: 1px solid #123C35;
   color: #123C35;
   background-color: transparent;
-  font-family: 'Inter', sans-serif;
-  font-size: 13.5px;
+  font-family: 'Manrope', sans-serif;
+  font-size: 13px;
   font-weight: 600;
   height: 42px;
   padding: 0 18px;
@@ -671,8 +733,8 @@ input[class*="pr-12"], select[class*="pr-12"], .input-modern[class*="pr-12"] { p
   gap: 8px;
   background-color: #15803D;
   color: #FFFFFF;
-  font-family: 'Inter', sans-serif;
-  font-size: 13.5px;
+  font-family: 'Manrope', sans-serif;
+  font-size: 13px;
   font-weight: 600;
   height: 42px;
   padding: 0 18px;
@@ -700,11 +762,12 @@ input[class*="pr-12"], select[class*="pr-12"], .input-modern[class*="pr-12"] { p
 .table-enterprise thead th, .table-wedding thead th, table.enterprise-table thead th, .th-wedding {
   color: #182033 !important;
   border-bottom: 1px solid #E2DDD2;
-  font-family: 'Inter', sans-serif;
-  font-weight: 600;
-  font-size: 12px;
+  font-family: 'Manrope', sans-serif;
+  font-weight: 700;
+  font-size: 11.5px;
   padding: 14px 16px;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 .table-enterprise tbody tr, .table-wedding tbody tr, table.enterprise-table tbody tr {
   min-height: 58px;
@@ -712,8 +775,9 @@ input[class*="pr-12"], select[class*="pr-12"], .input-modern[class*="pr-12"] { p
 }
 .table-enterprise tbody td, .table-wedding tbody td, table.enterprise-table tbody td {
   color: #182033;
-  font-family: 'Inter', sans-serif;
-  font-size: 13.5px;
+  font-family: 'Manrope', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
   border-bottom: 1px solid #E2DDD2;
   padding: 14px 16px;
 }
@@ -732,13 +796,13 @@ input[class*="pr-12"], select[class*="pr-12"], .input-modern[class*="pr-12"] { p
   border: 1px solid #E2DDD2;
   border-radius: 12px;
   box-shadow: 0 10px 25px rgba(18, 60, 53, 0.08);
-  font-family: 'Inter', sans-serif;
+  font-family: 'Manrope', sans-serif;
   padding: 6px;
 }
 .dropdown-item-enterprise, .dropdown-item-wedding {
   color: #182033;
-  font-family: 'Inter', sans-serif;
-  font-size: 13.5px;
+  font-family: 'Manrope', sans-serif;
+  font-size: 13px;
   font-weight: 500;
   padding: 8px 12px;
   border-radius: 8px;

@@ -52,7 +52,7 @@ export default function Breadcrumbs({ items, className = '' }: BreadcrumbsProps)
 
       {/* Standard breadcrumb list (shown always when <= 2 items, or on sm+ screens) */}
       <ol
-        className={`items-center min-w-0 text-[13px] sm:text-[13.5px] font-medium ${
+        className={`items-center min-w-0 text-[13px] font-medium ${
           items.length > 2 ? 'hidden sm:flex flex-wrap gap-y-1' : 'flex flex-wrap gap-y-1'
         }`}
       >

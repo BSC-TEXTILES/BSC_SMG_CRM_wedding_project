@@ -4,8 +4,8 @@
    ========================================================================== */
 
 :root {
-  --pf-font-serif: "Inter", sans-serif;
-  --pf-font-sans: "Inter", sans-serif;
+  --pf-font-serif: "Manrope", sans-serif;
+  --pf-font-sans: "Manrope", sans-serif;
   --pf-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
   /* Light Theme Tokens */

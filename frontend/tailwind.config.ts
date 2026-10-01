@@ -17,8 +17,8 @@ const config: Config = {
     },
     extend: {
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
-        serif: ['Inter', 'sans-serif'],
+        sans: ['Manrope', 'sans-serif'],
+        serif: ['Manrope', 'sans-serif'],
       },
       blur: { xs: '2px' },
       backdropBlur: { xs: '2px' },

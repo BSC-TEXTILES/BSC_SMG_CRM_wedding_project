@@ -1197,8 +1197,8 @@ export default function UserManagementPage() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div className="bg-white p-5 border border-[#E2DDD2] rounded-2xl shadow-xs flex items-center justify-between">
               <div>
-                <p className="text-xs font-semibold text-[#687080] uppercase tracking-wider">Total Users</p>
-                <p className="text-2xl sm:text-3xl font-bold text-[#182033] mt-1">{stats.total}</p>
+                <p className="text-[13px] font-bold text-[#687080] tracking-[0.02em]">Total Users</p>
+                <p className="text-2xl sm:text-3xl lg:text-[36px] font-extrabold text-[#182033] tracking-[-0.03em] mt-1">{stats.total}</p>
                 <p className="text-[13px] text-[#687080] font-normal mt-0.5">Provisioned accounts</p>
               </div>
               <div className="w-11 h-11 rounded-xl bg-[#123C35]/10 flex items-center justify-center text-[#123C35]">
@@ -1208,8 +1208,8 @@ export default function UserManagementPage() {
 
             <div className="bg-white p-5 border border-[#E2DDD2] rounded-2xl shadow-xs flex items-center justify-between">
               <div>
-                <p className="text-xs font-semibold text-[#15803D] uppercase tracking-wider">Active Accounts</p>
-                <p className="text-2xl sm:text-3xl font-bold text-[#15803D] mt-1">{stats.active}</p>
+                <p className="text-[13px] font-bold text-[#15803D] tracking-[0.02em]">Active Accounts</p>
+                <p className="text-2xl sm:text-3xl lg:text-[36px] font-extrabold text-[#15803D] tracking-[-0.03em] mt-1">{stats.active}</p>
                 <p className="text-[13px] text-[#687080] font-normal mt-0.5">Enabled &amp; accessible</p>
               </div>
               <div className="w-11 h-11 rounded-xl bg-[#15803D]/10 flex items-center justify-center text-[#15803D]">
@@ -1219,8 +1219,8 @@ export default function UserManagementPage() {
 
             <div className="bg-white p-5 border border-[#E2DDD2] rounded-2xl shadow-xs flex items-center justify-between">
               <div>
-                <p className="text-xs font-semibold text-[#687080] uppercase tracking-wider">Deactivated</p>
-                <p className="text-2xl sm:text-3xl font-bold text-[#687080] mt-1">{stats.inactive}</p>
+                <p className="text-[13px] font-bold text-[#687080] tracking-[0.02em]">Deactivated</p>
+                <p className="text-2xl sm:text-3xl lg:text-[36px] font-extrabold text-[#687080] tracking-[-0.03em] mt-1">{stats.inactive}</p>
                 <p className="text-[13px] text-[#687080] font-normal mt-0.5">Suspended accounts</p>
               </div>
               <div className="w-11 h-11 rounded-xl bg-gray-100 flex items-center justify-center text-[#687080]">
@@ -1230,8 +1230,8 @@ export default function UserManagementPage() {
 
             <div className="bg-white p-5 border border-[#E2DDD2] rounded-2xl shadow-xs flex items-center justify-between">
               <div>
-                <p className="text-xs font-semibold text-[#C9A45C] uppercase tracking-wider">Admin Roles</p>
-                <p className="text-2xl sm:text-3xl font-bold text-[#182033] mt-1">{stats.adminCount}</p>
+                <p className="text-[13px] font-bold text-[#C9A45C] tracking-[0.02em]">Admin Roles</p>
+                <p className="text-2xl sm:text-3xl lg:text-[36px] font-extrabold text-[#182033] tracking-[-0.03em] mt-1">{stats.adminCount}</p>
                 <p className="text-[13px] text-[#687080] font-normal mt-0.5">Elevated governance</p>
               </div>
               <div className="w-11 h-11 rounded-xl bg-[#C9A45C]/15 flex items-center justify-center text-[#C9A45C]">

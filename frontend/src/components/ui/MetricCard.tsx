@@ -43,10 +43,10 @@ export default function MetricCard({
     >
       <div className="flex items-start justify-between gap-3 min-w-0">
         <div className="min-w-0 flex-1">
-          <span className="text-xs font-semibold uppercase tracking-wider text-[#687080] block mb-1 truncate">
+          <span className="text-[13px] font-bold tracking-[0.02em] text-[#687080] block mb-1 truncate">
             {title}
           </span>
-          <div className="text-2xl sm:text-3xl lg:text-[34px] font-bold text-[#182033] tracking-tight truncate leading-tight">
+          <div className="text-2xl sm:text-3xl lg:text-[36px] font-extrabold text-[#182033] tracking-[-0.03em] truncate leading-tight">
             {value}
           </div>
         </div>

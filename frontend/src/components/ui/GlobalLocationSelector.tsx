@@ -41,11 +41,11 @@ export default function GlobalLocationSelector() {
     const displayName = loc ? loc.name : activeLocation.name || 'Store';
     return (
       <div
-        className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-[#F7F4ED] border border-[#E2DDD2] text-[#123C35] text-xs font-bold shadow-xs select-none shrink-0"
+        className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-[#F7F4ED] border border-[#E2DDD2] text-[#123C35] text-[13px] font-semibold shadow-xs select-none shrink-0"
         title={`Your account is strictly scoped to ${displayName}`}
       >
         <MapPin className="w-3.5 h-3.5 text-[#123C35] shrink-0" />
-        <span className="truncate max-w-[120px] sm:max-w-[180px] font-bold">
+        <span className="truncate max-w-[120px] sm:max-w-[180px] font-semibold">
           📍 {displayName}
         </span>
         <Lock className="w-3 h-3 text-[#687080] shrink-0 ml-0.5" />
@@ -59,7 +59,7 @@ export default function GlobalLocationSelector() {
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-[#F7F4ED] hover:bg-white border border-[#E2DDD2] hover:border-[#C9A45C] text-[#123C35] transition-all shadow-xs text-xs font-bold cursor-pointer group shrink-0 select-none focus:outline-none focus:ring-2 focus:ring-[#C9A45C]"
+        className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-[#F7F4ED] hover:bg-white border border-[#E2DDD2] hover:border-[#C9A45C] text-[#123C35] transition-all shadow-xs text-[13px] font-semibold cursor-pointer group shrink-0 select-none focus:outline-none focus:ring-2 focus:ring-[#C9A45C]"
         title="Switch active store location"
         aria-expanded={isOpen}
         aria-haspopup="true"
@@ -68,19 +68,19 @@ export default function GlobalLocationSelector() {
         <MapPin className="w-3.5 h-3.5 text-[#123C35] group-hover:scale-110 transition-transform shrink-0" />
 
         {/* Desktop: ◉ ACTIVE: All Locations ⌄ */}
-        <span className="hidden lg:inline text-xs font-bold tracking-tight text-[#123C35]">
+        <span className="hidden lg:inline text-[13px] font-semibold tracking-tight text-[#123C35]">
           <span className="text-[#C9A45C] mr-1.5 font-bold">◉</span>
           ACTIVE: {activeLocation.name}
         </span>
 
         {/* Tablet: ◉ All Locations */}
-        <span className="hidden sm:inline lg:hidden text-xs font-bold tracking-tight text-[#123C35]">
+        <span className="hidden sm:inline lg:hidden text-[13px] font-semibold tracking-tight text-[#123C35]">
           <span className="text-[#C9A45C] mr-1 font-bold">◉</span>
           {activeLocation.name}
         </span>
 
         {/* Mobile: ◉ All Stores */}
-        <span className="sm:hidden text-xs font-bold tracking-tight truncate max-w-[95px] text-[#123C35]">
+        <span className="sm:hidden text-[13px] font-semibold tracking-tight truncate max-w-[95px] text-[#123C35]">
           <span className="text-[#C9A45C] mr-1 font-bold">◉</span>
           {activeLocation.id === 'ALL' ? 'All Stores' : activeLocation.shortName}
         </span>

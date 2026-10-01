@@ -356,7 +356,7 @@ export default function WeddingOperationsDesk() {
           <div className="card-glass p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-xl sm:text-2xl font-black text-text-primary tracking-tight">
+            <h1 className="page-title">
               Wedding Operations Desk
             </h1>
             {locName && (
@@ -366,7 +366,7 @@ export default function WeddingOperationsDesk() {
               </span>
             )}
           </div>
-          <p className="text-xs sm:text-sm text-text-secondary mt-1">
+          <p className="page-subtitle mt-1">
             Real-time wedding customer registrations, follow-up status, visit planning, and operational activity.
           </p>
         </div>
