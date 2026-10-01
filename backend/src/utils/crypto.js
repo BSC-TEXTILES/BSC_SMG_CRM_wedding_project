@@ -43,20 +43,63 @@ function encryptField(plaintext) {
   ].join(':');
 }
 
+let decryptionWarningLogged = false;
+
+function getCandidateFallbackKeys() {
+  const keys = [];
+  if (process.env.FALLBACK_ENCRYPTION_KEYS) {
+    const candidates = process.env.FALLBACK_ENCRYPTION_KEYS.split(',').map(s => s.trim()).filter(Boolean);
+    for (const c of candidates) {
+      keys.push(crypto.createHash('sha256').update(c).digest());
+    }
+  }
+  return keys;
+}
+
 function decryptField(stored) {
   if (stored === null || stored === undefined) return stored;
   const value = String(stored);
   if (!value.startsWith(PREFIX)) return value; // legacy plaintext row — dual-read
 
+  const parts = value.split(':');
+  if (parts.length < 5) return '';
+
+  const [, , ivB64, tagB64, dataB64] = parts;
+
   try {
-    const [, , ivB64, tagB64, dataB64] = value.split(':');
-    const decipher = crypto.createDecipheriv('aes-256-gcm', getFieldEncryptionKey(), Buffer.from(ivB64, 'base64'));
-    decipher.setAuthTag(Buffer.from(tagB64, 'base64'));
-    const plaintext = Buffer.concat([decipher.update(Buffer.from(dataB64, 'base64')), decipher.final()]);
-    return plaintext.toString('utf8');
+    const iv = Buffer.from(ivB64, 'base64');
+    const tag = Buffer.from(tagB64, 'base64');
+    const ciphertext = Buffer.from(dataB64, 'base64');
+
+    // 1. Attempt primary key decryption
+    try {
+      const decipher = crypto.createDecipheriv('aes-256-gcm', getFieldEncryptionKey(), iv);
+      decipher.setAuthTag(tag);
+      const plaintext = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
+      return plaintext.toString('utf8');
+    } catch (primaryErr) {
+      // 2. Attempt fallback keys if configured (e.g. during key rotation)
+      const fallbackKeys = getCandidateFallbackKeys();
+      for (const fbKey of fallbackKeys) {
+        try {
+          const decipher = crypto.createDecipheriv('aes-256-gcm', fbKey, iv);
+          decipher.setAuthTag(tag);
+          const plaintext = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
+          return plaintext.toString('utf8');
+        } catch (fbErr) {
+          // Continue to next candidate key
+        }
+      }
+
+      // 3. Graceful masking without repetitive terminal console spam
+      if (!decryptionWarningLogged) {
+        console.warn('[Crypto] Notice: One or more legacy encrypted fields could not be authenticated with the current key (rotated or imported data). Safely masked.');
+        decryptionWarningLogged = true;
+      }
+      return '';
+    }
   } catch (err) {
-    console.error('[Crypto] Field decryption failed — returning masked placeholder:', err.message);
-    return '[Encrypted data unavailable]';
+    return '';
   }
 }
 

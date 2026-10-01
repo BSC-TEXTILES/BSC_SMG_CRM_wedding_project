@@ -1694,6 +1694,7 @@ export const API = {
     to_date?: string;
     limit?: number;
     offset?: number;
+    page?: number;
   }) {
     const q = params ? new URLSearchParams(cleanQueryParams(params)).toString() : '';
     const res = await apiFetch(`/wedding-crm/customers${q ? `?${q}` : ''}`);
