@@ -585,19 +585,19 @@ export default function DojDesk() {
 
         <main className="p-3 sm:p-5 lg:p-7 space-y-5 max-w-7xl mx-auto w-full">
           {/* ── Top Header Banner ─────────────────────────────────── */}
-          <div className="bg-gradient-to-r from-[#123C35] via-[#5C1E48] to-[#2E0B22] text-white rounded-3xl p-5 sm:p-6 shadow-md relative overflow-hidden">
+          <div className="bg-gradient-to-r from-[#123C35] to-[#0B2924] text-white rounded-2xl p-5 sm:p-6 shadow-xs relative overflow-hidden">
             <div className="absolute right-0 top-0 bottom-0 w-72 bg-gradient-to-l from-white/5 to-transparent pointer-events-none" />
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
               <div>
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 backdrop-blur-xs text-[#E4CB92] text-[11px] font-semibold uppercase tracking-wider mb-2">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 backdrop-blur-xs text-[#E4CB92] text-xs font-semibold uppercase tracking-wider mb-2">
                   <CalendarClock className="w-3.5 h-3.5" />
-                  <span>HR & Recruitment Operations</span>
+                  <span>HR &amp; Recruitment Operations</span>
                 </div>
-                <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2">
+                <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight flex items-center gap-2">
                   <span>Date of Joining (DOJ) Desk</span>
                   <Sparkles className="w-5 h-5 text-[#E4CB92]" />
                 </h1>
-                <p className="text-xs sm:text-sm text-white/80 mt-1 max-w-2xl">
+                <p className="text-xs sm:text-sm text-white/80 mt-1 max-w-2xl font-normal">
                   Track and verify candidate onboarding, manage expected store reporting dates, conduct follow-ups, and maintain the live Joined Store Directory.
                 </p>
               </div>
@@ -607,7 +607,7 @@ export default function DojDesk() {
                 <button
                   type="button"
                   onClick={() => setQuickAddModal((prev) => ({ ...prev, open: true }))}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-[#E4CB92] hover:bg-[#dfbba0] text-[#123C35] font-bold text-xs transition-all shadow-sm cursor-pointer"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#C9A45C] hover:bg-[#E4CB92] text-[#0B2924] font-semibold text-xs transition-all shadow-xs cursor-pointer"
                 >
                   <Plus className="w-4 h-4" />
                   <span>Schedule Candidate DOJ</span>
@@ -616,7 +616,7 @@ export default function DojDesk() {
                   type="button"
                   onClick={() => loadData()}
                   disabled={loading}
-                  className="p-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white transition-all cursor-pointer"
+                  className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-all cursor-pointer"
                   title="Refresh Data"
                 >
                   <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
@@ -626,24 +626,24 @@ export default function DojDesk() {
           </div>
 
           {/* ── Top 4 KPI Summary Cards ───────────────────────────── */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Card 1: Pending Joining */}
             <div
               onClick={() => setActiveTab('not_joined')}
-              className={`p-4 rounded-3xl border transition-all cursor-pointer shadow-xs ${
+              className={`p-5 rounded-2xl border transition-all cursor-pointer shadow-xs ${
                 activeTab === 'not_joined'
                   ? 'bg-white border-[#123C35] ring-2 ring-[#123C35]/10'
-                  : 'bg-white border-accent-soft hover:border-accent'
+                  : 'bg-white border-[#E2DDD2] hover:border-[#C9A45C]'
               }`}
             >
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-primary/70">Pending Joining</span>
-                <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                  <CalendarClock className="w-4 h-4 text-accent" />
+                <span className="text-xs font-semibold uppercase tracking-wider text-[#687080]">Pending Joining</span>
+                <div className="w-10 h-10 rounded-xl bg-[#123C35]/10 flex items-center justify-center text-[#123C35]">
+                  <CalendarClock className="w-5 h-5 text-[#C9A45C]" />
                 </div>
               </div>
-              <p className="text-2xl sm:text-3xl font-black text-primary mt-2">{stats.total}</p>
-              <p className="text-[11px] text-accent font-bold mt-1">
+              <p className="text-2xl sm:text-3xl font-bold text-[#182033] mt-2">{stats.total}</p>
+              <p className="text-[13px] text-[#687080] font-normal mt-1">
                 {stats.upcoming} scheduled · {stats.today} today
               </p>
             </div>
@@ -651,20 +651,20 @@ export default function DojDesk() {
             {/* Card 2: Overdue DOJ */}
             <div
               onClick={() => setActiveTab('overdue')}
-              className={`p-4 rounded-3xl border transition-all cursor-pointer shadow-xs ${
+              className={`p-5 rounded-2xl border transition-all cursor-pointer shadow-xs ${
                 activeTab === 'overdue'
-                  ? 'bg-red-50/50 border-[#B42318] ring-2 ring-[#B42318]/10'
-                  : 'bg-white border-accent-soft hover:border-red-300'
+                  ? 'bg-white border-[#C62828] ring-2 ring-[#C62828]/10'
+                  : 'bg-white border-[#E2DDD2] hover:border-[#C62828]'
               }`}
             >
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-primary/70">Overdue DOJ</span>
-                <div className="w-8 h-8 rounded-xl bg-red-100 flex items-center justify-center text-[#B42318]">
-                  <TriangleAlert className="w-4 h-4 text-[#B42318]" />
+                <span className="text-xs font-semibold uppercase tracking-wider text-[#C62828]">Overdue DOJ</span>
+                <div className="w-10 h-10 rounded-xl bg-[#C62828]/10 flex items-center justify-center text-[#C62828]">
+                  <TriangleAlert className="w-5 h-5 text-[#C62828]" />
                 </div>
               </div>
-              <p className="text-2xl sm:text-3xl font-black text-[#B42318] mt-2">{stats.overdue}</p>
-              <p className="text-[11px] text-red-600 font-bold mt-1">
+              <p className="text-2xl sm:text-3xl font-bold text-[#C62828] mt-2">{stats.overdue}</p>
+              <p className="text-[13px] text-[#687080] font-normal mt-1">
                 {stats.overdue > 0 ? 'Immediate follow-up required' : 'All scheduled joinings on track'}
               </p>
             </div>
@@ -672,41 +672,41 @@ export default function DojDesk() {
             {/* Card 3: Joining Today */}
             <div
               onClick={() => setActiveTab('today')}
-              className={`p-4 rounded-3xl border transition-all cursor-pointer shadow-xs ${
+              className={`p-5 rounded-2xl border transition-all cursor-pointer shadow-xs ${
                 activeTab === 'today'
-                  ? 'bg-orange-50/50 border-orange-500 ring-2 ring-orange-500/10'
-                  : 'bg-white border-accent-soft hover:border-orange-300'
+                  ? 'bg-white border-[#B7791F] ring-2 ring-[#B7791F]/10'
+                  : 'bg-white border-[#E2DDD2] hover:border-[#B7791F]'
               }`}
             >
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-primary/70">Joining Today</span>
-                <div className="w-8 h-8 rounded-xl bg-orange-100 flex items-center justify-center text-orange-600">
-                  <Clock className="w-4 h-4 text-orange-600" />
+                <span className="text-xs font-semibold uppercase tracking-wider text-[#B7791F]">Joining Today</span>
+                <div className="w-10 h-10 rounded-xl bg-[#B7791F]/10 flex items-center justify-center text-[#B7791F]">
+                  <Clock className="w-5 h-5 text-[#B7791F]" />
                 </div>
               </div>
-              <p className="text-2xl sm:text-3xl font-black text-orange-600 mt-2">{stats.today}</p>
-              <p className="text-[11px] text-orange-600 font-bold mt-1">Ready for store verification</p>
+              <p className="text-2xl sm:text-3xl font-bold text-[#B7791F] mt-2">{stats.today}</p>
+              <p className="text-[13px] text-[#687080] font-normal mt-1">Ready for store verification</p>
             </div>
 
             {/* Card 4: Active Store Staff */}
             <div
               onClick={() => setActiveTab('joined_store')}
-              className={`p-4 rounded-3xl border transition-all cursor-pointer shadow-xs ${
+              className={`p-5 rounded-2xl border transition-all cursor-pointer shadow-xs ${
                 activeTab === 'joined_store'
-                  ? 'bg-green-50/50 border-[#198754] ring-2 ring-[#198754]/10'
-                  : 'bg-white border-accent-soft hover:border-green-300'
+                  ? 'bg-white border-[#15803D] ring-2 ring-[#15803D]/10'
+                  : 'bg-white border-[#E2DDD2] hover:border-[#15803D]'
               }`}
             >
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-primary/70">Active Store Staff</span>
-                <div className="w-8 h-8 rounded-xl bg-green-100 flex items-center justify-center text-[#198754]">
-                  <Store className="w-4 h-4 text-[#198754]" />
+                <span className="text-xs font-semibold uppercase tracking-wider text-[#15803D]">Active Store Staff</span>
+                <div className="w-10 h-10 rounded-xl bg-[#15803D]/10 flex items-center justify-center text-[#15803D]">
+                  <Store className="w-5 h-5 text-[#15803D]" />
                 </div>
               </div>
-              <p className="text-2xl sm:text-3xl font-black text-[#198754] mt-2">
+              <p className="text-2xl sm:text-3xl font-bold text-[#15803D] mt-2">
                 {stats.activeStaff || joinedCount || 0}
               </p>
-              <p className="text-[11px] text-[#198754] font-bold mt-1">Across permitted store branches</p>
+              <p className="text-[13px] text-[#687080] font-normal mt-1">Across permitted store branches</p>
             </div>
           </div>
 
@@ -904,15 +904,15 @@ export default function DojDesk() {
                 </button>
               </div>
             ) : (
-              <div className="bg-white rounded-3xl border border-accent-soft shadow-xs overflow-hidden">
-                <div className="px-5 py-3.5 bg-background/60 border-b border-accent-soft flex items-center justify-between">
+              <div className="bg-white rounded-2xl border border-[#E2DDD2] shadow-xs overflow-hidden">
+                <div className="px-5 py-3.5 bg-[#F7F4ED] border-b border-[#E2DDD2] flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Store className="w-4 h-4 text-[#198754]" />
-                    <span className="text-xs font-black text-primary uppercase tracking-wider">
+                    <Store className="w-4 h-4 text-[#15803D]" />
+                    <span className="text-xs font-semibold text-[#182033] uppercase tracking-wider">
                       Joined Store Directory ({displayEmployees.length})
                     </span>
                   </div>
-                  <span className="text-[11px] font-bold text-primary/60">
+                  <span className="text-xs text-[#687080]">
                     Live database synchronization with Employee Master
                   </span>
                 </div>
@@ -920,18 +920,18 @@ export default function DojDesk() {
                 <div className="table-frame custom-scrollbar">
                   <table className="w-full text-left text-xs">
                     <thead>
-                      <tr className="bg-background/40 border-b border-accent-soft text-primary/70 font-extrabold text-[11px] uppercase tracking-wider">
-                        <th className="py-3 px-4">Employee Code & Name</th>
-                        <th className="py-3 px-4">Role & Store Branch</th>
-                        <th className="py-3 px-4">Department & Section</th>
+                      <tr className="bg-[#F7F4ED] border-b border-[#E2DDD2] text-[#182033] font-semibold text-xs uppercase tracking-wider">
+                        <th className="py-3 px-4">Employee Code &amp; Name</th>
+                        <th className="py-3 px-4">Role &amp; Store Branch</th>
+                        <th className="py-3 px-4">Department &amp; Section</th>
                         <th className="py-3 px-4">Date of Joining</th>
                         <th className="py-3 px-4">Verification</th>
                         <th className="py-3 px-4 text-right">Status</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-accent-soft/40">
+                    <tbody className="divide-y divide-[#E2DDD2]">
                       {displayEmployees.map((emp) => (
-                        <tr key={emp.emp_code || emp.id} className="hover:bg-background/40 transition-colors">
+                        <tr key={emp.emp_code || emp.id} className="hover:bg-[#F7F4ED]/60 transition-colors border-b border-[#E2DDD2]">
                           <td className="py-3.5 px-4">
                             <p className="font-extrabold text-primary">{emp.name}</p>
                             <p className="font-mono text-[10px] text-accent font-bold mt-0.5">{emp.emp_code}</p>
@@ -1051,11 +1051,11 @@ export default function DojDesk() {
               </div>
             ) : (
               /* CANDIDATES TABLE / LIST */
-              <div className="bg-white rounded-3xl border border-accent-soft shadow-xs overflow-hidden">
-                <div className="px-5 py-3.5 bg-background/60 border-b border-accent-soft flex items-center justify-between">
+              <div className="bg-white rounded-2xl border border-[#E2DDD2] shadow-xs overflow-hidden">
+                <div className="px-5 py-3.5 bg-[#F7F4ED] border-b border-[#E2DDD2] flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <CalendarClock className="w-4 h-4 text-accent" />
-                    <span className="text-xs font-black text-primary uppercase tracking-wider">
+                    <CalendarClock className="w-4 h-4 text-[#C9A45C]" />
+                    <span className="text-xs font-semibold text-[#182033] uppercase tracking-wider">
                       {activeTab === 'overdue'
                         ? `Overdue Candidates (${displayCandidates.length})`
                         : activeTab === 'today'
@@ -1065,7 +1065,7 @@ export default function DojDesk() {
                         : `Pending Candidates (${displayCandidates.length})`}
                     </span>
                   </div>
-                  <span className="text-[11px] font-bold text-primary/60">
+                  <span className="text-xs text-[#687080]">
                     Showing candidates awaiting store reporting
                   </span>
                 </div>
@@ -1073,18 +1073,18 @@ export default function DojDesk() {
                 <div className="table-frame custom-scrollbar">
                   <table className="w-full text-left text-xs">
                     <thead>
-                      <tr className="bg-background/40 border-b border-accent-soft text-primary/70 font-extrabold text-[11px] uppercase tracking-wider">
-                        <th className="py-3 px-4">Candidate & App No</th>
-                        <th className="py-3 px-4">Role & Store Location</th>
+                      <tr className="bg-[#F7F4ED] border-b border-[#E2DDD2] text-[#182033] font-semibold text-xs uppercase tracking-wider">
+                        <th className="py-3 px-4">Candidate &amp; App No</th>
+                        <th className="py-3 px-4">Role &amp; Store Location</th>
                         <th className="py-3 px-4">Scheduled DOJ</th>
                         <th className="py-3 px-4">Urgency / Delay</th>
                         <th className="py-3 px-4">Latest Follow-Up</th>
                         <th className="py-3 px-4 text-right">Desk Actions</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-accent-soft/40">
+                    <tbody className="divide-y divide-[#E2DDD2]">
                       {displayCandidates.map((cand) => (
-                        <tr key={cand.app_no} className="hover:bg-background/40 transition-colors">
+                        <tr key={cand.app_no} className="hover:bg-[#F7F4ED]/60 transition-colors border-b border-[#E2DDD2]">
                           {/* Candidate Name & Contact */}
                           <td className="py-3.5 px-4">
                             <button

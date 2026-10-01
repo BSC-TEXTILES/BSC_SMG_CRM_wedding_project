@@ -40,7 +40,7 @@
 .bfx-page {
   min-height: 100dvh;
   background: var(--bfx-cream);
-  font-family: 'Inter', 'Outfit', system-ui, -apple-system, sans-serif;
+  font-family: 'Inter', sans-serif;
   -webkit-font-smoothing: antialiased;
   color: var(--bfx-ink);
 }

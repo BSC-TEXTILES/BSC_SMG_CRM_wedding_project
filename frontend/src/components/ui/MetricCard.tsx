@@ -37,30 +37,30 @@ export default function MetricCard({
     <div
       onClick={onClick}
       className={`
-        card-glass card-glass-hover p-4 sm:p-5 flex flex-col justify-between transition-all duration-200 border border-[#E1DDD3] bg-[#FFFFFF] rounded-2xl h-full min-w-0 shadow-xs
-        ${style.border} ${onClick ? 'cursor-pointer' : ''}
+        bg-white border border-[#E2DDD2] rounded-2xl p-5 flex flex-col justify-between transition-all duration-200 h-full min-w-0 shadow-xs hover:shadow-sm
+        ${style.border} ${onClick ? 'cursor-pointer hover:border-[#C9A45C]' : ''}
       `}
     >
       <div className="flex items-start justify-between gap-3 min-w-0">
         <div className="min-w-0 flex-1">
-          <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-[#65716C] block mb-1 truncate">
+          <span className="text-xs font-semibold uppercase tracking-wider text-[#687080] block mb-1 truncate">
             {title}
           </span>
-          <div className="text-xl sm:text-2xl lg:text-3xl font-black text-[#123C35] tracking-tight truncate">
+          <div className="text-2xl sm:text-3xl lg:text-[34px] font-bold text-[#182033] tracking-tight truncate leading-tight">
             {value}
           </div>
         </div>
 
         <div className={`p-2.5 sm:p-3 rounded-xl ${style.iconBg} shadow-2xs flex items-center justify-center flex-shrink-0`}>
-          <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
+          <Icon className="w-5 h-5" />
         </div>
       </div>
 
       {(subtext || trend) && (
-        <div className="mt-4 pt-3 border-t border-[#E1DDD3] flex items-center justify-between text-xs">
-          {subtext && <span className="text-[#65716C] font-medium">{subtext}</span>}
+        <div className="mt-4 pt-3 border-t border-[#E2DDD2] flex items-center justify-between text-xs">
+          {subtext && <span className="text-[13px] text-[#687080] font-normal truncate">{subtext}</span>}
           {trend && (
-            <span className={`font-bold flex items-center gap-0.5 ${trendUp ? 'text-status-success' : 'text-status-warning'}`}>
+            <span className={`font-semibold text-xs flex items-center gap-0.5 ${trendUp ? 'text-[#15803D]' : 'text-[#B7791F]'}`}>
               {trend}
             </span>
           )}

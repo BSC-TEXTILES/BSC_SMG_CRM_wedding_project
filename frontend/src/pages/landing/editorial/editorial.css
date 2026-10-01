@@ -42,8 +42,8 @@
 /* ── Typography ─────────────────────────────────────────────────────────── */
 
 .bsc-ed-serif {
-  font-family: 'Fraunces', 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
-  font-weight: 400;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
   letter-spacing: -0.015em;
 }
 

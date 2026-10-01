@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Manrope:wght@500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -7,59 +7,68 @@
 :root {
   /* ==================================================
      BSC EXCLUSIVE ENTERPRISE SUITE BRAND COLOR SYSTEM
-     FOREST GREEN + CHAMPAGNE GOLD + WARM OFF-WHITE
+     FOREST GREEN + CHAMPAGNE GOLD + WARM CREAM
      ================================================== */
+  --font-family: 'Inter', sans-serif;
   --color-primary: #123C35;          /* Forest Green (Primary Brand) */
-  --color-primary-dark: #082821;     /* Primary Dark */
-  --color-primary-medium: #1D5148;   /* Primary Light */
+  --color-primary-dark: #0B2924;     /* Deep Forest */
+  --color-primary-medium: #1D5148;   /* Primary Medium */
   --color-primary-light: #1D5148;
   --color-accent: #C9A45C;           /* Champagne Gold (Primary Accent) */
   --color-accent-light: #E4CB92;     /* Light Champagne */
   --color-accent-hover: #B88F45;     /* Champagne Gold Hover */
   --color-champagne: #C9A45C;        /* Champagne Gold */
   --color-champagne-light: #E4CB92;
-  --color-soft-gold: #F1E4C4;        /* Soft Gold */
+  --color-soft-gold: #F7F4ED;        /* Warm Cream Soft Gold */
   --color-dusty-plum: #1D5148;
-  --color-soft-mauve: #F1E4C4;
+  --color-soft-mauve: #F7F4ED;
 
-  --color-background: #F7F5F0;       /* Warm Off-White */
+  --color-background: #F7F4ED;       /* Warm Cream */
   --color-card: #FFFFFF;             /* Pure White Card */
-  --color-text: #17201D;             /* Primary Text */
-  --color-text-secondary: #65716C;   /* Secondary Text */
-  --color-text-muted: #8A9691;       /* Muted Text */
-  --color-border: #E1DDD3;           /* Border */
-  --color-divider: #E1DDD3;          /* Divider */
+  --color-surface: #FFFFFF;          /* Pure White Surface */
+  --color-text: #182033;             /* Primary Text */
+  --color-text-secondary: #687080;   /* Secondary Text */
+  --color-text-muted: #8A919B;       /* Muted Text */
+  --color-border: #E2DDD2;           /* Border */
+  --color-divider: #E2DDD2;          /* Divider */
   --color-hover: #EDF3F0;            /* Subtle Mint Hover */
   --color-input-bg: #FFFFFF;         /* Input Background */
 
+  /* Global Radius Tokens */
+  --radius-sm: 10px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-pill: 999px;
+
   /* Status Colors */
-  --color-success: #16805C;          /* Success */
-  --color-success-light: #E5F4EE;
-  --color-warning: #C58A16;          /* Warning */
-  --color-warning-light: #FEF7E6;
-  --color-danger: #C83B4A;           /* Danger */
-  --color-danger-light: #FCECEE;
-  --color-info: #2864C7;             /* Information */
-  --color-info-light: #EBF1FB;
-  --color-neutral: #65716C;          /* Neutral */
+  --color-success: #15803D;          /* Success */
+  --color-success-light: #DCFCE7;
+  --color-warning: #B7791F;          /* Warning */
+  --color-warning-light: #FEF3C7;
+  --color-danger: #C62828;           /* Danger */
+  --color-danger-light: #FEE2E2;
+  --color-info: #2563EB;             /* Information */
+  --color-info-light: #DBEAFE;
+  --color-neutral: #687080;          /* Neutral */
   --color-interested: #123C35;       /* Forest Green */
   --color-interested-light: #EDF3F0;
   --color-followup: #C9A45C;         /* Champagne Gold */
-  --color-followup-light: #F1E4C4;
+  --color-followup-light: #FEF3C7;
 
   /* Semantic Contrast System Tokens */
-  --text-primary: #17201D;
-  --text-secondary: #65716C;
-  --text-muted: #8A9691;
+  --text-primary: #182033;
+  --text-secondary: #687080;
+  --text-muted: #8A919B;
   --text-inverse: #FFFFFF;
-  --text-inverse-muted: #B9C8C2;
+  --text-inverse-muted: #D7E3DF;
   --text-gold: #C9A45C;
   --text-rosegold: #C9A45C;
   --text-plum: #123C35;
   --surface-light: #FFFFFF;
   --surface-dark: #123C35;
   --surface-navy: #123C35;
-  --border-light: #E1DDD3;
+  --border-light: #E2DDD2;
   --border-dark: rgba(255, 255, 255, 0.10);
 
   /* Reusable standard aliases matching existing code */
@@ -72,7 +81,7 @@
 
   --color-gold: var(--color-accent);
   --color-gold-light: var(--color-accent-light);
-  --color-accent-soft: #F1E4C4;
+  --color-accent-soft: #F7F4ED;
   --color-accent-text: #C9A45C;
   --color-accent-bright: var(--color-accent-light);
   --color-primary-hover: var(--color-primary-dark);
@@ -82,7 +91,7 @@
   --burgundy-dark: var(--color-primary-dark);
   --burgundy-light: #1D5148;
   --champagne: var(--color-champagne);
-  --champagne-dark: #123C35;
+  --champagne-dark: #0B2924;
   --champagne-light: #E4CB92;
   --cream: var(--color-background);
   --ivory: var(--color-background);
@@ -96,7 +105,7 @@
   --navy-dark: var(--color-primary-dark);
   --navy-light: #1D5148;
   --gold: var(--color-accent);
-  --gold-dark: #123C35;
+  --gold-dark: #0B2924;
   --muted: var(--color-text-secondary);
 
   /* Chart Colors Order */
@@ -104,8 +113,8 @@
   --chart-color-2: #C9A45C;
   --chart-color-3: #1D5148;
   --chart-color-4: #E4CB92;
-  --chart-color-5: #16805C;
-  --chart-color-6: #F1E4C4;
+  --chart-color-5: #15803D;
+  --chart-color-6: #F7F4ED;
 }
 
 html {
@@ -120,14 +129,12 @@ html {
 }
 
 body {
-  font-family: 'Inter', 'Plus Jakarta Sans', 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'Inter', sans-serif;
   background-color: var(--bg);
   color: var(--text-main);
   min-height: 100vh;
   margin: 0;
   padding: 0;
-  /* `clip` (not `hidden`) — `hidden` would make body a scroll container and
-     silently break `position: sticky` on the landing page. */
   overflow-x: clip;
   max-width: 100%;
   width: 100%;
@@ -136,6 +143,10 @@ body {
   -moz-user-select: text;
   -ms-user-select: text;
   user-select: text;
+}
+
+input, button, select, textarea, optgroup {
+  font-family: 'Inter', sans-serif;
 }
 
 /* Sidebar color classes */
@@ -183,74 +194,147 @@ html, #root, * {
 }
 
 /* ==================================================
-   DASHBOARD CARDS
+   ENTERPRISE TYPOGRAPHY SYSTEM
    ================================================== */
-.card-glass {
-  background: #FFFFFF;
-  border: 1px solid #E1DDD3;
-  box-shadow: 0 1px 3px rgba(18, 60, 53, 0.04);
-  border-radius: 16px;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+.page-title, .typography-page-title {
+  font-family: 'Inter', sans-serif !important;
+  font-size: 24px !important;
+  font-weight: 700 !important;
+  line-height: 1.25 !important;
+  color: #182033;
 }
-.card-glass-hover:hover {
-  box-shadow: 0 4px 16px rgba(18, 60, 53, 0.07);
-  border-color: #C9A45C;
-  transform: translateY(-1px);
+.section-title, .typography-section-title {
+  font-family: 'Inter', sans-serif !important;
+  font-size: 19px !important;
+  font-weight: 600 !important;
+  line-height: 1.3 !important;
+  color: #182033;
+}
+.card-title, .typography-card-title {
+  font-family: 'Inter', sans-serif !important;
+  font-size: 14.5px !important;
+  font-weight: 600 !important;
+  line-height: 1.4 !important;
+  color: #182033;
+}
+.body-text, .typography-body {
+  font-family: 'Inter', sans-serif !important;
+  font-size: 14px !important;
+  font-weight: 400 !important;
+  line-height: 1.5 !important;
+  color: #182033;
+}
+.secondary-text, .typography-secondary {
+  font-family: 'Inter', sans-serif !important;
+  font-size: 13px !important;
+  font-weight: 400 !important;
+  line-height: 1.4 !important;
+  color: #687080;
+}
+.small-label, .typography-small-label {
+  font-family: 'Inter', sans-serif !important;
+  font-size: 11.5px !important;
+  font-weight: 600 !important;
+  line-height: 1.3 !important;
+  color: #687080;
+}
+.stat-number, .typography-stat-number {
+  font-family: 'Inter', sans-serif !important;
+  font-size: 32px !important;
+  font-weight: 700 !important;
+  line-height: 1.1 !important;
+  color: #182033;
+}
+.table-header-text, .typography-table-header {
+  font-family: 'Inter', sans-serif !important;
+  font-size: 11.5px !important;
+  font-weight: 600 !important;
+  line-height: 1.2 !important;
+  color: #182033;
 }
 
 /* ==================================================
-   CRM STATUS BADGES & ENTERPRISE BADGES
+   CARDS — BRAND SYSTEM
    ================================================== */
-.badge {
+.card-enterprise, .card-glass {
+  background-color: #FFFFFF;
+  border: 1px solid #E2DDD2;
+  box-shadow: 0 1px 3px rgba(18, 60, 53, 0.04);
+  border-radius: 16px;
+  padding: 24px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.card-enterprise-compact {
+  background-color: #FFFFFF;
+  border: 1px solid #E2DDD2;
+  box-shadow: 0 1px 3px rgba(18, 60, 53, 0.04);
+  border-radius: 16px;
+  padding: 16px 20px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.card-glass-hover:hover, .card-enterprise:hover {
+  box-shadow: 0 4px 16px rgba(18, 60, 53, 0.06);
+  border-color: #C9A45C;
+}
+
+/* ==================================================
+   STATUS BADGES — BRAND SYSTEM (Pill 999px, 11-12px 600)
+   ================================================== */
+.badge, .status-badge {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 3.5px 11px;
-  border-radius: 9999px;
-  font-size: 11px;
-  font-weight: 700;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-family: 'Inter', sans-serif;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.1;
   white-space: nowrap;
-  letter-spacing: 0.01em;
   box-shadow: 0 1px 2px rgba(0,0,0,0.02);
 }
 
-/* CRM Specific Badges */
-.badge-confirmed, .badge-won, .badge-visited {
-  background-color: #E5F4EE !important;
-  color: #16805C !important;
-  border: 1px solid #A2DAC6 !important;
+/* ACTIVE: soft green background, green text */
+.badge-active, .badge-confirmed, .badge-won, .badge-visited, .b-sel, .b-board, .sc-done {
+  background-color: #DCFCE7 !important;
+  color: #15803D !important;
+  border: 1px solid #BBF7D0 !important;
 }
-.badge-pending, .badge-contact-pending {
-  background-color: #FEF7E6 !important;
-  color: #C58A16 !important;
-  border: 1px solid #F5D695 !important;
+
+/* INACTIVE: soft gray */
+.badge-inactive, .b-neutral, .badge-neutral {
+  background-color: #F3F4F6 !important;
+  color: #4B5563 !important;
+  border: 1px solid #E5E7EB !important;
 }
-.badge-cancelled, .badge-lost, .badge-not-interested {
-  background-color: #FCECEE !important;
-  color: #C83B4A !important;
-  border: 1px solid #F5ACB4 !important;
+
+/* PENDING: soft champagne */
+.badge-pending, .badge-contact-pending, .badge-followup, .badge-callback, .badge-scheduled, .b-short, .b-hold, .b-offer, .sc-pending {
+  background-color: #FEF3C7 !important;
+  color: #B7791F !important;
+  border: 1px solid #FDE68A !important;
 }
-.badge-interested, .badge-new-lead {
+
+/* ERROR: soft red */
+.badge-error, .badge-danger, .badge-cancelled, .badge-lost, .badge-not-interested, .b-rej, .sc-fail {
+  background-color: #FEE2E2 !important;
+  color: #C62828 !important;
+  border: 1px solid #FECACA !important;
+}
+
+/* INFO: soft blue */
+.badge-info, .b-int, .b-info {
+  background-color: #DBEAFE !important;
+  color: #2563EB !important;
+  border: 1px solid #BFDBFE !important;
+}
+
+/* INTERESTED / NEW LEAD: Soft Mint */
+.badge-interested, .badge-new-lead, .b-new {
   background-color: #EDF3F0 !important;
   color: #123C35 !important;
   border: 1px solid #B4D4C8 !important;
 }
-.badge-followup, .badge-callback, .badge-scheduled {
-  background-color: #F1E4C4 !important;
-  color: #17201D !important;
-  border: 1px solid #DEC58E !important;
-}
-
-/* Compatibility Pill Badges */
-.b-new { background: #EDF3F0; color: #123C35; border: 1px solid #B4D4C8; }
-.b-short { background: #FEF7E6; color: #C58A16; border: 1px solid #F5D695; }
-.b-int { background: #EBF1FB; color: #2864C7; border: 1px solid #A6C3EE; }
-.b-sel { background: #E5F4EE; color: #16805C; border: 1px solid #A2DAC6; }
-.b-offer { background: #F1E4C4; color: #17201D; border: 1px solid #DEC58E; }
-.b-hold { background: #FEF7E6; color: #C58A16; border: 1px solid #F5D695; }
-.b-rej { background: #FCECEE; color: #C83B4A; border: 1px solid #F5ACB4; }
-.b-board { background: #E5F4EE; color: #16805C; border: 1px solid #A2DAC6; }
-.b-info { background: #EBF1FB; color: #2864C7; border: 1px solid #A6C3EE; }
 
 /* Status Chips */
 .sc-chip {
@@ -258,23 +342,20 @@ html, #root, * {
   align-items: center;
   padding: 3px 9px;
   border-radius: 6px;
-  font-size: 10.5px;
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: 600;
 }
-.sc-done { background: #E5F4EE; color: #16805C; border: 1px solid #A2DAC6; }
-.sc-fail { background: #FCECEE; color: #C83B4A; border: 1px solid #F5ACB4; }
-.sc-pending { background: #FEF7E6; color: #C58A16; border: 1px solid #F5D695; }
 
 /* Days in Pipeline Chip */
 .days-chip {
   padding: 2px 8px;
   border-radius: 6px;
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 600;
 }
-.dc-ok { background: #E5F4EE; color: #16805C; }
-.dc-warn { background: #FEF7E6; color: #C58A16; }
-.dc-danger { background: #FCECEE; color: #C83B4A; }
+.dc-ok { background: #DCFCE7; color: #15803D; }
+.dc-warn { background: #FEF3C7; color: #B7791F; }
+.dc-danger { background: #FEE2E2; color: #C62828; }
 
 /* Funnel Rows */
 .funnel-row {
@@ -286,7 +367,7 @@ html, #root, * {
 }
 .f-lbl {
   width: 140px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-main);
   flex-shrink: 0;
 }
@@ -306,12 +387,12 @@ html, #root, * {
   padding-right: 8px;
   color: #fff;
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 700;
   transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .f-num {
   width: 32px;
-  font-weight: 800;
+  font-weight: 700;
   text-align: right;
   flex-shrink: 0;
   color: var(--text-main);
@@ -320,34 +401,47 @@ html, #root, * {
   width: 54px;
   font-size: 10px;
   color: var(--color-danger);
-  font-weight: 700;
+  font-weight: 600;
   text-align: right;
   flex-shrink: 0;
 }
 
 /* ==================================================
-   MODERN FORM CONTROLS
+   INPUT SYSTEM (Height 40-44px, Border #E2DDD2, Radius 10-12px, Inter 14px)
    ================================================== */
 @layer components {
-  .input-modern, .select-modern, .textarea-modern {
+  .input-enterprise, .input-modern, .select-modern, .textarea-modern {
     width: 100%;
-    padding: 10px 14px;
-    border-radius: 10px;
-    border: 1px solid #E1DDD3;
+    height: 42px;
+    padding: 0 14px;
+    border-radius: 12px;
+    border: 1px solid #E2DDD2;
     background-color: #FFFFFF;
-    color: #17201D;
-    font-weight: 600;
-    font-size: 13px;
+    color: #182033;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.5;
     transition: all 0.15s ease-in-out;
   }
-  .input-modern:focus, .select-modern:focus, .textarea-modern:focus {
-    outline: none;
-    border-color: #C9A45C;
-    background-color: #FFFFFF;
-    box-shadow: 0 0 0 3px rgba(201, 164, 92, 0.20);
+  textarea.input-enterprise, textarea.textarea-modern {
+    height: auto;
+    min-height: 84px;
+    padding: 10px 14px;
   }
-  .input-modern::placeholder, .textarea-modern::placeholder {
-    color: #65716C;
+  .input-enterprise:focus, .input-modern:focus, .select-modern:focus, .textarea-modern:focus {
+    outline: none;
+    border-color: #123C35;
+    background-color: #FFFFFF;
+    box-shadow: 0 0 0 3px rgba(201, 164, 92, 0.25);
+  }
+  .input-enterprise::placeholder, .input-modern::placeholder, .textarea-modern::placeholder {
+    color: #8A919B;
+  }
+  .input-enterprise:disabled, .input-modern:disabled, .select-modern:disabled {
+    background-color: #F7F4ED;
+    color: #8A919B;
+    cursor: not-allowed;
   }
 }
 
@@ -372,141 +466,292 @@ input[class*="pr-12"], select[class*="pr-12"], .input-modern[class*="pr-12"] { p
 }
 
 /* ==================================================
-   BUTTONS — BRAND SYSTEM
+   BUTTON SYSTEM (Height 40-44px, Radius 10-12px, Inter 13-14px 600)
    ================================================== */
-/* PRIMARY BUTTON: Background: #123C35, Text: #FFFFFF, Hover: #082821 */
+/* PRIMARY BUTTON: Background: #123C35, Text: #FFFFFF, Hover: #0B2924 */
 .btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   background-color: #123C35;
   color: #FFFFFF;
-  font-weight: 700;
-  padding: 9px 18px;
-  border-radius: 10px;
-  transition: all 0.15s ease;
-  box-shadow: 0 2px 6px rgba(18, 60, 53, 0.18);
+  font-family: 'Inter', sans-serif;
+  font-size: 13.5px;
+  font-weight: 600;
+  height: 42px;
+  padding: 0 18px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  transition: all 0.15s ease-in-out;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(18, 60, 53, 0.12);
 }
-.btn-primary:hover {
-  background-color: #082821;
+.btn-primary:hover:not(:disabled) {
+  background-color: #0B2924;
   color: #FFFFFF;
   transform: translateY(-0.5px);
-  box-shadow: 0 4px 12px rgba(8, 40, 33, 0.25);
+  box-shadow: 0 3px 8px rgba(11, 41, 36, 0.22);
+}
+.btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+}
+.btn-primary:focus-visible {
+  outline: 2px solid #C9A45C;
+  outline-offset: 2px;
+}
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
-/* PREMIUM ACTION BUTTON: Background: #C9A45C, Text: #17201D, Hover: #B88F45 */
+/* SECONDARY BUTTON: Background: #FFFFFF, Text: #123C35, Border: #E2DDD2 */
 .btn-secondary {
-  background-color: #C9A45C;
-  color: #17201D;
-  font-weight: 700;
-  padding: 9px 18px;
-  border-radius: 10px;
-  transition: all 0.15s ease;
-  box-shadow: 0 2px 6px rgba(201, 164, 92, 0.20);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background-color: #FFFFFF;
+  color: #123C35;
+  font-family: 'Inter', sans-serif;
+  font-size: 13.5px;
+  font-weight: 600;
+  height: 42px;
+  padding: 0 18px;
+  border-radius: 12px;
+  border: 1px solid #E2DDD2;
+  transition: all 0.15s ease-in-out;
+  cursor: pointer;
+  white-space: nowrap;
 }
-.btn-secondary:hover {
-  background-color: #B88F45;
-  color: #17201D;
-  transform: translateY(-0.5px);
-  box-shadow: 0 4px 12px rgba(184, 143, 69, 0.28);
+.btn-secondary:hover:not(:disabled) {
+  background-color: #F7F4ED;
+  border-color: #C9A45C;
+  color: #0B2924;
+}
+.btn-secondary:focus-visible {
+  outline: 2px solid #C9A45C;
+  outline-offset: 2px;
+}
+.btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
-/* OUTLINE BUTTON: Border: #123C35, Text: #123C35, Background: transparent */
+/* ACCENT BUTTON: Background: #C9A45C, Text: #0B2924, Hover: #B88F45 */
+.btn-accent, .btn-gold {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background-color: #C9A45C;
+  color: #0B2924;
+  font-family: 'Inter', sans-serif;
+  font-size: 13.5px;
+  font-weight: 600;
+  height: 42px;
+  padding: 0 18px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  transition: all 0.15s ease-in-out;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(201, 164, 92, 0.18);
+}
+.btn-accent:hover:not(:disabled), .btn-gold:hover:not(:disabled) {
+  background-color: #B88F45;
+  color: #0B2924;
+  transform: translateY(-0.5px);
+  box-shadow: 0 3px 8px rgba(184, 143, 69, 0.25);
+}
+.btn-accent:focus-visible, .btn-gold:focus-visible {
+  outline: 2px solid #123C35;
+  outline-offset: 2px;
+}
+.btn-accent:disabled, .btn-gold:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* DANGER BUTTON: Subtle red background, red text #C62828 */
+.btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background-color: #FEE2E2;
+  color: #C62828;
+  font-family: 'Inter', sans-serif;
+  font-size: 13.5px;
+  font-weight: 600;
+  height: 42px;
+  padding: 0 18px;
+  border-radius: 12px;
+  border: 1px solid #FECACA;
+  transition: all 0.15s ease-in-out;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn-danger:hover:not(:disabled) {
+  background-color: #FEE2E2;
+  border-color: #C62828;
+  color: #B91C1C;
+}
+.btn-danger:focus-visible {
+  outline: 2px solid #C62828;
+  outline-offset: 2px;
+}
+.btn-danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* GHOST BUTTON: Transparent */
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background-color: transparent;
+  color: #182033;
+  font-family: 'Inter', sans-serif;
+  font-size: 13.5px;
+  font-weight: 600;
+  height: 42px;
+  padding: 0 16px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  transition: all 0.15s ease-in-out;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn-ghost:hover:not(:disabled) {
+  background-color: rgba(18, 60, 53, 0.08);
+  color: #123C35;
+}
+.btn-ghost:focus-visible {
+  outline: 2px solid #C9A45C;
+  outline-offset: 2px;
+}
+.btn-ghost:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* OUTLINE BUTTON */
 .btn-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   border: 1px solid #123C35;
   color: #123C35;
   background-color: transparent;
-  font-weight: 700;
-  padding: 9px 18px;
-  border-radius: 10px;
-  transition: all 0.15s ease;
+  font-family: 'Inter', sans-serif;
+  font-size: 13.5px;
+  font-weight: 600;
+  height: 42px;
+  padding: 0 18px;
+  border-radius: 12px;
+  transition: all 0.15s ease-in-out;
+  cursor: pointer;
+  white-space: nowrap;
 }
-.btn-outline:hover {
-  background-color: #EDF3F0;
-  border-color: #082821;
-  color: #082821;
-}
-
-/* Gold Button alias */
-.btn-gold {
-  background-color: #C9A45C;
-  color: #17201D;
-  font-weight: 700;
-  padding: 9px 18px;
-  border-radius: 10px;
-  transition: all 0.15s ease;
-  box-shadow: 0 2px 6px rgba(201, 164, 92, 0.20);
-}
-.btn-gold:hover {
-  background-color: #B88F45;
-  color: #17201D;
-  transform: translateY(-0.5px);
-}
-
-.btn-danger {
-  background-color: #C83B4A;
-  color: #FFFFFF;
-  font-weight: 700;
-  padding: 9px 18px;
-  border-radius: 10px;
-  transition: all 0.15s ease;
-}
-.btn-danger:hover {
-  background-color: #A92A38;
+.btn-outline:hover:not(:disabled) {
+  background-color: #F7F4ED;
+  border-color: #0B2924;
+  color: #0B2924;
 }
 
 .btn-success {
-  background-color: #16805C;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background-color: #15803D;
   color: #FFFFFF;
-  font-weight: 700;
-  padding: 9px 18px;
-  border-radius: 10px;
-  transition: all 0.15s ease;
+  font-family: 'Inter', sans-serif;
+  font-size: 13.5px;
+  font-weight: 600;
+  height: 42px;
+  padding: 0 18px;
+  border-radius: 12px;
+  transition: all 0.15s ease-in-out;
+  cursor: pointer;
+  white-space: nowrap;
 }
-.btn-success:hover {
+.btn-success:hover:not(:disabled) {
   background-color: #0F5E43;
 }
 
 /* ==================================================
-   TABLES — BRAND SYSTEM
+   TABLES — BRAND SYSTEM (Header #F7F4ED, 12px 600, Row 56-64px)
    ================================================== */
-.table-wedding, table.enterprise-table {
+.table-enterprise, .table-wedding, table.enterprise-table {
   background-color: #FFFFFF;
   border-collapse: separate;
   border-spacing: 0;
   width: 100%;
 }
-.table-wedding thead, table.enterprise-table thead, .thead-wedding {
-  background-color: #EDF3F0 !important;
+.table-enterprise thead, .table-wedding thead, table.enterprise-table thead, .thead-wedding {
+  background-color: #F7F4ED !important;
 }
-.table-wedding thead th, table.enterprise-table thead th, .th-wedding {
-  color: #123C35 !important;
-  border-bottom: 1px solid #E1DDD3;
-  font-weight: 800;
-  font-size: 11px;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+.table-enterprise thead th, .table-wedding thead th, table.enterprise-table thead th, .th-wedding {
+  color: #182033 !important;
+  border-bottom: 1px solid #E2DDD2;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 12px;
+  padding: 14px 16px;
+  letter-spacing: 0.02em;
 }
-.table-wedding tbody td, table.enterprise-table tbody td {
-  color: #17201D;
-  border-bottom: 1px solid #E1DDD3;
+.table-enterprise tbody tr, .table-wedding tbody tr, table.enterprise-table tbody tr {
+  min-height: 58px;
+  transition: background-color 0.15s ease;
 }
-.table-wedding tbody tr:hover, table.enterprise-table tbody tr:hover, .tr-wedding-hover:hover {
-  background-color: #EDF3F0 !important;
+.table-enterprise tbody td, .table-wedding tbody td, table.enterprise-table tbody td {
+  color: #182033;
+  font-family: 'Inter', sans-serif;
+  font-size: 13.5px;
+  border-bottom: 1px solid #E2DDD2;
+  padding: 14px 16px;
 }
-.table-wedding tbody tr.selected, table.enterprise-table tbody tr.selected, .tr-wedding-selected {
-  background-color: #F1E4C4 !important;
+.table-enterprise tbody tr:hover, .table-wedding tbody tr:hover, table.enterprise-table tbody tr:hover, .tr-wedding-hover:hover {
+  background-color: rgba(201, 164, 92, 0.06) !important;
+}
+.table-enterprise tbody tr.selected, .table-wedding tbody tr.selected, table.enterprise-table tbody tr.selected, .tr-wedding-selected {
+  background-color: rgba(201, 164, 92, 0.14) !important;
 }
 
 /* ==================================================
    DROPDOWNS & FILTERS
    ================================================== */
-.dropdown-menu-wedding {
+.dropdown-menu-enterprise, .dropdown-menu-wedding {
   background-color: #FFFFFF;
-  border: 1px solid #E1DDD3;
-  border-radius: 14px;
+  border: 1px solid #E2DDD2;
+  border-radius: 12px;
   box-shadow: 0 10px 25px rgba(18, 60, 53, 0.08);
+  font-family: 'Inter', sans-serif;
+  padding: 6px;
 }
-.dropdown-item-wedding {
-  color: #17201D;
+.dropdown-item-enterprise, .dropdown-item-wedding {
+  color: #182033;
+  font-family: 'Inter', sans-serif;
+  font-size: 13.5px;
+  font-weight: 500;
+  padding: 8px 12px;
+  border-radius: 8px;
   transition: all 0.15s ease;
+}
+.dropdown-item-enterprise:hover, .dropdown-item-wedding:hover {
+  background-color: rgba(201, 164, 92, 0.12);
+  color: #0B2924;
+}
+.dropdown-item-enterprise.active, .dropdown-item-wedding.active, .dropdown-item-wedding[aria-selected="true"] {
+  background-color: #C9A45C !important;
+  color: #0B2924 !important;
+  font-weight: 600;
 }
 .dropdown-item-wedding:hover {
   background-color: #EDF3F0;

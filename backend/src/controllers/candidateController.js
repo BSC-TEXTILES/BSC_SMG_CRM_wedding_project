@@ -5,6 +5,61 @@ const { logAction } = require('../utils/logger');
 const { successRes, errorRes } = require('../utils/response');
 const { getLocationFilter, injectLocationId, getEffectiveLocationId } = require('../middleware/auth');
 const realtimeService = require('../services/realtimeService');
+let _dojSchemaChecked = false;
+async function ensureDojSchema(database) {
+  if (_dojSchemaChecked) return;
+  try {
+    await database.query(`
+      CREATE TABLE IF NOT EXISTS candidate_doj_history (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        app_no VARCHAR(50) NOT NULL,
+        event_type VARCHAR(50) NOT NULL,
+        new_doj DATE NULL,
+        reporting_time VARCHAR(50) NULL,
+        contact_result VARCHAR(150) NULL,
+        candidate_response TEXT NULL,
+        reason VARCHAR(255) NULL,
+        remarks TEXT NULL,
+        action_by VARCHAR(100) NULL,
+        performed_by VARCHAR(100) NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_cdh_app_no (app_no),
+        INDEX idx_cdh_event (event_type)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    `).catch(() => {});
+
+    await database.query(`
+      CREATE TABLE IF NOT EXISTS selection_offers (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        candidate_id INT NULL,
+        app_no VARCHAR(50) NOT NULL,
+        name VARCHAR(150) NULL,
+        designation VARCHAR(150) NULL,
+        department VARCHAR(150) NULL,
+        section VARCHAR(150) NULL,
+        salary VARCHAR(100) NULL,
+        notice_period VARCHAR(50) NULL,
+        est_doj DATE NULL,
+        actual_doj DATE NULL,
+        status VARCHAR(50) DEFAULT 'Shortlisted',
+        remarks TEXT NULL,
+        location_id INT NULL,
+        reporting_manager VARCHAR(150) NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_so_app_no (app_no),
+        INDEX idx_so_status (status)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    `).catch(() => {});
+
+    await database.query("ALTER TABLE candidates ADD COLUMN IF NOT EXISTS offered_doj DATE NULL").catch(() => {});
+    await database.query("ALTER TABLE candidates ADD COLUMN IF NOT EXISTS is_deleted TINYINT(1) DEFAULT 0").catch(() => {});
+
+    _dojSchemaChecked = true;
+  } catch (err) {
+    console.warn('[DOJ Desk ensureDojSchema Warning]', err.message);
+  }
+}
 
 class CandidateController {
   async getCandidates(req, res) {
@@ -539,6 +594,8 @@ class CandidateController {
   async getNotJoinedDesk(req, res) {
     try {
       const db = require('../config/db');
+      await ensureDojSchema(db);
+
       const { clause: locClause, params: locParams } = await getLocationFilter(req, 'c');
       const { search, status, overdueOnly, filterType, department, locationId } = req.query;
 
@@ -589,7 +646,7 @@ class CandidateController {
       `;
       const params = [...locParams];
 
-      if (locationId && locationId !== 'all') {
+      if (locationId && locationId !== 'all' && !locClause.includes('location_id')) {
         sql += ` AND c.location_id = ?`;
         params.push(locationId);
       }
@@ -620,7 +677,39 @@ class CandidateController {
 
       sql += ` ORDER BY COALESCE(so.est_doj, c.offered_doj) ASC`;
 
-      const [rows] = await db.query(sql, params);
+      const [rows] = await db.query(sql, params).catch(async (queryErr) => {
+        console.warn('[getNotJoinedDesk] Primary query issue:', queryErr.message);
+        // Fallback: query without subqueries in case of older schema
+        const fallbackSql = `
+          SELECT 
+            c.app_no, c.name, c.phone, c.email, c.designation, c.department, c.section,
+            c.source, c.referrer, c.reporting_manager, c.salary, c.experience, c.qualification,
+            c.city_state, c.remarks as candidate_remarks, c.status as candidate_status,
+            COALESCE(c.created_at, so.created_at) as offer_date,
+            COALESCE(so.est_doj, c.offered_doj) as scheduled_doj,
+            so.status as offer_status, so.notice_period, so.remarks as offer_remarks,
+            c.location_id, l.location_name, l.location_code,
+            DATEDIFF(CURDATE(), COALESCE(so.est_doj, c.offered_doj)) as delay_days,
+            CASE 
+              WHEN COALESCE(so.est_doj, c.offered_doj) < CURDATE() THEN 'Overdue'
+              WHEN COALESCE(so.est_doj, c.offered_doj) = CURDATE() THEN 'Joining Today'
+              ELSE 'Upcoming'
+            END as doj_urgency,
+            NULL as last_followup_date, NULL as last_contact_result,
+            NULL as last_followup_remarks, NULL as next_action
+          FROM candidates c
+          LEFT JOIN locations l ON l.id = c.location_id
+          LEFT JOIN selection_offers so ON c.app_no = so.app_no
+          WHERE (c.is_deleted = 0 OR c.is_deleted IS NULL)
+            AND (c.offered_doj IS NOT NULL OR so.est_doj IS NOT NULL)
+            AND COALESCE(so.status, c.status) NOT IN ('Joined', 'Offer Rejected', 'Rejected', 'Not Joined')
+            AND c.app_no NOT IN (SELECT candidate_app_no FROM users WHERE candidate_app_no IS NOT NULL AND active = 1)
+            ${locClause}
+          ORDER BY COALESCE(so.est_doj, c.offered_doj) ASC
+        `;
+        const [fallbackRows] = await db.query(fallbackSql, locParams).catch(() => [[]]);
+        return [fallbackRows || []];
+      });
 
       // Compute stats for all pending candidates in scope without filterType restriction
       let statsSql = `
@@ -637,7 +726,12 @@ class CandidateController {
           AND c.app_no NOT IN (SELECT candidate_app_no FROM users WHERE candidate_app_no IS NOT NULL AND active = 1)
           ${locClause}
       `;
-      const [statsRows] = await db.query(statsSql, locParams);
+      const statsParams = [...locParams];
+      if (locationId && locationId !== 'all' && !locClause.includes('location_id')) {
+        statsSql += ` AND c.location_id = ?`;
+        statsParams.push(locationId);
+      }
+      const [statsRows] = await db.query(statsSql, statsParams).catch(() => [[{ total: 0, overdue: 0, today: 0, upcoming: 0 }]]);
       const statsBase = statsRows[0] || {};
       const total = Number(statsBase.total) || 0;
       const overdue = Number(statsBase.overdue) || 0;
@@ -645,30 +739,36 @@ class CandidateController {
       const upcoming = Number(statsBase.upcoming) || 0;
 
       // Active Store Staff count (across permitted locations)
-      const { clause: uLocClause, params: uLocParams } = await getLocationFilter(req, 'u');
-      const [activeStaffRows] = await db.query(
-        `SELECT COUNT(*) as cnt FROM users u WHERE u.active = 1 ${uLocClause}
-         AND LOWER(COALESCE(u.role, '')) NOT IN ('admin', 'super admin', 'system administrator', 'customer', 'guest')
-         AND LOWER(COALESCE(u.username, '')) NOT IN ('admin', 'admin@bsctextiles.com', 'ghost')
-         AND LOWER(COALESCE(u.full_name, '')) NOT LIKE '%system administrator%'`,
-        uLocParams
-      );
-      const activeStaff = Number(activeStaffRows[0]?.cnt) || 0;
+      let activeStaff = 0;
+      try {
+        const { clause: uLocClause, params: uLocParams } = await getLocationFilter(req, 'u');
+        const [activeStaffRows] = await db.query(
+          `SELECT COUNT(*) as cnt FROM users u WHERE u.active = 1 ${uLocClause}
+           AND LOWER(COALESCE(u.role, '')) NOT IN ('admin', 'super admin', 'system administrator', 'customer', 'guest')
+           AND LOWER(COALESCE(u.username, '')) NOT IN ('admin', 'admin@bsctextiles.com', 'ghost')
+           AND LOWER(COALESCE(u.full_name, '')) NOT LIKE '%system administrator%'`,
+          uLocParams
+        ).catch(() => [[{ cnt: 0 }]]);
+        activeStaff = Number(activeStaffRows[0]?.cnt) || 0;
+      } catch (_uErr) {
+        activeStaff = 0;
+      }
 
       return res.json({
         success: true,
         stats: { total, overdue, today, upcoming, activeStaff },
-        candidates: rows
+        candidates: rows || []
       });
     } catch (err) {
       console.error('[getNotJoinedDesk ERROR]', err);
-      return res.status(500).json({ success: false, error: err.message });
+      return res.status(500).json({ success: false, error: err.message, stats: { total: 0, overdue: 0, today: 0, upcoming: 0, activeStaff: 0 }, candidates: [] });
     }
   }
 
   async handleNotJoinedAction(req, res) {
     try {
       const db = require('../config/db');
+      await ensureDojSchema(db);
       const { 
         appNo, 
         action, 
@@ -982,6 +1082,7 @@ class CandidateController {
   async getCandidateDojHistory(req, res) {
     try {
       const db = require('../config/db');
+      await ensureDojSchema(db);
       const { appNo } = req.params;
       if (!appNo) {
         return res.status(400).json({ success: false, message: 'appNo is required' });
@@ -1014,7 +1115,7 @@ class CandidateController {
       const [historyRows] = await db.query(
         `SELECT * FROM candidate_doj_history WHERE app_no = ? ORDER BY created_at DESC, id DESC`,
         [appNo]
-      );
+      ).catch(() => [[]]);
 
       return res.json({
         success: true,
@@ -1030,6 +1131,7 @@ class CandidateController {
   async getJoinedStoreDirectory(req, res) {
     try {
       const db = require('../config/db');
+      await ensureDojSchema(db);
       const { clause: locClause, params: locParams } = await getLocationFilter(req, 'u');
       const { search, department, locationId } = req.query;
 
@@ -1062,7 +1164,7 @@ class CandidateController {
       `;
       const params = [...locParams];
 
-      if (locationId && locationId !== 'all') {
+      if (locationId && locationId !== 'all' && !locClause.includes('location_id')) {
         sql += ` AND u.location_id = ?`;
         params.push(locationId);
       }
@@ -1113,7 +1215,7 @@ class CandidateController {
       `;
       const candParams = [...cLocParams];
 
-      if (locationId && locationId !== 'all') {
+      if (locationId && locationId !== 'all' && !cLocClause.includes('location_id')) {
         candSql += ` AND c.location_id = ?`;
         candParams.push(locationId);
       }

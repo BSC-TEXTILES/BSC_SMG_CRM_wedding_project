@@ -38,8 +38,8 @@
   --on-ink-2: #c3a9a4;
   --on-ink-3: #d9c4bd;
 
-  --f-display: 'Fraunces', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
-  --f-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --f-display: 'Inter', sans-serif;
+  --f-sans: 'Inter', sans-serif;
 
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-io: cubic-bezier(0.65, 0, 0.35, 1);

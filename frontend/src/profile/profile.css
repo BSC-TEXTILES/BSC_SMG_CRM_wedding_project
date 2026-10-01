@@ -4,8 +4,8 @@
    ========================================================================== */
 
 :root {
-  --pf-font-serif: "Playfair Display", "Cormorant Garamond", Georgia, "Times New Roman", serif;
-  --pf-font-sans: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --pf-font-serif: "Inter", sans-serif;
+  --pf-font-sans: "Inter", sans-serif;
   --pf-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
   /* Light Theme Tokens */

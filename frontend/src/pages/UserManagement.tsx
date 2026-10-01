@@ -1195,42 +1195,46 @@ export default function UserManagementPage() {
 
           {/* Metric Summary Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div className="card-glass p-4 border border-accent/20 flex items-center justify-between">
+            <div className="bg-white p-5 border border-[#E2DDD2] rounded-2xl shadow-xs flex items-center justify-between">
               <div>
-                <p className="text-[11px] font-bold text-primary/60 uppercase tracking-wider">Total Users</p>
-                <p className="text-2xl font-black text-primary mt-1">{stats.total}</p>
+                <p className="text-xs font-semibold text-[#687080] uppercase tracking-wider">Total Users</p>
+                <p className="text-2xl sm:text-3xl font-bold text-[#182033] mt-1">{stats.total}</p>
+                <p className="text-[13px] text-[#687080] font-normal mt-0.5">Provisioned accounts</p>
               </div>
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+              <div className="w-11 h-11 rounded-xl bg-[#123C35]/10 flex items-center justify-center text-[#123C35]">
                 <Users className="w-5 h-5" />
               </div>
             </div>
 
-            <div className="card-glass p-4 border border-accent/20 flex items-center justify-between">
+            <div className="bg-white p-5 border border-[#E2DDD2] rounded-2xl shadow-xs flex items-center justify-between">
               <div>
-                <p className="text-[11px] font-bold text-green-600 uppercase tracking-wider">Active Accounts</p>
-                <p className="text-2xl font-black text-green-700 mt-1">{stats.active}</p>
+                <p className="text-xs font-semibold text-[#15803D] uppercase tracking-wider">Active Accounts</p>
+                <p className="text-2xl sm:text-3xl font-bold text-[#15803D] mt-1">{stats.active}</p>
+                <p className="text-[13px] text-[#687080] font-normal mt-0.5">Enabled &amp; accessible</p>
               </div>
-              <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center text-green-600">
+              <div className="w-11 h-11 rounded-xl bg-[#15803D]/10 flex items-center justify-center text-[#15803D]">
                 <UserCheck className="w-5 h-5" />
               </div>
             </div>
 
-            <div className="card-glass p-4 border border-accent/20 flex items-center justify-between">
+            <div className="bg-white p-5 border border-[#E2DDD2] rounded-2xl shadow-xs flex items-center justify-between">
               <div>
-                <p className="text-[11px] font-bold text-red-500 uppercase tracking-wider">Deactivated</p>
-                <p className="text-2xl font-black text-red-600 mt-1">{stats.inactive}</p>
+                <p className="text-xs font-semibold text-[#687080] uppercase tracking-wider">Deactivated</p>
+                <p className="text-2xl sm:text-3xl font-bold text-[#687080] mt-1">{stats.inactive}</p>
+                <p className="text-[13px] text-[#687080] font-normal mt-0.5">Suspended accounts</p>
               </div>
-              <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center text-red-500">
+              <div className="w-11 h-11 rounded-xl bg-gray-100 flex items-center justify-center text-[#687080]">
                 <UserX className="w-5 h-5" />
               </div>
             </div>
 
-            <div className="card-glass p-4 border border-accent/20 flex items-center justify-between">
+            <div className="bg-white p-5 border border-[#E2DDD2] rounded-2xl shadow-xs flex items-center justify-between">
               <div>
-                <p className="text-[11px] font-bold text-accent uppercase tracking-wider">Admin Roles</p>
-                <p className="text-2xl font-black text-primary mt-1">{stats.adminCount}</p>
+                <p className="text-xs font-semibold text-[#C9A45C] uppercase tracking-wider">Admin Roles</p>
+                <p className="text-2xl sm:text-3xl font-bold text-[#182033] mt-1">{stats.adminCount}</p>
+                <p className="text-[13px] text-[#687080] font-normal mt-0.5">Elevated governance</p>
               </div>
-              <div className="w-10 h-10 rounded-xl bg-accent/15 flex items-center justify-center text-accent">
+              <div className="w-11 h-11 rounded-xl bg-[#C9A45C]/15 flex items-center justify-center text-[#C9A45C]">
                 <ShieldCheck className="w-5 h-5" />
               </div>
             </div>
@@ -1371,21 +1375,21 @@ export default function UserManagementPage() {
           )}
 
           {/* Search and Filters Bar */}
-          <div className="card-glass p-4 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+          <div className="bg-white p-4 rounded-2xl border border-[#E2DDD2] shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
             <div className="relative flex-1 min-w-[240px]">
-              <Search className="w-4 h-4 text-primary/40 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <Search className="w-4 h-4 text-[#687080] absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 placeholder="Search by name, username, role, department..."
-                className="w-full pl-9 pr-4 py-2 text-xs rounded-xl bg-white/80 border border-accent/20 focus:outline-none focus:ring-2 focus:ring-accent/40 text-primary font-medium placeholder:text-primary/40"
+                className="w-full pl-9 pr-4 h-11 text-sm rounded-xl bg-white border border-[#E2DDD2] focus:outline-none focus:ring-1 focus:ring-[#123C35] focus:border-[#123C35] text-[#182033] font-normal placeholder:text-[#687080]"
               />
               {searchQuery && (
                 <button
                   type="button"
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-primary/40 hover:text-primary cursor-pointer"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#687080] hover:text-[#182033] cursor-pointer"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -1394,13 +1398,13 @@ export default function UserManagementPage() {
 
             <div className="flex flex-wrap items-center gap-2">
               {/* Role filter */}
-              <div className="flex items-center gap-1.5 bg-white/80 px-2.5 py-1 rounded-xl border border-accent/20">
-                <Filter className="w-3.5 h-3.5 text-accent" />
-                <span className="text-[11px] font-bold text-primary">Role:</span>
+              <div className="flex items-center gap-1.5 bg-white h-11 px-3 rounded-xl border border-[#E2DDD2]">
+                <Filter className="w-3.5 h-3.5 text-[#C9A45C]" />
+                <span className="text-xs font-semibold text-[#182033]">Role:</span>
                 <select
                   value={roleFilter}
                   onChange={e => setRoleFilter(e.target.value)}
-                  className="text-xs bg-transparent text-primary font-bold focus:outline-none cursor-pointer"
+                  className="text-xs bg-transparent text-[#182033] font-semibold focus:outline-none cursor-pointer"
                 >
                   <option value="ALL">All Roles</option>
                   {availableRoles.map(r => (
@@ -1410,12 +1414,12 @@ export default function UserManagementPage() {
               </div>
 
               {/* Status filter */}
-              <div className="flex items-center gap-1.5 bg-white/80 px-2.5 py-1 rounded-xl border border-accent/20">
-                <span className="text-[11px] font-bold text-primary">Status:</span>
+              <div className="flex items-center gap-1.5 bg-white h-11 px-3 rounded-xl border border-[#E2DDD2]">
+                <span className="text-xs font-semibold text-[#182033]">Status:</span>
                 <select
                   value={statusFilter}
                   onChange={e => setStatusFilter(e.target.value as any)}
-                  className="text-xs bg-transparent text-primary font-bold focus:outline-none cursor-pointer"
+                  className="text-xs bg-transparent text-[#182033] font-semibold focus:outline-none cursor-pointer"
                 >
                   <option value="ALL">All Status</option>
                   <option value="ACTIVE">Active Only</option>
@@ -1424,13 +1428,13 @@ export default function UserManagementPage() {
               </div>
 
               {/* Location filter */}
-              <div className="flex items-center gap-1.5 bg-white/80 px-2.5 py-1 rounded-xl border border-accent/20">
-                <Building2 className="w-3.5 h-3.5 text-accent" />
-                <span className="text-[11px] font-bold text-primary">Location:</span>
+              <div className="flex items-center gap-1.5 bg-white h-11 px-3 rounded-xl border border-[#E2DDD2]">
+                <Building2 className="w-3.5 h-3.5 text-[#C9A45C]" />
+                <span className="text-xs font-semibold text-[#182033]">Location:</span>
                 <select
                   value={locationFilter}
                   onChange={e => setLocationFilter(e.target.value)}
-                  className="text-xs bg-transparent text-primary font-bold focus:outline-none cursor-pointer"
+                  className="text-xs bg-transparent text-[#182033] font-semibold focus:outline-none cursor-pointer"
                 >
                   {isGlobalAdmin && <option value="ALL">All Locations</option>}
                   {isGlobalAdmin && <option value="GLOBAL">Global / All Stores</option>}
@@ -1443,11 +1447,11 @@ export default function UserManagementPage() {
           </div>
 
           {/* User Accounts Table */}
-          <div className="card-glass overflow-hidden border border-accent/20 shadow-sm">
+          <div className="bg-white rounded-2xl overflow-hidden border border-[#E2DDD2] shadow-xs">
             <div className="table-frame custom-scrollbar">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-primary/5 text-primary text-[11px] font-black uppercase tracking-wider border-b border-accent/20">
+                  <tr className="bg-[#F7F4ED] text-[#182033] text-xs font-semibold uppercase tracking-wider border-b border-[#E2DDD2]">
                     <th className="py-3 px-4">User Account</th>
                     <th className="py-3 px-4">Role &amp; Location</th>
                     <th className="py-3 px-4">Department &amp; Title</th>
@@ -1457,10 +1461,10 @@ export default function UserManagementPage() {
                         <button
                           type="button"
                           onClick={handleToggleAllPasswords}
-                          className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-white border border-accent/30 text-primary hover:bg-accent/15 flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
+                          className="text-[11px] font-semibold px-2 py-0.5 rounded-lg bg-white border border-[#E2DDD2] text-[#182033] hover:border-[#C9A45C] flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
                           title={allPasswordsVisible ? "Hide all passwords" : "Show all passwords"}
                         >
-                          {allPasswordsVisible ? <EyeOff className="w-3 h-3 text-accent" /> : <Eye className="w-3 h-3 text-accent" />}
+                          {allPasswordsVisible ? <EyeOff className="w-3 h-3 text-[#C9A45C]" /> : <Eye className="w-3 h-3 text-[#C9A45C]" />}
                           <span className="hidden sm:inline">{allPasswordsVisible ? 'Hide All' : 'View All'}</span>
                         </button>
                       </div>
@@ -1500,7 +1504,7 @@ export default function UserManagementPage() {
                       const isBuiltinAdmin = ['admin', 'admin@bsctextiles.com'].includes(user.username.toLowerCase());
 
                       return (
-                        <tr key={user.id} className="hover:bg-accent/5 transition-colors">
+                        <tr key={user.id} className="hover:bg-[#F7F4ED]/60 border-b border-[#E2DDD2] transition-colors">
                           {/* User Account */}
                           <td className="py-3 px-4">
                             <div className="flex items-center gap-3">
@@ -1672,14 +1676,14 @@ export default function UserManagementPage() {
                                 type="button"
                                 onClick={() => handleStatusClick(user)}
                                 disabled={isBuiltinAdmin}
-                                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer shadow-2xs ${
+                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer shadow-2xs ${
                                   user.active
-                                    ? 'bg-green-100 text-green-800 hover:bg-green-200 border border-green-300'
-                                    : 'bg-red-100 text-red-800 hover:bg-red-200 border border-red-300'
+                                    ? 'bg-[#15803D]/10 text-[#15803D] hover:bg-[#15803D]/15 border border-[#15803D]/25'
+                                    : 'bg-gray-100 text-[#687080] hover:bg-gray-200 border border-gray-200'
                                 } ${isBuiltinAdmin ? 'opacity-75 cursor-not-allowed' : ''}`}
                                 title={isBuiltinAdmin ? 'System Admin cannot be deactivated' : (user.active ? 'Click to deactivate (select duration)' : 'Click to reactivate immediately')}
                               >
-                                <span className={`w-2 h-2 rounded-full ${user.active ? 'bg-green-600 animate-pulse' : 'bg-red-600'}`} />
+                                <span className={`w-1.5 h-1.5 rounded-full ${user.active ? 'bg-[#15803D]' : 'bg-[#687080]'}`} />
                                 <span>{user.active ? 'Active' : 'Inactive'}</span>
                               </button>
 

@@ -226,9 +226,55 @@ async function autoInitializeDatabase() {
       await pool.query("ALTER TABLE `employee_documents` ADD COLUMN IF NOT EXISTS `status` VARCHAR(50) DEFAULT 'Active'");
       await pool.query("ALTER TABLE `users` ADD COLUMN IF NOT EXISTS `photo_url` TEXT NULL");
       await pool.query("ALTER TABLE `candidates` ADD COLUMN IF NOT EXISTS `photo_url` TEXT NULL");
+      await pool.query("ALTER TABLE `candidates` ADD COLUMN IF NOT EXISTS `offered_doj` DATE NULL");
+      await pool.query("ALTER TABLE `candidates` ADD COLUMN IF NOT EXISTS `is_deleted` TINYINT(1) DEFAULT 0");
     } catch (_colErr) {
       /* Column already exists */
     }
+
+    // ─── Selection Offers & DOJ Desk Tables ────────────────────────────
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS \`selection_offers\` (
+        \`id\` INT AUTO_INCREMENT PRIMARY KEY,
+        \`candidate_id\` INT NULL,
+        \`app_no\` VARCHAR(50) NOT NULL,
+        \`name\` VARCHAR(150) NULL,
+        \`designation\` VARCHAR(150) NULL,
+        \`department\` VARCHAR(150) NULL,
+        \`section\` VARCHAR(150) NULL,
+        \`salary\` VARCHAR(100) NULL,
+        \`notice_period\` VARCHAR(50) NULL,
+        \`est_doj\` DATE NULL,
+        \`actual_doj\` DATE NULL,
+        \`status\` VARCHAR(50) DEFAULT 'Shortlisted',
+        \`remarks\` TEXT NULL,
+        \`location_id\` INT NULL,
+        \`reporting_manager\` VARCHAR(150) NULL,
+        \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        \`updated_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX \`idx_so_app_no\` (\`app_no\`),
+        INDEX \`idx_so_status\` (\`status\`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS \`candidate_doj_history\` (
+        \`id\` INT AUTO_INCREMENT PRIMARY KEY,
+        \`app_no\` VARCHAR(50) NOT NULL,
+        \`event_type\` VARCHAR(50) NOT NULL,
+        \`new_doj\` DATE NULL,
+        \`reporting_time\` VARCHAR(50) NULL,
+        \`contact_result\` VARCHAR(150) NULL,
+        \`candidate_response\` TEXT NULL,
+        \`reason\` VARCHAR(255) NULL,
+        \`remarks\` TEXT NULL,
+        \`action_by\` VARCHAR(100) NULL,
+        \`performed_by\` VARCHAR(100) NULL,
+        \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX \`idx_cdh_app_no\` (\`app_no\`),
+        INDEX \`idx_cdh_event\` (\`event_type\`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
 
     // ─── Email Verification Tokens ────────────────────────────────────
     await pool.query(`

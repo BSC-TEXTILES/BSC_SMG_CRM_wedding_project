@@ -344,7 +344,7 @@ export default function VmDashboard() {
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h1 className="text-2xl lg:text-3xl font-black tracking-tight text-white font-serif">
+                  <h1 className="text-2xl lg:text-3xl font-bold tracking-tight text-white">
                     Visual Merchandising Dashboard
                   </h1>
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
@@ -586,7 +586,7 @@ export default function VmDashboard() {
                     <ClipboardList className="w-4 h-4" />
                   </div>
                 </div>
-                <div className="text-2xl font-black text-primary font-serif">
+                <div className="text-2xl font-bold text-primary">
                   {summaryCards.totalAudits}
                 </div>
                 <div className="text-[10px] font-medium text-primary/60 mt-1 flex items-center justify-between">
@@ -604,7 +604,7 @@ export default function VmDashboard() {
                   </div>
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-black text-primary font-serif">
+                  <span className="text-2xl font-bold text-primary">
                     {summaryCards.averageScore}%
                   </span>
                   <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
@@ -633,7 +633,7 @@ export default function VmDashboard() {
                     <CheckCircle2 className="w-4 h-4" />
                   </div>
                 </div>
-                <div className="text-2xl font-black text-emerald-700 font-serif">
+                <div className="text-2xl font-bold text-emerald-700">
                   {summaryCards.compliancePercentage}%
                 </div>
                 <div className="text-[10px] font-medium text-emerald-800/80 mt-1">
@@ -652,12 +652,12 @@ export default function VmDashboard() {
                 <div className="flex items-center gap-3">
                   <div>
                     <span className="text-xs font-bold text-emerald-700 block">Passed</span>
-                    <span className="text-lg font-black text-emerald-800 font-serif">{summaryCards.completedAudits}</span>
+                    <span className="text-lg font-bold text-emerald-800">{summaryCards.completedAudits}</span>
                   </div>
                   <div className="w-px h-7 bg-primary/10" />
                   <div>
                     <span className="text-xs font-bold text-amber-700 block">Review</span>
-                    <span className="text-lg font-black text-amber-800 font-serif">{summaryCards.pendingAudits}</span>
+                    <span className="text-lg font-bold text-amber-800">{summaryCards.pendingAudits}</span>
                   </div>
                 </div>
               </div>
@@ -670,7 +670,7 @@ export default function VmDashboard() {
                     <Layers className="w-4 h-4" />
                   </div>
                 </div>
-                <div className="text-2xl font-black text-primary font-serif">
+                <div className="text-2xl font-bold text-primary">
                   {summaryCards.sectionsAudited}
                 </div>
                 <div className="text-[10px] font-medium text-primary/60 mt-1">
@@ -686,7 +686,7 @@ export default function VmDashboard() {
                     <Camera className="w-4 h-4" />
                   </div>
                 </div>
-                <div className="text-2xl font-black text-accent font-serif">
+                <div className="text-2xl font-bold text-accent">
                   {summaryCards.imagesUploaded}
                 </div>
                 <div className="text-[10px] font-medium text-primary/60 mt-1">
@@ -1394,7 +1394,7 @@ export default function VmDashboard() {
               <div className="p-5 bg-gradient-to-r from-primary to-primary-dark text-white flex items-center justify-between">
                 <div>
                   <div className="flex items-center gap-2">
-                    <h3 className="text-lg font-black font-serif">Audit Detail Inspection</h3>
+                    <h3 className="text-lg font-bold">Audit Detail Inspection</h3>
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                       selectedAuditForModal.scorePercent >= 80 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' :
                       selectedAuditForModal.scorePercent >= 50 ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' :
