@@ -1,627 +1,815 @@
 /* ============================================================================
-   BSC Textiles — Customer Feedback store selection
-   Built on the public website's editorial system (./pages/landing/editorial/
-   editorial.css): same canvas, ink, hairlines, serif headings and rose-gold
-   accent. Adds only what this screen needs — back link, access notice, store
-   cards and the loading / empty / error states — so the page reads as part of
-   the existing BSC Textiles website.
-   ========================================================================== */
+   BSC Textiles — Customer Feedback QR / Store Selection Experience
+   Forest Green (#123C35) + Champagne Gold (#C9A45C) + Warm Cream (#F7F4ED)
+   Mobile-first, Luxury Retail Aesthetic, 100% Self-Contained.
+   ============================================================================ */
 
-.bsc-fb-page {
+/* ── Design Tokens ────────────────────────────────────────────────────────── */
+:root {
+  --bfx-green:          #123C35;
+  --bfx-green-dark:     #0B2924;
+  --bfx-green-mid:      #1A5247;
+  --bfx-green-light:    rgba(18, 60, 53, 0.08);
+  --bfx-green-ring:     rgba(18, 60, 53, 0.2);
+
+  --bfx-gold:           #C9A45C;
+  --bfx-gold-light:     #E4CB92;
+  --bfx-gold-faint:     rgba(201, 164, 92, 0.15);
+  --bfx-gold-border:    rgba(201, 164, 92, 0.35);
+
+  --bfx-cream:          #F7F4ED;
+  --bfx-cream-dark:     #EDE9DF;
+  --bfx-white:          #FFFFFF;
+
+  --bfx-ink:            #182033;
+  --bfx-ink-soft:       #687080;
+  --bfx-ink-faint:      #9AA4B2;
+
+  --bfx-border:         #E2DDD2;
+  --bfx-border-mid:     #CBC4B8;
+
+  --bfx-success:        #16835B;
+  --bfx-success-bg:     rgba(22, 131, 91, 0.08);
+  --bfx-error:          #B42318;
+  --bfx-error-bg:       rgba(180, 35, 24, 0.06);
+
+  --bfx-radius-sm:      10px;
+  --bfx-radius-md:      14px;
+  --bfx-radius-lg:      20px;
+
+  --bfx-shadow-sm:      0 1px 4px rgba(18, 60, 53, 0.06);
+  --bfx-shadow-card:    0 4px 20px rgba(18, 60, 53, 0.06);
+  --bfx-shadow-hover:   0 16px 36px rgba(18, 60, 53, 0.12);
+  --bfx-shadow-modal:   0 24px 60px rgba(11, 41, 36, 0.28);
+
+  --bfx-duration:       200ms;
+  --bfx-ease:           cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ── Reset & Page Shell ─────────────────────────────────────────────────── */
+.bfx-qr-page {
   min-height: 100vh;
   min-height: 100dvh;
+  background-color: var(--bfx-cream);
+  color: var(--bfx-ink);
+  font-family: 'Inter', 'Outfit', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   display: flex;
   flex-direction: column;
-}
-
-.bsc-fb-main {
-  flex: 1 0 auto;
-}
-
-.bsc-fb-section {
-  padding-block: clamp(2.5rem, 6vw, 4.25rem) clamp(3rem, 7vw, 5rem);
-}
-
-/* ── Heading block ──────────────────────────────────────────────────────── */
-
-.bsc-fb-head {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.875rem;
-  max-width: 62ch;
-  margin-bottom: clamp(1.75rem, 4vw, 2.75rem);
-}
-
-.bsc-fb-head > * {
-  margin: 0;
-}
-
-/* Signed-in staff: which stores their account may access. */
-.bsc-fb-access {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.4063rem 0.75rem;
-  border: 1px solid var(--ed-line);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--ed-surface) 72%, transparent);
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: var(--ed-ink-soft);
-}
-
-.bsc-fb-access svg {
-  flex: none;
-  color: var(--ed-accent);
-}
-
-.bsc-fb-access strong {
-  font-weight: 700;
-  color: var(--ed-ink);
-}
-
-/* ── Store grid ─────────────────────────────────────────────────────────── */
-
-.bsc-fb-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
-  gap: clamp(0.875rem, 1.8vw, 1.25rem);
+  position: relative;
   width: 100%;
-  min-width: 0;
+  box-sizing: border-box;
 }
 
-/* One or two accessible stores stay a balanced width instead of full bleed. */
-.bsc-fb-grid[data-count='1'] {
-  max-width: 26rem;
+.bfx-qr-page *,
+.bfx-qr-page *::before,
+.bfx-qr-page *::after {
+  box-sizing: border-box;
 }
 
-.bsc-fb-grid[data-count='2'] {
-  max-width: 54rem;
-}
-
-/* ── Store card ─────────────────────────────────────────────────────────── */
-
-.bsc-fb-store {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.5rem;
-  width: 100%;
-  min-width: 0;
-  padding: clamp(1.25rem, 2.4vw, 1.625rem);
-  text-align: left;
-  font: inherit;
-  color: inherit;
-  cursor: pointer;
-  background: var(--ed-surface);
-  border: 1px solid var(--ed-line);
-  border-radius: 14px;
-  transition: border-color 200ms ease, box-shadow 200ms ease, transform 200ms ease;
-}
-
-.bsc-fb-store:hover {
-  border-color: var(--ed-accent);
-  box-shadow: 0 12px 28px rgba(43, 23, 34, 0.07);
-  transform: translateY(-2px);
-}
-
-.bsc-fb-store:active {
-  transform: translateY(0);
-  box-shadow: 0 6px 16px rgba(43, 23, 34, 0.06);
-}
-
-/* Editorial focus ring, kept at the card's own radius (the shared rule in
-   editorial.css would otherwise square the corners while focused). */
-.bsc-ed-page .bsc-fb-store:focus-visible {
-  border-radius: 14px;
-  outline: 2px solid var(--ed-accent);
-  outline-offset: 3px;
-}
-
-.bsc-fb-store-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: none;
-  width: 2.5rem;
-  height: 2.5rem;
-  margin-bottom: 0.25rem;
-  border: 1px solid color-mix(in srgb, var(--ed-accent) 40%, transparent);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--ed-accent) 10%, transparent);
-  color: var(--ed-accent);
-  transition: background-color 200ms ease, border-color 200ms ease, color 200ms ease;
-}
-
-.bsc-fb-store:hover .bsc-fb-store-icon,
-.bsc-fb-store:focus-visible .bsc-fb-store-icon {
-  background: var(--ed-accent);
-  border-color: var(--ed-accent);
-  color: #ffffff;
-}
-
-.bsc-fb-store-city {
-  font-size: 1.375rem;
-  line-height: 1.2;
-  color: var(--ed-ink);
-}
-
-.bsc-fb-store-name {
-  font-size: 0.875rem;
-  line-height: 1.5;
-  color: var(--ed-ink-soft);
-}
-
-.bsc-fb-store-address {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  max-width: 100%;
+/* ── Accessibility: Skip Link ───────────────────────────────────────────── */
+.bfx-qr-skip {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 9999;
+  padding: 0.625rem 1.25rem;
+  background: var(--bfx-green);
+  color: #ffffff !important;
   font-size: 0.8125rem;
-  line-height: 1.6;
-  overflow-wrap: anywhere;
-  color: var(--ed-ink-faint);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  border-radius: var(--bfx-radius-sm);
+  border: 2px solid var(--bfx-gold);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+  transform: translateY(-200%);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 160ms var(--bfx-ease), opacity 160ms var(--bfx-ease);
 }
 
-.bsc-fb-store-cta {
+.bfx-qr-skip:focus-visible {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+  outline: 2px solid var(--bfx-gold);
+  outline-offset: 2px;
+}
+
+/* ── Content Container (Constrained Max-Width) ─────────────────────────── */
+.bfx-qr-container {
+  width: 100%;
+  max-width: 1320px;
+  margin-inline: auto;
+  padding-inline: clamp(1rem, 3.5vw, 2.5rem);
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.bfx-qr-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(247, 244, 237, 0.94);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--bfx-border);
+  padding: 0.75rem 0;
+}
+
+.bfx-qr-header-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 1rem;
+}
+
+.bfx-qr-brand {
+  display: flex;
+  align-items: center;
   gap: 0.75rem;
-  width: 100%;
-  margin-top: auto;
-  padding-top: 0.875rem;
-  border-top: 1px solid var(--ed-line);
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  color: var(--ed-accent);
-  transition: color 200ms ease;
+  text-decoration: none;
+  color: inherit;
+  min-width: 0;
 }
 
-.bsc-fb-store-cta svg {
+.bfx-qr-logo-wrap {
+  width: 2.75rem;
+  height: 2.75rem;
   flex: none;
-  transition: transform 200ms ease;
+  line-height: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--bfx-white);
+  border: 1px solid var(--bfx-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
 }
 
-.bsc-fb-store:hover .bsc-fb-store-cta,
-.bsc-fb-store:focus-visible .bsc-fb-store-cta {
-  color: var(--ed-accent-deep);
+.bfx-qr-logo-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
-.bsc-fb-store:hover .bsc-fb-store-cta svg,
-.bsc-fb-store:focus-visible .bsc-fb-store-cta svg {
-  transform: translateX(3px);
+@media (min-width: 640px) {
+  .bfx-qr-logo-wrap {
+    width: 3.25rem;
+    height: 3.25rem;
+  }
 }
 
-/* ── Loading skeleton (no location is revealed before access resolves) ──── */
-
-.bsc-fb-store--skeleton {
-  cursor: default;
-  pointer-events: none;
-  box-shadow: none;
-}
-
-.bsc-fb-store--skeleton:hover {
-  border-color: var(--ed-line);
-  transform: none;
-  box-shadow: none;
-}
-
-.bsc-fb-store--skeleton:hover .bsc-fb-store-icon {
-  background: color-mix(in srgb, var(--ed-accent) 10%, transparent);
-  border-color: color-mix(in srgb, var(--ed-accent) 40%, transparent);
-  color: var(--ed-accent);
-}
-
-.bsc-fb-skeleton-icon {
-  width: 1.25rem;
-  height: 1.25rem;
-  border-radius: 999px;
-}
-
-/* ── Empty & error states ───────────────────────────────────────────────── */
-
-.bsc-fb-state {
+.bfx-qr-brand-text {
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 0.625rem;
-  max-width: 46rem;
-  padding: clamp(1.5rem, 3vw, 2rem);
-  background: var(--ed-surface);
-  border: 1px solid var(--ed-line);
-  border-radius: 14px;
 }
 
-.bsc-fb-state-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
-  margin-bottom: 0.125rem;
-  border: 1px solid color-mix(in srgb, var(--ed-accent) 40%, transparent);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--ed-accent) 10%, transparent);
-  color: var(--ed-accent);
-}
-
-.bsc-fb-state-title {
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 600;
-  line-height: 1.55;
-  color: var(--ed-ink);
-}
-
-.bsc-fb-state-note {
-  margin: 0;
-  font-size: 0.875rem;
-  line-height: 1.6;
-  color: var(--ed-ink-soft);
-}
-
-.bsc-fb-state-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-top: 0.5rem;
-}
-
-/* Native buttons do not inherit the page font; keep editorial controls on it. */
-.bsc-fb-state .bsc-ed-btn {
-  font-family: inherit;
-}
-
-/* The shared focus rule squares the pill radius while focused. */
-.bsc-ed-page .bsc-fb-state .bsc-ed-btn:focus-visible {
-  border-radius: 999px;
-}
-
-/* ── Header back link ───────────────────────────────────────────────────── */
-
-.bsc-fb-back {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.375rem;
-  min-height: 2.75rem;
-  padding: 0.5rem 1rem;
-  border: 1px solid var(--ed-line-strong);
-  border-radius: 999px;
-  background: transparent;
-  color: var(--ed-ink);
+.bfx-qr-brand-title {
   font-size: 0.8125rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--bfx-green);
+  line-height: 1.2;
+}
+
+.bfx-qr-brand-sub {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--bfx-ink-soft);
+  margin-top: 0.125rem;
+}
+
+.bfx-qr-brand-tag {
+  font-size: 0.625rem;
   font-weight: 600;
-  text-decoration: none;
-  white-space: nowrap;
-  transition: border-color 200ms ease, color 200ms ease, background-color 200ms ease;
+  color: var(--bfx-gold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  display: none;
 }
 
-.bsc-fb-back:hover {
-  border-color: var(--ed-accent);
-  background: var(--ed-surface);
-  color: var(--ed-accent-deep);
+@media (min-width: 480px) {
+  .bfx-qr-brand-tag {
+    display: inline;
+  }
 }
 
-.bsc-ed-page .bsc-fb-back:focus-visible {
-  border-radius: 999px;
-}
-
-.bsc-fb-back svg {
-  flex: none;
-}
-
-/* ── Footer ─────────────────────────────────────────────────────────────── */
-
-.bsc-fb-footer {
-  flex: none;
-  border-top: 1px solid var(--ed-line);
-  padding-block: 1.5rem;
-}
-
-.bsc-fb-trust {
-  display: flex;
+/* Header Action Link */
+.bfx-qr-back-btn {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  margin: 0;
-  font-size: 0.75rem;
-  color: var(--ed-ink-faint);
+  gap: 0.4375rem;
+  flex: none;
+  padding: 0.5rem 0.875rem;
+  background: var(--bfx-white);
+  border: 1px solid var(--bfx-border-mid);
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--bfx-ink-soft);
+  text-decoration: none;
+  cursor: pointer;
+  transition: all var(--bfx-duration) ease;
+  white-space: nowrap;
+}
+
+.bfx-qr-back-btn svg {
+  width: 0.875rem;
+  height: 0.875rem;
+  flex: none;
+  transition: transform 180ms ease;
+}
+
+.bfx-qr-back-btn:hover {
+  color: var(--bfx-green);
+  border-color: var(--bfx-green);
+  background: var(--bfx-green-light);
+}
+
+.bfx-qr-back-btn:hover svg {
+  transform: translateX(-2px);
+}
+
+.bfx-qr-back-btn:focus-visible {
+  outline: 2px solid var(--bfx-gold);
+  outline-offset: 2px;
+}
+
+/* ── Hero Section ──────────────────────────────────────────────────────── */
+.bfx-qr-hero {
+  padding-block: clamp(1.75rem, 4vw, 2.75rem) clamp(1.25rem, 3vw, 2rem);
   text-align: center;
 }
 
-.bsc-fb-trust svg {
-  flex: none;
-  color: var(--ed-accent);
-}
-
-/* ── Mobile ─────────────────────────────────────────────────────────────── */
-
-@media (max-width: 480px) {
-  .bsc-fb-back {
-    padding: 0.5rem 0.75rem;
-    font-size: 0.75rem;
-  }
-
-  .bsc-fb-section {
-    padding-block: 2rem 2.5rem;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .bsc-fb-store:hover,
-  .bsc-fb-store:active,
-  .bsc-fb-card:hover {
-    transform: none;
-  }
-
-  .bsc-fb-store:hover .bsc-fb-store-cta svg {
-    transform: none;
-  }
-}
-
-/* ── Feedback QR Store Card Enhancement ──────────────────────────────────── */
-
-.bsc-fb-card {
+.bfx-qr-hero-content {
+  max-width: 680px;
+  margin-inline: auto;
   display: flex;
   flex-direction: column;
-  background: var(--ed-surface);
-  border: 1px solid var(--ed-line);
-  border-radius: 18px;
-  padding: clamp(1.25rem, 2.5vw, 1.75rem);
-  box-shadow: 0 4px 16px rgba(43, 23, 34, 0.04);
-  transition: border-color 220ms ease, box-shadow 220ms ease, transform 220ms ease;
-  position: relative;
-  overflow: hidden;
+  align-items: center;
+  gap: 0.75rem;
 }
 
-.bsc-fb-card:hover {
-  border-color: var(--ed-accent);
-  box-shadow: 0 16px 36px rgba(43, 23, 34, 0.09);
+.bfx-qr-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4375rem;
+  padding: 0.3125rem 0.8125rem;
+  background: var(--bfx-gold-faint);
+  border: 1px solid var(--bfx-gold-border);
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--bfx-green);
+}
+
+.bfx-qr-badge svg {
+  width: 0.75rem;
+  height: 0.75rem;
+  color: var(--bfx-gold);
+}
+
+.bfx-qr-title {
+  margin: 0;
+  font-size: clamp(1.625rem, 4.5vw, 2.375rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  color: var(--bfx-green);
+}
+
+.bfx-qr-subtitle {
+  margin: 0;
+  font-size: clamp(0.875rem, 2vw, 1.0625rem);
+  line-height: 1.55;
+  color: var(--bfx-ink-soft);
+  max-width: 52ch;
+}
+
+.bfx-qr-accent-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--bfx-gold);
+  margin-top: 0.125rem;
+}
+
+/* Store Access Indicator Pill */
+.bfx-qr-access-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4375rem;
+  padding: 0.375rem 0.9375rem;
+  background: var(--bfx-white);
+  border: 1px solid var(--bfx-border);
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--bfx-ink-soft);
+  box-shadow: var(--bfx-shadow-sm);
+  margin-top: 0.375rem;
+}
+
+.bfx-qr-access-pill svg {
+  width: 0.8125rem;
+  height: 0.8125rem;
+  color: var(--bfx-green);
+  flex: none;
+}
+
+.bfx-qr-access-label {
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--bfx-green);
+}
+
+.bfx-qr-access-sep {
+  color: var(--bfx-border-mid);
+}
+
+.bfx-qr-access-val {
+  color: var(--bfx-ink);
+  font-weight: 600;
+}
+
+/* ── Main Section ──────────────────────────────────────────────────────── */
+.bfx-qr-main {
+  flex: 1 0 auto;
+  padding-bottom: clamp(3rem, 7vw, 5rem);
+}
+
+/* ── Responsive Grid ───────────────────────────────────────────────────── */
+.bfx-qr-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: clamp(1rem, 2.5vw, 1.75rem);
+  width: 100%;
+  margin-inline: auto;
+}
+
+@media (min-width: 640px) {
+  .bfx-qr-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .bfx-qr-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* When only 1 store is accessible */
+.bfx-qr-grid[data-count='1'] {
+  max-width: 440px;
+}
+
+/* When 2 stores are accessible */
+.bfx-qr-grid[data-count='2'] {
+  max-width: 880px;
+}
+
+/* ── Store Card ────────────────────────────────────────────────────────── */
+.bfx-qr-card {
+  background: var(--bfx-white);
+  border: 1px solid var(--bfx-border);
+  border-radius: var(--bfx-radius-lg);
+  padding: clamp(1.25rem, 2.5vw, 1.625rem);
+  box-shadow: var(--bfx-shadow-card);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1.125rem;
+  position: relative;
+  transition: border-color var(--bfx-duration) ease,
+              box-shadow var(--bfx-duration) ease,
+              transform var(--bfx-duration) ease;
+  min-width: 0;
+}
+
+.bfx-qr-card:hover {
+  border-color: var(--bfx-gold);
+  box-shadow: var(--bfx-shadow-hover);
   transform: translateY(-3px);
 }
 
-.bsc-fb-card-top {
+/* Card Header */
+.bfx-qr-card-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 0.75rem;
-  margin-bottom: 0.75rem;
 }
 
-.bsc-fb-card-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
+.bfx-qr-card-meta {
+  min-width: 0;
 }
 
-.bsc-fb-badge {
+.bfx-qr-card-city {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--bfx-green);
+  line-height: 1.2;
+}
+
+.bfx-qr-card-storename {
+  margin: 0.1875rem 0 0;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--bfx-ink-soft);
+  line-height: 1.35;
+}
+
+.bfx-qr-code-pill {
+  flex: none;
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  padding: 0.2rem 0.6rem;
-  border-radius: 999px;
+  padding: 0.25rem 0.5625rem;
+  border-radius: 8px;
   font-size: 0.6875rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  font-weight: 800;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  background: color-mix(in srgb, var(--ed-accent) 12%, transparent);
-  color: var(--ed-accent);
-  border: 1px solid color-mix(in srgb, var(--ed-accent) 25%, transparent);
+  background: var(--bfx-green-light);
+  color: var(--bfx-green);
+  border: 1px solid var(--bfx-green-ring);
 }
 
-.bsc-fb-badge--active {
-  background: rgba(16, 185, 129, 0.1);
-  color: #059669;
-  border-color: rgba(16, 185, 129, 0.25);
+.bfx-qr-code-pill svg {
+  width: 0.6875rem;
+  height: 0.6875rem;
 }
 
-.bsc-fb-qr-frame {
+/* Store Address */
+.bfx-qr-address {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--bfx-ink-soft);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* QR Code Container Box */
+.bfx-qr-box {
   position: relative;
-  background: #ffffff;
-  border: 1px solid var(--ed-line);
-  border-radius: 14px;
-  padding: 1.25rem;
+  background: var(--bfx-cream);
+  border: 1px solid var(--bfx-border);
+  border-radius: var(--bfx-radius-md);
+  padding: clamp(1rem, 2.5vw, 1.25rem);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  margin-block: 0.875rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
   cursor: pointer;
-  transition: border-color 200ms ease, transform 200ms ease;
+  transition: border-color var(--bfx-duration) ease,
+              background-color var(--bfx-duration) ease,
+              transform var(--bfx-duration) ease;
 }
 
-.bsc-fb-qr-frame:hover {
-  border-color: var(--ed-accent);
+.bfx-qr-box:hover {
+  border-color: var(--bfx-gold);
+  background: #FFFDF9;
   transform: scale(1.015);
 }
 
-.bsc-fb-qr-img {
-  width: 190px;
-  height: 190px;
-  max-width: 100%;
-  aspect-ratio: 1;
-  object-fit: contain;
-  border-radius: 8px;
-  display: block;
+.bfx-qr-box:focus-visible {
+  outline: 2px solid var(--bfx-gold);
+  outline-offset: 2px;
 }
 
-/* Scanner target corners */
-.bsc-fb-qr-corners {
+/* Corner Guides for camera targeting */
+.bfx-qr-corners {
   position: absolute;
-  inset: 10px;
+  inset: 8px;
   pointer-events: none;
 }
 
-.bsc-fb-corner {
+.bfx-qr-corner {
   position: absolute;
   width: 14px;
   height: 14px;
-  border-color: var(--ed-accent);
+  border-color: var(--bfx-gold);
   border-style: solid;
 }
 
-.bsc-fb-corner-tl {
+.bfx-qr-corner-tl {
   top: 0;
   left: 0;
   border-width: 2.5px 0 0 2.5px;
   border-top-left-radius: 4px;
 }
 
-.bsc-fb-corner-tr {
+.bfx-qr-corner-tr {
   top: 0;
   right: 0;
   border-width: 2.5px 2.5px 0 0;
   border-top-right-radius: 4px;
 }
 
-.bsc-fb-corner-bl {
+.bfx-qr-corner-bl {
   bottom: 0;
   left: 0;
   border-width: 0 0 2.5px 2.5px;
   border-bottom-left-radius: 4px;
 }
 
-.bsc-fb-corner-br {
+.bfx-qr-corner-br {
   bottom: 0;
   right: 0;
   border-width: 0 2.5px 2.5px 0;
   border-bottom-right-radius: 4px;
 }
 
-.bsc-fb-qr-caption {
-  font-size: 0.6875rem;
-  font-weight: 600;
-  color: var(--ed-ink-soft);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+/* Crisp QR Code Image */
+.bfx-qr-img {
+  width: min(100%, 200px);
+  aspect-ratio: 1 / 1;
+  height: auto;
+  object-fit: contain;
+  display: block;
+  border-radius: 6px;
+  background: #ffffff;
+  padding: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.bfx-qr-caption {
   margin-top: 0.625rem;
-  text-align: center;
-}
-
-.bsc-fb-qr-url-pill {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 0.6875rem;
-  color: var(--ed-ink);
-  background: var(--ed-surface);
-  border: 1px solid var(--ed-line);
-  padding: 0.35rem 0.625rem;
-  border-radius: 8px;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  margin-bottom: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--bfx-ink-soft);
   text-align: center;
 }
 
-.bsc-fb-actions-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  margin-top: auto;
-  width: 100%;
-}
-
-.bsc-fb-btn-fill {
+/* ── Feedback Link Display Pill ────────────────────────────────────────── */
+.bfx-qr-link-box {
+  background: var(--bfx-cream);
+  border: 1px solid var(--bfx-border);
+  border-radius: var(--bfx-radius-sm);
+  padding: 0.4375rem 0.625rem;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   gap: 0.5rem;
-  width: 100%;
-  padding: 0.75rem 1rem;
-  border-radius: 10px;
-  background: var(--ed-ink);
-  color: #ffffff;
-  font-size: 0.8125rem;
-  font-weight: 700;
+  min-width: 0;
+}
+
+.bfx-qr-link-text {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.6875rem;
+  color: var(--bfx-ink);
+  overflow-wrap: anywhere;
+  word-break: break-all;
+  line-height: 1.35;
+  min-width: 0;
+}
+
+.bfx-qr-mini-copy {
+  flex: none;
+  background: none;
   border: none;
+  padding: 0.25rem;
   cursor: pointer;
-  transition: background-color 180ms ease, transform 180ms ease;
-}
-
-.bsc-fb-btn-fill:hover {
-  background: #111827;
-  transform: translateY(-1px);
-}
-
-.bsc-fb-btn-fill:active {
-  transform: translateY(0);
-}
-
-.bsc-fb-btn-actions {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.375rem;
-}
-
-.bsc-fb-tool-btn {
+  color: var(--bfx-ink-soft);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.35rem;
-  padding: 0.5rem 0.35rem;
-  border-radius: 8px;
-  background: #ffffff;
-  border: 1px solid var(--ed-line);
-  color: var(--ed-ink-soft);
+  border-radius: 4px;
+  transition: color var(--bfx-duration) ease;
+}
+
+.bfx-qr-mini-copy:hover {
+  color: var(--bfx-green);
+}
+
+/* ── Action Buttons ─────────────────────────────────────────────────────── */
+.bfx-qr-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+/* Strong Primary CTA: OPEN FEEDBACK */
+.bfx-qr-btn-primary {
+  width: 100%;
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  background: var(--bfx-green);
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(18, 60, 53, 0.15);
+  transition: background-color var(--bfx-duration) ease,
+              transform var(--bfx-duration) ease,
+              box-shadow var(--bfx-duration) ease;
+}
+
+.bfx-qr-btn-primary svg {
+  width: 1rem;
+  height: 1rem;
+  color: var(--bfx-gold-light);
+  transition: transform 180ms ease;
+}
+
+.bfx-qr-btn-primary:hover {
+  background: var(--bfx-green-dark);
+  box-shadow: 0 6px 16px rgba(18, 60, 53, 0.25);
+  transform: translateY(-1px);
+}
+
+.bfx-qr-btn-primary:hover svg {
+  transform: translateX(3px);
+}
+
+.bfx-qr-btn-primary:active {
+  transform: translateY(0);
+}
+
+.bfx-qr-btn-primary:focus-visible {
+  outline: 2px solid var(--bfx-gold);
+  outline-offset: 2px;
+}
+
+/* Secondary Actions Toolbar */
+.bfx-qr-secondary-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.375rem;
+}
+
+.bfx-qr-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3125rem;
+  padding: 0.5rem 0.25rem;
+  min-height: 38px;
+  background: var(--bfx-white);
+  border: 1px solid var(--bfx-border);
+  border-radius: var(--bfx-radius-sm);
+  color: var(--bfx-ink);
   font-size: 0.6875rem;
   font-weight: 600;
+  letter-spacing: 0.02em;
   cursor: pointer;
-  transition: border-color 180ms ease, background-color 180ms ease, color 180ms ease;
   white-space: nowrap;
+  transition: border-color var(--bfx-duration) ease,
+              background-color var(--bfx-duration) ease,
+              color var(--bfx-duration) ease;
 }
 
-.bsc-fb-tool-btn:hover {
-  border-color: var(--ed-accent);
-  color: var(--ed-accent);
-  background: color-mix(in srgb, var(--ed-accent) 5%, #ffffff);
+.bfx-qr-btn-secondary svg {
+  width: 0.8125rem;
+  height: 0.8125rem;
+  flex: none;
 }
 
-/* ── Fullscreen Enlarge QR Modal ────────────────────────────────────────── */
+.bfx-qr-btn-secondary:hover {
+  border-color: var(--bfx-gold);
+  color: var(--bfx-green);
+  background: var(--bfx-cream);
+}
 
-.bsc-fb-modal-backdrop {
+.bfx-qr-btn-secondary:focus-visible {
+  outline: 2px solid var(--bfx-gold);
+  outline-offset: 2px;
+}
+
+.bfx-qr-copied-text {
+  color: var(--bfx-success) !important;
+  font-weight: 700;
+}
+
+/* ── States: Loading, Error, Empty ─────────────────────────────────────── */
+.bfx-qr-state-card {
+  background: var(--bfx-white);
+  border: 1px solid var(--bfx-border);
+  border-radius: var(--bfx-radius-lg);
+  padding: clamp(2rem, 5vw, 3rem) 1.5rem;
+  text-align: center;
+  max-width: 480px;
+  margin-inline: auto;
+  box-shadow: var(--bfx-shadow-card);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.875rem;
+}
+
+.bfx-qr-state-icon {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bfx-green-light);
+  color: var(--bfx-green);
+}
+
+.bfx-qr-state-title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--bfx-ink);
+}
+
+.bfx-qr-state-note {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--bfx-ink-soft);
+}
+
+/* Skeleton Loading */
+.bfx-qr-skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(18, 60, 53, 0.04) 25%,
+    rgba(18, 60, 53, 0.08) 50%,
+    rgba(18, 60, 53, 0.04) 75%
+  );
+  background-size: 200% 100%;
+  animation: bfxShimmer 1.5s infinite;
+  border-radius: 6px;
+}
+
+@keyframes bfxShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ── Enlarge QR Modal ──────────────────────────────────────────────────── */
+.bfx-qr-modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.65);
-  backdrop-filter: blur(6px);
+  background: rgba(11, 41, 36, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   z-index: 9999;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1.25rem;
-  animation: bscFadeIn 200ms ease;
+  padding: 1rem;
+  animation: bfxFadeIn 200ms ease;
 }
 
-.bsc-fb-modal {
+.bfx-qr-modal {
   position: relative;
   width: 100%;
   max-width: 440px;
-  background: #ffffff;
-  border: 1px solid var(--ed-line);
-  border-radius: 20px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: var(--bfx-white);
+  border: 1px solid var(--bfx-border);
+  border-radius: var(--bfx-radius-lg);
   padding: clamp(1.5rem, 4vw, 2.25rem);
   text-align: center;
-  box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.25);
-  animation: bscScaleUp 220ms cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: var(--bfx-shadow-modal);
+  animation: bfxScaleUp 220ms var(--bfx-ease);
 }
 
-.bsc-fb-modal-close {
+.bfx-qr-modal-close {
   position: absolute;
   top: 1rem;
   right: 1rem;
   width: 32px;
   height: 32px;
   border-radius: 999px;
-  border: 1px solid var(--ed-line);
-  background: #ffffff;
-  color: var(--ed-ink-soft);
+  border: 1px solid var(--bfx-border);
+  background: var(--bfx-cream);
+  color: var(--bfx-ink-soft);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -629,38 +817,84 @@
   transition: all 180ms ease;
 }
 
-.bsc-fb-modal-close:hover {
-  background: #f1f5f9;
-  color: var(--ed-ink);
+.bfx-qr-modal-close:hover {
+  background: var(--bfx-green-light);
+  color: var(--bfx-green);
+  border-color: var(--bfx-green);
   transform: rotate(90deg);
 }
 
-.bsc-fb-modal-qr-wrap {
+.bfx-qr-modal-qr-wrap {
   display: inline-block;
-  padding: 1.25rem;
-  background: #ffffff;
-  border: 1px solid var(--ed-line);
+  padding: 1rem;
+  background: var(--bfx-cream);
+  border: 1px solid var(--bfx-border);
   border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   margin-block: 1rem 0.75rem;
 }
 
-.bsc-fb-modal-qr-img {
+.bfx-qr-modal-img {
   width: 240px;
   height: 240px;
   max-width: 100%;
   aspect-ratio: 1;
   display: block;
   object-fit: contain;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 8px;
 }
 
-@keyframes bscFadeIn {
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.bfx-qr-footer {
+  flex: none;
+  background: var(--bfx-cream);
+  border-top: 1px solid var(--bfx-border);
+  padding: 1.75rem 0;
+  text-align: center;
+}
+
+.bfx-qr-footer-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  color: var(--bfx-ink-soft);
+}
+
+.bfx-qr-footer-brand {
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--bfx-green);
+  display: flex;
+  align-items: center;
+  gap: 0.4375rem;
+}
+
+.bfx-qr-footer-brand svg {
+  color: var(--bfx-gold);
+}
+
+/* ── Animations ────────────────────────────────────────────────────────── */
+@keyframes bfxFadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
 }
 
-@keyframes bscScaleUp {
-  from { opacity: 0; transform: scale(0.94); }
+@keyframes bfxScaleUp {
+  from { opacity: 0; transform: scale(0.95); }
   to { opacity: 1; transform: scale(1); }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .bfx-qr-card:hover,
+  .bfx-qr-box:hover,
+  .bfx-qr-btn-primary:hover,
+  .bfx-qr-modal,
+  .bfx-qr-modal-backdrop {
+    animation: none;
+    transform: none;
+  }
+}
