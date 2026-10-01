@@ -450,7 +450,10 @@ export function mapPhoto(raw: unknown): VmPhoto {
   return {
     id,
     submissionId: p.submissionId === undefined || p.submissionId === null ? null : toStr(p.submissionId),
-    locationId: p.locationId !== undefined && p.locationId !== null ? p.locationId : (p.location_id !== undefined ? p.location_id : null),
+    locationId: (() => {
+      const rawLoc = p.locationId !== undefined && p.locationId !== null ? p.locationId : (p.location_id !== undefined ? p.location_id : null);
+      return typeof rawLoc === 'string' || typeof rawLoc === 'number' ? rawLoc : null;
+    })(),
     locationName: toStr(p.locationName ?? p.location_name, '') || null,
     floor: toStr(p.floor, ''),
     section: toStr(p.section, ''),

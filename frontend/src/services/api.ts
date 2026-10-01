@@ -24,6 +24,7 @@ export interface UserSession {
   fullName: string;
   displayName: string;
   name?: string;
+  email?: string | null;
   employeeId?: string | number;
   token?: string | null;
   // ── Multi-Location Fields ──
