@@ -97,13 +97,18 @@ export default function WeddingCustomerDetail() {
   const [loading, setLoading] = useState(true);
   const [copiedMobile, setCopiedMobile] = useState(false);
 
-  // Tell Caller — the button only appears for roles the backend also accepts.
+  // Tell Caller & Instructions
   const [tellCallerOpen, setTellCallerOpen] = useState(false);
-  const [canTellCaller, setCanTellCaller] = useState(false);
+  const [canTellCaller, setCanTellCaller] = useState(() => {
+    const role = (Auth.get()?.role || '').trim().toLowerCase();
+    return ['admin', 'super admin', 'system administrator', 'manager', 'crm manager', 'store manager', 'floor manager', 'wedding collection manager', 'crm executive'].some(r => role.includes(r));
+  });
+  const [instructions, setInstructions] = useState<any[]>([]);
+  const [instructionsLoading, setInstructionsLoading] = useState(false);
 
   // Active Profile Section Tab
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'calls' | 'visits' | 'notes' | 'timeline' | 'status_history' | 'associated_weddings'
+    'overview' | 'calls' | 'visits' | 'notes' | 'timeline' | 'status_history' | 'associated_weddings' | 'caller_instructions'
   >('overview');
 
   // Edit Customer Modal
@@ -204,9 +209,10 @@ export default function WeddingCustomerDetail() {
     if (!id) return;
     setLoading(true);
     try {
-      const [custRes, fullRes] = await Promise.all([
+      const [custRes, fullRes, instrRes] = await Promise.all([
         API.getWeddingCustomerById(id),
-        API.getWeddingFullProfile(id).catch(() => null)
+        API.getWeddingFullProfile(id).catch(() => null),
+        API.getTelecallerInstructions({ customer_id: id, limit: 50 }).catch(() => null)
       ]);
 
       const loadedCustomer = custRes?.customer || custRes?.data || null;
@@ -231,12 +237,32 @@ export default function WeddingCustomerDetail() {
         setCallLogs(custRes.call_logs);
         setIsOldCustomerProfile(loadedCustomer?.lifecycle_status === 'OLD_CUSTOMER');
       }
+
+      const instrList = instrRes?.instructions || instrRes?.data?.instructions || (fullRes?.data as any)?.instructions || (fullRes as any)?.instructions || [];
+      if (Array.isArray(instrList)) {
+        setInstructions(instrList);
+      }
     } catch (err: any) {
       showToast('Error loading customer details: ' + (err.message || 'Unable to load data'), 'error');
     } finally {
       setLoading(false);
     }
   }, [id]);
+
+  const loadInstructions = useCallback(async (customerId: number | string) => {
+    try {
+      setInstructionsLoading(true);
+      const res = await API.getTelecallerInstructions({ customer_id: customerId, limit: 50 });
+      const list = res?.instructions || res?.data?.instructions || [];
+      if (Array.isArray(list)) {
+        setInstructions(list);
+      }
+    } catch (err) {
+      console.warn('[WeddingCustomerDetail] Could not load instructions:', err);
+    } finally {
+      setInstructionsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (!Auth.check()) {
@@ -247,14 +273,24 @@ export default function WeddingCustomerDetail() {
     loadCustomer();
   }, [loadCustomer, navigate]);
 
-  // Hidden here, enforced again on the server — hiding the button is not a permission.
+  // Robust permission gate: Managerial roles allow Tell Caller directly
   useEffect(() => {
     let active = true;
-    permissionsCache.get().then(() => {
-      if (!active) return;
-      const role = Auth.get()?.role;
-      setCanTellCaller(permissionsCache.canAction('wedding_tell_caller', 'can_add', role));
-    });
+    const role = (Auth.get()?.role || session?.role || '').trim().toLowerCase();
+    const isManagerial = ['admin', 'super admin', 'system administrator', 'manager', 'crm manager', 'store manager', 'floor manager', 'wedding collection manager', 'crm executive'].some(r => role.includes(r));
+    if (isManagerial) {
+      setCanTellCaller(true);
+    } else {
+      permissionsCache.get().then(() => {
+        if (!active) return;
+        const currentRole = Auth.get()?.role || session?.role;
+        setCanTellCaller(
+          permissionsCache.canAction('wedding_tell_caller', 'can_add', currentRole) ||
+          permissionsCache.canAction('wedding_crm', 'can_edit', currentRole) ||
+          permissionsCache.canAction('wedding_crm', 'can_add', currentRole)
+        );
+      });
+    }
     return () => { active = false; };
   }, [session?.role]);
 
@@ -790,11 +826,16 @@ export default function WeddingCustomerDetail() {
                 <button
                   type="button"
                   onClick={() => setTellCallerOpen(true)}
-                  className="px-3.5 py-2 bg-[#FFFDFC] hover:bg-[#FFF7F2] text-[#4A173A] border border-[#E8D9D4] font-semibold rounded-xl text-xs flex items-center gap-1.5 shadow-2xs transition-all active:scale-95 cursor-pointer"
+                  className="px-3.5 py-2 bg-[#FFFDFC] hover:bg-[#FDF4F6] text-[#4A173A] hover:text-[#6A2853] border border-[#E8D9D4] hover:border-[#B76E79] font-semibold rounded-xl text-xs flex items-center gap-1.5 shadow-2xs transition-all active:scale-95 cursor-pointer"
                   title="Send an instruction to a telecaller about this customer"
                 >
                   <MessageSquareQuote className="w-3.5 h-3.5 text-[#B76E79]" />
                   <span>Tell Caller</span>
+                  {instructions.length > 0 && (
+                    <span className="ml-0.5 px-1.5 py-0.2 bg-[#F6E2E5] text-[#6A2853] text-[10px] font-bold rounded-full">
+                      {instructions.length}
+                    </span>
+                  )}
                 </button>
               )}
 
@@ -926,6 +967,18 @@ export default function WeddingCustomerDetail() {
             <Heart className="w-3.5 h-3.5" />
             <span>All Registrations ({associatedRegistrations.length + associatedCustomers.length})</span>
           </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('caller_instructions')}
+            className={`px-4 py-2.5 rounded-xl transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+              activeTab === 'caller_instructions'
+                ? 'bg-[#B76E79] text-white shadow-xs font-bold'
+                : 'bg-[#FFFDFC] text-[#6F5963] hover:text-[#4A173A] border border-[#E8D9D4]'
+            }`}
+          >
+            <MessageSquareQuote className="w-3.5 h-3.5" />
+            <span>Tell Caller / Instructions ({instructions.length})</span>
+          </button>
         </div>
 
         {/* ── TAB 1: OVERVIEW & REQUIREMENTS ── */}
@@ -1053,9 +1106,22 @@ export default function WeddingCustomerDetail() {
 
             {/* Section 3: Follow-up & Telecaller Desk */}
             <div className="bg-[#FFFDFC] p-5 sm:p-6 rounded-3xl border border-[#E8D9D4] shadow-xs space-y-4 text-xs">
-              <div className="flex items-center gap-2 font-bold text-sm text-[#4A173A] border-b border-[#E8D9D4] pb-2.5">
-                <PhoneCall className="w-4 h-4 text-[#B76E79]" />
-                <span>Follow-up & Telecaller Desk</span>
+              <div className="flex items-center justify-between font-bold text-sm text-[#4A173A] border-b border-[#E8D9D4] pb-2.5">
+                <div className="flex items-center gap-2">
+                  <PhoneCall className="w-4 h-4 text-[#B76E79]" />
+                  <span>Follow-up & Telecaller Desk</span>
+                </div>
+                {canTellCaller && !isArchived && (
+                  <button
+                    type="button"
+                    onClick={() => setTellCallerOpen(true)}
+                    className="px-2.5 py-1 bg-[#FDF4F6] hover:bg-[#F6E2E5] text-[#6A2853] border border-[#B76E79]/30 font-semibold rounded-lg text-[11px] flex items-center gap-1 shadow-2xs transition-all active:scale-95 cursor-pointer"
+                    title="Send instruction to telecaller"
+                  >
+                    <MessageSquareQuote className="w-3 h-3 text-[#B76E79]" />
+                    <span>Tell Caller</span>
+                  </button>
+                )}
               </div>
               <div className="space-y-2.5">
                 <div className="flex justify-between items-center py-1 border-b border-[#E8D9D4]/40">
@@ -1091,6 +1157,78 @@ export default function WeddingCustomerDetail() {
                 <div className="flex justify-between items-center py-1">
                   <span className="text-[#6F5963]">Last Updated:</span>
                   <strong className="text-[#4A173A]">{formatDateTimeDisplay(customer.updated_at, '—')}</strong>
+                </div>
+
+                {/* Telecaller Instructions Summary Box */}
+                <div className="mt-3 pt-3 border-t border-[#E8D9D4] space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-1.5 font-bold text-[#4A173A]">
+                      <MessageSquareQuote className="w-3.5 h-3.5 text-[#B76E79]" />
+                      <span>Caller Instructions</span>
+                      {instructions.length > 0 && (
+                        <span className="px-1.5 py-0.2 bg-[#F6E2E5] text-[#6A2853] text-[10px] rounded-full font-bold">
+                          {instructions.length}
+                        </span>
+                      )}
+                    </span>
+                    {canTellCaller && !isArchived && (
+                      <button
+                        type="button"
+                        onClick={() => setTellCallerOpen(true)}
+                        className="text-[11px] font-bold text-[#B76E79] hover:text-[#4A173A] flex items-center gap-1 transition-colors cursor-pointer"
+                      >
+                        <Plus className="w-3 h-3" />
+                        <span>Tell Caller</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {instructions.length > 0 ? (
+                    <div className="bg-[#FAF7F5] rounded-xl p-2.5 border border-[#E8D9D4]/60 space-y-1.5">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="font-semibold text-[#4A173A] truncate max-w-[140px]">
+                          To: {instructions[0].telecaller_name || instructions[0].telecallerName || 'Assigned Caller'}
+                        </span>
+                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${
+                          instructions[0].status === 'Completed'
+                            ? 'bg-[#E8F5EE] text-[#198754] border-[#198754]/30'
+                            : instructions[0].status === 'Acknowledged'
+                            ? 'bg-[#FFF4D6] text-[#8A6212] border-[#C58A18]/30'
+                            : instructions[0].status === 'Seen'
+                            ? 'bg-[#EAF1FA] text-[#356AE6] border-[#356AE6]/30'
+                            : 'bg-[#F6E2E5] text-[#6A2853] border-[#B76E79]/30'
+                        }`}>
+                          {instructions[0].status || 'New'}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-[#4A173A] line-clamp-2 italic">
+                        "{instructions[0].message}"
+                      </p>
+                      <div className="flex items-center justify-between pt-1 text-[10px] text-[#6F5963]">
+                        <span>{formatDateTimeDisplay(instructions[0].created_at || instructions[0].createdAt, 'Recent')}</span>
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab('caller_instructions')}
+                          className="text-[#B76E79] hover:underline font-semibold"
+                        >
+                          View all ({instructions.length}) →
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-[#FAF7F5] rounded-xl p-2.5 border border-[#E8D9D4]/60 text-center">
+                      <p className="text-[11px] text-[#6F5963]">No instructions given to telecaller yet.</p>
+                      {canTellCaller && !isArchived && (
+                        <button
+                          type="button"
+                          onClick={() => setTellCallerOpen(true)}
+                          className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-semibold text-[#B76E79] hover:text-[#4A173A]"
+                        >
+                          <Plus className="w-3 h-3" /> Send first instruction
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -1524,6 +1662,131 @@ export default function WeddingCustomerDetail() {
                     </div>
                   </div>
                 )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── TAB 8: TELL CALLER / INSTRUCTIONS ── */}
+        {activeTab === 'caller_instructions' && (
+          <div className="space-y-4 animate-fade-in">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#FFFDFC] p-4 sm:p-5 rounded-3xl border border-[#E8D9D4] shadow-xs">
+              <div>
+                <h3 className="text-base font-bold text-[#4A173A] flex items-center gap-2">
+                  <MessageSquareQuote className="w-5 h-5 text-[#B76E79]" />
+                  <span>Telecaller Instructions & Directives ({instructions.length})</span>
+                </h3>
+                <p className="text-xs text-[#6F5963] mt-0.5">
+                  Guidance and priority instructions sent by CRM managers to the assigned telecaller for {customer.customer_name}.
+                </p>
+              </div>
+              {canTellCaller && !isArchived && (
+                <button
+                  type="button"
+                  onClick={() => setTellCallerOpen(true)}
+                  className="px-4 py-2 bg-[#4A173A] hover:bg-[#6A2853] text-white font-semibold rounded-xl text-xs flex items-center justify-center gap-2 shadow-2xs transition-all active:scale-95 cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Tell Caller / New Instruction</span>
+                </button>
+              )}
+            </div>
+
+            {instructionsLoading ? (
+              <div className="bg-[#FFFDFC] p-8 rounded-3xl border border-[#E8D9D4] flex flex-col items-center justify-center text-center text-[#6F5963]">
+                <RefreshCw className="w-6 h-6 animate-spin text-[#B76E79] mb-2" />
+                <p className="text-xs">Loading instructions...</p>
+              </div>
+            ) : instructions.length === 0 ? (
+              <div className="bg-[#FFFDFC] p-10 rounded-3xl border border-[#E8D9D4] flex flex-col items-center justify-center text-center">
+                <div className="w-12 h-12 rounded-full bg-[#F6E2E5] flex items-center justify-center text-[#B76E79] mb-3">
+                  <MessageSquareQuote className="w-6 h-6" />
+                </div>
+                <h4 className="text-sm font-bold text-[#4A173A]">No Instructions Sent Yet</h4>
+                <p className="text-xs text-[#6F5963] max-w-md mt-1 mb-4">
+                  Use "Tell Caller" to send specific instructions, guidance, or urgent reminders to the telecaller handling {customer.customer_name}.
+                </p>
+                {canTellCaller && !isArchived && (
+                  <button
+                    type="button"
+                    onClick={() => setTellCallerOpen(true)}
+                    className="px-4 py-2 bg-[#4A173A] hover:bg-[#6A2853] text-white font-semibold rounded-xl text-xs flex items-center gap-1.5 shadow-2xs transition-all active:scale-95 cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Send Instruction Now</span>
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {instructions.map((inst, idx) => {
+                  const statusColors: Record<string, string> = {
+                    Completed: 'bg-[#E8F5EE] text-[#198754] border-[#198754]/30',
+                    Acknowledged: 'bg-[#FFF4D6] text-[#8A6212] border-[#C58A18]/30',
+                    Seen: 'bg-[#EAF1FA] text-[#356AE6] border-[#356AE6]/30',
+                    New: 'bg-[#F6E2E5] text-[#6A2853] border-[#B76E79]/30'
+                  };
+                  const priorityColors: Record<string, string> = {
+                    Urgent: 'bg-rose-100 text-rose-800 border-rose-300 font-bold',
+                    High: 'bg-amber-100 text-amber-800 border-amber-300 font-bold',
+                    Normal: 'bg-blue-50 text-blue-700 border-blue-200'
+                  };
+
+                  return (
+                    <div
+                      key={inst.id || idx}
+                      className="bg-[#FFFDFC] p-4 sm:p-5 rounded-2xl border border-[#E8D9D4] shadow-xs space-y-3 hover:border-[#B76E79]/40 transition-colors"
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#E8D9D4]/40 pb-2.5">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-bold text-sm text-[#4A173A]">
+                            To: {inst.telecaller_name || inst.telecallerName || 'Assigned Telecaller'}
+                          </span>
+                          <span className={`px-2 py-0.5 rounded-md text-[11px] font-semibold border ${priorityColors[inst.priority || 'Normal'] || priorityColors.Normal}`}>
+                            {inst.priority || 'Normal'}
+                          </span>
+                          <span className={`px-2 py-0.5 rounded-md text-[11px] font-semibold border ${statusColors[inst.status || 'New'] || statusColors.New}`}>
+                            {inst.status || 'New'}
+                          </span>
+                        </div>
+                        <div className="text-[11px] text-[#6F5963] flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-[#9A858D]" />
+                          <span>{formatDateTimeDisplay(inst.created_at || inst.createdAt, 'N/A')}</span>
+                        </div>
+                      </div>
+
+                      <div className="bg-[#FAF7F5] rounded-xl p-3 border border-[#E8D9D4]/60">
+                        <p className="text-xs text-[#2B1722] leading-relaxed whitespace-pre-wrap font-normal">
+                          {inst.message}
+                        </p>
+                      </div>
+
+                      <div className="flex flex-wrap items-center justify-between text-[11px] text-[#6F5963] pt-1 gap-2">
+                        <div>
+                          <span>Sent By: </span>
+                          <strong className="text-[#4A173A]">{inst.sent_by_name || inst.sentByName || 'CRM Manager'}</strong>
+                        </div>
+                        <div className="flex items-center gap-3 flex-wrap">
+                          {inst.seen_at && (
+                            <span className="flex items-center gap-1 text-blue-700">
+                              <Eye className="w-3 h-3" /> Seen: {formatDateTimeDisplay(inst.seen_at, '')}
+                            </span>
+                          )}
+                          {inst.acknowledged_at && (
+                            <span className="flex items-center gap-1 text-amber-700">
+                              <Check className="w-3 h-3" /> Acknowledged: {formatDateTimeDisplay(inst.acknowledged_at, '')}
+                            </span>
+                          )}
+                          {inst.completed_at && (
+                            <span className="flex items-center gap-1 text-emerald-700 font-semibold">
+                              <CheckCircle2 className="w-3 h-3" /> Completed: {formatDateTimeDisplay(inst.completed_at, '')}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -2011,7 +2274,10 @@ export default function WeddingCustomerDetail() {
           <TellCallerModal
             customer={customer}
             onClose={() => setTellCallerOpen(false)}
-            onSent={loadCustomer}
+            onSent={() => {
+              loadCustomer();
+              if (customer?.id) loadInstructions(customer.id);
+            }}
           />
         )}
 

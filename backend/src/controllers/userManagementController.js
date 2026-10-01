@@ -1024,13 +1024,32 @@ const getMyPermissions = async (req, res) => {
       }, 'Using role defaults');
     }
 
-    const viewableModules = rows.filter(r => r.can_view === 1 || r.can_view === true).map(r => r.module);
+    const roleNorm = (role || '').trim().toLowerCase();
+    const isManagerRole = ['manager', 'crm manager', 'floor manager', 'store manager', 'wedding collection manager', 'crm executive'].includes(roleNorm);
+    const hasTellCaller = rows.some(r => r.module === 'wedding_tell_caller');
+    const effectiveRows = [...rows];
+    if (!hasTellCaller) {
+      const weddingCrmRow = rows.find(r => r.module === 'wedding_crm');
+      if (weddingCrmRow || isManagerRole) {
+        effectiveRows.push({
+          module: 'wedding_tell_caller',
+          can_view: 1,
+          can_add: weddingCrmRow ? (weddingCrmRow.can_add || weddingCrmRow.can_edit ? 1 : 0) : 1,
+          can_edit: weddingCrmRow ? (weddingCrmRow.can_edit ? 1 : 0) : 1,
+          can_delete: 0,
+          can_export: 1,
+          can_approve: 0
+        });
+      }
+    }
+
+    const viewableModules = effectiveRows.filter(r => r.can_view === 1 || r.can_view === true).map(r => r.module);
 
     return successRes(res, {
       isAdmin: false,
       custom: true,
       modules: viewableModules,
-      permissions: rows
+      permissions: effectiveRows
     }, 'User custom permissions retrieved');
   } catch (err) {
     const roleDefaults = authorizationService.resolveRoleDefaultPermissions(req.user?.role);

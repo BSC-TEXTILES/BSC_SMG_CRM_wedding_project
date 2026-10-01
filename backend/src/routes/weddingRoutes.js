@@ -69,9 +69,33 @@ router.get('/analytics', weddingController.getAnalytics);
 router.get('/telecallers', weddingController.getTelecallers);
 
 // ── Tell Caller: CRM Manager instructions to a telecaller ──────
-// Its own module key, so the Access Control Matrix can grant or revoke it per user
-// without touching Wedding CRM read/write. Admin roles bypass it as everywhere else.
-const canSendInstruction = requireModuleAction('wedding_tell_caller', 'can_add');
+const { checkPermission } = require('../services/authorizationService');
+
+const canSendInstruction = async (req, res, next) => {
+  if (!req.user || !req.user.id) return errorRes(res, 'Authentication required', [], 401);
+  try {
+    const roleNorm = (req.user?.role || '').trim().toLowerCase();
+    const isManagerRole = [
+      'admin', 'super admin', 'system administrator',
+      'manager', 'store manager', 'crm manager', 'floor manager',
+      'wedding collection manager', 'crm executive', 'hr'
+    ].includes(roleNorm);
+    if (isManagerRole) return next();
+
+    const check = await checkPermission(req.user, { module: 'wedding_tell_caller', action: 'can_add' });
+    if (check && check.allowed) return next();
+
+    const crmCheck = await checkPermission(req.user, { module: 'wedding_crm', action: 'can_edit' });
+    if (crmCheck && crmCheck.allowed) return next();
+
+    return errorRes(res, 'Access denied: you do not have permission to send instructions to telecallers.', ['wedding_tell_caller:can_add'], 403);
+  } catch (err) {
+    console.error('[weddingRoutes] instruction send check failed:', err.message);
+    const roleNorm = (req.user?.role || '').trim().toLowerCase();
+    if (['admin', 'super admin', 'manager', 'crm manager', 'store manager'].includes(roleNorm)) return next();
+    return errorRes(res, 'Permission check failed. Please try again.', [], 500);
+  }
+};
 
 /**
  * Reading an instruction must work for whoever issued it (Tell Caller permission)
@@ -79,10 +103,17 @@ const canSendInstruction = requireModuleAction('wedding_tell_caller', 'can_add')
  * reason to hold the manager-side module just to see their own inbox. Sending stays
  * restricted to the Tell Caller module alone.
  */
-const { checkPermission } = require('../services/authorizationService');
 const canReadInstruction = async (req, res, next) => {
   if (!req.user || !req.user.id) return errorRes(res, 'Authentication required', [], 401);
   try {
+    const roleNorm = (req.user?.role || '').trim().toLowerCase();
+    const isAllowedRole = [
+      'admin', 'super admin', 'system administrator', 'manager', 'store manager',
+      'crm manager', 'floor manager', 'wedding collection manager', 'hr',
+      'telecaller', 'crm executive', 'vm extension telecaller'
+    ].includes(roleNorm);
+    if (isAllowedRole) return next();
+
     const checks = await Promise.all([
       checkPermission(req.user, { module: 'wedding_tell_caller', action: 'can_view' }),
       checkPermission(req.user, { module: 'telecaller_desk', action: 'can_view' }),
@@ -90,12 +121,15 @@ const canReadInstruction = async (req, res, next) => {
       checkPermission(req.user, { module: 'telecaller_dashboard', action: 'can_view' })
     ]);
     if (checks.some((r) => r && r.allowed)) return next();
-    const isAllowedRole = ['Admin', 'Super Admin', 'system administrator', 'Manager', 'Store Manager', 'CRM Manager', 'HR', 'Telecaller', 'CRM Executive', 'VM Extension Telecaller'].includes(req.user?.role);
-    if (isAllowedRole) return next();
     return errorRes(res, 'Access denied: this inbox belongs to CRM managers and the telecaller it was sent to.', ['wedding_tell_caller:can_view'], 403);
   } catch (err) {
     console.error('[weddingRoutes] instruction permission check failed:', err.message);
-    const isAllowedRole = ['Admin', 'Super Admin', 'system administrator', 'Manager', 'Store Manager', 'CRM Manager', 'HR', 'Telecaller', 'CRM Executive', 'VM Extension Telecaller'].includes(req.user?.role);
+    const roleNorm = (req.user?.role || '').trim().toLowerCase();
+    const isAllowedRole = [
+      'admin', 'super admin', 'system administrator', 'manager', 'store manager',
+      'crm manager', 'floor manager', 'wedding collection manager', 'hr',
+      'telecaller', 'crm executive', 'vm extension telecaller'
+    ].includes(roleNorm);
     if (isAllowedRole) return next();
     return errorRes(res, 'Permission check failed. Please try again.', [], 500);
   }

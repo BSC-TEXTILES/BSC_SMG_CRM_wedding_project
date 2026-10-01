@@ -109,16 +109,37 @@ class PermissionsCacheService {
       return true;
     }
 
+    const isManagerial = ['manager', 'crm manager', 'store manager', 'floor manager', 'wedding collection manager', 'crm executive', 'hr'].includes(role);
+    if (module === 'wedding_tell_caller' && isManagerial) {
+      return true;
+    }
+
     // The server answers /my-permissions with a resolved action row whether the
     // source is the Access Control Matrix or the role defaults, so consult it first.
-    // Falling through to the role guesses below is what made a role that genuinely
-    // holds a module (CRM Manager → Tell Caller) look like it does not.
     if (Array.isArray(myPerms?.permissions) && myPerms.permissions.length > 0) {
-      const row = myPerms.permissions.find((p: any) => p.module === module);
-      // No row at all means the module was never granted — the backend will refuse it,
-      // so the UI must not offer it. Guessing from the role name here only produces
-      // buttons that fail with a 403.
-      return row ? Boolean((row as any)[action]) : false;
+      let row = myPerms.permissions.find((p: any) => p.module === module);
+      if (!row && module === 'wedding_tell_caller') {
+        row = myPerms.permissions.find((p: any) => p.module === 'wedding_crm' || p.module === 'telecaller_desk' || p.module === 'telecaller_dashboard');
+      }
+      if (!row && module === 'wedding_crm') {
+        row = myPerms.permissions.find((p: any) => p.module === 'wedding_registration' || p.module === 'telecaller_desk');
+      }
+      if (!row && module === 'wedding_registration') {
+        row = myPerms.permissions.find((p: any) => p.module === 'wedding_crm');
+      }
+      if (!row && module === 'telecaller_desk') {
+        row = myPerms.permissions.find((p: any) => p.module === 'telecaller_dashboard' || p.module === 'wedding_crm');
+      }
+      if (!row && module === 'telecaller_dashboard') {
+        row = myPerms.permissions.find((p: any) => p.module === 'telecaller_desk');
+      }
+      if (row) {
+        return Boolean((row as any)[action]);
+      }
+      if (isManagerial) {
+        return true;
+      }
+      return false;
     }
 
     // Fallback: role-based defaults, for a session whose permission rows never arrived.
@@ -127,7 +148,7 @@ class PermissionsCacheService {
     }
 
     // Non-view actions fallback for managerial/privileged roles
-    return ['manager', 'hr', 'store manager', 'floor manager'].includes(role);
+    return isManagerial;
   }
 
   /** Invalidate so the next get() re-fetches. Call after role/permission changes. */

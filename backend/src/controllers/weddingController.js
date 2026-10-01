@@ -5634,6 +5634,18 @@ class WeddingController {
         ORDER BY wc.created_at DESC
       `, [normMob, cleanMob, id, ...assocParams]);
 
+      let instructions = [];
+      try {
+        await ensureTelecallerInstructionsTable().catch(() => {});
+        const [instrRows] = await pool.query(
+          `SELECT * FROM wedding_telecaller_instructions WHERE customer_id = ? ORDER BY created_at DESC, id DESC LIMIT 50`,
+          [id]
+        );
+        instructions = (instrRows || []).map(mapInstructionRow);
+      } catch (e) {
+        // Fallback gracefully
+      }
+
       return successRes(res, {
         customer,
         callLogs: callLogs || [],
@@ -5646,6 +5658,7 @@ class WeddingController {
         communications: communications || [],
         documents: documents || [],
         auditLogs: auditLogs || [],
+        instructions: instructions || [],
         associatedRegistrations: associatedRegistrations || [],
         associatedCustomers: associatedCustomers || [],
         is_old_customer: customer.lifecycle_status === 'OLD_CUSTOMER'

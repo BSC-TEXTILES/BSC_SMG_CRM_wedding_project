@@ -114,14 +114,28 @@ export default function WeddingCustomerRegister() {
 
   // Tell Caller
   const [tellCallerCustomer, setTellCallerCustomer] = useState<WeddingCustomer | null>(null);
-  const [canTellCaller, setCanTellCaller] = useState(false);
+  const [canTellCaller, setCanTellCaller] = useState(() => {
+    const role = (Auth.get()?.role || '').trim().toLowerCase();
+    return ['admin', 'super admin', 'system administrator', 'manager', 'crm manager', 'store manager', 'floor manager', 'wedding collection manager', 'crm executive'].some(r => role.includes(r));
+  });
 
   useEffect(() => {
     let active = true;
-    permissionsCache.get().then(() => {
-      if (!active) return;
-      setCanTellCaller(permissionsCache.canAction('wedding_tell_caller', 'can_add', Auth.get()?.role));
-    });
+    const role = (Auth.get()?.role || '').trim().toLowerCase();
+    const isManagerial = ['admin', 'super admin', 'system administrator', 'manager', 'crm manager', 'store manager', 'floor manager', 'wedding collection manager', 'crm executive'].some(r => role.includes(r));
+    if (isManagerial) {
+      setCanTellCaller(true);
+    } else {
+      permissionsCache.get().then(() => {
+        if (!active) return;
+        const currentRole = Auth.get()?.role;
+        setCanTellCaller(
+          permissionsCache.canAction('wedding_tell_caller', 'can_add', currentRole) ||
+          permissionsCache.canAction('wedding_crm', 'can_edit', currentRole) ||
+          permissionsCache.canAction('wedding_crm', 'can_add', currentRole)
+        );
+      });
+    }
     return () => { active = false; };
   }, []);
 
