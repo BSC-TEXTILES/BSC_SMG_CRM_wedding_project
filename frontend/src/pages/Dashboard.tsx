@@ -420,20 +420,23 @@ export default function DashboardPage() {
   return (
     <DashboardLayout
       title={dashboardTitle}
-      breadcrumbs={[{ label: 'Dashboard' }]}
+      breadcrumbs={[]}
     >
       <PageContainer maxWidth="full">
         {/* =========================================================================
             SECTION 1: EXECUTIVE OVERVIEW HEADER (Clean Enterprise Style)
         ========================================================================== */}
-        <div className="bg-white rounded-2xl border border-[#E1DDD3] shadow-xs p-5 sm:p-6 mb-6">
+        <div className="bg-white rounded-2xl border border-[#E2DDD2] shadow-xs px-5 py-4 sm:px-6 sm:py-5 mb-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="min-w-0">
-              <h1 className="text-xl sm:text-2xl font-black text-[#17201D] tracking-tight leading-tight">
+              <h2 className="text-xl sm:text-2xl font-bold text-[#182033] tracking-tight leading-tight">
                 {isAdminDashboard ? 'ADMIN DASHBOARD' : 'BSC EXECUTIVE DASHBOARD'}
-              </h1>
-              <p className="text-xs sm:text-sm font-semibold text-[#65716C] mt-1">
-                Executive &amp; Workforce Operations — Live overview of BSC Textiles across authorized locations.
+              </h2>
+              <p className="text-xs sm:text-sm font-semibold text-[#123C35] mt-0.5">
+                Executive &amp; Workforce Operations
+              </p>
+              <p className="text-xs text-[#687080] font-medium mt-0.5">
+                Live overview of BSC Textiles across authorized locations.
               </p>
             </div>
 
@@ -445,13 +448,12 @@ export default function DashboardPage() {
                 type="button"
                 onClick={() => loadData()}
                 disabled={isRefreshing}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#E1DDD3] bg-[#F7F5F0] hover:bg-white text-[#17201D] text-xs font-bold transition-all shadow-2xs hover:border-[#C9A45C] cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[#E2DDD2] bg-[#F7F4ED] hover:bg-white text-[#182033] text-xs font-bold transition-all shadow-xs hover:border-[#C9A45C] cursor-pointer"
                 title="Refresh dashboard metrics"
               >
                 <RefreshCw className={`w-3.5 h-3.5 text-[#C9A45C] ${isRefreshing ? 'animate-spin' : ''}`} />
                 <span className="hidden sm:inline">Refresh</span>
               </button>
-
             </div>
           </div>
         </div>

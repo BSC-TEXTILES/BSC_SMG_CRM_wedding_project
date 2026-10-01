@@ -146,7 +146,7 @@ body {
 .sidebar-accent { color: #C9A45C; }
 .sidebar-hover-bg { background-color: #082821; }
 .sidebar-active-bg { background-color: #C9A45C; }
-.sidebar-active-text { color: #17201D; }
+.sidebar-active-text { color: #0B2924; }
 
 /* Enable full project text selection & copying everywhere */
 html, #root, * {

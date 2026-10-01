@@ -5,7 +5,7 @@ import Sidebar from '../Sidebar';
 import Topbar from '../Topbar';
 import ToastContainer from '../Toast';
 import PageContainer from '../ui/PageContainer';
-import { Auth, UserSession } from "../../services/api";
+import { Auth, UserSession } from '../../services/api';
 
 import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../../utils/sidebarState';
 import { BreadcrumbCrumb } from '../../utils/breadcrumbs';
@@ -51,12 +51,22 @@ export default function DashboardLayout({
   }, [navigate]);
 
   return (
-    <div className="h-screen h-[100dvh] max-h-screen bg-[#F7F5F0] flex relative select-text w-full max-w-full overflow-hidden">
+    <div className="h-screen h-[100dvh] max-h-screen bg-[#F7F4ED] flex relative select-text w-full max-w-full overflow-hidden">
       <ToastContainer />
 
-      <Sidebar session={session} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      {/* Global Sidebar Shell */}
+      <Sidebar
+        session={session}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
 
-      <div className={`flex-1 flex flex-col min-w-0 w-full h-full max-h-full overflow-hidden transition-all duration-300 ${collapsed ? 'lg:pl-[72px]' : 'lg:pl-64'}`}>
+      {/* Main Content Area: Resizes smoothly with sidebar collapse */}
+      <div
+        className={`flex-1 flex flex-col min-w-0 w-full h-full max-h-full overflow-hidden transition-all duration-300 ${
+          collapsed ? 'lg:pl-[72px]' : 'lg:pl-[270px]'
+        }`}
+      >
         {!hideTopbar ? (
           <Topbar
             title={title}
@@ -67,23 +77,25 @@ export default function DashboardLayout({
             rightElement={rightElement}
           />
         ) : (
-          <div className="lg:hidden h-12 px-4 flex items-center justify-between bg-[#FFFFFF] border-b border-[#E1DDD3] sticky top-0 z-30 shrink-0">
+          <div className="lg:hidden h-14 px-4 flex items-center justify-between bg-white border-b border-[#E2DDD2] sticky top-0 z-30 shrink-0">
             <button
               type="button"
               onClick={() => setSidebarOpen(true)}
-              className="flex items-center justify-center w-9 h-9 rounded-xl bg-[#123C35] text-white hover:bg-[#082821] active:scale-95 transition-all shadow-sm border border-[#123C35]"
+              className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#123C35] text-white hover:bg-[#0B2924] active:scale-95 transition-all shadow-xs border border-[#123C35] cursor-pointer"
               aria-label="Open navigation menu"
               title="Open navigation menu"
             >
               <Menu className="w-5 h-5 text-white" />
             </button>
-            <span className="text-xs font-black text-[#123C35] truncate max-w-[200px]">{title}</span>
-            <div className="w-9" />
+            <span className="text-sm font-bold text-[#182033] truncate max-w-[200px]">{title}</span>
+            <div className="w-10" />
           </div>
         )}
 
         <main className="flex-1 w-full min-w-0 max-w-full overflow-y-auto overflow-x-hidden custom-scrollbar focus:outline-none">
-          {noPadding ? children : (
+          {noPadding ? (
+            children
+          ) : (
             <PageContainer maxWidth="full">
               {children}
             </PageContainer>

@@ -138,7 +138,7 @@ export default function BroadcastCenterPage() {
       <ToastContainer />
       <Sidebar session={session} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${collapsed ? 'lg:pl-[72px]' : 'lg:pl-64'}`}>
+      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${collapsed ? 'lg:pl-[72px]' : 'lg:pl-[270px]'}`}>
         <Topbar
           title="Broadcast Center"
           breadcrumbs={[{ label: activeTab === 'dashboard' ? 'Analytics Dashboard' : activeTab === 'create' ? 'Create Broadcast' : 'Broadcast History' }]}

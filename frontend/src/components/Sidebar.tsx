@@ -1,7 +1,29 @@
 import { useEffect, useState, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Auth, UserSession } from '../services/api';
-import { BarChart3, Users, Target, FileText, LogOut, ClipboardList, Settings, UserCheck, Briefcase, ChevronRight, Sparkles, Megaphone, SquareCheck, Menu, Shield, ShieldAlert, PhoneCall, Heart, X, KeyRound } from 'lucide-react';
+import {
+  BarChart3,
+  Users,
+  Target,
+  FileText,
+  LogOut,
+  ClipboardList,
+  Settings,
+  UserCheck,
+  Briefcase,
+  ChevronRight,
+  Sparkles,
+  Megaphone,
+  SquareCheck,
+  Menu,
+  Shield,
+  ShieldAlert,
+  PhoneCall,
+  Heart,
+  X,
+  KeyRound,
+  Globe
+} from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import ChangePasswordModal from './ui/ChangePasswordModal';
 import {
@@ -43,9 +65,9 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
   const isGlobalUser = locCtx.isGlobalAdmin && isAdminRole && (!session?.locationId || session?.isGlobalAdmin === true);
   const activeLocationLabel = locCtx
     ? (locCtx.currentLocation === 'ALL' && isGlobalUser)
-      ? '🌐 ALL LOCATIONS'
-      : `📍 ${(locCtx.currentLocationLabel || session?.locationName || 'STORE').toUpperCase()}`
-    : '';
+      ? 'ALL LOCATIONS'
+      : (locCtx.currentLocationLabel || session?.locationName || 'STORE').toUpperCase()
+    : 'ALL LOCATIONS';
 
   useEffect(() => {
     const unsub = subscribeSidebarCollapsed((c) => {
@@ -54,7 +76,7 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
     return unsub;
   }, []);
 
-  // ── Escape key closes mobile sidebar ────────────────────────────
+  // Escape key closes mobile sidebar
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -67,7 +89,7 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  // ── Body scroll lock when mobile sidebar is open ────────────────
+  // Body scroll lock when mobile sidebar drawer is open
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -88,24 +110,23 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
     setSidebarCollapsed(next);
   };
 
-  // Auto-scroll the active nav item to the top of the sidebar
+  // Auto-scroll active nav item into view
   useEffect(() => {
     if (!navScrollRef.current) return;
     const container = navScrollRef.current;
-    // Small delay to ensure the DOM has updated after navigation
     const timer = setTimeout(() => {
       const activeLink = container.querySelector('[data-active="true"]');
       if (activeLink) {
         const containerRect = container.getBoundingClientRect();
         const linkRect = activeLink.getBoundingClientRect();
         const offset = linkRect.top - containerRect.top + container.scrollTop;
-        container.scrollTo({ top: Math.max(0, offset - 8), behavior: 'smooth' });
+        container.scrollTo({ top: Math.max(0, offset - 12), behavior: 'smooth' });
       }
-    }, 50);
+    }, 60);
     return () => clearTimeout(timer);
   }, [pathname]);
 
-  // Single source of truth shared with RouteGuard (utils/rbac.ts)
+  // Single source of truth shared with RouteGuard
   const [allowed, setAllowed] = useState<string[]>(() => {
     if (session?.modules && Array.isArray(session.modules) && session.modules.length > 0) {
       return resolveAllowedPages(role, null, session.modules);
@@ -135,22 +156,16 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
     'Guest':       'Guest'
   };
 
-  const isTelecallerRole = [
-    'telecaller', 'caller', 'tele-caller', 'tele caller',
-    'vm extension telecaller', 'vm telecaller'
-  ].includes((role || '').trim().toLowerCase().replace(/[_\s-]+/g, ' '));
-
   const dashboardHref = getDashboardRouteForRole(role);
-  const dashboardLabel = getDashboardLabelForRole(role);
 
   const navItems: NavItem[] = [
-    // Enterprise (Role-specific landing module at top)
-    { key: 'dashboard', href: '/dashboard', label: 'Dashboard', icon: BarChart3, section: 'Enterprise' },
-    { key: 'regional_analytics', href: '/dashboard', label: 'Regional Analytics', icon: BarChart3, section: 'Enterprise' },
-    { key: 'employees', href: '/employees', label: 'Employee & Store Directory', icon: UserCheck, section: 'Enterprise' },
-    { key: 'greyhr', href: '/employees', label: 'GreyHR Sync', icon: UserCheck, section: 'Enterprise' },
-    { key: 'user_management', href: '/user-management', label: 'User Management', icon: Shield, section: 'Enterprise' },
-    { key: 'attendance', href: '/attendance', label: 'Attendance & Roster', icon: UserCheck, section: 'Enterprise' },
+    // Overview (formerly Enterprise)
+    { key: 'dashboard', href: '/dashboard', label: 'Dashboard', icon: BarChart3, section: 'Overview' },
+    { key: 'regional_analytics', href: '/dashboard', label: 'Regional Analytics', icon: BarChart3, section: 'Overview' },
+    { key: 'employees', href: '/employees', label: 'Employee & Store Directory', icon: UserCheck, section: 'Overview' },
+    { key: 'greyhr', href: '/employees', label: 'GreyHR Sync', icon: UserCheck, section: 'Overview' },
+    { key: 'user_management', href: '/user-management', label: 'User Management', icon: Shield, section: 'Overview' },
+    { key: 'attendance', href: '/attendance', label: 'Attendance & Roster', icon: UserCheck, section: 'Overview' },
 
     // Store Operations
     { key: 'wedding_crm', href: '/wedding-crm/dashboard', label: 'Wedding CRM', icon: Sparkles, section: 'Store Operations', isNew: true },
@@ -196,7 +211,6 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
 
   useEffect(() => {
     const updateAllowed = () => {
-      // First check local stored session
       try {
         const stored = localStorage.getItem('bsc_user_session') || localStorage.getItem('user');
         if (stored) {
@@ -240,33 +254,35 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
   }, [role, session]);
 
   const initials = session?.fullName
-    ? session.fullName.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase()
+    ? session.fullName.split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase()
     : role.slice(0, 2).toUpperCase();
 
   return (
     <>
+      {/* Mobile Backdrop Overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-[#082821]/70 z-40 lg:hidden transition-opacity"
+          className="fixed inset-0 bg-[#0B2924]/75 z-40 lg:hidden transition-opacity backdrop-blur-xs"
           onClick={onClose}
           aria-hidden="true"
         />
       )}
 
+      {/* ── Main Sidebar Shell ────────────────────────────────────────────── */}
       <aside
         role="navigation"
         aria-label="Main navigation"
         className={`
-          fixed top-0 left-0 bottom-0 bg-[#123C35] text-white z-50 flex flex-col transition-all duration-300 shadow-2xl border-r border-white/10 overscroll-contain
-          w-[280px] max-w-[85vw] lg:max-w-none
+          fixed top-0 left-0 bottom-0 bg-[#123C35] text-white z-50 flex flex-col transition-all duration-300 shadow-2xl border-r border-white/10 overscroll-contain overflow-hidden
+          w-[min(85vw,320px)] lg:max-w-none
           ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-          ${collapsed ? 'lg:w-[72px]' : 'lg:w-64'}
+          ${collapsed ? 'lg:w-[72px]' : 'lg:w-[270px]'}
         `}
       >
-        {/* Header: Collapsed on Desktop shows ONLY 3-lines + logo; On mobile or Desktop Expanded shows Logo + Text + Close/Toggle */}
-        <div className="p-3 sm:p-3.5 border-b border-white/10 flex items-center justify-between min-h-[64px] w-full bg-[#082821]/50">
+        {/* ── 1. Fixed Header ─────────────────────────────────────────────── */}
+        <div className="p-3 sm:p-3.5 border-b border-white/10 flex items-center justify-between min-h-[64px] sm:min-h-[68px] w-full bg-[#0B2924]/60 shrink-0">
           <div className={`flex items-center gap-2.5 min-w-0 ${collapsed ? 'lg:hidden' : 'flex'}`}>
-            <div className="w-11 h-9 rounded-xl bg-white p-1 shadow-md border border-[#C9A45C]/30 flex items-center justify-center flex-shrink-0">
+            <div className="w-9 h-9 rounded-lg bg-white p-1 shadow-sm border border-[#C9A45C]/40 flex items-center justify-center shrink-0">
               <img
                 src="/logo.png"
                 alt="BSC Logo"
@@ -274,35 +290,30 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
               />
             </div>
             <div className="min-w-0">
-              <div className="font-extrabold text-sm text-white tracking-wide leading-tight truncate">BSC Textiles</div>
-              <div className="text-[9px] font-bold uppercase tracking-widest mt-0.5 flex items-center gap-1 truncate text-[#E4CB92]">
-                {activeLocationLabel ? (
-                  <span className={activeLocationLabel.includes('ALL') ? 'text-[#C9A45C] font-extrabold truncate' : 'truncate text-[#E4CB92]'}>
-                    {activeLocationLabel}
-                  </span>
-                ) : isGlobalUser ? (
-                  <span className="text-[#C9A45C] font-extrabold truncate">🌐 ALL LOCATIONS</span>
-                ) : (
-                  <span className="truncate text-[#E4CB92]">📍 {(session?.locationName || locCtx?.activeLocation?.name || 'STORE').toUpperCase()}</span>
-                )}
+              <div className="font-bold text-sm text-white tracking-wider leading-tight uppercase truncate">
+                BSC Textiles
+              </div>
+              <div className="text-[10px] font-semibold uppercase tracking-wider mt-0.5 flex items-center gap-1 truncate text-[#E4CB92]">
+                <Globe className="w-2.5 h-2.5 text-[#C9A45C] shrink-0" />
+                <span className="truncate">{activeLocationLabel}</span>
               </div>
             </div>
           </div>
 
-          {/* Desktop Collapsed View Only */}
+          {/* Desktop Collapsed View Only (Icon and Logo) */}
           {collapsed && (
             <div className="hidden lg:flex flex-col items-center justify-center w-full gap-2 py-1">
               <button
                 type="button"
                 onClick={handleToggle}
-                className="p-1.5 rounded-xl text-[#C9A45C] hover:text-white hover:bg-[#1D5148] transition-colors flex items-center justify-center cursor-pointer shadow-xs border border-white/10"
+                className="p-1.5 rounded-xl text-[#C9A45C] hover:text-white hover:bg-white/10 transition-colors flex items-center justify-center cursor-pointer shadow-xs border border-white/10"
                 title="Expand navigation menu"
                 aria-label="Expand sidebar"
               >
                 <Menu className="w-5 h-5 text-[#C9A45C]" />
               </button>
               <div
-                className="w-10 h-8 rounded-xl bg-white p-1 shadow-md border border-[#C9A45C]/40 hover:scale-105 transition-transform cursor-pointer flex items-center justify-center flex-shrink-0"
+                className="w-9 h-9 rounded-lg bg-white p-1 shadow-sm border border-[#C9A45C]/40 hover:scale-105 transition-transform cursor-pointer flex items-center justify-center shrink-0"
                 onClick={handleToggle}
                 title="BSC Logo - Click to expand navigation"
               >
@@ -315,25 +326,25 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
             </div>
           )}
 
-          {/* Right Header Action: Close button on mobile; Collapse toggle on desktop */}
+          {/* Header Action: Close button on mobile; Collapse toggle on desktop */}
           <div className="flex items-center gap-1">
             {/* Mobile Close Button */}
             <button
               type="button"
               onClick={onClose}
-              className="lg:hidden p-1.5 rounded-xl text-[#B9C8C2] hover:text-white hover:bg-white/10 transition-colors"
+              className="lg:hidden p-1.5 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
               title="Close navigation"
               aria-label="Close navigation"
             >
               <X className="w-5 h-5" />
             </button>
 
-            {/* Desktop Collapse Toggle (visible only when not collapsed on desktop) */}
+            {/* Desktop Collapse Toggle */}
             {!collapsed && (
               <button
                 type="button"
                 onClick={handleToggle}
-                className="hidden lg:flex p-1.5 rounded-xl text-[#C9A45C] hover:text-white hover:bg-[#1D5148] transition-colors flex-shrink-0 cursor-pointer border border-white/10 shadow-xs"
+                className="hidden lg:flex p-1.5 rounded-xl text-[#C9A45C] hover:text-white hover:bg-white/10 transition-colors shrink-0 cursor-pointer border border-white/10 shadow-xs"
                 title="Collapse sidebar"
                 aria-label="Collapse sidebar"
               >
@@ -343,31 +354,38 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
           </div>
         </div>
 
-        {/* User Card */}
-        <div className={`mx-2 my-2 rounded-xl bg-[#082821]/80 border border-white/10 flex items-center shadow-inner transition-all ${
-          collapsed ? 'p-1 justify-center' : 'p-2.5 gap-2.5'
+        {/* ── 2. Fixed User Profile Card ──────────────────────────────────── */}
+        <div className={`mx-3 my-2.5 rounded-xl bg-[#0B2924]/60 border border-white/[0.08] flex items-center transition-all shrink-0 ${
+          collapsed ? 'lg:mx-1.5 p-1.5 justify-center' : 'p-2.5 gap-2.5'
         }`}>
           <div
-            className="w-8 h-8 rounded-lg bg-[#C9A45C] text-[#17201D] font-black flex items-center justify-center text-xs shadow-md border border-[#E4CB92] flex-shrink-0"
+            className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#C9A45C] to-[#B88F45] text-[#0B2924] font-black flex items-center justify-center text-xs shadow-sm border border-[#E4CB92]/40 shrink-0"
             title={`${session?.fullName || 'User'} (${role})`}
           >
             {initials}
           </div>
           {!collapsed && (
-            <div className="overflow-hidden flex-1">
-              <div className="font-bold text-xs text-white truncate">{session?.fullName || 'HR Manager'}</div>
-              <div className="text-[10px] text-[#E4CB92] font-semibold truncate">{roleLabels[role] || role}</div>
+            <div className="overflow-hidden flex-1 min-w-0">
+              <div className="font-bold text-xs text-white truncate">
+                {session?.fullName || 'System Administrator'}
+              </div>
+              <div className="text-[10px] text-[#E4CB92] font-semibold truncate mt-0.5">
+                {roleLabels[role] || role}
+              </div>
             </div>
           )}
         </div>
 
-        {/* Navigation Items */}
-        <div ref={navScrollRef} className="flex-1 overflow-y-auto overscroll-contain custom-scrollbar px-2 py-1.5 space-y-3">
-          {['Enterprise', 'Store Operations', 'Talent', 'Daily Operations', 'Administration', 'Public Portals'].map(section => {
-            // Strict RBAC rendering: only keys resolved for THIS user
-            const rawItems = navItems.filter(item => item.section === section && allowed.includes(item.key));
+        {/* ── 3. Scrollable Navigation Content ────────────────────────────── */}
+        <div
+          ref={navScrollRef}
+          className="flex-1 overflow-y-auto overflow-x-hidden overscroll-contain custom-scrollbar px-3 py-2 space-y-4"
+        >
+          {['Overview', 'Store Operations', 'Talent', 'Daily Operations', 'Administration', 'Public Portals'].map((section) => {
+            const rawItems = navItems.filter((item) => item.section === section && allowed.includes(item.key));
             if (rawItems.length === 0) return null;
 
+            // Deduplicate items by href
             const items: NavItem[] = [];
             const seenHrefs = new Set<string>();
             for (const it of rawItems) {
@@ -378,17 +396,17 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
             }
 
             return (
-              <div key={section} className="space-y-0.5">
+              <div key={section} className="space-y-1">
                 {collapsed ? (
-                  <div className="h-px bg-white/10 my-1.5 mx-1" />
+                  <div className="h-px bg-white/10 my-2 mx-1" />
                 ) : (
-                  <div className="text-[9px] font-bold uppercase tracking-widest text-[#E4CB92] px-2.5 mb-1">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-[#E4CB92]/90 px-3 mb-1.5">
                     <span>{section}</span>
                   </div>
                 )}
 
-                <div className="space-y-1">
-                  {items.map(item => {
+                <div className="space-y-0.5">
+                  {items.map((item) => {
                     const Icon = item.icon;
                     const isActive = pathname === item.href || (item.key === 'dashboard' && pathname === dashboardHref);
 
@@ -401,38 +419,40 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
                         title={item.hint ? `${item.label} — ${item.hint}` : item.label}
                         data-active={isActive ? 'true' : undefined}
                         className={`
-                          flex items-center rounded-xl text-xs font-bold transition-all duration-150 group relative
-                          ${collapsed ? 'justify-center px-0 py-2.5' : 'px-3 py-2.5 justify-between'}
+                          flex items-center rounded-xl text-xs font-semibold transition-colors duration-150 group relative
+                          ${collapsed ? 'justify-center p-2.5 my-1' : 'px-3 py-2.5 justify-between my-0.5'}
                           ${isActive
-                            ? 'bg-[#C9A45C] text-[#17201D] shadow-md shadow-[#C9A45C]/25 font-black border-l-4 border-[#082821]'
-                            : 'text-white hover:bg-[#1D5148] hover:text-white'}
+                            ? 'bg-[#C9A45C] text-[#0B2924] font-bold shadow-sm'
+                            : 'text-white/80 hover:bg-white/[0.08] hover:text-white'}
                         `}
                       >
-                        <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-2.5 min-w-0'}`}>
-                          <Icon className={`w-4 h-4 transition-transform group-hover:scale-110 flex-shrink-0 ${
-                            isActive ? 'text-[#17201D]' : item.key === 'wedding_crm' ? 'text-[#C9A45C]' : 'text-[#C9A45C] group-hover:text-white'
-                          }`} />
+                        <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3 min-w-0'}`}>
+                          <Icon
+                            className={`w-[18px] h-[18px] shrink-0 transition-transform ${
+                              isActive ? 'text-[#0B2924]' : 'text-[#C9A45C] group-hover:text-white'
+                            }`}
+                          />
 
                           {!collapsed && (
-                            <span className="min-w-0">
+                            <span className="min-w-0 truncate">
                               <span className="block truncate">{item.label}</span>
                               {item.hint && (
-                                <span className="block truncate text-[9px] font-semibold leading-tight text-[#B9C8C2]">
+                                <span className="block truncate text-[9px] font-medium leading-tight text-white/60">
                                   {item.hint}
                                 </span>
                               )}
                             </span>
                           )}
 
-                          {!collapsed && item.key === 'wedding_crm' && (
-                            <span className="text-[8px] bg-[#082821] text-[#E4CB92] font-black px-1.5 py-[2px] rounded-full uppercase ml-1 flex-shrink-0 shadow-xs border border-[#C9A45C]/40">
+                          {!collapsed && item.isNew && (
+                            <span className="border border-[#C9A45C]/50 bg-[#C9A45C]/20 text-[#E4CB92] text-[9px] font-bold px-1.5 py-0.5 rounded uppercase ml-auto mr-1 shrink-0">
                               NEW
                             </span>
                           )}
                         </div>
 
                         {!collapsed && isActive && (
-                          <ChevronRight className="w-3.5 h-3.5 text-[#17201D] opacity-95 flex-shrink-0" />
+                          <ChevronRight className="w-3.5 h-3.5 text-[#0B2924]/70 shrink-0 ml-1" />
                         )}
                       </Link>
                     );
@@ -443,38 +463,43 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
           })}
         </div>
 
-        {/* Footer Actions */}
-        <div className={`border-t border-white/10 bg-[#082821]/95 transition-all space-y-1.5 ${collapsed ? 'p-2' : 'p-3'}`}>
+        {/* ── 4. Fixed Footer Actions ─────────────────────────────────────── */}
+        <div className={`border-t border-white/10 bg-[#082821]/90 shrink-0 space-y-1.5 transition-all ${
+          collapsed ? 'p-2' : 'p-3'
+        }`}>
           <button
+            type="button"
             onClick={() => setChangePasswordOpen(true)}
             title="Update Password"
-            className={`w-full flex items-center justify-center rounded-xl text-xs font-bold bg-[#C9A45C]/15 text-[#E4CB92] border border-[#C9A45C]/30 hover:bg-[#C9A45C] hover:text-[#17201D] transition-all shadow-sm cursor-pointer ${
+            className={`w-full flex items-center justify-center rounded-xl text-xs font-semibold border border-white/15 bg-white/[0.04] hover:bg-white/[0.1] text-[#E4CB92] hover:text-white transition-all cursor-pointer ${
               collapsed ? 'py-2.5 px-0' : 'py-2 px-3 gap-2'
             }`}
           >
-            <KeyRound className="w-4 h-4 flex-shrink-0" />
+            <KeyRound className="w-4 h-4 shrink-0" />
             {!collapsed && <span>Update Password</span>}
           </button>
 
           <button
+            type="button"
             onClick={() => Auth.logout()}
             title="Sign Out Session"
-            className={`w-full flex items-center justify-center rounded-xl text-xs font-bold bg-[#C83B4A]/20 text-white border border-[#C83B4A]/40 hover:bg-[#C83B4A] hover:text-white transition-all shadow-sm cursor-pointer ${
+            className={`w-full flex items-center justify-center rounded-xl text-xs font-semibold border border-[#C83B4A]/25 bg-[#C83B4A]/10 hover:bg-[#C83B4A] text-white/90 hover:text-white transition-all cursor-pointer ${
               collapsed ? 'py-2.5 px-0' : 'py-2 px-3 gap-2'
             }`}
           >
-            <LogOut className="w-4 h-4 flex-shrink-0" />
+            <LogOut className="w-4 h-4 shrink-0" />
             {!collapsed && <span>Sign Out</span>}
           </button>
+
           {!collapsed && (
-            <div className="text-[8.5px] text-[#E4CB92]/70 text-center mt-2 font-medium">
-              BSC Exclusive Wedding CRM · Enterprise Suite
+            <div className="text-[10px] text-white/40 tracking-wider text-center pt-1 font-medium select-none">
+              BSC Exclusive CRM · Enterprise Suite
             </div>
           )}
         </div>
       </aside>
 
-      {/* Change Password Modal for All Roles */}
+      {/* Change Password Modal */}
       <ChangePasswordModal
         isOpen={changePasswordOpen}
         onClose={() => setChangePasswordOpen(false)}

@@ -489,7 +489,7 @@ export default function EmployeesPage() {
   return (
     <DashboardLayout
       title="Employee Master Directory"
-      breadcrumbs={[{ label: 'Operations', href: '/dashboard' }, { label: 'Employee Directory' }]}
+      breadcrumbs={[]}
     >
       <PageContainer maxWidth="full">
         <div className="space-y-6 animate-fade-in select-text">

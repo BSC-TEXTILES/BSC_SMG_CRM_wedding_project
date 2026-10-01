@@ -8,76 +8,85 @@ interface BreadcrumbsProps {
 }
 
 /**
- * ── The one-and-only breadcrumb renderer ─────────────────────────────────
- * Semantic, keyboard-accessible and responsive:
- *  - <nav aria-label="Breadcrumb"> + ordered list
+ * ── The Executive Breadcrumb Renderer ────────────────────────────────────
+ * Minimal, executive, highly readable navigation breadcrumb:
+ *  - Semantic <nav aria-label="Breadcrumbs"> + ordered list
  *  - aria-current="page" on the current crumb
- *  - parent crumbs are links (client-side navigation, no reloads)
- *  - current crumb is plain text, never clickable
- *  - single ChevronRight separator + truncation for long paths, wrapping on
- *    narrow screens so navigation always stays reachable.
+ *  - Parent crumbs are clickable links with smooth hover states
+ *  - Current page crumb is primary text (#182033), never clickable
+ *  - Separators use subtle champagne gold
+ *  - Clean responsive handling with graceful truncation
  */
 export default function Breadcrumbs({ items, className = '' }: BreadcrumbsProps) {
   if (!items || items.length === 0) return null;
+
   const lastIndex = items.length - 1;
   const parentCrumb = items.length >= 2 ? items[items.length - 2] : null;
   const currentCrumb = items[lastIndex];
 
   return (
-    <nav aria-label="Breadcrumb" className={`min-w-0 ${className}`}>
-      {/* Mobile concise breadcrumb: parent link + current */}
+    <nav aria-label="Breadcrumbs" className={`min-w-0 flex items-center ${className}`}>
+      {/* Mobile concise breadcrumb: parent link + current page */}
       {items.length > 2 && parentCrumb && (
-        <div className="sm:hidden flex items-center min-w-0 text-[11px] font-semibold">
+        <div className="sm:hidden flex items-center min-w-0 text-[13px] font-medium">
           {parentCrumb.href ? (
             <Link
               to={parentCrumb.href}
               title={parentCrumb.label}
-              className="text-[#65716C] hover:text-[#123C35] hover:underline transition-colors flex items-center gap-0.5 truncate max-w-[45vw]"
+              className="text-[#687080] hover:text-[#123C35] hover:underline underline-offset-2 transition-colors flex items-center gap-1 truncate max-w-[40vw]"
             >
               <span>‹</span>
               <span className="truncate">{parentCrumb.label}</span>
             </Link>
           ) : (
-            <span className="text-[#65716C] truncate max-w-[40vw]">
+            <span className="text-[#687080] truncate max-w-[38vw]">
               ‹ {parentCrumb.label}
             </span>
           )}
-          <ChevronRight className="w-3 h-3 mx-1 text-[#C9A45C] flex-shrink-0" aria-hidden="true" />
-          <span className="text-[#123C35] font-bold truncate max-w-[45vw]">
+          <ChevronRight className="w-3.5 h-3.5 mx-1 text-[#C9A45C] flex-shrink-0" aria-hidden="true" />
+          <span className="text-[#182033] font-bold truncate max-w-[46vw]" aria-current="page">
             {currentCrumb.label}
           </span>
         </div>
       )}
 
-      {/* Standard breadcrumb list (always shown if <= 2 items, or on sm+ screens) */}
-      <ol className={`items-center gap-y-0.5 min-w-0 text-[11px] font-semibold leading-tight ${
-        items.length > 2 ? 'hidden sm:flex flex-wrap' : 'flex flex-wrap'
-      }`}>
+      {/* Standard breadcrumb list (shown always when <= 2 items, or on sm+ screens) */}
+      <ol
+        className={`items-center min-w-0 text-[13px] sm:text-[13.5px] font-medium ${
+          items.length > 2 ? 'hidden sm:flex flex-wrap gap-y-1' : 'flex flex-wrap gap-y-1'
+        }`}
+      >
         {items.map((crumb, idx) => {
           const isLast = idx === lastIndex;
-          const clickable = !isLast && !!crumb.href;
+          const clickable = !isLast && Boolean(crumb.href);
+
           return (
             <li
               key={`${idx}-${crumb.label}`}
+              className="flex items-center min-w-0"
               aria-current={isLast ? 'page' : undefined}
-              className="flex items-center min-w-0 max-w-full"
             >
               {idx > 0 && (
-                <ChevronRight className="w-3 h-3 mx-1 text-[#C9A45C] flex-shrink-0" aria-hidden="true" />
+                <ChevronRight
+                  className="w-3.5 h-3.5 mx-1.5 text-[#C9A45C] flex-shrink-0 opacity-80"
+                  aria-hidden="true"
+                />
               )}
               {clickable ? (
                 <Link
                   to={crumb.href!}
                   title={crumb.label}
-                  className="text-[#65716C] hover:text-[#123C35] hover:underline underline-offset-2 transition-colors truncate rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A45C] max-w-[40vw] xs:max-w-[45vw] sm:max-w-[240px]"
+                  className="text-[#687080] hover:text-[#123C35] hover:underline underline-offset-4 transition-colors truncate max-w-[200px] md:max-w-[260px] lg:max-w-[320px] rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A45C]"
                 >
                   {crumb.label}
                 </Link>
               ) : (
                 <span
                   title={crumb.label}
-                  className={`truncate max-w-[55vw] xs:max-w-[60vw] sm:max-w-[300px] ${
-                    isLast ? 'text-[#123C35] font-bold' : 'text-[#65716C]'
+                  className={`truncate max-w-[240px] md:max-w-[320px] lg:max-w-[400px] ${
+                    isLast
+                      ? 'text-[#182033] font-bold'
+                      : 'text-[#687080]'
                   }`}
                 >
                   {crumb.label}
