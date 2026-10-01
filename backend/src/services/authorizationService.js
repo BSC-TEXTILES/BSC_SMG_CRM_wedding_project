@@ -108,6 +108,9 @@ async function checkPermission(user, { module = null, action = 'can_view', locat
         if (!permRow && module === 'telecaller_dashboard') {
           permRow = allUserPerms.find(p => p.module === 'telecaller_desk');
         }
+        if (!permRow && module === 'wedding_tell_caller') {
+          permRow = allUserPerms.find(p => p.module === 'wedding_crm' || p.module === 'telecaller_desk' || p.module === 'telecaller_dashboard');
+        }
         if (!permRow && module === 'joining_desk') {
           permRow = allUserPerms.find(p => p.module === 'doj_desk');
         }

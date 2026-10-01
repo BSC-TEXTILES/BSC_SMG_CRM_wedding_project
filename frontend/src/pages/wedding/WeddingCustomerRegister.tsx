@@ -18,7 +18,9 @@ import {
   getStatusBadge
 } from './weddingTypes';
 import LocationFilterSelect from '../../components/ui/LocationFilterSelect';
-import { UserPlus, Search, PhoneCall, UserCheck, MapPin, MessageCircle, Download, RefreshCw, ChevronLeft, ChevronRight, Eye, X, CircleCheck, CircleAlert, Trash2, Archive, Lock } from 'lucide-react';
+import { UserPlus, Search, PhoneCall, UserCheck, MapPin, MessageCircle, Download, RefreshCw, ChevronLeft, ChevronRight, Eye, X, CircleCheck, CircleAlert, Trash2, Archive, Lock, MessageSquareQuote } from 'lucide-react';
+import TellCallerModal from '../../components/wedding/TellCallerModal';
+import { permissionsCache } from '../../context/PermissionsCache';
 
 export default function WeddingCustomerRegister() {
   const navigate = useNavigate();
@@ -109,6 +111,19 @@ export default function WeddingCustomerRegister() {
   const [customerToArchive, setCustomerToArchive] = useState<WeddingCustomer | null>(null);
   const [archiveReason, setArchiveReason] = useState('');
   const [archiving, setArchiving] = useState(false);
+
+  // Tell Caller
+  const [tellCallerCustomer, setTellCallerCustomer] = useState<WeddingCustomer | null>(null);
+  const [canTellCaller, setCanTellCaller] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    permissionsCache.get().then(() => {
+      if (!active) return;
+      setCanTellCaller(permissionsCache.canAction('wedding_tell_caller', 'can_add', Auth.get()?.role));
+    });
+    return () => { active = false; };
+  }, []);
 
   const handleMoveToOldCustomers = async () => {
     if (!customerToArchive) return;
@@ -808,6 +823,17 @@ export default function WeddingCustomerRegister() {
                                 <UserCheck className="w-3.5 h-3.5" />
                               </button>
 
+                              {/* Tell Caller — CRM instruction to a telecaller */}
+                              {canTellCaller && cust.lifecycle_status !== 'OLD_CUSTOMER' && (
+                                <button
+                                  onClick={() => setTellCallerCustomer(cust)}
+                                  className="shrink-0 p-1.5 rounded-lg bg-[#EAF1FA] hover:bg-[#356AE6]/15 text-[#356AE6] transition-colors border border-[#356AE6]/20"
+                                  title="Tell Caller — send an instruction to a telecaller"
+                                >
+                                  <MessageSquareQuote className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+
                                {/* Move to Old Customers — hidden once the row is archived */}
                               {cust.lifecycle_status !== 'OLD_CUSTOMER' && (
                                 <button
@@ -1156,6 +1182,15 @@ export default function WeddingCustomerRegister() {
               </div>
             </div>
           )}
+          {/* Tell Caller Modal */}
+          {tellCallerCustomer && (
+            <TellCallerModal
+              customer={tellCallerCustomer}
+              onClose={() => setTellCallerCustomer(null)}
+              onSent={loadData}
+            />
+          )}
+
           {/* Move to Old Customers Modal */}
           {customerToArchive && (
             <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">

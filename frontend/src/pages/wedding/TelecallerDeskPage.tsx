@@ -24,6 +24,7 @@ import {
   getStatusBadge
 } from './weddingTypes';
 import LocationFilterSelect from '../../components/ui/LocationFilterSelect';
+import TelecallerInbox from '../../components/wedding/TelecallerInbox';
 import {
   PhoneCall, CircleCheck, Search, MessageCircle, Eye, RefreshCw, X,
   Check, Award, MapPin, Calendar, Clock, Edit3, Send, Sparkles,
@@ -537,6 +538,9 @@ export default function TelecallerDeskPage() {
             );
           })}
         </div>
+
+        {/* ── CRM Instructions sent to this telecaller ── */}
+        <TelecallerInbox />
 
         {/* ── Call Queue Container ── */}
         <div className="bg-[#FFFDFC] rounded-3xl border border-[#E8D9D4] shadow-xs p-4 sm:p-5 space-y-4">

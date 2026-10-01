@@ -1,4 +1,5 @@
 const multer = require('multer');
+const crypto = require('crypto');
 
 // In-memory cache for calling desk to reduce DB hits (30 seconds TTL)
 const deskCache = new Map();
@@ -902,6 +903,12 @@ async function ensureTables() {
       console.warn('[ensureTables] wedding_import_logs:', e.message);
     }
 
+    try {
+      await ensureTelecallerInstructionsTable();
+    } catch (e) {
+      console.warn('[ensureTables] wedding_telecaller_instructions:', e.message);
+    }
+
         tablesChecked = true;
       } catch (err) {
         console.error('[WeddingController.ensureTables Error]', err.message);
@@ -909,6 +916,42 @@ async function ensureTables() {
     })();
   }
   return tablesInitPromise;
+}
+
+/**
+ * Self-healing table creator for wedding_telecaller_instructions.
+ * Guarantees table exists even if accessed before/outside ensureTables().
+ */
+async function ensureTelecallerInstructionsTable() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS \`wedding_telecaller_instructions\` (
+      \`id\` INT AUTO_INCREMENT PRIMARY KEY,
+      \`customer_id\` INT NOT NULL,
+      \`customer_code\` VARCHAR(40) NULL,
+      \`customer_name\` VARCHAR(190) NULL,
+      \`location_id\` INT NOT NULL DEFAULT 2,
+      \`location_name\` VARCHAR(120) NULL,
+      \`telecaller_user_id\` INT NOT NULL,
+      \`telecaller_name\` VARCHAR(190) NOT NULL,
+      \`sent_by_user_id\` INT NULL,
+      \`sent_by_name\` VARCHAR(190) NOT NULL,
+      \`sent_by_role\` VARCHAR(80) NULL,
+      \`message\` TEXT NOT NULL,
+      \`message_hash\` CHAR(64) NULL,
+      \`priority\` VARCHAR(20) NOT NULL DEFAULT 'Normal',
+      \`status\` VARCHAR(20) NOT NULL DEFAULT 'New',
+      \`related_call_log_id\` INT NULL,
+      \`seen_at\` DATETIME NULL,
+      \`acknowledged_at\` DATETIME NULL,
+      \`completed_at\` DATETIME NULL,
+      \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      \`updated_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX \`idx_wti_loc_tele\` (\`location_id\`, \`telecaller_user_id\`),
+      INDEX \`idx_wti_customer\` (\`customer_id\`),
+      INDEX \`idx_wti_status\` (\`status\`),
+      INDEX \`idx_wti_created\` (\`created_at\`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
 }
 
 // ── Shared helpers for the bulk import / template feature ─────────────────────
@@ -991,6 +1034,87 @@ async function getTemplateTelecallers() {
 
 function formatRupees(n) {
   return Number(n).toLocaleString('en-IN');
+}
+
+// ── Tell Caller (CRM → telecaller instructions) ─────────────────────────────
+const INSTRUCTION_STATUSES = ['New', 'Seen', 'Acknowledged', 'Completed'];
+const INSTRUCTION_PRIORITIES = ['Normal', 'High', 'Urgent'];
+/** Forward-only lifecycle, so "Completed" can never quietly become "New" again. */
+const INSTRUCTION_STATUS_RANK = { New: 1, Seen: 2, Acknowledged: 3, Completed: 4 };
+
+/** The recipient must be a live telecaller-role account, not an arbitrary user id. */
+async function loadInstructionRecipient(telecallerUserId) {
+  const [rows] = await pool.query(
+    `SELECT u.id, u.full_name, u.username, u.role, u.designation, u.department,
+            u.location_id, u.active, l.location_name, l.location_code
+       FROM users u
+       LEFT JOIN locations l ON l.id = u.location_id
+      WHERE u.id = ? AND u.active = TRUE AND u.role IN (?)
+      LIMIT 1`,
+    [telecallerUserId, TELECALLER_ROLES]
+  );
+  if (!rows || rows.length === 0) return null;
+  const r = rows[0];
+  return {
+    id: r.id,
+    full_name: r.full_name || r.username,
+    role: r.role,
+    designation: r.designation || null,
+    department: r.department || null,
+    location_id: r.location_id,
+    location_name: r.location_name || 'All Locations'
+  };
+}
+
+/** Row → API shape. The message is decrypted here and never leaves encrypted at rest. */
+function mapInstructionRow(row) {
+  if (!row) return null;
+  return {
+    id: Number(row.id),
+    customerId: Number(row.customer_id),
+    customerCode: row.customer_code || null,
+    customerName: row.customer_name || null,
+    locationId: row.location_id === null ? null : Number(row.location_id),
+    locationName: row.location_name || null,
+    telecallerUserId: Number(row.telecaller_user_id),
+    telecallerName: row.telecaller_name || null,
+    sentByUserId: row.sent_by_user_id === null ? null : Number(row.sent_by_user_id),
+    sentByName: row.sent_by_name || null,
+    sentByRole: row.sent_by_role || null,
+    message: decryptField(row.message) || '',
+    priority: row.priority || 'Normal',
+    status: row.status || 'New',
+    relatedCallLogId: row.related_call_log_id === null ? null : Number(row.related_call_log_id),
+    seenAt: row.seen_at || null,
+    acknowledgedAt: row.acknowledged_at || null,
+    acknowledgedBy: row.acknowledged_by || null,
+    completedAt: row.completed_at || null,
+    completedBy: row.completed_by || null,
+    createdAt: row.created_at || null,
+    updatedAt: row.updated_at || null
+  };
+}
+
+/**
+ * Store the caller may act in: global admins any, everyone else only their own /
+ * explicitly granted stores. Written here rather than reusing the import helper so
+ * the message a CRM Manager sees is about instructions, not imports.
+ */
+function canActForLocation(user, locationId) {
+  if (!user) return false;
+  const target = parseInt(locationId, 10);
+  if (isNaN(target)) return false;
+  const isAdminRole = ['Admin', 'Super Admin', 'system administrator'].includes(user.role);
+  const isGlobal = user.role === 'Super Admin' || (isAdminRole && (!user.locationId || user.isGlobalAdmin === true));
+  if (isGlobal) return true;
+  if (user.locationId && Number(user.locationId) === target) return true;
+  return Array.isArray(user.allowedLocations) && user.allowedLocations.map(Number).includes(target);
+}
+
+/** Exact-repeat key. The message column is encrypted with a random IV, so it cannot
+ *  be compared for equality; this hash can. */
+function instructionHash(message) {
+  return crypto.createHash('sha256').update(String(message).trim()).digest('hex');
 }
 
 class WeddingController {
@@ -2767,7 +2891,11 @@ class WeddingController {
       // Include Telecaller and related CRM roles for the assignment dropdown
       let sql = `
         SELECT u.id, u.username, u.full_name, u.employee_id, u.role, u.location_id, u.active,
-               l.location_name, l.location_code
+               u.designation, u.department,
+               l.location_name, l.location_code,
+               (SELECT COUNT(*) FROM wedding_customers w
+                 WHERE w.assigned_telecaller_id = u.id AND w.is_deleted = 0) AS assigned_count,
+               (SELECT MAX(c.created_at) FROM wedding_call_logs c WHERE c.telecaller_id = u.id) AS last_activity
         FROM users u
         LEFT JOIN locations l ON l.id = u.location_id
         WHERE u.active = TRUE
@@ -2793,10 +2921,16 @@ class WeddingController {
         name: u.full_name || u.username,  // backward compat alias
         employee_id: u.employee_id || `EMP-${u.id}`,
         role: u.role,
+        designation: u.designation || u.role,
+        department: u.department || null,
         location_id: u.location_id,
         location_name: u.location_name || 'All Locations',
         location_code: u.location_code || '',
-        active: u.active
+        active: u.active,
+        // Workload, so a manager can pick the free telecaller rather than the busiest
+        // one without a second round trip.
+        assigned_count: Number(u.assigned_count || 0),
+        last_activity: u.last_activity || null
       }));
 
       return successRes(res, { telecallers }, 'Telecallers fetched successfully.');
@@ -4490,6 +4624,324 @@ class WeddingController {
     } catch (err) {
       console.error('[WeddingController.createNote Error]', err);
       return errorRes(res, 'Failed to add note', [err.message], 500);
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // TELL CALLER — CRM instructions sent to a telecaller about a customer
+  // ═══════════════════════════════════════════════════════════════════
+
+  /**
+   * Sends one instruction. Nothing here is trusted from the browser: the store is
+   * read from the customer row, the recipient is re-checked against the caller's
+   * own locations, and the audit entry that makes it show up in the customer's
+   * history is written in the same transaction as the instruction itself.
+   */
+  async sendTelecallerInstruction(req, res) {
+    const customerId = parseInt(req.params.id, 10);
+    if (!customerId || isNaN(customerId)) return errorRes(res, 'A valid customer id is required', [], 400);
+
+    const rawMessage = req.body?.message ?? req.body?.instruction ?? '';
+    const message = String(rawMessage).trim();
+    if (!message) {
+      return errorRes(res, 'Please enter a message for the telecaller.', ['message is required'], 400);
+    }
+    if (message.length > 2000) {
+      return errorRes(res, 'The message is too long. Please keep it under 2000 characters.', ['message too long'], 400);
+    }
+
+    const telecallerId = parseInt(req.body?.telecaller_user_id ?? req.body?.telecallerId ?? req.body?.telecaller_id, 10);
+    if (!telecallerId || isNaN(telecallerId)) {
+      return errorRes(res, 'Choose the telecaller this instruction is for.', ['telecaller_user_id is required'], 400);
+    }
+
+    const priority = INSTRUCTION_PRIORITIES.includes(req.body?.priority) ? req.body.priority : 'Normal';
+
+    try {
+      await ensureTables();
+
+      // The customer must be inside the caller's own stores — a foreign id is a 404,
+      // not a 403, so the endpoint cannot be used to probe which customers exist.
+      const { clause: locClause, params: locParams } = resolveLocFilter(req, 'w');
+      const [custRows] = await pool.query(
+        `SELECT w.id, w.customer_code, w.customer_name, w.location_id, w.assigned_telecaller_id,
+                l.location_name, l.location_code
+           FROM wedding_customers w
+           LEFT JOIN locations l ON l.id = w.location_id
+          WHERE w.id = ? AND w.is_deleted = 0 ${locClause}`,
+        [customerId, ...locParams]
+      );
+      if (!custRows || custRows.length === 0) return errorRes(res, 'Customer not found', [], 404);
+      const customer = custRows[0];
+
+      const recipient = await loadInstructionRecipient(telecallerId);
+      if (!recipient) {
+        return errorRes(res, 'The selected staff member is not an active telecaller.', ['telecaller is not assignable'], 400);
+      }
+      if (!canActForLocation(req.user, recipient.location_id ?? customer.location_id)) {
+        return errorRes(res, 'You can only send instructions to telecallers in the stores you manage.', [], 403);
+      }
+      // A Shivamogga customer must not be handed to a Belagavi telecaller by someone
+      // who is allowed to see both stores.
+      if (recipient.location_id && Number(recipient.location_id) !== Number(customer.location_id)) {
+        return errorRes(res, `This telecaller belongs to ${recipient.location_name || 'another store'}, not the customer's store.`, ['telecaller location mismatch'], 400);
+      }
+
+      // Double-click / retry guard: the same instruction to the same person about the
+      // same customer inside a minute is one instruction, not two.
+      const messageHash = instructionHash(message);
+      const [dupes] = await pool.query(
+        `SELECT id FROM wedding_telecaller_instructions
+          WHERE customer_id = ? AND telecaller_user_id = ? AND message_hash = ?
+            AND created_at >= DATE_SUB(NOW(), INTERVAL 60 SECOND)
+          LIMIT 1`,
+        [customerId, telecallerId, messageHash]
+      );
+      if (dupes && dupes.length > 0) {
+        return res.status(409).json({
+          success: false,
+          message: 'This instruction was just sent to the telecaller.',
+          data: { id: dupes[0].id, duplicate: true }
+        });
+      }
+
+      const senderName = req.user?.fullName || req.user?.username || 'CRM Manager';
+      const sentAt = new Date().toLocaleString('en-IN');
+      const auditDetails = [
+        `CRM Manager sent instruction to ${recipient.full_name}`,
+        `Customer: ${customer.customer_name} (${customer.customer_code})`,
+        `Location: ${customer.location_name || customer.location_code || customer.location_id}`,
+        `Message: "${message}"`,
+        `Priority: ${priority}`,
+        `Status: Sent`,
+        `Sent By: ${senderName}${req.user?.role ? ` (${req.user.role})` : ''}`,
+        `Date/Time: ${sentAt}`
+      ].join('\n');
+
+      const conn = await pool.getConnection();
+      let instructionId;
+      try {
+        await conn.beginTransaction();
+
+        const [result] = await conn.query(
+          `INSERT INTO wedding_telecaller_instructions
+             (customer_id, customer_code, customer_name, location_id, location_name,
+              telecaller_user_id, telecaller_name, sent_by_user_id, sent_by_name, sent_by_role,
+              message, message_hash, priority, status, related_call_log_id)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'New', ?)`,
+          [
+            customer.id, customer.customer_code || null, customer.customer_name || null,
+            customer.location_id, customer.location_name || null,
+            recipient.id, recipient.full_name,
+            req.user?.id || null, senderName, req.user?.role || null,
+            encryptField(message), messageHash, priority,
+            Number.isInteger(parseInt(req.body?.related_call_log_id, 10)) ? parseInt(req.body.related_call_log_id, 10) : null
+          ]
+        );
+        instructionId = result.insertId;
+
+        await conn.query(
+          `INSERT INTO wedding_audit_logs (customer_id, location_id, user_name, action, details)
+           VALUES (?, ?, ?, ?, ?)`,
+          [customer.id, customer.location_id, senderName, 'Telecaller Instructed', auditDetails]
+        );
+
+        await conn.commit();
+      } catch (inner) {
+        await conn.rollback();
+        throw inner;
+      } finally {
+        conn.release();
+      }
+
+      await delCachePattern(`app:prod:wedding:customer:${customer.id}:*`);
+      await delCachePattern('app:prod:wedding:desk:*');
+      await delCachePattern('app:prod:wedding:dashboard:*');
+      realtimeService.emitTelecallerInstruction('CREATE', {
+        id: instructionId,
+        customer_id: customer.id,
+        customer_name: customer.customer_name,
+        telecaller_user_id: recipient.id,
+        location_id: customer.location_id,
+        status: 'New',
+        priority
+      });
+
+      const [saved] = await pool.query('SELECT * FROM wedding_telecaller_instructions WHERE id = ? LIMIT 1', [instructionId]);
+      return successRes(res, { instruction: mapInstructionRow(saved[0]) }, 'Message sent to the telecaller successfully.', 201);
+    } catch (err) {
+      console.error('[WeddingController.sendTelecallerInstruction Error]', err);
+      return errorRes(res, 'Unable to send the message to the telecaller. Please try again.', [], 500);
+    }
+  }
+
+  /** Instructions visible to the caller: their own store(s), or the whole network for admins. */
+  async listTelecallerInstructions(req, res) {
+    try {
+      await ensureTables();
+      await ensureTelecallerInstructionsTable().catch(() => {});
+
+      const where = [];
+      const params = [];
+      const { clause: locClause, params: locParams } = resolveLocFilter(req, 'i');
+      // resolveLocFilter emits "AND <alias>.location_id = ?" — the alias is already qualified.
+      if (locClause) {
+        where.push(locClause.replace(/^AND\s+/, ''));
+        params.push(...locParams);
+      }
+
+      const customerId = parseInt(req.query.customer_id, 10);
+      if (customerId) { where.push('i.customer_id = ?'); params.push(customerId); }
+
+      const telecallerId = parseInt(req.query.telecaller_id, 10);
+      if (telecallerId) { where.push('i.telecaller_user_id = ?'); params.push(telecallerId); }
+
+      // "mine" is how the Telecaller Desk asks for its own inbox, so the id never
+      // has to travel through a editable query string.
+      if (String(req.query.mine || '') === '1') {
+        where.push('i.telecaller_user_id = ?');
+        params.push(req.user.id);
+      }
+
+      if (INSTRUCTION_STATUSES.includes(req.query.status)) {
+        where.push('i.status = ?');
+        params.push(req.query.status);
+      }
+
+      const from = parseDate(req.query.dateFrom || req.query.from_date);
+      if (from) { where.push('DATE(i.created_at) >= ?'); params.push(from); }
+      const to = parseDate(req.query.dateTo || req.query.to_date);
+      if (to) { where.push('DATE(i.created_at) <= ?'); params.push(to); }
+
+      const search = String(req.query.search || '').trim();
+      if (search) {
+        where.push('(i.customer_name LIKE ? OR i.customer_code LIKE ? OR i.telecaller_name LIKE ? OR i.sent_by_name LIKE ?)');
+        const like = `%${search}%`;
+        params.push(like, like, like, like);
+      }
+
+      const limit = Math.max(1, Math.min(parseInt(req.query.limit, 10) || 50, 200));
+      const offset = Math.max(0, parseInt(req.query.offset, 10) || 0);
+      const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
+
+      const [rows] = await pool.query(
+        `SELECT i.* FROM wedding_telecaller_instructions i ${whereSql}
+          ORDER BY i.created_at DESC, i.id DESC LIMIT ${limit} OFFSET ${offset}`,
+        params
+      );
+
+      const [countRows] = await pool.query(
+        `SELECT COUNT(*) AS total FROM wedding_telecaller_instructions i ${whereSql}`,
+        params
+      );
+
+      return successRes(res, {
+        instructions: (rows || []).map(mapInstructionRow),
+        total: Number(countRows?.[0]?.total || 0),
+        limit,
+        offset
+      }, 'Telecaller instructions fetched.');
+    } catch (err) {
+      console.error('[WeddingController.listTelecallerInstructions Error]', err);
+      if (err.code === 'ER_NO_SUCH_TABLE' || (err.message && err.message.includes('wedding_telecaller_instructions'))) {
+        try {
+          await ensureTelecallerInstructionsTable();
+          return successRes(res, { instructions: [], total: 0, limit: 50, offset: 0 }, 'Telecaller instructions initialized.');
+        } catch(tableErr) {}
+      }
+      return errorRes(res, 'Unable to load the CRM instructions. Please try again.', [], 500);
+    }
+  }
+
+  async getTelecallerInstruction(req, res) {
+    try {
+      await ensureTables();
+      const id = parseInt(req.params.id, 10);
+      if (!id) return errorRes(res, 'A valid instruction id is required', [], 400);
+
+      const { clause: locClause, params: locParams } = resolveLocFilter(req, 'i');
+      const [rows] = await pool.query(
+        `SELECT i.* FROM wedding_telecaller_instructions i
+          WHERE i.id = ? ${locClause ? locClause.replace(/^AND\s+/, 'AND ') : ''} LIMIT 1`,
+        [id, ...locParams]
+      );
+      if (!rows || rows.length === 0) return errorRes(res, 'Instruction not found', [], 404);
+
+      return successRes(res, { instruction: mapInstructionRow(rows[0]) }, 'Instruction fetched.');
+    } catch (err) {
+      console.error('[WeddingController.getTelecallerInstruction Error]', err);
+      return errorRes(res, 'Unable to load this instruction. Please try again.', [], 500);
+    }
+  }
+
+  /**
+   * Seen / Acknowledged / Completed. Only the telecaller it was sent to (or an Admin)
+   * may move it, and the status never moves backwards — the history has to stay
+   * truthful for the CRM Manager who issued it.
+   */
+  async updateTelecallerInstructionStatus(req, res) {
+    const id = parseInt(req.params.id, 10);
+    if (!id) return errorRes(res, 'A valid instruction id is required', [], 400);
+
+    const next = String(req.body?.status || '').trim();
+    if (!['Seen', 'Acknowledged', 'Completed'].includes(next)) {
+      return errorRes(res, 'Status must be Seen, Acknowledged or Completed.', ['status is invalid'], 400);
+    }
+
+    try {
+      await ensureTables();
+      const { clause: locClause, params: locParams } = resolveLocFilter(req, 'i');
+      const [rows] = await pool.query(
+        `SELECT i.* FROM wedding_telecaller_instructions i
+          WHERE i.id = ? ${locClause ? locClause.replace(/^AND\s+/, 'AND ') : ''} LIMIT 1`,
+        [id, ...locParams]
+      );
+      if (!rows || rows.length === 0) return errorRes(res, 'Instruction not found', [], 404);
+      const current = rows[0];
+
+      const isAdmin = ['Admin', 'Super Admin', 'system administrator'].includes(req.user?.role);
+      if (!isAdmin && Number(current.telecaller_user_id) !== Number(req.user?.id)) {
+        return errorRes(res, 'Only the telecaller this instruction was sent to can update it.', [], 403);
+      }
+
+      const rank = INSTRUCTION_STATUS_RANK;
+      if ((rank[current.status] || 0) > (rank[next] || 0)) {
+        return errorRes(res, `This instruction is already ${current.status} and cannot go back.`, ['status moves forward only'], 409);
+      }
+
+      const actorName = req.user?.fullName || req.user?.username || 'Telecaller';
+      const sets = ['status = ?'];
+      const params = [next];
+      if (next !== 'New' && !current.seen_at) { sets.push('seen_at = NOW()'); }
+      if (next === 'Acknowledged' && !current.acknowledged_at) {
+        sets.push('acknowledged_at = NOW()', 'acknowledged_by = ?');
+        params.push(actorName);
+      }
+      if (next === 'Completed') {
+        sets.push('completed_at = NOW()', 'completed_by = ?', 'completed_by_user_id = ?');
+        params.push(actorName, req.user?.id || null);
+      }
+
+      await pool.query(`UPDATE wedding_telecaller_instructions SET ${sets.join(', ')} WHERE id = ?`, [...params, id]);
+
+      await pool.query(
+        `INSERT INTO wedding_audit_logs (customer_id, location_id, user_name, action, details)
+         VALUES (?, ?, ?, ?, ?)`,
+        [
+          current.customer_id, current.location_id, actorName, `Instruction ${next}`,
+          `Instruction #${current.id} marked ${next} by ${actorName} on ${new Date().toLocaleString('en-IN')}.`
+        ]
+      );
+
+      await delCachePattern(`app:prod:wedding:customer:${current.customer_id}:*`);
+      await delCachePattern('app:prod:wedding:desk:*');
+      realtimeService.emitTelecallerInstruction(next.toUpperCase(), current);
+
+      const [saved] = await pool.query('SELECT * FROM wedding_telecaller_instructions WHERE id = ? LIMIT 1', [id]);
+      return successRes(res, { instruction: mapInstructionRow(saved[0]) }, `Instruction marked as ${next}.`);
+    } catch (err) {
+      console.error('[WeddingController.updateTelecallerInstructionStatus Error]', err);
+      return errorRes(res, 'Unable to update this instruction. Please try again.', [], 500);
     }
   }
 

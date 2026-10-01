@@ -302,6 +302,7 @@ router.post('/vm/audits/draft', authenticate, authorizeLocationAccess(), canWrit
 router.get('/vm/attention', authenticate, authorizeLocationAccess(), canViewVm, vmController.getVmAttention);
 router.get('/vm/submissions', authenticate, authorizeLocationAccess(), canViewVm, vmController.getVmAudits);
 router.get('/vm/audits/:id', authenticate, authorizeLocationAccess(), canViewVm, vmController.getVmAuditDetail);
+router.get('/vm/audits/:id/history', authenticate, authorizeLocationAccess(), canViewVm, vmController.getVmAuditHistory);
 router.put('/vm/audits/:id/draft', authenticate, authorizeLocationAccess(), canWriteVm, vmController.saveVmDraft);
 router.post('/vm/audits/:id/submit', authenticate, authorizeLocationAccess(), canWriteVm, vmController.submitVmAudit);
 router.post('/vm/submit', authenticate, authorizeLocationAccess(), canWriteVm, vmController.submitVm);
@@ -394,6 +395,10 @@ router.get('/mcheck/export/excel', authenticate, authorizeLocationAccess(), mche
 // ── Wedding Customer Follow-up CRM ───────────────────────────
 const weddingRoutes = require('./weddingRoutes');
 router.use('/wedding-crm', weddingRoutes);
+router.use('/telecaller-instructions', (req, res, next) => {
+  req.url = '/telecaller-instructions' + (req.url === '/' ? '' : req.url);
+  return weddingRoutes(req, res, next);
+});
 
 // ── Telecaller Dashboard ─────────────────────────────────────
 const telecallerDashboardRoutes = require('./telecallerDashboardRoutes');

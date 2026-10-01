@@ -1051,8 +1051,111 @@ function AuditDetailModal({
               </div>
             )}
           </div>
+
+          <AuditTrail auditId={detail.id} />
         </div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * The checklist's own trail, straight from vm_submission_history: who opened it,
+ * what was saved, when it was filed and which evidence came and went. It is read on
+ * demand so opening an audit never waits on it.
+ */
+const TRAIL_LABELS: Record<string, string> = {
+  Created: 'Checklist opened',
+  DraftSaved: 'Answers saved',
+  Submitted: 'Filed for review',
+  AttachmentAdded: 'Photo attached',
+  AttachmentReplaced: 'Photo replaced',
+  AttachmentRemoved: 'Photo removed'
+};
+
+type VmTrailEvent = {
+  id: number;
+  action: string;
+  summary?: string | null;
+  statusBefore?: string | null;
+  statusAfter?: string | null;
+  scorePercent?: number | null;
+  changedBy?: string | null;
+  changedByRole?: string | null;
+  changedAt?: string | null;
+};
+
+function AuditTrail({ auditId }: { auditId: string }) {
+  const [events, setEvents] = useState<VmTrailEvent[] | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await API.getVmAuditHistory(auditId);
+      setEvents(Array.isArray(res?.history) ? (res.history as VmTrailEvent[]) : []);
+    } catch (err) {
+      setEvents(null);
+      setError(vmErrorMessage(err, 'Unable to load the audit trail.'));
+    } finally {
+      setLoading(false);
+    }
+  }, [auditId]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  return (
+    <div className="space-y-2.5">
+      <h4 className={`${vmLabel} flex items-center gap-1.5`}>
+        <History className="w-3.5 h-3.5 text-[#B76E79]" />
+        <span>Audit trail</span>
+      </h4>
+
+      {loading && <VmSkeletonCard lines={3} />}
+
+      {!loading && error && (
+        <VmErrorState message={error} onRetry={load} title="The audit trail could not be loaded." />
+      )}
+
+      {!loading && !error && events && events.length === 0 && (
+        <p className="rounded-xl border border-[#E8D9D4] bg-[#FFF7F2] px-3 py-2.5 text-[13px] font-semibold leading-snug text-[#6F5963]">
+          No recorded events for this checklist yet.
+        </p>
+      )}
+
+      {!loading && !error && events && events.length > 0 && (
+        <ol className="space-y-2">
+          {events.map((event) => (
+            <li key={event.id} className="rounded-xl border border-[#E8D9D4] bg-white px-3 py-2.5">
+              <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
+                <span className="text-[13px] font-black leading-snug text-[#2B1722]">
+                  {TRAIL_LABELS[event.action] || event.action}
+                </span>
+                <span className="text-[11px] font-semibold text-[#6F5963]">
+                  {formatVmTime(event.changedAt) || dashIfEmpty(event.changedAt, '—')}
+                </span>
+              </div>
+              {Boolean(event.summary) && (
+                <p className="mt-1 break-words text-[12px] font-semibold leading-snug text-[#6F5963]">{event.summary}</p>
+              )}
+              <p className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] font-semibold text-[#6F5963]">
+                <User className="w-3 h-3 shrink-0" aria-hidden="true" />
+                <span>{dashIfEmpty(event.changedBy, 'Unknown user')}</span>
+                {Boolean(event.changedByRole) && <span className="text-[#9A858D]">· {event.changedByRole}</span>}
+                {event.statusAfter && event.statusAfter !== event.statusBefore && (
+                  <VmPill tone={statusTone(event.statusAfter)} className="ml-auto shrink-0">
+                    {event.statusBefore ? `${event.statusBefore} → ${event.statusAfter}` : event.statusAfter}
+                  </VmPill>
+                )}
+              </p>
+            </li>
+          ))}
+        </ol>
+      )}
     </div>
   );
 }

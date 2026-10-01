@@ -59,7 +59,7 @@ const ROLE_DEFAULT_MODULES = {
   'VM Extension Telecaller': ['vm_checklist', 'vm_dashboard', 'wedding_crm', 'telecaller_desk', 'telecaller_dashboard', 'wedding_registration', 'dashboard', 'footfall', 'broadcast'],
   'VM': ['vm_checklist', 'vm_dashboard', 'dashboard', 'footfall', 'broadcast'],
   'CRM Executive': ['wedding_crm', 'telecaller_desk', 'telecaller_dashboard', 'wedding_registration', 'dashboard', 'footfall'],
-  'CRM Manager': ['wedding_crm', 'telecaller_desk', 'telecaller_dashboard', 'wedding_registration', 'wedding_operations', 'dashboard', 'footfall', 'broadcast', 'vm_checklist', 'vm_dashboard'],
+  'CRM Manager': ['wedding_crm', 'wedding_tell_caller', 'telecaller_desk', 'telecaller_dashboard', 'wedding_registration', 'wedding_operations', 'dashboard', 'footfall', 'broadcast', 'vm_checklist', 'vm_dashboard'],
   'Recruiter': ['dashboard', 'wedding_crm', 'candidates', 'broadcast', 'candidate_apply'],
   'Interviewer': ['candidates'],
   'Employee': ['dashboard', 'wedding_crm', 'wedding_registration'],

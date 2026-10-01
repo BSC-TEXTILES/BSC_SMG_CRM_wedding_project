@@ -109,17 +109,19 @@ class PermissionsCacheService {
       return true;
     }
 
-    // Custom ACM permissions
-    if (myPerms?.custom && Array.isArray(myPerms.permissions)) {
+    // The server answers /my-permissions with a resolved action row whether the
+    // source is the Access Control Matrix or the role defaults, so consult it first.
+    // Falling through to the role guesses below is what made a role that genuinely
+    // holds a module (CRM Manager → Tell Caller) look like it does not.
+    if (Array.isArray(myPerms?.permissions) && myPerms.permissions.length > 0) {
       const row = myPerms.permissions.find((p: any) => p.module === module);
-      if (row) {
-        return Boolean((row as any)[action]);
-      }
-      // If module not found in explicit permissions list, deny
-      return false;
+      // No row at all means the module was never granted — the backend will refuse it,
+      // so the UI must not offer it. Guessing from the role name here only produces
+      // buttons that fail with a 403.
+      return row ? Boolean((row as any)[action]) : false;
     }
 
-    // Fallback: role-based defaults
+    // Fallback: role-based defaults, for a session whose permission rows never arrived.
     if (action === 'can_view') {
       return true;
     }

@@ -68,6 +68,50 @@ router.get('/analytics', weddingController.getAnalytics);
 // ── Telecallers List (for assignment dropdown) ────────────────
 router.get('/telecallers', weddingController.getTelecallers);
 
+// ── Tell Caller: CRM Manager instructions to a telecaller ──────
+// Its own module key, so the Access Control Matrix can grant or revoke it per user
+// without touching Wedding CRM read/write. Admin roles bypass it as everywhere else.
+const canSendInstruction = requireModuleAction('wedding_tell_caller', 'can_add');
+
+/**
+ * Reading an instruction must work for whoever issued it (Tell Caller permission)
+ * and for whoever received it (their Telecaller Desk access) — a telecaller has no
+ * reason to hold the manager-side module just to see their own inbox. Sending stays
+ * restricted to the Tell Caller module alone.
+ */
+const { checkPermission } = require('../services/authorizationService');
+const canReadInstruction = async (req, res, next) => {
+  if (!req.user || !req.user.id) return errorRes(res, 'Authentication required', [], 401);
+  try {
+    const checks = await Promise.all([
+      checkPermission(req.user, { module: 'wedding_tell_caller', action: 'can_view' }),
+      checkPermission(req.user, { module: 'telecaller_desk', action: 'can_view' }),
+      checkPermission(req.user, { module: 'wedding_crm', action: 'can_view' }),
+      checkPermission(req.user, { module: 'telecaller_dashboard', action: 'can_view' })
+    ]);
+    if (checks.some((r) => r && r.allowed)) return next();
+    const isAllowedRole = ['Admin', 'Super Admin', 'system administrator', 'Manager', 'Store Manager', 'CRM Manager', 'HR', 'Telecaller', 'CRM Executive', 'VM Extension Telecaller'].includes(req.user?.role);
+    if (isAllowedRole) return next();
+    return errorRes(res, 'Access denied: this inbox belongs to CRM managers and the telecaller it was sent to.', ['wedding_tell_caller:can_view'], 403);
+  } catch (err) {
+    console.error('[weddingRoutes] instruction permission check failed:', err.message);
+    const isAllowedRole = ['Admin', 'Super Admin', 'system administrator', 'Manager', 'Store Manager', 'CRM Manager', 'HR', 'Telecaller', 'CRM Executive', 'VM Extension Telecaller'].includes(req.user?.role);
+    if (isAllowedRole) return next();
+    return errorRes(res, 'Permission check failed. Please try again.', [], 500);
+  }
+};
+
+router.post('/customers/:id/telecaller-instructions', canSendInstruction, weddingController.sendTelecallerInstruction);
+router.get('/telecaller-instructions', canReadInstruction, weddingController.listTelecallerInstructions);
+router.get('/telecaller-instructions/:id', canReadInstruction, weddingController.getTelecallerInstruction);
+// The controller still restricts a status change to the recipient or an Admin.
+router.patch('/telecaller-instructions/:id/status', canReadInstruction, weddingController.updateTelecallerInstructionStatus);
+
+// Aliases for flexibility across frontend client versions
+router.get('/instructions', canReadInstruction, weddingController.listTelecallerInstructions);
+router.get('/instructions/:id', canReadInstruction, weddingController.getTelecallerInstruction);
+router.patch('/instructions/:id/status', canReadInstruction, weddingController.updateTelecallerInstructionStatus);
+
 // ── Export Data (Excel / CSV / Report data) ────────────────────
 router.get('/export', weddingController.exportData);
 router.get('/export-customers-csv', weddingController.exportCustomersCsv);

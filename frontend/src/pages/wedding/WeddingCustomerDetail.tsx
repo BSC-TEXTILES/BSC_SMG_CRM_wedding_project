@@ -23,9 +23,11 @@ import {
   User, Heart, PhoneCall, MessageCircle, FileText, History, TrendingUp,
   ArrowLeft, Plus, X, CircleAlert, RefreshCw, Users, ExternalLink,
   Edit3, MapPin, Calendar, Clock, Save, Building2, Archive, RotateCcw,
-  Check, Copy, Sparkles, CheckCircle2, ShoppingBag, Eye, Activity
+  Check, Copy, Sparkles, CheckCircle2, ShoppingBag, Eye, Activity, MessageSquareQuote
 } from 'lucide-react';
 import { STORE_LOCATIONS_LIST } from '../../config/storeLocations';
+import TellCallerModal from '../../components/wedding/TellCallerModal';
+import { permissionsCache } from '../../context/PermissionsCache';
 
 const SHOPPING_CATEGORIES = [
   'General Wedding Shopping',
@@ -81,6 +83,10 @@ export default function WeddingCustomerDetail() {
   const [isOldCustomerProfile, setIsOldCustomerProfile] = useState(false);
   const [loading, setLoading] = useState(true);
   const [copiedMobile, setCopiedMobile] = useState(false);
+
+  // Tell Caller — the button only appears for roles the backend also accepts.
+  const [tellCallerOpen, setTellCallerOpen] = useState(false);
+  const [canTellCaller, setCanTellCaller] = useState(false);
 
   // Active Profile Section Tab
   const [activeTab, setActiveTab] = useState<
@@ -227,6 +233,17 @@ export default function WeddingCustomerDetail() {
     setSession(Auth.get());
     loadCustomer();
   }, [loadCustomer, navigate]);
+
+  // Hidden here, enforced again on the server — hiding the button is not a permission.
+  useEffect(() => {
+    let active = true;
+    permissionsCache.get().then(() => {
+      if (!active) return;
+      const role = Auth.get()?.role;
+      setCanTellCaller(permissionsCache.canAction('wedding_tell_caller', 'can_add', role));
+    });
+    return () => { active = false; };
+  }, [session?.role]);
 
   const handleCopyMobile = () => {
     if (!customer?.mobile_number) return;
@@ -754,6 +771,19 @@ export default function WeddingCustomerDetail() {
                 <Users className="w-3.5 h-3.5 text-[#B76E79]" />
                 <span>Reassign Telecaller</span>
               </button>
+
+              {/* Tell Caller — instruction to the telecaller, assignment unchanged */}
+              {canTellCaller && !isArchived && (
+                <button
+                  type="button"
+                  onClick={() => setTellCallerOpen(true)}
+                  className="px-3.5 py-2 bg-[#FFFDFC] hover:bg-[#FFF7F2] text-[#4A173A] border border-[#E8D9D4] font-semibold rounded-xl text-xs flex items-center gap-1.5 shadow-2xs transition-all active:scale-95 cursor-pointer"
+                  title="Send an instruction to a telecaller about this customer"
+                >
+                  <MessageSquareQuote className="w-3.5 h-3.5 text-[#B76E79]" />
+                  <span>Tell Caller</span>
+                </button>
+              )}
 
               {/* Update Status */}
               <button
@@ -1955,6 +1985,15 @@ export default function WeddingCustomerDetail() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* ── 2b. TELL CALLER MODAL ── */}
+        {tellCallerOpen && customer && (
+          <TellCallerModal
+            customer={customer}
+            onClose={() => setTellCallerOpen(false)}
+            onSent={loadCustomer}
+          />
         )}
 
         {/* ── 3. REASSIGN TELECALLER MODAL ── */}

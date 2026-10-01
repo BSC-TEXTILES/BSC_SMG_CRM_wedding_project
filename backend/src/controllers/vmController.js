@@ -11,6 +11,7 @@ const { getLocationFilter } = require('../middleware/auth');
 const realtimeService = require('../services/realtimeService');
 const { getISTDateString } = require('../utils/dates');
 const vmAuditAccess = require('../services/vmAuditAccess');
+const vmHistory = require('../services/vmAuditHistory');
 const { assertLocationAccess, resolveAuditLocationId, mapVmPhoto, getVmPhotos } = require('./vmPhotoController');
 
 function getUUID() {
@@ -814,7 +815,7 @@ exports.getVmDashboard = async (req, res) => {
     });
   } catch (err) {
     console.error('[VM Dashboard Error]', err);
-    return errorRes(res, 'Failed to fetch VM dashboard metrics: ' + err.message, [err.message], 500);
+    return errorRes(res, 'Unable to load the VM dashboard. Please try again.', [], 500);
   }
 };
 
@@ -1015,7 +1016,7 @@ exports.getVmAudits = async (req, res) => {
     });
   } catch (err) {
     console.error('[Get VM Audits Error]', err);
-    return errorRes(res, 'Failed to fetch VM audits: ' + err.message, [err.message], 500);
+    return errorRes(res, 'Unable to load the checklist history. Please try again.', [], 500);
   }
 };
 
@@ -1085,7 +1086,57 @@ exports.getVmAuditDetail = async (req, res) => {
     });
   } catch (err) {
     console.error('[Get VM Audit Detail Error]', err);
-    return errorRes(res, 'Failed to fetch VM audit detail: ' + err.message, [err.message], 500);
+    return errorRes(res, 'Unable to open this checklist. Please try again.', [], 500);
+  }
+};
+
+// ── 4b. AUDIT TRAIL OF ONE CHECKLIST ────────────────────────────────────────
+/**
+ * Who opened this checklist, what they changed, when it was filed and which evidence
+ * came and went. Same location rule as the detail view: knowing the id is not a
+ * licence to read another store's history.
+ */
+exports.getVmAuditHistory = async (req, res) => {
+  try {
+    const auditId = req.params.id;
+    const [rows] = await pool.query(
+      'SELECT id, location_id, floor, section, shift, entryDate, status, scorePercent, submittedBy, submittedAt, updatedBy FROM vmsubmissions WHERE id = ? LIMIT 1',
+      [auditId]
+    );
+    if (!rows || rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'VM audit not found' });
+    }
+    const audit = rows[0];
+    if (!await assertLocationAccess(req.user, audit.location_id)) {
+      return res.status(403).json({
+        success: false,
+        message: `Access denied: this audit belongs to store location ${audit.location_id}, which is not assigned to your account`
+      });
+    }
+
+    const history = await vmHistory.getVmAuditHistory(auditId, req.query.limit);
+
+    return res.json({
+      success: true,
+      auditId,
+      audit: {
+        id: audit.id,
+        locationId: Number(audit.location_id),
+        floor: audit.floor,
+        section: audit.section,
+        shift: audit.shift,
+        entryDate: dateKey(audit.entryDate) || '',
+        status: audit.status,
+        scorePercent: Number(audit.scorePercent || 0),
+        submittedBy: audit.submittedBy || null,
+        submittedAt: audit.submittedAt || null,
+        updatedBy: audit.updatedBy || null
+      },
+      history
+    });
+  } catch (err) {
+    console.error('[Get VM Audit History Error]', err);
+    return errorRes(res, 'Unable to load the checklist history. Please try again.', [], 500);
   }
 };
 
@@ -1251,7 +1302,7 @@ exports.submitVm = async (req, res) => {
     });
   } catch (err) {
     console.error('[Submit VM Error]', err);
-    return errorRes(res, 'Failed to submit VM audit: ' + err.message, [err.message], 500);
+    return errorRes(res, 'Unable to submit the checklist. Please try again.', [], 500);
   }
 };
 
@@ -1385,7 +1436,7 @@ exports.exportVmAudits = async (req, res) => {
     return res.status(200).send(csvContent);
   } catch (err) {
     console.error('[Export VM Audits Error]', err);
-    return errorRes(res, 'Failed to export VM audits: ' + err.message, [err.message], 500);
+    return errorRes(res, 'Unable to export the checklist records. Please try again.', [], 500);
   }
 };
 
@@ -1454,7 +1505,7 @@ exports.createVmFloor = async (req, res) => {
     });
   } catch (err) {
     console.error('[Create VM Floor Error]', err);
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, message: 'Unable to save the floor. Please try again.' });
   }
 };
 
@@ -1473,7 +1524,8 @@ exports.deleteVmFloor = async (req, res) => {
     }
     return res.json({ success: true, message: 'Floor deleted successfully' });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
+    console.error('[Delete VM Floor Error]', err);
+    return res.status(500).json({ success: false, message: 'Unable to remove the floor. Please try again.' });
   }
 };
 
@@ -1490,7 +1542,7 @@ exports.getVmPoints = async (req, res) => {
     return res.json({ success: true, points, total: points.length });
   } catch (err) {
     console.error('[Get VM Points Error]', err);
-    return errorRes(res, 'Failed to fetch VM checklist points: ' + err.message, [err.message], 500);
+    return errorRes(res, 'Unable to load the checklist questions. Please try again.', [], 500);
   }
 };
 
@@ -1605,7 +1657,7 @@ exports.getVmFloorSummary = async (req, res) => {
     });
   } catch (err) {
     console.error('[VM Floor Summary Error]', err);
-    return errorRes(res, 'Failed to build the VM floor summary: ' + err.message, [err.message], 500);
+    return errorRes(res, 'Unable to load the floor summary. Please try again.', [], 500);
   }
 };
 
@@ -1735,6 +1787,15 @@ exports.createOrResumeVmDraft = async (req, res) => {
       req.user ? (req.user.username || auditorName) : auditorName
     ]);
 
+    await vmHistory.recordVmAuditEvent(conn, {
+      submissionId: auditId,
+      locationId,
+      action: vmHistory.VM_EVENT.CREATED,
+      statusAfter: VM_STATUS.DRAFT,
+      summary: `${floor} · ${section} · ${shift} · ${activePoints.length} checkpoints`,
+      actor: req.user
+    });
+
     await conn.commit();
 
     const response = await buildDraftResponse(auditId, false);
@@ -1766,7 +1827,7 @@ exports.createOrResumeVmDraft = async (req, res) => {
   } catch (err) {
     try { await conn.rollback(); } catch (e) {}
     console.error('[Create VM Draft Error]', err);
-    return errorRes(res, 'Failed to open the VM audit draft: ' + err.message, [err.message], 500);
+    return errorRes(res, 'Unable to open the checklist. Please try again.', [], 500);
   } finally {
     conn.release();
   }
@@ -1806,19 +1867,31 @@ exports.saveVmDraft = async (req, res) => {
     await conn.beginTransaction();
 
     const actor = req.user ? (req.user.username || req.user.fullName || 'VM') : 'VM';
+    const beforeEntries = await loadAuditEntries(auditId, conn);
+    const beforeScore = new Map(beforeEntries.map(e => [String(e.pointId), String(e.score || '')]));
+    const beforeNote = new Map(beforeEntries.map(e => [String(e.pointId), String(e.comment || e.remarks || '')]));
+
     if (shift !== undefined && String(shift) !== String(audit.shift)) {
       await conn.query('UPDATE vmsubmissions SET shift = ?, updatedBy = ? WHERE id = ?', [String(shift).trim(), actor, auditId]);
     } else {
       await conn.query('UPDATE vmsubmissions SET updatedBy = ? WHERE id = ?', [actor, auditId]);
     }
 
+    const changedPoints = [];
     for (const e of entries) {
+      const pointId = String(e.pointId || e.id || '');
+      const nextComment = e.comment !== undefined && e.comment !== null ? e.comment : e.remarks;
+      const normalized = normalizeScore(e.score);
+      if (String(beforeScore.get(pointId) || '') !== String(normalized || '') ||
+          String(beforeNote.get(pointId) || '') !== String(nextComment || '')) {
+        changedPoints.push(pointId);
+      }
       await upsertAuditEntry(conn, auditId, {
-        pointId: String(e.pointId || e.id || ''),
+        pointId,
         pointTitle: e.pointTitle || e.title,
         score: e.score,
         // The guided flow sends `comment`; the legacy page sends `remarks`.
-        comment: e.comment !== undefined && e.comment !== null ? e.comment : e.remarks,
+        comment: nextComment,
         observation: e.observation,
         correctiveAction: e.correctiveAction !== undefined ? e.correctiveAction : e.corrective_action,
         photoUrl: e.photoUrl
@@ -1826,6 +1899,21 @@ exports.saveVmDraft = async (req, res) => {
     }
 
     const score = await recomputeAuditScore(conn, auditId, activePoints.length);
+
+    // Only a save that actually changed an answer is an event. Autosave fires on
+    // every blur, so recording all of them would bury the real edits.
+    if (changedPoints.length > 0) {
+      await vmHistory.recordVmAuditEvent(conn, {
+        submissionId: auditId,
+        locationId: audit.location_id,
+        action: vmHistory.VM_EVENT.DRAFT_SAVED,
+        pointId: changedPoints.length === 1 ? changedPoints[0] : null,
+        newValue: changedPoints.join(', ').slice(0, 5000),
+        scorePercent: score.percent,
+        summary: `${changedPoints.length} checkpoint${changedPoints.length === 1 ? '' : 's'} updated · ${vmHistory.describeScore(score)}`,
+        actor: req.user
+      });
+    }
 
     const [saved] = await conn.query('SELECT updatedAt FROM vmsubmissions WHERE id = ? LIMIT 1', [auditId]);
 
@@ -1840,7 +1928,7 @@ exports.saveVmDraft = async (req, res) => {
   } catch (err) {
     try { await conn.rollback(); } catch (e) {}
     console.error('[Save VM Draft Error]', err);
-    return errorRes(res, 'Failed to save the VM audit draft: ' + err.message, [err.message], 500);
+    return errorRes(res, 'Unable to save the checklist. Please try again.', [], 500);
   } finally {
     conn.release();
   }
@@ -1935,6 +2023,17 @@ exports.submitVmAudit = async (req, res) => {
       });
     }
 
+    await vmHistory.recordVmAuditEvent(conn, {
+      submissionId: auditId,
+      locationId: audit.location_id,
+      action: vmHistory.VM_EVENT.SUBMITTED,
+      statusBefore: VM_STATUS.DRAFT,
+      statusAfter: status,
+      scorePercent: score.percent,
+      summary: `${audit.floor} · ${audit.section} · ${audit.shift} · ${vmHistory.describeScore(score)}`,
+      actor: req.user
+    });
+
     await conn.commit();
 
     const [stamp] = await pool.query('SELECT submittedAt FROM vmsubmissions WHERE id = ? LIMIT 1', [auditId]);
@@ -1972,7 +2071,7 @@ exports.submitVmAudit = async (req, res) => {
   } catch (err) {
     try { await conn.rollback(); } catch (e) {}
     console.error('[Submit VM Audit Error]', err);
-    return errorRes(res, 'Failed to submit the VM audit: ' + err.message, [err.message], 500);
+    return errorRes(res, 'Unable to submit the checklist. Please try again.', [], 500);
   } finally {
     conn.release();
   }
@@ -2121,6 +2220,6 @@ exports.getVmAttention = async (req, res) => {
     });
   } catch (err) {
     console.error('[VM Attention Error]', err);
-    return errorRes(res, 'Failed to compute the VM attention list: ' + err.message, [err.message], 500);
+    return errorRes(res, 'Unable to load the attention list. Please try again.', [], 500);
   }
 };

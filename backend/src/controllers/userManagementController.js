@@ -76,6 +76,7 @@ async function _validateAssignedLocations(locationIds) {
 const MODULE_REGISTRY = [
   { key: 'dashboard', label: 'Dashboard', section: 'Enterprise' },
   { key: 'wedding_crm', label: 'Wedding CRM', section: 'Store Operations' },
+  { key: 'wedding_tell_caller', label: 'Tell Caller (CRM Instructions)', section: 'Store Operations' },
   { key: 'wedding_registration', label: 'Wedding Customer Registration', section: 'Store Operations' },
   { key: 'telecaller_desk', label: 'Telecaller Calling Desk', section: 'Store Operations' },
   { key: 'telecaller_dashboard', label: 'Telecaller Dashboard', section: 'Store Operations' },

@@ -306,8 +306,39 @@ function emitCandidateChange(action, candidate = {}, locationId = null) {
   });
 }
 
-function emitWeddingChange(action, customer = {}, locationId = null) {
-  emitEntityChange({
+/**
+ * "Tell Caller" instruction. One event name for every transition so the desk only
+ * needs one subscription; the payload carries which one happened. Delivered to the
+ * recipient's own room, their store room, and the global-admin room.
+ */
+function emitTelecallerInstruction(action, instruction = {}) {
+  if (!ioInstance) return;
+  const payload = {
+    entity: 'TELECALLER_INSTRUCTION',
+    action: String(action || 'CREATE').toUpperCase(),
+    id: instruction.id ? String(instruction.id) : null,
+    locationId: parseLocationId(instruction.location_id),
+    meta: {
+      customer_id: instruction.customer_id ?? null,
+      customer_name: instruction.customer_name ?? null,
+      telecaller_user_id: instruction.telecaller_user_id ?? null,
+      status: instruction.status ?? null,
+      priority: instruction.priority ?? null
+    },
+    timestamp: new Date().toISOString()
+  };
+  const rooms = [];
+  if (payload.meta.telecaller_user_id) rooms.push(`user:${payload.meta.telecaller_user_id}`);
+  if (payload.locationId) rooms.push(`location:${payload.locationId}`);
+  rooms.push('location:ALL');
+  try {
+    rooms.reduce((acc, room) => acc.to(room), ioInstance).emit('telecaller_instruction:changed', payload);
+  } catch (err) {
+    console.warn('[RealtimeService] Failed to emit instruction event:', err.message);
+  }
+}
+
+function emitWeddingChange(action, customer = {}, locationId = null) {  emitEntityChange({
     entity: 'WEDDING',
     action,
     id: customer.id || customer.customer_code,
@@ -530,6 +561,7 @@ module.exports = {
   emitEmployeeChange,
   emitCandidateChange,
   emitWeddingChange,
+  emitTelecallerInstruction,
   emitWeddingRegistrationChange,
   emitFeedbackChange,
   emitCallQueueChange,

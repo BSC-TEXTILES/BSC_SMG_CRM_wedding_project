@@ -1557,6 +1557,10 @@ export const API = {
     const q = params ? new URLSearchParams(cleanQueryParams(params)).toString() : '';
     return apiFetch(`/vm/attention${q ? `?${q}` : ''}`);
   },
+  /** Who opened, changed, filed and attached evidence to one checklist, newest first. */
+  async getVmAuditHistory(auditId: string) {
+    return apiFetch(`/vm/audits/${encodeURIComponent(auditId)}/history`);
+  },
   /** Photos already stored for one section, optionally scoped to a single audit. */
   async getVmSectionPhotos(params: { floor: string; section: string; submissionId?: string; date?: string }) {
     const q = new URLSearchParams(cleanQueryParams(params as Record<string, unknown>)).toString();
@@ -1836,6 +1840,41 @@ export const API = {
         assigned_telecaller_id: telecallerId,
         assigned_telecaller: telecallerName
       })
+    });
+    return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
+  },
+  // ── Tell Caller: CRM Manager instructions to a telecaller ──
+  async sendTelecallerInstruction(customerId: number | string, payload: { telecaller_user_id: number | string; message: string; priority?: string }) {
+    const res = await apiFetch(`/wedding-crm/customers/${customerId}/telecaller-instructions`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+    return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
+  },
+  async getTelecallerInstructions(params?: {
+    customer_id?: number | string; telecaller_id?: number | string; mine?: number;
+    status?: string; dateFrom?: string; dateTo?: string; search?: string; limit?: number; offset?: number;
+  }) {
+    const q = params ? new URLSearchParams(cleanQueryParams(params as Record<string, unknown>)).toString() : '';
+    try {
+      const res = await apiFetch(`/wedding-crm/telecaller-instructions${q ? `?${q}` : ''}`);
+      return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
+    } catch (err: any) {
+      if (err?.status === 404 || (err?.message && err.message.includes('Not found'))) {
+        try {
+          const fallbackRes = await apiFetch(`/telecaller-instructions${q ? `?${q}` : ''}`);
+          return (fallbackRes && fallbackRes.data !== undefined) ? { ...fallbackRes, ...fallbackRes.data } : fallbackRes;
+        } catch {
+          return { success: true, instructions: [], total: 0 };
+        }
+      }
+      throw err;
+    }
+  },
+  async updateTelecallerInstructionStatus(id: number | string, status: 'Seen' | 'Acknowledged' | 'Completed') {
+    const res = await apiFetch(`/wedding-crm/telecaller-instructions/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status })
     });
     return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
   },

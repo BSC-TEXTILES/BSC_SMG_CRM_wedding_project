@@ -339,6 +339,9 @@ class RealtimeClient {
     this.socket.on('wedding:create', handleWeddingEvent);
     this.socket.on('wedding:update', handleWeddingEvent);
     this.socket.on('wedding:call_logged', handleWeddingEvent);
+    // A CRM instruction is a wedding-desk change as much as a message: the desk and
+    // the inbox both refresh off `realtime:wedding`.
+    this.socket.on('telecaller_instruction:changed', handleWeddingEvent);
 
     const handleWeddingRegEvent = (payload: any) => {
       window.dispatchEvent(new CustomEvent('realtime:wedding_reg', { detail: payload }));

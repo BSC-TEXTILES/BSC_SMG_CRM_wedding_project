@@ -9,6 +9,7 @@ const upload = require('../middleware/upload');
 const realtimeService = require('../services/realtimeService');
 const { getISTDateString } = require('../utils/dates');
 const vmAuditAccess = require('../services/vmAuditAccess');
+const vmHistory = require('../services/vmAuditHistory');
 
 const uploadRoot = upload.uploadDir || path.join(__dirname, '../../uploads');
 
@@ -147,6 +148,25 @@ async function recordPhotoHistory(req, { photoId, submissionId = null, action, f
     // A missing history table must not fail the user's upload; the write is logged
     // instead so the gap is visible rather than swallowed.
     console.error('[VM Photo History] write failed:', err.message);
+  }
+
+  // Evidence appearing or disappearing is a checklist-level event, so it is mirrored
+  // into the audit trail too. Caption/label edits stay out of it — they are already
+  // recorded per photo and would only bury the meaningful rows.
+  const CHECKLIST_EVENTS = { UPLOADED: 'AttachmentAdded', DELETED: 'AttachmentRemoved', REPLACED: 'AttachmentReplaced' };
+  const VERBS = { AttachmentAdded: 'Attached', AttachmentReplaced: 'Replaced', AttachmentRemoved: 'Removed' };
+  const mirrored = CHECKLIST_EVENTS[action];
+  if (mirrored && submissionId) {
+    await vmHistory.recordVmAuditEvent(null, {
+      submissionId,
+      locationId: null,
+      action: mirrored,
+      pointId: null,
+      oldValue: oldFileName || null,
+      newValue: newFileName || null,
+      summary: `${VERBS[mirrored]} photo ${photoId}`,
+      actor: req?.user || null
+    });
   }
 }
 
@@ -403,7 +423,7 @@ exports.uploadPhotos = async (req, res) => {
       rawFiles.forEach(f => { try { fs.unlinkSync(f.path); } catch (e) {} });
     }
     console.error('[VM Photo Upload Error]', err);
-    return errorRes(res, 'Failed to upload VM checklist photos: ' + err.message, [err.message], 500);
+    return errorRes(res, 'Unable to upload the photos. Please try again.', [], 500);
   }
 };
 
@@ -562,7 +582,7 @@ exports.listPhotos = async (req, res) => {
     });
   } catch (err) {
     console.error('[VM Photos List Error]', err);
-    return errorRes(res, 'Failed to list VM checklist photos', [err.message], 500);
+    return errorRes(res, 'Unable to load the photos for this checklist. Please try again.', [], 500);
   }
 };
 
@@ -670,7 +690,7 @@ exports.deletePhoto = async (req, res) => {
     });
   } catch (err) {
     console.error('[Delete VM Photo Error]', err);
-    return errorRes(res, 'Failed to delete photo: ' + err.message, [err.message], 500);
+    return errorRes(res, 'Unable to remove the photo. Please try again.', [], 500);
   }
 };
 
@@ -734,7 +754,7 @@ exports.linkPhotosToSubmission = async (req, res) => {
     });
   } catch (err) {
     console.error('[Link Photos Error]', err);
-    return errorRes(res, 'Failed to link photos: ' + err.message, [err.message], 500);
+    return errorRes(res, 'Unable to attach the photos to this checklist. Please try again.', [], 500);
   }
 };
 
@@ -826,7 +846,7 @@ exports.updatePhotoMetadata = async (req, res) => {
     return res.json({ success: true, message: 'Photo details updated successfully.', photo: mapVmPhoto(refreshed[0]) });
   } catch (err) {
     console.error('[Update VM Photo Metadata Error]', err);
-    return errorRes(res, 'Failed to update photo details: ' + err.message, [err.message], 500);
+    return errorRes(res, 'Unable to update the photo details. Please try again.', [], 500);
   }
 };
 
@@ -906,7 +926,7 @@ exports.replacePhoto = async (req, res) => {
       } catch (e) {}
     }
     console.error('[Replace VM Photo Error]', err);
-    return errorRes(res, 'Failed to replace photo: ' + err.message, [err.message], 500);
+    return errorRes(res, 'Unable to replace the photo. Please try again.', [], 500);
   }
 };
 
@@ -944,7 +964,7 @@ exports.getPhotoHistory = async (req, res) => {
     });
   } catch (err) {
     console.error('[VM Photo History Error]', err);
-    return errorRes(res, 'Failed to load photo history: ' + err.message, [err.message], 500);
+    return errorRes(res, 'Unable to load the photo history. Please try again.', [], 500);
   }
 };
 

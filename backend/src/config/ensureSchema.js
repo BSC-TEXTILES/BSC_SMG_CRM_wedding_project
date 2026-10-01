@@ -52,6 +52,14 @@ const REQUIRED_COLUMNS = [
       { col: 'role_scope', def: 'VARCHAR(50) DEFAULT "All"' },
       { col: 'active', def: 'BOOLEAN DEFAULT TRUE' }
     ]
+  },
+  {
+    // Dedupe key for Tell Caller instructions: the message itself is encrypted with
+    // a random IV, so ciphertext can never be compared for an exact repeat.
+    table: 'wedding_telecaller_instructions',
+    columns: [
+      { col: 'message_hash', def: 'CHAR(64) NULL' }
+    ]
   }
 ];
 
@@ -74,6 +82,62 @@ const REQUIRED_TABLES = [
      INDEX \`idx_fe_entry\` (\`entry_id\`),
      INDEX \`idx_fe_loc_date\` (\`location_id\`, \`entryDate\`),
      INDEX \`idx_fe_created\` (\`created_at\`)
+   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+
+  `CREATE TABLE IF NOT EXISTS \`vm_submission_history\` (
+     \`id\` INT AUTO_INCREMENT PRIMARY KEY,
+     \`submission_id\` VARCHAR(64) NOT NULL,
+     \`location_id\` INT NULL,
+     \`action\` VARCHAR(40) NOT NULL,
+     \`field\` VARCHAR(60) NULL,
+     \`point_id\` VARCHAR(64) NULL,
+     \`old_value\` TEXT NULL,
+     \`new_value\` TEXT NULL,
+     \`status_before\` VARCHAR(30) NULL,
+     \`status_after\` VARCHAR(30) NULL,
+     \`score_percent\` DECIMAL(5,2) NULL,
+     \`summary\` VARCHAR(500) NULL,
+     \`changed_by\` VARCHAR(150) NOT NULL,
+     \`changed_by_user_id\` INT NULL,
+     \`changed_by_role\` VARCHAR(60) NULL,
+     \`changed_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+     INDEX \`idx_vm_hist_sub\` (\`submission_id\`, \`changed_at\`),
+     INDEX \`idx_vm_hist_loc\` (\`location_id\`),
+     INDEX \`idx_vm_hist_when\` (\`changed_at\`)
+   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+
+  // "Tell Caller": a CRM Manager's instruction about one customer to one telecaller.
+  // Names are stored alongside the ids because an archived customer must keep
+  // readable history, and `message` holds encrypted text like wedding_notes.
+  `CREATE TABLE IF NOT EXISTS \`wedding_telecaller_instructions\` (
+     \`id\` INT AUTO_INCREMENT PRIMARY KEY,
+     \`customer_id\` INT NOT NULL,
+     \`customer_code\` VARCHAR(40) NULL,
+     \`customer_name\` VARCHAR(190) NULL,
+     \`location_id\` INT NOT NULL,
+     \`location_name\` VARCHAR(120) NULL,
+     \`telecaller_user_id\` INT NOT NULL,
+     \`telecaller_name\` VARCHAR(190) NOT NULL,
+     \`sent_by_user_id\` INT NULL,
+     \`sent_by_name\` VARCHAR(190) NOT NULL,
+     \`sent_by_role\` VARCHAR(80) NULL,
+     \`message\` TEXT NOT NULL,
+     \`message_hash\` CHAR(64) NULL,
+     \`priority\` VARCHAR(20) NOT NULL DEFAULT 'Normal',
+     \`status\` VARCHAR(20) NOT NULL DEFAULT 'New',
+     \`related_call_log_id\` INT NULL,
+     \`seen_at\` DATETIME NULL,
+     \`acknowledged_at\` DATETIME NULL,
+     \`acknowledged_by\` VARCHAR(190) NULL,
+     \`completed_at\` DATETIME NULL,
+     \`completed_by\` VARCHAR(190) NULL,
+     \`completed_by_user_id\` INT NULL,
+     \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+     \`updated_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+     INDEX \`idx_wti_telecaller\` (\`telecaller_user_id\`, \`status\`, \`created_at\`),
+     INDEX \`idx_wti_customer\` (\`customer_id\`, \`created_at\`),
+     INDEX \`idx_wti_location\` (\`location_id\`),
+     INDEX \`idx_wti_created\` (\`created_at\`)
    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
 ];
 
