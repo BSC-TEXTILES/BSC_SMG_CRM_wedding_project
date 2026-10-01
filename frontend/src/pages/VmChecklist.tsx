@@ -5,12 +5,20 @@ import PageContainer from '../components/ui/PageContainer';
 import { showToast } from '../components/Toast';
 import {
   Activity,
+  Award,
   BarChart3,
+  Calendar,
   Camera,
-  ClipboardList,
+  CheckCircle2,
+  ChevronRight,
   CircleAlert,
+  ClipboardList,
+  Clock,
+  Eye,
   Filter,
   History as HistoryIcon,
+  Layers,
+  MapPin,
   Plus,
   RefreshCw,
   RotateCcw,
@@ -18,6 +26,7 @@ import {
   Store,
   Trash2,
   TrendingUp,
+  User,
   X
 } from 'lucide-react';
 import {
@@ -51,6 +60,7 @@ import { VM_SHIFTS } from './vm/vmTypes';
 import type { VmPhoto } from './vm/vmTypes';
 import {
   VM_FLOW_STEPS,
+  formatBytes,
   formatVmDate,
   liveScoreDisplay,
   mapAuditList,
@@ -74,8 +84,8 @@ const CHART_COLORS = {
 };
 
 const GALLERY_CONTROL =
-  'w-full text-xs font-bold text-[#4A173A] bg-white border border-[#E8D9D4] rounded-2xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#B76E79]/35 focus:border-[#B76E79] transition-colors';
-const GALLERY_LABEL = 'block text-[11px] font-black uppercase tracking-wider text-[#6F5963] mb-1';
+  'w-full text-xs font-bold text-[#4A173A] bg-white border border-[#E8D9D4] rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#B76E79]/35 focus:border-[#B76E79] transition-all shadow-2xs';
+const GALLERY_LABEL = 'block text-[11px] font-black uppercase tracking-wider text-[#6F5963] mb-1.5 flex items-center gap-1.5';
 
 const TOOLTIP_STYLE = {
   backgroundColor: '#FFFDFC',
@@ -545,12 +555,21 @@ export default function VmChecklist() {
         <div className="space-y-4">
           {/* View switch: the guided audit, then the two reading views. */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-1.5 bg-[#FFFDFC] border border-[#E8D9D4] rounded-2xl p-1 self-start flex-wrap">
+            <div className="flex items-center gap-1.5 bg-[#FFFDFC] border border-[#E8D9D4] rounded-2xl p-1 self-start flex-wrap shadow-2xs">
               <ViewTab active={view === 'flow'} onClick={() => setView('flow')} icon={<ClipboardList className="w-3.5 h-3.5" />}>
                 Audit flow
               </ViewTab>
               <ViewTab active={view === 'gallery'} onClick={() => setView('gallery')} icon={<Camera className="w-3.5 h-3.5" />}>
                 Photo gallery
+                {galleryPhotos.length > 0 && (
+                  <span
+                    className={`ml-1.5 px-2 py-0.5 rounded-full text-[10px] font-black ${
+                      view === 'gallery' ? 'bg-white/25 text-white' : 'bg-[#B76E79]/20 text-[#4A173A]'
+                    }`}
+                  >
+                    {galleryPhotos.length}
+                  </span>
+                )}
               </ViewTab>
               <ViewTab active={view === 'analytics'} onClick={() => setView('analytics')} icon={<BarChart3 className="w-3.5 h-3.5" />}>
                 Analytics
@@ -639,42 +658,97 @@ export default function VmChecklist() {
           )}
 
           {view === 'gallery' && (
-            <section className="bg-[#FFFDFC] border border-[#E8D9D4] rounded-3xl shadow-xs">
-              <div className="p-4 sm:p-5 border-b border-[#E8D9D4] flex flex-col lg:flex-row lg:items-end justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-[11px] font-black uppercase tracking-wider text-[#B76E79] flex items-center gap-1.5">
-                    <Camera className="w-3.5 h-3.5" />
-                    <span>Store visual merchandising gallery</span>
-                  </p>
-                  <h2 className="text-base sm:text-lg font-black text-[#4A173A] tracking-tight mt-0.5">
-                    Inspection photos on file
-                  </h2>
-                  <p className="text-[11px] font-semibold text-[#6F5963] mt-0.5">
-                    {galleryLoading
-                      ? 'Loading photos…'
-                      : `${galleryPhotos.length} photo${galleryPhotos.length === 1 ? '' : 's'} matching the filters`}
-                  </p>
+            <section className="bg-[#FFFDFC] border border-[#E8D9D4] rounded-3xl shadow-sm overflow-hidden">
+              {/* Gallery Header */}
+              <div className="p-5 sm:p-6 border-b border-[#E8D9D4] bg-gradient-to-r from-[#FFFDFC] via-[#FFF9F6] to-[#FAF5F2] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#4A173A] to-[#6A2853] text-[#FAF6F0] flex items-center justify-center shadow-md shrink-0">
+                    <Camera className="w-6 h-6 text-[#E8C7A8]" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[11px] font-black uppercase tracking-wider text-[#B76E79]">
+                        Store Visual Merchandising Gallery
+                      </span>
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#198754]/10 text-[#198754] border border-[#198754]/20">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#198754] animate-pulse" />
+                        Live Studio
+                      </span>
+                    </div>
+                    <h2 className="text-lg sm:text-xl font-black text-[#4A173A] tracking-tight mt-0.5">
+                      Inspection Evidence & Store Exhibits
+                    </h2>
+                    <p className="text-xs font-semibold text-[#6F5963] mt-0.5">
+                      {galleryLoading
+                        ? 'Refreshing inspection photos…'
+                        : `${galleryPhotos.length} photo${galleryPhotos.length === 1 ? '' : 's'} matching current filters`}
+                    </p>
+                  </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => void loadGallery()}
-                  disabled={galleryLoading}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[#E8D9D4] bg-white text-[#4A173A] text-[11px] font-bold hover:bg-[#FFF7F2] transition-colors disabled:opacity-60 cursor-pointer self-start lg:self-auto"
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 text-[#B76E79] ${galleryLoading ? 'animate-spin' : ''}`} />
-                  <span>Refresh</span>
-                </button>
+
+                <div className="flex items-center gap-2 self-start sm:self-auto">
+                  <button
+                    type="button"
+                    onClick={() => void loadGallery()}
+                    disabled={galleryLoading}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#E8D9D4] bg-white text-[#4A173A] text-xs font-bold hover:bg-[#FFF7F2] hover:border-[#B76E79]/50 shadow-2xs transition-all disabled:opacity-60 cursor-pointer"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 text-[#B76E79] ${galleryLoading ? 'animate-spin' : ''}`} />
+                    <span>{galleryLoading ? 'Refreshing…' : 'Refresh Feed'}</span>
+                  </button>
+                </div>
               </div>
 
-              <div className="p-4 sm:p-5 border-b border-[#E8D9D4] bg-[#FFF7F2]">
-                <p className="text-[11px] font-black uppercase tracking-wider text-[#6F5963] flex items-center gap-1.5 mb-2.5">
-                  <Filter className="w-3.5 h-3.5 text-[#B76E79]" />
-                  <span>Filters</span>
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5">
+              {/* Filters Station */}
+              <div className="p-4 sm:p-5 border-b border-[#E8D9D4] bg-[#FFF9F6]/80">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+                  <div className="flex items-center gap-2">
+                    <Filter className="w-3.5 h-3.5 text-[#B76E79]" />
+                    <span className="text-xs font-black uppercase tracking-wider text-[#4A173A]">Filter Evidence</span>
+                    {Object.values(galleryFilters).some((v) => v !== '' && v !== 'All') && (
+                      <span className="px-2 py-0.5 rounded-full bg-[#B76E79]/15 text-[#4A173A] text-[10px] font-bold border border-[#B76E79]/20">
+                        Active Filters
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Quick Date Presets */}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-[#6F5963] mr-1">Quick:</span>
+                    {[
+                      { label: 'All Dates', value: '' },
+                      { label: 'Today', value: new Date().toISOString().split('T')[0] },
+                      {
+                        label: 'Yesterday',
+                        value: new Date(Date.now() - 86400000).toISOString().split('T')[0]
+                      }
+                    ].map((preset) => {
+                      const isActive = galleryFilters.date === preset.value;
+                      return (
+                        <button
+                          key={preset.label}
+                          type="button"
+                          onClick={() => setGalleryFilters((p) => ({ ...p, date: preset.value }))}
+                          className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                            isActive
+                              ? 'bg-[#4A173A] text-white shadow-xs'
+                              : 'bg-white border border-[#E8D9D4] text-[#6F5963] hover:text-[#4A173A] hover:bg-[#FFFDFC]'
+                          }`}
+                        >
+                          {preset.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                   {(isAdmin || isManager) && (
                     <label className="block">
-                      <span className={GALLERY_LABEL}>Store</span>
+                      <span className={GALLERY_LABEL}>
+                        <Store className="w-3.5 h-3.5 text-[#B76E79]" />
+                        <span>Store Location</span>
+                      </span>
                       <select
                         value={galleryFilters.locationId}
                         onChange={(e) => setGalleryFilters((p) => ({ ...p, locationId: e.target.value }))}
@@ -687,8 +761,12 @@ export default function VmChecklist() {
                       </select>
                     </label>
                   )}
+
                   <label className="block">
-                    <span className={GALLERY_LABEL}>Floor</span>
+                    <span className={GALLERY_LABEL}>
+                      <Layers className="w-3.5 h-3.5 text-[#B76E79]" />
+                      <span>Store Floor</span>
+                    </span>
                     <select
                       value={galleryFilters.floor}
                       onChange={(e) => setGalleryFilters((p) => ({ ...p, floor: e.target.value, section: 'All' }))}
@@ -702,8 +780,12 @@ export default function VmChecklist() {
                       ))}
                     </select>
                   </label>
+
                   <label className="block">
-                    <span className={GALLERY_LABEL}>Section</span>
+                    <span className={GALLERY_LABEL}>
+                      <Sparkles className="w-3.5 h-3.5 text-[#B76E79]" />
+                      <span>Floor Section</span>
+                    </span>
                     <select
                       value={galleryFilters.section}
                       onChange={(e) => setGalleryFilters((p) => ({ ...p, section: e.target.value }))}
@@ -717,8 +799,12 @@ export default function VmChecklist() {
                       ))}
                     </select>
                   </label>
+
                   <label className="block">
-                    <span className={GALLERY_LABEL}>Inspection date</span>
+                    <span className={GALLERY_LABEL}>
+                      <Calendar className="w-3.5 h-3.5 text-[#B76E79]" />
+                      <span>Inspection Date</span>
+                    </span>
                     <input
                       type="date"
                       value={galleryFilters.date}
@@ -726,8 +812,12 @@ export default function VmChecklist() {
                       className={GALLERY_CONTROL}
                     />
                   </label>
+
                   <label className="block">
-                    <span className={GALLERY_LABEL}>Audit shift</span>
+                    <span className={GALLERY_LABEL}>
+                      <Clock className="w-3.5 h-3.5 text-[#B76E79]" />
+                      <span>Audit Shift</span>
+                    </span>
                     <select
                       value={galleryFilters.shift}
                       onChange={(e) => setGalleryFilters((p) => ({ ...p, shift: e.target.value }))}
@@ -741,121 +831,253 @@ export default function VmChecklist() {
                       ))}
                     </select>
                   </label>
+
                   <label className="block">
-                    <span className={GALLERY_LABEL}>Audit score</span>
+                    <span className={GALLERY_LABEL}>
+                      <Award className="w-3.5 h-3.5 text-[#B76E79]" />
+                      <span>Audit Score</span>
+                    </span>
                     <select
                       value={galleryFilters.minScore}
                       onChange={(e) => setGalleryFilters((p) => ({ ...p, minScore: e.target.value }))}
                       className={GALLERY_CONTROL}
                     >
                       <option value="">Any score</option>
-                      <option value="90">90% and above</option>
+                      <option value="90">90% and above (Pass)</option>
                       <option value="80">80% and above</option>
                       <option value="50">50% and above</option>
-                      <option value="below50">Below 50%</option>
+                      <option value="below50">Below 50% (Attention)</option>
                     </select>
                   </label>
-                  <div className="flex items-end gap-2">
-                    <label className="block flex-1 min-w-0">
-                      <span className={GALLERY_LABEL}>Inspector</span>
-                      <select
-                        value={galleryFilters.inspector}
-                        onChange={(e) => setGalleryFilters((p) => ({ ...p, inspector: e.target.value }))}
-                        className={GALLERY_CONTROL}
-                      >
-                        <option value="All">All inspectors</option>
-                        {inspectorOptions.map((i) => (
-                          <option key={i} value={i}>
-                            {i}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
+
+                  <label className="block">
+                    <span className={GALLERY_LABEL}>
+                      <User className="w-3.5 h-3.5 text-[#B76E79]" />
+                      <span>Inspector</span>
+                    </span>
+                    <select
+                      value={galleryFilters.inspector}
+                      onChange={(e) => setGalleryFilters((p) => ({ ...p, inspector: e.target.value }))}
+                      className={GALLERY_CONTROL}
+                    >
+                      <option value="All">All inspectors</option>
+                      {inspectorOptions.map((i) => (
+                        <option key={i} value={i}>
+                          {i}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <div className="flex items-end">
                     <button
                       type="button"
-                      onClick={() => setGalleryFilters({ locationId: '', floor: 'All', section: 'All', date: '', inspector: 'All', shift: 'All', minScore: '' })}
-                      className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2.5 rounded-2xl border border-[#E8D9D4] bg-white text-[11px] font-black uppercase tracking-wider text-[#4A173A] hover:bg-[#FFF7F2] transition-colors cursor-pointer"
+                      onClick={() =>
+                        setGalleryFilters({
+                          locationId: '',
+                          floor: 'All',
+                          section: 'All',
+                          date: '',
+                          inspector: 'All',
+                          shift: 'All',
+                          minScore: ''
+                        })
+                      }
+                      className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-[#E8D9D4] bg-white text-xs font-black uppercase tracking-wider text-[#4A173A] hover:bg-[#FFF7F2] hover:border-[#B76E79] shadow-2xs transition-all cursor-pointer"
                     >
                       <RotateCcw className="w-3.5 h-3.5 text-[#B76E79]" />
-                      <span>Clear</span>
+                      <span>Reset Filters</span>
                     </button>
                   </div>
                 </div>
               </div>
 
-              <div className="p-4 sm:p-5">
+              {/* Photo Exhibition Area */}
+              <div className="p-4 sm:p-6">
                 {galleryError ? (
-                  <div className="py-8 px-6 text-center bg-[#FFFDFC] border border-[#B42318]/30 rounded-3xl">
-                    <CircleAlert className="w-6 h-6 text-[#B42318] mx-auto mb-2" />
+                  <div className="py-10 px-6 text-center bg-[#FFFDFC] border border-[#B42318]/30 rounded-3xl max-w-lg mx-auto shadow-xs">
+                    <CircleAlert className="w-8 h-8 text-[#B42318] mx-auto mb-3" />
                     <p className="text-sm font-black text-[#4A173A]">Unable to load the photo gallery</p>
-                    <p className="text-xs text-[#6F5963] mt-1 break-words max-w-lg mx-auto">{galleryError}</p>
+                    <p className="text-xs text-[#6F5963] mt-1 break-words">{galleryError}</p>
                     <button
                       type="button"
                       onClick={() => void loadGallery()}
-                      className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 bg-[#4A173A] hover:bg-[#6A2853] text-white font-bold rounded-xl text-xs transition-colors cursor-pointer"
+                      className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 bg-[#4A173A] hover:bg-[#6A2853] text-white font-bold rounded-xl text-xs transition-all cursor-pointer shadow-md"
                     >
                       <RefreshCw className="w-3.5 h-3.5" />
-                      <span>Retry</span>
+                      <span>Retry Gallery</span>
                     </button>
                   </div>
                 ) : galleryLoading && galleryPhotos.length === 0 ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                    {[0, 1, 2, 3, 4, 5].map((i) => (
-                      <div key={i} className="bg-[#FFF7F2] border border-[#E8D9D4] rounded-2xl aspect-[4/3] animate-pulse" />
-                    ))}
-                  </div>
-                ) : galleryPhotos.length === 0 ? (
-                  <div className="py-12 px-6 text-center">
-                    <Camera className="w-8 h-8 text-[#B76E79] mx-auto mb-3" />
-                    <p className="text-sm font-black text-[#4A173A]">No inspection photos match these filters</p>
-                    <p className="text-xs text-[#6F5963] mt-1 max-w-md mx-auto">
-                      Photos are attached during the photo step of an audit. Clear the filters, or start an audit to
-                      capture new evidence.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2.5 sm:gap-3">
-                    {galleryPhotos.map((photo, index) => (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
                       <div
-                        key={photo.id}
-                        className="group bg-white border border-[#E8D9D4] rounded-2xl overflow-hidden hover:border-[#B76E79] transition-colors"
+                        key={i}
+                        className="bg-white border border-[#E8D9D4] rounded-2xl overflow-hidden shadow-xs animate-pulse"
                       >
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const items = toLightboxItems(galleryPhotos);
-                            setGalleryViewer({ items, index: Math.min(Math.max(index, 0), items.length - 1) });
-                          }}
-                          className="block w-full aspect-[4/3] bg-[#FFF7F2] cursor-pointer"
-                          aria-label={`Open photo ${photo.fileName}`}
-                        >
-                          <img
-                            src={photoSrc(photo)}
-                            alt={photo.fileName}
-                            loading="lazy"
-                            className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform"
-                          />
-                        </button>
-                        <div className="px-2.5 py-2 border-t border-[#E8D9D4]">
-                          <p className="text-[11px] font-black text-[#4A173A] truncate" title={`${photo.floor} → ${photo.section}`}>
-                            {photo.floor} → {photo.section}
-                          </p>
-                          <p className="text-[11px] font-bold text-[#6F5963] mt-0.5 truncate">
-                            {photo.uploadedBy || '—'} · {formatVmDate(photo.inspectionDate || photo.createdAt) || '—'}
-                          </p>
-                          {canWrite && (
-                            <button
-                              type="button"
-                              onClick={() => setPhotoToDelete(photo)}
-                              className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-black text-[#B42318] hover:underline cursor-pointer"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                              <span>Delete</span>
-                            </button>
-                          )}
+                        <div className="aspect-[4/3] bg-[#FAF5F2]" />
+                        <div className="p-3.5 space-y-2">
+                          <div className="h-3.5 bg-[#FAF5F2] rounded-md w-3/4" />
+                          <div className="h-3 bg-[#FAF5F2] rounded-md w-1/2" />
                         </div>
                       </div>
                     ))}
+                  </div>
+                ) : galleryPhotos.length === 0 ? (
+                  <div className="py-16 px-6 text-center max-w-md mx-auto">
+                    <div className="w-16 h-16 rounded-3xl bg-[#FAF5F2] border border-[#E8D9D4] flex items-center justify-center mx-auto mb-4 text-[#B76E79] shadow-inner">
+                      <Camera className="w-8 h-8" />
+                    </div>
+                    <h3 className="text-base font-black text-[#4A173A]">No inspection photos found</h3>
+                    <p className="text-xs text-[#6F5963] mt-1.5 leading-relaxed">
+                      No photos match the selected filters. Clear your filters or launch a new audit to capture fresh store floor evidence.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setGalleryFilters({
+                          locationId: '',
+                          floor: 'All',
+                          section: 'All',
+                          date: '',
+                          inspector: 'All',
+                          shift: 'All',
+                          minScore: ''
+                        })
+                      }
+                      className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white border border-[#E8D9D4] hover:bg-[#FFF7F2] text-[#4A173A] text-xs font-bold transition-all cursor-pointer shadow-2xs"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5 text-[#B76E79]" />
+                      <span>Clear All Filters</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {galleryPhotos.map((photo, index) => {
+                      const isEvidence = Boolean(photo.pointId);
+                      return (
+                        <div
+                          key={photo.id}
+                          className="group relative bg-white border border-[#E8D9D4] hover:border-[#B76E79] rounded-2xl overflow-hidden shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col hover:-translate-y-1"
+                        >
+                          {/* Photo Thumbnail Container */}
+                          <div
+                            onClick={() => {
+                              const items = toLightboxItems(galleryPhotos);
+                              setGalleryViewer({ items, index: Math.min(Math.max(index, 0), items.length - 1) });
+                            }}
+                            className="relative aspect-[4/3] bg-gradient-to-br from-[#20101C] to-[#120810] cursor-pointer overflow-hidden"
+                            role="button"
+                            tabIndex={0}
+                            aria-label={`Inspect photo for ${photo.floor} ${photo.section}`}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                const items = toLightboxItems(galleryPhotos);
+                                setGalleryViewer({ items, index: Math.min(Math.max(index, 0), items.length - 1) });
+                              }
+                            }}
+                          >
+                            <img
+                              src={photoSrc(photo)}
+                              alt={`${photo.floor} ${photo.section}`}
+                              loading="lazy"
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            />
+
+                            {/* Floating Badges */}
+                            <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between gap-1 pointer-events-none">
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#180f16]/85 backdrop-blur-md border border-white/20 text-white text-[10px] font-black shadow-md truncate max-w-[65%]">
+                                <MapPin className="w-3 h-3 text-[#E8C7A8] shrink-0" />
+                                <span className="truncate">{photo.floor}</span>
+                              </span>
+
+                              <span
+                                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black border backdrop-blur-md shadow-md ${
+                                  isEvidence
+                                    ? 'bg-amber-950/80 border-amber-400/40 text-amber-200'
+                                    : 'bg-[#4A173A]/80 border-[#B76E79]/40 text-[#FAF6F0]'
+                                }`}
+                              >
+                                {isEvidence ? (
+                                  <>
+                                    <CheckCircle2 className="w-3 h-3 text-amber-300" />
+                                    <span>Checkpoint</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Layers className="w-3 h-3 text-[#E8C7A8]" />
+                                    <span>Section Shot</span>
+                                  </>
+                                )}
+                              </span>
+                            </div>
+
+                            {/* Hover Overlay Button */}
+                            <div className="absolute inset-0 bg-[#351027]/40 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center p-4">
+                              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#4A173A] text-white text-xs font-black shadow-xl border border-white/20 transform scale-95 group-hover:scale-100 transition-transform duration-200">
+                                <Eye className="w-4 h-4 text-[#E8C7A8]" />
+                                <span>Inspect Photo</span>
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Card Body & Details */}
+                          <div className="p-3.5 flex-1 flex flex-col justify-between border-t border-[#E8D9D4] bg-[#FFFDFC]">
+                            <div>
+                              <p className="text-xs font-black text-[#4A173A] truncate" title={`${photo.floor} → ${photo.section}`}>
+                                {photo.section}
+                              </p>
+                              <div className="flex items-center gap-2 text-[11px] font-medium text-[#6F5963] mt-1.5 flex-wrap">
+                                <span className="inline-flex items-center gap-1">
+                                  <User className="w-3 h-3 text-[#B76E79]" />
+                                  <span className="font-bold text-[#4A173A]">{photo.uploadedBy || 'Auditor'}</span>
+                                </span>
+                                <span>•</span>
+                                <span className="inline-flex items-center gap-1">
+                                  <Calendar className="w-3 h-3 text-[#B76E79]" />
+                                  <span>{formatVmDate(photo.inspectionDate || photo.createdAt) || 'Today'}</span>
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Action footer */}
+                            <div className="mt-3 pt-2.5 border-t border-[#F0E4E0] flex items-center justify-between text-[11px]">
+                              <span className="text-[10px] font-bold text-[#6F5963] bg-[#FAF5F2] border border-[#E8D9D4] px-2 py-0.5 rounded-md">
+                                {formatBytes(photo.fileSize)}
+                              </span>
+
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const items = toLightboxItems(galleryPhotos);
+                                    setGalleryViewer({ items, index: Math.min(Math.max(index, 0), items.length - 1) });
+                                  }}
+                                  className="text-[11px] font-bold text-[#4A173A] hover:text-[#B76E79] transition-colors cursor-pointer"
+                                >
+                                  View
+                                </button>
+
+                                {canWrite && (
+                                  <>
+                                    <span className="text-[#E8D9D4]">|</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => setPhotoToDelete(photo)}
+                                      title="Delete this inspection photo"
+                                      className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-600 hover:text-rose-700 hover:underline cursor-pointer"
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                      <span>Delete</span>
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -1091,35 +1313,37 @@ export default function VmChecklist() {
 
       {photoToDelete && (
         <div
-          className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-[#351027]/60 backdrop-blur-xs"
+          className="fixed inset-0 z-[130] flex items-center justify-center p-4 bg-[#180f16]/75 backdrop-blur-sm animate-fade-in"
           role="dialog"
           aria-modal="true"
           aria-label="Delete photo"
           onClick={() => !deletingPhoto && setPhotoToDelete(null)}
         >
-          <div className="w-full max-w-sm bg-[#FFFDFC] border border-[#E8D9D4] rounded-3xl shadow-xl p-5" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-sm font-black text-[#4A173A]">Delete this photo?</h3>
-            <p className="text-[11px] font-semibold text-[#6F5963] mt-1 break-words">
-              {photoToDelete.fileName} ({photoToDelete.floor} → {photoToDelete.section}). It is removed from the
-              inspection record for good.
+          <div className="w-full max-w-sm bg-[#FFFDFC] border border-[#E8D9D4] rounded-3xl shadow-2xl p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mb-3 border border-rose-200 shadow-sm">
+              <Trash2 className="w-6 h-6" />
+            </div>
+            <h3 className="text-base font-black text-[#4A173A]">Delete Inspection Photo?</h3>
+            <p className="text-xs font-semibold text-[#6F5963] mt-1.5 leading-relaxed">
+              This photo for <span className="text-[#4A173A] font-bold">{photoToDelete.floor} → {photoToDelete.section}</span> will be permanently removed from the audit record.
             </p>
-            <div className="mt-4 flex items-center justify-end gap-2">
+            <div className="mt-5 flex items-center justify-end gap-2.5">
               <button
                 type="button"
                 onClick={() => setPhotoToDelete(null)}
                 disabled={deletingPhoto}
-                className="px-3 py-2 rounded-xl border border-[#E8D9D4] bg-white text-[#4A173A] text-[11px] font-black hover:bg-[#FFF7F2] transition-colors disabled:opacity-50 cursor-pointer"
+                className="px-4 py-2.5 rounded-xl border border-[#E8D9D4] bg-white text-[#4A173A] text-xs font-bold hover:bg-[#FFF7F2] transition-colors disabled:opacity-50 cursor-pointer shadow-2xs"
               >
-                Keep photo
+                Keep Photo
               </button>
               <button
                 type="button"
                 onClick={() => void confirmDeletePhoto()}
                 disabled={deletingPhoto}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#B42318] hover:bg-[#8f1c14] text-white text-[11px] font-black transition-colors disabled:opacity-50 cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#B42318] hover:bg-[#911d14] text-white text-xs font-bold transition-all disabled:opacity-50 cursor-pointer shadow-md"
               >
                 {deletingPhoto ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
-                <span>{deletingPhoto ? 'Deleting…' : 'Delete photo'}</span>
+                <span>{deletingPhoto ? 'Deleting…' : 'Delete Photo'}</span>
               </button>
             </div>
           </div>
