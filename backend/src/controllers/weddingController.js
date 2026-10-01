@@ -440,6 +440,13 @@ function buildExtendedFieldUpdate(body) {
 let tablesChecked = false;
 let tablesInitPromise = null;
 let weddingCustomersColumns = new Set();
+
+// Immediately repair column nullability on startup
+pool.query("ALTER TABLE wedding_customers MODIFY COLUMN expected_shopping_date DATE NULL DEFAULT NULL").catch(() => {});
+pool.query("ALTER TABLE wedding_customers MODIFY COLUMN wedding_date DATE NULL DEFAULT NULL").catch(() => {});
+pool.query("ALTER TABLE wedding_customers MODIFY COLUMN follow_up_date DATE NULL DEFAULT NULL").catch(() => {});
+pool.query("ALTER TABLE wedding_customers MODIFY COLUMN total_calls_count INT NOT NULL DEFAULT 0").catch(() => {});
+
 async function getWeddingCustomerColumns() {
   if (weddingCustomersColumns.size > 0) return weddingCustomersColumns;
   try {
@@ -452,11 +459,15 @@ async function getWeddingCustomerColumns() {
 }
 
 async function ensureTables() {
-  if (tablesChecked && weddingCustomersColumns.has('last_contacted_by')) return;
+  if (tablesChecked && weddingCustomersColumns.has('last_contacted_by') && weddingCustomersColumns.has('assigned_telecaller_id')) return;
   if (!tablesInitPromise) {
     tablesInitPromise = (async () => {
       try {
         await pool.query("SET time_zone = '+05:30'").catch(() => {});
+        try { await pool.query("ALTER TABLE wedding_customers MODIFY COLUMN expected_shopping_date DATE NULL DEFAULT NULL"); } catch(e) {}
+        try { await pool.query("ALTER TABLE wedding_customers MODIFY COLUMN wedding_date DATE NULL DEFAULT NULL"); } catch(e) {}
+        try { await pool.query("ALTER TABLE wedding_customers MODIFY COLUMN follow_up_date DATE NULL DEFAULT NULL"); } catch(e) {}
+        try { await pool.query("ALTER TABLE wedding_customers MODIFY COLUMN total_calls_count INT NOT NULL DEFAULT 0"); } catch(e) {}
         await pool.query(`
       CREATE TABLE IF NOT EXISTS \`wedding_customers\` (
         \`id\` INT AUTO_INCREMENT PRIMARY KEY,
@@ -746,8 +757,13 @@ async function ensureTables() {
       "ALTER TABLE wedding_customers ADD COLUMN created_by VARCHAR(150) NULL",
       "ALTER TABLE wedding_customers ADD COLUMN created_by_user_id INT NULL",
       "ALTER TABLE wedding_customers ADD COLUMN assigned_telecaller_id INT NULL",
+      "ALTER TABLE wedding_customers MODIFY COLUMN expected_shopping_date DATE NULL DEFAULT NULL",
+      "ALTER TABLE wedding_customers MODIFY COLUMN wedding_date DATE NULL DEFAULT NULL",
+      "ALTER TABLE wedding_customers MODIFY COLUMN follow_up_date DATE NULL DEFAULT NULL",
       "ALTER TABLE wedding_customers MODIFY COLUMN total_calls_count INT NOT NULL DEFAULT 0",
-      "ALTER TABLE wedding_customers MODIFY COLUMN follow_up_date DATE NULL"
+      "ALTER TABLE wedding_customers MODIFY COLUMN preferred_shopping_category VARCHAR(150) NULL DEFAULT 'General Wedding Shopping'",
+      "ALTER TABLE wedding_customers MODIFY COLUMN preferred_call_time VARCHAR(50) NULL DEFAULT 'Morning (10 AM - 1 PM)'",
+      "ALTER TABLE wedding_customers MODIFY COLUMN estimated_family_size INT NULL DEFAULT 1"
     ];
     for (const sql of weddingCols) {
       try { await pool.query(sql); } catch(e) { /* column already exists */ }
@@ -1434,6 +1450,9 @@ class WeddingController {
         return errorRes(res, 'Unable to allocate a unique registration ID. Please try again.', [], 500);
       }
 
+      let safeWeddingDate = weddingDate || null;
+      let safeExpectedShoppingDate = expectedShoppingDate || null;
+
       let newId;
       try {
         const [insertResult] = await pool.query(`
@@ -1469,10 +1488,10 @@ class WeddingController {
           mobileNumber,
           alternateMobile,
           email,
-          weddingDate,
-          expectedShoppingDate || null,
+          safeWeddingDate,
+          safeExpectedShoppingDate,
           preferredCategory,
-          estimatedFamilySize,
+          estimatedFamilySize || 1,
           assignedTelecaller,
           assignedTelecallerId,
           followUpDate,
@@ -1486,42 +1505,97 @@ class WeddingController {
         ]);
         newId = insertResult.insertId;
       } catch (insertErr) {
-        console.warn('[WeddingController.createCustomer] Primary insert failed, falling back to core columns:', insertErr.message);
-        const [fallbackResult] = await pool.query(`
-          INSERT INTO wedding_customers (
-            customer_code,
-            location_id,
-            customer_name,
-            mobile_number,
+        console.warn('[WeddingController.createCustomer] Primary insert failed:', insertErr.message);
+
+        // Attempt on-the-fly column nullability repairs
+        if (/expected_shopping_date/i.test(insertErr.message)) {
+          await pool.query("ALTER TABLE wedding_customers MODIFY COLUMN expected_shopping_date DATE NULL DEFAULT NULL").catch(() => {});
+        }
+        if (/wedding_date/i.test(insertErr.message)) {
+          await pool.query("ALTER TABLE wedding_customers MODIFY COLUMN wedding_date DATE NULL DEFAULT NULL").catch(() => {});
+        }
+        if (/follow_up_date/i.test(insertErr.message)) {
+          await pool.query("ALTER TABLE wedding_customers MODIFY COLUMN follow_up_date DATE NULL DEFAULT NULL").catch(() => {});
+        }
+
+        try {
+          const [fallbackResult] = await pool.query(`
+            INSERT INTO wedding_customers (
+              customer_code,
+              location_id,
+              customer_name,
+              mobile_number,
+              email,
+              wedding_date,
+              expected_shopping_date,
+              preferred_shopping_category,
+              estimated_family_size,
+              assigned_telecaller,
+              follow_up_date,
+              preferred_call_time,
+              customer_notes,
+              customer_status,
+              call_status,
+              total_calls_count
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'New', 'Pending', 0)
+          `, [
+            customerCode,
+            locationId,
+            customerName,
+            mobileNumber,
             email,
-            wedding_date,
-            expected_shopping_date,
-            preferred_shopping_category,
-            estimated_family_size,
-            assigned_telecaller,
-            follow_up_date,
-            preferred_call_time,
-            customer_notes,
-            customer_status,
-            call_status,
-            total_calls_count
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'New', 'Pending', 0)
-        `, [
-          customerCode,
-          locationId,
-          customerName,
-          mobileNumber,
-          email,
-          weddingDate,
-          expectedShoppingDate || null,
-          preferredCategory,
-          estimatedFamilySize,
-          assignedTelecaller,
-          followUpDate,
-          preferredCallTime,
-          encryptField(customerNotes)
-        ]);
-        newId = fallbackResult.insertId;
+            safeWeddingDate,
+            safeExpectedShoppingDate,
+            preferredCategory,
+            estimatedFamilySize || 1,
+            assignedTelecaller,
+            followUpDate,
+            preferredCallTime,
+            encryptField(customerNotes)
+          ]);
+          newId = fallbackResult.insertId;
+        } catch (fallbackErr) {
+          console.warn('[WeddingController.createCustomer] Fallback insert failed, attempting minimal safe insert:', fallbackErr.message);
+
+          // If the DB strictly requires a non-null date for expected_shopping_date or wedding_date, provide valid date
+          const todayIso = new Date().toISOString().slice(0, 10);
+          const activeShoppingDate = safeExpectedShoppingDate || todayIso;
+          const activeWeddingDate = safeWeddingDate || todayIso;
+
+          const [minimalResult] = await pool.query(`
+            INSERT INTO wedding_customers (
+              customer_code,
+              location_id,
+              customer_name,
+              mobile_number,
+              wedding_date,
+              expected_shopping_date,
+              preferred_shopping_category,
+              follow_up_date,
+              customer_status,
+              call_status,
+              total_calls_count
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'New', 'Pending', 0)
+          `, [
+            customerCode,
+            locationId,
+            customerName,
+            mobileNumber,
+            activeWeddingDate,
+            activeShoppingDate,
+            preferredCategory || 'General Wedding Shopping',
+            followUpDate || todayIso
+          ]);
+          newId = minimalResult.insertId;
+
+          // If user had not entered dates, attempt to clean them to NULL in background
+          if (!expectedShoppingDate) {
+            pool.query('UPDATE wedding_customers SET expected_shopping_date = NULL WHERE id = ?', [newId]).catch(() => {});
+          }
+          if (!weddingDate) {
+            pool.query('UPDATE wedding_customers SET wedding_date = NULL WHERE id = ?', [newId]).catch(() => {});
+          }
+        }
 
         // Progressively apply optional fields if columns exist
         if (budget) pool.query('UPDATE wedding_customers SET budget = ? WHERE id = ?', [budget, newId]).catch(() => {});
@@ -1529,6 +1603,9 @@ class WeddingController {
         if (priority) pool.query('UPDATE wedding_customers SET priority = ? WHERE id = ?', [priority, newId]).catch(() => {});
         if (alternateMobile) pool.query('UPDATE wedding_customers SET alternate_mobile = ? WHERE id = ?', [alternateMobile, newId]).catch(() => {});
         if (assignedTelecallerId) pool.query('UPDATE wedding_customers SET assigned_telecaller_id = ? WHERE id = ?', [assignedTelecallerId, newId]).catch(() => {});
+        if (customerNotes) pool.query('UPDATE wedding_customers SET customer_notes = ? WHERE id = ?', [encryptField(customerNotes), newId]).catch(() => {});
+        if (preferredCallTime) pool.query('UPDATE wedding_customers SET preferred_call_time = ? WHERE id = ?', [preferredCallTime, newId]).catch(() => {});
+        if (req.user?.fullName) pool.query('UPDATE wedding_customers SET created_by = ?, created_by_user_id = ? WHERE id = ?', [req.user.fullName, req.user.id || null, newId]).catch(() => {});
       }
 
       // Repeat customer: the new journey points back at the archived original so
