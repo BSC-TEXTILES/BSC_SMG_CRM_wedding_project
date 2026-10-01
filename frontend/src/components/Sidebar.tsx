@@ -39,8 +39,10 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
   const navScrollRef = useRef<HTMLDivElement>(null);
 
   const locCtx = useLocationContext();
+  const isAdminRole = ['Admin', 'Super Admin'].includes(session?.role || '');
+  const isGlobalUser = locCtx.isGlobalAdmin && isAdminRole && (!session?.locationId || session?.isGlobalAdmin === true);
   const activeLocationLabel = locCtx
-    ? locCtx.currentLocation === 'ALL'
+    ? (locCtx.currentLocation === 'ALL' && isGlobalUser)
       ? '🌐 ALL LOCATIONS'
       : `📍 ${(locCtx.currentLocationLabel || session?.locationName || 'STORE').toUpperCase()}`
     : '';
@@ -279,7 +281,7 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
                   <span className={activeLocationLabel.includes('ALL') ? 'text-[#C9A45C] font-extrabold truncate' : 'truncate text-[#E8C7A8]'}>
                     {activeLocationLabel}
                   </span>
-                ) : session?.isGlobalAdmin ? (
+                ) : isGlobalUser ? (
                   <span className="text-[#C9A45C] font-extrabold truncate">🌐 ALL LOCATIONS</span>
                 ) : (
                   <span className="truncate text-[#E8C7A8]">📍 {(session?.locationName || locCtx?.activeLocation?.name || 'STORE').toUpperCase()}</span>

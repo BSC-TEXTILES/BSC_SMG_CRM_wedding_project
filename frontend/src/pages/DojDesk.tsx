@@ -4,6 +4,7 @@ import Sidebar from '../components/Sidebar';
 import Topbar from '../components/Topbar';
 import ToastContainer, { showToast } from '../components/Toast';
 import { API, Auth, UserSession } from '../services/api';
+import { useLocationContext } from '../context/LocationContext';
 import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../utils/sidebarState';
 import {
   CalendarClock,
@@ -136,8 +137,11 @@ export default function DojDesk() {
   const [joinedCount, setJoinedCount] = useState(0);
 
   // Search & Filters
+  const { isGlobalAdmin, availableLocations, currentLocation } = useLocationContext();
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterLocation, setFilterLocation] = useState<string>('all');
+  const [filterLocation, setFilterLocation] = useState<string>(() => {
+    return isGlobalAdmin ? 'all' : (currentLocation !== 'ALL' ? currentLocation : String(Auth.get()?.locationId || '3'));
+  });
   const [filterDepartment, setFilterDepartment] = useState<string>('all');
   const [filterDateFrom, setFilterDateFrom] = useState<string>('');
   const [filterDateTo, setFilterDateTo] = useState<string>('');
@@ -812,10 +816,12 @@ export default function DojDesk() {
                   onChange={(e) => setFilterLocation(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl border border-accent-soft bg-background text-xs font-medium text-primary focus:outline-none focus:ring-2 focus:ring-accent"
                 >
-                  <option value="all">All Locations</option>
-                  <option value="1">Belagavi (BEL)</option>
-                  <option value="2">Davanagere (DAV)</option>
-                  <option value="3">Shivamogga (SHI)</option>
+                  {isGlobalAdmin && <option value="all">All Locations</option>}
+                  {availableLocations.map((loc) => (
+                    <option key={loc.id} value={String(loc.id)}>
+                      {loc.name} ({loc.code})
+                    </option>
+                  ))}
                 </select>
               </div>
 

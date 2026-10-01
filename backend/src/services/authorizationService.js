@@ -222,8 +222,11 @@ async function checkLocationAccess(user, targetLocation) {
 
   if (!targetLocationId) return false;
 
-  // Global admin (null locationId or isGlobalAdmin) has access to all locations
-  if (!user.locationId || user.isGlobalAdmin || ['Admin', 'Super Admin'].includes(user.role)) {
+  // Global admin has access to all locations (Super Admin or unassigned Admin)
+  const isSuperAdmin = user.role === 'Super Admin';
+  const isAdminRole = ADMIN_ROLES.includes(user.role);
+  const isGlobalAdmin = isSuperAdmin || (isAdminRole && (!user.locationId || user.isGlobalAdmin === true));
+  if (isGlobalAdmin) {
     return true;
   }
 
@@ -264,7 +267,10 @@ async function getUserLocations(user) {
   if (!user) return [];
 
   // Global admin gets all locations
-  if (!user.locationId || user.isGlobalAdmin) {
+  const isSuperAdmin = user.role === 'Super Admin';
+  const isAdminRole = ADMIN_ROLES.includes(user.role);
+  const isGlobalAdmin = isSuperAdmin || (isAdminRole && (!user.locationId || user.isGlobalAdmin === true));
+  if (isGlobalAdmin) {
     try {
       const [rows] = await pool.query('SELECT id FROM locations WHERE status = ?', ['Active']);
       return rows.map(r => r.id);
@@ -342,37 +348,54 @@ function authorizeLocationAccess(paramName = 'locationId') {
     try {
       const rawVal = req.params?.[paramName] 
         || req.params?.['location_id']
+        || req.params?.['locationId']
+        || req.params?.['location']
+        || req.params?.['store_id']
+        || req.params?.['store']
         || req.body?.[paramName] 
         || req.body?.['location_id']
         || req.body?.['locationId']
+        || req.body?.['locationCode']
+        || req.body?.['location_code']
+        || req.body?.['location']
+        || req.body?.['store_id']
+        || req.body?.['store']
         || req.query?.[paramName]
         || req.query?.['location_id']
         || req.query?.['locationId']
+        || req.query?.['locationCode']
+        || req.query?.['location_code']
+        || req.query?.['location']
+        || req.query?.['store_id']
+        || req.query?.['store']
         || req.headers?.['x-location-id'];
 
-      const isGlobal = !req.user?.locationId || req.user?.isGlobalAdmin || ['Admin', 'Super Admin'].includes(req.user?.role);
-
-      if (rawVal === undefined || rawVal === null || rawVal === '') {
-        return next(); // No specific location specified — let the controller handle filtering
+      // Public / unauthenticated requests (e.g., customer feedback submission) are not scoped to a logged-in user
+      if (!req.user || !req.user.id || req.user.role === 'Guest' || req.user.id === 'anonymous') {
+        return next();
       }
 
-      if (String(rawVal).trim().toLowerCase() === 'all') {
+      const isSuperAdmin = req.user?.role === 'Super Admin';
+      const isAdminRole = ADMIN_ROLES.includes(req.user?.role);
+      const isGlobal = isSuperAdmin || (isAdminRole && (!req.user?.locationId || req.user?.isGlobalAdmin === true));
+
+      if (rawVal === undefined || rawVal === null || rawVal === '') {
+        return next(); // No specific location specified — let the controller handle filtering via getLocationFilter
+      }
+
+      const rawStr = String(rawVal).trim().toLowerCase();
+      if (['all', 'all locations', 'all_locations', '0'].includes(rawStr)) {
         if (isGlobal) return next();
         return res.status(403).json({
           success: false,
           error: {
             code: 'LOCATION_ACCESS_DENIED',
-            message: 'Access denied: You are restricted to your assigned store location.',
+            message: 'You do not have permission to access All Locations.',
             details: { requestedLocation: rawVal }
           },
-          message: 'Access denied: You are restricted to your assigned store location.',
+          message: 'You do not have permission to access All Locations.',
           errors: ['Single-location accounts cannot access All Locations data.']
         });
-      }
-
-      // Public / unauthenticated requests (e.g., customer feedback submission) are not scoped to a logged-in user
-      if (!req.user || !req.user.id || req.user.role === 'Guest' || req.user.id === 'anonymous') {
-        return next();
       }
 
       const allowed = await checkLocationAccess(req.user, rawVal);
@@ -381,11 +404,11 @@ function authorizeLocationAccess(paramName = 'locationId') {
           success: false,
           error: {
             code: 'LOCATION_ACCESS_DENIED',
-            message: 'Access denied: you do not have permission to access data for this location',
+            message: 'You do not have permission to access this location.',
             details: { requestedLocation: rawVal }
           },
-          message: 'Access denied: you do not have permission to access data for this location',
-          errors: ['You do not have permission to access data for this location']
+          message: 'You do not have permission to access this location.',
+          errors: ['You do not have permission to access this location.']
         });
       }
 

@@ -60,8 +60,10 @@ async function resolveEmployeeUser(identifier) {
  */
 function assertLocationAccess(reqUser, targetLocationId) {
   if (!reqUser) return false;
-  if (['Admin', 'Super Admin'].includes(reqUser.role)) return true;
-  if (!targetLocationId) return true;
+  const isAdminRole = ['Admin', 'Super Admin'].includes(reqUser.role);
+  const isGlobalAdmin = reqUser.role === 'Super Admin' || (isAdminRole && (!reqUser.locationId || reqUser.isGlobalAdmin === true));
+  if (isGlobalAdmin) return true;
+  if (!targetLocationId) return false;
   if (reqUser.locationId && Number(reqUser.locationId) === Number(targetLocationId)) return true;
   if (Array.isArray(reqUser.allowedLocations) && reqUser.allowedLocations.includes(Number(targetLocationId))) return true;
   return false;

@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const rateLimit = require('express-rate-limit');
 const weddingRegistrationController = require('../controllers/weddingRegistrationController');
-const { authenticate, authorize } = require('../middleware/auth');
+const { authenticate, authorize, authorizeLocationAccess } = require('../middleware/auth');
 const { errorRes } = require('../utils/response');
 
 const {
@@ -19,8 +19,9 @@ router.post('/public/wedding-registration/check-duplicate', duplicateCheckRateLi
 // Public tracking route (no auth, rate-limited)
 router.post('/public/wedding-registration/track', publicTrackingRateLimiter, weddingRegistrationController.trackRegistration);
 
-// All other routes require authentication
+// All other routes require authentication and store-level location access authorization
 router.use(authenticate);
+router.use(authorizeLocationAccess());
 
 // Dashboard Stats
 router.get('/wedding-registrations/stats', weddingRegistrationController.getDashboardStats);

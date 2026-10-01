@@ -644,7 +644,9 @@ export default function FeedbackQRManagement() {
   // Filters
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [locationFilter, setLocationFilter] = useState('');
+  const [locationFilter, setLocationFilter] = useState(() => {
+    return isGlobalAdmin ? '' : (currentLocation !== 'ALL' ? currentLocation : String(Auth.get()?.locationId || '3'));
+  });
   const [floorFilter, setFloorFilter] = useState('all');
   const [sortBy, setSortBy] = useState('createdAt');
   const [sortOrder, setSortOrder] = useState<'ASC' | 'DESC'>('DESC');
@@ -792,6 +794,10 @@ export default function FeedbackQRManagement() {
           { id: 2, locationCode: 'DAV', locationName: 'Davanagere' },
           { id: 3, locationCode: 'SHI', locationName: 'Shivamogga' }
         ];
+      }
+      if (!isGlobalAdmin) {
+        const allowedIds = availableLocations.length > 0 ? availableLocations.map(l => l.id) : (session?.locationId ? [Number(session.locationId)] : []);
+        combinedLocs = combinedLocs.filter(l => allowedIds.includes(Number(l.id)));
       }
       setLocations(combinedLocs);
 
@@ -1228,7 +1234,7 @@ export default function FeedbackQRManagement() {
               <div className="flex items-center gap-1.5">
                 <span className="text-[10.5px] font-bold text-primary/60 hidden sm:inline">Location:</span>
                 <select value={locationFilter} onChange={(e) => handleFilterChange('location', e.target.value)} className="select-modern text-xs font-bold py-2 min-w-[160px]">
-                  <option value="">All Locations</option>
+                  {isGlobalAdmin && <option value="">All Locations</option>}
                   {locations.map(loc => (
                     <option key={loc.id} value={String(loc.id)}>{loc.locationName} ({loc.locationCode})</option>
                   ))}

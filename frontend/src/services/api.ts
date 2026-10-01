@@ -141,7 +141,10 @@ export const Auth = {
   // True if user is Global Admin (no specific location assigned)
   isGlobalAdmin(): boolean {
     const session = this.get();
-    return session?.isGlobalAdmin === true || session?.locationId === null || session?.locationId === undefined;
+    if (!session) return false;
+    const isSuperAdmin = session.role === 'Super Admin';
+    const isAdminRole = ['Admin', 'Super Admin'].includes(session.role || '');
+    return isSuperAdmin || (isAdminRole && (!session.locationId || session.isGlobalAdmin === true));
   },
 
   getToken(): string | null {
@@ -361,7 +364,9 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
   }
 
   // Dynamic multi-location header injection
-  const isGlobal = !session?.locationId || session?.isGlobalAdmin || ['Admin', 'Super Admin'].includes(session?.role || '');
+  const isSuperAdmin = session?.role === 'Super Admin';
+  const isAdminRole = ['Admin', 'Super Admin'].includes(session?.role || '');
+  const isGlobal = isSuperAdmin || (isAdminRole && (!session?.locationId || session?.isGlobalAdmin === true));
   let activeLoc = typeof localStorage !== 'undefined' ? localStorage.getItem('bsc_selected_location') : null;
 
   if (!isGlobal && session?.locationId) {

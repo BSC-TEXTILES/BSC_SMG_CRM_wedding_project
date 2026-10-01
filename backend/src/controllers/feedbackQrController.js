@@ -134,10 +134,12 @@ function parseUserAgent(userAgent) {
   return { deviceType, browser, os };
 }
 
-// Global Admin checker: Admin, Super Admin, and global users bypass location lock
+// Global Admin checker: Super Admin or unassigned Admin bypass location lock
 function checkIsGlobalAdmin(session) {
   if (!session) return false;
-  return !session.locationId || !!session.isGlobalAdmin || ['Admin', 'Super Admin', 'system administrator'].includes(session.role);
+  const isSuperAdmin = session.role === 'Super Admin';
+  const isAdminRole = ['Admin', 'Super Admin', 'system administrator'].includes(session.role);
+  return isSuperAdmin || (isAdminRole && (!session.locationId || session.isGlobalAdmin === true));
 }
 
 // ── Get All QR Codes (Admin Dashboard) ───────────────────────────

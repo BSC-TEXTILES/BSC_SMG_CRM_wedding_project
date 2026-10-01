@@ -33,7 +33,9 @@ async function assertLocationAccess(reqUser, targetLocationId) {
   if (!reqUser) return false;
 
   const role = String(reqUser.role || '').trim().toLowerCase();
-  if (VM_BYPASS_ROLES.includes(role)) return true;
+  const isAdminRole = VM_BYPASS_ROLES.includes(role);
+  const isGlobalAdmin = role === 'super admin' || (isAdminRole && (!reqUser.locationId || reqUser.isGlobalAdmin === true));
+  if (isGlobalAdmin) return true;
 
   const target = Number(targetLocationId);
   if (!Number.isFinite(target) || target <= 0) return false;

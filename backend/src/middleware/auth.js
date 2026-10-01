@@ -434,10 +434,11 @@ const authenticate = async (req, res, next) => {
       if (status.fullName) {
         req.user.fullName = status.fullName;
       }
+      const isSuperAdmin = req.user.role === 'Super Admin';
       const isAdminRole = ['Admin', 'Super Admin', 'system administrator'].includes(req.user.role);
-      req.user.isGlobalAdmin = isAdminRole && (!req.user.locationId);
-      if (!isAdminRole && req.user.locationId && (!req.user.allowedLocations || req.user.allowedLocations.length === 0)) {
-        req.user.allowedLocations = [req.user.locationId];
+      req.user.isGlobalAdmin = isSuperAdmin || (isAdminRole && (!req.user.locationId || req.user.isGlobalAdmin === true));
+      if (req.user.locationId && (!req.user.allowedLocations || req.user.allowedLocations.length === 0)) {
+        req.user.allowedLocations = [Number(req.user.locationId)];
       }
     }
 
@@ -697,15 +698,20 @@ const getLocationFilter = async (req, tableAlias = '', column = 'location_id') =
     || req.query?.locationId 
     || req.query?.locationCode
     || req.query?.location
+    || req.query?.store_id
+    || req.query?.store
     || req.headers?.['x-location-id']
     || req.body?.location_id
     || req.body?.locationId
     || req.body?.locationCode
-    || req.body?.location;
+    || req.body?.location
+    || req.body?.store_id
+    || req.body?.store;
   const requestedLocationId = parseTargetLocation(rawRequested);
 
+  const isSuperAdmin = req.user.role === 'Super Admin';
   const isAdminRole = ['Admin', 'Super Admin', 'system administrator'].includes(req.user.role);
-  const isGlobalAdmin = isAdminRole && (!req.user.locationId || req.user.isGlobalAdmin);
+  const isGlobalAdmin = isSuperAdmin || (isAdminRole && (!req.user.locationId || req.user.isGlobalAdmin === true));
 
   if (isGlobalAdmin) {
     if (requestedLocationId) {
@@ -776,11 +782,14 @@ const injectLocationId = (req) => {
     || req.query?.locationId 
     || req.query?.locationCode
     || req.query?.location
+    || req.query?.store_id
+    || req.query?.store
     || req.headers?.['x-location-id'];
   const requestedLocationId = parseTargetLocation(rawRequested);
 
+  const isSuperAdmin = req.user.role === 'Super Admin';
   const isAdminRole = ['Admin', 'Super Admin', 'system administrator'].includes(req.user.role);
-  const isGlobalAdmin = isAdminRole && (!req.user.locationId || req.user.isGlobalAdmin);
+  const isGlobalAdmin = isSuperAdmin || (isAdminRole && (!req.user.locationId || req.user.isGlobalAdmin === true));
 
   if (isGlobalAdmin) {
     return requestedLocationId || req.user.locationId || 1;
@@ -813,15 +822,20 @@ const getEffectiveLocationId = (req) => {
     || req.query?.locationId 
     || req.query?.locationCode
     || req.query?.location
+    || req.query?.store_id
+    || req.query?.store
     || req.headers?.['x-location-id']
     || req.body?.location_id
     || req.body?.locationId
     || req.body?.locationCode
-    || req.body?.location;
+    || req.body?.location
+    || req.body?.store_id
+    || req.body?.store;
   const requestedLocationId = parseTargetLocation(rawRequested);
 
+  const isSuperAdmin = req.user.role === 'Super Admin';
   const isAdminRole = ['Admin', 'Super Admin', 'system administrator'].includes(req.user.role);
-  const isGlobalAdmin = isAdminRole && (!req.user.locationId || req.user.isGlobalAdmin);
+  const isGlobalAdmin = isSuperAdmin || (isAdminRole && (!req.user.locationId || req.user.isGlobalAdmin === true));
 
   if (isGlobalAdmin) {
     return requestedLocationId || null;

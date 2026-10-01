@@ -105,7 +105,8 @@ function init(io) {
       socket.data.userId = decoded.id;
       socket.data.role = decoded.role || 'Staff';
       socket.data.locationId = parseLocationId(decoded.locationId);
-      socket.data.isGlobalAdmin = !decoded.locationId || decoded.isGlobalAdmin || ['Admin', 'Super Admin'].includes(decoded.role);
+      const isAdminRole = ['Admin', 'Super Admin'].includes(decoded.role);
+      socket.data.isGlobalAdmin = decoded.role === 'Super Admin' || (isAdminRole && (!decoded.locationId || decoded.isGlobalAdmin === true));
       socket.data.allowedLocations = Array.isArray(decoded.allowedLocations) ? decoded.allowedLocations : [];
 
       next();

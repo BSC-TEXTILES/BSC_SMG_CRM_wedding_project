@@ -50,10 +50,11 @@ class DashboardController {
       }
 
       // Location scoping: Global Admins can filter or view ALL; HR users are bound to their assigned location(s)
+      const isGlobalAdmin = user.role === 'Super Admin' || (isAdminRole(user.role) && (!user.locationId || user.isGlobalAdmin === true));
       const requestedLoc = req.query.locationId;
       let effectiveLoc = null;
 
-      if (isAdminRole(user.role)) {
+      if (isGlobalAdmin) {
         if (requestedLoc && requestedLoc !== 'ALL') {
           const parsed = parseInt(requestedLoc, 10);
           if (!isNaN(parsed) && parsed > 0) effectiveLoc = parsed;
@@ -128,10 +129,10 @@ class DashboardController {
             COUNT(u.id) as staffCount
           FROM locations l
           LEFT JOIN users u ON u.location_id = l.id AND u.active = 1
-          WHERE l.status = 'Active'
+          WHERE l.status = 'Active' ${effectiveLoc ? 'AND l.id = ?' : ''}
           GROUP BY l.id, l.location_code, l.location_name
           ORDER BY l.sort_order ASC
-        `),
+        `, locParam),
 
         // 5. Candidate recruitment pipeline status breakdown
         pool.query(`
@@ -302,8 +303,9 @@ class DashboardController {
       }
 
       // Location scoping: Global Admins can toggle; Managers are strictly locked to their store location
+      const isGlobalAdmin = user.role === 'Super Admin' || (isAdminRole(user.role) && (!user.locationId || user.isGlobalAdmin === true));
       let effectiveLoc = user.locationId || null;
-      if (isAdminRole(user.role) && req.query.locationId && req.query.locationId !== 'ALL') {
+      if (isGlobalAdmin && req.query.locationId && req.query.locationId !== 'ALL') {
         const parsed = parseInt(req.query.locationId, 10);
         if (!isNaN(parsed) && parsed > 0) effectiveLoc = parsed;
       }

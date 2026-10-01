@@ -248,7 +248,8 @@ exports.submitAll = async (req, res) => {
 
     // Resolve location
     let locationId = injectLocationId(req) || (req.user && req.user.locationId) || null;
-    const isGlobalAdmin = !req.user?.locationId || req.user?.isGlobalAdmin || ['Admin', 'Super Admin'].includes(req.user?.role);
+    const isAdminRole = ['Admin', 'Super Admin'].includes(req.user?.role);
+    const isGlobalAdmin = req.user?.role === 'Super Admin' || (isAdminRole && (!req.user?.locationId || req.user?.isGlobalAdmin === true));
     if (isGlobalAdmin && (req.body.location_id || req.body.locationId)) {
       locationId = parseInt(req.body.location_id || req.body.locationId, 10);
     }

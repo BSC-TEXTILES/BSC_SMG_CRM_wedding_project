@@ -72,8 +72,8 @@ router.post('/auth/change-password', authenticate, authController.changePassword
 router.post('/auth/update-password', authenticate, authController.changePassword.bind(authController));
 
 // ── Location Routes ───────────────────────────────────────────
-router.get('/locations', locationController.getLocations);
-router.get('/locations/:id', locationController.getLocation);
+router.get('/locations', optionalAuthenticate, locationController.getLocations);
+router.get('/locations/:id', optionalAuthenticate, locationController.getLocation);
 router.post('/locations', authenticate, authorize('Admin', 'Super Admin'), locationController.createLocation);
 router.put('/locations/:id', authenticate, authorize('Admin', 'Super Admin'), locationController.updateLocation);
 router.get('/global-stats', authenticate, locationController.getGlobalStats);

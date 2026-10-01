@@ -723,6 +723,17 @@ async function autoInitializeDatabase() {
         `);
       } catch (e) {}
 
+      // ─── Feature schema convergence ───────────────────────────────────────────
+      // Columns and tables that feature code reads but that only a hand-run script
+      // used to create. An environment that never ran it answered 500 for the whole
+      // screen — production's Hourly Footfall register being the live example.
+      try {
+        await require('./ensureSchema').ensureFeatureSchema(pool);
+      } catch (e) {
+        console.warn('[Auto DB Initializer] Feature schema convergence notice:', e.message);
+      }
+
+
       // ─── VM Submissions Table & Columns Migration ────────────────────────
       await pool.query(`
         CREATE TABLE IF NOT EXISTS \`vmsubmissions\` (

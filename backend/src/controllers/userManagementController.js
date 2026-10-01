@@ -21,6 +21,12 @@ const {
   looksBinary
 } = require('../utils/employeeCsv');
 
+function _isGlobalAdminUser(user) {
+  if (!user) return false;
+  const isAdminRole = ['Admin', 'Super Admin'].includes(user.role);
+  return user.role === 'Super Admin' || (isAdminRole && (!user.locationId || user.isGlobalAdmin === true));
+}
+
 /**
  * Parses the `id:name` pairs produced by GROUP_CONCAT in listUsers.
  * A single aggregate is used (instead of two parallel GROUP_CONCATs) because
@@ -121,6 +127,19 @@ const listUsers = async (req, res) => {
       console.warn('[UserMgmt] Auto-reactivation check:', autoReactivateErr.message);
     }
 
+    const isGlobal = _isGlobalAdminUser(req.user);
+    let locWhere = '';
+    const queryParams = [];
+    if (!isGlobal && req.user) {
+      const allowed = req.user?.allowedLocations?.length ? req.user.allowedLocations : (req.user?.locationId ? [req.user.locationId] : []);
+      if (allowed.length > 0) {
+        locWhere = ' WHERE (u.location_id IN (?) OR EXISTS (SELECT 1 FROM user_locations ulx WHERE ulx.user_id = u.id AND ulx.location_id IN (?))) ';
+        queryParams.push(allowed, allowed);
+      } else {
+        locWhere = ' WHERE 1 = 0 ';
+      }
+    }
+
     const [rawUsers] = await db.query(`
       SELECT
         u.id, u.username, u.password, u.full_name AS fullName, u.email, u.phone,
@@ -135,9 +154,10 @@ const listUsers = async (req, res) => {
       LEFT JOIN locations l ON l.id = u.location_id
       LEFT JOIN user_locations ul ON ul.user_id = u.id
       LEFT JOIN locations l2 ON l2.id = ul.location_id
+      ${locWhere}
       GROUP BY u.id
       ORDER BY u.created_at ASC
-    `);
+    `, queryParams);
 
     // Every stored matrix row, so the list can tell an explicitly configured
     // account apart from one that is still running on its role defaults.
@@ -184,6 +204,19 @@ const listUsers = async (req, res) => {
   } catch (err) {
     // Fallback if user_permissions table doesn't exist yet
     try {
+      const isGlobal = _isGlobalAdminUser(req.user);
+      let locWhere = '';
+      const queryParams = [];
+      if (!isGlobal && req.user) {
+        const allowed = req.user?.allowedLocations?.length ? req.user.allowedLocations : (req.user?.locationId ? [req.user.locationId] : []);
+        if (allowed.length > 0) {
+          locWhere = ' WHERE (u.location_id IN (?) OR EXISTS (SELECT 1 FROM user_locations ulx WHERE ulx.user_id = u.id AND ulx.location_id IN (?))) ';
+          queryParams.push(allowed, allowed);
+        } else {
+          locWhere = ' WHERE 1 = 0 ';
+        }
+      }
+
       const [rawUsers] = await db.query(`
         SELECT
           u.id, u.username, u.password, u.full_name AS fullName, u.email, u.phone,
@@ -197,9 +230,10 @@ const listUsers = async (req, res) => {
         LEFT JOIN locations l ON l.id = u.location_id
         LEFT JOIN user_locations ul ON ul.user_id = u.id
         LEFT JOIN locations l2 ON l2.id = ul.location_id
+        ${locWhere}
         GROUP BY u.id
         ORDER BY u.created_at ASC
-      `);
+      `, queryParams);
 
       const users = rawUsers.map(u => {
         const { assigned_location_pairs, ...rest } = u;
@@ -244,6 +278,17 @@ const getUser = async (req, res) => {
 
     if (!user) {
       return errorRes(res, 'User not found', [], 404);
+    }
+
+    const isGlobal = _isGlobalAdminUser(req.user);
+    if (!isGlobal && req.user) {
+      const allowed = req.user?.allowedLocations?.length ? req.user.allowedLocations : (req.user?.locationId ? [req.user.locationId] : []);
+      const [userLocs] = await db.query('SELECT location_id FROM user_locations WHERE user_id = ?', [id]);
+      const targetLocs = [user.location_id, ...userLocs.map(l => l.location_id)].filter(Boolean);
+      const hasOverlap = targetLocs.some(l => allowed.includes(Number(l)));
+      if (!hasOverlap) {
+        return errorRes(res, 'You do not have permission to view users in this location.', [], 403);
+      }
     }
 
     user.password = decryptField(user.password);
@@ -334,14 +379,30 @@ const createUser = async (req, res) => {
       }
     }
 
+    const isGlobal = _isGlobalAdminUser(req.user);
+    if (!isGlobal && req.user) {
+      if (allLocations) {
+        return errorRes(res, 'You do not have permission to create global users.', [], 403);
+      }
+      const allowed = req.user?.allowedLocations?.length ? req.user.allowedLocations : (req.user?.locationId ? [req.user.locationId] : []);
+      if (Array.isArray(locationIds) && locationIds.length > 0) {
+        const outOfScope = locationIds.some(lid => !allowed.includes(Number(lid)));
+        if (outOfScope) {
+          return errorRes(res, 'You do not have permission to assign users to this location.', [], 403);
+        }
+      } else if (locationId && !allowed.includes(Number(locationId))) {
+        return errorRes(res, 'You do not have permission to assign users to this location.', [], 403);
+      }
+    }
 
     // Location scope: explicit allLocations=true grants global access (NULL
     // location). Otherwise the user is pinned to a single store location.
-    const wantsAllLocations = allLocations === true;
-    const isGlobalRole = role === 'Admin' || 'Super Admin' === role;
+    const wantsAllLocations = isGlobal && allLocations === true;
+    const isGlobalRole = isGlobal && (role === 'Admin' || 'Super Admin' === role);
+    const defaultStoreId = req.user?.locationId || 2;
     const resolvedLocationId = wantsAllLocations
       ? null
-      : (locationId || (isGlobalRole ? null : 2));
+      : (locationId || (isGlobalRole ? null : defaultStoreId));
 
     // ── Assigned locations must be valid actual store locations ─────
     if (Array.isArray(locationIds) && locationIds.length > 0) {
@@ -358,7 +419,7 @@ const createUser = async (req, res) => {
 
     return _insertUser(req, res, { username, password, role, fullName, email, phone, department, designation,
                                      employeeId: cleanEmployeeId, section, joiningDate,
-                                     resolvedLocationId, locationIds, allLocations, maxModules, permissions });
+                                     resolvedLocationId, locationIds, allLocations: wantsAllLocations, maxModules, permissions });
   } catch (err) {
     return errorRes(res, 'Failed to create user', [err.message], 500);
   }
@@ -480,9 +541,31 @@ const updateUser = async (req, res) => {
             locationId, locationIds, allLocations, maxModules, active } = req.body;
 
     // Check user exists
-    const [[user]] = await db.query(`SELECT id, username, role as prevRole FROM users WHERE id = ?`, [id]);
+    const [[user]] = await db.query(`SELECT id, username, role as prevRole, location_id FROM users WHERE id = ?`, [id]);
     if (!user) {
       return errorRes(res, 'User not found', [], 404);
+    }
+
+    const isGlobal = _isGlobalAdminUser(req.user);
+    if (!isGlobal && req.user) {
+      const allowed = req.user?.allowedLocations?.length ? req.user.allowedLocations : (req.user?.locationId ? [req.user.locationId] : []);
+      const [userLocs] = await db.query('SELECT location_id FROM user_locations WHERE user_id = ?', [id]);
+      const targetLocs = [user.location_id, ...userLocs.map(l => l.location_id)].filter(Boolean);
+      const hasOverlap = targetLocs.some(l => allowed.includes(Number(l)));
+      if (!hasOverlap) {
+        return errorRes(res, 'You do not have permission to modify users in this location.', [], 403);
+      }
+      if (allLocations) {
+        return errorRes(res, 'You do not have permission to grant All Locations access.', [], 403);
+      }
+      if (Array.isArray(locationIds) && locationIds.length > 0) {
+        const outOfScope = locationIds.some(lid => !allowed.includes(Number(lid)));
+        if (outOfScope) {
+          return errorRes(res, 'You do not have permission to assign users to this location.', [], 403);
+        }
+      } else if (locationId && !allowed.includes(Number(locationId))) {
+        return errorRes(res, 'You do not have permission to assign users to this location.', [], 403);
+      }
     }
 
     const updates = [];
@@ -659,6 +742,18 @@ const deleteUser = async (req, res) => {
     const protectedUsers = ['admin@bsctextiles.com', 'admin'];
     if (protectedUsers.includes(user.username.toLowerCase())) {
       return errorRes(res, 'Cannot delete the built-in system administrator account', [], 403);
+    }
+
+    const isGlobal = _isGlobalAdminUser(req.user);
+    if (!isGlobal && req.user) {
+      const allowed = req.user?.allowedLocations?.length ? req.user.allowedLocations : (req.user?.locationId ? [req.user.locationId] : []);
+      const [[targetLoc]] = await db.query('SELECT location_id FROM users WHERE id = ?', [user.id]);
+      const [userLocs] = await db.query('SELECT location_id FROM user_locations WHERE user_id = ?', [user.id]);
+      const targetLocs = [targetLoc?.location_id, ...userLocs.map(l => l.location_id)].filter(Boolean);
+      const hasOverlap = targetLocs.some(l => allowed.includes(Number(l)));
+      if (!hasOverlap) {
+        return errorRes(res, 'You do not have permission to delete users in this location.', [], 403);
+      }
     }
 
     // Delete permissions, location assignments and every cross-module

@@ -27,6 +27,7 @@ export default function DashboardPage() {
     isGlobalAdmin,
     canSwitch,
     setCurrentLocation,
+    availableLocations,
     allLocations
   } = useLocationContext();
 
@@ -200,10 +201,15 @@ export default function DashboardPage() {
   const loadData = useCallback(async (targetLoc?: string) => {
     const sess = Auth.get();
     const rNorm = (sess?.role || '').toLowerCase().replace(/[_\s-]+/g, ' ');
-    const isAdm = ['admin', 'super admin', 'system administrator'].includes(rNorm);
+    const isSuperAdmin = rNorm === 'super admin';
+    const isAdminRole = ['admin', 'super admin', 'system administrator'].includes(rNorm);
+    const isGlobalUser = isSuperAdmin || (isAdminRole && (!sess?.locationId || sess?.isGlobalAdmin === true));
 
     // Resolve active location scope
-    const activeLoc = targetLoc !== undefined ? targetLoc : currentLocation;
+    let activeLoc = targetLoc !== undefined ? targetLoc : currentLocation;
+    if (!isGlobalUser && sess?.locationId) {
+      activeLoc = String(sess.locationId);
+    }
     const locParam = activeLoc && activeLoc !== 'ALL' ? activeLoc : undefined;
 
     setLoading(true);
@@ -225,7 +231,7 @@ export default function DashboardPage() {
         })),
         API.getWeddingStats(locParam).catch(() => null),
         (API as any).getTelecallerStats ? (API as any).getTelecallerStats(locParam).catch(() => null) : Promise.resolve(null),
-        isAdm ? API.getGlobalStats().catch(() => ({ locations: [] })) : Promise.resolve({ locations: [] }),
+        isGlobalUser ? API.getGlobalStats().catch(() => ({ locations: [] })) : Promise.resolve({ locations: [] }),
         API.getUserTrackingStats().catch(() => null)
       ]);
 
@@ -669,7 +675,7 @@ export default function DashboardPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {[1, 2, 3].map((locId) => {
+            {(isGlobalAdmin ? [1, 2, 3] : (availableLocations.length > 0 ? availableLocations.map(l => l.id) : [Number(session?.locationId || 3)])).map((locId) => {
               const store = locationBreakdown[locId];
               const isSelected = currentLocation === String(locId);
               const isAll = currentLocation === 'ALL';
@@ -930,7 +936,7 @@ export default function DashboardPage() {
                 <span className="text-[#687080] text-[11px]">Store Strength</span>
               </div>
 
-              {[1, 2, 3].map((locId) => {
+              {(isGlobalAdmin ? [1, 2, 3] : (availableLocations.length > 0 ? availableLocations.map(l => l.id) : [Number(session?.locationId || 3)])).map((locId) => {
                 const store = locationBreakdown[locId];
                 const total = employees.length || 1;
                 const pct = Math.round((store.count / total) * 100);

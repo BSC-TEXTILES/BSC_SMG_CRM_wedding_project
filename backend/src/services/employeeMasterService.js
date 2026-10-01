@@ -963,7 +963,9 @@ async function resolveUnrestrictedRow(identifier) {
 
 async function assertLocationScope(req, locationId) {
   const user = req.user;
-  const isGlobal = !user.locationId || user.isGlobalAdmin || ADMIN_ROLES.includes(user.role);
+  if (!user) return false;
+  const isAdminRole = ADMIN_ROLES.includes(user.role);
+  const isGlobal = user.role === 'Super Admin' || (isAdminRole && (!user.locationId || user.isGlobalAdmin === true));
   if (!locationId) return isGlobal;
   if (isGlobal) return true;
   return checkLocationAccess(user, locationId);

@@ -8,6 +8,7 @@ const { getLocationFilter } = require('../middleware/auth');
 // ── List all locations ───────────────────────────────────────
 exports.getLocations = async (req, res) => {
   try {
+    const { clause: locClause, params: locParams } = await getLocationFilter(req, 'l', 'id');
     const [rows] = await db.query(
       `SELECT l.*,
         (SELECT COUNT(DISTINCT u.id) FROM users u
@@ -16,8 +17,9 @@ exports.getLocations = async (req, res) => {
         (SELECT COUNT(*) FROM candidates c WHERE c.location_id = l.id) AS total_candidates,
         (SELECT COUNT(*) FROM candidates c WHERE c.location_id = l.id AND c.status IN ('Joined','Mark Joined','Offer Accepted','Confirmed DOJ')) AS joined_count
        FROM locations l
-       WHERE l.status = 'Active'
-       ORDER BY l.sort_order ASC, l.location_name ASC`
+       WHERE l.status = 'Active' ${locClause}
+       ORDER BY l.sort_order ASC, l.location_name ASC`,
+      locParams
     );
     return res.json({ success: true, locations: rows, data: rows });
   } catch (err) {
@@ -29,6 +31,18 @@ exports.getLocations = async (req, res) => {
 exports.getLocation = async (req, res) => {
   try {
     const { id } = req.params;
+    if (req.user) {
+      const isAdminRole = ['Admin', 'Super Admin'].includes(req.user.role);
+      const isGlobalAdmin = req.user.role === 'Super Admin' || (isAdminRole && (!req.user.locationId || req.user.isGlobalAdmin === true));
+      const allowed = Array.isArray(req.user.allowedLocations) && req.user.allowedLocations.length > 0
+        ? req.user.allowedLocations.map(Number)
+        : (req.user.locationId ? [Number(req.user.locationId)] : []);
+      if (!isGlobalAdmin && allowed.length > 0) {
+        if (!allowed.includes(Number(id))) {
+          return res.status(403).json({ success: false, message: 'You do not have permission to access this location.' });
+        }
+      }
+    }
     const [rows] = await db.query(
       `SELECT l.*,
         (SELECT COUNT(DISTINCT u.id) FROM users u
@@ -47,6 +61,12 @@ exports.getLocation = async (req, res) => {
 // ── Create location (Global Admin only) ─────────────────────
 exports.createLocation = async (req, res) => {
   try {
+    const isAdminRole = req.user && ['Admin', 'Super Admin'].includes(req.user.role);
+    const isGlobalAdmin = req.user && (req.user.role === 'Super Admin' || (isAdminRole && (!req.user.locationId || req.user.isGlobalAdmin === true)));
+    if (!isGlobalAdmin) {
+      return res.status(403).json({ success: false, message: 'Only Global Admins can manage locations.' });
+    }
+
     const { location_name, location_code, address, phone: rawPhone, email, sort_order } = req.body;
     if (!location_name || !location_code) {
       return res.status(400).json({ success: false, error: 'location_name and location_code are required' });
@@ -73,6 +93,12 @@ exports.createLocation = async (req, res) => {
 // ── Update location (Global Admin only) ─────────────────────
 exports.updateLocation = async (req, res) => {
   try {
+    const isAdminRole = req.user && ['Admin', 'Super Admin'].includes(req.user.role);
+    const isGlobalAdmin = req.user && (req.user.role === 'Super Admin' || (isAdminRole && (!req.user.locationId || req.user.isGlobalAdmin === true)));
+    if (!isGlobalAdmin) {
+      return res.status(403).json({ success: false, message: 'Only Global Admins can manage locations.' });
+    }
+
     const { id } = req.params;
     const { location_name, address, phone: rawPhone, email, status, sort_order } = req.body;
     // Normalize phone to +91 format
@@ -103,6 +129,12 @@ exports.updateLocation = async (req, res) => {
 // ── Global dashboard stats (Global Admin only) ───────────────
 exports.getGlobalStats = async (req, res) => {
   try {
+    const isAdminRole = req.user && ['Admin', 'Super Admin'].includes(req.user.role);
+    const isGlobalAdmin = req.user && (req.user.role === 'Super Admin' || (isAdminRole && (!req.user.locationId || req.user.isGlobalAdmin === true)));
+    if (!isGlobalAdmin) {
+      return res.status(403).json({ success: false, message: 'You do not have permission to access global statistics.' });
+    }
+
     const [locations] = await db.query(
       `SELECT id, location_name, location_code FROM locations WHERE status = 'Active' ORDER BY sort_order ASC`
     );

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const weddingController = require('../controllers/weddingController');
-const { authenticate, authorize } = require('../middleware/auth');
+const { authenticate, authorize, authorizeLocationAccess } = require('../middleware/auth');
 const { requireModuleAction } = require('../middleware/moduleGuard');
 const { errorRes } = require('../utils/response');
 const multer = require('multer');
@@ -29,8 +29,9 @@ const googleSheetsController = require('../controllers/googleSheetsController');
 // ── Google OAuth Callback (Must be before authenticate as it is called directly by Google redirect) ──
 router.get('/google/callback', (req, res, next) => googleSheetsController.handleCallback(req, res, next));
 
-// All wedding CRM routes require authentication
+// All wedding CRM routes require authentication and store-level location access authorization
 router.use(authenticate);
+router.use(authorizeLocationAccess());
 
 // Module-level RBAC (Access Control Matrix → role defaults) + audit + force logout
 const canViewWedding = requireModuleAction('wedding_crm', 'can_view');

@@ -452,8 +452,52 @@ function validateFootfallSlot(entryDate, slotHour) {
   return { error: null };
 }
 
+/**
+ * Which footfall columns and tables this database actually has.
+ *
+ * The origin columns and the edit trail were added after the register went live, so
+ * an environment that never ran the migration has neither. Failing the whole request
+ * for that would hide the visitor counts the store needs, and rolling back a save
+ * would stop the kiosk recording footfall at all — both of which are worse than
+ * losing the edit trail. The answer is cached, refreshed at most once a minute, and
+ * the backend creates the missing pieces on its next boot.
+ */
+const FOOTFALL_SCHEMA_TTL_MS = 60000;
+let footfallSchemaCache = { checkedAt: 0, editTrail: false, origin: false };
+
+async function footfallSchema() {
+  const now = Date.now();
+  if (now - footfallSchemaCache.checkedAt < FOOTFALL_SCHEMA_TTL_MS) return footfallSchemaCache;
+
+  const next = { checkedAt: now, editTrail: false, origin: false };
+  try {
+    const [tables] = await db.query(
+      `SELECT TABLE_NAME FROM information_schema.TABLES
+        WHERE TABLE_SCHEMA = DATABASE() AND LOWER(TABLE_NAME) = 'footfall_edit_history' LIMIT 1`
+    );
+    next.editTrail = !!(tables && tables.length);
+
+    const [cols] = await db.query(
+      `SELECT COLUMN_NAME FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE() AND LOWER(TABLE_NAME) = 'footfallentries'
+          AND COLUMN_NAME IN ('entry_source', 'created_by')`
+    );
+    next.origin = !!(cols && cols.length >= 2);
+  } catch (err) {
+    console.warn('[Footfall] Schema check failed:', err.message);
+  }
+
+  if ((!next.editTrail || !next.origin) && footfallSchemaCache.checkedAt !== 0) {
+    console.warn('[Footfall] The origin columns or the edit trail are still missing; restart the backend to create them.');
+  }
+  footfallSchemaCache = next;
+  return next;
+}
+
 async function recordFootfallHistory(conn, { entryId, locationId, entryDate, slotHour, field, oldValue, newValue, actor, action = 'Edited', reason = null }) {
   if (String(oldValue) === String(newValue)) return;
+  const schema = await footfallSchema();
+  if (!schema.editTrail) return;
   await conn.query(
     `INSERT INTO footfall_edit_history
        (entry_id, location_id, entryDate, slotHour, field_changed, old_value, new_value, action, edited_by, edited_by_role, reason)
@@ -540,20 +584,32 @@ exports.upsertFootfall = async (req, res) => {
     const newVisitors = mode === 'increment' ? Math.max(0, oldVisitors + delta) : Math.max(0, Number(visitors));
     const entryId = before ? before.id : getUUID();
 
+    // A database that has not been given the origin columns yet must still be able to
+    // record visitors: refusing the save over a missing audit column would close the
+    // store's register for the day.
+    const schema = await footfallSchema();
+    const originUpdate = schema.origin ? ', updated_by = ?, updated_by_role = ?' : '';
+    const originColumns = schema.origin ? ', entry_source, created_by, created_by_role, updated_by, updated_by_role' : '';
+    const originPlaceholders = schema.origin ? ', ?, ?, ?, ?, ?' : '';
+
     if (before) {
       await conn.query(
         `UPDATE FootfallEntries
-         SET visitors = ?, remarks = ?, submittedBy = ?,
-             updated_by = ?, updated_by_role = ?, updatedAt = CURRENT_TIMESTAMP
+           SET visitors = ?, remarks = ?, submittedBy = ?${originUpdate},
+               updatedAt = CURRENT_TIMESTAMP
          WHERE id = ?`,
-        [newVisitors, targetRemarks || before.remarks, before.submittedBy || actorName, actorName, actorRole, entryId]
+        schema.origin
+          ? [newVisitors, targetRemarks || before.remarks, before.submittedBy || actorName, actorName, actorRole, entryId]
+          : [newVisitors, targetRemarks || before.remarks, before.submittedBy || actorName, entryId]
       );
     } else {
       await conn.query(
         `INSERT INTO FootfallEntries
-           (id, location_id, entryDate, slotHour, visitors, remarks, submittedBy, entry_source, created_by, created_by_role, updated_by, updated_by_role)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [entryId, locationId, targetDate, targetHour, newVisitors, targetRemarks, actorName, source, actorName, actorRole, actorName, actorRole]
+           (id, location_id, entryDate, slotHour, visitors, remarks, submittedBy${originColumns})
+         VALUES (?, ?, ?, ?, ?, ?, ?${originPlaceholders})`,
+        schema.origin
+          ? [entryId, locationId, targetDate, targetHour, newVisitors, targetRemarks, actorName, source, actorName, actorRole, actorName, actorRole]
+          : [entryId, locationId, targetDate, targetHour, newVisitors, targetRemarks, actorName]
       );
     }
 
@@ -574,8 +630,8 @@ exports.upsertFootfall = async (req, res) => {
     await conn.commit();
 
     const [savedRows] = await conn.query(
-      `SELECT id, location_id, entryDate, slotHour, visitors, remarks, submittedBy,
-              entry_source, created_by, created_by_role, updated_by, updated_by_role, createdAt, updatedAt
+      `SELECT id, location_id, entryDate, slotHour, visitors, remarks, submittedBy${originColumns},
+              createdAt, updatedAt
        FROM FootfallEntries WHERE id = ?`,
       [entryId]
     );
@@ -640,23 +696,36 @@ exports.listFootfallEntries = async (req, res) => {
     const { clause: locClause, params: locParams } = await getLocationFilter(req, 'f');
     const sourceFilter = String(req.query.source || '').trim();
     const greeterFilter = String(req.query.greeter || '').trim();
+    const schema = await footfallSchema();
 
     const where = [`f.entryDate = ?`, `1=1 ${locClause}`];
     const params = [targetDate, ...locParams];
 
-    if (sourceFilter && sourceFilter !== 'all') {
+    if (schema.origin && sourceFilter && sourceFilter !== 'all') {
       where.push(`f.entry_source = ?`);
       params.push(sourceFilter);
     }
-    if (greeterFilter && greeterFilter !== 'all') {
+    if (schema.origin && greeterFilter && greeterFilter !== 'all') {
       where.push(`(f.created_by = ? OR f.submittedBy = ?)`);
       params.push(greeterFilter, greeterFilter);
     }
 
+    // The trail and origin columns arrived after the register went live, so they are
+    // read only when this database actually has them; the visitor counts are always
+    // returned. `f.*` already carries the origin columns when they exist.
+    const columns = ['f.*', 'l.location_name', 'l.location_code'];
+    if (schema.editTrail) {
+      columns.push('(SELECT COUNT(*) FROM footfall_edit_history h WHERE h.entry_id = f.id) AS edit_count');
+      columns.push('(SELECT MAX(h.created_at) FROM footfall_edit_history h WHERE h.entry_id = f.id) AS last_edited_at');
+    } else {
+      columns.push('0 AS edit_count', 'NULL AS last_edited_at');
+    }
+    if (!schema.origin) {
+      columns.push('NULL AS entry_source', 'NULL AS created_by', 'NULL AS updated_by');
+    }
+
     const [rows] = await db.query(`
-      SELECT f.*, l.location_name, l.location_code,
-             (SELECT COUNT(*) FROM footfall_edit_history h WHERE h.entry_id = f.id) AS edit_count,
-             (SELECT MAX(h.created_at) FROM footfall_edit_history h WHERE h.entry_id = f.id) AS last_edited_at
+      SELECT ${columns.join(', ')}
       FROM FootfallEntries f
       LEFT JOIN locations l ON l.id = f.location_id
       WHERE ${where.join(' AND ')}
@@ -670,7 +739,8 @@ exports.listFootfallEntries = async (req, res) => {
       date: targetDate,
       entries: rows,
       totalVisitors,
-      sources: [SOURCE_GREETER, SOURCE_ADMIN]
+      // Hiding the filter is better than offering one that cannot be applied.
+      sources: schema.origin ? [SOURCE_GREETER, SOURCE_ADMIN] : []
     });
   } catch (err) {
     console.error('[Footfall list error]', err);
@@ -732,13 +802,17 @@ exports.updateFootfallEntry = async (req, res) => {
       }
     }
 
+    const editorSchema = await footfallSchema();
+    const editorUpdate = editorSchema.origin ? ', updated_by = ?, updated_by_role = ?' : '';
     await conn.query(
       `UPDATE FootfallEntries
-       SET visitors = ?, entryDate = ?, slotHour = ?, location_id = ?, remarks = ?,
-           updated_by = ?, updated_by_role = ?, updatedAt = CURRENT_TIMESTAMP
+         SET visitors = ?, entryDate = ?, slotHour = ?, location_id = ?, remarks = ?${editorUpdate},
+             updatedAt = CURRENT_TIMESTAMP
        WHERE id = ?`,
-      [nextVisitors, nextDate, nextHour, nextLocation, nextRemarks,
-        req.user?.fullName || req.user?.username || 'Staff', req.user?.role || 'Staff', id]
+      editorSchema.origin
+        ? [nextVisitors, nextDate, nextHour, nextLocation, nextRemarks,
+            req.user?.fullName || req.user?.username || 'Staff', req.user?.role || 'Staff', id]
+        : [nextVisitors, nextDate, nextHour, nextLocation, nextRemarks, id]
     );
 
     const actor = req.user;
@@ -789,6 +863,18 @@ exports.getFootfallEditHistory = async (req, res) => {
     const [entryRows] = await db.query(`SELECT fe.* FROM FootfallEntries fe WHERE fe.id = ? ${locClause}`, [id, ...locParams]);
     if (!entryRows.length) {
       return res.status(404).json({ success: false, message: 'Footfall record not found or outside your store locations.' });
+    }
+
+    const schema = await footfallSchema();
+    if (!schema.editTrail) {
+      // No trail table means no corrections were recorded, which is a fact to show,
+      // not a failure to hide behind a 500.
+      return res.json({
+        success: true,
+        entry: entryRows[0],
+        history: [],
+        notice: 'Edit history is not stored on this database yet. Restart the backend to enable it.'
+      });
     }
 
     const [history] = await db.query(

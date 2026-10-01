@@ -74,7 +74,7 @@ function resolveLocFilter(req, tableAlias = 'w') {
   const requestedLocationId = parseTargetLocation(rawParam);
 
   const isAdminRole = ['Admin', 'Super Admin', 'system administrator'].includes(req.user.role);
-  const isGlobal = isAdminRole || (!req.user.locationId) || !!req.user.isGlobalAdmin;
+  const isGlobal = req.user.role === 'Super Admin' || (isAdminRole && (!req.user.locationId || req.user.isGlobalAdmin === true));
 
   if (isGlobal) {
     if (requestedLocationId) {

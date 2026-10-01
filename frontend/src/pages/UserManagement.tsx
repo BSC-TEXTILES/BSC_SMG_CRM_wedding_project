@@ -6,6 +6,7 @@ import ToastContainer, { showToast } from '../components/Toast';
 import { API, Auth, UserSession } from '../services/api';
 import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../utils/sidebarState';
 import { permissionsCache } from '../context/PermissionsCache';
+import { useLocationContext } from '../context/LocationContext';
 import { useRealtimeSection } from '../hooks/useRealtimeSection';
 import { Users, UserPlus, Shield, ShieldCheck, Key, Lock, Edit, Trash2, Check, X, Search, Filter, RefreshCw, Eye, EyeOff, Copy, SquareCheck, Building2, Mail, Clock, TriangleAlert, Sparkles, SlidersHorizontal, Activity, UserCheck, UserX, FileSpreadsheet, Download, Upload } from 'lucide-react';
 
@@ -163,7 +164,10 @@ export default function UserManagementPage() {
   const [availableRoles, setAvailableRoles] = useState<string[]>(DEFAULT_SYSTEM_ROLES);
   const [availableDepartments, setAvailableDepartments] = useState<string[]>(DEFAULT_DEPARTMENTS);
   const [availableDesignations, setAvailableDesignations] = useState<string[]>(DEFAULT_DESIGNATIONS);
-  const [locationFilter, setLocationFilter] = useState('ALL');
+  const { isGlobalAdmin, availableLocations, currentLocation } = useLocationContext();
+  const [locationFilter, setLocationFilter] = useState(() => {
+    return isGlobalAdmin ? 'ALL' : (currentLocation !== 'ALL' ? currentLocation : String(Auth.get()?.locationId || '3'));
+  });
 
   // Modals state
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -1428,8 +1432,8 @@ export default function UserManagementPage() {
                   onChange={e => setLocationFilter(e.target.value)}
                   className="text-xs bg-transparent text-primary font-bold focus:outline-none cursor-pointer"
                 >
-                  <option value="ALL">All Locations</option>
-                  <option value="GLOBAL">Global / All Stores</option>
+                  {isGlobalAdmin && <option value="ALL">All Locations</option>}
+                  {isGlobalAdmin && <option value="GLOBAL">Global / All Stores</option>}
                   {locations.map(loc => (
                     <option key={loc.id} value={String(loc.id)}>{loc.location_name || loc.location_code}</option>
                   ))}

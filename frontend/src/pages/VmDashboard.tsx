@@ -10,7 +10,10 @@ export default function VmDashboard() {
   const navigate = useNavigate();
   const session = Auth.get();
   const userRole = String(session?.role || '').trim().toLowerCase();
-  const isAdmin = !session || ['admin', 'super admin', 'system administrator'].includes(userRole);
+  const isSuperAdmin = userRole === 'super admin';
+  const isAdminRole = ['admin', 'super admin', 'system administrator'].includes(userRole);
+  const isGlobalAdmin = isSuperAdmin || (isAdminRole && (!session?.locationId || session?.isGlobalAdmin === true));
+  const isAdmin = isGlobalAdmin;
   const isCrmManager = userRole === 'crm manager';
   const isManager = Boolean(session && ['manager', 'store manager', 'floor manager', 'vm', 'crm manager', 'system administrator', 'admin', 'super admin'].includes(userRole));
   const canDeletePhotos = isAdmin || isCrmManager || isManager;
@@ -19,7 +22,7 @@ export default function VmDashboard() {
 
   // Filter States
   const [selectedLocation, setSelectedLocation] = useState<string>(
-    (!isAdmin && userLocationId) ? String(userLocationId) : 'All'
+    (!isGlobalAdmin && userLocationId) ? String(userLocationId) : 'All'
   );
   const [selectedFloor, setSelectedFloor] = useState<string>('All');
   const [selectedSection, setSelectedSection] = useState<string>('All');
@@ -87,11 +90,14 @@ export default function VmDashboard() {
   const [lightboxZoom, setLightboxZoom] = useState<number>(1);
 
   // Available Store Locations
-  const storeLocations = [
+  const allMasterLocations = [
     { id: 1, name: 'Belagavi', code: 'BEL' },
     { id: 2, name: 'Davanagere', code: 'DAV' },
     { id: 3, name: 'Shivamogga', code: 'SHI' }
   ];
+  const storeLocations = isGlobalAdmin
+    ? allMasterLocations
+    : allMasterLocations.filter(l => l.id === userLocationId || (Array.isArray(session?.allowedLocations) && session.allowedLocations.includes(l.id)));
 
   // Fetch Floor Masters
   useEffect(() => {

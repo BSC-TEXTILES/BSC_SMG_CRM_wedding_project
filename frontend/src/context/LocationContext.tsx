@@ -61,8 +61,9 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (!sess) return 'ALL';
 
     const roleNorm = (sess.role || '').toLowerCase().replace(/[_\s-]+/g, ' ');
+    const isSuperAdmin = roleNorm === 'super admin';
     const isAdminRole = ['admin', 'super admin', 'system administrator'].includes(roleNorm);
-    const isGlobal = isAdminRole && (!sess.locationId || sess.isGlobalAdmin === true);
+    const isGlobal = isSuperAdmin || (isAdminRole && (!sess.locationId || sess.isGlobalAdmin === true));
 
     if (isGlobal) {
       const saved = localStorage.getItem('bsc_selected_location');
@@ -117,8 +118,9 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, []);
 
   const roleNorm = (session?.role || '').toLowerCase().replace(/[_\s-]+/g, ' ');
+  const isSuperAdmin = roleNorm === 'super admin';
   const isAdminRole = ['admin', 'super admin', 'system administrator'].includes(roleNorm);
-  const isGlobalAdmin = isAdminRole && (!session?.locationId || session?.isGlobalAdmin === true);
+  const isGlobalAdmin = isSuperAdmin || (isAdminRole && (!session?.locationId || session?.isGlobalAdmin === true));
 
   // Available locations strictly scoped by authorization
   const availableLocations = useMemo(() => {
@@ -185,8 +187,9 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (newLoc !== undefined && newLoc !== null) {
         const currentSess = Auth.get();
         const roleN = (currentSess?.role || '').toLowerCase().replace(/[_\s-]+/g, ' ');
+        const isSuperAdm = roleN === 'super admin';
         const isAdm = ['admin', 'super admin', 'system administrator'].includes(roleN);
-        const isGlob = isAdm && (!currentSess?.locationId || currentSess?.isGlobalAdmin === true);
+        const isGlob = isSuperAdm || (isAdm && (!currentSess?.locationId || currentSess?.isGlobalAdmin === true));
 
         if (!isGlob) {
           const allowed = (Array.isArray(currentSess?.allowedLocations) && currentSess.allowedLocations.length > 0)
@@ -258,7 +261,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         locationStatus,
         setCurrentLocation,
         availableLocations,
-        allLocations: activeMasterList,
+        allLocations: isGlobalAdmin ? activeMasterList : availableLocations,
         canSwitch,
         isGlobalAdmin,
         currentLocationLabel

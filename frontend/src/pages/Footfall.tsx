@@ -94,6 +94,10 @@ export default function Footfall() {
   // and is what the Source / Greeter filters are applied to server-side.
   const [entries, setEntries] = useState<FootfallEntryRow[]>([]);
   const [entriesLoading, setEntriesLoading] = useState<boolean>(true);
+  // A failed read must not read as "nothing was recorded today" — the register looks
+  // identical either way, and a store that is closed for the day is very different
+  // from a store whose counts never arrived.
+  const [entriesError, setEntriesError] = useState<string | null>(null);
   const [sourceFilter, setSourceFilter] = useState<string>('all');
   const [greeterFilter, setGreeterFilter] = useState<string>('all');
   const [sourceOptions, setSourceOptions] = useState<string[]>([]);
@@ -130,10 +134,10 @@ export default function Footfall() {
         });
       }
       setSlots(map);
-    } catch (err) {
+    } catch (err: any) {
       if (seq !== requestSeqRef.current) return;
       console.error(err);
-      showToast('Unable to load footfall entries. Please try again.', 'error');
+      showToast('Unable to load today\'s footfall counts. Please try again.', 'error');
     } finally {
       if (seq === requestSeqRef.current) setLoading(false);
     }
@@ -168,6 +172,7 @@ export default function Footfall() {
       if (seq !== entriesSeqRef.current) return;
       const rows: FootfallEntryRow[] = res && Array.isArray(res.entries) ? res.entries : [];
       setEntries(rows);
+      setEntriesError(null);
       if (res && Array.isArray(res.sources) && res.sources.length > 0) {
         setSourceOptions(res.sources.map((s: any) => String(s)));
       }
@@ -178,9 +183,10 @@ export default function Footfall() {
       } else {
         setRecorderOptions(prev => (prev.includes(activeGreeter) ? prev : [...prev, activeGreeter]));
       }
-    } catch (err) {
+    } catch (err: any) {
       if (seq !== entriesSeqRef.current) return;
       console.error(err);
+      setEntriesError(err?.message || 'Unable to load footfall entries.');
       showToast('Unable to load footfall entries. Please try again.', 'error');
     } finally {
       if (seq === entriesSeqRef.current) setEntriesLoading(false);
@@ -685,11 +691,27 @@ export default function Footfall() {
                 {entries.length === 0 ? (
                   <tr>
                     <td colSpan={10} className="py-6 px-2 text-center text-xs font-semibold text-primary/60">
-                      {entriesLoading
-                        ? 'Loading footfall entries...'
-                        : filtersActive
-                          ? `No entries match the selected filters for ${activeStore.name} on ${formatIstDate(date)}.`
-                          : `No footfall recorded for ${activeStore.name} on ${formatIstDate(date)} yet.`}
+                      {entriesLoading ? (
+                        'Loading footfall entries...'
+                      ) : entriesError ? (
+                        <span className="inline-flex flex-col items-center gap-2">
+                          <span className="text-rose-700 font-bold">
+                            The entry list could not be loaded: {entriesError}
+                          </span>
+                          <span className="text-[11px] font-bold text-primary/60">
+                            The visitor counts above may be incomplete. This is a connection problem, not an empty day.
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => fetchEntries(date, effectiveLocationId)}
+                            className="px-3 py-1.5 rounded-lg bg-primary text-white text-[11px] font-black uppercase tracking-wider hover:bg-primary-dark cursor-pointer"
+                          >
+                            Try again
+                          </button>
+                        </span>
+                      ) : filtersActive
+                        ? `No entries match the selected filters for ${activeStore.name} on ${formatIstDate(date)}.`
+                        : `No footfall recorded for ${activeStore.name} on ${formatIstDate(date)} yet.`}
                     </td>
                   </tr>
                 ) : (
