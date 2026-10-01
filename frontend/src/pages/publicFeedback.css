@@ -479,10 +479,10 @@
    right-hand position instead of drifting to the left. */
 .bsc-fx-actions[data-single='true'] { justify-content: flex-end; }
 
-.bsc-fx-submit { width: 100%; }
+.bsc-fx-btn-primary.bsc-fx-submit { width: 100%; }
 
 @media (min-width: 576px) {
-  .bsc-fx-submit { width: auto; min-width: 13rem; }
+  .bsc-fx-btn-primary.bsc-fx-submit { width: auto; min-width: 13rem; }
 }
 
 .bsc-fx-btn-primary {
@@ -961,7 +961,7 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  margin-bottom: 1.25rem;
+  margin-top: 1.25rem;
   padding: 0.625rem 0.75rem;
   border: 1px dashed var(--ed-line-strong);
   border-radius: 12px;

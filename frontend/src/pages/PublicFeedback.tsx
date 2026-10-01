@@ -517,45 +517,6 @@ export default function PublicFeedback() {
   return (
     <div className="bsc-ed-page">
       <div className="bsc-fx-shell">
-        {/* Store feedback QR — a sharing tool for staff, deliberately quiet so it
-            never competes with the questions a customer is answering. */}
-        <div className="bsc-fx-qr">
-          <button
-            type="button"
-            className="bsc-fx-qr-thumb"
-            onClick={() => setShowQrModal(true)}
-            title={`Enlarge the ${selectedStore.city} feedback QR code`}
-          >
-            <img
-              src={getStoreQrUrl(selectedStore.code, 160)}
-              alt={`${selectedStore.city} feedback QR code`}
-              width={64}
-              height={64}
-              loading="lazy"
-              decoding="async"
-            />
-          </button>
-          <div className="bsc-fx-qr-copy">
-            <span className="bsc-fx-qr-label">
-              <QrCode aria-hidden="true" />
-              Store feedback QR · {selectedStore.code}
-            </span>
-            <p className="bsc-fx-qr-note">
-              Customers can scan this to answer the same survey on their own phone.
-            </p>
-          </div>
-          <div className="bsc-fx-qr-actions">
-            <button type="button" className="bsc-fx-qr-btn" onClick={() => setShowQrModal(true)}>
-              <Maximize2 aria-hidden="true" />
-              <span>Enlarge</span>
-            </button>
-            <button type="button" className="bsc-fx-qr-btn" onClick={handleCopyStoreLink}>
-              {qrModalCopied ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />}
-              <span>{qrModalCopied ? 'Copied' : 'Copy link'}</span>
-            </button>
-          </div>
-        </div>
-
         {/* Header: the brand first, the survey second, the store switch last. */}
         <header className="bsc-fx-head">
           <div className="bsc-fx-brand">
@@ -1232,6 +1193,45 @@ export default function PublicFeedback() {
               )}
             </div>
           </form>
+        </div>
+
+        {/* Store feedback QR — a counter tool for staff, kept below the survey so
+            a customer scanning the page is never shown someone else's share kit. */}
+        <div className="bsc-fx-qr">
+          <button
+            type="button"
+            className="bsc-fx-qr-thumb"
+            onClick={() => setShowQrModal(true)}
+            title={`Enlarge the ${selectedStore.city} feedback QR code`}
+          >
+            <img
+              src={getStoreQrUrl(selectedStore.code, 160)}
+              alt={`${selectedStore.city} feedback QR code`}
+              width={64}
+              height={64}
+              loading="lazy"
+              decoding="async"
+            />
+          </button>
+          <div className="bsc-fx-qr-copy">
+            <span className="bsc-fx-qr-label">
+              <QrCode aria-hidden="true" />
+              Store feedback QR · {selectedStore.code}
+            </span>
+            <p className="bsc-fx-qr-note">
+              Customers can scan this to answer the same survey on their own phone.
+            </p>
+          </div>
+          <div className="bsc-fx-qr-actions">
+            <button type="button" className="bsc-fx-qr-btn" onClick={() => setShowQrModal(true)}>
+              <Maximize2 aria-hidden="true" />
+              <span>Enlarge</span>
+            </button>
+            <button type="button" className="bsc-fx-qr-btn" onClick={handleCopyStoreLink}>
+              {qrModalCopied ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />}
+              <span>{qrModalCopied ? 'Copied' : 'Copy link'}</span>
+            </button>
+          </div>
         </div>
 
         <footer className="bsc-fx-foot">
