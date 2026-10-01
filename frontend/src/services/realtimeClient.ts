@@ -16,7 +16,7 @@ export type RealtimeEntity =
   | 'permissions'
   | 'vm';
 
-type SocketListener = (socket: Socket) => void;
+type SocketListener = (socket: Socket) => (() => void) | void;
 
 /**
  * Consecutive failed handshakes tolerated before the client goes quiet. The
@@ -26,6 +26,13 @@ type SocketListener = (socket: Socket) => void;
 const MAX_CONNECT_FAILURES = 3;
 const RETRY_BASE_DELAY = 2000;
 
+/** Location values that look set but mean "nobody has chosen a store yet". */
+function cleanLocationId(value: unknown): string | null {
+  const text = String(value ?? '').trim();
+  if (!text || text === 'null' || text === 'undefined' || text === 'NaN') return null;
+  return text;
+}
+
 class RealtimeClient {
   private socket: Socket | null = null;
   private isConnected = false;
@@ -33,6 +40,30 @@ class RealtimeClient {
   private retryTimer: ReturnType<typeof setTimeout> | null = null;
   private gaveUp = false;
   private socketListeners = new Set<SocketListener>();
+  /** Detach functions handed back by each consumer, one per consumer at a time. */
+  private listenerDetachers = new Map<SocketListener, Set<() => void>>();
+  /**
+   * The store this tab is scoped to. Kept on the client so a reconnect after a
+   * backend restart rejoins the same room instead of arriving location-less.
+   */
+  private locationId: string | null = null;
+
+  /**
+   * The store to connect for, in order of authority: the caller's explicit choice,
+   * the signed-in account's own store, the store the user last picked in the switcher,
+   * the store this tab already joined. A global admin with none of those sees 'ALL'.
+   * Returns null when the location is genuinely still unknown — which is not the same
+   * as an empty one, and must not be dialled as one.
+   */
+  private resolveLocation(explicit?: number | string | null): string | null {
+    const session = Auth.get();
+    const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('bsc_selected_location') : null;
+    const found = cleanLocationId(explicit) || cleanLocationId(session?.locationId) || cleanLocationId(stored) || this.locationId;
+    if (found) return found;
+    const role = String(session?.role || '').trim().toLowerCase();
+    if (session?.isGlobalAdmin || role === 'admin' || role === 'super admin' || role === 'system administrator') return 'ALL';
+    return null;
+  }
 
   /**
    * Single shared connection for the whole app. Resolves to the page origin so
@@ -52,10 +83,23 @@ class RealtimeClient {
     if (!this.socket) this.open(customLocationId);
   }
 
+  /**
+   * Point the shared connection at a store. Called by the location switcher, so
+   * changing store actually changes the room instead of leaving the old events
+   * streaming in. A call while disconnected starts the connection that was being
+   * withheld because no location was known yet.
+   */
   public setLocation(locId: number | string | null): void {
-    if (!locId) return;
-    const clean = String(locId).trim();
-    if (clean && clean !== 'null' && clean !== 'undefined' && this.socket?.connected) {
+    const clean = cleanLocationId(locId);
+    if (!clean) return;
+    const changed = clean !== this.locationId;
+    this.locationId = clean;
+    if (!this.socket) {
+      if (this.gaveUp) return;
+      this.open(clean);
+      return;
+    }
+    if (changed && this.socket.connected) {
       this.socket.emit('join_location', clean);
     }
   }
@@ -79,14 +123,17 @@ class RealtimeClient {
       return;
     }
 
-    // Determine clean, non-empty location ID
+    // A socket opened without a store joins no room and receives only global
+    // chatter, so the polling handshake is pure noise — and it is exactly what the
+    // console shows as `socket.io/?locationId=&…`. Wait for the location instead;
+    // setLocation() opens the connection the moment it is known.
+    const locationId = this.resolveLocation(customLocationId);
+    if (!locationId && !isPublicContext) return;
+
     const query: Record<string, string> = {};
-    const rawLoc = customLocationId ?? session?.locationId ?? (typeof localStorage !== 'undefined' ? localStorage.getItem('bsc_selected_location') : null);
-    
-    if (rawLoc && rawLoc !== 'ALL' && rawLoc !== 'null' && rawLoc !== 'undefined' && String(rawLoc).trim() !== '') {
-      query.locationId = String(rawLoc).trim();
-    } else if (session?.isGlobalAdmin || ['Admin', 'Super Admin'].includes(session?.role || '')) {
-      query.locationId = 'ALL';
+    if (locationId) {
+      query.locationId = locationId;
+      this.locationId = locationId;
     }
 
     this.socket = io(window.location.origin, {
@@ -101,13 +148,11 @@ class RealtimeClient {
     this.socket.on('connect', () => {
       this.isConnected = true;
       this.connectFailures = 0;
-      const currentSession = Auth.get();
-      const effectiveLoc = customLocationId ?? currentSession?.locationId;
-      if (effectiveLoc) {
-        this.socket?.emit('join_location', effectiveLoc);
+      if (this.locationId) {
+        this.socket?.emit('join_location', this.locationId);
       }
       this.socketListeners.forEach((cb) => {
-        try { if (this.socket) cb(this.socket); } catch { /* a broken listener must not kill the socket */ }
+        if (this.socket) this.attachListener(this.socket, cb);
       });
       this.wireEntityEvents();
     });
@@ -133,7 +178,7 @@ class RealtimeClient {
     // instance, so a consumer attached after connecting is served exactly once.
     if (this.isConnected) {
       this.socketListeners.forEach((cb) => {
-        try { if (this.socket) cb(this.socket); } catch { /* ignore */ }
+        if (this.socket) this.attachListener(this.socket, cb);
       });
     }
   }
@@ -189,14 +234,49 @@ class RealtimeClient {
    * Register a consumer of the shared socket (used by NotificationService so
    * the app keeps exactly one connection). The callback also runs on every
    * reconnection, so handlers never have to be re-attached by hand.
+   *
+   * A callback may return its own detach function (`() => socket.off('x', handler)`),
+   * and the client will run it when the consumer unsubscribes or the socket is
+   * replaced. Without that handshake every remount added another `socket.on` to the
+   * same connection — Footfall did exactly that, so one pushed update triggered
+   * several refetches.
+   *
    * Returns an unsubscribe function.
    */
   public onSocket(cb: SocketListener): () => void {
     this.socketListeners.add(cb);
     if (this.socket && this.isConnected) {
-      try { cb(this.socket); } catch { /* ignore */ }
+      this.attachListener(this.socket, cb);
     }
-    return () => { this.socketListeners.delete(cb); };
+    return () => {
+      this.socketListeners.delete(cb);
+      this.detachListener(cb);
+    };
+  }
+
+  private attachListener(socket: Socket, cb: SocketListener): void {
+    // A fresh socket replaces this consumer's previous attachment, so its old
+    // handlers are released before the new ones are registered.
+    this.detachListener(cb);
+    let detach: (() => void) | void;
+    try {
+      detach = cb(socket);
+    } catch {
+      return;
+    }
+    if (typeof detach !== 'function') return;
+    const list = this.listenerDetachers.get(cb);
+    if (list) list.add(detach);
+    else this.listenerDetachers.set(cb, new Set([detach]));
+  }
+
+  private detachListener(cb: SocketListener): void {
+    const list = this.listenerDetachers.get(cb);
+    if (!list) return;
+    this.listenerDetachers.delete(cb);
+    list.forEach((detach) => {
+      try { detach(); } catch { /* the socket may already be gone */ }
+    });
   }
 
   public refreshConnection(): void {

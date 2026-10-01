@@ -34,7 +34,7 @@ import {
   RotateCcw
 } from 'lucide-react';
 import { API } from '../services/api';
-import { io, Socket } from 'socket.io-client';
+import { realtimeClient } from '../services/realtimeClient';
 import KioskAccessScreen from './tv/KioskAccessScreen';
 import {
   readKioskSession,
@@ -373,40 +373,24 @@ export default function TVDisplay() {
 
     fetchData(true);
 
-    let socket: Socket | null = null;
-    try {
-      socket = io(window.location.origin, {
-        path: '/socket.io',
-        transports: ['websocket', 'polling'],
-        query: tvLocationId ? { locationId: String(tvLocationId) } : undefined,
-        autoConnect: true
-      });
+    // The kiosk rides the app's single shared connection instead of opening its own.
+    // Its previous private socket had no auth, no teardown and unlimited default
+    // reconnection, so a backend restart left a second socket hammering the server
+    // from behind the page.
+    realtimeClient.connect(tvLocationId);
 
-      socket.on('footfall:updated', (data: any) => {
-        if (!data.location_id || Number(data.location_id) === Number(tvLocationId)) {
-          fetchData();
-          playChime();
-        }
-      });
+    const watchedEvents: Array<[string, (data: any) => void]> = [
+      ['footfall:updated', () => { fetchData(); playChime(); }],
+      ['divert:created', () => { fetchData(); playChime(); }],
+      ['broadcast:create', () => { fetchData(); playChime(); }],
+      ['feedback:submitted', () => { fetchData(); }],
+      ['feedback:negative', () => { fetchData(); playChime(); }]
+    ];
 
-      socket.on('divert:created', (data: any) => {
-        if (!data.location_id || Number(data.location_id) === Number(tvLocationId)) {
-          fetchData();
-          playChime();
-        }
-      });
-
-      socket.on('broadcast:created', () => {
-        fetchData();
-        playChime();
-      });
-
-      socket.on('feedback:received', () => {
-        fetchData();
-      });
-    } catch (e) {
-      // Graceful fallback to efficient polling
-    }
+    const offSocket = realtimeClient.onSocket((socket) => {
+      watchedEvents.forEach(([name, handler]) => socket.on(name, handler));
+      return () => watchedEvents.forEach(([name, handler]) => { socket.off(name, handler); });
+    });
 
     // High reliability 12-second polling interval
     const interval = setInterval(() => {
@@ -414,7 +398,7 @@ export default function TVDisplay() {
     }, 12000);
 
     return () => {
-      if (socket) socket.disconnect();
+      offSocket();
       clearInterval(interval);
     };
   }, [kioskSession, tvLocationId, fetchData, playChime]);

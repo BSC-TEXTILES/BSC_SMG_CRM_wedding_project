@@ -6,6 +6,7 @@
 
 const jwt = require('jsonwebtoken');
 const { getJwtSecret } = require('../utils/secrets');
+const pool = require('../config/db');
 
 let ioInstance = null;
 
@@ -29,6 +30,35 @@ function parseLocationId(val) {
     return LOCATION_CODE_MAP[val.trim().toUpperCase()] || null;
   }
   return null;
+}
+
+/**
+ * Is this socket's user entitled to the given store?
+ *
+ * The requested location used to be taken straight from the handshake query, so any
+ * page could subscribe to another store's live feed by naming it. Token claims answer
+ * first (cheap, covers the normal case); the `user_locations` grant is consulted when
+ * the claims don't cover it, because a token issued before a store was assigned to the
+ * user would otherwise deny access they genuinely have.
+ *
+ * @returns {Promise<boolean>}
+ */
+async function isAuthorizedForLocation(data, locId) {
+  const target = parseLocationId(locId);
+  if (!target) return false;
+  if (data && data.isGlobalAdmin) return true;
+  if (data && Number(data.locationId) === target) return true;
+  const allowed = data && Array.isArray(data.allowedLocations) ? data.allowedLocations.map(Number) : [];
+  if (allowed.includes(target)) return true;
+  if (!data || !data.userId) return false;
+  try {
+    const [rows] = await pool.query('SELECT location_id FROM user_locations WHERE user_id = ?', [data.userId]);
+    return (rows || []).some((r) => Number(r.location_id) === target);
+  } catch (err) {
+    // Unverifiable means unauthorized.
+    console.warn('[RealtimeService] Location grant lookup failed:', err.message);
+    return false;
+  }
 }
 
 /**
@@ -119,16 +149,27 @@ function init(io) {
       }
     }
 
-    // Allow client to join explicit location room if authorized
-    socket.on('join_location', (locId) => {
+    // Allow client to join an explicit location room, only if authorized for it.
+    // The claim check used to compare a parsed number against token strings, so
+    // `allowedLocations: ['2']` never matched and the user could not switch to a
+    // store they are assigned to; the grant table is consulted as well now.
+    socket.on('join_location', async (locId) => {
       const parsed = parseLocationId(locId);
       if (!parsed) {
         if (data.isGlobalAdmin) socket.join('location:ALL');
         return;
       }
-      if (data.isGlobalAdmin || data.locationId === parsed || (data.allowedLocations && data.allowedLocations.includes(parsed))) {
-        socket.join(`location:${parsed}`);
+      if (!await isAuthorizedForLocation(data, parsed)) return;
+
+      // Only one browsed store at a time, so events from the store the user switched
+      // away from stop arriving. Rooms the account is entitled to by default are kept,
+      // because leaving one would silently cut a legitimate live feed.
+      const inherent = new Set([data.locationId, ...(Array.isArray(data.allowedLocations) ? data.allowedLocations.map(Number) : [])].filter(Boolean));
+      if (data.viewedLocation && data.viewedLocation !== parsed && !inherent.has(data.viewedLocation)) {
+        socket.leave(`location:${data.viewedLocation}`);
       }
+      data.viewedLocation = parsed;
+      socket.join(`location:${parsed}`);
     });
 
     socket.on('disconnect', () => {
@@ -173,33 +214,31 @@ function emitEntityChange({ entity, action, locationId = null, id = null, meta =
 
   try {
     const locId = parseLocationId(locationId);
+    const target = locId ? `location:${locId}` : null;
+    const rooms = [];
 
     // If restricted by role
     if (Array.isArray(roles) && roles.length > 0) {
-      roles.forEach(role => {
-        ioInstance.to(`role:${role}`).emit(eventName, payload);
-        if (legacyEvent) ioInstance.to(`role:${role}`).emit(legacyEvent, payload);
-      });
+      roles.forEach(role => rooms.push(`role:${role}`));
+    } else if (target) {
+      // Emit to matching location room AND to Global Admins room
+      rooms.push(target, 'location:ALL');
+    }
+
+    const names = [eventName, legacyEvent].filter(Boolean);
+
+    if (rooms.length === 0) {
+      // Genuinely system-wide change (no store, no role restriction).
+      names.forEach(name => ioInstance.emit(name, payload));
       return;
     }
 
-    // If restricted by location
-    if (locId) {
-      // Emit to matching location room AND to Global Admins room
-      ioInstance.to(`location:${locId}`).emit(eventName, payload);
-      ioInstance.to('location:ALL').emit(eventName, payload);
-
-      if (legacyEvent) {
-        ioInstance.to(`location:${locId}`).emit(legacyEvent, payload);
-        ioInstance.to('location:ALL').emit(legacyEvent, payload);
-      }
-    } else {
-      // Global event (e.g. system-wide change)
-      ioInstance.emit(eventName, payload);
-      if (legacyEvent) {
-        ioInstance.emit(legacyEvent, payload);
-      }
-    }
+    names.forEach(name => {
+      // Chained .to() is one delivery per socket, even for a socket sitting in
+      // several of these rooms.
+      const target = rooms.reduce((acc, room) => acc.to(room), ioInstance);
+      target.emit(name, payload);
+    });
   } catch (err) {
     console.warn(`[RealtimeService] Failed to emit event ${eventName}:`, err.message);
   }
@@ -233,9 +272,7 @@ function emitPermissionsChange(userId, meta = {}) {
   };
   try {
     ioInstance.to(`user:${userId}`).emit('permissions:update', payload);
-    ioInstance.to('role:Admin').emit('permissions:update', payload);
-    ioInstance.to('role:Super Admin').emit('permissions:update', payload);
-    ioInstance.emit('permissions:update', payload);
+    emitToAdmins('permissions:update', payload);
   } catch (err) {
     console.warn('[RealtimeService] Failed to emit permissions update:', err.message);
   }
@@ -365,6 +402,108 @@ function emitDivertChange(divert = {}, locationId = null) {
   });
 }
 
+/**
+ * Broadcast changes for one store.
+ *
+ * These used to be bare `io.emit(...)` calls, so a Belagavi announcement pushed to
+ * every connected browser in every store, and the live TV screen never heard it at
+ * all because it listens for the lowercase `broadcast:*` names this service uses.
+ * Room-targeting fixes both: only the store the broadcast is addressed to (plus
+ * global admins) is notified.
+ *
+ * @param {'CREATE'|'UPDATE'|'DELETE'|'CANCEL'|'EXPIRE'|'ACKNOWLEDGE'} action
+ */
+function emitBroadcastChange(action, broadcast = {}, meta = {}) {
+  emitEntityChange({
+    entity: 'BROADCAST',
+    action,
+    id: broadcast.id || broadcast.broadcastId || null,
+    locationId: broadcast.location_id || broadcast.locationId || null,
+    meta: {
+      title: broadcast.title || broadcast.message || null,
+      targetLocations: broadcast.target_locations || broadcast.targetLocations || null,
+      ...meta
+    }
+  });
+}
+
+/**
+ * Send one payload to every event name, scoped to the store it belongs to.
+ *
+ * A change with no store attached is genuinely system-wide and still goes to
+ * everyone; anything tied to a location is delivered to that location's room plus
+ * the global-admin room. This is what stops a correction made in Belagavi from
+ * waking every screen in Davanagere and Shivamogga.
+ */
+function emitToLocationRooms(eventNames, payload, locId) {
+  if (!ioInstance) return;
+  const names = Array.isArray(eventNames) ? eventNames : [eventNames];
+  const target = parseLocationId(locId);
+  try {
+    names.forEach((name) => {
+      if (!name) return;
+      if (target) {
+        // One call with both rooms: Socket.IO delivers once per socket even when the
+        // socket is in both rooms. Two separate calls handed global admins a
+        // duplicate, which made screens refetch twice per change.
+        ioInstance.to(`location:${target}`).to('location:ALL').emit(name, payload);
+      } else {
+        ioInstance.emit(name, payload);
+      }
+    });
+  } catch (err) {
+    console.warn(`[RealtimeService] Failed to emit ${names.join(', ')}:`, err.message);
+  }
+}
+
+const ADMIN_ROLE_ROOMS = ['role:Admin', 'role:Super Admin', 'role:system administrator'];
+
+/**
+ * A policy change every browser must apply immediately (currently the developer-tools
+ * shield toggle). The payload carries no one's data — broadcasting it is the point.
+ */
+function emitToAll(eventNames, payload) {
+  if (!ioInstance) return;
+  const names = Array.isArray(eventNames) ? eventNames : [eventNames];
+  try {
+    names.forEach((name) => { if (name) ioInstance.emit(name, payload); });
+  } catch (err) {
+    console.warn(`[RealtimeService] Failed to broadcast ${names.join(', ')}:`, err.message);
+  }
+}
+
+/**
+ * Admin-only push (security incidents, access requests).
+ *
+ * These payloads carry another person's username, IP address and device details.
+ * Emitting them to every connected browser handed that to ordinary staff accounts
+ * and to public kiosk screens, which is not who the event is for.
+ */
+function emitToAdmins(eventNames, payload) {
+  if (!ioInstance) return;
+  const names = Array.isArray(eventNames) ? eventNames : [eventNames];
+  try {
+    names.forEach((name) => {
+      if (!name) return;
+      ADMIN_ROLE_ROOMS.reduce((acc, room) => acc.to(room), ioInstance).emit(name, payload);
+    });
+  } catch (err) {
+    console.warn(`[RealtimeService] Failed to emit ${names.join(', ')} to admins:`, err.message);
+  }
+}
+
+/**
+ * Push a saved footfall entry to the screens that show it.
+ *
+ * The Footfall page and the live TV board read the flat fields (entryDate,
+ * slotHour, visitors, remarks, submittedBy) rather than an entity envelope, so the
+ * saved row is passed through as-is under both the legacy and the canonical name.
+ */
+function emitFootfallUpdate(payload = {}) {
+  const locId = payload.location_id ?? payload.locationId ?? null;
+  emitToLocationRooms(['footfall:updated', 'footfall:update'], payload, locId);
+}
+
 function emitVmChange(action, audit = {}, locationId = null) {
   emitEntityChange({
     entity: 'VM',
@@ -396,5 +535,11 @@ module.exports = {
   emitQrChange,
   emitFootfallChange,
   emitDivertChange,
-  emitVmChange
+  emitBroadcastChange,
+  emitFootfallUpdate,
+  emitToLocationRooms,
+  emitToAdmins,
+  emitToAll,
+  emitVmChange,
+  isAuthorizedForLocation
 };

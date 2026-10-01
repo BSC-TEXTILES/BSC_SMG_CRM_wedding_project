@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { API, Auth, UserSession } from '../services/api';
+import { realtimeClient } from '../services/realtimeClient';
 
 export interface LocationItem {
   id: number;
@@ -132,6 +133,15 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, [session, isGlobalAdmin, activeMasterList]);
 
   const canSwitch = isGlobalAdmin || availableLocations.length > 1;
+
+  // The shared Socket.IO connection must follow the store actually being viewed.
+  // Before this, nothing ever told it — a tab that connected before the location
+  // resolved stayed on a location-less socket, and switching store left the old
+  // room's events arriving.
+  useEffect(() => {
+    if (!currentLocation) return;
+    realtimeClient.setLocation(currentLocation);
+  }, [currentLocation]);
 
   // Active Location Object
   const activeLocation = useMemo<ActiveLocation>(() => {

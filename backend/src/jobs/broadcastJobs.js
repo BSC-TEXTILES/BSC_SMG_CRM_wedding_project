@@ -70,16 +70,12 @@ async function dispatchScheduledBroadcasts() {
         
         await conn.commit();
         
-        // Emit socket event for real-time
-        const io = global.broadcastIO;
-        if (io) {
-          io.emit('NEW_BROADCAST', { 
-            ...broadcast, 
-            status: 'Dispatched', 
-            dispatched_at: new Date().toISOString(),
-            recipients_count: users.length 
-          });
-        }
+        // Push to the addressed store's live screens
+        realtimeService.emitBroadcastChange('CREATE', {
+          ...broadcast,
+          status: 'Dispatched',
+          dispatched_at: new Date().toISOString()
+        }, { recipientsCount: users.length });
         
         console.info(`[BroadcastJob] Auto-dispatched broadcast ${broadcast.id} (${broadcast.title}) to ${users.length} recipients`);
         
@@ -182,10 +178,7 @@ async function expireBroadcasts() {
         await conn.commit();
         
         // Emit socket event
-        const io = global.broadcastIO;
-        if (io) {
-          io.emit('BROADCAST_EXPIRED', { id: broadcast.id });
-        }
+        realtimeService.emitBroadcastChange('EXPIRE', broadcast);
         
         console.info(`[BroadcastJob] Expired broadcast ${broadcast.id} (${broadcast.title})`);
         

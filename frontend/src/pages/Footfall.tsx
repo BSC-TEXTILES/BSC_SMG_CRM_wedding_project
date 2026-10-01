@@ -198,7 +198,7 @@ export default function Footfall() {
 
     // Reuse the app's single shared socket instead of opening one per page mount.
     const offSocket = realtimeClient.onSocket((socket) => {
-      socket.on('footfall:updated', (data: any) => {
+      const onFootfallUpdated = (data: any) => {
         const eventDate = istDateStringFrom(data?.entryDate);
         if (data && eventDate === date && (!data.location_id || Number(data.location_id) === Number(effectiveLocationId))) {
           setSlots(prev => {
@@ -223,7 +223,12 @@ export default function Footfall() {
           // so a push has to refresh it too — not just the slot grid.
           fetchEntries(date, effectiveLocationId);
         }
-      });
+      };
+      socket.on('footfall:updated', onFootfallUpdated);
+      // Handed back to the shared client so it detaches on unmount and before the
+      // next reconnection; without it every date or store change left another
+      // handler on the same socket and one push refetched the page several times.
+      return () => { socket.off('footfall:updated', onFootfallUpdated); };
     });
 
     // Polling fallback for missed pushes; reuses fetchFootfall so the stale-response

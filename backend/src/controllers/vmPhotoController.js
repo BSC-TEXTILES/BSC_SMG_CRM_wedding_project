@@ -8,6 +8,7 @@ const { getLocationFilter, injectLocationId } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 const realtimeService = require('../services/realtimeService');
 const { getISTDateString } = require('../utils/dates');
+const vmAuditAccess = require('../services/vmAuditAccess');
 
 const uploadRoot = upload.uploadDir || path.join(__dirname, '../../uploads');
 
@@ -61,6 +62,17 @@ function resolveAuditLocationId(req) {
   const body = req.body || {};
   const requested = Number(body.locationId || body.location_id) || null;
   return requested || injectLocationId(req) || (req.user ? Number(req.user.locationId) : null) || null;
+}
+
+/**
+ * The uploader of a photograph, matched on name because `vm_checklist_photos` has no
+ * user_id column — `uploaded_by` stores the person's name. Owners may always correct
+ * or withdraw their own evidence, even when their role cannot manage the store's.
+ */
+function isPhotoOwner(user, photo) {
+  if (!user || !photo) return false;
+  const identity = [user.fullName, user.name, user.username].filter(Boolean);
+  return identity.some((v) => String(v) === String(photo.uploaded_by));
 }
 
 /**
@@ -156,29 +168,15 @@ exports.uploadPhotos = async (req, res) => {
       return res.status(400).json({ success: false, message: 'No photo image file was provided' });
     }
 
-    // Server-side role check: CRM Managers, Managers, VM, Visual Merchandisers, VM Extension Telecaller, and Administrators
-    const allowedRoles = [
-      'admin',
-      'super admin',
-      'system administrator',
-      'crm manager',
-      'manager',
-      'store manager',
-      'floor manager',
-      'vm',
-      'visual merchandiser',
-      'vm extension telecaller',
-      'vm telecaller',
-      'vm auditor',
-      'auditor'
-    ];
-    const userRole = (req.user && req.user.role ? String(req.user.role).trim().toLowerCase() : '');
-    const isVmRole = userRole.includes('vm') || userRole.includes('merchandis');
-    if (!allowedRoles.includes(userRole) && !isVmRole) {
+    // Server-side authorisation. This asks the same source of truth the route guard
+    // and the navigation use (services/vmAuditAccess.js), so a store role that Admin
+    // granted the VM Checklist module can no longer be refused by a stale role list.
+    const uploadAccess = await vmAuditAccess.canAttachPhotos(req.user);
+    if (!uploadAccess.allowed) {
       rawFiles.forEach(f => { try { fs.unlinkSync(f.path); } catch (e) {} });
       return res.status(403).json({
         success: false,
-        message: 'Permission denied: Only authorized VM auditors and administrators can attach inspection photos'
+        message: `Permission denied: ${uploadAccess.reason}. Ask an administrator for VM Checklist access to attach inspection photos.`
       });
     }
 
@@ -619,17 +617,11 @@ exports.deletePhoto = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Photo not found' });
     }
     const photo = rows[0];
-    const userRole = (req.user && req.user.role ? String(req.user.role).trim().toLowerCase() : '');
-    const isManagerRole = ['admin', 'super admin', 'system administrator', 'crm manager', 'manager', 'store manager'].includes(userRole);
-    // vm_checklist_photos has no user_id column — uploaded_by stores the person's name,
-    // so ownership is matched on that (against both name and username) rather than on an
-    // id that never existed on this table.
-    const identity = req.user ? [req.user.fullName, req.user.name, req.user.username].filter(Boolean) : [];
-    const isOwner = !!req.user && identity.some(v => String(v) === String(photo.uploaded_by));
-    if (!isManagerRole && !isOwner) {
+    const deleteAccess = await vmAuditAccess.canDeletePhotos(req.user);
+    if (!deleteAccess.allowed && !isPhotoOwner(req.user, photo)) {
       return res.status(403).json({
         success: false,
-        message: 'Permission denied: You do not have permission to delete this audit photo'
+        message: `Permission denied: ${deleteAccess.reason}. You may remove a photo you uploaded yourself.`
       });
     }
 
@@ -745,9 +737,10 @@ exports.linkPhotosToSubmission = async (req, res) => {
 };
 
 /**
- * Loads a photo and applies the same authorisation the delete path uses: a manager
- * role or the uploader, and only within the caller's own store. Shared so that
- * editing, replacing and deleting can never disagree about who may act.
+ * Loads a photo and applies the same authorisation shape the delete path uses: the
+ * VM access the action requires, or the uploader's own right over their own
+ * photograph, and only within the caller's store. Shared so that editing, replacing
+ * and deleting can never disagree about who may act.
  */
 async function loadAuthorisedPhoto(req, res) {
   const photoId = req.params.photoId;
@@ -761,12 +754,9 @@ async function loadAuthorisedPhoto(req, res) {
   }
   const photo = rows[0];
 
-  const userRole = (req.user && req.user.role ? String(req.user.role).trim().toLowerCase() : '');
-  const isManagerRole = ['admin', 'super admin', 'system administrator', 'crm manager', 'manager', 'store manager'].includes(userRole);
-  const identity = req.user ? [req.user.fullName, req.user.name, req.user.username].filter(Boolean) : [];
-  const isOwner = !!req.user && identity.some((v) => String(v) === String(photo.uploaded_by));
-  if (!isManagerRole && !isOwner) {
-    res.status(403).json({ success: false, message: 'Permission denied: You do not have permission to manage this audit photo' });
+  const manageAccess = await vmAuditAccess.canManagePhotos(req.user);
+  if (!manageAccess.allowed && !isPhotoOwner(req.user, photo)) {
+    res.status(403).json({ success: false, message: `Permission denied: ${manageAccess.reason}` });
     return null;
   }
   if (!await assertLocationAccess(req.user, photo.location_id)) {

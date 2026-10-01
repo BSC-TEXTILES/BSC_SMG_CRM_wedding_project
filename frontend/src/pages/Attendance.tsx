@@ -230,7 +230,7 @@ export default function Attendance() {
 
           {/* Desktop Table (hidden on < md) */}
           <div className="hidden md:block table-frame custom-scrollbar">
-            <table className="w-full text-left text-xs font-semibold border-collapse">
+            <table className="w-full min-w-[850px] text-left text-xs font-semibold border-collapse">
               <thead className="bg-primary text-white uppercase text-[10px] tracking-wider">
                 <tr>
                   <th className="p-4">Employee Code</th>

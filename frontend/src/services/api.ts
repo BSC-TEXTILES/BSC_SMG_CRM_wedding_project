@@ -396,12 +396,38 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
   }
 
   const executeFetch = async () => {
+  // A backend that is restarting is a temporary condition, not a user error. Only
+  // reads are retried — replaying a POST could duplicate an audit or an upload — and
+  // only twice, with a growing pause, so a server that is genuinely down reports an
+  // error instead of silently filling the network tab.
+  const MAX_TRANSIENT_RETRIES = isGet ? 2 : 0;
+  const RETRYABLE_GATEWAY_STATUS = [502, 503, 504];
+  let transientAttempt = 0;
+
   try {
-    let res = await fetch(url, {
-      ...options,
-      headers,
-      credentials: 'include' // Include HttpOnly cookies
-    });
+    let res: Response;
+    for (;;) {
+      try {
+        res = await fetch(url, {
+          ...options,
+          headers,
+          credentials: 'include' // Include HttpOnly cookies
+        });
+      } catch (networkErr) {
+        if (transientAttempt < MAX_TRANSIENT_RETRIES) {
+          await new Promise((r) => setTimeout(r, 600 * Math.pow(3, transientAttempt)));
+          transientAttempt += 1;
+          continue;
+        }
+        throw networkErr;
+      }
+      if (RETRYABLE_GATEWAY_STATUS.includes(res.status) && transientAttempt < MAX_TRANSIENT_RETRIES) {
+        await new Promise((r) => setTimeout(r, 600 * Math.pow(3, transientAttempt)));
+        transientAttempt += 1;
+        continue;
+      }
+      break;
+    }
 
     const isAuthRoute = endpoint.includes('/auth/login') ||
                         endpoint.includes('/auth/refresh') ||
@@ -484,8 +510,14 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
             errorMessage = 'Too many requests. Please wait and try again.';
             break;
           case 500:
+            errorMessage = 'Unable to load data. Please try again.';
+            break;
+          case 502:
           case 503:
-            errorMessage = 'Server error. Please try again or contact your administrator.';
+          case 504:
+            // The proxy answers 503 when the backend is not reachable; saying
+            // "temporarily unavailable" is both true and actionable.
+            errorMessage = 'Live data service is temporarily unavailable. Please try again in a moment.';
             break;
           default:
             errorMessage = `Request failed. Please try again. (Error: ${res.status})`;
@@ -503,9 +535,14 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
     console.warn(`[API Fetch Error: ${endpoint}]`, err.message);
     // If the error is a network error (not an API response error), provide a user-friendly message
     if (!err.status) {
-      const networkError: any = new Error('Network error. Please check your internet connection and try again.');
+      // The request never reached the API. Say that plainly rather than blaming the
+      // user's internet, and mark it so a screen can offer a retry.
+      const networkError: any = new Error(
+        'The live data service is temporarily unavailable. Please try again in a moment.'
+      );
       networkError.status = 0;
-      networkError.errors = [];
+      networkError.errors = [err?.message || 'network'];
+      networkError.backendUnavailable = true;
       throw networkError;
     }
     throw err;
@@ -1404,7 +1441,7 @@ export const API = {
   async getVmFloors() { return apiFetch('/vm/floors'); },
   async createVmFloor(payload: any) { return apiFetch('/vm/floors', { method: 'POST', body: JSON.stringify(payload) }); },
   async deleteVmFloor(payload: any) { return apiFetch('/vm/floors/delete', { method: 'POST', body: JSON.stringify(typeof payload === 'object' ? payload : { id: payload }) }); },
-  async getVmPhotos(params?: { locationId?: string | number; floor?: string; section?: string; submissionId?: string; pointId?: string; date?: string; dateFrom?: string; dateTo?: string; inspector?: string; status?: string; limit?: number; offset?: number }) {
+  async getVmPhotos(params?: { locationId?: string | number; floor?: string; section?: string; submissionId?: string; pointId?: string; date?: string; dateFrom?: string; dateTo?: string; inspector?: string; status?: string; shift?: string; minScore?: number; maxScore?: number; limit?: number; offset?: number }) {
     const q = params ? new URLSearchParams(cleanQueryParams(params)).toString() : '';
     return apiFetch(`/vm/photos${q ? `?${q}` : ''}`);
   },

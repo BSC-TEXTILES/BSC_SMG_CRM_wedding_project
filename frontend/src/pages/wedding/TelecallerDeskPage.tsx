@@ -666,7 +666,7 @@ export default function TelecallerDeskPage() {
 
           {/* ── Desktop Queue Table (md+) ── */}
           <div className="hidden md:block table-frame custom-scrollbar border border-[#E8D9D4] rounded-2xl">
-            <table className="w-full text-left text-xs text-[#2B1722] whitespace-nowrap">
+            <table className="w-full min-w-[1100px] text-left text-xs text-[#2B1722] whitespace-nowrap">
               <thead className="bg-[#FFFAF7] text-[#4A173A] border-b border-[#E8D9D4] uppercase text-[10px] tracking-wider">
                 <tr>
                   <th className="py-3 px-3 font-black">Reg ID</th>

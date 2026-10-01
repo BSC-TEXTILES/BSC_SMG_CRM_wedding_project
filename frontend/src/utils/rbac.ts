@@ -65,7 +65,7 @@ export const ROLE_NAV_MAP: Record<string, string[]> = {
   ],
   'Floor Manager': [
     'wedding_crm', 'wedding_operations', 'wedding_registration', 'telecaller_desk', 'telecaller_dashboard', 'candidate_apply', 'footfall', 
-    'feedback_collection', 'feedback_list', 'feedback_qr', 'divert', 'pm_view', 'vm_checklist', 
+    'feedback_collection', 'feedback_list', 'feedback_qr', 'divert', 'pm_view', 'vm_checklist', 'vm_dashboard', 
     'attendance', 'dashboard', 'candidates', 'offer', 'openings', 'daily_mcheck', 'mcheck_reports', 
     'mcheck_history', 'employees', 'dept_hiring', 'section_allocation', 'broadcast', 'user_management'
   ],
@@ -135,6 +135,10 @@ export function getRoleNavMap(role?: string): string[] {
   if (norm === 'manager' || norm === 'store manager' || norm === 'floor manager' || norm === 'department manager') return ROLE_NAV_MAP['Manager'];
   if (norm === 'hr' || norm === 'hr manager') return ROLE_NAV_MAP['HR'];
   if (norm === 'vm' || norm === 'visual merchandiser') return ROLE_NAV_MAP['VM'];
+  // Any spelling of the merchandising job title gets the VM navigation, matching the
+  // backend role resolution — otherwise the page is hidden and the API 403 is the only
+  // feedback an inspector gets.
+  if (norm.split(' ').includes('vm') || norm.includes('merchandis')) return ROLE_NAV_MAP['VM'];
   if (norm === 'greeter') return ROLE_NAV_MAP['Greeter'];
   if (norm === 'crm executive' || norm === 'crm exec') return ROLE_NAV_MAP['CRM Executive'];
   if (norm === 'crm manager') return ROLE_NAV_MAP['CRM Manager'];

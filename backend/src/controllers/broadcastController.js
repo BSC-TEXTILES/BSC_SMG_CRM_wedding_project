@@ -1,6 +1,7 @@
 const pool = require('../config/db');
 const conn = pool;
 const { log: auditLog, AuditEvents } = require('../services/auditService');
+const realtimeService = require('../services/realtimeService');
 const crypto = require('crypto');
 
 let broadcastSchemaChecked = false;
@@ -286,6 +287,41 @@ async function logAudit(req, action, broadcastId, details = {}) {
   }
 }
 
+/**
+ * Accept either spelling of every broadcast field.
+ *
+ * The Broadcast Center posts snake_case (`target_role`, `require_ack`, `sender_name`)
+ * and its own names for timing (`scheduledAt`, `expiryDate`), while this API was
+ * written against `audience`, `requireAck` and `expiresAt`. Nothing complained: the
+ * record simply saved with no recipients, the acknowledgement toggle did nothing,
+ * and the schedule/expiry the user picked were dropped.
+ */
+function normalizeBroadcastInput(body = {}) {
+  const firstValue = (...values) => values.find(v => v !== undefined && v !== null && v !== '');
+
+  const audience = Array.isArray(body.audience) && body.audience.length > 0
+    ? body.audience
+    : String(firstValue(body.target_role, body.targetRole, '') || 'Everyone')
+      .split(',')
+      .map(group => group.trim())
+      .filter(Boolean);
+
+  const requireAck = firstValue(body.requireAck, body.require_ack, body.requireAcknowledgement, false);
+  const scheduledAt = firstValue(body.scheduledAt, body.scheduled_at, body.startDate, null);
+  const expiresAt = firstValue(body.expiresAt, body.expires_at, body.expiryDate, null);
+
+  return {
+    ...body,
+    audience,
+    target_role: audience.join(', '),
+    requireAck: requireAck === true || requireAck === 1 || String(requireAck) === 'true',
+    pinned: body.pinned === true || body.pinNotification === true || body.pinned === 1,
+    sender_name: firstValue(body.sender_name, body.senderName, null),
+    scheduledAt,
+    expiresAt
+  };
+}
+
 exports.getBroadcasts = async (req, res) => {
   try {
     if (!req.user || req.user.role === 'Guest' || req.user.id === 'anonymous') {
@@ -295,50 +331,46 @@ exports.getBroadcasts = async (req, res) => {
     await ensureBroadcastSchema();
 
     const { status, priority, category, audience, dateFrom, dateTo, page = 1, limit = 20 } = req.query;
-    const offset = (page - 1) * limit;
-    
-    let where = 'WHERE 1=1';
-    const params = [];
-    
-    if (status) {
-      where += ' AND bm.status = ?';
-      params.push(status);
-    }
-    if (priority) {
-      where += ' AND bm.priority = ?';
-      params.push(priority);
-    }
-    if (category) {
-      where += ' AND bm.category = ?';
-      params.push(category);
-    }
-    if (dateFrom) {
-      where += ' AND DATE(bm.created_at) >= ?';
-      params.push(dateFrom);
-    }
-    if (dateTo) {
-      where += ' AND DATE(bm.created_at) <= ?';
-      params.push(dateTo);
-    }
-    
-    // Location scoping: global notices (location_id IS NULL) + user's branch notices
-    if (!req.user.isGlobalAdmin && req.user.locationId) {
-      where += ' AND (bm.location_id IS NULL OR bm.location_id = ?)';
-      params.push(req.user.locationId);
-    }
-    
-    let rows = [];
-    let totalResult = [{ total: 0 }];
+    const pageNumber = parseInt(page) || 1;
+    const pageSize = parseInt(limit) || 20;
+    const offset = (pageNumber - 1) * pageSize;
 
-    try {
-      let audienceClause = '';
-      if (audience) {
-        audienceClause = ' AND EXISTS (SELECT 1 FROM broadcast_audience ba WHERE ba.broadcast_id = bm.id AND ba.audience_group = ?)';
-        params.push(audience);
+    /**
+     * Filter list and its parameters, built together so the `?` placeholders and the
+     * bound values can never disagree.
+     *
+     * `withAudience: false` drops only the condition that needs the audience table;
+     * the store scoping stays in every variant, because a degraded read must not
+     * become a wider one.
+     */
+    const buildWhere = ({ withAudience = true } = {}) => {
+      const clauses = ['1=1'];
+      const values = [];
+      if (status) { clauses.push('bm.status = ?'); values.push(status); }
+      if (priority) { clauses.push('bm.priority = ?'); values.push(priority); }
+      if (category) { clauses.push('bm.category = ?'); values.push(category); }
+      if (dateFrom) { clauses.push('DATE(bm.created_at) >= ?'); values.push(dateFrom); }
+      if (dateTo) { clauses.push('DATE(bm.created_at) <= ?'); values.push(dateTo); }
+      // Global notices (location_id IS NULL) plus this user's own branch notices.
+      if (!req.user.isGlobalAdmin && req.user.locationId) {
+        clauses.push('(bm.location_id IS NULL OR bm.location_id = ?)');
+        values.push(req.user.locationId);
       }
+      if (withAudience && audience) {
+        clauses.push('EXISTS (SELECT 1 FROM broadcast_audience ba WHERE ba.broadcast_id = bm.id AND ba.audience_group = ?)');
+        values.push(audience);
+      }
+      return { clause: `WHERE ${clauses.join(' AND ')}`, values };
+    };
 
+    const { clause: filterClause, values: filterParams } = buildWhere();
+
+    let rows = [];
+    let countRows = [];
+    let total = 0;
+    try {
       [rows] = await conn.query(`
-        SELECT 
+        SELECT
           bm.*,
           u.full_name as creator_name,
           COALESCE((SELECT COUNT(*) FROM broadcast_recipients br WHERE br.broadcast_id = bm.id), 0) as total_recipients,
@@ -347,64 +379,74 @@ exports.getBroadcasts = async (req, res) => {
           (SELECT JSON_ARRAYAGG(audience_group) FROM broadcast_audience ba WHERE ba.broadcast_id = bm.id) as audience_groups
         FROM broadcast_messages bm
         LEFT JOIN users u ON bm.created_by = u.id
-        ${where} ${audienceClause}
+        ${filterClause}
         ORDER BY bm.created_at DESC
         LIMIT ? OFFSET ?
-      `, [...params, parseInt(limit), parseInt(offset)]);
-      
-      [totalResult] = await conn.query(`
-        SELECT COUNT(*) as total FROM broadcast_messages bm ${where} ${audienceClause}
-      `, params);
+      `, [...filterParams, pageSize, offset]);
+
+      [countRows] = await conn.query(`
+        SELECT COUNT(*) as total FROM broadcast_messages bm ${filterClause}
+      `, filterParams);
+      total = Number(countRows?.[0]?.total || 0);
     } catch (primaryErr) {
-      console.warn('[Broadcast] Primary query warning:', primaryErr.message);
+      console.warn('[Broadcast] List query failed, retrying without the recipient subqueries:', primaryErr.message);
       try {
-        // Fallback: simple query directly on broadcast_messages without subquery joins
-        const simpleWhere = where.replace(/ AND \(bm\.location_id IS NULL OR bm\.location_id = \?\)/g, '')
-                                 .replace(/ AND bm\.location_id = \?/g, '');
-        const simpleParams = params.filter(p => typeof p === 'string' && !p.includes('-') && p !== req.user?.locationId);
+        const reduced = buildWhere({ withAudience: false });
         [rows] = await conn.query(`
-          SELECT 
+          SELECT
             bm.*,
             0 as total_recipients,
             0 as read_count,
             0 as acknowledged_count,
             JSON_ARRAY() as audience_groups
           FROM broadcast_messages bm
-          ${simpleWhere}
+          ${reduced.clause}
           ORDER BY bm.created_at DESC
           LIMIT ? OFFSET ?
-        `, [...simpleParams, parseInt(limit), parseInt(offset)]);
-        
-        [totalResult] = await conn.query(`
-          SELECT COUNT(*) as total FROM broadcast_messages bm ${simpleWhere}
-        `, simpleParams);
+        `, [...reduced.values, pageSize, offset]);
+
+        [countRows] = await conn.query(`
+          SELECT COUNT(*) as total FROM broadcast_messages bm ${reduced.clause}
+        `, reduced.values);
+        total = Number(countRows?.[0]?.total || 0);
       } catch (fallbackErr) {
-        console.warn('[Broadcast] Fallback query notice:', fallbackErr.message);
-        return res.json({
-          success: true,
-          broadcasts: [],
-          pagination: { page: 1, limit: parseInt(limit) || 20, total: 0, totalPages: 0 }
+        console.error('[Broadcast] Fallback list query failed:', fallbackErr.message);
+        // A failed read must not look like "there are no broadcasts".
+        return res.status(500).json({
+          success: false,
+          message: 'Unable to load broadcasts. Please try again.',
+          errors: [fallbackErr.message]
         });
       }
     }
-    
-    res.json({ 
-      success: true, 
-      broadcasts: rows || [],
+
+    res.json({
+      success: true,
+      // The screen reads camelCase (`requireAcknowledgement`, `scheduledAt`) while the
+      // table columns are snake_case; without both spellings the acknowledgement and
+      // schedule figures sat at zero no matter what was stored.
+      broadcasts: (rows || []).map(b => ({
+        ...b,
+        requireAcknowledgement: !!(b.require_ack ?? b.acknowledgement_required),
+        scheduledAt: b.scheduled_at ?? b.scheduledAt ?? null,
+        expiresAt: b.expires_at ?? b.expiresAt ?? null,
+        targetRole: b.target_role ?? null
+      })),
       pagination: {
-        page: parseInt(page) || 1,
-        limit: parseInt(limit) || 20,
-        total: totalResult[0]?.total || 0,
-        totalPages: Math.ceil((totalResult[0]?.total || 0) / (parseInt(limit) || 20))
+        page: pageNumber,
+        limit: pageSize,
+        total,
+        totalPages: Math.ceil(total / pageSize)
       }
     });
   } catch (err) {
     console.error('[Broadcast getBroadcasts Error]', err.message);
-    // Never crash notification synchronization with 500
-    res.json({ 
-      success: true, 
-      broadcasts: [],
-      pagination: { page: 1, limit: 20, total: 0, totalPages: 0 }
+    // Answering "no broadcasts" when the read failed is how a store misses an
+    // announcement while believing everything is fine.
+    return res.status(500).json({
+      success: false,
+      message: 'Unable to load broadcasts. Please try again.',
+      errors: [err.message]
     });
   }
 };
@@ -459,21 +501,32 @@ exports.createBroadcast = async (req, res) => {
   try {
     await conn.beginTransaction();
     
-    const { 
-      title, subject, message, priority, category, 
-      audience, scheduledAt, expiresAt, 
-      requireAck, pinned, action, sender_name 
-    } = req.body;
-    
-    const errors = validateBroadcastData(req.body);
+    const {
+      title, subject, message, priority, category,
+      audience, scheduledAt, expiresAt,
+      requireAck, pinned, action, sender_name, status
+    } = normalizeBroadcastInput(req.body);
+
+    const errors = validateBroadcastData({
+      title, subject, message, priority, category,
+      audience, scheduledAt, expiresAt
+    });
     if (errors.length > 0) {
       await conn.rollback();
       return res.status(400).json({ success: false, error: errors.join(', ') });
     }
-    
-    const finalStatus = action === 'schedule' ? 'Scheduled' : (action === 'draft' ? 'Draft' : 'Dispatched');
+
+    // `action` is what this API was written against; the Broadcast Center sends a
+    // plain status instead, and that spelling had to win or every dispatch from the
+    // page would have been filed with the wrong lifecycle state.
+    const finalStatus = action === 'schedule'
+      ? 'Scheduled'
+      : (action === 'draft'
+        ? 'Draft'
+        : (STATUSES.includes(status) ? status : 'Dispatched'));
+    const isLive = finalStatus === 'Dispatched' || finalStatus === 'Sent';
     const now = new Date();
-    const dispatchedAt = action === 'draft' || action === 'schedule' ? null : now;
+    const dispatchedAt = isLive ? now : null;
     
     const [result] = await conn.query(
       `INSERT INTO broadcast_messages 
@@ -500,7 +553,7 @@ exports.createBroadcast = async (req, res) => {
     }
     
     let recipientResult = { count: 0 };
-    if (finalStatus === 'Dispatched') {
+    if (isLive) {
       recipientResult = await resolveRecipients(broadcastId, audience, req.user.id, conn);
     }
     
@@ -518,10 +571,10 @@ exports.createBroadcast = async (req, res) => {
     
     const [newBroadcast] = await conn.query('SELECT * FROM broadcast_messages WHERE id = ?', [broadcastId]);
     
-    // Emit socket event
-    const io = req.app.get('io');
-    if (io && finalStatus === 'Dispatched') {
-      io.emit('NEW_BROADCAST', { ...newBroadcast[0], recipients_count: recipientResult.count });
+    // Push to the store this broadcast was addressed to (and to global admins),
+    // instead of to every browser in every store.
+    if (isLive) {
+      realtimeService.emitBroadcastChange('CREATE', newBroadcast[0], { recipientsCount: recipientResult.count });
     }
     
     await logAudit(req, 'BROADCAST_CREATED', broadcastId, { 
@@ -551,11 +604,11 @@ exports.updateBroadcast = async (req, res) => {
     await conn.beginTransaction();
     
     const { id } = req.params;
-    const { 
-      title, subject, message, priority, category, 
-      audience, scheduledAt, expiresAt, 
-      requireAck, pinned, action 
-    } = req.body;
+    const {
+      title, subject, message, priority, category,
+      audience, scheduledAt, expiresAt,
+      requireAck, pinned, action, status
+    } = normalizeBroadcastInput(req.body);
     
     const [existing] = await conn.query('SELECT * FROM broadcast_messages WHERE id = ?', [id]);
     if (existing.length === 0) {
@@ -630,10 +683,9 @@ exports.updateBroadcast = async (req, res) => {
     
     const [updatedBroadcast] = await conn.query('SELECT * FROM broadcast_messages WHERE id = ?', [id]);
     
-    // Emit socket event for real-time updates
-    const io = req.app.get('io');
-    if (io && action === 'dispatch') {
-      io.emit('NEW_BROADCAST', { ...updatedBroadcast[0], recipients_count: recipientResult.count });
+    // Push to the addressed store so the live screens react.
+    if (action === 'dispatch') {
+      realtimeService.emitBroadcastChange('CREATE', updatedBroadcast[0], { recipientsCount: recipientResult.count });
     }
     
     await logAudit(req, action === 'dispatch' ? 'BROADCAST_DISPATCHED' : 'BROADCAST_UPDATED', id, { 
@@ -684,10 +736,7 @@ exports.deleteBroadcast = async (req, res) => {
     await conn.commit();
     
     // Emit socket event
-    const io = req.app.get('io');
-    if (io) {
-      io.emit('DELETE_BROADCAST', { id: parseInt(id) });
-    }
+    realtimeService.emitBroadcastChange('DELETE', broadcast);
     
     await logAudit(req, 'BROADCAST_DELETED', parseInt(id), { title: broadcast.title });
     
@@ -715,9 +764,11 @@ exports.cancelBroadcast = async (req, res) => {
     }
     
     const broadcast = existing[0];
-    if (broadcast.status !== 'Dispatched' && broadcast.status !== 'Active' && broadcast.status !== 'Scheduled') {
+    // 'Sent' is what the Broadcast Center files an immediate dispatch as, so it has
+    // to be withdrawable too — otherwise the only way back is the database.
+    if (!['Dispatched', 'Active', 'Scheduled', 'Sent'].includes(broadcast.status)) {
       await conn.rollback();
-      return res.status(400).json({ success: false, error: 'Only dispatched, active, or scheduled broadcasts can be cancelled' });
+      return res.status(400).json({ success: false, error: 'Only dispatched, active, scheduled or sent broadcasts can be cancelled' });
     }
     
     await conn.query(
@@ -735,10 +786,7 @@ exports.cancelBroadcast = async (req, res) => {
     await conn.commit();
     
     // Emit socket event
-    const io = req.app.get('io');
-    if (io) {
-      io.emit('BROADCAST_CANCELLED', { id: parseInt(id) });
-    }
+    realtimeService.emitBroadcastChange('CANCEL', broadcast);
     
     await logAudit(req, 'BROADCAST_CANCELLED', parseInt(id));
     
@@ -801,10 +849,7 @@ exports.acknowledgeBroadcast = async (req, res) => {
     await conn.commit();
     
     // Emit socket event for real-time updates
-    const io = req.app.get('io');
-    if (io) {
-      io.emit('BROADCAST_ACKNOWLEDGED', { broadcastId: parseInt(id), userId, username: req.user.username });
-    }
+    realtimeService.emitBroadcastChange('ACKNOWLEDGE', broadcast[0], { userId, username: req.user.username });
     
     await logAudit(req, 'BROADCAST_ACKNOWLEDGED', parseInt(id), { username: req.user.username });
     
@@ -848,7 +893,7 @@ exports.getBroadcastReport = async (req, res) => {
       SELECT 
         COUNT(*) as total_recipients,
         SUM(CASE WHEN delivered_at IS NOT NULL THEN 1 ELSE 0 END) as delivered,
-        SUM(CASE WHEN read_at IS NOT NULL THEN 1 ELSE 0 END) as read,
+        SUM(CASE WHEN read_at IS NOT NULL THEN 1 ELSE 0 END) as read_count,
         SUM(CASE WHEN acknowledged_at IS NOT NULL THEN 1 ELSE 0 END) as acknowledged,
         SUM(CASE WHEN status = 'PENDING' THEN 1 ELSE 0 END) as pending,
         SUM(CASE WHEN status = 'ACKNOWLEDGED' THEN 1 ELSE 0 END) as acknowledged_count

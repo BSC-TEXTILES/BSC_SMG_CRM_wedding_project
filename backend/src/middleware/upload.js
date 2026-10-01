@@ -1,45 +1,15 @@
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const dotenv = require('dotenv');
 const securityLogger = require('../security/securityLogger');
+const { UPLOAD_ROOT, UPLOAD_SUBDIRS, ensureUploadDirs } = require('../config/uploadPaths');
 
-dotenv.config({ path: path.join(__dirname, '../../../.env') });
+// Every uploader writes under the one storage root the server also serves, so a
+// file cannot be filed somewhere the read path will never look.
+const uploadDir = UPLOAD_ROOT;
+ensureUploadDirs();
 
-let uploadDir = process.env.UPLOAD_DIR;
-
-if (!uploadDir) {
-  uploadDir = path.join(__dirname, '../../../uploads'); // 1 level above BSC-Candidate-Followup-main
-  try {
-    if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-  } catch (e) {
-    // Fallback to local uploads if parent is not writable
-    uploadDir = path.join(__dirname, '../../uploads'); // hrms-system/uploads
-    if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-  }
-} else {
-  try {
-    if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-  } catch (e) {
-    uploadDir = path.join(__dirname, '../../uploads');
-    try { if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true }); } catch (err) {}
-  }
-}
-
-const subdirs = [
-  'applicants',
-  'candidate-resumes',
-  'candidate-photos',
-  'employee-photos',
-  'employee-documents',
-  'offer-letters',
-  'relieving-letters',
-  'experience-certificates',
-  'mcheck-photos',
-  'vm-checklist',
-  'diverts',
-  'misc'
-];
+const subdirs = UPLOAD_SUBDIRS;
 
 subdirs.forEach((dir) => {
   try {
@@ -71,13 +41,14 @@ const storage = multer.diskStorage({
     } else {
       // Backward compatibility / Misc uploads if no appNo
       let dest = 'misc';
+      const isMcheckRequest = String(req.baseUrl || '').includes('mcheck') || String(req.path || '').includes('mcheck');
       if (file.fieldname === 'resume') dest = 'candidate-resumes';
+      else if (file.fieldname === 'photo' && isMcheckRequest) dest = 'mcheck-photos';
       else if (file.fieldname === 'photo') dest = 'candidate-photos';
       else if (file.fieldname === 'document' || file.fieldname === 'aadhar' || file.fieldname === 'pan') dest = 'employee-documents';
       else if (file.fieldname === 'offerLetter') dest = 'offer-letters';
       else if (file.fieldname === 'relievingLetter') dest = 'relieving-letters';
       else if (file.fieldname === 'experienceCert') dest = 'experience-certificates';
-      else if (file.fieldname === 'photo' && (req.baseUrl.includes('mcheck') || req.path.includes('mcheck'))) dest = 'mcheck-photos';
       cb(null, path.join(uploadDir, dest));
     }
   },

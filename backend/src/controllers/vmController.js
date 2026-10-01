@@ -10,6 +10,7 @@ const { logAction } = require('../utils/logger');
 const { getLocationFilter } = require('../middleware/auth');
 const realtimeService = require('../services/realtimeService');
 const { getISTDateString } = require('../utils/dates');
+const vmAuditAccess = require('../services/vmAuditAccess');
 const { assertLocationAccess, resolveAuditLocationId, mapVmPhoto, getVmPhotos } = require('./vmPhotoController');
 
 function getUUID() {
@@ -24,9 +25,9 @@ const VM_PASS_MARK = 80;
 // The guided flow offers exactly these shifts; anything else would silently create a
 // second history row the store never performs.
 const VM_SHIFT_WHITELIST = ['Opening', 'Mid-Day', 'Closing'];
-// Roles that may write an audit they did not create (the rest can only touch their own).
-const VM_MANAGER_ROLES = ['admin', 'super admin', 'system administrator', 'manager',
-  'store manager', 'floor manager', 'vm', 'crm manager'];
+// Roles that may write an audit they did not create (the rest can only touch their
+// own). Resolved by the same service the photo routes and the navigation read, so a
+// store role is never told "you may inspect the floor" here and "you may not" there.
 
 /** Canonical answer value from anything the client sends. */
 function normalizeScore(raw) {
@@ -206,8 +207,7 @@ async function loadWritableAudit(req, res) {
     return null;
   }
 
-  const role = String((req.user && req.user.role) || '').trim().toLowerCase();
-  const isManager = VM_MANAGER_ROLES.includes(role);
+  const mayWriteAnyAudit = vmAuditAccess.isVmInspectionRole(req.user && req.user.role);
   const auditorId = audit.auditor_user_id !== null && audit.auditor_user_id !== undefined
     ? Number(audit.auditor_user_id)
     : null;
@@ -215,7 +215,7 @@ async function loadWritableAudit(req, res) {
   const isCreator = (auditorId !== null && req.user && Number(auditorId) === Number(req.user.id)) ||
     (audit.submittedBy && names.includes(String(audit.submittedBy)));
 
-  if (!isManager && !isCreator) {
+  if (!mayWriteAnyAudit && !isCreator) {
     res.status(403).json({ success: false, message: 'Access denied: only the auditor who opened this draft (or a store manager) can change it' });
     return null;
   }

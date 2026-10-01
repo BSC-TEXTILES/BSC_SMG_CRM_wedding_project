@@ -408,7 +408,7 @@ export default function DailyMCheck() {
 
           {/* M-Check Module Navigation */}
           <div className="bg-white p-2 rounded-2xl border border-accent-soft shadow-xs flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-1.5 overflow-x-auto whitespace-nowrap pb-1 scrollbar-hide">
+            <div className="flex items-center gap-1.5 overflow-x-auto whitespace-nowrap pb-1 custom-scrollbar max-w-full">
               <button
                 onClick={() => { setSelectedModule(null); setModuleData(null); }}
                 className={`px-4 py-2 rounded-xl text-xs font-black flex items-center gap-2 transition-all ${

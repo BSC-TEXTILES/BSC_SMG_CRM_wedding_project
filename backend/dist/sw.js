@@ -5,7 +5,10 @@
  * while strictly bypassing all API requests, authentication routes, and dynamic data.
  */
 
-const CACHE_NAME = 'bsc-static-v1';
+// Bumped when the app bundle changes in a way that must not be served from an old
+// cache: `activate` deletes every cache except the current name, so the previous
+// version's hashed chunks cannot come back after a deploy.
+const CACHE_NAME = 'bsc-static-v2';
 
 const STATIC_SHELL = [
   '/',

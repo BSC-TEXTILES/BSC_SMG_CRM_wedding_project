@@ -192,7 +192,7 @@ export default function WeddingReports() {
             </div>
 
             <div className="table-frame custom-scrollbar rounded-2xl border border-[#E8D9D4]">
-              <table className="w-full text-left text-xs text-[#2B1722]">
+              <table className="w-full min-w-[850px] text-left text-xs text-[#2B1722]">
                 <thead className="bg-[#F8EDE8] text-[#4A173A] uppercase text-[10px] tracking-wider border-b border-[#E8D9D4]">
                   <tr>
                     <th className="py-3 px-4 font-black">Telecaller Name</th>
@@ -302,7 +302,7 @@ export default function WeddingReports() {
               </p>
             ) : (
               <div className="table-frame custom-scrollbar rounded-2xl border border-[#E8D9D4]">
-                <table className="w-full text-left text-xs">
+                <table className="w-full min-w-[950px] text-left text-xs">
                   <thead className="bg-[#F8EDE8] text-[#4A173A] font-black text-[11px] border-b border-[#E8D9D4]">
                     <tr>
                       <th className="py-2.5 pr-3 pl-3">When</th>

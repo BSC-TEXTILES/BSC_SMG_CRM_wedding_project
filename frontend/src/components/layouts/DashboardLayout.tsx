@@ -51,12 +51,12 @@ export default function DashboardLayout({
   }, [navigate]);
 
   return (
-    <div className="min-h-screen min-h-[100dvh] bg-[#FFF7F2] flex relative select-text w-full overflow-x-hidden">
+    <div className="h-screen h-[100dvh] max-h-screen bg-[#FFF7F2] flex relative select-text w-full max-w-full overflow-hidden">
       <ToastContainer />
 
       <Sidebar session={session} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      <div className={`flex-1 flex flex-col min-w-0 w-full transition-all duration-300 ${collapsed ? 'lg:pl-[72px]' : 'lg:pl-64'}`}>
+      <div className={`flex-1 flex flex-col min-w-0 w-full h-full max-h-full overflow-hidden transition-all duration-300 ${collapsed ? 'lg:pl-[72px]' : 'lg:pl-64'}`}>
         {!hideTopbar ? (
           <Topbar
             title={title}
@@ -82,7 +82,7 @@ export default function DashboardLayout({
           </div>
         )}
 
-        <main className="flex-1 w-full min-w-0 max-w-full overflow-y-auto">
+        <main className="flex-1 w-full min-w-0 max-w-full overflow-y-auto overflow-x-hidden custom-scrollbar focus:outline-none">
           {noPadding ? children : (
             <PageContainer maxWidth="full">
               {children}

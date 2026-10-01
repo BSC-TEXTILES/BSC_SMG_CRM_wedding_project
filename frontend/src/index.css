@@ -933,24 +933,34 @@ html, body, #root {
  */
 .table-frame {
   position: relative;
-  overflow: auto;
-  max-height: var(--table-frame-max, 62vh);
-  overscroll-behavior: contain;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: visible;
+  overscroll-behavior-x: contain;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
   scrollbar-color: #E8D9D4 transparent;
 }
 
-/* Inside a modal or drawer the parent already owns the height, so the table
-   should fill what it is given rather than re-apply a vh cap. */
+/* Explicit vertical scroll container for tables in modals, drawers, or bounded cards */
+.table-frame--scroll-y,
+.table-frame-scroll-y {
+  overflow-y: auto;
+  max-height: var(--table-frame-max, 68vh);
+}
+
+/* Inside a modal or drawer where parent owns the height */
 .table-frame--fill {
   max-height: 100%;
   min-height: 0;
+  overflow-y: auto;
 }
 
 .table-frame::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
 }
 
 .table-frame::-webkit-scrollbar-track {
@@ -1020,6 +1030,10 @@ html, body, #root {
 
 /* Wide tables are unusable if a column can shrink to nothing; the inner table
    opts in via `table-frame > table { min-width: max-content }` where needed. */
+.table-frame > table {
+  min-width: 100%;
+}
+
 .table-frame--dense > table {
   min-width: max-content;
 }

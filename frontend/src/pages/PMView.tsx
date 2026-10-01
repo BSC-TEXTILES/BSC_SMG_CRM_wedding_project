@@ -73,7 +73,7 @@ export default function PMView() {
             <div className="p-8 text-center text-gray-500 font-bold">No sourcing requests found.</div>
           ) : (
             <div className="table-frame custom-scrollbar">
-              <table className="w-full text-left text-xs font-semibold">
+              <table className="w-full min-w-[900px] text-left text-xs font-semibold">
                 <thead className="bg-primary text-white uppercase text-[10px] tracking-wider">
                   <tr>
                     <th className="p-4">Ref No</th>

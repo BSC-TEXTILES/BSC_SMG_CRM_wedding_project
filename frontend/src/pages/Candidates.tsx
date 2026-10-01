@@ -194,25 +194,14 @@ export default function CandidatesPage() {
     return p ? p.slice(0, 5) + ' XXXXX' : '—';
   };
 
-  const fileUrl = (url: string | null | undefined): string | null => {
-    if (!url) return null;
-    let clean = url.trim();
-    if (!clean) return null;
-    if (clean.startsWith('http://') || clean.startsWith('https://')) return clean;
-
-    if (clean.startsWith('uploads/')) {
-      clean = `/${clean}`;
-    }
-
-    const filename = clean.split('/').pop() || clean;
-
-    if (filename.startsWith('photo') && !clean.includes('applicants')) return `/uploads/candidate-photos/${filename}`;
-    if (filename.startsWith('resume') && !clean.includes('applicants')) return `/uploads/candidate-resumes/${filename}`;
-    if ((filename.startsWith('aadhar') || filename.startsWith('aadhaar') || filename.startsWith('pan') || filename.startsWith('document')) && !clean.includes('applicants')) return `/uploads/employee-documents/${filename}`;
-
-    if (clean.startsWith('/uploads/')) return clean;
-    return `/uploads/misc/${filename}`;
-  };
+  /**
+   * The stored path is used as the database wrote it. Rebuilding it from the file
+   * name — which this helper used to do — moved photos into whichever folder matched
+   * the prefix (`photo*` → candidate-photos), so employee pictures and any file under
+   * `applicants/<appNo>/` pointed at a location that never held them. The server
+   * resolves a stored path across its upload folders, so it only needs to be absolute.
+   */
+  const fileUrl = (url: string | null | undefined): string | null => API.fileUrl(url);
 
   const openDrawer = async (c: any) => {
     setDrawerCandidate(c);
@@ -615,7 +604,7 @@ export default function CandidatesPage() {
           {/* Candidate Table Grid */}
           <div className="card-glass p-5 space-y-4">
             <div className="table-frame custom-scrollbar">
-              <table className="w-full text-left text-xs border-collapse">
+              <table className="w-full min-w-[1000px] text-left text-xs border-collapse">
                 <thead>
                   <tr className="border-b border-accent-soft text-[10.5px] font-black uppercase text-primary tracking-wider bg-background/60">
                     <th className="py-3 px-3 text-center w-12">SL.NO</th>

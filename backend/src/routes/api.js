@@ -6,6 +6,7 @@ const db = require('../config/db');
 const upload = require('../middleware/upload');
 const { errorRes } = require('../utils/response');
 const pool = require('../config/db');
+const realtimeService = require('../services/realtimeService');
 
 const authController = require('../controllers/authController');
 const candidateController = require('../controllers/candidateController');
@@ -283,11 +284,12 @@ router.post('/cash/save', authenticate, authorizeLocationAccess(), crmController
 // ── Visual Merchandising (VM) Routes ──────────────────────────
 // Module permission is enforced here, not only by hiding buttons in the UI:
 // reads need vm_checklist/can_view, every write needs vm_checklist/can_add.
-// (Admin / Super Admin / System Administrator bypass module checks; other roles
-// are granted through the Access Control Matrix.)
-const { requireModuleAction } = require('../middleware/moduleGuard');
-const canViewVm = requireModuleAction('vm_checklist', 'can_view');
-const canWriteVm = requireModuleAction('vm_checklist', 'can_add');
+// Resolution goes through services/vmAuditAccess, which is the same source the photo
+// controller and the frontend navigation read, so the three can never disagree about
+// who inspects the floor.
+const { requireVmAction } = require('../middleware/moduleGuard');
+const canViewVm = requireVmAction('can_view');
+const canWriteVm = requireVmAction('can_add');
 
 // LITERAL paths are registered before any '/:id' path, or Express hands the
 // literal to the parameterised handler ('/vm/audits/draft' becoming audit
@@ -339,6 +341,18 @@ router.post('/vm/photos/link', authenticate, authorizeLocationAccess(), canWrite
 // ── Broadcast Routes ─────────────────────────────────────────
 router.get('/broadcasts', optionalAuthenticate, broadcastController.getBroadcasts);
 router.post('/broadcasts', authenticate, authorize('Admin', 'Super Admin'), broadcastController.createBroadcast);
+// Literal paths first: '/broadcasts/stats' would otherwise be read as broadcast id
+// "stats", and these handlers all read req.params.id.
+router.get('/broadcasts/stats', authenticate, broadcastController.getBroadcastStats);
+router.get('/broadcasts/:id', authenticate, broadcastController.getBroadcastById);
+router.put('/broadcasts/:id', authenticate, authorize('Admin', 'Super Admin'), broadcastController.updateBroadcast);
+router.patch('/broadcasts/:id', authenticate, authorize('Admin', 'Super Admin'), broadcastController.updateBroadcast);
+// A dispatched broadcast cannot be deleted, only withdrawn — this route was missing,
+// so the Cancel button in the Broadcast Center had nothing to call.
+router.patch('/broadcasts/:id/cancel', authenticate, authorize('Admin', 'Super Admin'), broadcastController.cancelBroadcast);
+router.post('/broadcasts/:id/acknowledge', authenticate, broadcastController.acknowledgeBroadcast);
+router.post('/broadcasts/:id/read', authenticate, broadcastController.markAsRead);
+router.get('/broadcasts/:id/report', authenticate, authorize('Admin', 'Super Admin'), broadcastController.getBroadcastReport);
 router.delete('/broadcasts/:id', authenticate, authorize('Admin', 'Super Admin'), broadcastController.deleteBroadcast);
 
 // ── Chat Routes (Gemini AI) ─────────────────────────────
@@ -501,12 +515,10 @@ router.post('/security/shield-toggle', authenticate, authorize('Admin', 'Super A
     }
 
     // Push the change to every connected device immediately so the Admin's
-    // toggle takes effect without waiting for the periodic re-check.
+    // toggle takes effect without waiting for the periodic re-check. This carries
+    // only the on/off policy, so it is safe for every client to receive.
     try {
-      const io = req.app && req.app.get('io');
-      if (io && typeof io.emit === 'function') {
-        io.emit('security:shield_changed', { enabled });
-      }
+      realtimeService.emitToAll('security:shield_changed', { enabled });
     } catch (pushErr) {
       /* best-effort push only */
     }
@@ -555,19 +567,17 @@ router.post('/security/log-event', optionalAuthenticate, async (req, res) => {
       ]
     );
 
-    // Push real-time event to Admin Dashboard via Socket.IO
+    // Push real-time event to the Admin Dashboard only — this payload carries another
+    // person's username, IP address and device details.
     try {
-      const io = req.app && req.app.get('io');
-      if (io && typeof io.emit === 'function') {
-        io.emit('security:event_logged', {
-          id: insertResult.insertId,
-          username,
-          action: event,
-          details: eventDetails,
-          ipAddress: req.ip || null,
-          createdAt: new Date().toISOString()
-        });
-      }
+      realtimeService.emitToAdmins('security:event_logged', {
+        id: insertResult.insertId,
+        username,
+        action: event,
+        details: eventDetails,
+        ipAddress: req.ip || null,
+        createdAt: new Date().toISOString()
+      });
     } catch (pushErr) {
       /* best-effort push */
     }
@@ -609,7 +619,9 @@ router.get('/security/events', authenticate, authorize('Admin', 'Super Admin'), 
     return res.json({ success: true, events: parsedEvents });
   } catch (err) {
     console.error('[Security events Error]', err.message);
-    return res.json({ success: true, events: [] });
+    // An empty list here reads as "nothing happened", which is the opposite of the
+    // truth when the query failed. Report the failure so the screen shows an error.
+    return errorRes(res, 'Unable to load the security event log. Please try again.', [err.message], 500);
   }
 });
 

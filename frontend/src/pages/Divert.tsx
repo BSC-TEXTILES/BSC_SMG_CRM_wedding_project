@@ -707,7 +707,7 @@ export default function Divert() {
             ) : filteredDiverts.length === 0 ? (
               <div className="p-12 text-center text-xs text-gray-500 font-bold">No sourcing divert entries found matching your query.</div>
             ) : (
-              <table className="w-full text-left text-xs border-collapse">
+              <table className="w-full min-w-[980px] text-left text-xs border-collapse">
                 <thead>
                   <tr className="border-b border-accent-soft text-[10.5px] font-black uppercase text-primary bg-background/60">
                     <th className="py-3 px-3 text-center">#</th>

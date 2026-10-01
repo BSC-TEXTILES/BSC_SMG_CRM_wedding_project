@@ -13,7 +13,8 @@ const path = require('path');
 const fs = require('fs');
 
 // Ensure upload directory exists
-const uploadDir = path.join(__dirname, '..', '..', 'uploads', 'profile-media');
+const { UPLOAD_ROOT } = require('../config/uploadPaths');
+const uploadDir = path.join(UPLOAD_ROOT, 'profile-media');
 if (!fs.existsSync(uploadDir)) {
   try {
     fs.mkdirSync(uploadDir, { recursive: true });

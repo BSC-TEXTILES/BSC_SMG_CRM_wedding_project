@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Users, UserPlus, PhoneCall, History, Calendar, Kanban, BarChart3, FileSpreadsheet, Sparkles, Archive } from 'lucide-react';
 
 interface WeddingNavProps {
@@ -11,6 +11,7 @@ interface WeddingNavProps {
 
 export default function WeddingNav({ currentPageTitle, breadcrumbs, actions, hideTitleCard = false }: WeddingNavProps) {
   const location = useLocation();
+  const navigate = useNavigate();
   const currentPath = location.pathname;
 
   const navLinks = [
@@ -54,15 +55,15 @@ export default function WeddingNav({ currentPageTitle, breadcrumbs, actions, hid
       )}
 
       {/* Responsive Wedding CRM Sub-Navigation */}
-      <div className="bg-[#FFFDFC] p-2 rounded-2xl border border-[#E8D9D4] shadow-xs">
-        {/* Mobile Dropdown View (< sm) */}
-        <div className="sm:hidden space-y-2">
+      <div className="bg-[#FFFDFC] p-2.5 rounded-2xl border border-[#E8D9D4] shadow-xs">
+        {/* Mobile View (< sm): Select Dropdown + Full Horizontal Scrollable Tab Strip */}
+        <div className="sm:hidden space-y-2.5">
           <div className="flex items-center gap-2">
-            <span className="text-[11px] font-bold text-[#6F5963] uppercase tracking-wider">Module:</span>
+            <span className="text-[11px] font-bold text-[#6F5963] uppercase tracking-wider shrink-0">Module:</span>
             <select
               value={currentPath}
               onChange={(e) => {
-                window.location.href = e.target.value;
+                navigate(e.target.value);
               }}
               className="flex-1 px-3 py-2 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl text-xs font-bold text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
             >
@@ -74,31 +75,33 @@ export default function WeddingNav({ currentPageTitle, breadcrumbs, actions, hid
             </select>
           </div>
 
-          {/* Quick Shortcuts on Mobile */}
-          <div className="grid grid-cols-4 gap-1.5 pt-1 border-t border-[#E8D9D4]">
-            {navLinks.slice(0, 4).map((link) => {
-              const Icon = link.icon;
-              const isActive = currentPath === link.href || (link.href === '/wedding-crm/dashboard' && currentPath === '/wedding-crm') || (link.href === '/wedding/customer-registration' && currentPath === '/wedding-crm/customers/new');
-              return (
-                <Link
-                  key={link.href}
-                  to={link.href}
-                  className={`flex flex-col items-center justify-center p-2 rounded-xl text-[10px] font-bold transition-all text-center ${
-                    isActive
-                      ? 'bg-[#B76E79] text-white shadow-xs font-black'
-                      : 'bg-[#FFF7F2] text-[#6F5963] hover:text-[#4A173A]'
-                  }`}
-                >
-                  <Icon className={`w-3.5 h-3.5 mb-0.5 ${isActive ? 'text-white' : 'text-[#B76E79]'}`} />
-                  <span className="truncate w-full">{link.label.split(' ')[0]}</span>
-                </Link>
-              );
-            })}
+          {/* Full Horizontal Scrollable Pill Strip on Mobile (100% of tabs accessible) */}
+          <div className="overflow-x-auto custom-scrollbar pb-1.5 pt-1 border-t border-[#E8D9D4]/70">
+            <div className="flex items-center gap-1.5 min-w-max">
+              {navLinks.map((link) => {
+                const Icon = link.icon;
+                const isActive = currentPath === link.href || (link.href === '/wedding-crm/dashboard' && currentPath === '/wedding-crm') || (link.href === '/wedding/customer-registration' && currentPath === '/wedding-crm/customers/new');
+                return (
+                  <Link
+                    key={link.href}
+                    to={link.href}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all whitespace-nowrap ${
+                      isActive
+                        ? 'bg-[#B76E79] text-white shadow-xs font-black border border-[#D89AA3]/40'
+                        : 'bg-[#FFF7F2] text-[#6F5963] hover:text-[#4A173A] hover:bg-[#F6E2E5]'
+                    }`}
+                  >
+                    <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-white' : 'text-[#B76E79]'}`} />
+                    <span>{link.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
           </div>
         </div>
 
         {/* Desktop / Tablet Horizontal Scroll Tab Strip (sm+) */}
-        <div className="hidden sm:flex items-center justify-between gap-2 overflow-x-auto scrollbar-hide max-w-full">
+        <div className="hidden sm:flex items-center justify-between gap-3 overflow-x-auto custom-scrollbar max-w-full pb-1">
           <div className="flex items-center gap-1.5 min-w-max py-0.5">
             {navLinks.map((link) => {
               const Icon = link.icon;
@@ -108,7 +111,7 @@ export default function WeddingNav({ currentPageTitle, breadcrumbs, actions, hid
                 <Link
                   key={link.href}
                   to={link.href}
-                  className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                  className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 ${
                     isActive
                       ? 'bg-[#B76E79] text-white shadow-md font-black border border-[#D89AA3]/30'
                       : 'text-[#6F5963] hover:text-[#4A173A] hover:bg-[#F6E2E5]'
@@ -122,7 +125,7 @@ export default function WeddingNav({ currentPageTitle, breadcrumbs, actions, hid
           </div>
 
           {hideTitleCard && actions && (
-            <div className="flex items-center gap-2 flex-shrink-0 pl-2 border-l border-[#E8D9D4]/60">
+            <div className="flex items-center gap-2 flex-shrink-0 pl-3 border-l border-[#E8D9D4]/60">
               {actions}
             </div>
           )}

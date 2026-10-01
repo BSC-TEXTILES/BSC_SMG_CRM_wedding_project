@@ -122,11 +122,11 @@ export default function ChangePasswordModal({
       ariaLabel="Update Password"
     >
       <div 
-        className="w-full max-w-md bg-[#FFFDFC] rounded-3xl shadow-2xl border border-[#E8D9D4] overflow-hidden"
+        className="w-full max-w-md max-h-[90vh] max-h-[90dvh] flex flex-col bg-[#FFFDFC] rounded-3xl shadow-2xl border border-[#E8D9D4] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="bg-[#4A173A] px-6 py-5 text-white flex items-center justify-between border-b border-[#B76E79]/25">
+        <div className="bg-[#4A173A] px-6 py-5 text-white flex items-center justify-between border-b border-[#B76E79]/25 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center text-[#E8C7A8] border border-[#B76E79]/30 shadow-inner">
               <KeyRound className="w-5 h-5 text-[#E8C7A8]" />
@@ -152,7 +152,7 @@ export default function ChangePasswordModal({
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 flex-1 overflow-y-auto custom-scrollbar">
           {error && (
             <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold flex items-center gap-2.5 animate-shake">
               <AlertCircle className="w-4 h-4 flex-shrink-0 text-rose-600" />

@@ -501,7 +501,7 @@ export default function SectionAllocationPage() {
             </div>
 
             <div className="table-frame custom-scrollbar">
-              <table className="w-full text-left text-xs border-collapse">
+              <table className="w-full min-w-[1000px] text-left text-xs border-collapse">
                 <thead>
                   <tr className="border-b border-accent-soft text-[10.5px] font-black uppercase text-primary tracking-wider bg-background/60">
                     <th className="py-3.5 px-3 text-center w-12">SL.NO</th>

@@ -159,6 +159,12 @@ console.log(`[Boot] PORT=${PORT} (${isSocketPort ? 'socket/passenger' : 'network
 
 const isProduction = process.env.NODE_ENV === 'production';
 
+// In development the Vite proxy points at one fixed port, so drifting to the next
+// free one makes the browser talk to a server that is not this process: every call
+// answers 503/ECONNREFUSED and it looks exactly like a crashed backend. Only the
+// production/Passenger startup may search for a free port.
+const ALLOW_PORT_FALLBACK = isProduction;
+
 // Trust first proxy (nginx/Caddy) for correct client IP, secure cookie detection, and rate limiting
 // In production behind reverse proxy, '1' trusts the first hop (the reverse proxy)
 app.set('trust proxy', isProduction ? 1 : false);
@@ -190,88 +196,28 @@ app.use(inputSanitizer);
 app.use(setCsrfCookie);
 
 // ── Static Uploads ────────────────────────────────────────────────────────────
-const primaryUploadsDir = process.env.UPLOAD_DIR || path.join(APP_ROOT, 'uploads');
-const parentUploadsDir = path.join(APP_ROOT, '..', 'uploads');
-const grandParentUploadsDir = path.join(APP_ROOT, '..', '..', 'uploads');
+// One canonical storage root. A relative UPLOAD_DIR used to resolve against
+// process.cwd(), so starting the server from a different folder wrote new files
+// into a different tree than the one existing records pointed at, and an upload
+// could succeed and still render as a broken image.
+const { UPLOAD_ROOT, LEGACY_UPLOAD_ROOTS, ensureUploadDirs, findStoredFile } = require('./src/config/uploadPaths');
 
-if (process.env.UPLOAD_DIR) {
-  console.log(`[Uploads] Using UPLOAD_DIR from environment: ${primaryUploadsDir}`);
-} else {
-  console.warn(`[Uploads] WARNING: UPLOAD_DIR not set. Falling back to: ${primaryUploadsDir}`);
-  console.warn(`[Uploads] WARNING: Files in this directory may be lost during deployments!`);
-  console.warn(`[Uploads] Set UPLOAD_DIR to a persistent path outside the app folder.`);
-}
+ensureUploadDirs();
+console.log(`[Uploads] Storage root: ${UPLOAD_ROOT}`);
 
-
-const subdirs = [
-  'applicants',
-  'candidate-resumes',
-  'candidate-photos',
-  'employee-photos',
-  'employee-documents',
-  'offer-letters',
-  'relieving-letters',
-  'experience-certificates',
-  'vm-checklist',
-  'misc'
-];
-
-[primaryUploadsDir, parentUploadsDir, grandParentUploadsDir].forEach((baseDir) => {
-  try {
-    if (fs.existsSync(baseDir)) {
-      subdirs.forEach((sub) => {
-        const subPath = path.join(baseDir, sub);
-        if (!fs.existsSync(subPath)) fs.mkdirSync(subPath, { recursive: true });
-      });
-    }
-  } catch (e) {}
+app.use('/uploads', express.static(UPLOAD_ROOT, { maxAge: '1h', etag: true }));
+// Files written before the root was pinned down are still served, read-only, so
+// no previously uploaded image or document stops displaying.
+LEGACY_UPLOAD_ROOTS.filter((dir) => fs.existsSync(dir)).forEach((dir) => {
+  app.use('/uploads', express.static(dir));
 });
-
-app.use('/uploads', express.static(primaryUploadsDir, { maxAge: '1h', etag: true }));
-if (fs.existsSync(parentUploadsDir)) {
-  app.use('/uploads', express.static(parentUploadsDir));
-}
 
 // Smart Uploads Fallback Handler (prevents 404 for photos & documents across subfolders)
 app.get(['/uploads/*', '/candidate-resumes/*', '/candidate-photos/*', '/employee-photos/*', '/employee-documents/*', '/vm-checklist/*', '/:file(*.pdf)', '/:file(*.jpg)', '/:file(*.jpeg)', '/:file(*.png)', '/:file(*.webp)', '/:file(*.doc)', '/:file(*.docx)'], (req, res, next) => {
   const reqPath = req.params[0] || req.params.file || req.path.replace(/^\//, '');
-  const fileName = path.basename(reqPath);
-  const candidateAppNo = req.query.appNo || '';
 
-  const possiblePaths = [
-    path.join(primaryUploadsDir, 'applicants', candidateAppNo, fileName),
-    path.join(primaryUploadsDir, fileName),
-    path.join(primaryUploadsDir, 'employee-photos', fileName),
-    path.join(primaryUploadsDir, 'employee-documents', fileName),
-    path.join(primaryUploadsDir, 'vm-checklist', fileName),
-    path.join(primaryUploadsDir, 'candidate-resumes', fileName),
-    path.join(primaryUploadsDir, 'candidate-photos', fileName),
-    path.join(primaryUploadsDir, 'misc', fileName),
-
-    path.join(parentUploadsDir, 'applicants', candidateAppNo, fileName),
-    path.join(parentUploadsDir, fileName),
-    path.join(parentUploadsDir, 'employee-photos', fileName),
-    path.join(parentUploadsDir, 'employee-documents', fileName),
-    path.join(parentUploadsDir, 'vm-checklist', fileName),
-    path.join(parentUploadsDir, 'candidate-resumes', fileName),
-    path.join(parentUploadsDir, 'candidate-photos', fileName),
-    path.join(parentUploadsDir, 'misc', fileName),
-    
-    path.join(grandParentUploadsDir, 'applicants', candidateAppNo, fileName),
-    path.join(grandParentUploadsDir, fileName),
-    path.join(grandParentUploadsDir, 'employee-photos', fileName),
-    path.join(grandParentUploadsDir, 'employee-documents', fileName),
-    path.join(grandParentUploadsDir, 'vm-checklist', fileName),
-    path.join(grandParentUploadsDir, 'candidate-resumes', fileName),
-    path.join(grandParentUploadsDir, 'candidate-photos', fileName),
-    path.join(grandParentUploadsDir, 'misc', fileName)
-  ];
-
-  for (const p of possiblePaths) {
-    if (fs.existsSync(p) && fs.statSync(p).isFile()) {
-      return res.sendFile(p);
-    }
-  }
+  const found = findStoredFile(reqPath, { appNo: req.query.appNo || '' });
+  if (found) return res.sendFile(found);
 
   next();
 });
@@ -796,12 +742,19 @@ if (PORT === 'passenger') {
     console.log(`  BSC HRMS running on domain socket: ${PORT}`);
     console.log(`====================================================`);
   });
+} else if (!ALLOW_PORT_FALLBACK) {
+  server.listen(PORT, () => {
+    console.log('====================================================');
+    console.log(`  BSC HRMS running on port ${PORT}`);
+    console.log(`  Health: http://localhost:${PORT}/health`);
+    console.log('====================================================');
+  });
 } else {
   scanPorts();
 }
 
 server.on('error', (err) => {
-  const canRecover = !isSocketPort && typeof PORT === 'number'
+  const canRecover = ALLOW_PORT_FALLBACK && !isSocketPort && typeof PORT === 'number'
     && (err.code === 'EADDRINUSE' || err.code === 'EACCES' || err.code === 'ENOTSUP');
 
   if (canRecover) {
@@ -815,6 +768,14 @@ server.on('error', (err) => {
   writeCrashLog(msg);
 
   if (err.code === 'ERR_SERVER_ALREADY_LISTEN') return;
+
+  if (!ALLOW_PORT_FALLBACK && err.code === 'EADDRINUSE') {
+    const blocked = `[Server] Port ${PORT} is already held by another process, so this server refused to start on a different one.\n`
+      + `[Server] The frontend proxy talks to ${PORT}; starting elsewhere would look like a dead backend (503 / ECONNREFUSED).\n`
+      + `[Server] Free the port (stop the older "node index.js") or move both: PORT=5050 with VITE_API_URL=http://localhost:5050\n`;
+    console.error(blocked);
+    writeCrashLog(blocked);
+  }
 
   process.exit(1);
 });

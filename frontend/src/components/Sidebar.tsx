@@ -361,7 +361,7 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
         </div>
 
         {/* Navigation Items */}
-        <div ref={navScrollRef} className="flex-1 overflow-y-auto px-2 py-1.5 space-y-3">
+        <div ref={navScrollRef} className="flex-1 overflow-y-auto overscroll-contain custom-scrollbar px-2 py-1.5 space-y-3">
           {['Enterprise', 'Store Operations', 'Talent', 'Daily Operations', 'Administration', 'Public Portals'].map(section => {
             // Strict RBAC rendering: only keys resolved for THIS user
             const rawItems = navItems.filter(item => item.section === section && allowed.includes(item.key));

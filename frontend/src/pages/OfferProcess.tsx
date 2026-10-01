@@ -75,19 +75,10 @@ export default function OfferProcessPage() {
 
 
   // ─── Helpers ───────────────────────────────────────────────────────────────
-  const fileUrl = (url: string | null | undefined): string | null => {
-    if (!url) return null;
-    let clean = url.trim();
-    if (!clean) return null;
-    if (clean.startsWith('http://') || clean.startsWith('https://')) return clean;
-    if (clean.startsWith('uploads/')) clean = `/${clean}`;
-    const filename = clean.split('/').pop() || clean;
-    if (filename.startsWith('photo') && !clean.includes('applicants')) return `/uploads/candidate-photos/${filename}`;
-    if (filename.startsWith('resume') && !clean.includes('applicants')) return `/uploads/candidate-resumes/${filename}`;
-    if ((filename.startsWith('aadhar') || filename.startsWith('aadhaar') || filename.startsWith('pan') || filename.startsWith('document')) && !clean.includes('applicants')) return `/uploads/employee-documents/${filename}`;
-    if (clean.startsWith('/uploads/')) return clean;
-    return `/uploads/misc/${filename}`;
-  };
+  // Same rule as everywhere else: use the stored path, only made absolute. The
+  // filename-prefix guessing this replaced moved files into folders that never held
+  // them, and the server already resolves a stored path across its upload folders.
+  const fileUrl = (url: string | null | undefined): string | null => API.fileUrl(url);
 
   const fmtINR = (n: number) => `₹${n.toLocaleString('en-IN')}`;
 
@@ -560,7 +551,7 @@ export default function OfferProcessPage() {
               {/* Desktop High-Fidelity Table */}
               <div className="hidden md:block bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden animate-fade-in">
                 <div className="table-frame custom-scrollbar">
-                  <table className="w-full text-left text-xs border-collapse">
+                  <table className="w-full min-w-[900px] text-left text-xs border-collapse">
                     <thead>
                       <tr className="border-b border-slate-200 bg-slate-50/80 text-[10.5px] font-black uppercase text-slate-500 tracking-wider">
                         <th className="py-3.5 px-3 text-center w-12">SL.NO</th>

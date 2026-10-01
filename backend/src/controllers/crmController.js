@@ -587,22 +587,21 @@ exports.upsertFootfall = async (req, res) => {
 
     const saved = savedRows[0] || null;
 
-    // Emit Socket.IO push event for zero-latency screen updates
-    const io = req.app.get('io');
-    if (io) {
-      io.emit('footfall:updated', {
-        entry_id: entryId,
-        location_id: locationId,
-        entryDate: targetDate,
-        slotHour: targetHour,
-        visitors: newVisitors,
-        remarks: saved?.remarks ?? targetRemarks,
-        submittedBy: actorName,
-        source: saved?.entry_source || source,
-        updatedBy: actorName,
-        action: before ? 'updated' : 'created'
-      });
-    }
+    // Push the saved entry to this store's screens (and to global admins). This
+    // used to be a bare io.emit, so a footfall entry in one store refreshed the
+    // pages of every other store as well.
+    realtimeService.emitFootfallUpdate({
+      entry_id: entryId,
+      location_id: locationId,
+      entryDate: targetDate,
+      slotHour: targetHour,
+      visitors: newVisitors,
+      remarks: saved?.remarks ?? targetRemarks,
+      submittedBy: actorName,
+      source: saved?.entry_source || source,
+      updatedBy: actorName,
+      action: before ? 'updated' : 'created'
+    });
     realtimeService.emitEntityChange({
       entity: 'FOOTFALL',
       action: 'UPDATE',
@@ -753,19 +752,16 @@ exports.updateFootfallEntry = async (req, res) => {
     await conn.commit();
 
     const [after] = await conn.query('SELECT * FROM FootfallEntries WHERE id = ?', [id]);
-    const io = req.app.get('io');
-    if (io) {
-      io.emit('footfall:updated', {
-        entry_id: id,
-        location_id: after[0]?.location_id,
-        entryDate: after[0]?.entryDate,
-        slotHour: after[0]?.slotHour,
-        visitors: after[0]?.visitors,
-        source: after[0]?.entry_source,
-        updatedBy: actor?.fullName || 'Staff',
-        action: 'corrected'
-      });
-    }
+    realtimeService.emitFootfallUpdate({
+      entry_id: id,
+      location_id: after[0]?.location_id,
+      entryDate: after[0]?.entryDate,
+      slotHour: after[0]?.slotHour,
+      visitors: after[0]?.visitors,
+      source: after[0]?.entry_source,
+      updatedBy: actor?.fullName || 'Staff',
+      action: 'corrected'
+    });
     realtimeService.emitEntityChange({ entity: 'FOOTFALL', action: 'UPDATE', locationId: after[0]?.location_id, meta: { corrected: true, id } });
 
     return res.json({
@@ -1111,20 +1107,19 @@ exports.submitFeedback = async (req, res) => {
       console.warn('[submitFeedback Scan Link Notice]:', scanUpdateErr.message);
     }
 
-    const io = req.app.get('io');
-    if (io) {
-      io.emit('feedback:submitted', {
-        id,
-        location_id: targetLocId,
-        locationCode: targetLocCode,
-        locationName: targetLocName,
-        storeLocation: targetStoreName,
-        entryDate,
-        customerName: finalCustName,
-        isNegative: !!isNegative,
-        qrCodeId: qrCodeId || null
-      });
-    }
+    // Scope the push to the store the feedback belongs to (plus global admins).
+    // `feedback:received` is the name the live TV board listens for.
+    realtimeService.emitToLocationRooms(['feedback:submitted', 'feedback:received'], {
+      id,
+      location_id: targetLocId,
+      locationCode: targetLocCode,
+      locationName: targetLocName,
+      storeLocation: targetStoreName,
+      entryDate,
+      customerName: finalCustName,
+      isNegative: !!isNegative,
+      qrCodeId: qrCodeId || null
+    });
 
     if (isNegative) {
       const cqId = `cq_${id}`;
@@ -1896,16 +1891,16 @@ exports.createDivert = async (req, res) => {
       VALUES (?, ?, 'open', 'Sourcing divert raised by staff', ?, 'Staff')
     `, [updateId, id, clampToColumn(creatorName, 'DivertUpdates', 'actorId') || 'Staff']);
 
-    const io = req.app.get('io');
-    if (io) {
-      io.emit('divert:created', {
-        id,
-        productWanted: product,
-        quantity: qty,
-        createdBy: creatorName,
-        message: `URGENT DIVERT: New stock request for ${product} (Qty: ${qty}) created by ${creatorName}`
-      });
-    }
+    // Diverts are raised for one store's sales floor, so only that store's screens
+    // are woken (and global admins).
+    realtimeService.emitToLocationRooms(['divert:created', 'divert:create'], {
+      id,
+      location_id: locationId,
+      productWanted: product,
+      quantity: qty,
+      createdBy: creatorName,
+      message: `URGENT DIVERT: New stock request for ${product} (Qty: ${qty}) created by ${creatorName}`
+    }, locationId);
 
     return res.json({ success: true, message: 'Divert created successfully', id });
   } catch (err) {

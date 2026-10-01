@@ -47,6 +47,7 @@ import ReviewStep from './vm/ReviewStep';
 import HistoryStep from './vm/HistoryStep';
 import PhotoLightbox from './vm/PhotoLightbox';
 import { useVmAuditFlow } from './vm/useVmAuditFlow';
+import { VM_SHIFTS } from './vm/vmTypes';
 import type { VmPhoto } from './vm/vmTypes';
 import {
   VM_FLOW_STEPS,
@@ -151,7 +152,9 @@ export default function VmChecklist() {
     floor: 'All',
     section: 'All',
     date: '',
-    inspector: 'All'
+    inspector: 'All',
+    shift: 'All',
+    minScore: ''
   });
   const [galleryPhotos, setGalleryPhotos] = useState<VmPhoto[]>([]);
   const [galleryLoading, setGalleryLoading] = useState(false);
@@ -171,6 +174,9 @@ export default function VmChecklist() {
         section?: string;
         date?: string;
         inspector?: string;
+        shift?: string;
+        minScore?: number;
+        maxScore?: number;
         limit?: number;
       } = { limit: 200 };
       if (galleryFilters.locationId) params.locationId = galleryFilters.locationId;
@@ -178,6 +184,11 @@ export default function VmChecklist() {
       if (galleryFilters.section !== 'All') params.section = galleryFilters.section;
       if (galleryFilters.date) params.date = galleryFilters.date;
       if (galleryFilters.inspector !== 'All') params.inspector = galleryFilters.inspector;
+      if (galleryFilters.shift !== 'All') params.shift = galleryFilters.shift;
+      // "Below 50%" is a ceiling, not a floor, so it goes to maxScore instead of
+      // being smuggled through minScore as a range string the server cannot parse.
+      if (galleryFilters.minScore === 'below50') params.maxScore = 49;
+      else if (galleryFilters.minScore) params.minScore = Number(galleryFilters.minScore);
 
       const res = await API.getVmPhotos(params);
       if (seq !== gallerySeqRef.current) return;
@@ -660,7 +671,7 @@ export default function VmChecklist() {
                   <Filter className="w-3.5 h-3.5 text-[#B76E79]" />
                   <span>Filters</span>
                 </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5">
                   {(isAdmin || isManager) && (
                     <label className="block">
                       <span className={GALLERY_LABEL}>Store</span>
@@ -715,6 +726,35 @@ export default function VmChecklist() {
                       className={GALLERY_CONTROL}
                     />
                   </label>
+                  <label className="block">
+                    <span className={GALLERY_LABEL}>Audit shift</span>
+                    <select
+                      value={galleryFilters.shift}
+                      onChange={(e) => setGalleryFilters((p) => ({ ...p, shift: e.target.value }))}
+                      className={GALLERY_CONTROL}
+                    >
+                      <option value="All">All shifts</option>
+                      {VM_SHIFTS.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="block">
+                    <span className={GALLERY_LABEL}>Audit score</span>
+                    <select
+                      value={galleryFilters.minScore}
+                      onChange={(e) => setGalleryFilters((p) => ({ ...p, minScore: e.target.value }))}
+                      className={GALLERY_CONTROL}
+                    >
+                      <option value="">Any score</option>
+                      <option value="90">90% and above</option>
+                      <option value="80">80% and above</option>
+                      <option value="50">50% and above</option>
+                      <option value="below50">Below 50%</option>
+                    </select>
+                  </label>
                   <div className="flex items-end gap-2">
                     <label className="block flex-1 min-w-0">
                       <span className={GALLERY_LABEL}>Inspector</span>
@@ -733,7 +773,7 @@ export default function VmChecklist() {
                     </label>
                     <button
                       type="button"
-                      onClick={() => setGalleryFilters({ locationId: '', floor: 'All', section: 'All', date: '', inspector: 'All' })}
+                      onClick={() => setGalleryFilters({ locationId: '', floor: 'All', section: 'All', date: '', inspector: 'All', shift: 'All', minScore: '' })}
                       className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2.5 rounded-2xl border border-[#E8D9D4] bg-white text-[11px] font-black uppercase tracking-wider text-[#4A173A] hover:bg-[#FFF7F2] transition-colors cursor-pointer"
                     >
                       <RotateCcw className="w-3.5 h-3.5 text-[#B76E79]" />

@@ -47,11 +47,11 @@ const ROLE_DEFAULT_MODULES = {
   'Manager': ['dashboard', 'wedding_crm', 'wedding_registration', 'wedding_operations', 'telecaller_desk', 'telecaller_dashboard',
               'footfall', 'feedback_collection', 'feedback_list', 'feedback_qr',
               'divert', 'candidates', 'offer', 'openings', 'employees', 'dept_hiring', 'section_allocation',
-              'broadcast', 'daily_mcheck', 'mcheck_reports', 'mcheck_history'],
+              'broadcast', 'daily_mcheck', 'mcheck_reports', 'mcheck_history', 'vm_checklist', 'vm_dashboard'],
   'Floor Manager': ['dashboard', 'wedding_crm', 'wedding_registration', 'wedding_operations', 'telecaller_desk', 'telecaller_dashboard',
                     'footfall', 'feedback_collection', 'feedback_list', 'feedback_qr',
                     'divert', 'candidates', 'offer', 'openings', 'employees', 'dept_hiring', 'section_allocation',
-                    'broadcast', 'daily_mcheck', 'mcheck_reports', 'mcheck_history'],
+                    'broadcast', 'daily_mcheck', 'mcheck_reports', 'mcheck_history', 'vm_checklist', 'vm_dashboard'],
   'Team Lead': ['wedding_crm', 'dashboard', 'wedding_registration', 'employees', 'section_allocation', 'broadcast'],
   'Wedding Collection Manager': ['wedding_crm', 'wedding_operations', 'dashboard', 'wedding_registration', 'footfall', 'divert', 'broadcast'],
   'Data Analyst': ['wedding_crm', 'wedding_operations', 'dashboard', 'mcheck_reports', 'regional_analytics'],
@@ -59,7 +59,7 @@ const ROLE_DEFAULT_MODULES = {
   'VM Extension Telecaller': ['vm_checklist', 'vm_dashboard', 'wedding_crm', 'telecaller_desk', 'telecaller_dashboard', 'wedding_registration', 'dashboard', 'footfall', 'broadcast'],
   'VM': ['vm_checklist', 'vm_dashboard', 'dashboard', 'footfall', 'broadcast'],
   'CRM Executive': ['wedding_crm', 'telecaller_desk', 'telecaller_dashboard', 'wedding_registration', 'dashboard', 'footfall'],
-  'CRM Manager': ['wedding_crm', 'telecaller_desk', 'telecaller_dashboard', 'wedding_registration', 'wedding_operations', 'dashboard', 'footfall', 'broadcast'],
+  'CRM Manager': ['wedding_crm', 'telecaller_desk', 'telecaller_dashboard', 'wedding_registration', 'wedding_operations', 'dashboard', 'footfall', 'broadcast', 'vm_checklist', 'vm_dashboard'],
   'Recruiter': ['dashboard', 'wedding_crm', 'candidates', 'broadcast', 'candidate_apply'],
   'Interviewer': ['candidates'],
   'Employee': ['dashboard', 'wedding_crm', 'wedding_registration'],
@@ -98,7 +98,13 @@ function resolveRoleKey(role) {
   const normalized = normalizeRole(role);
   const exact = Object.keys(ROLE_DEFAULT_MODULES).find(k => normalizeRole(k) === normalized);
   if (exact) return exact;
-  return ROLE_ALIASES[normalized] || null;
+  if (ROLE_ALIASES[normalized]) return ROLE_ALIASES[normalized];
+  // A store may be given any spelling of the merchandising job title ('VM Auditor',
+  // 'Senior VM', 'Merchandising Executive'). Matching only exact names locked those
+  // accounts out of the checklist they are employed to carry out.
+  if (normalized.split(' ').includes('vm')) return 'VM';
+  if (normalized.includes('merchandis')) return 'VM';
+  return null;
 }
 
 /** Exact-role lookup (used by seeding, which must never guess a role). */
