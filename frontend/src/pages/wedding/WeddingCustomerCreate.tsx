@@ -77,7 +77,17 @@ export default function WeddingCustomerCreate() {
       API.getLocations().catch(() => ({ locations: [] })),
       API.getWeddingTelecallers().catch(() => ({ telecallers: [] }))
     ]).then(([locsRes, callersRes]) => {
-      if (locsRes?.locations) setLocations(locsRes.locations);
+      const locList = Array.isArray(locsRes?.locations) ? locsRes.locations : [];
+      if (locList.length > 0) {
+        setLocations(locList);
+        setForm((prev) => {
+          if (!prev.location_id) {
+            const defaultLoc = sess?.locationId ? String(sess.locationId) : String(locList[0].id);
+            return { ...prev, location_id: defaultLoc };
+          }
+          return prev;
+        });
+      }
       if (callersRes?.telecallers) setTelecallers(callersRes.telecallers);
     });
   }, [navigate]);
@@ -385,7 +395,7 @@ export default function WeddingCustomerCreate() {
                     <option value="">-- Choose Store --</option>
                     {(Array.isArray(locations) ? locations : []).map((loc) => (
                       <option key={loc.id} value={loc.id}>
-                        📍 {loc.name}
+                        📍 {loc.store_name || loc.location_name || loc.name || `Store ${loc.id}`}
                       </option>
                     ))}
                   </select>

@@ -73,11 +73,11 @@ const DEFAULT_QUESTIONS = [
  * its wording are unchanged, only how far along it is communicated.
  */
 const STEPS = [
-  { short: 'Store & Contact', name: 'Store & Customer Details' },
-  { short: 'Visit Experience', name: 'Overall Shopping Experience' },
-  { short: 'Service & Staff', name: 'Staff Service & Hospitality' },
-  { short: 'Products & Store', name: 'Collection & Ambience' },
-  { short: 'Final Feedback', name: 'Review & Final Comments' }
+  { short: 'Store', name: 'Store & Customer Details' },
+  { short: 'Visit', name: 'Overall Shopping Experience' },
+  { short: 'Service', name: 'Staff Service & Hospitality' },
+  { short: 'Products', name: 'Collection & Ambience' },
+  { short: 'Review', name: 'Review & Final Comments' }
 ];
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;

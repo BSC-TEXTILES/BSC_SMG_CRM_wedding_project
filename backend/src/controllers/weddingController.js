@@ -742,7 +742,12 @@ async function ensureTables() {
       "ALTER TABLE wedding_customers ADD COLUMN last_contacted_by VARCHAR(150) NULL",
       "ALTER TABLE wedding_customers ADD COLUMN last_contacted_by_user_id INT NULL",
       "ALTER TABLE wedding_customers ADD COLUMN last_updated_by VARCHAR(150) NULL",
-      "ALTER TABLE wedding_customers ADD COLUMN last_updated_by_user_id INT NULL"
+      "ALTER TABLE wedding_customers ADD COLUMN last_updated_by_user_id INT NULL",
+      "ALTER TABLE wedding_customers ADD COLUMN created_by VARCHAR(150) NULL",
+      "ALTER TABLE wedding_customers ADD COLUMN created_by_user_id INT NULL",
+      "ALTER TABLE wedding_customers ADD COLUMN assigned_telecaller_id INT NULL",
+      "ALTER TABLE wedding_customers MODIFY COLUMN total_calls_count INT NOT NULL DEFAULT 0",
+      "ALTER TABLE wedding_customers MODIFY COLUMN follow_up_date DATE NULL"
     ];
     for (const sql of weddingCols) {
       try { await pool.query(sql); } catch(e) { /* column already exists */ }
@@ -1371,6 +1376,9 @@ class WeddingController {
         // Global admin can specify location or defaults to 2 (Davanagere)
         locationId = requestedLocationId ? parseInt(requestedLocationId, 10) : 2;
       }
+      if (!locationId || isNaN(locationId) || locationId <= 0) {
+        locationId = 2;
+      }
 
       // Fetch location code for code generation
       const [locRows] = await pool.query(`SELECT location_code FROM locations WHERE id = ?`, [locationId]);
@@ -1421,95 +1429,152 @@ class WeddingController {
       }
 
       // Generate standardized code: BSC-WED-{LOC}-{YEAR}-{NNNNNN}
-      // 6-digit sequence matching the wedding_registrations format.
-      // Collision-proof: seed from the true MAX across both customer-code
-      // formats (reading a single "highest id" row is wrong once the newest
-      // row belongs to the other format) and advance until the candidate is free.
       const customerCode = await allocateCustomerCode(pool, locCode, 'current');
       if (!customerCode) {
         return errorRes(res, 'Unable to allocate a unique registration ID. Please try again.', [], 500);
       }
 
-      const [insertResult] = await pool.query(`
-        INSERT INTO wedding_customers (
-          customer_code,
-          location_id,
-          customer_name,
-          mobile_number,
-          alternate_mobile,
+      let newId;
+      try {
+        const [insertResult] = await pool.query(`
+          INSERT INTO wedding_customers (
+            customer_code,
+            location_id,
+            customer_name,
+            mobile_number,
+            alternate_mobile,
+            email,
+            wedding_date,
+            expected_shopping_date,
+            preferred_shopping_category,
+            estimated_family_size,
+            assigned_telecaller,
+            assigned_telecaller_id,
+            follow_up_date,
+            preferred_call_time,
+            customer_notes,
+            budget,
+            lead_source,
+            priority,
+            customer_status,
+            call_status,
+            total_calls_count,
+            created_by,
+            created_by_user_id
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'New', 'Pending', 0, ?, ?)
+        `, [
+          customerCode,
+          locationId,
+          customerName,
+          mobileNumber,
+          alternateMobile,
           email,
-          wedding_date,
-          expected_shopping_date,
-          preferred_shopping_category,
-          estimated_family_size,
-          assigned_telecaller,
-          assigned_telecaller_id,
-          follow_up_date,
-          preferred_call_time,
-          customer_notes,
+          weddingDate,
+          expectedShoppingDate || null,
+          preferredCategory,
+          estimatedFamilySize,
+          assignedTelecaller,
+          assignedTelecallerId,
+          followUpDate,
+          preferredCallTime,
+          encryptField(customerNotes),
           budget,
-          lead_source,
+          leadSource,
           priority,
-          customer_status,
-          call_status,
-          created_by,
-          created_by_user_id
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'New', 'Pending', ?, ?)
-      `, [
-        customerCode,
-        locationId,
-        customerName,
-        mobileNumber,
-        alternateMobile,
-        email,
-        weddingDate,
-        expectedShoppingDate || null,
-        preferredCategory,
-        estimatedFamilySize,
-        assignedTelecaller,
-        assignedTelecallerId,
-        followUpDate,
-        preferredCallTime,
-        encryptField(customerNotes),
-        budget,
-        leadSource,
-        priority,
-        req.user?.fullName || 'Staff',
-        req.user?.id || null
-      ]);
+          req.user?.fullName || 'Staff',
+          req.user?.id || null
+        ]);
+        newId = insertResult.insertId;
+      } catch (insertErr) {
+        console.warn('[WeddingController.createCustomer] Primary insert failed, falling back to core columns:', insertErr.message);
+        const [fallbackResult] = await pool.query(`
+          INSERT INTO wedding_customers (
+            customer_code,
+            location_id,
+            customer_name,
+            mobile_number,
+            email,
+            wedding_date,
+            expected_shopping_date,
+            preferred_shopping_category,
+            estimated_family_size,
+            assigned_telecaller,
+            follow_up_date,
+            preferred_call_time,
+            customer_notes,
+            customer_status,
+            call_status,
+            total_calls_count
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'New', 'Pending', 0)
+        `, [
+          customerCode,
+          locationId,
+          customerName,
+          mobileNumber,
+          email,
+          weddingDate,
+          expectedShoppingDate || null,
+          preferredCategory,
+          estimatedFamilySize,
+          assignedTelecaller,
+          followUpDate,
+          preferredCallTime,
+          encryptField(customerNotes)
+        ]);
+        newId = fallbackResult.insertId;
 
-      const newId = insertResult.insertId;
+        // Progressively apply optional fields if columns exist
+        if (budget) pool.query('UPDATE wedding_customers SET budget = ? WHERE id = ?', [budget, newId]).catch(() => {});
+        if (leadSource) pool.query('UPDATE wedding_customers SET lead_source = ? WHERE id = ?', [leadSource, newId]).catch(() => {});
+        if (priority) pool.query('UPDATE wedding_customers SET priority = ? WHERE id = ?', [priority, newId]).catch(() => {});
+        if (alternateMobile) pool.query('UPDATE wedding_customers SET alternate_mobile = ? WHERE id = ?', [alternateMobile, newId]).catch(() => {});
+        if (assignedTelecallerId) pool.query('UPDATE wedding_customers SET assigned_telecaller_id = ? WHERE id = ?', [assignedTelecallerId, newId]).catch(() => {});
+      }
 
       // Repeat customer: the new journey points back at the archived original so
       // both stay separately traceable. The previous record is never modified.
       if (forceNew && dup && dup.length > 0) {
-        await pool.query(`UPDATE wedding_customers SET previous_customer_id = ? WHERE id = ?`, [dup[0].id, newId]);
+        try {
+          await pool.query(`UPDATE wedding_customers SET previous_customer_id = ? WHERE id = ?`, [dup[0].id, newId]);
+          await pool.query(`
+            INSERT INTO wedding_audit_logs (customer_id, location_id, user_name, action, details)
+            VALUES (?, ?, ?, 'New Journey Linked', ?)
+          `, [
+            newId,
+            locationId,
+            req.user?.fullName || 'Staff',
+            `New wedding journey linked to previous customer ${dup[0].customer_name} (${dup[0].customer_code}). Previous record preserved unchanged.`
+          ]);
+        } catch (_linkErr) {
+          console.warn('[WeddingController.createCustomer] Previous link non-fatal warning:', _linkErr.message);
+        }
+      }
+
+      // Audit Log (guarded non-fatal)
+      try {
         await pool.query(`
           INSERT INTO wedding_audit_logs (customer_id, location_id, user_name, action, details)
-          VALUES (?, ?, ?, 'New Journey Linked', ?)
+          VALUES (?, ?, ?, 'Customer Added', ?)
         `, [
           newId,
           locationId,
           req.user?.fullName || 'Staff',
-          `New wedding journey linked to previous customer ${dup[0].customer_name} (${dup[0].customer_code}). Previous record preserved unchanged.`
+          `Created wedding customer ${customerName} (${customerCode}). Expected shopping: ${expectedShoppingDate || 'N/A'}, Follow-up: ${followUpDate}`
         ]);
+      } catch (_auditErr) {
+        console.warn('[WeddingController.createCustomer] Audit log non-fatal warning:', _auditErr.message);
       }
 
-      // Audit Log
-      await pool.query(`
-        INSERT INTO wedding_audit_logs (customer_id, location_id, user_name, action, details)
-        VALUES (?, ?, ?, 'Customer Added', ?)
-      `, [
-        newId,
-        locationId,
-        req.user?.fullName || 'Staff',
-        `Created wedding customer ${customerName} (${customerCode}). Expected shopping: ${expectedShoppingDate}, Follow-up: ${followUpDate}`
-      ]);
+      // Cache & Bloom Filter (guarded non-fatal)
+      try {
+        await bfAdd('wedding_customers_bf', newId.toString());
+        await delCachePattern('app:prod:wedding:dashboard:*');
+      } catch (_cacheErr) {}
 
-      await bfAdd('wedding_customers_bf', newId.toString());
-      await delCachePattern('app:prod:wedding:dashboard:*');
-
-      realtimeService.emitWeddingChange('CREATE', { id: newId, customer_code: customerCode, customer_name: customerName }, locationId);
+      // Realtime event emit (guarded non-fatal)
+      try {
+        realtimeService.emitWeddingChange('CREATE', { id: newId, customer_code: customerCode, customer_name: customerName }, locationId);
+      } catch (_rtErr) {}
 
       return successRes(res, {
         id: newId,
@@ -1524,7 +1589,7 @@ class WeddingController {
       }, 'Customer created successfully.', 201);
     } catch (err) {
       console.error('[WeddingController.createCustomer Error]', err);
-      return errorRes(res, 'Failed to add wedding customer', [err.message], 500);
+      return errorRes(res, 'Failed to add wedding customer. ' + (err.message || ''), [err.message], 500);
     }
   }
 
