@@ -165,24 +165,24 @@ export default function CreateFloorModal({
       }}
     >
       <div
-        className="relative w-full max-w-2xl max-h-[90vh] flex flex-col rounded-3xl bg-[#FFFDFC] border border-[#E8D9D4] shadow-2xl overflow-hidden"
+        className="relative w-full max-w-2xl max-h-[90vh] flex flex-col rounded-3xl bg-[#FFFFFF] border border-[#E1DDD3] shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#E8D9D4] bg-gradient-to-r from-[#FFF7F2] to-white">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#E1DDD3] bg-gradient-to-r from-[#EDF3F0] to-white">
           <div className="flex items-center gap-3">
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-[#4A173A] text-white shadow-sm">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-[#123C35] text-white shadow-sm">
               <Building2 className="w-5 h-5" />
             </span>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-[18px] font-black text-[#4A173A]">Create New Store Floor</h2>
-                <span className="inline-flex items-center gap-1 rounded-full border border-[#4A173A]/20 bg-[#4A173A]/10 px-2 py-0.5 text-[10px] font-black uppercase text-[#4A173A]">
-                  <ShieldCheck className="w-3 h-3 text-[#4A173A]" />
+                <h2 className="text-[18px] font-black text-[#123C35]">Create New Store Floor</h2>
+                <span className="inline-flex items-center gap-1 rounded-full border border-[#123C35]/20 bg-[#123C35]/10 px-2 py-0.5 text-[10px] font-black uppercase text-[#123C35]">
+                  <ShieldCheck className="w-3 h-3 text-[#123C35]" />
                   Admin Only
                 </span>
               </div>
-              <p className="text-[12px] font-semibold text-[#6F5963]">
+              <p className="text-[12px] font-semibold text-[#65716C]">
                 Add a new floor level and assign showroom merchandising sections.
               </p>
             </div>
@@ -191,7 +191,7 @@ export default function CreateFloorModal({
             type="button"
             onClick={onClose}
             disabled={loading}
-            className="rounded-xl p-2 text-[#6F5963] hover:bg-[#FFF7F2] hover:text-[#4A173A] transition-colors"
+            className="rounded-xl p-2 text-[#65716C] hover:bg-[#EDF3F0] hover:text-[#123C35] transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -209,13 +209,13 @@ export default function CreateFloorModal({
           {/* Location / Store Selector */}
           <div>
             <label className={`${vmLabel} block mb-1.5 flex items-center gap-1.5`}>
-              <MapPin className="w-3.5 h-3.5 text-[#B76E79]" />
+              <MapPin className="w-3.5 h-3.5 text-[#C9A45C]" />
               Store Showroom Location
             </label>
             <select
               value={selectedLocationId}
               onChange={(e) => setSelectedLocationId(e.target.value)}
-              className="w-full rounded-xl border border-[#E8D9D4] bg-white px-3.5 py-2.5 text-[13px] font-bold text-[#4A173A] focus:border-[#B76E79] focus:outline-none focus:ring-2 focus:ring-[#B76E79]/20"
+              className="w-full rounded-xl border border-[#E1DDD3] bg-white px-3.5 py-2.5 text-[13px] font-bold text-[#123C35] focus:border-[#C9A45C] focus:outline-none focus:ring-2 focus:ring-[#C9A45C]/20"
             >
               {locations.length > 0 ? (
                 locations.map((loc) => (
@@ -232,7 +232,7 @@ export default function CreateFloorModal({
           {/* Quick presets row */}
           <div>
             <label className={`${vmLabel} block mb-1.5 flex items-center gap-1.5`}>
-              <Sparkles className="w-3.5 h-3.5 text-[#B76E79]" />
+              <Sparkles className="w-3.5 h-3.5 text-[#C9A45C]" />
               Quick Floor Presets
             </label>
             <div className="flex flex-wrap gap-1.5">
@@ -243,8 +243,8 @@ export default function CreateFloorModal({
                   onClick={() => handleApplyPreset(p)}
                   className={`rounded-xl px-2.5 py-1 text-[11px] font-bold transition-all ${
                     floorName === p.name
-                      ? 'bg-[#4A173A] text-white shadow-sm'
-                      : 'border border-[#E8D9D4] bg-[#FFF7F2] text-[#6F5963] hover:border-[#B76E79] hover:text-[#4A173A]'
+                      ? 'bg-[#123C35] text-white shadow-sm'
+                      : 'border border-[#E1DDD3] bg-[#EDF3F0] text-[#65716C] hover:border-[#C9A45C] hover:text-[#123C35]'
                   }`}
                 >
                   {p.name} ({p.code})
@@ -265,7 +265,7 @@ export default function CreateFloorModal({
                 value={floorName}
                 onChange={(e) => setFloorName(e.target.value)}
                 placeholder="e.g. Ground Floor, Fourth Floor"
-                className="w-full rounded-xl border border-[#E8D9D4] bg-white px-3.5 py-2.5 text-[13px] font-bold text-[#4A173A] placeholder-[#6F5963]/50 focus:border-[#B76E79] focus:outline-none focus:ring-2 focus:ring-[#B76E79]/20"
+                className="w-full rounded-xl border border-[#E1DDD3] bg-white px-3.5 py-2.5 text-[13px] font-bold text-[#123C35] placeholder-[#65716C]/50 focus:border-[#C9A45C] focus:outline-none focus:ring-2 focus:ring-[#C9A45C]/20"
               />
             </div>
 
@@ -276,7 +276,7 @@ export default function CreateFloorModal({
                 value={floorCode}
                 onChange={(e) => setFloorCode(e.target.value)}
                 placeholder="e.g. GF, 4F, MEZZ"
-                className="w-full rounded-xl border border-[#E8D9D4] bg-white px-3.5 py-2.5 text-[13px] font-bold text-[#4A173A] placeholder-[#6F5963]/50 focus:border-[#B76E79] focus:outline-none focus:ring-2 focus:ring-[#B76E79]/20 uppercase"
+                className="w-full rounded-xl border border-[#E1DDD3] bg-white px-3.5 py-2.5 text-[13px] font-bold text-[#123C35] placeholder-[#65716C]/50 focus:border-[#C9A45C] focus:outline-none focus:ring-2 focus:ring-[#C9A45C]/20 uppercase"
               />
             </div>
           </div>
@@ -289,23 +289,23 @@ export default function CreateFloorModal({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="e.g. Bridal Sarees, Silk Galleria & High-Value Collections"
-              className="w-full rounded-xl border border-[#E8D9D4] bg-white px-3.5 py-2 text-[13px] font-semibold text-[#4A173A] placeholder-[#6F5963]/50 focus:border-[#B76E79] focus:outline-none focus:ring-2 focus:ring-[#B76E79]/20"
+              className="w-full rounded-xl border border-[#E1DDD3] bg-white px-3.5 py-2 text-[13px] font-semibold text-[#123C35] placeholder-[#65716C]/50 focus:border-[#C9A45C] focus:outline-none focus:ring-2 focus:ring-[#C9A45C]/20"
             />
           </div>
 
           {/* Sections Configuration */}
-          <div className="rounded-2xl border border-[#E8D9D4] bg-[#FFF7F2] p-4 space-y-3">
+          <div className="rounded-2xl border border-[#E1DDD3] bg-[#EDF3F0] p-4 space-y-3">
             <div className="flex items-center justify-between">
               <div>
-                <label className={`${vmLabel} block flex items-center gap-1.5 text-[#4A173A]`}>
-                  <Layers className="w-3.5 h-3.5 text-[#B76E79]" />
+                <label className={`${vmLabel} block flex items-center gap-1.5 text-[#123C35]`}>
+                  <Layers className="w-3.5 h-3.5 text-[#C9A45C]" />
                   Store Sections on this Floor <span className="text-red-500">*</span>
                 </label>
-                <p className="text-[11px] font-semibold text-[#6F5963]">
+                <p className="text-[11px] font-semibold text-[#65716C]">
                   Checklists and photo audits are performed per section.
                 </p>
               </div>
-              <span className="rounded-full bg-white border border-[#E8D9D4] px-2.5 py-0.5 text-[11px] font-black text-[#4A173A]">
+              <span className="rounded-full bg-white border border-[#E1DDD3] px-2.5 py-0.5 text-[11px] font-black text-[#123C35]">
                 {sections.length} section{sections.length === 1 ? '' : 's'}
               </span>
             </div>
@@ -323,12 +323,12 @@ export default function CreateFloorModal({
                   }
                 }}
                 placeholder="Type section name (e.g. Bridal Studio) and press Enter"
-                className="flex-1 rounded-xl border border-[#E8D9D4] bg-white px-3.5 py-2 text-[13px] font-bold text-[#4A173A] placeholder-[#6F5963]/50 focus:border-[#B76E79] focus:outline-none focus:ring-2 focus:ring-[#B76E79]/20"
+                className="flex-1 rounded-xl border border-[#E1DDD3] bg-white px-3.5 py-2 text-[13px] font-bold text-[#123C35] placeholder-[#65716C]/50 focus:border-[#C9A45C] focus:outline-none focus:ring-2 focus:ring-[#C9A45C]/20"
               />
               <button
                 type="button"
                 onClick={() => handleAddSection()}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-[#4A173A] px-3.5 py-2 text-[12px] font-bold text-white hover:bg-[#6A2853] transition-colors"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-[#123C35] px-3.5 py-2 text-[12px] font-bold text-white hover:bg-[#082821] transition-colors"
               >
                 <Plus className="w-4 h-4" />
                 <span>Add</span>
@@ -337,7 +337,7 @@ export default function CreateFloorModal({
 
             {/* Popular suggestions */}
             <div>
-              <p className="text-[10px] font-black uppercase tracking-wider text-[#6F5963] mb-1.5">
+              <p className="text-[10px] font-black uppercase tracking-wider text-[#65716C] mb-1.5">
                 Popular Section Presets:
               </p>
               <div className="flex flex-wrap gap-1.5">
@@ -352,7 +352,7 @@ export default function CreateFloorModal({
                       className={`rounded-lg px-2 py-0.5 text-[10px] font-bold transition-all ${
                         alreadyAdded
                           ? 'opacity-40 cursor-not-allowed bg-gray-200 text-gray-500'
-                          : 'bg-white border border-[#E8D9D4] text-[#4A173A] hover:border-[#B76E79] hover:bg-[#FFFDFC]'
+                          : 'bg-white border border-[#E1DDD3] text-[#123C35] hover:border-[#C9A45C] hover:bg-[#FFFFFF]'
                       }`}
                     >
                       + {sug}
@@ -365,20 +365,20 @@ export default function CreateFloorModal({
             {/* Configured sections chip list */}
             {sections.length > 0 ? (
               <div className="pt-2">
-                <p className="text-[11px] font-black uppercase tracking-wider text-[#4A173A] mb-1.5">
+                <p className="text-[11px] font-black uppercase tracking-wider text-[#123C35] mb-1.5">
                   Assigned Sections List:
                 </p>
                 <div className="flex flex-wrap gap-2 max-h-36 overflow-y-auto p-1">
                   {sections.map((sec, idx) => (
                     <div
                       key={idx}
-                      className="group inline-flex items-center gap-1.5 rounded-xl border border-[#B76E79]/30 bg-white px-3 py-1.5 text-[12px] font-bold text-[#4A173A] shadow-sm"
+                      className="group inline-flex items-center gap-1.5 rounded-xl border border-[#C9A45C]/30 bg-white px-3 py-1.5 text-[12px] font-bold text-[#123C35] shadow-sm"
                     >
                       <span>{sec}</span>
                       <button
                         type="button"
                         onClick={() => handleRemoveSection(idx)}
-                        className="rounded-full p-0.5 text-[#6F5963] hover:bg-red-50 hover:text-red-600 transition-colors"
+                        className="rounded-full p-0.5 text-[#65716C] hover:bg-red-50 hover:text-red-600 transition-colors"
                         title="Remove section"
                       >
                         <X className="w-3.5 h-3.5" />
@@ -388,14 +388,14 @@ export default function CreateFloorModal({
                 </div>
               </div>
             ) : (
-              <p className="rounded-xl border border-dashed border-[#E8D9D4] bg-white/60 p-3 text-center text-[12px] font-semibold italic text-[#6F5963]">
+              <p className="rounded-xl border border-dashed border-[#E1DDD3] bg-white/60 p-3 text-center text-[12px] font-semibold italic text-[#65716C]">
                 No sections added yet. Type a section name above or click one of the presets.
               </p>
             )}
           </div>
 
           {/* Modal Footer */}
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#E8D9D4]">
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#E1DDD3]">
             <button
               type="button"
               onClick={onClose}

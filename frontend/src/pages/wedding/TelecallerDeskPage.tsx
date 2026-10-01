@@ -426,19 +426,19 @@ export default function TelecallerDeskPage() {
               />
               <button
                 onClick={handleOpenPerformance}
-                className="px-3 py-1.5 bg-[#FFFDFC] hover:bg-[#FFF7F2] border border-[#E8D9D4] rounded-xl text-xs font-bold text-[#4A173A] flex items-center gap-1.5 transition-colors shadow-2xs cursor-pointer"
+                className="px-3 py-1.5 bg-[#FFFFFF] hover:bg-[#EDF3F0] border border-[#E1DDD3] rounded-xl text-xs font-bold text-[#123C35] flex items-center gap-1.5 transition-colors shadow-2xs cursor-pointer"
                 title="View Team Performance Scorecard"
               >
-                <Award className="w-3.5 h-3.5 text-[#B76E79]" />
+                <Award className="w-3.5 h-3.5 text-[#C9A45C]" />
                 <span className="hidden sm:inline">Performance</span>
               </button>
               <button
                 onClick={refreshQueue}
                 disabled={loading}
-                className="px-3 py-1.5 bg-[#FFFDFC] hover:bg-[#FFF7F2] border border-[#E8D9D4] rounded-xl text-xs font-bold text-[#4A173A] flex items-center gap-1.5 transition-colors shadow-2xs cursor-pointer disabled:opacity-60"
+                className="px-3 py-1.5 bg-[#FFFFFF] hover:bg-[#EDF3F0] border border-[#E1DDD3] rounded-xl text-xs font-bold text-[#123C35] flex items-center gap-1.5 transition-colors shadow-2xs cursor-pointer disabled:opacity-60"
                 title="Refresh telecaller queue"
               >
-                <RefreshCw className={`w-3.5 h-3.5 text-[#B76E79] ${loading ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`w-3.5 h-3.5 text-[#C9A45C] ${loading ? 'animate-spin' : ''}`} />
                 <span>Refresh</span>
               </button>
             </div>
@@ -452,15 +452,15 @@ export default function TelecallerDeskPage() {
               key: 'myQueue',
               label: 'My Customers',
               count: deskSummary.myCustomers,
-              color: 'text-[#4A173A] bg-[#FFFDFC] border-[#E8D9D4]',
-              badgeBg: 'bg-[#F6E2E5] text-[#4A173A]',
+              color: 'text-[#123C35] bg-[#FFFFFF] border-[#E1DDD3]',
+              badgeBg: 'bg-[#EDF3F0] text-[#123C35]',
               icon: Users
             },
             {
               key: 'dueToday',
               label: 'Calls Due Today',
               count: queueRecords.dueToday?.length || 0,
-              color: 'text-[#C58A18] bg-[#FFFDFC] border-[#E8D9D4]',
+              color: 'text-[#C58A18] bg-[#FFFFFF] border-[#E1DDD3]',
               badgeBg: 'bg-[#FFF4D6] text-[#C58A18]',
               icon: Clock
             },
@@ -468,7 +468,7 @@ export default function TelecallerDeskPage() {
               key: 'overdue',
               label: 'Overdue',
               count: deskSummary.overdueCount || queueRecords.overdue?.length || 0,
-              color: 'text-[#B42318] bg-[#FFFDFC] border-[#E8D9D4]',
+              color: 'text-[#B42318] bg-[#FFFFFF] border-[#E1DDD3]',
               badgeBg: 'bg-[#FDE8E7] text-[#B42318]',
               icon: AlertTriangle
             },
@@ -476,23 +476,23 @@ export default function TelecallerDeskPage() {
               key: 'callbacks',
               label: 'Callbacks',
               count: deskSummary.callbackCount,
-              color: 'text-[#6A2853] bg-[#FFFDFC] border-[#E8D9D4]',
-              badgeBg: 'bg-[#EDE7F6] text-[#6A2853]',
+              color: 'text-[#082821] bg-[#FFFFFF] border-[#E1DDD3]',
+              badgeBg: 'bg-[#EDF3F0] text-[#082821]',
               icon: PhoneForwarded
             },
             {
               key: 'newLeads',
               label: 'New Customers',
               count: queueRecords.newLeads?.length || 0,
-              color: 'text-[#2B1722] bg-[#FFFDFC] border-[#E8D9D4]',
-              badgeBg: 'bg-[#FFF7F2] text-[#4A173A]',
+              color: 'text-[#17201D] bg-[#FFFFFF] border-[#E1DDD3]',
+              badgeBg: 'bg-[#EDF3F0] text-[#123C35]',
               icon: Sparkles
             },
             {
               key: 'shoppingConfirmed',
               label: 'Shopping Confirmed',
               count: deskSummary.shoppingConfirmed,
-              color: 'text-[#198754] bg-[#FFFDFC] border-[#E8D9D4]',
+              color: 'text-[#198754] bg-[#FFFFFF] border-[#E1DDD3]',
               badgeBg: 'bg-[#E8F5EE] text-[#198754]',
               icon: ShoppingBag
             },
@@ -500,15 +500,15 @@ export default function TelecallerDeskPage() {
               key: 'visitsPlanned',
               label: 'Visits Planned',
               count: deskSummary.visitsPlanned,
-              color: 'text-[#4A173A] bg-[#FFFDFC] border-[#E8D9D4]',
-              badgeBg: 'bg-[#F6E2E5] text-[#4A173A]',
+              color: 'text-[#123C35] bg-[#FFFFFF] border-[#E1DDD3]',
+              badgeBg: 'bg-[#EDF3F0] text-[#123C35]',
               icon: MapPin
             },
             {
               key: 'priorityQueue',
               label: 'Completed Today',
               count: deskSummary.completedToday,
-              color: 'text-[#198754] bg-[#FFFDFC] border-[#E8D9D4]',
+              color: 'text-[#198754] bg-[#FFFFFF] border-[#E1DDD3]',
               badgeBg: 'bg-[#E8F5EE] text-[#198754]',
               icon: CheckCircle2
             }
@@ -521,7 +521,7 @@ export default function TelecallerDeskPage() {
                 onClick={() => setActiveQueue(card.key as any)}
                 className={`p-3 rounded-2xl border text-left transition-all hover:shadow-sm cursor-pointer ${
                   isCurrent
-                    ? 'border-[#B76E79] ring-2 ring-[#B76E79]/30 bg-[#FFFAF7]'
+                    ? 'border-[#C9A45C] ring-2 ring-[#C9A45C]/30 bg-[#F7F5F0]'
                     : card.color
                 }`}
               >
@@ -531,7 +531,7 @@ export default function TelecallerDeskPage() {
                   </span>
                   <span className="text-lg font-black">{card.count}</span>
                 </div>
-                <div className="text-[11px] font-bold text-[#6F5963] truncate">
+                <div className="text-[11px] font-bold text-[#65716C] truncate">
                   {card.label}
                 </div>
               </button>
@@ -543,9 +543,9 @@ export default function TelecallerDeskPage() {
         <TelecallerInbox />
 
         {/* ── Call Queue Container ── */}
-        <div className="bg-[#FFFDFC] rounded-3xl border border-[#E8D9D4] shadow-xs p-4 sm:p-5 space-y-4">
+        <div className="bg-[#FFFFFF] rounded-3xl border border-[#E1DDD3] shadow-xs p-4 sm:p-5 space-y-4">
           {/* Queue Selection Tabs & Fast Search */}
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-[#E8D9D4] pb-3">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-[#E1DDD3] pb-3">
             <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide py-1">
               {[
                 { key: 'priorityQueue', label: '⚡ Smart Priority Queue', count: queueRecords.priorityQueue?.length || 0, isSpecial: true },
@@ -564,11 +564,11 @@ export default function TelecallerDeskPage() {
                   className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 whitespace-nowrap transition-all cursor-pointer ${
                     activeQueue === tab.key
                       ? tab.isSpecial
-                        ? 'bg-[#4A173A] text-white shadow-xs'
-                        : 'bg-[#B76E79] text-white shadow-xs'
+                        ? 'bg-[#123C35] text-white shadow-xs'
+                        : 'bg-[#C9A45C] text-white shadow-xs'
                       : tab.isSpecial
-                        ? 'bg-[#F6E2E5] text-[#4A173A] hover:bg-[#D89AA3]/30'
-                        : 'bg-[#FFF7F2] text-[#6F5963] hover:text-[#4A173A] hover:bg-[#F6E2E5]'
+                        ? 'bg-[#EDF3F0] text-[#123C35] hover:bg-[#D89AA3]/30'
+                        : 'bg-[#EDF3F0] text-[#65716C] hover:text-[#123C35] hover:bg-[#EDF3F0]'
                   }`}
                 >
                   <span>{tab.label}</span>
@@ -589,7 +589,7 @@ export default function TelecallerDeskPage() {
                 placeholder="Search name, phone, reg ID..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-8 pr-3 py-1.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl text-xs text-[#2B1722] placeholder-[#9A858D] focus:outline-none focus:border-[#B76E79]"
+                className="w-full pl-8 pr-3 py-1.5 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl text-xs text-[#17201D] placeholder-[#9A858D] focus:outline-none focus:border-[#C9A45C]"
               />
             </div>
           </div>
@@ -597,15 +597,15 @@ export default function TelecallerDeskPage() {
           {/* ── Mobile Queue Card View (< md) ── */}
           <div className="md:hidden space-y-3">
             {loading ? (
-              <div className="text-center py-10 bg-[#FFFDFC] rounded-2xl border border-[#E8D9D4]">
-                <RefreshCw className="w-5 h-5 animate-spin text-[#B76E79] mx-auto mb-2" />
-                <span className="text-xs text-[#6F5963]">Loading queue...</span>
+              <div className="text-center py-10 bg-[#FFFFFF] rounded-2xl border border-[#E1DDD3]">
+                <RefreshCw className="w-5 h-5 animate-spin text-[#C9A45C] mx-auto mb-2" />
+                <span className="text-xs text-[#65716C]">Loading queue...</span>
               </div>
             ) : currentList.length === 0 ? (
-              <div className="text-center py-10 bg-[#FFFDFC] rounded-2xl border border-[#E8D9D4] p-4">
+              <div className="text-center py-10 bg-[#FFFFFF] rounded-2xl border border-[#E1DDD3] p-4">
                 <CircleCheck className="w-10 h-10 text-[#198754] mx-auto mb-2" />
-                <div className="font-bold text-sm text-[#4A173A]">Queue is currently clear!</div>
-                <div className="text-xs text-[#6F5963] mt-0.5">No pending customer calls in this bucket.</div>
+                <div className="font-bold text-sm text-[#123C35]">Queue is currently clear!</div>
+                <div className="text-xs text-[#65716C] mt-0.5">No pending customer calls in this bucket.</div>
               </div>
             ) : (
               currentList.map((cust: WeddingCustomer) => {
@@ -616,19 +616,19 @@ export default function TelecallerDeskPage() {
                 return (
                   <div
                     key={cust.id}
-                    className="p-4 bg-[#FFFDFC] rounded-2xl border border-[#E8D9D4] shadow-xs space-y-3"
+                    className="p-4 bg-[#FFFFFF] rounded-2xl border border-[#E1DDD3] shadow-xs space-y-3"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="font-bold text-sm text-[#2B1722]">
+                          <span className="font-bold text-sm text-[#17201D]">
                             {cust.customer_name}
                           </span>
-                          <span className="text-[10px] font-mono text-white bg-[#4A173A] px-1.5 py-0.5 rounded">
+                          <span className="text-[10px] font-mono text-white bg-[#123C35] px-1.5 py-0.5 rounded">
                             {cust.customer_code}
                           </span>
                         </div>
-                        <div className="text-[11px] text-[#6F5963] mt-0.5">
+                        <div className="text-[11px] text-[#65716C] mt-0.5">
                           📍 {cust.location_name || 'Store'} · 💍 {cust.wedding_date ? formatDateDisplay(cust.wedding_date, 'TBD') : 'TBD'}
                         </div>
                       </div>
@@ -637,26 +637,26 @@ export default function TelecallerDeskPage() {
                       </span>
                     </div>
 
-                    <div className="flex items-center justify-between text-xs pt-1 border-t border-[#E8D9D4]">
-                      <div className="text-[#6F5963]">
-                        Follow-up: <strong className={isOverdue ? 'text-[#B42318]' : 'text-[#2B1722]'}>
+                    <div className="flex items-center justify-between text-xs pt-1 border-t border-[#E1DDD3]">
+                      <div className="text-[#65716C]">
+                        Follow-up: <strong className={isOverdue ? 'text-[#B42318]' : 'text-[#17201D]'}>
                           {cust.follow_up_date ? formatDateDisplay(cust.follow_up_date, 'None') : 'None'}
                         </strong>
                       </div>
                       <div className="flex items-center gap-1.5">
                         <button
                           onClick={() => handleDirectCall(cust)}
-                          className="px-3 py-1.5 bg-[#4A173A] hover:bg-[#6A2853] text-white font-bold rounded-xl text-xs flex items-center gap-1"
+                          className="px-3 py-1.5 bg-[#123C35] hover:bg-[#082821] text-white font-bold rounded-xl text-xs flex items-center gap-1"
                         >
-                          <PhoneCall className="w-3.5 h-3.5 text-[#E8C7A8]" />
+                          <PhoneCall className="w-3.5 h-3.5 text-[#E4CB92]" />
                           <span>Call</span>
                         </button>
                         <button
                           onClick={() => handleOpenWorkspace(cust, 'call')}
-                          className="p-1.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl text-[#4A173A]"
+                          className="p-1.5 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl text-[#123C35]"
                           title="Open Workspace"
                         >
-                          <Edit3 className="w-3.5 h-3.5 text-[#B76E79]" />
+                          <Edit3 className="w-3.5 h-3.5 text-[#C9A45C]" />
                         </button>
                       </div>
                     </div>
@@ -667,9 +667,9 @@ export default function TelecallerDeskPage() {
           </div>
 
           {/* ── Desktop Queue Table (md+) ── */}
-          <div className="hidden md:block table-frame custom-scrollbar border border-[#E8D9D4] rounded-2xl">
-            <table className="w-full min-w-[1100px] text-left text-xs text-[#2B1722] whitespace-nowrap">
-              <thead className="bg-[#FFFAF7] text-[#4A173A] border-b border-[#E8D9D4] uppercase text-[10px] tracking-wider">
+          <div className="hidden md:block table-frame custom-scrollbar border border-[#E1DDD3] rounded-2xl">
+            <table className="w-full min-w-[1100px] text-left text-xs text-[#17201D] whitespace-nowrap">
+              <thead className="bg-[#F7F5F0] text-[#123C35] border-b border-[#E1DDD3] uppercase text-[10px] tracking-wider">
                 <tr>
                   <th className="py-3 px-3 font-black">Reg ID</th>
                   <th className="py-3 px-3 font-black">Customer Name</th>
@@ -683,20 +683,20 @@ export default function TelecallerDeskPage() {
                   <th className="py-3 px-3 font-black text-right">Quick Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#E8D9D4]">
+              <tbody className="divide-y divide-[#E1DDD3]">
                 {loading ? (
                   <tr>
-                    <td colSpan={10} className="text-center py-12 text-[#6F5963]">
-                      <RefreshCw className="w-5 h-5 animate-spin text-[#B76E79] mx-auto mb-2" />
+                    <td colSpan={10} className="text-center py-12 text-[#65716C]">
+                      <RefreshCw className="w-5 h-5 animate-spin text-[#C9A45C] mx-auto mb-2" />
                       <span>Loading telecaller queue...</span>
                     </td>
                   </tr>
                 ) : currentList.length === 0 ? (
                   <tr>
-                    <td colSpan={10} className="text-center py-12 text-[#6F5963]">
+                    <td colSpan={10} className="text-center py-12 text-[#65716C]">
                       <CircleCheck className="w-10 h-10 text-[#198754] mx-auto mb-2" />
-                      <div className="font-bold text-sm text-[#4A173A]">Queue is currently clear!</div>
-                      <div className="text-xs text-[#6F5963] mt-0.5">All customer calls in this queue have been handled.</div>
+                      <div className="font-bold text-sm text-[#123C35]">Queue is currently clear!</div>
+                      <div className="text-xs text-[#65716C] mt-0.5">All customer calls in this queue have been handled.</div>
                     </td>
                   </tr>
                 ) : (
@@ -706,11 +706,11 @@ export default function TelecallerDeskPage() {
                     const isOverdue = !!followUp && followUp.getTime() < new Date().setHours(0, 0, 0, 0);
 
                     return (
-                      <tr key={cust.id} className="hover:bg-[#FFF7F2] transition-colors">
-                        <td className="py-3 px-3 font-bold text-[#4A173A]">
+                      <tr key={cust.id} className="hover:bg-[#EDF3F0] transition-colors">
+                        <td className="py-3 px-3 font-bold text-[#123C35]">
                           <button
                             onClick={() => handleOpenWorkspace(cust, 'timeline')}
-                            className="hover:text-[#B76E79] hover:underline font-mono cursor-pointer"
+                            className="hover:text-[#C9A45C] hover:underline font-mono cursor-pointer"
                           >
                             {cust.customer_code}
                           </button>
@@ -718,35 +718,35 @@ export default function TelecallerDeskPage() {
                         <td className="py-3 px-3">
                           <button
                             onClick={() => handleOpenWorkspace(cust, 'call')}
-                            className="font-bold text-[#2B1722] hover:text-[#4A173A] text-left block cursor-pointer"
+                            className="font-bold text-[#17201D] hover:text-[#123C35] text-left block cursor-pointer"
                           >
                             {cust.customer_name}
                           </button>
-                          <span className="text-[10px] text-[#6F5963] block mt-0.5">
+                          <span className="text-[10px] text-[#65716C] block mt-0.5">
                             {cust.preferred_shopping_category || 'General Wedding'}
                           </span>
                         </td>
-                        <td className="py-3 px-3 font-medium text-[#2B1722]">
+                        <td className="py-3 px-3 font-medium text-[#17201D]">
                           <div className="flex items-center gap-1.5">
                             <span className="font-mono">{cust.mobile_number}</span>
                             <button
                               onClick={() => handleCopyMobile(cust.mobile_number)}
-                              className="text-[#9A858D] hover:text-[#4A173A] p-0.5 rounded cursor-pointer"
+                              className="text-[#9A858D] hover:text-[#123C35] p-0.5 rounded cursor-pointer"
                               title="Copy mobile number"
                             >
                               <Copy className="w-3 h-3" />
                             </button>
                           </div>
                           {cust.alternate_mobile && (
-                            <span className="text-[10px] text-[#6F5963] block font-mono">Alt: {cust.alternate_mobile}</span>
+                            <span className="text-[10px] text-[#65716C] block font-mono">Alt: {cust.alternate_mobile}</span>
                           )}
                         </td>
-                        <td className="py-3 px-3 font-medium text-[#6F5963]">
+                        <td className="py-3 px-3 font-medium text-[#65716C]">
                           📍 {cust.location_name || 'Store'}
                         </td>
                         <td className="py-3 px-3">
                           {parseDate(cust.wedding_date) ? (
-                            <span className="text-[#B76E79] font-bold">
+                            <span className="text-[#C9A45C] font-bold">
                               💍 {formatDateDisplay(cust.wedding_date, 'TBD')}
                             </span>
                           ) : (
@@ -755,17 +755,17 @@ export default function TelecallerDeskPage() {
                         </td>
                         <td className="py-3 px-3 font-medium">
                           {cust.assigned_telecaller ? (
-                            <span className="bg-[#FFFAF7] border border-[#E8D9D4] text-[#4A173A] px-2 py-0.5 rounded-full text-[11px] font-bold">
+                            <span className="bg-[#F7F5F0] border border-[#E1DDD3] text-[#123C35] px-2 py-0.5 rounded-full text-[11px] font-bold">
                               👤 {cust.assigned_telecaller}
                             </span>
                           ) : (
                             <span className="text-[#9A858D] italic text-[11px]">Unassigned</span>
                           )}
                         </td>
-                        <td className="py-3 px-3 text-[#6F5963]">
+                        <td className="py-3 px-3 text-[#65716C]">
                           {cust.last_contacted_by ? (
                             <div>
-                              <span className="font-bold text-[#4A173A] text-[11px] block">{cust.last_contacted_by}</span>
+                              <span className="font-bold text-[#123C35] text-[11px] block">{cust.last_contacted_by}</span>
                               <span className="text-[10px] text-[#9A858D]">{cust.last_call_outcome || 'Called'}</span>
                             </div>
                           ) : cust.last_updated_by ? (
@@ -782,7 +782,7 @@ export default function TelecallerDeskPage() {
                         </td>
                         <td className="py-3 px-3">
                           {parseDate(cust.follow_up_date) ? (
-                            <span className={`font-bold ${isOverdue ? 'text-[#B42318]' : 'text-[#2B1722]'}`}>
+                            <span className={`font-bold ${isOverdue ? 'text-[#B42318]' : 'text-[#17201D]'}`}>
                               {formatDateDisplay(cust.follow_up_date, 'None')}
                               {isOverdue && <span className="ml-1 text-[9px] bg-[#FDE8E7] text-[#B42318] px-1 rounded uppercase font-bold">Overdue</span>}
                             </span>
@@ -795,20 +795,20 @@ export default function TelecallerDeskPage() {
                             {/* 1. CALL (Prominent Call Action) */}
                             <button
                               onClick={() => handleDirectCall(cust)}
-                              className="px-3 py-1.5 bg-[#4A173A] hover:bg-[#6A2853] text-white font-bold rounded-xl text-xs flex items-center gap-1 shadow-2xs border border-[#4A173A] cursor-pointer"
+                              className="px-3 py-1.5 bg-[#123C35] hover:bg-[#082821] text-white font-bold rounded-xl text-xs flex items-center gap-1 shadow-2xs border border-[#123C35] cursor-pointer"
                               title="Call Customer & Open Workspace"
                             >
-                              <PhoneCall className="w-3.5 h-3.5 text-[#E8C7A8]" />
+                              <PhoneCall className="w-3.5 h-3.5 text-[#E4CB92]" />
                               <span>CALL</span>
                             </button>
 
                             {/* 2. UPDATE (Edit Details) */}
                             <button
                               onClick={() => handleOpenWorkspace(cust, 'edit')}
-                              className="px-2.5 py-1.5 bg-[#FFF7F2] hover:bg-[#F6E2E5] text-[#4A173A] font-bold rounded-xl text-xs border border-[#E8D9D4] flex items-center gap-1 cursor-pointer"
+                              className="px-2.5 py-1.5 bg-[#EDF3F0] hover:bg-[#EDF3F0] text-[#123C35] font-bold rounded-xl text-xs border border-[#E1DDD3] flex items-center gap-1 cursor-pointer"
                               title="Edit Customer Details"
                             >
-                              <Edit3 className="w-3.5 h-3.5 text-[#B76E79]" />
+                              <Edit3 className="w-3.5 h-3.5 text-[#C9A45C]" />
                               <span>Update</span>
                             </button>
 
@@ -824,19 +824,19 @@ export default function TelecallerDeskPage() {
                             {/* 4. TIMELINE */}
                             <button
                               onClick={() => handleOpenWorkspace(cust, 'timeline')}
-                              className="p-1.5 bg-[#FFFAF7] hover:bg-[#FFF7F2] text-[#4A173A] rounded-xl text-xs border border-[#E8D9D4] cursor-pointer"
+                              className="p-1.5 bg-[#F7F5F0] hover:bg-[#EDF3F0] text-[#123C35] rounded-xl text-xs border border-[#E1DDD3] cursor-pointer"
                               title="View Activity Timeline"
                             >
-                              <History className="w-3.5 h-3.5 text-[#B76E79]" />
+                              <History className="w-3.5 h-3.5 text-[#C9A45C]" />
                             </button>
 
                             {/* 5. FULL PROFILE */}
                             <Link
                               to={`/wedding-crm/customers/${cust.id}`}
-                              className="p-1.5 bg-[#FFFAF7] hover:bg-[#FFF7F2] text-[#4A173A] rounded-xl text-xs border border-[#E8D9D4]"
+                              className="p-1.5 bg-[#F7F5F0] hover:bg-[#EDF3F0] text-[#123C35] rounded-xl text-xs border border-[#E1DDD3]"
                               title="View Full Profile"
                             >
-                              <Eye className="w-3.5 h-3.5 text-[#B76E79]" />
+                              <Eye className="w-3.5 h-3.5 text-[#C9A45C]" />
                             </Link>
                           </div>
                         </td>
@@ -859,46 +859,46 @@ export default function TelecallerDeskPage() {
             <div className="absolute inset-0" onClick={() => setWorkspaceOpen(false)} aria-hidden="true" />
 
             {/* Modal Dialog Card */}
-            <div className="relative w-full max-w-3xl max-h-[calc(100dvh-2rem)] bg-[#FFFDFC] rounded-3xl shadow-2xl border border-[#E8D9D4] flex flex-col overflow-hidden z-10 my-auto">
+            <div className="relative w-full max-w-3xl max-h-[calc(100dvh-2rem)] bg-[#FFFFFF] rounded-3xl shadow-2xl border border-[#E1DDD3] flex flex-col overflow-hidden z-10 my-auto">
               
               {/* 1. FIXED MODAL HEADER (shrink-0) */}
-              <div className="p-4 sm:p-5 border-b border-[#E8D9D4] bg-[#FFFDFC] shrink-0 space-y-3">
+              <div className="p-4 sm:p-5 border-b border-[#E1DDD3] bg-[#FFFFFF] shrink-0 space-y-3">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="text-lg sm:text-xl font-black text-[#4A173A]">
+                      <h3 className="text-lg sm:text-xl font-black text-[#123C35]">
                         {activeCustomer.customer_name}
                       </h3>
-                      <span className="text-xs font-mono font-bold bg-[#4A173A] text-white px-2 py-0.5 rounded-lg">
+                      <span className="text-xs font-mono font-bold bg-[#123C35] text-white px-2 py-0.5 rounded-lg">
                         {activeCustomer.customer_code}
                       </span>
-                      <span className="text-xs bg-[#FFFAF7] text-[#B76E79] font-bold px-2 py-0.5 rounded-lg border border-[#E8D9D4]">
+                      <span className="text-xs bg-[#F7F5F0] text-[#C9A45C] font-bold px-2 py-0.5 rounded-lg border border-[#E1DDD3]">
                         📍 {activeCustomer.location_name || 'Store'}
                       </span>
-                      <span className="text-xs font-bold px-2 py-0.5 rounded-lg bg-[#EDE7F6] text-[#6A2853] border border-[#6A2853]/20">
+                      <span className="text-xs font-bold px-2 py-0.5 rounded-lg bg-[#EDF3F0] text-[#082821] border border-[#082821]/20">
                         {activeCustomer.customer_status}
                       </span>
                     </div>
 
                     {/* Telecaller Details */}
-                    <div className="flex items-center gap-3 text-xs text-[#6F5963] mt-1.5 flex-wrap">
+                    <div className="flex items-center gap-3 text-xs text-[#65716C] mt-1.5 flex-wrap">
                       <span>
-                        Assigned: <strong className="text-[#4A173A]">{activeCustomer.assigned_telecaller || 'Unassigned'}</strong>
+                        Assigned: <strong className="text-[#123C35]">{activeCustomer.assigned_telecaller || 'Unassigned'}</strong>
                       </span>
                       <span>•</span>
                       <span>
-                        Last Contact: <strong className="text-[#2B1722]">{activeCustomer.last_contacted_by || 'None'}</strong>
+                        Last Contact: <strong className="text-[#17201D]">{activeCustomer.last_contacted_by || 'None'}</strong>
                       </span>
                       <span>•</span>
                       <span>
-                        Shopping Date: <strong className="text-[#2B1722]">{formatDateDisplay(activeCustomer.expected_shopping_date, 'Not Decided')}</strong>
+                        Shopping Date: <strong className="text-[#17201D]">{formatDateDisplay(activeCustomer.expected_shopping_date, 'Not Decided')}</strong>
                       </span>
                     </div>
                   </div>
 
                   <button
                     onClick={() => setWorkspaceOpen(false)}
-                    className="p-1.5 text-[#6F5963] hover:text-[#4A173A] hover:bg-[#FFF7F2] rounded-xl transition-colors cursor-pointer shrink-0"
+                    className="p-1.5 text-[#65716C] hover:text-[#123C35] hover:bg-[#EDF3F0] rounded-xl transition-colors cursor-pointer shrink-0"
                     title="Close modal (Esc)"
                   >
                     <X className="w-5 h-5" />
@@ -906,14 +906,14 @@ export default function TelecallerDeskPage() {
                 </div>
 
                 {/* Controlled Horizontal-Scroll Navigation Tabs */}
-                <div className="flex items-center gap-2 border-t border-[#E8D9D4]/60 pt-2.5 overflow-x-auto scrollbar-hide text-xs font-bold">
+                <div className="flex items-center gap-2 border-t border-[#E1DDD3]/60 pt-2.5 overflow-x-auto scrollbar-hide text-xs font-bold">
                   <button
                     type="button"
                     onClick={() => setWorkspaceTab('call')}
                     className={`px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-all whitespace-nowrap cursor-pointer ${
                       workspaceTab === 'call'
-                        ? 'bg-[#4A173A] text-white shadow-xs'
-                        : 'bg-[#FFF7F2] text-[#6F5963] hover:text-[#4A173A]'
+                        ? 'bg-[#123C35] text-white shadow-xs'
+                        : 'bg-[#EDF3F0] text-[#65716C] hover:text-[#123C35]'
                     }`}
                   >
                     <PhoneCall className="w-3.5 h-3.5" />
@@ -924,8 +924,8 @@ export default function TelecallerDeskPage() {
                     onClick={() => setWorkspaceTab('edit')}
                     className={`px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-all whitespace-nowrap cursor-pointer ${
                       workspaceTab === 'edit'
-                        ? 'bg-[#4A173A] text-white shadow-xs'
-                        : 'bg-[#FFF7F2] text-[#6F5963] hover:text-[#4A173A]'
+                        ? 'bg-[#123C35] text-white shadow-xs'
+                        : 'bg-[#EDF3F0] text-[#65716C] hover:text-[#123C35]'
                     }`}
                   >
                     <Edit3 className="w-3.5 h-3.5" />
@@ -937,7 +937,7 @@ export default function TelecallerDeskPage() {
                     className={`px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-all whitespace-nowrap cursor-pointer ${
                       workspaceTab === 'whatsapp'
                         ? 'bg-[#198754] text-white shadow-xs'
-                        : 'bg-[#FFF7F2] text-[#6F5963] hover:text-[#198754]'
+                        : 'bg-[#EDF3F0] text-[#65716C] hover:text-[#198754]'
                     }`}
                   >
                     <MessageCircle className="w-3.5 h-3.5" />
@@ -948,8 +948,8 @@ export default function TelecallerDeskPage() {
                     onClick={() => setWorkspaceTab('timeline')}
                     className={`px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-all whitespace-nowrap cursor-pointer ${
                       workspaceTab === 'timeline'
-                        ? 'bg-[#4A173A] text-white shadow-xs'
-                        : 'bg-[#FFF7F2] text-[#6F5963] hover:text-[#4A173A]'
+                        ? 'bg-[#123C35] text-white shadow-xs'
+                        : 'bg-[#EDF3F0] text-[#65716C] hover:text-[#123C35]'
                     }`}
                   >
                     <History className="w-3.5 h-3.5" />
@@ -965,9 +965,9 @@ export default function TelecallerDeskPage() {
                 {workspaceTab === 'call' && (
                   <form id="call-form" onSubmit={handleSaveCall} className="space-y-4 text-xs">
                     {/* Direct Telephony Action Box */}
-                    <div className="bg-[#4A173A] text-white p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 shadow-md border border-[#B76E79]/30">
+                    <div className="bg-[#123C35] text-white p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 shadow-md border border-[#C9A45C]/30">
                       <div>
-                        <div className="text-[11px] font-bold uppercase tracking-wider text-[#E8C7A8]">
+                        <div className="text-[11px] font-bold uppercase tracking-wider text-[#E4CB92]">
                           Direct Telephony Action
                         </div>
                         <div className="text-xl sm:text-2xl font-black mt-0.5 tracking-tight flex items-center gap-2">
@@ -981,7 +981,7 @@ export default function TelecallerDeskPage() {
                             {copiedNumber ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
                           </button>
                         </div>
-                        <div className="text-xs text-[#E8C7A8] mt-0.5">
+                        <div className="text-xs text-[#E4CB92] mt-0.5">
                           {activeCustomer.preferred_call_time ? `Preferred Window: ${activeCustomer.preferred_call_time}` : 'Window: Any Time'}
                         </div>
                       </div>
@@ -997,7 +997,7 @@ export default function TelecallerDeskPage() {
 
                     {/* Call Outcome Options (Grid) */}
                     <div>
-                      <label className="block text-xs font-black uppercase text-[#4A173A] mb-2 tracking-wide">
+                      <label className="block text-xs font-black uppercase text-[#123C35] mb-2 tracking-wide">
                         What was the outcome of this call? *
                       </label>
                       <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
@@ -1038,12 +1038,12 @@ export default function TelecallerDeskPage() {
                               }}
                               className={`p-2.5 rounded-xl border text-left font-bold text-xs transition-all flex items-center justify-between min-h-[46px] cursor-pointer ${
                                 isSelected
-                                  ? 'bg-[#4A173A] text-white border-[#4A173A] shadow-xs'
-                                  : 'bg-[#FFFAF7] text-[#2B1722] border-[#E8D9D4] hover:bg-[#FFF7F2] hover:border-[#B76E79]'
+                                  ? 'bg-[#123C35] text-white border-[#123C35] shadow-xs'
+                                  : 'bg-[#F7F5F0] text-[#17201D] border-[#E1DDD3] hover:bg-[#EDF3F0] hover:border-[#C9A45C]'
                               }`}
                             >
                               <span className="leading-tight">{label}</span>
-                              {isSelected && <Check className="w-3.5 h-3.5 text-[#E8C7A8] shrink-0 ml-1" />}
+                              {isSelected && <Check className="w-3.5 h-3.5 text-[#E4CB92] shrink-0 ml-1" />}
                             </button>
                           );
                         })}
@@ -1051,16 +1051,16 @@ export default function TelecallerDeskPage() {
                     </div>
 
                     {/* Operational Fields Grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2 border-t border-[#E8D9D4]">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2 border-t border-[#E1DDD3]">
                       {/* Customer Status Update */}
                       <div>
-                        <label className="block text-[10px] font-bold uppercase text-[#6F5963] mb-1">
+                        <label className="block text-[10px] font-bold uppercase text-[#65716C] mb-1">
                           Customer Status *
                         </label>
                         <select
                           value={callForm.new_customer_status}
                           onChange={(e) => setCallForm({ ...callForm, new_customer_status: e.target.value })}
-                          className="w-full px-3 py-2 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-bold text-[#4A173A] focus:outline-none focus:border-[#B76E79]"
+                          className="w-full px-3 py-2 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl font-bold text-[#123C35] focus:outline-none focus:border-[#C9A45C]"
                         >
                           {CUSTOMER_STATUSES.map((st) => (
                             <option key={st} value={st}>{st}</option>
@@ -1070,26 +1070,26 @@ export default function TelecallerDeskPage() {
 
                       {/* Next Follow-up Date */}
                       <div>
-                        <label className="block text-[10px] font-bold uppercase text-[#6F5963] mb-1">
+                        <label className="block text-[10px] font-bold uppercase text-[#65716C] mb-1">
                           Next Follow-up Date {['Call Back Requested', 'Customer Asked to Contact Later'].includes(callForm.call_outcome) ? '*' : ''}
                         </label>
                         <input
                           type="date"
                           value={callForm.next_follow_up_date}
                           onChange={(e) => setCallForm({ ...callForm, next_follow_up_date: e.target.value })}
-                          className="w-full px-3 py-2 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-semibold text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                          className="w-full px-3 py-2 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl font-semibold text-[#17201D] focus:outline-none focus:border-[#C9A45C]"
                         />
                       </div>
 
                       {/* Next Follow-up Time Window */}
                       <div>
-                        <label className="block text-[10px] font-bold uppercase text-[#6F5963] mb-1">
+                        <label className="block text-[10px] font-bold uppercase text-[#65716C] mb-1">
                           Next Follow-up Time Window
                         </label>
                         <select
                           value={callForm.next_follow_up_time}
                           onChange={(e) => setCallForm({ ...callForm, next_follow_up_time: e.target.value })}
-                          className="w-full px-3 py-2 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-medium text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                          className="w-full px-3 py-2 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl font-medium text-[#17201D] focus:outline-none focus:border-[#C9A45C]"
                         >
                           {CALL_TIME_OPTIONS.map((time) => (
                             <option key={time} value={time}>{time}</option>
@@ -1099,21 +1099,21 @@ export default function TelecallerDeskPage() {
 
                       {/* Expected Shopping Date */}
                       <div>
-                        <label className="block text-[10px] font-bold uppercase text-[#6F5963] mb-1">
+                        <label className="block text-[10px] font-bold uppercase text-[#65716C] mb-1">
                           Expected Shopping Date
                         </label>
                         <input
                           type="date"
                           value={callForm.expected_shopping_date}
                           onChange={(e) => setCallForm({ ...callForm, expected_shopping_date: e.target.value })}
-                          className="w-full px-3 py-2 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-semibold text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                          className="w-full px-3 py-2 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl font-semibold text-[#17201D] focus:outline-none focus:border-[#C9A45C]"
                         />
                       </div>
                     </div>
 
                     {/* Remarks / Discussion Notes */}
                     <div>
-                      <label className="block text-[10px] font-bold uppercase text-[#6F5963] mb-1">
+                      <label className="block text-[10px] font-bold uppercase text-[#65716C] mb-1">
                         Call Remarks & Discussion Notes *
                       </label>
                       <textarea
@@ -1122,7 +1122,7 @@ export default function TelecallerDeskPage() {
                         placeholder="Enter conversation highlights, customer requirements, objections, or wedding schedule details..."
                         value={callForm.remarks}
                         onChange={(e) => setCallForm({ ...callForm, remarks: e.target.value })}
-                        className="w-full px-3 py-2 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-medium text-[#2B1722] focus:outline-none focus:border-[#B76E79] leading-relaxed"
+                        className="w-full px-3 py-2 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl font-medium text-[#17201D] focus:outline-none focus:border-[#C9A45C] leading-relaxed"
                       />
                     </div>
                   </form>
@@ -1137,7 +1137,7 @@ export default function TelecallerDeskPage() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                       <div>
-                        <label className="block text-[10px] font-bold uppercase text-[#6F5963] mb-1">
+                        <label className="block text-[10px] font-bold uppercase text-[#65716C] mb-1">
                           Alternate Mobile / WhatsApp
                         </label>
                         <input
@@ -1145,18 +1145,18 @@ export default function TelecallerDeskPage() {
                           placeholder="e.g. 9876543210"
                           value={editForm.alternate_mobile}
                           onChange={(e) => setEditForm({ ...editForm, alternate_mobile: e.target.value })}
-                          className="w-full px-3 py-2 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-semibold text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                          className="w-full px-3 py-2 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl font-semibold text-[#17201D] focus:outline-none focus:border-[#C9A45C]"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-[10px] font-bold uppercase text-[#6F5963] mb-1">
+                        <label className="block text-[10px] font-bold uppercase text-[#65716C] mb-1">
                           Preferred Call Window
                         </label>
                         <select
                           value={editForm.preferred_call_time}
                           onChange={(e) => setEditForm({ ...editForm, preferred_call_time: e.target.value })}
-                          className="w-full px-3 py-2 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-medium text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                          className="w-full px-3 py-2 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl font-medium text-[#17201D] focus:outline-none focus:border-[#C9A45C]"
                         >
                           {CALL_TIME_OPTIONS.map((t) => (
                             <option key={t} value={t}>{t}</option>
@@ -1167,25 +1167,25 @@ export default function TelecallerDeskPage() {
 
 
                       <div>
-                        <label className="block text-[10px] font-bold uppercase text-[#6F5963] mb-1">
+                        <label className="block text-[10px] font-bold uppercase text-[#65716C] mb-1">
                           Expected Shopping Date
                         </label>
                         <input
                           type="date"
                           value={editForm.expected_shopping_date}
                           onChange={(e) => setEditForm({ ...editForm, expected_shopping_date: e.target.value })}
-                          className="w-full px-3 py-2 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-semibold text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                          className="w-full px-3 py-2 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl font-semibold text-[#17201D] focus:outline-none focus:border-[#C9A45C]"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-[10px] font-bold uppercase text-[#6F5963] mb-1">
+                        <label className="block text-[10px] font-bold uppercase text-[#65716C] mb-1">
                           Shopping Category
                         </label>
                         <select
                           value={editForm.preferred_shopping_category}
                           onChange={(e) => setEditForm({ ...editForm, preferred_shopping_category: e.target.value })}
-                          className="w-full px-3 py-2 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-medium text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                          className="w-full px-3 py-2 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl font-medium text-[#17201D] focus:outline-none focus:border-[#C9A45C]"
                         >
                           {CATEGORY_OPTIONS.map((cat) => (
                             <option key={cat} value={cat}>{cat}</option>
@@ -1194,13 +1194,13 @@ export default function TelecallerDeskPage() {
                       </div>
 
                       <div>
-                        <label className="block text-[10px] font-bold uppercase text-[#6F5963] mb-1">
+                        <label className="block text-[10px] font-bold uppercase text-[#65716C] mb-1">
                           Estimated Budget
                         </label>
                         <select
                           value={editForm.budget}
                           onChange={(e) => setEditForm({ ...editForm, budget: e.target.value })}
-                          className="w-full px-3 py-2 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-medium text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                          className="w-full px-3 py-2 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl font-medium text-[#17201D] focus:outline-none focus:border-[#C9A45C]"
                         >
                           {BUDGET_RANGES.map((b) => (
                             <option key={b} value={b}>{b}</option>
@@ -1209,13 +1209,13 @@ export default function TelecallerDeskPage() {
                       </div>
 
                       <div>
-                        <label className="block text-[10px] font-bold uppercase text-[#6F5963] mb-1">
+                        <label className="block text-[10px] font-bold uppercase text-[#65716C] mb-1">
                           Customer Status
                         </label>
                         <select
                           value={editForm.customer_status}
                           onChange={(e) => setEditForm({ ...editForm, customer_status: e.target.value })}
-                          className="w-full px-3 py-2 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-bold text-[#4A173A] focus:outline-none focus:border-[#B76E79]"
+                          className="w-full px-3 py-2 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl font-bold text-[#123C35] focus:outline-none focus:border-[#C9A45C]"
                         >
                           {CUSTOMER_STATUSES.map((s) => (
                             <option key={s} value={s}>{s}</option>
@@ -1224,20 +1224,20 @@ export default function TelecallerDeskPage() {
                       </div>
 
                       <div>
-                        <label className="block text-[10px] font-bold uppercase text-[#6F5963] mb-1">
+                        <label className="block text-[10px] font-bold uppercase text-[#65716C] mb-1">
                           Next Follow-up Date
                         </label>
                         <input
                           type="date"
                           value={editForm.follow_up_date}
                           onChange={(e) => setEditForm({ ...editForm, follow_up_date: e.target.value })}
-                          className="w-full px-3 py-2 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-semibold text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                          className="w-full px-3 py-2 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl font-semibold text-[#17201D] focus:outline-none focus:border-[#C9A45C]"
                         />
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-[10px] font-bold uppercase text-[#6F5963] mb-1">
+                      <label className="block text-[10px] font-bold uppercase text-[#65716C] mb-1">
                         Shopping Requirements & Preferences
                       </label>
                       <textarea
@@ -1245,12 +1245,12 @@ export default function TelecallerDeskPage() {
                         placeholder="e.g. Needs pure Kanchipuram silk sarees for bride & matching dhotis for groom's family..."
                         value={editForm.shopping_requirements}
                         onChange={(e) => setEditForm({ ...editForm, shopping_requirements: e.target.value })}
-                        className="w-full px-3 py-2 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-medium text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                        className="w-full px-3 py-2 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl font-medium text-[#17201D] focus:outline-none focus:border-[#C9A45C]"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[10px] font-bold uppercase text-[#6F5963] mb-1">
+                      <label className="block text-[10px] font-bold uppercase text-[#65716C] mb-1">
                         Reason for Update / Edit Remarks
                       </label>
                       <input
@@ -1258,7 +1258,7 @@ export default function TelecallerDeskPage() {
                         placeholder="e.g. Customer requested date change during follow-up call"
                         value={editForm.remarks}
                         onChange={(e) => setEditForm({ ...editForm, remarks: e.target.value })}
-                        className="w-full px-3 py-2 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-medium text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                        className="w-full px-3 py-2 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl font-medium text-[#17201D] focus:outline-none focus:border-[#C9A45C]"
                       />
                     </div>
                   </form>
@@ -1276,7 +1276,7 @@ export default function TelecallerDeskPage() {
                           <div className="font-bold text-[#198754]">
                             Store Location Template: {activeCustomer.location_name || 'Store'}
                           </div>
-                          <div className="text-[11px] text-[#2B1722]">
+                          <div className="text-[11px] text-[#17201D]">
                             Store phone, showroom address & wedding schedule placeholders are automatically resolved.
                           </div>
                         </div>
@@ -1284,7 +1284,7 @@ export default function TelecallerDeskPage() {
                     </div>
 
                     <div>
-                      <label className="block text-[10px] font-bold uppercase text-[#6F5963] mb-1">
+                      <label className="block text-[10px] font-bold uppercase text-[#65716C] mb-1">
                         Choose WhatsApp Template
                       </label>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -1296,11 +1296,11 @@ export default function TelecallerDeskPage() {
                             className={`p-2.5 rounded-xl border text-left font-bold text-xs transition-all cursor-pointer ${
                               selectedTemplateKey === tmpl.key
                                 ? 'bg-[#198754] text-white border-[#198754] shadow-xs'
-                                : 'bg-[#FFFAF7] text-[#2B1722] border-[#E8D9D4] hover:bg-[#FFF7F2]'
+                                : 'bg-[#F7F5F0] text-[#17201D] border-[#E1DDD3] hover:bg-[#EDF3F0]'
                             }`}
                           >
                             <div>{tmpl.label}</div>
-                            <div className={`text-[10px] font-normal ${selectedTemplateKey === tmpl.key ? 'text-white/80' : 'text-[#6F5963]'}`}>
+                            <div className={`text-[10px] font-normal ${selectedTemplateKey === tmpl.key ? 'text-white/80' : 'text-[#65716C]'}`}>
                               {tmpl.category}
                             </div>
                           </button>
@@ -1310,7 +1310,7 @@ export default function TelecallerDeskPage() {
 
                     <div>
                       <div className="flex items-center justify-between mb-1">
-                        <label className="block text-[10px] font-bold uppercase text-[#6F5963]">
+                        <label className="block text-[10px] font-bold uppercase text-[#65716C]">
                           Message Preview & Customization
                         </label>
                         <button
@@ -1319,7 +1319,7 @@ export default function TelecallerDeskPage() {
                             const tmpl = whatsappTemplates.find(t => t.key === selectedTemplateKey);
                             if (tmpl) setCustomWhatsAppMessage(tmpl.text);
                           }}
-                          className="text-[10px] text-[#B76E79] font-bold hover:underline cursor-pointer"
+                          className="text-[10px] text-[#C9A45C] font-bold hover:underline cursor-pointer"
                         >
                           Reset to Template
                         </button>
@@ -1328,28 +1328,28 @@ export default function TelecallerDeskPage() {
                         rows={6}
                         value={customWhatsAppMessage}
                         onChange={(e) => setCustomWhatsAppMessage(e.target.value)}
-                        className="w-full px-3 py-2 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-mono text-xs text-[#2B1722] focus:outline-none focus:border-[#198754] leading-relaxed"
+                        className="w-full px-3 py-2 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl font-mono text-xs text-[#17201D] focus:outline-none focus:border-[#198754] leading-relaxed"
                       />
                     </div>
 
                     {whatsappLogs.length > 0 && (
-                      <div className="pt-3 border-t border-[#E8D9D4]">
-                        <div className="text-[10px] font-bold uppercase text-[#6F5963] mb-2">
+                      <div className="pt-3 border-t border-[#E1DDD3]">
+                        <div className="text-[10px] font-bold uppercase text-[#65716C] mb-2">
                           Sent Message History ({whatsappLogs.length})
                         </div>
                         <div className="space-y-2 max-h-36 overflow-y-auto pr-1 custom-scrollbar">
                           {whatsappLogs.map((log) => (
-                            <div key={log.id} className="p-2.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl text-xs space-y-1">
-                              <div className="flex items-center justify-between font-bold text-[#4A173A]">
+                            <div key={log.id} className="p-2.5 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl text-xs space-y-1">
+                              <div className="flex items-center justify-between font-bold text-[#123C35]">
                                 <span>{log.template_type}</span>
-                                <span className="text-[10px] text-[#6F5963] font-normal">
+                                <span className="text-[10px] text-[#65716C] font-normal">
                                   {new Date(log.created_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
                                 </span>
                               </div>
-                              <div className="text-[11px] text-[#2B1722] font-mono bg-white p-2 rounded border border-[#E8D9D4]/50">
+                              <div className="text-[11px] text-[#17201D] font-mono bg-white p-2 rounded border border-[#E1DDD3]/50">
                                 {log.message_text}
                               </div>
-                              <div className="text-[10px] text-[#6F5963]">
+                              <div className="text-[10px] text-[#65716C]">
                                 By: <strong>{log.telecaller_name || 'Telecaller'}</strong> · Status: <span className="text-[#198754] font-bold">{log.status}</span>
                               </div>
                             </div>
@@ -1363,11 +1363,11 @@ export default function TelecallerDeskPage() {
                 {/* ── TAB 4: CHRONOLOGICAL ACTIVITY TIMELINE ── */}
                 {workspaceTab === 'timeline' && (
                   <div className="space-y-3 text-xs">
-                    <div className="flex items-center justify-between pb-2 border-b border-[#E8D9D4]">
-                      <span className="font-bold text-[#4A173A]">Complete CRM Audit Trail</span>
+                    <div className="flex items-center justify-between pb-2 border-b border-[#E1DDD3]">
+                      <span className="font-bold text-[#123C35]">Complete CRM Audit Trail</span>
                       <button
                         onClick={() => loadTimeline(activeCustomer.id)}
-                        className="text-[11px] text-[#B76E79] font-bold flex items-center gap-1 hover:underline cursor-pointer"
+                        className="text-[11px] text-[#C9A45C] font-bold flex items-center gap-1 hover:underline cursor-pointer"
                       >
                         <RefreshCw className="w-3 h-3" />
                         <span>Refresh</span>
@@ -1375,12 +1375,12 @@ export default function TelecallerDeskPage() {
                     </div>
 
                     {loadingTimeline ? (
-                      <div className="text-center py-8 text-[#6F5963]">
-                        <RefreshCw className="w-4 h-4 animate-spin text-[#B76E79] mx-auto mb-2" />
+                      <div className="text-center py-8 text-[#65716C]">
+                        <RefreshCw className="w-4 h-4 animate-spin text-[#C9A45C] mx-auto mb-2" />
                         <span>Loading activity feed...</span>
                       </div>
                     ) : timelineItems.length === 0 ? (
-                      <div className="text-center py-8 text-[#6F5963]">
+                      <div className="text-center py-8 text-[#65716C]">
                         No recorded events yet for this customer.
                       </div>
                     ) : (
@@ -1388,9 +1388,9 @@ export default function TelecallerDeskPage() {
                         {timelineItems.map((item, idx) => (
                           <div
                             key={item.id || idx}
-                            className="p-3 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl flex items-start gap-3"
+                            className="p-3 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl flex items-start gap-3"
                           >
-                            <div className="p-2 rounded-xl bg-[#4A173A] text-white shrink-0">
+                            <div className="p-2 rounded-xl bg-[#123C35] text-white shrink-0">
                               {item.type === 'CALL' && <PhoneCall className="w-3.5 h-3.5" />}
                               {item.type === 'WHATSAPP' && <MessageCircle className="w-3.5 h-3.5" />}
                               {item.type === 'STATUS_CHANGE' && <ArrowUpDown className="w-3.5 h-3.5" />}
@@ -1404,10 +1404,10 @@ export default function TelecallerDeskPage() {
 
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between gap-2 flex-wrap">
-                                <span className="font-bold text-[#4A173A] truncate">
+                                <span className="font-bold text-[#123C35] truncate">
                                   {item.action}
                                 </span>
-                                <span className="text-[10px] text-[#6F5963] font-mono shrink-0">
+                                <span className="text-[10px] text-[#65716C] font-mono shrink-0">
                                   {new Date(item.date_time).toLocaleString('en-IN', {
                                     dateStyle: 'medium',
                                     timeStyle: 'short'
@@ -1415,17 +1415,17 @@ export default function TelecallerDeskPage() {
                                 </span>
                               </div>
 
-                              <div className="text-xs text-[#2B1722] mt-0.5">
+                              <div className="text-xs text-[#17201D] mt-0.5">
                                 {item.details}
                               </div>
 
                               {item.remarks && (
-                                <div className="text-[11px] text-[#6F5963] italic mt-1 bg-white p-1.5 rounded border border-[#E8D9D4]/60">
+                                <div className="text-[11px] text-[#65716C] italic mt-1 bg-white p-1.5 rounded border border-[#E1DDD3]/60">
                                   "{item.remarks}"
                                 </div>
                               )}
 
-                              <div className="text-[10px] text-[#B76E79] font-semibold mt-1">
+                              <div className="text-[10px] text-[#C9A45C] font-semibold mt-1">
                                 By: <strong>{item.performer_name || 'System'}</strong>
                               </div>
                             </div>
@@ -1438,16 +1438,16 @@ export default function TelecallerDeskPage() {
               </div>
 
               {/* 3. STICKY MODAL FOOTER (shrink-0) */}
-              <div className="p-4 sm:px-6 py-3 bg-[#FFFAF7] border-t border-[#E8D9D4] flex items-center justify-between gap-3 shrink-0">
-                <div className="text-xs text-[#6F5963]">
-                  Logged In: <strong className="text-[#4A173A]">{session?.fullName || 'Active Telecaller'}</strong>
+              <div className="p-4 sm:px-6 py-3 bg-[#F7F5F0] border-t border-[#E1DDD3] flex items-center justify-between gap-3 shrink-0">
+                <div className="text-xs text-[#65716C]">
+                  Logged In: <strong className="text-[#123C35]">{session?.fullName || 'Active Telecaller'}</strong>
                 </div>
 
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => setWorkspaceOpen(false)}
-                    className="px-4 py-2 rounded-xl bg-[#FFFDFC] hover:bg-[#FFF7F2] border border-[#E8D9D4] font-bold text-xs text-[#4A173A] cursor-pointer"
+                    className="px-4 py-2 rounded-xl bg-[#FFFFFF] hover:bg-[#EDF3F0] border border-[#E1DDD3] font-bold text-xs text-[#123C35] cursor-pointer"
                   >
                     Cancel
                   </button>
@@ -1457,7 +1457,7 @@ export default function TelecallerDeskPage() {
                       type="submit"
                       form="call-form"
                       disabled={savingCall}
-                      className="px-5 py-2 rounded-xl bg-[#4A173A] hover:bg-[#6A2853] text-white font-bold text-xs shadow-md cursor-pointer disabled:opacity-60 flex items-center gap-1.5"
+                      className="px-5 py-2 rounded-xl bg-[#123C35] hover:bg-[#082821] text-white font-bold text-xs shadow-md cursor-pointer disabled:opacity-60 flex items-center gap-1.5"
                     >
                       {savingCall && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
                       <span>{savingCall ? 'Saving Call...' : 'Save Call & Update CRM'}</span>
@@ -1469,7 +1469,7 @@ export default function TelecallerDeskPage() {
                       type="submit"
                       form="edit-form"
                       disabled={savingEdit}
-                      className="px-5 py-2 rounded-xl bg-[#4A173A] hover:bg-[#6A2853] text-white font-bold text-xs shadow-md cursor-pointer disabled:opacity-60 flex items-center gap-1.5"
+                      className="px-5 py-2 rounded-xl bg-[#123C35] hover:bg-[#082821] text-white font-bold text-xs shadow-md cursor-pointer disabled:opacity-60 flex items-center gap-1.5"
                     >
                       {savingEdit && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
                       <span>{savingEdit ? 'Saving...' : 'Save Customer Details'}</span>
@@ -1492,7 +1492,7 @@ export default function TelecallerDeskPage() {
                     <button
                       type="button"
                       onClick={() => setWorkspaceOpen(false)}
-                      className="px-5 py-2 rounded-xl bg-[#4A173A] hover:bg-[#6A2853] text-white font-bold text-xs shadow-md cursor-pointer"
+                      className="px-5 py-2 rounded-xl bg-[#123C35] hover:bg-[#082821] text-white font-bold text-xs shadow-md cursor-pointer"
                     >
                       Done
                     </button>
@@ -1514,21 +1514,21 @@ export default function TelecallerDeskPage() {
             <div className="absolute inset-0" onClick={() => setPerfModalOpen(false)} aria-hidden="true" />
 
             {/* Modal Dialog */}
-            <div className="relative w-full max-w-4xl max-h-[calc(100dvh-2rem)] bg-[#FFFDFC] rounded-3xl shadow-2xl border border-[#E8D9D4] flex flex-col overflow-hidden z-10 my-auto">
+            <div className="relative w-full max-w-4xl max-h-[calc(100dvh-2rem)] bg-[#FFFFFF] rounded-3xl shadow-2xl border border-[#E1DDD3] flex flex-col overflow-hidden z-10 my-auto">
               {/* Fixed Header */}
-              <div className="p-4 sm:p-5 border-b border-[#E8D9D4] flex items-center justify-between bg-[#FFFDFC] shrink-0">
+              <div className="p-4 sm:p-5 border-b border-[#E1DDD3] flex items-center justify-between bg-[#FFFFFF] shrink-0">
                 <div>
-                  <h3 className="text-base font-bold text-[#4A173A] flex items-center gap-2">
-                    <Award className="w-4 h-4 text-[#B76E79]" />
+                  <h3 className="text-base font-bold text-[#123C35] flex items-center gap-2">
+                    <Award className="w-4 h-4 text-[#C9A45C]" />
                     <span>Telecaller Operational Activity & Performance</span>
                   </h3>
-                  <div className="text-xs text-[#6F5963]">
+                  <div className="text-xs text-[#65716C]">
                     Factual performance metrics tracked live from customer call activity and CRM updates.
                   </div>
                 </div>
                 <button
                   onClick={() => setPerfModalOpen(false)}
-                  className="p-1.5 text-[#6F5963] hover:text-[#4A173A] hover:bg-[#FFF7F2] rounded-xl cursor-pointer"
+                  className="p-1.5 text-[#65716C] hover:text-[#123C35] hover:bg-[#EDF3F0] rounded-xl cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -1537,18 +1537,18 @@ export default function TelecallerDeskPage() {
               {/* Scrollable Content */}
               <div className="flex-1 overflow-y-auto p-4 sm:p-6 custom-scrollbar">
                 {loadingPerf ? (
-                  <div className="text-center py-12 text-[#6F5963]">
-                    <RefreshCw className="w-5 h-5 animate-spin text-[#B76E79] mx-auto mb-2" />
+                  <div className="text-center py-12 text-[#65716C]">
+                    <RefreshCw className="w-5 h-5 animate-spin text-[#C9A45C] mx-auto mb-2" />
                     <span>Loading performance metrics...</span>
                   </div>
                 ) : performanceMetrics.length === 0 ? (
-                  <div className="text-center py-12 text-[#6F5963]">
+                  <div className="text-center py-12 text-[#65716C]">
                     No telecaller metrics available for the selected location.
                   </div>
                 ) : (
-                  <div className="table-frame custom-scrollbar border border-[#E8D9D4] rounded-2xl">
-                    <table className="w-full text-left text-xs text-[#2B1722] whitespace-nowrap">
-                      <thead className="bg-[#FFFAF7] text-[#4A173A] border-b border-[#E8D9D4] uppercase text-[10px] tracking-wider">
+                  <div className="table-frame custom-scrollbar border border-[#E1DDD3] rounded-2xl">
+                    <table className="w-full text-left text-xs text-[#17201D] whitespace-nowrap">
+                      <thead className="bg-[#F7F5F0] text-[#123C35] border-b border-[#E1DDD3] uppercase text-[10px] tracking-wider">
                         <tr>
                           <th className="py-3 px-3 font-bold">Telecaller</th>
                           <th className="py-3 px-3 font-bold">Location</th>
@@ -1562,13 +1562,13 @@ export default function TelecallerDeskPage() {
                           <th className="py-3 px-3 font-bold text-center">Visits Planned</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-[#E8D9D4]">
+                      <tbody className="divide-y divide-[#E1DDD3]">
                         {performanceMetrics.map((p) => (
-                          <tr key={p.telecaller_id} className="hover:bg-[#FFF7F2]">
-                            <td className="py-3 px-3 font-bold text-[#4A173A]">
+                          <tr key={p.telecaller_id} className="hover:bg-[#EDF3F0]">
+                            <td className="py-3 px-3 font-bold text-[#123C35]">
                               👤 {p.telecaller_name}
                             </td>
-                            <td className="py-3 px-3 font-medium text-[#6F5963]">
+                            <td className="py-3 px-3 font-medium text-[#65716C]">
                               📍 {p.location_name || 'Store'}
                             </td>
                             <td className="py-3 px-3 font-bold text-center">{p.assignedCustomers}</td>
@@ -1578,7 +1578,7 @@ export default function TelecallerDeskPage() {
                             <td className="py-3 px-3 font-medium text-center">{p.connectedCalls}</td>
                             <td className="py-3 px-3 font-medium text-center">{p.noAnswer}</td>
                             <td className="py-3 px-3 font-bold text-center text-[#198754]">{p.shoppingConfirmed}</td>
-                            <td className="py-3 px-3 font-bold text-center text-[#4A173A]">{p.visitsPlanned}</td>
+                            <td className="py-3 px-3 font-bold text-center text-[#123C35]">{p.visitsPlanned}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -1588,11 +1588,11 @@ export default function TelecallerDeskPage() {
               </div>
 
               {/* Fixed Footer */}
-              <div className="p-4 bg-[#FFFAF7] border-t border-[#E8D9D4] flex items-center justify-end shrink-0">
+              <div className="p-4 bg-[#F7F5F0] border-t border-[#E1DDD3] flex items-center justify-end shrink-0">
                 <button
                   type="button"
                   onClick={() => setPerfModalOpen(false)}
-                  className="px-5 py-2 rounded-xl bg-[#4A173A] hover:bg-[#6A2853] text-white font-bold text-xs shadow-md cursor-pointer"
+                  className="px-5 py-2 rounded-xl bg-[#123C35] hover:bg-[#082821] text-white font-bold text-xs shadow-md cursor-pointer"
                 >
                   Close
                 </button>

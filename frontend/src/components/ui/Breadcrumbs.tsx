@@ -32,18 +32,18 @@ export default function Breadcrumbs({ items, className = '' }: BreadcrumbsProps)
             <Link
               to={parentCrumb.href}
               title={parentCrumb.label}
-              className="text-[#6F5963] hover:text-[#4A173A] hover:underline transition-colors flex items-center gap-0.5 truncate max-w-[45vw]"
+              className="text-[#65716C] hover:text-[#123C35] hover:underline transition-colors flex items-center gap-0.5 truncate max-w-[45vw]"
             >
               <span>‹</span>
               <span className="truncate">{parentCrumb.label}</span>
             </Link>
           ) : (
-            <span className="text-[#6F5963] truncate max-w-[40vw]">
+            <span className="text-[#65716C] truncate max-w-[40vw]">
               ‹ {parentCrumb.label}
             </span>
           )}
-          <ChevronRight className="w-3 h-3 mx-1 text-[#B76E79] flex-shrink-0" aria-hidden="true" />
-          <span className="text-[#4A173A] font-bold truncate max-w-[45vw]">
+          <ChevronRight className="w-3 h-3 mx-1 text-[#C9A45C] flex-shrink-0" aria-hidden="true" />
+          <span className="text-[#123C35] font-bold truncate max-w-[45vw]">
             {currentCrumb.label}
           </span>
         </div>
@@ -63,13 +63,13 @@ export default function Breadcrumbs({ items, className = '' }: BreadcrumbsProps)
               className="flex items-center min-w-0 max-w-full"
             >
               {idx > 0 && (
-                <ChevronRight className="w-3 h-3 mx-1 text-[#B76E79] flex-shrink-0" aria-hidden="true" />
+                <ChevronRight className="w-3 h-3 mx-1 text-[#C9A45C] flex-shrink-0" aria-hidden="true" />
               )}
               {clickable ? (
                 <Link
                   to={crumb.href!}
                   title={crumb.label}
-                  className="text-[#6F5963] hover:text-[#4A173A] hover:underline underline-offset-2 transition-colors truncate rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B76E79] max-w-[40vw] xs:max-w-[45vw] sm:max-w-[240px]"
+                  className="text-[#65716C] hover:text-[#123C35] hover:underline underline-offset-2 transition-colors truncate rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A45C] max-w-[40vw] xs:max-w-[45vw] sm:max-w-[240px]"
                 >
                   {crumb.label}
                 </Link>
@@ -77,7 +77,7 @@ export default function Breadcrumbs({ items, className = '' }: BreadcrumbsProps)
                 <span
                   title={crumb.label}
                   className={`truncate max-w-[55vw] xs:max-w-[60vw] sm:max-w-[300px] ${
-                    isLast ? 'text-[#4A173A] font-bold' : 'text-[#6F5963]'
+                    isLast ? 'text-[#123C35] font-bold' : 'text-[#65716C]'
                   }`}
                 >
                   {crumb.label}

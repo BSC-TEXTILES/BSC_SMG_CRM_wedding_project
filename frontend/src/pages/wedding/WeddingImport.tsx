@@ -853,15 +853,15 @@ export default function WeddingImport() {
           />
 
           {/* Main Card */}
-          <div className="bg-[#FFFDFC] rounded-3xl border border-[#E8D9D4] shadow-xs p-6 sm:p-8 space-y-6">
+          <div className="bg-[#FFFFFF] rounded-3xl border border-[#E1DDD3] shadow-xs p-6 sm:p-8 space-y-6">
             {/* Header */}
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pb-6 border-b border-[#E8D9D4]">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pb-6 border-b border-[#E1DDD3]">
               <div>
-                <h2 className="text-xl font-black text-[#4A173A] flex items-center gap-2">
-                  <FileSpreadsheet className="w-6 h-6 text-[#B76E79]" />
+                <h2 className="text-xl font-black text-[#123C35] flex items-center gap-2">
+                  <FileSpreadsheet className="w-6 h-6 text-[#C9A45C]" />
                   <span>Bulk Import Wedding Customers</span>
                 </h2>
-                <p className="text-xs text-[#6F5963] mt-1 max-w-2xl leading-relaxed">
+                <p className="text-xs text-[#65716C] mt-1 max-w-2xl leading-relaxed">
                   Import customer registrations directly from CSV, Excel (.xlsx), or connected Google Sheets.
                   Duplicate mobile numbers will be skipped automatically to maintain clean customer history.
                 </p>
@@ -873,13 +873,13 @@ export default function WeddingImport() {
                   type="button"
                   onClick={() => handleDownloadTemplate('csv')}
                   disabled={downloadingCsv}
-                  className="px-4 py-2.5 bg-[#FFFDFC] hover:bg-[#FFF7F2] border border-[#B76E79] rounded-xl text-xs font-bold text-[#4A173A] flex items-center gap-2 shadow-2xs transition-all hover:border-[#4A173A] active:scale-95 disabled:opacity-50"
+                  className="px-4 py-2.5 bg-[#FFFFFF] hover:bg-[#EDF3F0] border border-[#C9A45C] rounded-xl text-xs font-bold text-[#123C35] flex items-center gap-2 shadow-2xs transition-all hover:border-[#123C35] active:scale-95 disabled:opacity-50"
                   title="Download standard UTF-8 CSV template"
                 >
                   {downloadingCsv ? (
-                    <Loader2 className="w-3.5 h-3.5 text-[#B76E79] animate-spin" />
+                    <Loader2 className="w-3.5 h-3.5 text-[#C9A45C] animate-spin" />
                   ) : (
-                    <Download className="w-3.5 h-3.5 text-[#B76E79]" />
+                    <Download className="w-3.5 h-3.5 text-[#C9A45C]" />
                   )}
                   <span>Download CSV Template</span>
                 </button>
@@ -888,13 +888,13 @@ export default function WeddingImport() {
                   type="button"
                   onClick={() => handleDownloadTemplate('xlsx')}
                   disabled={downloadingXlsx}
-                  className="px-4 py-2.5 bg-[#FFF7F2] hover:bg-[#F6E2E5] border border-[#B76E79] rounded-xl text-xs font-bold text-[#4A173A] flex items-center gap-2 shadow-2xs transition-all active:scale-95 disabled:opacity-50"
+                  className="px-4 py-2.5 bg-[#EDF3F0] hover:bg-[#EDF3F0] border border-[#C9A45C] rounded-xl text-xs font-bold text-[#123C35] flex items-center gap-2 shadow-2xs transition-all active:scale-95 disabled:opacity-50"
                   title="Download Excel spreadsheet with color-coded headers"
                 >
                   {downloadingXlsx ? (
-                    <Loader2 className="w-3.5 h-3.5 text-[#B76E79] animate-spin" />
+                    <Loader2 className="w-3.5 h-3.5 text-[#C9A45C] animate-spin" />
                   ) : (
-                    <FileSpreadsheet className="w-3.5 h-3.5 text-[#B76E79]" />
+                    <FileSpreadsheet className="w-3.5 h-3.5 text-[#C9A45C]" />
                   )}
                   <span>Download Excel (.xlsx) Template</span>
                 </button>
@@ -902,7 +902,7 @@ export default function WeddingImport() {
             </div>
 
             {/* Import Mode Switcher */}
-            <div className="flex flex-wrap items-center justify-between gap-4 p-2 bg-[#FFFAF7] border border-[#E8D9D4] rounded-2xl">
+            <div className="flex flex-wrap items-center justify-between gap-4 p-2 bg-[#F7F5F0] border border-[#E1DDD3] rounded-2xl">
               <div className="flex items-center gap-2">
                 <button
                   type="button"
@@ -913,8 +913,8 @@ export default function WeddingImport() {
                   }}
                   className={`px-5 py-2.5 rounded-xl text-xs font-black flex items-center gap-2 transition-all ${
                     importMode === 'file'
-                      ? 'bg-[#4A173A] text-white shadow-xs'
-                      : 'text-[#6F5963] hover:text-[#4A173A] hover:bg-[#FFFDFC]'
+                      ? 'bg-[#123C35] text-white shadow-xs'
+                      : 'text-[#65716C] hover:text-[#123C35] hover:bg-[#FFFFFF]'
                   }`}
                 >
                   <Upload className="w-4 h-4" />
@@ -933,8 +933,8 @@ export default function WeddingImport() {
                   }}
                   className={`px-5 py-2.5 rounded-xl text-xs font-black flex items-center gap-2.5 transition-all ${
                     importMode === 'google'
-                      ? 'bg-[#4A173A] text-white shadow-xs'
-                      : 'text-[#6F5963] hover:text-[#4A173A] hover:bg-[#FFFDFC]'
+                      ? 'bg-[#123C35] text-white shadow-xs'
+                      : 'text-[#65716C] hover:text-[#123C35] hover:bg-[#FFFFFF]'
                   }`}
                 >
                   <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
@@ -966,10 +966,10 @@ export default function WeddingImport() {
             {importMode === 'google' && (
               <div className="space-y-6">
                 {/* 1. Google Account Connection Card */}
-                <div className="p-5 sm:p-6 rounded-2xl bg-[#FFFAF7] border border-[#E8D9D4] space-y-4">
+                <div className="p-5 sm:p-6 rounded-2xl bg-[#F7F5F0] border border-[#E1DDD3] space-y-4">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-2xl bg-white border border-[#E8D9D4] shadow-2xs flex items-center justify-center shrink-0">
+                      <div className="w-10 h-10 rounded-2xl bg-white border border-[#E1DDD3] shadow-2xs flex items-center justify-center shrink-0">
                         <svg className="w-6 h-6" viewBox="0 0 24 24">
                           <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
                           <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
@@ -978,8 +978,8 @@ export default function WeddingImport() {
                         </svg>
                       </div>
                       <div>
-                        <h3 className="text-sm font-black text-[#4A173A]">Google Account Connection</h3>
-                        <p className="text-[11px] text-[#6F5963] mt-0.5">
+                        <h3 className="text-sm font-black text-[#123C35]">Google Account Connection</h3>
+                        <p className="text-[11px] text-[#65716C] mt-0.5">
                           {googleStatus?.isConnected
                             ? `Authorized access to read spreadsheets for ${googleStatus.email || 'your account'}.`
                             : 'Connect your Google account securely via Google OAuth 2.0 to access your Google Sheets.'}
@@ -1010,12 +1010,12 @@ export default function WeddingImport() {
                           id="btn-connect-google"
                           onClick={handleConnectGoogle}
                           disabled={connectingGoogle}
-                          className="px-5 py-2.5 rounded-xl bg-[#4A173A] hover:bg-[#6A2853] text-white text-xs font-black shadow-xs transition-all active:scale-95 disabled:opacity-50 inline-flex items-center gap-2"
+                          className="px-5 py-2.5 rounded-xl bg-[#123C35] hover:bg-[#082821] text-white text-xs font-black shadow-xs transition-all active:scale-95 disabled:opacity-50 inline-flex items-center gap-2"
                         >
                           {connectingGoogle ? (
-                            <Loader2 className="w-4 h-4 animate-spin text-[#B76E79]" />
+                            <Loader2 className="w-4 h-4 animate-spin text-[#C9A45C]" />
                           ) : (
-                            <Globe className="w-4 h-4 text-[#E8C7A8]" />
+                            <Globe className="w-4 h-4 text-[#E4CB92]" />
                           )}
                           <span>Connect Google Account</span>
                         </button>
@@ -1026,7 +1026,7 @@ export default function WeddingImport() {
                         <button
                           type="button"
                           onClick={() => setShowConfigModal(true)}
-                          className="p-2 rounded-xl bg-white border border-[#E8D9D4] hover:bg-[#FFF7F2] text-[#6F5963] hover:text-[#4A173A] transition-colors"
+                          className="p-2 rounded-xl bg-white border border-[#E1DDD3] hover:bg-[#EDF3F0] text-[#65716C] hover:text-[#123C35] transition-colors"
                           title="Configure Google Cloud OAuth Credentials"
                         >
                           <Settings className="w-4 h-4" />
@@ -1048,7 +1048,7 @@ export default function WeddingImport() {
                           <button
                             type="button"
                             onClick={() => setShowConfigModal(true)}
-                            className="font-black text-[#4A173A] underline ml-1.5 hover:text-[#6A2853]"
+                            className="font-black text-[#123C35] underline ml-1.5 hover:text-[#082821]"
                           >
                             Configure Credentials Now →
                           </button>
@@ -1062,9 +1062,9 @@ export default function WeddingImport() {
                 {googleStatus?.isConnected ? (
                   <div className="space-y-6">
                     {/* Store Location Selection for Google Sheets */}
-                    <div className="p-5 rounded-2xl bg-[#FFFDFC] border border-[#E8D9D4] space-y-4">
+                    <div className="p-5 rounded-2xl bg-[#FFFFFF] border border-[#E1DDD3] space-y-4">
                       <div>
-                        <label className="block text-xs font-black text-[#4A173A] mb-1.5">
+                        <label className="block text-xs font-black text-[#123C35] mb-1.5">
                           Assign Store Location <span className="text-[#B42318]">*</span>
                         </label>
                         <select
@@ -1074,9 +1074,9 @@ export default function WeddingImport() {
                             setLocationId(e.target.value);
                             if (e.target.value) setLocationError(false);
                           }}
-                          className={`w-full max-w-xl px-4 py-3 bg-[#FFFAF7] border ${
-                            locationError ? 'border-[#B42318] ring-2 ring-[#B42318]/20' : 'border-[#E8D9D4]'
-                          } rounded-xl font-bold text-xs text-[#2B1722] focus:outline-hidden focus:border-[#B76E79] transition-colors`}
+                          className={`w-full max-w-xl px-4 py-3 bg-[#F7F5F0] border ${
+                            locationError ? 'border-[#B42318] ring-2 ring-[#B42318]/20' : 'border-[#E1DDD3]'
+                          } rounded-xl font-bold text-xs text-[#17201D] focus:outline-hidden focus:border-[#C9A45C] transition-colors`}
                         >
                           <option value="">-- Choose Store Location (Required) --</option>
                           {locations.map((loc) => (
@@ -1094,9 +1094,9 @@ export default function WeddingImport() {
                       </div>
 
                       {/* Sheet Picker Header & Mode Switcher */}
-                      <div className="pt-2 border-t border-[#E8D9D4] space-y-3">
+                      <div className="pt-2 border-t border-[#E1DDD3] space-y-3">
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                          <label className="text-xs font-black text-[#4A173A]">
+                          <label className="text-xs font-black text-[#123C35]">
                             Select Google Sheet <span className="text-[#B42318]">*</span>
                           </label>
 
@@ -1106,8 +1106,8 @@ export default function WeddingImport() {
                               onClick={() => setSheetSelectionMode('drive')}
                               className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-colors ${
                                 sheetSelectionMode === 'drive'
-                                  ? 'bg-[#4A173A] text-white'
-                                  : 'bg-[#FFFAF7] border border-[#E8D9D4] text-[#6F5963] hover:text-[#4A173A]'
+                                  ? 'bg-[#123C35] text-white'
+                                  : 'bg-[#F7F5F0] border border-[#E1DDD3] text-[#65716C] hover:text-[#123C35]'
                               }`}
                             >
                               Choose from Drive
@@ -1117,8 +1117,8 @@ export default function WeddingImport() {
                               onClick={() => setSheetSelectionMode('url')}
                               className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-colors ${
                                 sheetSelectionMode === 'url'
-                                  ? 'bg-[#4A173A] text-white'
-                                  : 'bg-[#FFFAF7] border border-[#E8D9D4] text-[#6F5963] hover:text-[#4A173A]'
+                                  ? 'bg-[#123C35] text-white'
+                                  : 'bg-[#F7F5F0] border border-[#E1DDD3] text-[#65716C] hover:text-[#123C35]'
                               }`}
                             >
                               Paste Sheet Link / ID
@@ -1131,7 +1131,7 @@ export default function WeddingImport() {
                           <div className="space-y-3">
                             <div className="flex items-center gap-2">
                               <div className="relative flex-1">
-                                <Search className="w-4 h-4 text-[#6F5963] absolute left-3.5 top-1/2 -translate-y-1/2" />
+                                <Search className="w-4 h-4 text-[#65716C] absolute left-3.5 top-1/2 -translate-y-1/2" />
                                 <input
                                   type="text"
                                   placeholder="Search spreadsheets in your Google Drive..."
@@ -1140,19 +1140,19 @@ export default function WeddingImport() {
                                     setSheetSearchQuery(e.target.value);
                                     loadSpreadsheets(e.target.value);
                                   }}
-                                  className="w-full pl-10 pr-4 py-2.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl text-xs font-medium text-[#2B1722] focus:outline-hidden focus:border-[#B76E79]"
+                                  className="w-full pl-10 pr-4 py-2.5 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl text-xs font-medium text-[#17201D] focus:outline-hidden focus:border-[#C9A45C]"
                                 />
                               </div>
                               <button
                                 type="button"
                                 onClick={() => loadSpreadsheets(sheetSearchQuery)}
                                 disabled={loadingSheets}
-                                className="px-3.5 py-2.5 rounded-xl bg-white border border-[#E8D9D4] hover:bg-[#FFF7F2] text-[#4A173A] text-xs font-bold flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                                className="px-3.5 py-2.5 rounded-xl bg-white border border-[#E1DDD3] hover:bg-[#EDF3F0] text-[#123C35] text-xs font-bold flex items-center gap-1.5 transition-colors disabled:opacity-50"
                               >
                                 {loadingSheets ? (
-                                  <Loader2 className="w-3.5 h-3.5 animate-spin text-[#B76E79]" />
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin text-[#C9A45C]" />
                                 ) : (
-                                  <RefreshCw className="w-3.5 h-3.5 text-[#B76E79]" />
+                                  <RefreshCw className="w-3.5 h-3.5 text-[#C9A45C]" />
                                 )}
                                 <span>Refresh</span>
                               </button>
@@ -1160,16 +1160,16 @@ export default function WeddingImport() {
 
                             {/* Spreadsheets Grid */}
                             {loadingSheets ? (
-                              <div className="p-8 text-center bg-[#FFFAF7] rounded-xl border border-[#E8D9D4]">
-                                <Loader2 className="w-6 h-6 animate-spin text-[#B76E79] mx-auto mb-2" />
-                                <p className="text-xs text-[#6F5963]">Fetching spreadsheets from your Google Drive...</p>
+                              <div className="p-8 text-center bg-[#F7F5F0] rounded-xl border border-[#E1DDD3]">
+                                <Loader2 className="w-6 h-6 animate-spin text-[#C9A45C] mx-auto mb-2" />
+                                <p className="text-xs text-[#65716C]">Fetching spreadsheets from your Google Drive...</p>
                               </div>
                             ) : spreadsheets.length === 0 ? (
-                              <div className="p-6 text-center bg-[#FFFAF7] rounded-xl border border-[#E8D9D4] space-y-2">
-                                <p className="text-xs text-[#6F5963]">
+                              <div className="p-6 text-center bg-[#F7F5F0] rounded-xl border border-[#E1DDD3] space-y-2">
+                                <p className="text-xs text-[#65716C]">
                                   No spreadsheets found in your Google Drive matching this query.
                                 </p>
-                                <p className="text-[11px] text-[#6F5963]">
+                                <p className="text-[11px] text-[#65716C]">
                                   You can also click <strong>"Paste Sheet Link / ID"</strong> above to paste any sheet link directly.
                                 </p>
                               </div>
@@ -1183,8 +1183,8 @@ export default function WeddingImport() {
                                       onClick={() => handleSelectSpreadsheet(sheet)}
                                       className={`p-3 rounded-xl border cursor-pointer transition-all flex items-start justify-between gap-2 ${
                                         isSelected
-                                          ? 'bg-[#F9EEF4] border-[#4A173A] ring-2 ring-[#4A173A]/20'
-                                          : 'bg-[#FFFDFC] border-[#E8D9D4] hover:border-[#B76E79] hover:bg-[#FFFAF7]'
+                                          ? 'bg-[#F9EEF4] border-[#123C35] ring-2 ring-[#123C35]/20'
+                                          : 'bg-[#FFFFFF] border-[#E1DDD3] hover:border-[#C9A45C] hover:bg-[#F7F5F0]'
                                       }`}
                                     >
                                       <div className="min-w-0 flex items-start gap-2.5">
@@ -1194,11 +1194,11 @@ export default function WeddingImport() {
                                           <path fill="#FFF" d="M8 13h8v2H8zm0 4h8v2H8zm0-8h4v2H8z" />
                                         </svg>
                                         <div className="min-w-0">
-                                          <h4 className="text-xs font-black text-[#4A173A] truncate" title={sheet.name}>
+                                          <h4 className="text-xs font-black text-[#123C35] truncate" title={sheet.name}>
                                             {sheet.name}
                                           </h4>
                                           {sheet.lastModified && (
-                                            <p className="text-[10px] text-[#6F5963] mt-0.5">
+                                            <p className="text-[10px] text-[#65716C] mt-0.5">
                                               Updated: {formatImportDate(sheet.lastModified)}
                                             </p>
                                           )}
@@ -1212,14 +1212,14 @@ export default function WeddingImport() {
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             onClick={(e) => e.stopPropagation()}
-                                            className="p-1 rounded-lg hover:bg-white text-[#6F5963] hover:text-[#4A173A] transition-colors"
+                                            className="p-1 rounded-lg hover:bg-white text-[#65716C] hover:text-[#123C35] transition-colors"
                                             title="Open in Google Sheets (Read-Only)"
                                           >
                                             <ExternalLink className="w-3.5 h-3.5" />
                                           </a>
                                         )}
                                         {isSelected && (
-                                          <span className="w-5 h-5 rounded-full bg-[#4A173A] text-white flex items-center justify-center">
+                                          <span className="w-5 h-5 rounded-full bg-[#123C35] text-white flex items-center justify-center">
                                             <Check className="w-3 h-3" />
                                           </span>
                                         )}
@@ -1241,13 +1241,13 @@ export default function WeddingImport() {
                                 placeholder="Paste Google Sheet URL (e.g. https://docs.google.com/spreadsheets/d/.../edit) or Sheet ID"
                                 value={manualUrl}
                                 onChange={(e) => setManualUrl(e.target.value)}
-                                className="flex-1 px-4 py-2.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl text-xs font-mono text-[#2B1722] focus:outline-hidden focus:border-[#B76E79]"
+                                className="flex-1 px-4 py-2.5 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl text-xs font-mono text-[#17201D] focus:outline-hidden focus:border-[#C9A45C]"
                               />
                               <button
                                 type="button"
                                 onClick={handleLoadManualUrl}
                                 disabled={loadingDetails || !manualUrl.trim()}
-                                className="px-5 py-2.5 rounded-xl bg-[#4A173A] hover:bg-[#6A2853] text-white text-xs font-bold transition-all active:scale-95 disabled:opacity-50 inline-flex items-center gap-1.5"
+                                className="px-5 py-2.5 rounded-xl bg-[#123C35] hover:bg-[#082821] text-white text-xs font-bold transition-all active:scale-95 disabled:opacity-50 inline-flex items-center gap-1.5"
                               >
                                 {loadingDetails ? (
                                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1257,7 +1257,7 @@ export default function WeddingImport() {
                                 <span>Load Sheet</span>
                               </button>
                             </div>
-                            <span className="text-[10px] text-[#6F5963] block">
+                            <span className="text-[10px] text-[#65716C] block">
                               Make sure the Google account connected above has at least Read access to this spreadsheet.
                             </span>
                           </div>
@@ -1266,7 +1266,7 @@ export default function WeddingImport() {
 
                       {/* Selected Spreadsheet & Worksheet (Tab) Selector */}
                       {selectedSpreadsheet && (
-                        <div className="pt-4 border-t border-[#E8D9D4] space-y-3">
+                        <div className="pt-4 border-t border-[#E1DDD3] space-y-3">
                           <div className="p-3.5 rounded-xl bg-[#E8F5EE] border border-[#198754]/30 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs">
                             <div className="flex items-center gap-2.5 min-w-0">
                               <CircleCheck className="w-4.5 h-4.5 text-[#198754] shrink-0" />
@@ -1298,14 +1298,14 @@ export default function WeddingImport() {
 
                           {/* Worksheet / Tab dropdown */}
                           <div className="max-w-md">
-                            <label className="block text-xs font-black text-[#4A173A] mb-1.5">
+                            <label className="block text-xs font-black text-[#123C35] mb-1.5">
                               Select Worksheet / Tab <span className="text-[#B42318]">*</span>
                             </label>
                             <select
                               value={selectedWorksheet}
                               onChange={(e) => handleWorksheetChange(e.target.value)}
                               disabled={loadingDetails || worksheets.length === 0}
-                              className="w-full px-4 py-2.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl text-xs font-bold text-[#2B1722] focus:outline-hidden focus:border-[#B76E79]"
+                              className="w-full px-4 py-2.5 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl text-xs font-bold text-[#17201D] focus:outline-hidden focus:border-[#C9A45C]"
                             >
                               {worksheets.map((ws, idx) => (
                                 <option key={idx} value={ws.title}>
@@ -1320,16 +1320,16 @@ export default function WeddingImport() {
 
                     {/* 3. Live Sheet Preview & Pre-validation Card */}
                     {selectedSpreadsheet && selectedWorksheet && (
-                      <div className="p-5 sm:p-6 rounded-2xl bg-[#FFFDFC] border border-[#E8D9D4] shadow-xs space-y-4">
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-[#E8D9D4]">
+                      <div className="p-5 sm:p-6 rounded-2xl bg-[#FFFFFF] border border-[#E1DDD3] shadow-xs space-y-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-[#E1DDD3]">
                           <div>
                             <div className="flex items-center gap-2">
-                              <Table className="w-5 h-5 text-[#B76E79]" />
-                              <h3 className="text-sm font-black text-[#4A173A]">
+                              <Table className="w-5 h-5 text-[#C9A45C]" />
+                              <h3 className="text-sm font-black text-[#123C35]">
                                 Worksheet Preview: {selectedWorksheet}
                               </h3>
                             </div>
-                            <p className="text-[11px] text-[#6F5963] mt-0.5">
+                            <p className="text-[11px] text-[#65716C] mt-0.5">
                               Live read-only preview of headers and data rows directly from Google Sheets.
                             </p>
                           </div>
@@ -1339,13 +1339,13 @@ export default function WeddingImport() {
                               type="button"
                               onClick={handleRefreshSheetData}
                               disabled={loadingPreview}
-                              className="px-3.5 py-2 rounded-xl bg-[#FFF7F2] hover:bg-[#F6E2E5] border border-[#B76E79] text-[#4A173A] text-xs font-bold flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                              className="px-3.5 py-2 rounded-xl bg-[#EDF3F0] hover:bg-[#EDF3F0] border border-[#C9A45C] text-[#123C35] text-xs font-bold flex items-center gap-1.5 transition-colors disabled:opacity-50"
                               title="Re-read headers and rows from Google Sheets"
                             >
                               {loadingPreview ? (
-                                <Loader2 className="w-3.5 h-3.5 animate-spin text-[#B76E79]" />
+                                <Loader2 className="w-3.5 h-3.5 animate-spin text-[#C9A45C]" />
                               ) : (
-                                <RefreshCw className="w-3.5 h-3.5 text-[#B76E79]" />
+                                <RefreshCw className="w-3.5 h-3.5 text-[#C9A45C]" />
                               )}
                               <span>Refresh Sheet Data</span>
                             </button>
@@ -1353,9 +1353,9 @@ export default function WeddingImport() {
                         </div>
 
                         {loadingPreview ? (
-                          <div className="p-10 text-center bg-[#FFFAF7] rounded-xl border border-[#E8D9D4]">
-                            <Loader2 className="w-6 h-6 animate-spin text-[#B76E79] mx-auto mb-2" />
-                            <p className="text-xs text-[#6F5963]">Reading worksheet data and validating headers...</p>
+                          <div className="p-10 text-center bg-[#F7F5F0] rounded-xl border border-[#E1DDD3]">
+                            <Loader2 className="w-6 h-6 animate-spin text-[#C9A45C] mx-auto mb-2" />
+                            <p className="text-xs text-[#65716C]">Reading worksheet data and validating headers...</p>
                           </div>
                         ) : previewError ? (
                           <div className="p-4 rounded-xl bg-[#FDE8E7] border border-[#B42318]/30 text-[#B42318] text-xs space-y-2">
@@ -1408,8 +1408,8 @@ export default function WeddingImport() {
                             )}
 
                             {/* Detected Columns Tags */}
-                            <div className="p-3 bg-[#FFFAF7] rounded-xl border border-[#E8D9D4] space-y-1.5">
-                              <span className="text-[10px] font-black text-[#4A173A] uppercase tracking-wider block">
+                            <div className="p-3 bg-[#F7F5F0] rounded-xl border border-[#E1DDD3] space-y-1.5">
+                              <span className="text-[10px] font-black text-[#123C35] uppercase tracking-wider block">
                                 Detected Columns in Google Sheet ({previewData.headerValidation.canonicalHeaders.length}):
                               </span>
                               <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
@@ -1423,7 +1423,7 @@ export default function WeddingImport() {
                                         isRequired
                                           ? 'bg-[#198754] text-white'
                                           : isStandard
-                                          ? 'bg-[#FFFDFC] text-[#4A173A] border border-[#E8D9D4]'
+                                          ? 'bg-[#FFFFFF] text-[#123C35] border border-[#E1DDD3]'
                                           : 'bg-[#FFF4D6] text-[#855D00] border border-[#C58A18]/30'
                                       }`}
                                     >
@@ -1436,20 +1436,20 @@ export default function WeddingImport() {
 
                             {/* Data Rows Preview Table */}
                             <div className="space-y-1.5">
-                              <div className="flex items-center justify-between text-[11px] text-[#6F5963]">
+                              <div className="flex items-center justify-between text-[11px] text-[#65716C]">
                                 <span>
                                   Showing first <strong>{previewData.previewRows.length}</strong> of{' '}
                                   <strong>{previewData.totalRows}</strong> rows in worksheet
                                 </span>
-                                <span className="font-mono text-[10px] text-[#6F5963]">
+                                <span className="font-mono text-[10px] text-[#65716C]">
                                   Source: Read-Only (no modifications to Google Sheet)
                                 </span>
                               </div>
 
-                              <div className="overflow-x-auto table-sticky-head rounded-xl border border-[#E8D9D4] max-h-72">
+                              <div className="overflow-x-auto table-sticky-head rounded-xl border border-[#E1DDD3] max-h-72">
                                 <table className="w-full text-left text-[11px]">
                                   <thead className="bg-[#F8EDE8] sticky top-0 z-10">
-                                    <tr className="border-b border-[#E8D9D4] text-[#4A173A] font-black">
+                                    <tr className="border-b border-[#E1DDD3] text-[#123C35] font-black">
                                       <th className="py-2.5 px-3">Row</th>
                                       <th className="py-2.5 px-3">Status</th>
                                       <th className="py-2.5 px-3">Customer Name</th>
@@ -1461,15 +1461,15 @@ export default function WeddingImport() {
                                       <th className="py-2.5 px-3">Telecaller</th>
                                     </tr>
                                   </thead>
-                                  <tbody className="divide-y divide-[#EADBD7] text-[#2B1722] bg-[#FFFDFC]">
+                                  <tbody className="divide-y divide-[#EADBD7] text-[#17201D] bg-[#FFFFFF]">
                                     {previewData.previewRows.map((r, idx) => (
                                       <tr
                                         key={idx}
                                         className={`transition-colors ${
-                                          !r.isValid ? 'bg-[#FDE8E7]/40 hover:bg-[#FDE8E7]/70' : 'hover:bg-[#FFF7F2]'
+                                          !r.isValid ? 'bg-[#FDE8E7]/40 hover:bg-[#FDE8E7]/70' : 'hover:bg-[#EDF3F0]'
                                         }`}
                                       >
-                                        <td className="py-2 px-3 font-mono font-bold text-[#6F5963]">
+                                        <td className="py-2 px-3 font-mono font-bold text-[#65716C]">
                                           #{r.rowNumber}
                                         </td>
                                         <td className="py-2 px-3 whitespace-nowrap">
@@ -1486,14 +1486,14 @@ export default function WeddingImport() {
                                             </span>
                                           )}
                                         </td>
-                                        <td className="py-2 px-3 font-medium text-[#4A173A]">
+                                        <td className="py-2 px-3 font-medium text-[#123C35]">
                                           {r.data.customer_name || '—'}
                                         </td>
                                         <td className="py-2 px-3 font-mono">
                                           {r.data.mobile_number || '—'}
                                         </td>
-                                        <td className="py-2 px-3 text-[#6F5963]">{r.data.email || '—'}</td>
-                                        <td className="py-2 px-3 font-mono text-[#6F5963]">
+                                        <td className="py-2 px-3 text-[#65716C]">{r.data.email || '—'}</td>
+                                        <td className="py-2 px-3 font-mono text-[#65716C]">
                                           {r.data.wedding_date || '—'}
                                         </td>
                                         <td className="py-2 px-3">{r.data.preferred_shopping_category || '—'}</td>
@@ -1502,7 +1502,7 @@ export default function WeddingImport() {
                                             ? `₹${r.data.budget_min || '0'} - ₹${r.data.budget_max || '0'}`
                                             : '—'}
                                         </td>
-                                        <td className="py-2 px-3 text-[#6F5963]">
+                                        <td className="py-2 px-3 text-[#65716C]">
                                           {r.data.assigned_telecaller || '—'}
                                         </td>
                                       </tr>
@@ -1513,12 +1513,12 @@ export default function WeddingImport() {
                             </div>
 
                             {/* Import Action & Progress Indicator */}
-                            <div className="pt-4 border-t border-[#E8D9D4] space-y-4">
+                            <div className="pt-4 border-t border-[#E1DDD3] space-y-4">
                               {googleImporting && (
-                                <div className="p-4 rounded-xl bg-[#FFFAF7] border border-[#B76E79]/40 space-y-2.5">
-                                  <div className="flex items-center justify-between text-xs font-bold text-[#4A173A]">
+                                <div className="p-4 rounded-xl bg-[#F7F5F0] border border-[#C9A45C]/40 space-y-2.5">
+                                  <div className="flex items-center justify-between text-xs font-bold text-[#123C35]">
                                     <span className="flex items-center gap-2">
-                                      <Loader2 className="w-4 h-4 animate-spin text-[#B76E79]" />
+                                      <Loader2 className="w-4 h-4 animate-spin text-[#C9A45C]" />
                                       <span>
                                         {importStep === 'preparing' && 'Preparing import...'}
                                         {importStep === 'reading' && 'Reading Google Sheet data...'}
@@ -1530,9 +1530,9 @@ export default function WeddingImport() {
                                     <span className="font-mono">{importProgressPercent}%</span>
                                   </div>
 
-                                  <div className="w-full bg-[#E8D9D4] h-2 rounded-full overflow-hidden">
+                                  <div className="w-full bg-[#E1DDD3] h-2 rounded-full overflow-hidden">
                                     <div
-                                      className="bg-[#4A173A] h-full transition-all duration-300 ease-out"
+                                      className="bg-[#123C35] h-full transition-all duration-300 ease-out"
                                       style={{ width: `${importProgressPercent}%` }}
                                     />
                                   </div>
@@ -1550,22 +1550,22 @@ export default function WeddingImport() {
                                     !locationId ||
                                     previewData.totalRows === 0
                                   }
-                                  className="px-8 py-3.5 rounded-xl bg-[#4A173A] hover:bg-[#6A2853] text-white font-black text-xs shadow-md border border-[#4A173A] flex items-center gap-2.5 transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+                                  className="px-8 py-3.5 rounded-xl bg-[#123C35] hover:bg-[#082821] text-white font-black text-xs shadow-md border border-[#123C35] flex items-center gap-2.5 transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
                                 >
                                   {googleImporting ? (
                                     <>
-                                      <Loader2 className="w-4 h-4 animate-spin text-[#B76E79]" />
+                                      <Loader2 className="w-4 h-4 animate-spin text-[#C9A45C]" />
                                       <span>Importing Google Sheet Records...</span>
                                     </>
                                   ) : (
                                     <>
-                                      <Download className="w-4 h-4 text-[#E8C7A8]" />
+                                      <Download className="w-4 h-4 text-[#E4CB92]" />
                                       <span>Import Valid Rows from Google Sheet</span>
                                     </>
                                   )}
                                 </button>
 
-                                <span className="text-[11px] text-[#6F5963]">
+                                <span className="text-[11px] text-[#65716C]">
                                   Target: <strong>{previewData.totalRows}</strong> rows to validate & import into{' '}
                                   <strong>
                                     {locations.find((l) => String(l.id) === String(locationId))?.location_name ||
@@ -1581,8 +1581,8 @@ export default function WeddingImport() {
                   </div>
                 ) : (
                   /* If not connected, show prominent prompt */
-                  <div className="p-8 sm:p-12 text-center bg-[#FFFAF7] rounded-2xl border border-[#E8D9D4] space-y-4">
-                    <div className="w-16 h-16 rounded-3xl bg-white border border-[#E8D9D4] shadow-xs flex items-center justify-center mx-auto">
+                  <div className="p-8 sm:p-12 text-center bg-[#F7F5F0] rounded-2xl border border-[#E1DDD3] space-y-4">
+                    <div className="w-16 h-16 rounded-3xl bg-white border border-[#E1DDD3] shadow-xs flex items-center justify-center mx-auto">
                       <svg className="w-10 h-10" viewBox="0 0 24 24">
                         <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
                         <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
@@ -1592,8 +1592,8 @@ export default function WeddingImport() {
                     </div>
 
                     <div className="max-w-md mx-auto space-y-1">
-                      <h3 className="text-base font-black text-[#4A173A]">Connect to Google Sheets</h3>
-                      <p className="text-xs text-[#6F5963] leading-relaxed">
+                      <h3 className="text-base font-black text-[#123C35]">Connect to Google Sheets</h3>
+                      <p className="text-xs text-[#65716C] leading-relaxed">
                         Authorize the CRM with read-only access to select your spreadsheets, preview records,
                         validate mobile numbers, and import directly without manual file downloads.
                       </p>
@@ -1603,12 +1603,12 @@ export default function WeddingImport() {
                       type="button"
                       onClick={handleConnectGoogle}
                       disabled={connectingGoogle}
-                      className="px-6 py-3 rounded-xl bg-[#4A173A] hover:bg-[#6A2853] text-white text-xs font-black shadow-md transition-all active:scale-95 inline-flex items-center gap-2"
+                      className="px-6 py-3 rounded-xl bg-[#123C35] hover:bg-[#082821] text-white text-xs font-black shadow-md transition-all active:scale-95 inline-flex items-center gap-2"
                     >
                       {connectingGoogle ? (
-                        <Loader2 className="w-4 h-4 animate-spin text-[#B76E79]" />
+                        <Loader2 className="w-4 h-4 animate-spin text-[#C9A45C]" />
                       ) : (
-                        <Globe className="w-4 h-4 text-[#E8C7A8]" />
+                        <Globe className="w-4 h-4 text-[#E4CB92]" />
                       )}
                       <span>Connect Google Account</span>
                     </button>
@@ -1623,13 +1623,13 @@ export default function WeddingImport() {
             {importMode === 'file' && (
               <div className="space-y-6">
                 {/* Companion Guidance & Format Legend Card */}
-                <div className="p-4 sm:p-5 rounded-2xl bg-[#FFFAF7] border border-[#E8D9D4] space-y-3">
+                <div className="p-4 sm:p-5 rounded-2xl bg-[#F7F5F0] border border-[#E1DDD3] space-y-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="text-xs font-black text-[#4A173A] uppercase tracking-wider flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5 text-[#B76E79]" />
+                    <span className="text-xs font-black text-[#123C35] uppercase tracking-wider flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-[#C9A45C]" />
                       <span>Column Specification & Legend</span>
                     </span>
-                    <span className="text-[11px] font-medium text-[#6F5963]">
+                    <span className="text-[11px] font-medium text-[#65716C]">
                       Exact Row 1 headers · {COLUMN_SPECS.filter((c) => c.required).length} required ·{' '}
                       {COLUMN_SPECS.filter((c) => !c.required).length} optional · max {MAX_IMPORT_ROWS} rows
                     </span>
@@ -1640,13 +1640,13 @@ export default function WeddingImport() {
                       <div
                         key={col.name}
                         className={`p-2.5 rounded-xl border space-y-1 ${
-                          col.required ? 'bg-[#FDE8E7] border-[#B42318]/30' : 'bg-[#FFFDFC] border-[#E8D9D4]'
+                          col.required ? 'bg-[#FDE8E7] border-[#B42318]/30' : 'bg-[#FFFFFF] border-[#E1DDD3]'
                         }`}
                       >
                         <div className="flex items-center justify-between gap-2">
                           <span
                             className={`font-mono text-[11px] font-black break-all ${
-                              col.required ? 'text-[#B42318]' : 'text-[#4A173A]'
+                              col.required ? 'text-[#B42318]' : 'text-[#123C35]'
                             }`}
                           >
                             {col.name}
@@ -1659,16 +1659,16 @@ export default function WeddingImport() {
                             {col.required ? 'Required' : 'Optional'}
                           </span>
                         </div>
-                        <p className={`text-[11px] ${col.required ? 'text-[#B42318]' : 'text-[#2B1722]'}`}>{col.hint}</p>
-                        <p className="text-[10px] text-[#6F5963] font-mono italic break-words">
+                        <p className={`text-[11px] ${col.required ? 'text-[#B42318]' : 'text-[#17201D]'}`}>{col.hint}</p>
+                        <p className="text-[10px] text-[#65716C] font-mono italic break-words">
                           {col.format ? `${col.format} · ` : ''}e.g. {col.example}
                         </p>
                       </div>
                     ))}
                   </div>
 
-                  <p className="text-[11px] text-[#6F5963] leading-relaxed">
-                    <span className="font-black text-[#4A173A]">Legacy headers still accepted:</span> name, phone,
+                  <p className="text-[11px] text-[#65716C] leading-relaxed">
+                    <span className="font-black text-[#123C35]">Legacy headers still accepted:</span> name, phone,
                     alternate_number, email_id, marriage_date, expected_visit_date, preferred_collection, estimated_members,
                     budget, budget_range, store_location, followup_call_date, notes, telecaller.
                   </p>
@@ -1678,7 +1678,7 @@ export default function WeddingImport() {
                 <form onSubmit={handleImport} className="space-y-6 max-w-2xl">
                   {/* Store Location Selection */}
                   <div>
-                    <label className="block text-xs font-black text-[#4A173A] mb-1.5">
+                    <label className="block text-xs font-black text-[#123C35] mb-1.5">
                       Assign Store Location <span className="text-[#B42318]">*</span>
                     </label>
                     <div className="relative">
@@ -1689,9 +1689,9 @@ export default function WeddingImport() {
                           setLocationId(e.target.value);
                           if (e.target.value) setLocationError(false);
                         }}
-                        className={`w-full px-4 py-3 bg-[#FFFAF7] border ${
-                          locationError ? 'border-[#B42318] ring-2 ring-[#B42318]/20' : 'border-[#E8D9D4]'
-                        } rounded-xl font-bold text-xs text-[#2B1722] focus:outline-hidden focus:border-[#B76E79] transition-colors`}
+                        className={`w-full px-4 py-3 bg-[#F7F5F0] border ${
+                          locationError ? 'border-[#B42318] ring-2 ring-[#B42318]/20' : 'border-[#E1DDD3]'
+                        } rounded-xl font-bold text-xs text-[#17201D] focus:outline-hidden focus:border-[#C9A45C] transition-colors`}
                       >
                         <option value="">-- Choose Store Location (Required) --</option>
                         {locations.map((loc) => (
@@ -1707,14 +1707,14 @@ export default function WeddingImport() {
                         <span>Please assign a store location to import customer records.</span>
                       </p>
                     )}
-                    <span className="text-[11px] text-[#6F5963] block mt-1">
+                    <span className="text-[11px] text-[#65716C] block mt-1">
                       Default branch for records where "store_location" is not specified in the file.
                     </span>
                   </div>
 
                   {/* File Input */}
                   <div>
-                    <label className="block text-xs font-black text-[#4A173A] mb-1.5">
+                    <label className="block text-xs font-black text-[#123C35] mb-1.5">
                       Select Customer File (.csv or .xlsx) <span className="text-[#B42318]">*</span>
                     </label>
                     <div className="relative">
@@ -1727,7 +1727,7 @@ export default function WeddingImport() {
                           (e.target as HTMLInputElement).value = '';
                         }}
                         onChange={handleFileChange}
-                        className="w-full p-3.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-2xl file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-xs file:font-black file:bg-[#4A173A] file:text-white hover:file:bg-[#6A2853] cursor-pointer text-xs font-medium text-[#2B1722] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full p-3.5 bg-[#F7F5F0] border border-[#E1DDD3] rounded-2xl file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-xs file:font-black file:bg-[#123C35] file:text-white hover:file:bg-[#082821] cursor-pointer text-xs font-medium text-[#17201D] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       />
                     </div>
 
@@ -1810,16 +1810,16 @@ export default function WeddingImport() {
                     <button
                       type="submit"
                       disabled={uploading || !file || !locationId || !!fileError}
-                      className="px-8 py-3.5 rounded-xl bg-[#4A173A] hover:bg-[#6A2853] text-white font-black text-xs shadow-md border border-[#4A173A] flex items-center gap-2.5 transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="px-8 py-3.5 rounded-xl bg-[#123C35] hover:bg-[#082821] text-white font-black text-xs shadow-md border border-[#123C35] flex items-center gap-2.5 transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       {uploading ? (
                         <>
-                          <Loader2 className="w-4 h-4 animate-spin text-[#B76E79]" />
+                          <Loader2 className="w-4 h-4 animate-spin text-[#C9A45C]" />
                           <span>Processing & Importing Customer Records...</span>
                         </>
                       ) : (
                         <>
-                          <Upload className="w-4 h-4 text-[#E8C7A8]" />
+                          <Upload className="w-4 h-4 text-[#E4CB92]" />
                           <span>Start Bulk Import</span>
                         </>
                       )}
@@ -1833,8 +1833,8 @@ export default function WeddingImport() {
                 POST-IMPORT EXECUTION SUMMARY (Common for File & Google Sheets)
                ══════════════════════════════════════════════════════════════════════════ */}
             {importResult && (
-              <div className="p-5 sm:p-6 rounded-2xl bg-[#FFFDFC] border border-[#E8D9D4] shadow-xs space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-3 border-b border-[#E8D9D4]">
+              <div className="p-5 sm:p-6 rounded-2xl bg-[#FFFFFF] border border-[#E1DDD3] shadow-xs space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-3 border-b border-[#E1DDD3]">
                   <div className="flex items-center gap-2">
                     {importedCount > 0 ? (
                       <CheckCircle2 className="w-5 h-5 text-[#198754] shrink-0" />
@@ -1844,13 +1844,13 @@ export default function WeddingImport() {
                       <Info className="w-5 h-5 text-[#C58A18] shrink-0" />
                     )}
                     <div>
-                      <h3 className="font-black text-sm text-[#4A173A]">
+                      <h3 className="font-black text-sm text-[#123C35]">
                         Import Execution Summary
                       </h3>
-                      <div className="text-[11px] text-[#6F5963] mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+                      <div className="text-[11px] text-[#65716C] mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1">
                         <span>
                           Source:{' '}
-                          <strong className="text-[#4A173A]">
+                          <strong className="text-[#123C35]">
                             {importResult.sheetTitle
                               ? `${importResult.sheetTitle} (${importResult.sheetName})`
                               : importResult.fileName || lastFileName || file?.name || 'File'}
@@ -1859,7 +1859,7 @@ export default function WeddingImport() {
                         <span>•</span>
                         <span>
                           Branch:{' '}
-                          <strong className="text-[#4A173A]">
+                          <strong className="text-[#123C35]">
                             {importResult.storeBranch ||
                               locations.find((l) => String(l.id) === String(locationId))?.location_name ||
                               'Selected Store'}
@@ -1868,13 +1868,13 @@ export default function WeddingImport() {
                         <span>•</span>
                         <span>
                           Processing Time:{' '}
-                          <strong className="text-[#4A173A]">{importResult.processingTime || '< 1s'}</strong>
+                          <strong className="text-[#123C35]">{importResult.processingTime || '< 1s'}</strong>
                         </span>
                       </div>
                     </div>
                   </div>
 
-                  <span className="text-xs font-bold text-[#4A173A] bg-[#FFF7F2] px-3 py-1.5 rounded-xl border border-[#E8D9D4] self-start sm:self-center">
+                  <span className="text-xs font-bold text-[#123C35] bg-[#EDF3F0] px-3 py-1.5 rounded-xl border border-[#E1DDD3] self-start sm:self-center">
                     {importedCount} imported · {duplicateCount} duplicates · {errorCount} failed
                   </span>
                 </div>
@@ -1905,12 +1905,12 @@ export default function WeddingImport() {
                     <span className="text-[10px] text-[#B42318] block mt-0.5">validation failed</span>
                   </div>
 
-                  <div className="p-3 rounded-xl bg-[#EDE7F6] border border-[#6A2853]/20">
-                    <span className="text-[11px] font-bold text-[#6A2853] uppercase tracking-wider block">
+                  <div className="p-3 rounded-xl bg-[#EDF3F0] border border-[#082821]/20">
+                    <span className="text-[11px] font-bold text-[#082821] uppercase tracking-wider block">
                       Total Processed
                     </span>
-                    <span className="text-xl font-black text-[#6A2853] mt-1 block">{totalRowsCount}</span>
-                    <span className="text-[10px] text-[#6A2853] block mt-0.5">
+                    <span className="text-xl font-black text-[#082821] mt-1 block">{totalRowsCount}</span>
+                    <span className="text-[10px] text-[#082821] block mt-0.5">
                       time: {importResult.processingTime || '< 1s'}
                     </span>
                   </div>
@@ -1953,16 +1953,16 @@ export default function WeddingImport() {
                         handleRefreshSheetData();
                       }
                     }}
-                    className="text-xs font-black inline-flex items-center gap-1.5 bg-[#FFFDFC] text-[#4A173A] border border-[#E8D9D4] px-3.5 py-2.5 rounded-xl hover:bg-[#FFF7F2] transition-colors shadow-2xs"
+                    className="text-xs font-black inline-flex items-center gap-1.5 bg-[#FFFFFF] text-[#123C35] border border-[#E1DDD3] px-3.5 py-2.5 rounded-xl hover:bg-[#EDF3F0] transition-colors shadow-2xs"
                   >
-                    <RefreshCw className="w-3.5 h-3.5 text-[#B76E79]" />
+                    <RefreshCw className="w-3.5 h-3.5 text-[#C9A45C]" />
                     <span>Run Another Import</span>
                   </button>
                 </div>
 
                 {/* Errors Detail Section (Always visible/expanded when errors exist) */}
                 {notImportedRows.length > 0 && (
-                  <div className="space-y-3 pt-3 border-t border-[#E8D9D4]">
+                  <div className="space-y-3 pt-3 border-t border-[#E1DDD3]">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 bg-[#FDE8E7] p-3.5 rounded-xl border border-[#B42318]/30">
                       <div className="flex items-center gap-2.5 min-w-0">
                         <CircleAlert className="w-5 h-5 text-[#B42318] shrink-0" />
@@ -1992,18 +1992,18 @@ export default function WeddingImport() {
                       <div className="space-y-2.5">
                         {notImportedRows.length > 5 && (
                           <div className="relative">
-                            <Search className="w-4 h-4 text-[#6F5963] absolute left-3 top-1/2 -translate-y-1/2" />
+                            <Search className="w-4 h-4 text-[#65716C] absolute left-3 top-1/2 -translate-y-1/2" />
                             <input
                               type="text"
                               placeholder="Search in error list by customer, mobile, row number, or error reason..."
                               value={errorSearchQuery}
                               onChange={(e) => setErrorSearchQuery(e.target.value)}
-                              className="w-full pl-9 pr-4 py-2 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl text-xs font-medium text-[#2B1722] focus:outline-hidden focus:border-[#B42318]"
+                              className="w-full pl-9 pr-4 py-2 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl text-xs font-medium text-[#17201D] focus:outline-hidden focus:border-[#B42318]"
                             />
                           </div>
                         )}
 
-                        <div className="max-h-80 overflow-y-auto table-sticky-head rounded-xl border border-[#B42318]/30 bg-[#FFFDFC] text-xs shadow-2xs">
+                        <div className="max-h-80 overflow-y-auto table-sticky-head rounded-xl border border-[#B42318]/30 bg-[#FFFFFF] text-xs shadow-2xs">
                           <table className="w-full text-left">
                             <thead className="bg-[#FDE8E7] sticky top-0 z-10">
                               <tr className="border-b border-[#B42318]/20 text-[#B42318] text-[11px] font-black">
@@ -2030,10 +2030,10 @@ export default function WeddingImport() {
                                     <td className="py-2 px-3 font-mono font-bold text-[#B42318] whitespace-nowrap">
                                       {err.row > 0 ? `Row ${err.row}` : (err as any).rowNo ? `Row ${(err as any).rowNo}` : `#${idx + 2}`}
                                     </td>
-                                    <td className="py-2 px-3 font-medium text-[#2B1722]">
+                                    <td className="py-2 px-3 font-medium text-[#17201D]">
                                       {err.customerName || (err as any).customer_name || (err as any).name || '—'}
                                     </td>
-                                    <td className="py-2 px-3 font-mono text-[#2B1722]">
+                                    <td className="py-2 px-3 font-mono text-[#17201D]">
                                       {err.mobile || (err as any).mobile_number || (err as any).phone || '—'}
                                     </td>
                                     <td className="py-2 px-3 text-[#B42318] font-medium leading-relaxed">
@@ -2055,7 +2055,7 @@ export default function WeddingImport() {
                     <button
                       type="button"
                       onClick={() => setShowWarningDetails(!showWarningDetails)}
-                      className="text-xs font-bold text-[#6A2853] hover:underline flex items-center gap-1.5"
+                      className="text-xs font-bold text-[#082821] hover:underline flex items-center gap-1.5"
                     >
                       <span>
                         {showWarningDetails ? 'Hide' : 'View'} {importResult.warnings.length} Warning
@@ -2065,20 +2065,20 @@ export default function WeddingImport() {
                     </button>
 
                     {showWarningDetails && (
-                      <div className="max-h-48 overflow-y-auto table-sticky-head rounded-xl border border-[#6A2853]/20 bg-[#EDE7F6] p-3 text-xs">
+                      <div className="max-h-48 overflow-y-auto table-sticky-head rounded-xl border border-[#082821]/20 bg-[#EDF3F0] p-3 text-xs">
                         <table className="w-full text-left">
                           <thead>
-                            <tr className="border-b border-[#6A2853]/20 text-[#6A2853] text-[11px] font-black">
+                            <tr className="border-b border-[#082821]/20 text-[#082821] text-[11px] font-black">
                               <th className="pb-1.5 pr-2">Row #</th>
                               <th className="pb-1.5 px-2">Customer</th>
                               <th className="pb-1.5 px-2">Mobile</th>
                               <th className="pb-1.5 pl-2">Warning</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-[#6A2853]/10 text-[11px] text-[#6A2853] font-medium">
+                          <tbody className="divide-y divide-[#082821]/10 text-[11px] text-[#082821] font-medium">
                             {(importResult.warnings || []).map((warn, idx) => (
                               <tr key={idx}>
-                                <td className="py-1.5 pr-2 font-mono font-bold text-[#6A2853]">
+                                <td className="py-1.5 pr-2 font-mono font-bold text-[#082821]">
                                   {warn.row > 0 ? `Row ${warn.row}` : '—'}
                                 </td>
                                 <td className="py-1.5 px-2 font-medium">{warn.customerName || '—'}</td>
@@ -2098,7 +2098,7 @@ export default function WeddingImport() {
                   <div className="pt-2 flex items-center justify-between">
                     <Link
                       to="/wedding-crm/customers"
-                      className="text-xs font-black text-[#4A173A] hover:text-[#6A2853] flex items-center gap-1.5 transition-colors underline"
+                      className="text-xs font-black text-[#123C35] hover:text-[#082821] flex items-center gap-1.5 transition-colors underline"
                     >
                       <span>Open Customer Register to view imported records →</span>
                     </Link>
@@ -2110,10 +2110,10 @@ export default function WeddingImport() {
             {/* ══════════════════════════════════════════════════════════════════════════
                 IMPORT HISTORY TABLE (Includes File & Google Sheets imports)
                ══════════════════════════════════════════════════════════════════════════ */}
-            <div className="p-4 sm:p-5 rounded-2xl bg-[#FFFDFC] border border-[#E8D9D4] shadow-xs space-y-3">
+            <div className="p-4 sm:p-5 rounded-2xl bg-[#FFFFFF] border border-[#E1DDD3] shadow-xs space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="text-xs font-black text-[#4A173A] uppercase tracking-wider flex items-center gap-1.5">
-                  <History className="w-3.5 h-3.5 text-[#B76E79]" />
+                <span className="text-xs font-black text-[#123C35] uppercase tracking-wider flex items-center gap-1.5">
+                  <History className="w-3.5 h-3.5 text-[#C9A45C]" />
                   <span>Import History</span>
                 </span>
                 <div className="flex items-center gap-3">
@@ -2132,23 +2132,23 @@ export default function WeddingImport() {
                     type="button"
                     onClick={loadImportLogs}
                     disabled={logsLoading}
-                    className="text-[11px] font-bold text-[#4A173A] hover:text-[#6A2853] inline-flex items-center gap-1.5 underline disabled:opacity-60 cursor-pointer"
+                    className="text-[11px] font-bold text-[#123C35] hover:text-[#082821] inline-flex items-center gap-1.5 underline disabled:opacity-60 cursor-pointer"
                   >
-                    {logsLoading && <Loader2 className="w-3.5 h-3.5 animate-spin text-[#B76E79]" />}
+                    {logsLoading && <Loader2 className="w-3.5 h-3.5 animate-spin text-[#C9A45C]" />}
                     Refresh History
                   </button>
                 </div>
               </div>
 
               {importLogs.length === 0 ? (
-                <p className="text-[11px] text-[#6F5963] py-2">
+                <p className="text-[11px] text-[#65716C] py-2">
                   No imports recorded for your stores yet.
                 </p>
               ) : (
-                <div className="table-frame custom-scrollbar rounded-xl border border-[#E8D9D4]">
+                <div className="table-frame custom-scrollbar rounded-xl border border-[#E1DDD3]">
                   <table className="w-full text-left text-[11px]">
                     <thead className="bg-[#F8EDE8]">
-                      <tr className="border-b border-[#E8D9D4] text-[#4A173A] font-black">
+                      <tr className="border-b border-[#E1DDD3] text-[#123C35] font-black">
                         <th className="py-2.5 pr-3 pl-3">When</th>
                         <th className="py-2.5 px-3">Source</th>
                         <th className="py-2.5 px-3">File / Sheet</th>
@@ -2162,7 +2162,7 @@ export default function WeddingImport() {
                         <th className="py-2.5 pl-3 pr-3 text-center">Action</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-[#EADBD7] text-[#2B1722] bg-[#FFFDFC]">
+                    <tbody className="divide-y divide-[#EADBD7] text-[#17201D] bg-[#FFFFFF]">
                       {importLogs.map((log) => {
                         const isGoogleSheet =
                           log.file_type === 'google_sheets' ||
@@ -2170,7 +2170,7 @@ export default function WeddingImport() {
 
                         return (
                           <tr key={log.id} className="hover:bg-[#FFF1F2] transition-colors">
-                            <td className="py-2 pr-3 pl-3 font-mono whitespace-nowrap text-[#6F5963]">
+                            <td className="py-2 pr-3 pl-3 font-mono whitespace-nowrap text-[#65716C]">
                               {formatImportDate(log.created_at || (log as any).uploaded_at)}
                             </td>
                             <td className="py-2 px-3 whitespace-nowrap">
@@ -2184,23 +2184,23 @@ export default function WeddingImport() {
                                   <span>Google Sheet</span>
                                 </span>
                               ) : (
-                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-[#FFF7F2] text-[#4A173A] border border-[#E8D9D4]">
-                                  <FileSpreadsheet className="w-2.5 h-2.5 text-[#B76E79]" />
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-[#EDF3F0] text-[#123C35] border border-[#E1DDD3]">
+                                  <FileSpreadsheet className="w-2.5 h-2.5 text-[#C9A45C]" />
                                   <span>File</span>
                                 </span>
                               )}
                             </td>
                             <td
-                              className="py-2 px-3 font-medium max-w-[200px] truncate text-[#4A173A]"
+                              className="py-2 px-3 font-medium max-w-[200px] truncate text-[#123C35]"
                               title={log.file_name}
                             >
                               {log.file_name || '—'}
                             </td>
-                            <td className="py-2 px-3 text-[#6F5963]">
+                            <td className="py-2 px-3 text-[#65716C]">
                               {log.location_name || (log.location_id ? `#${log.location_id}` : 'All')}
                             </td>
-                            <td className="py-2 px-3 font-semibold text-[#2B1722]">{log.user_name || '—'}</td>
-                            <td className="py-2 px-3 text-right font-mono text-[#6F5963]">{log.total_rows ?? 0}</td>
+                            <td className="py-2 px-3 font-semibold text-[#17201D]">{log.user_name || '—'}</td>
+                            <td className="py-2 px-3 text-right font-mono text-[#65716C]">{log.total_rows ?? 0}</td>
                             <td className="py-2 px-3 text-right font-mono font-bold text-[#198754]">
                               {log.imported_count ?? 0}
                             </td>
@@ -2232,7 +2232,7 @@ export default function WeddingImport() {
                                 type="button"
                                 onClick={() => handleDeleteLog(log.id, log.file_name)}
                                 disabled={deletingLogId === log.id}
-                                className="p-1 rounded-lg hover:bg-[#FDE8E7] text-[#6F5963] hover:text-[#B42318] transition-colors cursor-pointer disabled:opacity-50"
+                                className="p-1 rounded-lg hover:bg-[#FDE8E7] text-[#65716C] hover:text-[#B42318] transition-colors cursor-pointer disabled:opacity-50"
                                 title="Delete this import history record"
                                 aria-label="Delete import log"
                               >
@@ -2251,7 +2251,7 @@ export default function WeddingImport() {
                 </div>
               )}
 
-              <p className="text-[10px] text-[#6F5963]">
+              <p className="text-[10px] text-[#65716C]">
                 Same history is available under Wedding → Reports → Import History.
               </p>
             </div>
@@ -2262,37 +2262,37 @@ export default function WeddingImport() {
             ADMIN MODAL: CONFIGURE GOOGLE CLOUD OAUTH CREDENTIALS
            ══════════════════════════════════════════════════════════════════════════ */}
         {showConfigModal && (
-          <div className="fixed inset-0 z-50 bg-[#2B1722]/50 backdrop-blur-xs flex items-center justify-center p-4">
-            <div className="bg-[#FFFDFC] rounded-3xl border border-[#E8D9D4] shadow-2xl max-w-lg w-full p-6 sm:p-7 space-y-5 animate-in fade-in zoom-in-95 duration-200">
-              <div className="flex items-center justify-between pb-3 border-b border-[#E8D9D4]">
+          <div className="fixed inset-0 z-50 bg-[#17201D]/50 backdrop-blur-xs flex items-center justify-center p-4">
+            <div className="bg-[#FFFFFF] rounded-3xl border border-[#E1DDD3] shadow-2xl max-w-lg w-full p-6 sm:p-7 space-y-5 animate-in fade-in zoom-in-95 duration-200">
+              <div className="flex items-center justify-between pb-3 border-b border-[#E1DDD3]">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-[#FFF7F2] border border-[#B76E79] flex items-center justify-center">
-                    <Lock className="w-4 h-4 text-[#4A173A]" />
+                  <div className="w-8 h-8 rounded-xl bg-[#EDF3F0] border border-[#C9A45C] flex items-center justify-center">
+                    <Lock className="w-4 h-4 text-[#123C35]" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-black text-[#4A173A]">Configure Google Cloud OAuth</h3>
-                    <p className="text-[11px] text-[#6F5963]">Admin setting for Google Sheets integration</p>
+                    <h3 className="text-sm font-black text-[#123C35]">Configure Google Cloud OAuth</h3>
+                    <p className="text-[11px] text-[#65716C]">Admin setting for Google Sheets integration</p>
                   </div>
                 </div>
                 <button
                   type="button"
                   onClick={() => setShowConfigModal(false)}
-                  className="p-1.5 rounded-lg hover:bg-[#FFFAF7] text-[#6F5963] hover:text-[#4A173A]"
+                  className="p-1.5 rounded-lg hover:bg-[#F7F5F0] text-[#65716C] hover:text-[#123C35]"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
 
               {/* Instructions */}
-              <div className="p-3.5 rounded-xl bg-[#FFFAF7] border border-[#E8D9D4] text-xs text-[#2B1722] space-y-2">
-                <span className="font-black text-[#4A173A] block">Setup Instructions:</span>
-                <ol className="list-decimal list-inside text-[11px] text-[#6F5963] space-y-1">
+              <div className="p-3.5 rounded-xl bg-[#F7F5F0] border border-[#E1DDD3] text-xs text-[#17201D] space-y-2">
+                <span className="font-black text-[#123C35] block">Setup Instructions:</span>
+                <ol className="list-decimal list-inside text-[11px] text-[#65716C] space-y-1">
                   <li>Open Google Cloud Console &gt; APIs & Services &gt; Credentials</li>
                   <li>Enable "Google Sheets API" and "Google Drive API"</li>
                   <li>Create OAuth 2.0 Client ID (Web Application)</li>
                   <li>
                     Add Authorized redirect URI:
-                    <span className="font-mono text-[10px] text-[#4A173A] bg-white px-1.5 py-0.5 rounded border border-[#E8D9D4] block mt-0.5 break-all select-all">
+                    <span className="font-mono text-[10px] text-[#123C35] bg-white px-1.5 py-0.5 rounded border border-[#E1DDD3] block mt-0.5 break-all select-all">
                       {typeof window !== 'undefined'
                         ? `${window.location.origin}/api/wedding-crm/google/callback`
                         : '/api/wedding-crm/google/callback'}
@@ -2304,7 +2304,7 @@ export default function WeddingImport() {
 
               <form onSubmit={handleSaveGoogleConfig} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-black text-[#4A173A] mb-1">
+                  <label className="block text-xs font-black text-[#123C35] mb-1">
                     Google Client ID <span className="text-[#B42318]">*</span>
                   </label>
                   <input
@@ -2313,12 +2313,12 @@ export default function WeddingImport() {
                     value={configClientId}
                     onChange={(e) => setConfigClientId(e.target.value)}
                     placeholder="e.g. 1234567890-abcdef.apps.googleusercontent.com"
-                    className="w-full px-3.5 py-2.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl text-xs font-mono text-[#2B1722] focus:outline-hidden focus:border-[#B76E79]"
+                    className="w-full px-3.5 py-2.5 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl text-xs font-mono text-[#17201D] focus:outline-hidden focus:border-[#C9A45C]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-black text-[#4A173A] mb-1">
+                  <label className="block text-xs font-black text-[#123C35] mb-1">
                     Google Client Secret <span className="text-[#B42318]">*</span>
                   </label>
                   <input
@@ -2327,9 +2327,9 @@ export default function WeddingImport() {
                     value={configClientSecret}
                     onChange={(e) => setConfigClientSecret(e.target.value)}
                     placeholder="GOCSPX-..."
-                    className="w-full px-3.5 py-2.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl text-xs font-mono text-[#2B1722] focus:outline-hidden focus:border-[#B76E79]"
+                    className="w-full px-3.5 py-2.5 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl text-xs font-mono text-[#17201D] focus:outline-hidden focus:border-[#C9A45C]"
                   />
-                  <span className="text-[10px] text-[#6F5963] mt-1 block">
+                  <span className="text-[10px] text-[#65716C] mt-1 block">
                     Credentials are stored securely in database settings and never exposed to client browsers.
                   </span>
                 </div>
@@ -2338,14 +2338,14 @@ export default function WeddingImport() {
                   <button
                     type="button"
                     onClick={() => setShowConfigModal(false)}
-                    className="px-4 py-2 rounded-xl bg-white border border-[#E8D9D4] text-xs font-bold text-[#6F5963] hover:text-[#4A173A]"
+                    className="px-4 py-2 rounded-xl bg-white border border-[#E1DDD3] text-xs font-bold text-[#65716C] hover:text-[#123C35]"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={savingConfig}
-                    className="px-5 py-2 rounded-xl bg-[#4A173A] hover:bg-[#6A2853] text-white text-xs font-black transition-all active:scale-95 disabled:opacity-50 inline-flex items-center gap-1.5"
+                    className="px-5 py-2 rounded-xl bg-[#123C35] hover:bg-[#082821] text-white text-xs font-black transition-all active:scale-95 disabled:opacity-50 inline-flex items-center gap-1.5"
                   >
                     {savingConfig && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                     <span>Save Credentials</span>

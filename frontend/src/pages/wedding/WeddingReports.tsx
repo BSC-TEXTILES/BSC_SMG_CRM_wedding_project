@@ -158,17 +158,17 @@ export default function WeddingReports() {
                 />
                 <button
                   onClick={handleExport}
-                  className="px-3.5 py-2 bg-[#FFFDFC] hover:bg-[#FFF7F2] border border-[#E8D9D4] rounded-xl text-xs font-bold text-[#4A173A] flex items-center gap-1.5 shadow-2xs transition-colors"
+                  className="px-3.5 py-2 bg-[#FFFFFF] hover:bg-[#EDF3F0] border border-[#E1DDD3] rounded-xl text-xs font-bold text-[#123C35] flex items-center gap-1.5 shadow-2xs transition-colors"
                 >
-                  <Download className="w-3.5 h-3.5 text-[#B76E79]" />
+                  <Download className="w-3.5 h-3.5 text-[#C9A45C]" />
                   <span>Export Report</span>
                 </button>
                 <button
                   onClick={loadReport}
                   disabled={loading}
-                  className="px-3.5 py-2 bg-[#FFFDFC] hover:bg-[#FFF7F2] border border-[#E8D9D4] rounded-xl text-xs font-bold text-[#4A173A] flex items-center gap-1.5 transition-colors shadow-2xs"
+                  className="px-3.5 py-2 bg-[#FFFFFF] hover:bg-[#EDF3F0] border border-[#E1DDD3] rounded-xl text-xs font-bold text-[#123C35] flex items-center gap-1.5 transition-colors shadow-2xs"
                 >
-                  <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-[#B76E79]' : 'text-[#B76E79]'}`} />
+                  <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-[#C9A45C]' : 'text-[#C9A45C]'}`} />
                   <span>Refresh</span>
                 </button>
               </div>
@@ -176,24 +176,24 @@ export default function WeddingReports() {
           />
 
           {/* Telecaller Performance Table Card */}
-          <div className="bg-[#FFFDFC] rounded-3xl border border-[#E8D9D4] shadow-xs p-6 space-y-4">
-            <div className="flex items-center justify-between border-b border-[#E8D9D4] pb-3">
+          <div className="bg-[#FFFFFF] rounded-3xl border border-[#E1DDD3] shadow-xs p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-[#E1DDD3] pb-3">
               <div>
-                <h3 className="text-sm font-black text-[#4A173A] uppercase tracking-wider">
+                <h3 className="text-sm font-black text-[#123C35] uppercase tracking-wider">
                   Telecaller & Staff Performance Matrix
                 </h3>
-                <div className="text-xs text-[#6F5963]">
+                <div className="text-xs text-[#65716C]">
                   Calls logged, confirmations, store visits, and sales won per telecaller
                 </div>
               </div>
-              <span className="text-xs font-bold text-[#6F5963]">
+              <span className="text-xs font-bold text-[#65716C]">
                 {telecallerPerf.length} active staff
               </span>
             </div>
 
-            <div className="table-frame custom-scrollbar rounded-2xl border border-[#E8D9D4]">
-              <table className="w-full min-w-[850px] text-left text-xs text-[#2B1722]">
-                <thead className="bg-[#F8EDE8] text-[#4A173A] uppercase text-[10px] tracking-wider border-b border-[#E8D9D4]">
+            <div className="table-frame custom-scrollbar rounded-2xl border border-[#E1DDD3]">
+              <table className="w-full min-w-[850px] text-left text-xs text-[#17201D]">
+                <thead className="bg-[#F8EDE8] text-[#123C35] uppercase text-[10px] tracking-wider border-b border-[#E1DDD3]">
                   <tr>
                     <th className="py-3 px-4 font-black">Telecaller Name</th>
                     <th className="py-3 px-4 font-black">Location</th>
@@ -204,17 +204,17 @@ export default function WeddingReports() {
                     <th className="py-3 px-4 font-black text-right">Conversion Rate</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#E8D9D4] bg-[#FFFDFC]">
+                <tbody className="divide-y divide-[#E1DDD3] bg-[#FFFFFF]">
                   {loading ? (
                     <tr>
-                      <td colSpan={7} className="text-center py-10 text-[#6F5963]">
-                        <RefreshCw className="w-5 h-5 animate-spin text-[#B76E79] mx-auto mb-2" />
+                      <td colSpan={7} className="text-center py-10 text-[#65716C]">
+                        <RefreshCw className="w-5 h-5 animate-spin text-[#C9A45C] mx-auto mb-2" />
                         <span>Loading performance data...</span>
                       </td>
                     </tr>
                   ) : telecallerPerf.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="text-center py-10 text-[#6F5963]">
+                      <td colSpan={7} className="text-center py-10 text-[#65716C]">
                         No performance records found for the selected store location.
                       </td>
                     </tr>
@@ -226,19 +226,19 @@ export default function WeddingReports() {
 
                       return (
                         <tr key={idx} className="hover:bg-[#FFF1F2] transition-colors">
-                          <td className="py-3 px-4 font-black text-[#4A173A]">
+                          <td className="py-3 px-4 font-black text-[#123C35]">
                             👤 {p.name || p.telecaller_name}
                           </td>
-                          <td className="py-3 px-4 font-medium text-[#6F5963]">
+                          <td className="py-3 px-4 font-medium text-[#65716C]">
                             📍 {p.location_name || 'Store'}
                           </td>
-                          <td className="py-3 px-4 font-bold text-[#2B1722]">
+                          <td className="py-3 px-4 font-bold text-[#17201D]">
                             {total}
                           </td>
                           <td className="py-3 px-4 font-bold text-[#356AE6]">
                             {p.connected || 0}
                           </td>
-                          <td className="py-3 px-4 font-bold text-[#6A2853]">
+                          <td className="py-3 px-4 font-bold text-[#082821]">
                             {p.confirmed || 0}
                           </td>
                           <td className="py-3 px-4 font-black text-[#198754]">
@@ -259,18 +259,18 @@ export default function WeddingReports() {
           </div>
 
           {/* Import History */}
-          <div className="bg-[#FFFDFC] rounded-3xl border border-[#E8D9D4] shadow-xs p-5 sm:p-6 space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-[#E8D9D4]">
-              <h3 className="text-sm font-black text-[#4A173A] flex items-center gap-2">
-                <History className="w-4.5 h-4.5 text-[#B76E79]" />
+          <div className="bg-[#FFFFFF] rounded-3xl border border-[#E1DDD3] shadow-xs p-5 sm:p-6 space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-[#E1DDD3]">
+              <h3 className="text-sm font-black text-[#123C35] flex items-center gap-2">
+                <History className="w-4.5 h-4.5 text-[#C9A45C]" />
                 <span>Bulk Import History</span>
               </h3>
               <div className="flex items-center gap-2">
                 <Link
                   to="/wedding-crm/import"
-                  className="text-[11px] font-black text-[#4A173A] hover:text-[#6A2853] inline-flex items-center gap-1.5 underline"
+                  className="text-[11px] font-black text-[#123C35] hover:text-[#082821] inline-flex items-center gap-1.5 underline"
                 >
-                  <FileText className="w-3 h-3 text-[#B76E79]" />
+                  <FileText className="w-3 h-3 text-[#C9A45C]" />
                   New Import
                 </Link>
                 {importLogs.length > 0 && (
@@ -288,22 +288,22 @@ export default function WeddingReports() {
                   type="button"
                   onClick={loadImportLogs}
                   disabled={logsLoading}
-                  className="text-[11px] font-bold text-[#4A173A] hover:text-[#6A2853] inline-flex items-center gap-1.5 underline disabled:opacity-60 cursor-pointer"
+                  className="text-[11px] font-bold text-[#123C35] hover:text-[#082821] inline-flex items-center gap-1.5 underline disabled:opacity-60 cursor-pointer"
                 >
-                  {logsLoading && <Loader2 className="w-3 h-3 animate-spin text-[#B76E79]" />}
+                  {logsLoading && <Loader2 className="w-3 h-3 animate-spin text-[#C9A45C]" />}
                   Refresh
                 </button>
               </div>
             </div>
 
             {importLogs.length === 0 ? (
-              <p className="text-xs text-[#6F5963] py-3">
+              <p className="text-xs text-[#65716C] py-3">
                 No bulk imports recorded for your stores yet.
               </p>
             ) : (
-              <div className="table-frame custom-scrollbar rounded-2xl border border-[#E8D9D4]">
+              <div className="table-frame custom-scrollbar rounded-2xl border border-[#E1DDD3]">
                 <table className="w-full min-w-[950px] text-left text-xs">
-                  <thead className="bg-[#F8EDE8] text-[#4A173A] font-black text-[11px] border-b border-[#E8D9D4]">
+                  <thead className="bg-[#F8EDE8] text-[#123C35] font-black text-[11px] border-b border-[#E1DDD3]">
                     <tr>
                       <th className="py-2.5 pr-3 pl-3">When</th>
                       <th className="py-2.5 px-3">File</th>
@@ -317,18 +317,18 @@ export default function WeddingReports() {
                       <th className="py-2.5 pl-3 pr-3 text-center">Action</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#EADBD7] text-[#2B1722] bg-[#FFFDFC]">
+                  <tbody className="divide-y divide-[#EADBD7] text-[#17201D] bg-[#FFFFFF]">
                     {importLogs.map((log: any) => (
                       <tr key={log.id} className="hover:bg-[#FFF1F2] transition-colors">
-                        <td className="py-2.5 pr-3 pl-3 font-mono whitespace-nowrap text-[#6F5963]">
+                        <td className="py-2.5 pr-3 pl-3 font-mono whitespace-nowrap text-[#65716C]">
                           {formatDateTimeDisplay(log.created_at, '—')}
                         </td>
-                        <td className="py-2.5 px-3 font-medium max-w-[200px] truncate text-[#4A173A]" title={log.file_name}>
+                        <td className="py-2.5 px-3 font-medium max-w-[200px] truncate text-[#123C35]" title={log.file_name}>
                           {log.file_name || '—'}
                         </td>
-                        <td className="py-2.5 px-3 text-[#6F5963]">{log.location_name || (log.location_id ? `#${log.location_id}` : 'All')}</td>
-                        <td className="py-2.5 px-3 font-semibold text-[#2B1722]">{log.user_name || '—'}</td>
-                        <td className="py-2.5 px-3 text-right font-mono text-[#6F5963]">{log.total_rows ?? 0}</td>
+                        <td className="py-2.5 px-3 text-[#65716C]">{log.location_name || (log.location_id ? `#${log.location_id}` : 'All')}</td>
+                        <td className="py-2.5 px-3 font-semibold text-[#17201D]">{log.user_name || '—'}</td>
+                        <td className="py-2.5 px-3 text-right font-mono text-[#65716C]">{log.total_rows ?? 0}</td>
                         <td className="py-2.5 px-3 text-right font-mono font-bold text-[#198754]">{log.imported_count ?? 0}</td>
                         <td className="py-2.5 px-3 text-right font-mono text-[#C58A18] font-bold">{log.duplicate_count ?? 0}</td>
                         <td className="py-2.5 px-3 text-right font-mono font-bold text-[#B42318]">{log.error_count ?? 0}</td>
@@ -350,7 +350,7 @@ export default function WeddingReports() {
                             type="button"
                             onClick={() => handleDeleteLog(log.id, log.file_name)}
                             disabled={deletingLogId === log.id}
-                            className="p-1 rounded-lg hover:bg-[#FDE8E7] text-[#6F5963] hover:text-[#B42318] transition-colors cursor-pointer disabled:opacity-50"
+                            className="p-1 rounded-lg hover:bg-[#FDE8E7] text-[#65716C] hover:text-[#B42318] transition-colors cursor-pointer disabled:opacity-50"
                             title="Delete this import history record"
                             aria-label="Delete import log"
                           >
@@ -368,7 +368,7 @@ export default function WeddingReports() {
               </div>
             )}
 
-            <p className="text-[10px] text-[#6F5963]">
+            <p className="text-[10px] text-[#65716C]">
               Every CSV / Excel upload into the customer register is logged here with its user, store and row counts.
             </p>
           </div>

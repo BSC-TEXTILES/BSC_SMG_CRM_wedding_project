@@ -585,17 +585,17 @@ export default function DojDesk() {
 
         <main className="p-3 sm:p-5 lg:p-7 space-y-5 max-w-7xl mx-auto w-full">
           {/* ── Top Header Banner ─────────────────────────────────── */}
-          <div className="bg-gradient-to-r from-[#4A173A] via-[#5C1E48] to-[#2E0B22] text-white rounded-3xl p-5 sm:p-6 shadow-md relative overflow-hidden">
+          <div className="bg-gradient-to-r from-[#123C35] via-[#5C1E48] to-[#2E0B22] text-white rounded-3xl p-5 sm:p-6 shadow-md relative overflow-hidden">
             <div className="absolute right-0 top-0 bottom-0 w-72 bg-gradient-to-l from-white/5 to-transparent pointer-events-none" />
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
               <div>
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 backdrop-blur-xs text-[#E8C7A8] text-[11px] font-semibold uppercase tracking-wider mb-2">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 backdrop-blur-xs text-[#E4CB92] text-[11px] font-semibold uppercase tracking-wider mb-2">
                   <CalendarClock className="w-3.5 h-3.5" />
                   <span>HR & Recruitment Operations</span>
                 </div>
                 <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2">
                   <span>Date of Joining (DOJ) Desk</span>
-                  <Sparkles className="w-5 h-5 text-[#E8C7A8]" />
+                  <Sparkles className="w-5 h-5 text-[#E4CB92]" />
                 </h1>
                 <p className="text-xs sm:text-sm text-white/80 mt-1 max-w-2xl">
                   Track and verify candidate onboarding, manage expected store reporting dates, conduct follow-ups, and maintain the live Joined Store Directory.
@@ -607,7 +607,7 @@ export default function DojDesk() {
                 <button
                   type="button"
                   onClick={() => setQuickAddModal((prev) => ({ ...prev, open: true }))}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-[#E8C7A8] hover:bg-[#dfbba0] text-[#4A173A] font-bold text-xs transition-all shadow-sm cursor-pointer"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-[#E4CB92] hover:bg-[#dfbba0] text-[#123C35] font-bold text-xs transition-all shadow-sm cursor-pointer"
                 >
                   <Plus className="w-4 h-4" />
                   <span>Schedule Candidate DOJ</span>
@@ -632,7 +632,7 @@ export default function DojDesk() {
               onClick={() => setActiveTab('not_joined')}
               className={`p-4 rounded-3xl border transition-all cursor-pointer shadow-xs ${
                 activeTab === 'not_joined'
-                  ? 'bg-white border-[#4A173A] ring-2 ring-[#4A173A]/10'
+                  ? 'bg-white border-[#123C35] ring-2 ring-[#123C35]/10'
                   : 'bg-white border-accent-soft hover:border-accent'
               }`}
             >
@@ -719,7 +719,7 @@ export default function DojDesk() {
                 onClick={() => setActiveTab('not_joined')}
                 className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                   activeTab === 'not_joined'
-                    ? 'bg-[#4A173A] text-white shadow-xs'
+                    ? 'bg-[#123C35] text-white shadow-xs'
                     : 'bg-background hover:bg-primary/5 text-primary border border-accent-soft'
                 }`}
               >

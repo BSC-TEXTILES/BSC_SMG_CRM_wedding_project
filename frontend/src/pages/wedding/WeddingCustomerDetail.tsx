@@ -552,8 +552,8 @@ export default function WeddingCustomerDetail() {
       <DashboardLayout title="Customer Profile">
         <PageContainer maxWidth="full">
           <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3">
-            <RefreshCw className="w-8 h-8 animate-spin text-[#B76E79]" />
-            <div className="text-sm font-semibold text-[#4A173A]">Loading customer details...</div>
+            <RefreshCw className="w-8 h-8 animate-spin text-[#C9A45C]" />
+            <div className="text-sm font-semibold text-[#123C35]">Loading customer details...</div>
           </div>
         </PageContainer>
       </DashboardLayout>
@@ -565,15 +565,15 @@ export default function WeddingCustomerDetail() {
       <DashboardLayout title="Customer Not Found">
         <PageContainer maxWidth="full">
           <div className="min-h-[60vh] flex items-center justify-center p-4">
-            <div className="bg-[#FFFDFC] p-8 rounded-3xl border border-[#E8D9D4] text-center max-w-md space-y-4 shadow-sm">
+            <div className="bg-[#FFFFFF] p-8 rounded-3xl border border-[#E1DDD3] text-center max-w-md space-y-4 shadow-sm">
               <CircleAlert className="w-12 h-12 text-[#B42318] mx-auto" />
-              <h2 className="text-lg font-bold text-[#4A173A]">Customer Not Found</h2>
-              <p className="text-xs text-[#6F5963]">
+              <h2 className="text-lg font-bold text-[#123C35]">Customer Not Found</h2>
+              <p className="text-xs text-[#65716C]">
                 The requested customer profile does not exist or you do not have permission to view it.
               </p>
               <Link
                 to="/wedding-crm/customers"
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#4A173A] text-white hover:bg-[#6A2853] font-semibold rounded-xl text-xs shadow-xs transition-colors"
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#123C35] text-white hover:bg-[#082821] font-semibold rounded-xl text-xs shadow-xs transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" /> Return to Customer Register
               </Link>
@@ -662,16 +662,16 @@ export default function WeddingCustomerDetail() {
         )}
 
         {/* ── UNIFIED CUSTOMER PROFILE HEADER & COMMAND CENTER ── */}
-        <div className="bg-[#FFFDFC] rounded-3xl border border-[#E8D9D4] shadow-xs p-5 sm:p-6 lg:p-7 space-y-5">
+        <div className="bg-[#FFFFFF] rounded-3xl border border-[#E1DDD3] shadow-xs p-5 sm:p-6 lg:p-7 space-y-5">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
             {/* Left: Avatar, Name, Status, and Key Meta */}
             <div className="flex items-start sm:items-center gap-4 min-w-0">
-              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#4A173A] text-white font-extrabold text-xl sm:text-2xl flex items-center justify-center border-2 border-[#B76E79]/40 shadow-md shrink-0 select-none">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#123C35] text-white font-extrabold text-xl sm:text-2xl flex items-center justify-center border-2 border-[#C9A45C]/40 shadow-md shrink-0 select-none">
                 {customer.customer_name ? customer.customer_name.slice(0, 2).toUpperCase() : 'CU'}
               </div>
               <div className="min-w-0 space-y-1.5">
                 <div className="flex items-center gap-2.5 flex-wrap">
-                  <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-[#4A173A] tracking-tight truncate">
+                  <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-[#123C35] tracking-tight truncate">
                     {customer.customer_name}
                   </h1>
                   <span className={`px-3 py-0.5 rounded-full text-xs font-bold border shadow-2xs ${badge.bg}`}>
@@ -685,22 +685,22 @@ export default function WeddingCustomerDetail() {
                 </div>
 
                 {/* Metadata Row */}
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-[#6F5963] font-medium pt-0.5">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-[#65716C] font-medium pt-0.5">
                   <span className="flex items-center gap-1.5">
                     <span className="text-[#9A858D] font-normal">Customer ID:</span>
-                    <strong className="text-[#4A173A] font-bold font-mono">{customer.customer_code}</strong>
+                    <strong className="text-[#123C35] font-bold font-mono">{customer.customer_code}</strong>
                   </span>
-                  <span className="hidden sm:inline text-[#E8D9D4]">•</span>
+                  <span className="hidden sm:inline text-[#E1DDD3]">•</span>
                   <span className="flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5 text-[#B76E79] shrink-0" />
-                    <strong className="text-[#2B1722]">{customer.location_name || 'Store Showroom'}</strong>
+                    <MapPin className="w-3.5 h-3.5 text-[#C9A45C] shrink-0" />
+                    <strong className="text-[#17201D]">{customer.location_name || 'Store Showroom'}</strong>
                   </span>
-                  <span className="hidden sm:inline text-[#E8D9D4]">•</span>
+                  <span className="hidden sm:inline text-[#E1DDD3]">•</span>
                   <span className="flex items-center gap-1.5">
                     <PhoneCall className="w-3.5 h-3.5 text-[#198754] shrink-0" />
                     <a
                       href={`tel:${customer.mobile_number}`}
-                      className="text-[#2B1722] font-semibold hover:text-[#4A173A] transition-colors"
+                      className="text-[#17201D] font-semibold hover:text-[#123C35] transition-colors"
                       title="Click to dial"
                     >
                       {customer.mobile_number}
@@ -708,21 +708,21 @@ export default function WeddingCustomerDetail() {
                     <button
                       type="button"
                       onClick={handleCopyMobile}
-                      className="p-1 text-[#6F5963] hover:text-[#4A173A] rounded transition-colors"
+                      className="p-1 text-[#65716C] hover:text-[#123C35] rounded transition-colors"
                       title="Copy mobile number"
                     >
                       {copiedMobile ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
                     </button>
                   </span>
-                  <span className="hidden sm:inline text-[#E8D9D4]">•</span>
+                  <span className="hidden sm:inline text-[#E1DDD3]">•</span>
                   <span className="flex items-center gap-1.5">
-                    <Users className="w-3.5 h-3.5 text-[#B76E79] shrink-0" />
-                    <span>Assigned: <strong className="text-[#4A173A]">{customer.assigned_telecaller || 'Unassigned'}</strong></span>
+                    <Users className="w-3.5 h-3.5 text-[#C9A45C] shrink-0" />
+                    <span>Assigned: <strong className="text-[#123C35]">{customer.assigned_telecaller || 'Unassigned'}</strong></span>
                   </span>
-                  <span className="hidden sm:inline text-[#E8D9D4]">•</span>
+                  <span className="hidden sm:inline text-[#E1DDD3]">•</span>
                   <span className="flex items-center gap-1.5 text-[11px]">
                     <Clock className="w-3.5 h-3.5 text-[#9A858D] shrink-0" />
-                    <span>Updated: <strong className="text-[#4A173A]">{formatDateTimeDisplay(customer.updated_at || customer.created_at, 'N/A')}</strong></span>
+                    <span>Updated: <strong className="text-[#123C35]">{formatDateTimeDisplay(customer.updated_at || customer.created_at, 'N/A')}</strong></span>
                   </span>
                 </div>
               </div>
@@ -730,23 +730,23 @@ export default function WeddingCustomerDetail() {
 
             {/* Right: Wedding Countdown Pill (if date present) */}
             {parseDate(customer.wedding_date) && (
-              <div className="bg-[#F6E2E5]/80 border border-[#E8D9D4] rounded-2xl p-3 sm:px-4 flex items-center gap-3 text-[#4A173A] shrink-0 self-start lg:self-auto shadow-2xs">
-                <Heart className="w-6 h-6 text-[#B76E79] shrink-0" />
+              <div className="bg-[#EDF3F0]/80 border border-[#E1DDD3] rounded-2xl p-3 sm:px-4 flex items-center gap-3 text-[#123C35] shrink-0 self-start lg:self-auto shadow-2xs">
+                <Heart className="w-6 h-6 text-[#C9A45C] shrink-0" />
                 <div>
-                  <div className="text-[10px] font-bold uppercase text-[#6F5963] tracking-wider">Wedding Date</div>
-                  <div className="text-sm font-bold text-[#4A173A]">{formatDateDisplay(customer.wedding_date, 'TBD')}</div>
+                  <div className="text-[10px] font-bold uppercase text-[#65716C] tracking-wider">Wedding Date</div>
+                  <div className="text-sm font-bold text-[#123C35]">{formatDateDisplay(customer.wedding_date, 'TBD')}</div>
                 </div>
                 {(() => {
                   const weddingDay = parseDate(customer.wedding_date);
                   if (!weddingDay) return null;
                   const diffDays = Math.ceil((weddingDay.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
                   return diffDays > 0 ? (
-                    <div className="ml-2 pl-3 border-l border-[#E8D9D4] text-right">
-                      <div className="text-base font-black text-[#B76E79]">{diffDays}</div>
-                      <div className="text-[9px] uppercase font-bold text-[#6F5963]">Days Left</div>
+                    <div className="ml-2 pl-3 border-l border-[#E1DDD3] text-right">
+                      <div className="text-base font-black text-[#C9A45C]">{diffDays}</div>
+                      <div className="text-[9px] uppercase font-bold text-[#65716C]">Days Left</div>
                     </div>
                   ) : diffDays === 0 ? (
-                    <div className="ml-2 pl-3 border-l border-[#E8D9D4] text-right">
+                    <div className="ml-2 pl-3 border-l border-[#E1DDD3] text-right">
                       <span className="text-xs font-bold text-[#198754]">Today!</span>
                     </div>
                   ) : null;
@@ -756,11 +756,11 @@ export default function WeddingCustomerDetail() {
           </div>
 
           {/* Action Toolbar Row: Back, Edit Customer, Log Call, WhatsApp, Reassign, Update Status, Archive/Restore */}
-          <div className="pt-4 border-t border-[#E8D9D4] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="pt-4 border-t border-[#E1DDD3] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="flex items-center gap-2">
               <Link
                 to={isArchived ? '/wedding-crm/old-customers' : '/wedding-crm/customers'}
-                className="px-3.5 py-2 bg-[#FFFDFC] hover:bg-[#FFF7F2] border border-[#E8D9D4] rounded-xl text-xs font-semibold text-[#4A173A] flex items-center gap-1.5 transition-colors shadow-2xs"
+                className="px-3.5 py-2 bg-[#FFFFFF] hover:bg-[#EDF3F0] border border-[#E1DDD3] rounded-xl text-xs font-semibold text-[#123C35] flex items-center gap-1.5 transition-colors shadow-2xs"
                 title="Return to customer register"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
@@ -773,7 +773,7 @@ export default function WeddingCustomerDetail() {
               <button
                 type="button"
                 onClick={handleOpenEdit}
-                className="px-4 py-2 bg-[#B76E79] hover:bg-[#A85F6A] text-white font-semibold rounded-xl text-xs flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer active:scale-95"
+                className="px-4 py-2 bg-[#C9A45C] hover:bg-[#A85F6A] text-white font-semibold rounded-xl text-xs flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer active:scale-95"
               >
                 <Edit3 className="w-3.5 h-3.5 text-white" />
                 <span>Edit Customer</span>
@@ -794,9 +794,9 @@ export default function WeddingCustomerDetail() {
                   });
                   setCallModalOpen(true);
                 }}
-                className="px-4 py-2 bg-[#4A173A] hover:bg-[#6A2853] text-white font-semibold rounded-xl text-xs flex items-center gap-1.5 shadow-2xs transition-all border border-[#B76E79]/30 active:scale-95 cursor-pointer"
+                className="px-4 py-2 bg-[#123C35] hover:bg-[#082821] text-white font-semibold rounded-xl text-xs flex items-center gap-1.5 shadow-2xs transition-all border border-[#C9A45C]/30 active:scale-95 cursor-pointer"
               >
-                <PhoneCall className="w-3.5 h-3.5 text-[#E8C7A8]" />
+                <PhoneCall className="w-3.5 h-3.5 text-[#E4CB92]" />
                 <span>Log Call</span>
               </button>
 
@@ -815,9 +815,9 @@ export default function WeddingCustomerDetail() {
               <button
                 type="button"
                 onClick={handleOpenReassign}
-                className="px-3.5 py-2 bg-[#FFFDFC] hover:bg-[#FFF7F2] text-[#4A173A] border border-[#E8D9D4] font-semibold rounded-xl text-xs flex items-center gap-1.5 shadow-2xs transition-all active:scale-95 cursor-pointer"
+                className="px-3.5 py-2 bg-[#FFFFFF] hover:bg-[#EDF3F0] text-[#123C35] border border-[#E1DDD3] font-semibold rounded-xl text-xs flex items-center gap-1.5 shadow-2xs transition-all active:scale-95 cursor-pointer"
               >
-                <Users className="w-3.5 h-3.5 text-[#B76E79]" />
+                <Users className="w-3.5 h-3.5 text-[#C9A45C]" />
                 <span>Reassign Telecaller</span>
               </button>
 
@@ -826,13 +826,13 @@ export default function WeddingCustomerDetail() {
                 <button
                   type="button"
                   onClick={() => setTellCallerOpen(true)}
-                  className="px-3.5 py-2 bg-[#FFFDFC] hover:bg-[#FDF4F6] text-[#4A173A] hover:text-[#6A2853] border border-[#E8D9D4] hover:border-[#B76E79] font-semibold rounded-xl text-xs flex items-center gap-1.5 shadow-2xs transition-all active:scale-95 cursor-pointer"
+                  className="px-3.5 py-2 bg-[#FFFFFF] hover:bg-[#FDF4F6] text-[#123C35] hover:text-[#082821] border border-[#E1DDD3] hover:border-[#C9A45C] font-semibold rounded-xl text-xs flex items-center gap-1.5 shadow-2xs transition-all active:scale-95 cursor-pointer"
                   title="Send an instruction to a telecaller about this customer"
                 >
-                  <MessageSquareQuote className="w-3.5 h-3.5 text-[#B76E79]" />
+                  <MessageSquareQuote className="w-3.5 h-3.5 text-[#C9A45C]" />
                   <span>Tell Caller</span>
                   {instructions.length > 0 && (
-                    <span className="ml-0.5 px-1.5 py-0.2 bg-[#F6E2E5] text-[#6A2853] text-[10px] font-bold rounded-full">
+                    <span className="ml-0.5 px-1.5 py-0.2 bg-[#EDF3F0] text-[#082821] text-[10px] font-bold rounded-full">
                       {instructions.length}
                     </span>
                   )}
@@ -847,9 +847,9 @@ export default function WeddingCustomerDetail() {
                   setStatusReason('');
                   setStatusModalOpen(true);
                 }}
-                className="px-3.5 py-2 bg-[#FFFDFC] hover:bg-[#FFF7F2] text-[#4A173A] border border-[#E8D9D4] font-semibold rounded-xl text-xs flex items-center gap-1.5 shadow-2xs transition-all active:scale-95 cursor-pointer"
+                className="px-3.5 py-2 bg-[#FFFFFF] hover:bg-[#EDF3F0] text-[#123C35] border border-[#E1DDD3] font-semibold rounded-xl text-xs flex items-center gap-1.5 shadow-2xs transition-all active:scale-95 cursor-pointer"
               >
-                <TrendingUp className="w-3.5 h-3.5 text-[#B76E79]" />
+                <TrendingUp className="w-3.5 h-3.5 text-[#C9A45C]" />
                 <span>Update Status</span>
               </button>
 
@@ -883,14 +883,14 @@ export default function WeddingCustomerDetail() {
         </div>
 
         {/* ── PROFILE TABS BAR ── */}
-        <div className="flex items-center gap-2 border-b border-[#E8D9D4] pb-2 text-xs font-semibold overflow-x-auto custom-scrollbar">
+        <div className="flex items-center gap-2 border-b border-[#E1DDD3] pb-2 text-xs font-semibold overflow-x-auto custom-scrollbar">
           <button
             type="button"
             onClick={() => setActiveTab('overview')}
             className={`px-4 py-2.5 rounded-xl transition-all whitespace-nowrap cursor-pointer ${
               activeTab === 'overview'
-                ? 'bg-[#B76E79] text-white shadow-xs font-bold'
-                : 'bg-[#FFFDFC] text-[#6F5963] hover:text-[#4A173A] border border-[#E8D9D4]'
+                ? 'bg-[#C9A45C] text-white shadow-xs font-bold'
+                : 'bg-[#FFFFFF] text-[#65716C] hover:text-[#123C35] border border-[#E1DDD3]'
             }`}
           >
             Overview & Requirements
@@ -900,8 +900,8 @@ export default function WeddingCustomerDetail() {
             onClick={() => setActiveTab('calls')}
             className={`px-4 py-2.5 rounded-xl transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
               activeTab === 'calls'
-                ? 'bg-[#B76E79] text-white shadow-xs font-bold'
-                : 'bg-[#FFFDFC] text-[#6F5963] hover:text-[#4A173A] border border-[#E8D9D4]'
+                ? 'bg-[#C9A45C] text-white shadow-xs font-bold'
+                : 'bg-[#FFFFFF] text-[#65716C] hover:text-[#123C35] border border-[#E1DDD3]'
             }`}
           >
             <PhoneCall className="w-3.5 h-3.5" />
@@ -912,8 +912,8 @@ export default function WeddingCustomerDetail() {
             onClick={() => setActiveTab('visits')}
             className={`px-4 py-2.5 rounded-xl transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
               activeTab === 'visits'
-                ? 'bg-[#B76E79] text-white shadow-xs font-bold'
-                : 'bg-[#FFFDFC] text-[#6F5963] hover:text-[#4A173A] border border-[#E8D9D4]'
+                ? 'bg-[#C9A45C] text-white shadow-xs font-bold'
+                : 'bg-[#FFFFFF] text-[#65716C] hover:text-[#123C35] border border-[#E1DDD3]'
             }`}
           >
             <Building2 className="w-3.5 h-3.5" />
@@ -924,8 +924,8 @@ export default function WeddingCustomerDetail() {
             onClick={() => setActiveTab('notes')}
             className={`px-4 py-2.5 rounded-xl transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
               activeTab === 'notes'
-                ? 'bg-[#B76E79] text-white shadow-xs font-bold'
-                : 'bg-[#FFFDFC] text-[#6F5963] hover:text-[#4A173A] border border-[#E8D9D4]'
+                ? 'bg-[#C9A45C] text-white shadow-xs font-bold'
+                : 'bg-[#FFFFFF] text-[#65716C] hover:text-[#123C35] border border-[#E1DDD3]'
             }`}
           >
             <FileText className="w-3.5 h-3.5" />
@@ -936,8 +936,8 @@ export default function WeddingCustomerDetail() {
             onClick={() => setActiveTab('timeline')}
             className={`px-4 py-2.5 rounded-xl transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
               activeTab === 'timeline'
-                ? 'bg-[#B76E79] text-white shadow-xs font-bold'
-                : 'bg-[#FFFDFC] text-[#6F5963] hover:text-[#4A173A] border border-[#E8D9D4]'
+                ? 'bg-[#C9A45C] text-white shadow-xs font-bold'
+                : 'bg-[#FFFFFF] text-[#65716C] hover:text-[#123C35] border border-[#E1DDD3]'
             }`}
           >
             <Activity className="w-3.5 h-3.5" />
@@ -948,8 +948,8 @@ export default function WeddingCustomerDetail() {
             onClick={() => setActiveTab('status_history')}
             className={`px-4 py-2.5 rounded-xl transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
               activeTab === 'status_history'
-                ? 'bg-[#B76E79] text-white shadow-xs font-bold'
-                : 'bg-[#FFFDFC] text-[#6F5963] hover:text-[#4A173A] border border-[#E8D9D4]'
+                ? 'bg-[#C9A45C] text-white shadow-xs font-bold'
+                : 'bg-[#FFFFFF] text-[#65716C] hover:text-[#123C35] border border-[#E1DDD3]'
             }`}
           >
             <History className="w-3.5 h-3.5" />
@@ -960,8 +960,8 @@ export default function WeddingCustomerDetail() {
             onClick={() => setActiveTab('associated_weddings')}
             className={`px-4 py-2.5 rounded-xl transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
               activeTab === 'associated_weddings'
-                ? 'bg-[#B76E79] text-white shadow-xs font-bold'
-                : 'bg-[#FFFDFC] text-[#6F5963] hover:text-[#4A173A] border border-[#E8D9D4]'
+                ? 'bg-[#C9A45C] text-white shadow-xs font-bold'
+                : 'bg-[#FFFFFF] text-[#65716C] hover:text-[#123C35] border border-[#E1DDD3]'
             }`}
           >
             <Heart className="w-3.5 h-3.5" />
@@ -972,8 +972,8 @@ export default function WeddingCustomerDetail() {
             onClick={() => setActiveTab('caller_instructions')}
             className={`px-4 py-2.5 rounded-xl transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
               activeTab === 'caller_instructions'
-                ? 'bg-[#B76E79] text-white shadow-xs font-bold'
-                : 'bg-[#FFFDFC] text-[#6F5963] hover:text-[#4A173A] border border-[#E8D9D4]'
+                ? 'bg-[#C9A45C] text-white shadow-xs font-bold'
+                : 'bg-[#FFFFFF] text-[#65716C] hover:text-[#123C35] border border-[#E1DDD3]'
             }`}
           >
             <MessageSquareQuote className="w-3.5 h-3.5" />
@@ -985,53 +985,53 @@ export default function WeddingCustomerDetail() {
         {activeTab === 'overview' && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in">
             {/* Section 1: Customer Details */}
-            <div className="bg-[#FFFDFC] p-5 sm:p-6 rounded-3xl border border-[#E8D9D4] shadow-xs space-y-4 text-xs">
-              <div className="flex items-center justify-between font-bold text-sm text-[#4A173A] border-b border-[#E8D9D4] pb-2.5">
+            <div className="bg-[#FFFFFF] p-5 sm:p-6 rounded-3xl border border-[#E1DDD3] shadow-xs space-y-4 text-xs">
+              <div className="flex items-center justify-between font-bold text-sm text-[#123C35] border-b border-[#E1DDD3] pb-2.5">
                 <div className="flex items-center gap-2">
-                  <User className="w-4 h-4 text-[#B76E79]" />
+                  <User className="w-4 h-4 text-[#C9A45C]" />
                   <span>Customer Details</span>
                 </div>
                 <button
                   type="button"
                   onClick={handleOpenEdit}
-                  className="text-xs text-[#B76E79] hover:text-[#4A173A] font-semibold flex items-center gap-1 cursor-pointer transition-colors"
+                  className="text-xs text-[#C9A45C] hover:text-[#123C35] font-semibold flex items-center gap-1 cursor-pointer transition-colors"
                 >
                   <Edit3 className="w-3.5 h-3.5" />
                   <span>Edit</span>
                 </button>
               </div>
               <div className="space-y-2.5">
-                <div className="flex justify-between items-center py-1 border-b border-[#E8D9D4]/40">
-                  <span className="text-[#6F5963]">Full Name:</span>
-                  <strong className="text-[#2B1722] text-right font-bold">{customer.customer_name}</strong>
+                <div className="flex justify-between items-center py-1 border-b border-[#E1DDD3]/40">
+                  <span className="text-[#65716C]">Full Name:</span>
+                  <strong className="text-[#17201D] text-right font-bold">{customer.customer_name}</strong>
                 </div>
-                <div className="flex justify-between items-center py-1 border-b border-[#E8D9D4]/40">
-                  <span className="text-[#6F5963]">Mobile Number:</span>
-                  <strong className="text-[#2B1722] font-mono">{customer.mobile_number}</strong>
+                <div className="flex justify-between items-center py-1 border-b border-[#E1DDD3]/40">
+                  <span className="text-[#65716C]">Mobile Number:</span>
+                  <strong className="text-[#17201D] font-mono">{customer.mobile_number}</strong>
                 </div>
                 {(customer as any).alternate_mobile && (
-                  <div className="flex justify-between items-center py-1 border-b border-[#E8D9D4]/40">
-                    <span className="text-[#6F5963]">Alternate Mobile:</span>
-                    <strong className="text-[#2B1722] font-mono">{(customer as any).alternate_mobile}</strong>
+                  <div className="flex justify-between items-center py-1 border-b border-[#E1DDD3]/40">
+                    <span className="text-[#65716C]">Alternate Mobile:</span>
+                    <strong className="text-[#17201D] font-mono">{(customer as any).alternate_mobile}</strong>
                   </div>
                 )}
                 {customer.email && (
-                  <div className="flex justify-between items-center py-1 border-b border-[#E8D9D4]/40">
-                    <span className="text-[#6F5963]">Email Address:</span>
-                    <span className="text-[#2B1722] font-medium text-right break-all">{customer.email}</span>
+                  <div className="flex justify-between items-center py-1 border-b border-[#E1DDD3]/40">
+                    <span className="text-[#65716C]">Email Address:</span>
+                    <span className="text-[#17201D] font-medium text-right break-all">{customer.email}</span>
                   </div>
                 )}
-                <div className="flex justify-between items-center py-1 border-b border-[#E8D9D4]/40">
-                  <span className="text-[#6F5963]">Store Showroom:</span>
-                  <span className="text-[#4A173A] font-semibold">{customer.location_name || 'Store'}</span>
+                <div className="flex justify-between items-center py-1 border-b border-[#E1DDD3]/40">
+                  <span className="text-[#65716C]">Store Showroom:</span>
+                  <span className="text-[#123C35] font-semibold">{customer.location_name || 'Store'}</span>
                 </div>
-                <div className="flex justify-between items-center py-1 border-b border-[#E8D9D4]/40">
-                  <span className="text-[#6F5963]">Lead Source:</span>
-                  <span className="text-[#2B1722] font-medium">{customer.lead_source || 'In-store Walkin'}</span>
+                <div className="flex justify-between items-center py-1 border-b border-[#E1DDD3]/40">
+                  <span className="text-[#65716C]">Lead Source:</span>
+                  <span className="text-[#17201D] font-medium">{customer.lead_source || 'In-store Walkin'}</span>
                 </div>
                 <div className="flex justify-between items-center py-1">
-                  <span className="text-[#6F5963]">Registration Date:</span>
-                  <span className="text-[#2B1722] font-medium">
+                  <span className="text-[#65716C]">Registration Date:</span>
+                  <span className="text-[#17201D] font-medium">
                     {formatDateDisplay(customer.created_at, 'N/A')}
                   </span>
                 </div>
@@ -1039,16 +1039,16 @@ export default function WeddingCustomerDetail() {
             </div>
 
             {/* Section 2: Wedding & Shopping Information */}
-            <div className="bg-[#FFFDFC] p-5 sm:p-6 rounded-3xl border border-[#E8D9D4] shadow-xs space-y-4 text-xs">
-              <div className="flex items-center justify-between font-bold text-sm text-[#4A173A] border-b border-[#E8D9D4] pb-2.5">
+            <div className="bg-[#FFFFFF] p-5 sm:p-6 rounded-3xl border border-[#E1DDD3] shadow-xs space-y-4 text-xs">
+              <div className="flex items-center justify-between font-bold text-sm text-[#123C35] border-b border-[#E1DDD3] pb-2.5">
                 <div className="flex items-center gap-2">
-                  <Heart className="w-4 h-4 text-[#B76E79]" />
+                  <Heart className="w-4 h-4 text-[#C9A45C]" />
                   <span>Wedding & Shopping Details</span>
                 </div>
                 <button
                   type="button"
                   onClick={handleOpenEdit}
-                  className="text-xs text-[#B76E79] hover:text-[#4A173A] font-semibold flex items-center gap-1 cursor-pointer transition-colors"
+                  className="text-xs text-[#C9A45C] hover:text-[#123C35] font-semibold flex items-center gap-1 cursor-pointer transition-colors"
                 >
                   <Edit3 className="w-3.5 h-3.5" />
                   <span>Edit</span>
@@ -1056,117 +1056,117 @@ export default function WeddingCustomerDetail() {
               </div>
               <div className="space-y-2.5">
                 {parseDate(customer.wedding_date) && (
-                  <div className="flex justify-between items-center py-1 border-b border-[#E8D9D4]/40">
-                    <span className="text-[#6F5963]">Wedding Date:</span>
-                    <strong className="text-[#B76E79] font-bold">
+                  <div className="flex justify-between items-center py-1 border-b border-[#E1DDD3]/40">
+                    <span className="text-[#65716C]">Wedding Date:</span>
+                    <strong className="text-[#C9A45C] font-bold">
                       {formatDateDisplay(customer.wedding_date, 'TBD')}
                     </strong>
                   </div>
                 )}
-                <div className="flex justify-between items-center py-1 border-b border-[#E8D9D4]/40">
-                  <span className="text-[#6F5963]">Expected Shopping:</span>
-                  <strong className="text-[#4A173A] font-bold">
+                <div className="flex justify-between items-center py-1 border-b border-[#E1DDD3]/40">
+                  <span className="text-[#65716C]">Expected Shopping:</span>
+                  <strong className="text-[#123C35] font-bold">
                     {formatDateDisplay(customer.expected_shopping_date, 'Not scheduled')}
                   </strong>
                 </div>
-                <div className="flex justify-between items-center py-1 border-b border-[#E8D9D4]/40">
-                  <span className="text-[#6F5963]">Shopping Category:</span>
-                  <strong className="text-[#2B1722] text-right font-medium">{customer.preferred_shopping_category || 'General Wedding Shopping'}</strong>
+                <div className="flex justify-between items-center py-1 border-b border-[#E1DDD3]/40">
+                  <span className="text-[#65716C]">Shopping Category:</span>
+                  <strong className="text-[#17201D] text-right font-medium">{customer.preferred_shopping_category || 'General Wedding Shopping'}</strong>
                 </div>
-                <div className="flex justify-between items-center py-1 border-b border-[#E8D9D4]/40">
-                  <span className="text-[#6F5963]">Budget Range:</span>
+                <div className="flex justify-between items-center py-1 border-b border-[#E1DDD3]/40">
+                  <span className="text-[#65716C]">Budget Range:</span>
                   <strong className="text-[#198754] font-semibold">{customer.budget || (customer as any).budget_range || 'Not Decided'}</strong>
                 </div>
                 {customer.estimated_family_size ? (
-                  <div className="flex justify-between items-center py-1 border-b border-[#E8D9D4]/40">
-                    <span className="text-[#6F5963]">Estimated Family Size:</span>
-                    <strong className="text-[#2B1722]">{customer.estimated_family_size} members</strong>
+                  <div className="flex justify-between items-center py-1 border-b border-[#E1DDD3]/40">
+                    <span className="text-[#65716C]">Estimated Family Size:</span>
+                    <strong className="text-[#17201D]">{customer.estimated_family_size} members</strong>
                   </div>
                 ) : null}
                 {(customer as any).bride_name && (
-                  <div className="flex justify-between items-center py-1 border-b border-[#E8D9D4]/40">
-                    <span className="text-[#6F5963]">Bride Name:</span>
-                    <strong className="text-[#2B1722]">{(customer as any).bride_name}</strong>
+                  <div className="flex justify-between items-center py-1 border-b border-[#E1DDD3]/40">
+                    <span className="text-[#65716C]">Bride Name:</span>
+                    <strong className="text-[#17201D]">{(customer as any).bride_name}</strong>
                   </div>
                 )}
                 {(customer as any).groom_name && (
-                  <div className="flex justify-between items-center py-1 border-b border-[#E8D9D4]/40">
-                    <span className="text-[#6F5963]">Groom Name:</span>
-                    <strong className="text-[#2B1722]">{(customer as any).groom_name}</strong>
+                  <div className="flex justify-between items-center py-1 border-b border-[#E1DDD3]/40">
+                    <span className="text-[#65716C]">Groom Name:</span>
+                    <strong className="text-[#17201D]">{(customer as any).groom_name}</strong>
                   </div>
                 )}
                 {(customer as any).wedding_city && (
                   <div className="flex justify-between items-center py-1">
-                    <span className="text-[#6F5963]">Wedding City / Venue:</span>
-                    <strong className="text-[#2B1722] text-right">{(customer as any).wedding_city}</strong>
+                    <span className="text-[#65716C]">Wedding City / Venue:</span>
+                    <strong className="text-[#17201D] text-right">{(customer as any).wedding_city}</strong>
                   </div>
                 )}
               </div>
             </div>
 
             {/* Section 3: Follow-up & Telecaller Desk */}
-            <div className="bg-[#FFFDFC] p-5 sm:p-6 rounded-3xl border border-[#E8D9D4] shadow-xs space-y-4 text-xs">
-              <div className="flex items-center justify-between font-bold text-sm text-[#4A173A] border-b border-[#E8D9D4] pb-2.5">
+            <div className="bg-[#FFFFFF] p-5 sm:p-6 rounded-3xl border border-[#E1DDD3] shadow-xs space-y-4 text-xs">
+              <div className="flex items-center justify-between font-bold text-sm text-[#123C35] border-b border-[#E1DDD3] pb-2.5">
                 <div className="flex items-center gap-2">
-                  <PhoneCall className="w-4 h-4 text-[#B76E79]" />
+                  <PhoneCall className="w-4 h-4 text-[#C9A45C]" />
                   <span>Follow-up & Telecaller Desk</span>
                 </div>
                 {canTellCaller && !isArchived && (
                   <button
                     type="button"
                     onClick={() => setTellCallerOpen(true)}
-                    className="px-2.5 py-1 bg-[#FDF4F6] hover:bg-[#F6E2E5] text-[#6A2853] border border-[#B76E79]/30 font-semibold rounded-lg text-[11px] flex items-center gap-1 shadow-2xs transition-all active:scale-95 cursor-pointer"
+                    className="px-2.5 py-1 bg-[#FDF4F6] hover:bg-[#EDF3F0] text-[#082821] border border-[#C9A45C]/30 font-semibold rounded-lg text-[11px] flex items-center gap-1 shadow-2xs transition-all active:scale-95 cursor-pointer"
                     title="Send instruction to telecaller"
                   >
-                    <MessageSquareQuote className="w-3 h-3 text-[#B76E79]" />
+                    <MessageSquareQuote className="w-3 h-3 text-[#C9A45C]" />
                     <span>Tell Caller</span>
                   </button>
                 )}
               </div>
               <div className="space-y-2.5">
-                <div className="flex justify-between items-center py-1 border-b border-[#E8D9D4]/40">
-                  <span className="text-[#6F5963]">Assigned Telecaller:</span>
-                  <strong className="text-[#4A173A] font-bold">{customer.assigned_telecaller || 'Unassigned'}</strong>
+                <div className="flex justify-between items-center py-1 border-b border-[#E1DDD3]/40">
+                  <span className="text-[#65716C]">Assigned Telecaller:</span>
+                  <strong className="text-[#123C35] font-bold">{customer.assigned_telecaller || 'Unassigned'}</strong>
                 </div>
-                <div className="flex justify-between items-center py-1 border-b border-[#E8D9D4]/40">
-                  <span className="text-[#6F5963]">Next Follow-up Date:</span>
+                <div className="flex justify-between items-center py-1 border-b border-[#E1DDD3]/40">
+                  <span className="text-[#65716C]">Next Follow-up Date:</span>
                   <strong className="text-[#C58A18] font-bold">
                     {formatDateDisplay(customer.follow_up_date, 'None scheduled')}
                   </strong>
                 </div>
-                <div className="flex justify-between items-center py-1 border-b border-[#E8D9D4]/40">
-                  <span className="text-[#6F5963]">Preferred Call Time:</span>
-                  <span className="text-[#2B1722] font-medium">{customer.preferred_call_time || 'Any Time'}</span>
+                <div className="flex justify-between items-center py-1 border-b border-[#E1DDD3]/40">
+                  <span className="text-[#65716C]">Preferred Call Time:</span>
+                  <span className="text-[#17201D] font-medium">{customer.preferred_call_time || 'Any Time'}</span>
                 </div>
-                <div className="flex justify-between items-center py-1 border-b border-[#E8D9D4]/40">
-                  <span className="text-[#6F5963]">Call Status:</span>
-                  <span className="text-[#2B1722] font-semibold">{customer.call_status || 'Pending'}</span>
+                <div className="flex justify-between items-center py-1 border-b border-[#E1DDD3]/40">
+                  <span className="text-[#65716C]">Call Status:</span>
+                  <span className="text-[#17201D] font-semibold">{customer.call_status || 'Pending'}</span>
                 </div>
-                <div className="flex justify-between items-center py-1 border-b border-[#E8D9D4]/40">
-                  <span className="text-[#6F5963]">Total Calls Logged:</span>
-                  <strong className="text-[#4A173A] font-bold">{customer.total_calls_count || callLogs.length}</strong>
+                <div className="flex justify-between items-center py-1 border-b border-[#E1DDD3]/40">
+                  <span className="text-[#65716C]">Total Calls Logged:</span>
+                  <strong className="text-[#123C35] font-bold">{customer.total_calls_count || callLogs.length}</strong>
                 </div>
-                <div className="flex justify-between items-center py-1 border-b border-[#E8D9D4]/40">
-                  <span className="text-[#6F5963]">Last Call Date:</span>
-                  <strong className="text-[#4A173A]">{formatDateDisplay(customer.last_call_date, 'No calls yet')}</strong>
+                <div className="flex justify-between items-center py-1 border-b border-[#E1DDD3]/40">
+                  <span className="text-[#65716C]">Last Call Date:</span>
+                  <strong className="text-[#123C35]">{formatDateDisplay(customer.last_call_date, 'No calls yet')}</strong>
                 </div>
-                <div className="flex justify-between items-center py-1 border-b border-[#E8D9D4]/40">
-                  <span className="text-[#6F5963]">Last Call Outcome:</span>
-                  <strong className="text-[#4A173A]">{customer.last_call_outcome || 'Pending First Call'}</strong>
+                <div className="flex justify-between items-center py-1 border-b border-[#E1DDD3]/40">
+                  <span className="text-[#65716C]">Last Call Outcome:</span>
+                  <strong className="text-[#123C35]">{customer.last_call_outcome || 'Pending First Call'}</strong>
                 </div>
                 <div className="flex justify-between items-center py-1">
-                  <span className="text-[#6F5963]">Last Updated:</span>
-                  <strong className="text-[#4A173A]">{formatDateTimeDisplay(customer.updated_at, '—')}</strong>
+                  <span className="text-[#65716C]">Last Updated:</span>
+                  <strong className="text-[#123C35]">{formatDateTimeDisplay(customer.updated_at, '—')}</strong>
                 </div>
 
                 {/* Telecaller Instructions Summary Box */}
-                <div className="mt-3 pt-3 border-t border-[#E8D9D4] space-y-2">
+                <div className="mt-3 pt-3 border-t border-[#E1DDD3] space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-1.5 font-bold text-[#4A173A]">
-                      <MessageSquareQuote className="w-3.5 h-3.5 text-[#B76E79]" />
+                    <span className="flex items-center gap-1.5 font-bold text-[#123C35]">
+                      <MessageSquareQuote className="w-3.5 h-3.5 text-[#C9A45C]" />
                       <span>Caller Instructions</span>
                       {instructions.length > 0 && (
-                        <span className="px-1.5 py-0.2 bg-[#F6E2E5] text-[#6A2853] text-[10px] rounded-full font-bold">
+                        <span className="px-1.5 py-0.2 bg-[#EDF3F0] text-[#082821] text-[10px] rounded-full font-bold">
                           {instructions.length}
                         </span>
                       )}
@@ -1175,7 +1175,7 @@ export default function WeddingCustomerDetail() {
                       <button
                         type="button"
                         onClick={() => setTellCallerOpen(true)}
-                        className="text-[11px] font-bold text-[#B76E79] hover:text-[#4A173A] flex items-center gap-1 transition-colors cursor-pointer"
+                        className="text-[11px] font-bold text-[#C9A45C] hover:text-[#123C35] flex items-center gap-1 transition-colors cursor-pointer"
                       >
                         <Plus className="w-3 h-3" />
                         <span>Tell Caller</span>
@@ -1184,9 +1184,9 @@ export default function WeddingCustomerDetail() {
                   </div>
 
                   {instructions.length > 0 ? (
-                    <div className="bg-[#FAF7F5] rounded-xl p-2.5 border border-[#E8D9D4]/60 space-y-1.5">
+                    <div className="bg-[#FAF7F5] rounded-xl p-2.5 border border-[#E1DDD3]/60 space-y-1.5">
                       <div className="flex items-center justify-between text-[11px]">
-                        <span className="font-semibold text-[#4A173A] truncate max-w-[140px]">
+                        <span className="font-semibold text-[#123C35] truncate max-w-[140px]">
                           To: {instructions[0].telecaller_name || instructions[0].telecallerName || 'Assigned Caller'}
                         </span>
                         <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${
@@ -1196,33 +1196,33 @@ export default function WeddingCustomerDetail() {
                             ? 'bg-[#FFF4D6] text-[#8A6212] border-[#C58A18]/30'
                             : instructions[0].status === 'Seen'
                             ? 'bg-[#EAF1FA] text-[#356AE6] border-[#356AE6]/30'
-                            : 'bg-[#F6E2E5] text-[#6A2853] border-[#B76E79]/30'
+                            : 'bg-[#EDF3F0] text-[#082821] border-[#C9A45C]/30'
                         }`}>
                           {instructions[0].status || 'New'}
                         </span>
                       </div>
-                      <p className="text-[11px] text-[#4A173A] line-clamp-2 italic">
+                      <p className="text-[11px] text-[#123C35] line-clamp-2 italic">
                         "{instructions[0].message}"
                       </p>
-                      <div className="flex items-center justify-between pt-1 text-[10px] text-[#6F5963]">
+                      <div className="flex items-center justify-between pt-1 text-[10px] text-[#65716C]">
                         <span>{formatDateTimeDisplay(instructions[0].created_at || instructions[0].createdAt, 'Recent')}</span>
                         <button
                           type="button"
                           onClick={() => setActiveTab('caller_instructions')}
-                          className="text-[#B76E79] hover:underline font-semibold"
+                          className="text-[#C9A45C] hover:underline font-semibold"
                         >
                           View all ({instructions.length}) →
                         </button>
                       </div>
                     </div>
                   ) : (
-                    <div className="bg-[#FAF7F5] rounded-xl p-2.5 border border-[#E8D9D4]/60 text-center">
-                      <p className="text-[11px] text-[#6F5963]">No instructions given to telecaller yet.</p>
+                    <div className="bg-[#FAF7F5] rounded-xl p-2.5 border border-[#E1DDD3]/60 text-center">
+                      <p className="text-[11px] text-[#65716C]">No instructions given to telecaller yet.</p>
                       {canTellCaller && !isArchived && (
                         <button
                           type="button"
                           onClick={() => setTellCallerOpen(true)}
-                          className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-semibold text-[#B76E79] hover:text-[#4A173A]"
+                          className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-semibold text-[#C9A45C] hover:text-[#123C35]"
                         >
                           <Plus className="w-3 h-3" /> Send first instruction
                         </button>
@@ -1235,8 +1235,8 @@ export default function WeddingCustomerDetail() {
 
             {/* Section 4: Archive & Lifecycle Information (if applicable) */}
             {(isArchived || (customer as any).archived_at) && (
-              <div className="bg-[#FFFDFC] p-5 sm:p-6 rounded-3xl border border-amber-200 bg-amber-50/20 shadow-xs space-y-3 text-xs md:col-span-2 lg:col-span-3">
-                <div className="flex items-center justify-between font-bold text-sm text-[#4A173A] border-b border-[#E8D9D4] pb-2.5">
+              <div className="bg-[#FFFFFF] p-5 sm:p-6 rounded-3xl border border-amber-200 bg-amber-50/20 shadow-xs space-y-3 text-xs md:col-span-2 lg:col-span-3">
+                <div className="flex items-center justify-between font-bold text-sm text-[#123C35] border-b border-[#E1DDD3] pb-2.5">
                   <div className="flex items-center gap-2">
                     <Archive className="w-4 h-4 text-amber-700" />
                     <span>Archive & Lifecycle History</span>
@@ -1247,32 +1247,32 @@ export default function WeddingCustomerDetail() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
                   <div className="space-y-1">
-                    <div className="text-[11px] font-medium text-[#6F5963]">Lifecycle Status</div>
+                    <div className="text-[11px] font-medium text-[#65716C]">Lifecycle Status</div>
                     <div className="font-bold text-amber-800 text-sm">{customer.lifecycle_status || 'OLD_CUSTOMER'}</div>
                   </div>
                   {(customer as any).previous_status && (
                     <div className="space-y-1">
-                      <div className="text-[11px] font-medium text-[#6F5963]">Previous CRM Status</div>
-                      <div className="font-bold text-[#4A173A] text-sm">{(customer as any).previous_status}</div>
+                      <div className="text-[11px] font-medium text-[#65716C]">Previous CRM Status</div>
+                      <div className="font-bold text-[#123C35] text-sm">{(customer as any).previous_status}</div>
                     </div>
                   )}
                   <div className="space-y-1">
-                    <div className="text-[11px] font-medium text-[#6F5963]">Archived On</div>
-                    <div className="font-semibold text-[#2B1722] text-sm">
+                    <div className="text-[11px] font-medium text-[#65716C]">Archived On</div>
+                    <div className="font-semibold text-[#17201D] text-sm">
                       {formatDateTimeDisplay((customer as any).archived_at, 'N/A')}
                     </div>
                   </div>
                   {(customer as any).archived_by && (
                     <div className="space-y-1">
-                      <div className="text-[11px] font-medium text-[#6F5963]">Archived By Staff</div>
-                      <div className="font-semibold text-[#2B1722] text-sm">{(customer as any).archived_by}</div>
+                      <div className="text-[11px] font-medium text-[#65716C]">Archived By Staff</div>
+                      <div className="font-semibold text-[#17201D] text-sm">{(customer as any).archived_by}</div>
                     </div>
                   )}
                 </div>
                 {(customer as any).archive_reason && (
                   <div className="pt-2 border-t border-amber-200 mt-2">
-                    <div className="text-[11px] font-semibold text-[#6F5963] mb-1">Archive Reason / Note:</div>
-                    <p className="italic text-[#2B1722] bg-white p-3 rounded-xl border border-amber-200">
+                    <div className="text-[11px] font-semibold text-[#65716C] mb-1">Archive Reason / Note:</div>
+                    <p className="italic text-[#17201D] bg-white p-3 rounded-xl border border-amber-200">
                       "{(customer as any).archive_reason}"
                     </p>
                   </div>
@@ -1284,27 +1284,27 @@ export default function WeddingCustomerDetail() {
 
         {/* ── TAB 2: CALL HISTORY ── */}
         {activeTab === 'calls' && (
-          <div className="bg-[#FFFDFC] rounded-3xl border border-[#E8D9D4] shadow-xs p-5 sm:p-6 space-y-4 animate-fade-in">
-            <div className="flex items-center justify-between pb-3 border-b border-[#E8D9D4]">
+          <div className="bg-[#FFFFFF] rounded-3xl border border-[#E1DDD3] shadow-xs p-5 sm:p-6 space-y-4 animate-fade-in">
+            <div className="flex items-center justify-between pb-3 border-b border-[#E1DDD3]">
               <div>
-                <h3 className="text-sm font-bold text-[#4A173A] uppercase tracking-wider">
+                <h3 className="text-sm font-bold text-[#123C35] uppercase tracking-wider">
                   Call & Follow-up History ({callLogs.length})
                 </h3>
-                <p className="text-xs text-[#6F5963] mt-0.5">Chronological record of phone calls and telecaller interactions.</p>
+                <p className="text-xs text-[#65716C] mt-0.5">Chronological record of phone calls and telecaller interactions.</p>
               </div>
               <button
                 type="button"
                 onClick={() => setCallModalOpen(true)}
-                className="px-4 py-2 bg-[#4A173A] text-white hover:bg-[#6A2853] font-semibold rounded-xl text-xs flex items-center gap-1.5 shadow-xs border border-[#B76E79]/30 transition-all cursor-pointer"
+                className="px-4 py-2 bg-[#123C35] text-white hover:bg-[#082821] font-semibold rounded-xl text-xs flex items-center gap-1.5 shadow-xs border border-[#C9A45C]/30 transition-all cursor-pointer"
               >
-                <Plus className="w-3.5 h-3.5 text-[#E8C7A8]" />
+                <Plus className="w-3.5 h-3.5 text-[#E4CB92]" />
                 <span>Log New Call</span>
               </button>
             </div>
 
             {callLogs.length === 0 ? (
-              <div className="text-center py-12 text-[#6F5963] text-xs space-y-2">
-                <PhoneCall className="w-8 h-8 text-[#B76E79]/50 mx-auto" />
+              <div className="text-center py-12 text-[#65716C] text-xs space-y-2">
+                <PhoneCall className="w-8 h-8 text-[#C9A45C]/50 mx-auto" />
                 <p className="font-semibold">No call records found for this customer yet.</p>
                 <p className="text-[#9A858D]">Click &ldquo;Log New Call&rdquo; to record the first contact.</p>
               </div>
@@ -1313,35 +1313,35 @@ export default function WeddingCustomerDetail() {
                 {callLogs.map((log) => (
                   <div
                     key={log.id}
-                    className="p-4 rounded-2xl bg-[#FFFAF7] border border-[#E8D9D4] text-xs space-y-2.5 transition-all hover:border-[#B76E79]"
+                    className="p-4 rounded-2xl bg-[#F7F5F0] border border-[#E1DDD3] text-xs space-y-2.5 transition-all hover:border-[#C9A45C]"
                   >
                     <div className="flex items-center justify-between flex-wrap gap-2">
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-[#4A173A] text-sm">{log.call_outcome}</span>
+                        <span className="font-bold text-[#123C35] text-sm">{log.call_outcome}</span>
                         <span className="text-[#9A858D]">·</span>
-                        <span className="text-[#6F5963] font-medium">
-                          Logged by <strong className="text-[#2B1722]">{log.telecaller_name || 'Telecaller'}</strong>
+                        <span className="text-[#65716C] font-medium">
+                          Logged by <strong className="text-[#17201D]">{log.telecaller_name || 'Telecaller'}</strong>
                         </span>
                       </div>
-                      <div className="text-[#6F5963] font-semibold text-[11px] bg-white px-2.5 py-1 rounded-lg border border-[#E8D9D4]">
+                      <div className="text-[#65716C] font-semibold text-[11px] bg-white px-2.5 py-1 rounded-lg border border-[#E1DDD3]">
                         {log.call_date} {log.call_time}
                       </div>
                     </div>
 
                     {log.remarks && (
-                      <p className="text-[#2B1722] bg-[#FFFDFC] p-3 rounded-xl border border-[#E8D9D4] italic">
+                      <p className="text-[#17201D] bg-[#FFFFFF] p-3 rounded-xl border border-[#E1DDD3] italic">
                         &ldquo;{log.remarks}&rdquo;
                       </p>
                     )}
 
                     {log.customer_response && (
-                      <div className="text-[11px] text-[#4A173A]">
+                      <div className="text-[11px] text-[#123C35]">
                         <span className="font-bold">Customer Response:</span> {log.customer_response}
                       </div>
                     )}
 
                     {parseDate(log.next_follow_up_date) && (
-                      <div className="text-[11px] text-[#C58A18] font-bold flex items-center gap-1.5 pt-1 border-t border-[#E8D9D4]/60">
+                      <div className="text-[11px] text-[#C58A18] font-bold flex items-center gap-1.5 pt-1 border-t border-[#E1DDD3]/60">
                         <Calendar className="w-3.5 h-3.5" />
                         <span>Next follow-up: {formatDateDisplay(log.next_follow_up_date, 'None')} ({log.next_follow_up_time || 'Any Time'})</span>
                       </div>
@@ -1355,45 +1355,45 @@ export default function WeddingCustomerDetail() {
 
         {/* ── TAB 3: VISITS & APPOINTMENTS ── */}
         {activeTab === 'visits' && (
-          <div className="bg-[#FFFDFC] rounded-3xl border border-[#E8D9D4] shadow-xs p-5 sm:p-6 space-y-5 animate-fade-in">
-            <div className="pb-3 border-b border-[#E8D9D4]">
-              <h3 className="text-sm font-bold text-[#4A173A] uppercase tracking-wider">
+          <div className="bg-[#FFFFFF] rounded-3xl border border-[#E1DDD3] shadow-xs p-5 sm:p-6 space-y-5 animate-fade-in">
+            <div className="pb-3 border-b border-[#E1DDD3]">
+              <h3 className="text-sm font-bold text-[#123C35] uppercase tracking-wider">
                 Showroom Visits & In-Store Appointments
               </h3>
-              <p className="text-xs text-[#6F5963] mt-0.5">Records of physical store footfall, appointments, and shopping sessions.</p>
+              <p className="text-xs text-[#65716C] mt-0.5">Records of physical store footfall, appointments, and shopping sessions.</p>
             </div>
 
             {visits.length === 0 && appointments.length === 0 ? (
-              <div className="text-center py-12 text-[#6F5963] text-xs space-y-2">
-                <Building2 className="w-8 h-8 text-[#B76E79]/50 mx-auto" />
+              <div className="text-center py-12 text-[#65716C] text-xs space-y-2">
+                <Building2 className="w-8 h-8 text-[#C9A45C]/50 mx-auto" />
                 <p className="font-semibold">No showroom visits or appointments recorded yet.</p>
                 <p className="text-[#9A858D]">Visits recorded at the store counter or greeter kiosk will appear here automatically.</p>
               </div>
             ) : (
               <div className="space-y-4 max-h-[650px] overflow-y-auto pr-1 custom-scrollbar">
                 {visits.map((v: any, idx: number) => (
-                  <div key={`visit-${idx}`} className="p-4 rounded-2xl bg-[#FFFAF7] border border-[#E8D9D4] text-xs space-y-2">
+                  <div key={`visit-${idx}`} className="p-4 rounded-2xl bg-[#F7F5F0] border border-[#E1DDD3] text-xs space-y-2">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#E8F5EE] text-[#198754]">Store Visit</span>
-                        <strong className="text-[#4A173A]">{v.store_name || v.location_name || 'Showroom'}</strong>
+                        <strong className="text-[#123C35]">{v.store_name || v.location_name || 'Showroom'}</strong>
                       </div>
-                      <span className="text-[#6F5963] font-semibold text-[11px]">{formatDateTimeDisplay(v.visit_date || v.created_at, 'N/A')}</span>
+                      <span className="text-[#65716C] font-semibold text-[11px]">{formatDateTimeDisplay(v.visit_date || v.created_at, 'N/A')}</span>
                     </div>
-                    {v.visit_notes && <p className="text-[#2B1722] italic">{v.visit_notes}</p>}
+                    {v.visit_notes && <p className="text-[#17201D] italic">{v.visit_notes}</p>}
                   </div>
                 ))}
 
                 {appointments.map((a: any, idx: number) => (
-                  <div key={`appt-${idx}`} className="p-4 rounded-2xl bg-[#FFFAF7] border border-[#E8D9D4] text-xs space-y-2">
+                  <div key={`appt-${idx}`} className="p-4 rounded-2xl bg-[#F7F5F0] border border-[#E1DDD3] text-xs space-y-2">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#EDE7F6] text-[#6A2853]">Appointment</span>
-                        <strong className="text-[#4A173A]">{a.appointment_type || 'Showroom Visit'}</strong>
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#EDF3F0] text-[#082821]">Appointment</span>
+                        <strong className="text-[#123C35]">{a.appointment_type || 'Showroom Visit'}</strong>
                       </div>
-                      <span className="text-[#6F5963] font-semibold text-[11px]">{formatDateTimeDisplay(a.appointment_date, 'N/A')}</span>
+                      <span className="text-[#65716C] font-semibold text-[11px]">{formatDateTimeDisplay(a.appointment_date, 'N/A')}</span>
                     </div>
-                    {a.special_arrangement && <p className="text-[#2B1722]">{a.special_arrangement}</p>}
+                    {a.special_arrangement && <p className="text-[#17201D]">{a.special_arrangement}</p>}
                   </div>
                 ))}
               </div>
@@ -1403,16 +1403,16 @@ export default function WeddingCustomerDetail() {
 
         {/* ── TAB 4: NOTES & PREFERENCES ── */}
         {activeTab === 'notes' && (
-          <div className="bg-[#FFFDFC] rounded-3xl border border-[#E8D9D4] shadow-xs p-5 sm:p-6 space-y-5 animate-fade-in">
-            <div className="pb-3 border-b border-[#E8D9D4]">
-              <h3 className="text-sm font-bold text-[#4A173A] uppercase tracking-wider">
+          <div className="bg-[#FFFFFF] rounded-3xl border border-[#E1DDD3] shadow-xs p-5 sm:p-6 space-y-5 animate-fade-in">
+            <div className="pb-3 border-b border-[#E1DDD3]">
+              <h3 className="text-sm font-bold text-[#123C35] uppercase tracking-wider">
                 Customer Notes & Shopping Preferences
               </h3>
-              <p className="text-xs text-[#6F5963] mt-0.5">Special requirements, trousseau notes, color choices, and fabric preferences.</p>
+              <p className="text-xs text-[#65716C] mt-0.5">Special requirements, trousseau notes, color choices, and fabric preferences.</p>
             </div>
 
             <form onSubmit={handleAddNote} className="space-y-3">
-              <label className="block text-[11px] font-bold text-[#6F5963] uppercase tracking-wider">
+              <label className="block text-[11px] font-bold text-[#65716C] uppercase tracking-wider">
                 Add New Note / Special Instruction
               </label>
               <textarea
@@ -1420,36 +1420,36 @@ export default function WeddingCustomerDetail() {
                 placeholder="e.g. Interested in Kanjeevaram pure silk, looking for pastel bridal shades, budget ~₹1.5 Lakh..."
                 value={noteText}
                 onChange={(e) => setNoteText(e.target.value)}
-                className="w-full p-3.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-2xl text-xs text-[#2B1722] placeholder-[#9A858D] focus:outline-none focus:border-[#B76E79]"
+                className="w-full p-3.5 bg-[#F7F5F0] border border-[#E1DDD3] rounded-2xl text-xs text-[#17201D] placeholder-[#9A858D] focus:outline-none focus:border-[#C9A45C]"
               />
               <div className="flex justify-end">
                 <button
                   type="submit"
                   disabled={savingNote || !noteText.trim()}
-                  className="px-5 py-2.5 bg-[#4A173A] text-white hover:bg-[#6A2853] font-semibold rounded-xl text-xs shadow-xs border border-[#B76E79]/30 disabled:opacity-40 transition-all cursor-pointer flex items-center gap-1.5"
+                  className="px-5 py-2.5 bg-[#123C35] text-white hover:bg-[#082821] font-semibold rounded-xl text-xs shadow-xs border border-[#C9A45C]/30 disabled:opacity-40 transition-all cursor-pointer flex items-center gap-1.5"
                 >
-                  {savingNote ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5 text-[#E8C7A8]" />}
+                  {savingNote ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5 text-[#E4CB92]" />}
                   <span>{savingNote ? 'Saving...' : 'Add Note'}</span>
                 </button>
               </div>
             </form>
 
-            <div className="pt-3 border-t border-[#E8D9D4] space-y-3">
-              <h4 className="text-xs font-bold uppercase text-[#4A173A] tracking-wider">Saved Notes</h4>
+            <div className="pt-3 border-t border-[#E1DDD3] space-y-3">
+              <h4 className="text-xs font-bold uppercase text-[#123C35] tracking-wider">Saved Notes</h4>
               {notes.length === 0 && !customer.customer_notes ? (
-                <div className="text-center py-8 text-[#6F5963] text-xs">No notes recorded yet.</div>
+                <div className="text-center py-8 text-[#65716C] text-xs">No notes recorded yet.</div>
               ) : (
                 <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1 custom-scrollbar">
                   {customer.customer_notes && (
-                    <div className="p-4 bg-[#FFFAF7] rounded-2xl border border-[#E8D9D4] text-xs space-y-1">
-                      <div className="text-[10px] uppercase font-bold text-[#6F5963]">Initial Registration Note</div>
-                      <p className="text-[#2B1722] italic font-medium">&ldquo;{customer.customer_notes}&rdquo;</p>
+                    <div className="p-4 bg-[#F7F5F0] rounded-2xl border border-[#E1DDD3] text-xs space-y-1">
+                      <div className="text-[10px] uppercase font-bold text-[#65716C]">Initial Registration Note</div>
+                      <p className="text-[#17201D] italic font-medium">&ldquo;{customer.customer_notes}&rdquo;</p>
                     </div>
                   )}
                   {notes.map((n: any, idx: number) => (
-                    <div key={idx} className="p-4 bg-[#FFFAF7] rounded-2xl border border-[#E8D9D4] text-xs space-y-1.5">
-                      <p className="text-[#2B1722] font-medium leading-relaxed">{n.note || n.details || n.note_content}</p>
-                      <div className="text-[10px] text-[#6F5963] font-semibold flex items-center gap-2 pt-1 border-t border-[#E8D9D4]/40">
+                    <div key={idx} className="p-4 bg-[#F7F5F0] rounded-2xl border border-[#E1DDD3] text-xs space-y-1.5">
+                      <p className="text-[#17201D] font-medium leading-relaxed">{n.note || n.details || n.note_content}</p>
+                      <div className="text-[10px] text-[#65716C] font-semibold flex items-center gap-2 pt-1 border-t border-[#E1DDD3]/40">
                         <span>{n.created_by || n.user_name || 'Staff'}</span>
                         <span>·</span>
                         <span>{formatDateTimeDisplay(n.created_at, '')}</span>
@@ -1464,33 +1464,33 @@ export default function WeddingCustomerDetail() {
 
         {/* ── TAB 5: ACTIVITY TIMELINE ── */}
         {activeTab === 'timeline' && (
-          <div className="bg-[#FFFDFC] rounded-3xl border border-[#E8D9D4] shadow-xs p-5 sm:p-6 space-y-4 animate-fade-in">
-            <div className="pb-3 border-b border-[#E8D9D4]">
-              <h3 className="text-sm font-bold text-[#4A173A] uppercase tracking-wider">
+          <div className="bg-[#FFFFFF] rounded-3xl border border-[#E1DDD3] shadow-xs p-5 sm:p-6 space-y-4 animate-fade-in">
+            <div className="pb-3 border-b border-[#E1DDD3]">
+              <h3 className="text-sm font-bold text-[#123C35] uppercase tracking-wider">
                 Full Activity & Audit Timeline ({auditLogs.length})
               </h3>
-              <p className="text-xs text-[#6F5963] mt-0.5">Automated history of customer creations, edits, status transitions, and staff actions.</p>
+              <p className="text-xs text-[#65716C] mt-0.5">Automated history of customer creations, edits, status transitions, and staff actions.</p>
             </div>
 
             {auditLogs.length === 0 ? (
-              <div className="text-center py-12 text-[#6F5963] text-xs space-y-2">
-                <Activity className="w-8 h-8 text-[#B76E79]/50 mx-auto" />
+              <div className="text-center py-12 text-[#65716C] text-xs space-y-2">
+                <Activity className="w-8 h-8 text-[#C9A45C]/50 mx-auto" />
                 <p className="font-semibold">No activity logs recorded yet.</p>
               </div>
             ) : (
               <div className="space-y-3 max-h-[650px] overflow-y-auto pr-1 custom-scrollbar">
                 {auditLogs.map((log: any, idx: number) => (
-                  <div key={`audit-${idx}`} className="p-4 rounded-2xl bg-[#FFFAF7] border border-[#E8D9D4] text-xs space-y-1.5">
+                  <div key={`audit-${idx}`} className="p-4 rounded-2xl bg-[#F7F5F0] border border-[#E1DDD3] text-xs space-y-1.5">
                     <div className="flex items-center justify-between flex-wrap gap-2">
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-[#4A173A] text-sm">{log.action}</span>
+                        <span className="font-bold text-[#123C35] text-sm">{log.action}</span>
                         <span className="text-[#9A858D]">·</span>
-                        <span className="text-[#6F5963]">By {log.user_name || 'System'}</span>
+                        <span className="text-[#65716C]">By {log.user_name || 'System'}</span>
                       </div>
-                      <span className="text-[11px] text-[#6F5963] font-mono">{formatDateTimeDisplay(log.created_at, 'N/A')}</span>
+                      <span className="text-[11px] text-[#65716C] font-mono">{formatDateTimeDisplay(log.created_at, 'N/A')}</span>
                     </div>
                     {log.details && (
-                      <p className="text-[#2B1722] leading-relaxed text-xs">{log.details}</p>
+                      <p className="text-[#17201D] leading-relaxed text-xs">{log.details}</p>
                     )}
                   </div>
                 ))}
@@ -1501,32 +1501,32 @@ export default function WeddingCustomerDetail() {
 
         {/* ── TAB 6: STATUS AUDIT HISTORY ── */}
         {activeTab === 'status_history' && (
-          <div className="bg-[#FFFDFC] rounded-3xl border border-[#E8D9D4] shadow-xs p-5 sm:p-6 space-y-4 animate-fade-in">
-            <div className="pb-3 border-b border-[#E8D9D4]">
-              <h3 className="text-sm font-bold text-[#4A173A] uppercase tracking-wider">
+          <div className="bg-[#FFFFFF] rounded-3xl border border-[#E1DDD3] shadow-xs p-5 sm:p-6 space-y-4 animate-fade-in">
+            <div className="pb-3 border-b border-[#E1DDD3]">
+              <h3 className="text-sm font-bold text-[#123C35] uppercase tracking-wider">
                 Status Transitions & Progression Trail
               </h3>
-              <p className="text-xs text-[#6F5963] mt-0.5">Audit log of every CRM funnel status change for this lead.</p>
+              <p className="text-xs text-[#65716C] mt-0.5">Audit log of every CRM funnel status change for this lead.</p>
             </div>
 
             {statusHistory.length === 0 ? (
-              <div className="text-center py-12 text-[#6F5963] text-xs space-y-2">
-                <History className="w-8 h-8 text-[#B76E79]/50 mx-auto" />
+              <div className="text-center py-12 text-[#65716C] text-xs space-y-2">
+                <History className="w-8 h-8 text-[#C9A45C]/50 mx-auto" />
                 <p className="font-semibold">Current lead status is &ldquo;{customer.customer_status}&rdquo;.</p>
                 <p className="text-[#9A858D]">No further status changes have been recorded.</p>
               </div>
             ) : (
               <div className="space-y-3 max-h-[650px] overflow-y-auto pr-1 custom-scrollbar">
                 {statusHistory.map((sh: any, idx: number) => (
-                  <div key={idx} className="p-4 bg-[#FFFAF7] rounded-2xl border border-[#E8D9D4] text-xs flex items-center justify-between gap-4">
+                  <div key={idx} className="p-4 bg-[#F7F5F0] rounded-2xl border border-[#E1DDD3] text-xs flex items-center justify-between gap-4">
                     <div className="space-y-1">
-                      <div className="font-semibold text-[#2B1722]">
-                        Changed to <span className="text-[#4A173A] font-bold text-sm">{sh.new_status}</span>
+                      <div className="font-semibold text-[#17201D]">
+                        Changed to <span className="text-[#123C35] font-bold text-sm">{sh.new_status}</span>
                       </div>
-                      {sh.change_reason && <p className="text-[#6F5963] italic">&ldquo;{sh.change_reason}&rdquo;</p>}
+                      {sh.change_reason && <p className="text-[#65716C] italic">&ldquo;{sh.change_reason}&rdquo;</p>}
                     </div>
-                    <div className="text-right text-[11px] text-[#6F5963] shrink-0 font-medium">
-                      <div className="text-[#2B1722] font-semibold">{sh.user_name || 'System Staff'}</div>
+                    <div className="text-right text-[11px] text-[#65716C] shrink-0 font-medium">
+                      <div className="text-[#17201D] font-semibold">{sh.user_name || 'System Staff'}</div>
                       <div>{formatDateDisplay(sh.created_at, '')}</div>
                     </div>
                   </div>
@@ -1538,36 +1538,36 @@ export default function WeddingCustomerDetail() {
 
         {/* ── TAB 7: ALL REGISTRATIONS & RELATED JOURNEYS ── */}
         {activeTab === 'associated_weddings' && (
-          <div className="bg-[#FFFDFC] rounded-3xl border border-[#E8D9D4] shadow-xs p-5 sm:p-6 space-y-6 animate-fade-in">
+          <div className="bg-[#FFFFFF] rounded-3xl border border-[#E1DDD3] shadow-xs p-5 sm:p-6 space-y-6 animate-fade-in">
             <div>
-              <h3 className="text-sm font-bold text-[#4A173A] uppercase tracking-wider">
+              <h3 className="text-sm font-bold text-[#123C35] uppercase tracking-wider">
                 Associated Wedding Registrations for Mobile: {customer.mobile_number}
               </h3>
-              <p className="text-xs text-[#6F5963] mt-1">
+              <p className="text-xs text-[#65716C] mt-1">
                 Families often plan multiple weddings (e.g. son, daughter, sibling). All wedding registrations registered under this mobile number are tracked here independently.
               </p>
             </div>
 
             {associatedRegistrations.length === 0 && associatedCustomers.length === 0 ? (
-              <div className="text-center py-12 bg-[#FFFAF7] rounded-2xl border border-[#E8D9D4] text-[#6F5963] text-xs space-y-2">
-                <Heart className="w-8 h-8 text-[#B76E79]/50 mx-auto" />
+              <div className="text-center py-12 bg-[#F7F5F0] rounded-2xl border border-[#E1DDD3] text-[#65716C] text-xs space-y-2">
+                <Heart className="w-8 h-8 text-[#C9A45C]/50 mx-auto" />
                 <p className="font-semibold">This customer currently has one active wedding registration ({customer.customer_code}).</p>
                 <p className="text-[#9A858D]">Future wedding registrations with this mobile number will appear here automatically.</p>
               </div>
             ) : (
               <div className="space-y-4">
                 {/* Active Primary Record Banner */}
-                <div className="p-4 rounded-2xl bg-[#F6E2E5] border border-[#E8D9D4] flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
+                <div className="p-4 rounded-2xl bg-[#EDF3F0] border border-[#E1DDD3] flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-[#4A173A] text-sm">{customer.customer_name}</span>
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#4A173A] text-white">Current Active Record</span>
+                      <span className="font-bold text-[#123C35] text-sm">{customer.customer_name}</span>
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#123C35] text-white">Current Active Record</span>
                     </div>
-                    <div className="text-[#6F5963] text-[11px] mt-1">
-                      Reg ID: <strong className="text-[#4A173A] font-mono">{customer.customer_code}</strong> · Wedding Date: <strong>{formatDateDisplay(customer.wedding_date, 'TBD')}</strong> · Telecaller: <strong>{customer.assigned_telecaller || 'Unassigned'}</strong>
+                    <div className="text-[#65716C] text-[11px] mt-1">
+                      Reg ID: <strong className="text-[#123C35] font-mono">{customer.customer_code}</strong> · Wedding Date: <strong>{formatDateDisplay(customer.wedding_date, 'TBD')}</strong> · Telecaller: <strong>{customer.assigned_telecaller || 'Unassigned'}</strong>
                     </div>
                   </div>
-                  <span className="text-xs font-semibold text-[#4A173A] bg-[#FFFDFC] border border-[#E8D9D4] px-3 py-1 rounded-xl shrink-0">
+                  <span className="text-xs font-semibold text-[#123C35] bg-[#FFFFFF] border border-[#E1DDD3] px-3 py-1 rounded-xl shrink-0">
                     Status: {customer.customer_status}
                   </span>
                 </div>
@@ -1576,21 +1576,21 @@ export default function WeddingCustomerDetail() {
                 {associatedRegistrations.map((reg) => (
                   <div
                     key={reg.id}
-                    className="p-4 rounded-2xl bg-[#FFFAF7] border border-[#E8D9D4] hover:border-[#B76E79] transition-all text-xs flex flex-col md:flex-row md:items-center justify-between gap-3"
+                    className="p-4 rounded-2xl bg-[#F7F5F0] border border-[#E1DDD3] hover:border-[#C9A45C] transition-all text-xs flex flex-col md:flex-row md:items-center justify-between gap-3"
                   >
                     <div className="space-y-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-bold text-[#2B1722] text-sm">{reg.customer_name}</span>
-                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-[#EDE7F6] text-[#6A2853] border border-[#E8D9D4]">
+                        <span className="font-bold text-[#17201D] text-sm">{reg.customer_name}</span>
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-[#EDF3F0] text-[#082821] border border-[#E1DDD3]">
                           Reg ID: {reg.registration_id}
                         </span>
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#FFFDFC] text-[#6F5963] border border-[#E8D9D4]">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#FFFFFF] text-[#65716C] border border-[#E1DDD3]">
                           {reg.status || 'New'}
                         </span>
                       </div>
-                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-[#6F5963] text-[11px]">
+                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-[#65716C] text-[11px]">
                         {parseDate(reg.wedding_date) && (
-                          <span>Wedding Date: <strong className="text-[#B76E79]">{formatDateDisplay(reg.wedding_date, 'TBD')}</strong></span>
+                          <span>Wedding Date: <strong className="text-[#C9A45C]">{formatDateDisplay(reg.wedding_date, 'TBD')}</strong></span>
                         )}
                         {reg.bride_name && <span>Bride: <strong>{reg.bride_name}</strong></span>}
                         {reg.groom_name && <span>Groom: <strong>{reg.groom_name}</strong></span>}
@@ -1598,7 +1598,7 @@ export default function WeddingCustomerDetail() {
                         {reg.location_name && <span>Store: <strong>{reg.location_name}</strong></span>}
                       </div>
                     </div>
-                    <div className="text-[11px] text-[#6F5963] text-right shrink-0">
+                    <div className="text-[11px] text-[#65716C] text-right shrink-0">
                       Registered: {formatDateDisplay(reg.created_at, 'N/A')}
                     </div>
                   </div>
@@ -1607,7 +1607,7 @@ export default function WeddingCustomerDetail() {
                 {/* Related Journeys */}
                 {previousJourneys.length > 0 && (
                   <div className="pt-2">
-                    <h4 className="text-[11px] font-bold uppercase tracking-wider text-[#4A173A] mb-2">
+                    <h4 className="text-[11px] font-bold uppercase tracking-wider text-[#123C35] mb-2">
                       Previous / Related Journeys ({previousJourneys.length})
                     </h4>
                     <div className="space-y-3">
@@ -1617,15 +1617,15 @@ export default function WeddingCustomerDetail() {
                         return (
                           <div
                             key={`journey-${cust.id}`}
-                            className={`p-4 rounded-2xl border text-xs flex flex-col md:flex-row md:items-center justify-between gap-3 transition-all hover:border-[#B76E79] ${
+                            className={`p-4 rounded-2xl border text-xs flex flex-col md:flex-row md:items-center justify-between gap-3 transition-all hover:border-[#C9A45C] ${
                               relatedArchived
                                 ? 'bg-amber-50 border-amber-200'
-                                : 'bg-[#FFFAF7] border-[#E8D9D4]'
+                                : 'bg-[#F7F5F0] border-[#E1DDD3]'
                             }`}
                           >
                             <div className="space-y-1">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <span className="font-bold text-[#2B1722] text-sm">{cust.customer_name}</span>
+                                <span className="font-bold text-[#17201D] text-sm">{cust.customer_name}</span>
                                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-[#E8F5EE] text-[#198754] border border-[#198754]/20 font-mono">
                                   {cust.customer_code}
                                 </span>
@@ -1638,9 +1638,9 @@ export default function WeddingCustomerDetail() {
                                   </span>
                                 )}
                               </div>
-                              <div className="flex flex-wrap gap-x-4 gap-y-1 text-[#6F5963] text-[11px]">
+                              <div className="flex flex-wrap gap-x-4 gap-y-1 text-[#65716C] text-[11px]">
                                 {parseDate(cust.wedding_date) && (
-                                  <span>Wedding Date: <strong className="text-[#B76E79]">{formatDateDisplay(cust.wedding_date, 'TBD')}</strong></span>
+                                  <span>Wedding Date: <strong className="text-[#C9A45C]">{formatDateDisplay(cust.wedding_date, 'TBD')}</strong></span>
                                 )}
                                 {cust.location_name && (
                                   <span>Location: <strong>{cust.location_name}</strong></span>
@@ -1651,7 +1651,7 @@ export default function WeddingCustomerDetail() {
                             </div>
                             <Link
                               to={`/wedding-crm/customers/${cust.id}`}
-                              className="px-3.5 py-1.5 rounded-xl bg-[#FFFDFC] hover:bg-[#FFF7F2] border border-[#E8D9D4] text-xs font-semibold text-[#4A173A] flex items-center gap-1.5 shrink-0 shadow-2xs"
+                              className="px-3.5 py-1.5 rounded-xl bg-[#FFFFFF] hover:bg-[#EDF3F0] border border-[#E1DDD3] text-xs font-semibold text-[#123C35] flex items-center gap-1.5 shrink-0 shadow-2xs"
                             >
                               <span>View Journey</span>
                               <ExternalLink className="w-3 h-3" />
@@ -1670,13 +1670,13 @@ export default function WeddingCustomerDetail() {
         {/* ── TAB 8: TELL CALLER / INSTRUCTIONS ── */}
         {activeTab === 'caller_instructions' && (
           <div className="space-y-4 animate-fade-in">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#FFFDFC] p-4 sm:p-5 rounded-3xl border border-[#E8D9D4] shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#FFFFFF] p-4 sm:p-5 rounded-3xl border border-[#E1DDD3] shadow-xs">
               <div>
-                <h3 className="text-base font-bold text-[#4A173A] flex items-center gap-2">
-                  <MessageSquareQuote className="w-5 h-5 text-[#B76E79]" />
+                <h3 className="text-base font-bold text-[#123C35] flex items-center gap-2">
+                  <MessageSquareQuote className="w-5 h-5 text-[#C9A45C]" />
                   <span>Telecaller Instructions & Directives ({instructions.length})</span>
                 </h3>
-                <p className="text-xs text-[#6F5963] mt-0.5">
+                <p className="text-xs text-[#65716C] mt-0.5">
                   Guidance and priority instructions sent by CRM managers to the assigned telecaller for {customer.customer_name}.
                 </p>
               </div>
@@ -1684,7 +1684,7 @@ export default function WeddingCustomerDetail() {
                 <button
                   type="button"
                   onClick={() => setTellCallerOpen(true)}
-                  className="px-4 py-2 bg-[#4A173A] hover:bg-[#6A2853] text-white font-semibold rounded-xl text-xs flex items-center justify-center gap-2 shadow-2xs transition-all active:scale-95 cursor-pointer"
+                  className="px-4 py-2 bg-[#123C35] hover:bg-[#082821] text-white font-semibold rounded-xl text-xs flex items-center justify-center gap-2 shadow-2xs transition-all active:scale-95 cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>Tell Caller / New Instruction</span>
@@ -1693,24 +1693,24 @@ export default function WeddingCustomerDetail() {
             </div>
 
             {instructionsLoading ? (
-              <div className="bg-[#FFFDFC] p-8 rounded-3xl border border-[#E8D9D4] flex flex-col items-center justify-center text-center text-[#6F5963]">
-                <RefreshCw className="w-6 h-6 animate-spin text-[#B76E79] mb-2" />
+              <div className="bg-[#FFFFFF] p-8 rounded-3xl border border-[#E1DDD3] flex flex-col items-center justify-center text-center text-[#65716C]">
+                <RefreshCw className="w-6 h-6 animate-spin text-[#C9A45C] mb-2" />
                 <p className="text-xs">Loading instructions...</p>
               </div>
             ) : instructions.length === 0 ? (
-              <div className="bg-[#FFFDFC] p-10 rounded-3xl border border-[#E8D9D4] flex flex-col items-center justify-center text-center">
-                <div className="w-12 h-12 rounded-full bg-[#F6E2E5] flex items-center justify-center text-[#B76E79] mb-3">
+              <div className="bg-[#FFFFFF] p-10 rounded-3xl border border-[#E1DDD3] flex flex-col items-center justify-center text-center">
+                <div className="w-12 h-12 rounded-full bg-[#EDF3F0] flex items-center justify-center text-[#C9A45C] mb-3">
                   <MessageSquareQuote className="w-6 h-6" />
                 </div>
-                <h4 className="text-sm font-bold text-[#4A173A]">No Instructions Sent Yet</h4>
-                <p className="text-xs text-[#6F5963] max-w-md mt-1 mb-4">
+                <h4 className="text-sm font-bold text-[#123C35]">No Instructions Sent Yet</h4>
+                <p className="text-xs text-[#65716C] max-w-md mt-1 mb-4">
                   Use "Tell Caller" to send specific instructions, guidance, or urgent reminders to the telecaller handling {customer.customer_name}.
                 </p>
                 {canTellCaller && !isArchived && (
                   <button
                     type="button"
                     onClick={() => setTellCallerOpen(true)}
-                    className="px-4 py-2 bg-[#4A173A] hover:bg-[#6A2853] text-white font-semibold rounded-xl text-xs flex items-center gap-1.5 shadow-2xs transition-all active:scale-95 cursor-pointer"
+                    className="px-4 py-2 bg-[#123C35] hover:bg-[#082821] text-white font-semibold rounded-xl text-xs flex items-center gap-1.5 shadow-2xs transition-all active:scale-95 cursor-pointer"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>Send Instruction Now</span>
@@ -1724,7 +1724,7 @@ export default function WeddingCustomerDetail() {
                     Completed: 'bg-[#E8F5EE] text-[#198754] border-[#198754]/30',
                     Acknowledged: 'bg-[#FFF4D6] text-[#8A6212] border-[#C58A18]/30',
                     Seen: 'bg-[#EAF1FA] text-[#356AE6] border-[#356AE6]/30',
-                    New: 'bg-[#F6E2E5] text-[#6A2853] border-[#B76E79]/30'
+                    New: 'bg-[#EDF3F0] text-[#082821] border-[#C9A45C]/30'
                   };
                   const priorityColors: Record<string, string> = {
                     Urgent: 'bg-rose-100 text-rose-800 border-rose-300 font-bold',
@@ -1735,11 +1735,11 @@ export default function WeddingCustomerDetail() {
                   return (
                     <div
                       key={inst.id || idx}
-                      className="bg-[#FFFDFC] p-4 sm:p-5 rounded-2xl border border-[#E8D9D4] shadow-xs space-y-3 hover:border-[#B76E79]/40 transition-colors"
+                      className="bg-[#FFFFFF] p-4 sm:p-5 rounded-2xl border border-[#E1DDD3] shadow-xs space-y-3 hover:border-[#C9A45C]/40 transition-colors"
                     >
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#E8D9D4]/40 pb-2.5">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#E1DDD3]/40 pb-2.5">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-bold text-sm text-[#4A173A]">
+                          <span className="font-bold text-sm text-[#123C35]">
                             To: {inst.telecaller_name || inst.telecallerName || 'Assigned Telecaller'}
                           </span>
                           <span className={`px-2 py-0.5 rounded-md text-[11px] font-semibold border ${priorityColors[inst.priority || 'Normal'] || priorityColors.Normal}`}>
@@ -1749,22 +1749,22 @@ export default function WeddingCustomerDetail() {
                             {inst.status || 'New'}
                           </span>
                         </div>
-                        <div className="text-[11px] text-[#6F5963] flex items-center gap-1.5">
+                        <div className="text-[11px] text-[#65716C] flex items-center gap-1.5">
                           <Clock className="w-3.5 h-3.5 text-[#9A858D]" />
                           <span>{formatDateTimeDisplay(inst.created_at || inst.createdAt, 'N/A')}</span>
                         </div>
                       </div>
 
-                      <div className="bg-[#FAF7F5] rounded-xl p-3 border border-[#E8D9D4]/60">
-                        <p className="text-xs text-[#2B1722] leading-relaxed whitespace-pre-wrap font-normal">
+                      <div className="bg-[#FAF7F5] rounded-xl p-3 border border-[#E1DDD3]/60">
+                        <p className="text-xs text-[#17201D] leading-relaxed whitespace-pre-wrap font-normal">
                           {inst.message}
                         </p>
                       </div>
 
-                      <div className="flex flex-wrap items-center justify-between text-[11px] text-[#6F5963] pt-1 gap-2">
+                      <div className="flex flex-wrap items-center justify-between text-[11px] text-[#65716C] pt-1 gap-2">
                         <div>
                           <span>Sent By: </span>
-                          <strong className="text-[#4A173A]">{inst.sent_by_name || inst.sentByName || 'CRM Manager'}</strong>
+                          <strong className="text-[#123C35]">{inst.sent_by_name || inst.sentByName || 'CRM Manager'}</strong>
                         </div>
                         <div className="flex items-center gap-3 flex-wrap">
                           {inst.seen_at && (
@@ -1805,29 +1805,29 @@ export default function WeddingCustomerDetail() {
             }}
           >
             <div
-              className="bg-[#FFFDFC] rounded-2xl sm:rounded-3xl max-w-3xl w-full max-h-[calc(100dvh-2rem)] sm:max-h-[calc(100dvh-3rem)] shadow-2xl border border-[#E8D9D4] flex flex-col overflow-hidden animate-scale-in"
+              className="bg-[#FFFFFF] rounded-2xl sm:rounded-3xl max-w-3xl w-full max-h-[calc(100dvh-2rem)] sm:max-h-[calc(100dvh-3rem)] shadow-2xl border border-[#E1DDD3] flex flex-col overflow-hidden animate-scale-in"
               role="dialog"
               aria-modal="true"
             >
               {/* Header */}
-              <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-[#E8D9D4] bg-[#FFFDFC] shrink-0">
+              <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-[#E1DDD3] bg-[#FFFFFF] shrink-0">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 rounded-xl bg-[#4A173A] text-white flex items-center justify-center shrink-0 shadow-sm border border-[#B76E79]/30">
-                    <Edit3 className="w-5 h-5 text-[#E8C7A8]" />
+                  <div className="w-10 h-10 rounded-xl bg-[#123C35] text-white flex items-center justify-center shrink-0 shadow-sm border border-[#C9A45C]/30">
+                    <Edit3 className="w-5 h-5 text-[#E4CB92]" />
                   </div>
                   <div className="min-w-0">
-                    <h3 className="text-base sm:text-lg font-bold text-[#4A173A] truncate leading-tight">
+                    <h3 className="text-base sm:text-lg font-bold text-[#123C35] truncate leading-tight">
                       Edit Customer Profile
                     </h3>
-                    <p className="text-xs text-[#6F5963] truncate mt-0.5">
-                      Customer ID: <strong className="text-[#4A173A] font-mono">{customer.customer_code}</strong> · {customer.customer_name}
+                    <p className="text-xs text-[#65716C] truncate mt-0.5">
+                      Customer ID: <strong className="text-[#123C35] font-mono">{customer.customer_code}</strong> · {customer.customer_name}
                     </p>
                   </div>
                 </div>
                 <button
                   type="button"
                   onClick={() => !savingEdit && setEditModalOpen(false)}
-                  className="p-2 text-[#6F5963] hover:text-[#4A173A] hover:bg-[#FFF7F2] rounded-xl transition-colors cursor-pointer shrink-0"
+                  className="p-2 text-[#65716C] hover:text-[#123C35] hover:bg-[#EDF3F0] rounded-xl transition-colors cursor-pointer shrink-0"
                   aria-label="Close modal"
                 >
                   <X className="w-5 h-5" />
@@ -1838,14 +1838,14 @@ export default function WeddingCustomerDetail() {
               <form id="edit-customer-form" onSubmit={handleSaveEdit} className="flex-1 overflow-y-auto min-h-0 px-5 sm:px-6 py-5 space-y-6 text-xs custom-scrollbar overscroll-contain">
                 {/* Section 1: Customer Contact & Showroom */}
                 <div className="space-y-3.5">
-                  <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#4A173A] pb-1.5 border-b border-[#E8D9D4]">
-                    <User className="w-4 h-4 text-[#B76E79]" />
+                  <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#123C35] pb-1.5 border-b border-[#E1DDD3]">
+                    <User className="w-4 h-4 text-[#C9A45C]" />
                     <span>Customer Contact & Showroom Location</span>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[11px] font-bold uppercase text-[#6F5963] mb-1">
+                      <label className="block text-[11px] font-bold uppercase text-[#65716C] mb-1">
                         Full Name <span className="text-rose-500">*</span>
                       </label>
                       <input
@@ -1854,16 +1854,16 @@ export default function WeddingCustomerDetail() {
                         value={editForm.customer_name}
                         onChange={(e) => setEditForm({ ...editForm, customer_name: e.target.value })}
                         placeholder="Customer full name"
-                        className="w-full px-3.5 py-2.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-semibold text-xs text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                        className="w-full px-3.5 py-2.5 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl font-semibold text-xs text-[#17201D] focus:outline-none focus:border-[#C9A45C]"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold uppercase text-[#6F5963] mb-1">
+                      <label className="block text-[11px] font-bold uppercase text-[#65716C] mb-1">
                         Mobile Number (10 Digits) <span className="text-rose-500">*</span>
                       </label>
-                      <div className="flex rounded-xl border border-[#E8D9D4] bg-[#FFFAF7] overflow-hidden focus-within:border-[#B76E79]">
-                        <span className="px-3.5 py-2.5 bg-[#F6E2E5]/50 border-r border-[#E8D9D4] text-xs font-mono font-bold text-[#4A173A] select-none">
+                      <div className="flex rounded-xl border border-[#E1DDD3] bg-[#F7F5F0] overflow-hidden focus-within:border-[#C9A45C]">
+                        <span className="px-3.5 py-2.5 bg-[#EDF3F0]/50 border-r border-[#E1DDD3] text-xs font-mono font-bold text-[#123C35] select-none">
                           +91
                         </span>
                         <input
@@ -1874,17 +1874,17 @@ export default function WeddingCustomerDetail() {
                           value={editForm.mobile_number}
                           onChange={(e) => setEditForm({ ...editForm, mobile_number: e.target.value.replace(/\D/g, '').slice(0, 10) })}
                           placeholder="9876543210"
-                          className="flex-1 px-3.5 py-2.5 text-xs font-mono font-semibold text-[#2B1722] bg-transparent outline-none"
+                          className="flex-1 px-3.5 py-2.5 text-xs font-mono font-semibold text-[#17201D] bg-transparent outline-none"
                         />
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold uppercase text-[#6F5963] mb-1">
+                      <label className="block text-[11px] font-bold uppercase text-[#65716C] mb-1">
                         Alternate Mobile (Optional)
                       </label>
-                      <div className="flex rounded-xl border border-[#E8D9D4] bg-[#FFFAF7] overflow-hidden focus-within:border-[#B76E79]">
-                        <span className="px-3.5 py-2.5 bg-[#F6E2E5]/50 border-r border-[#E8D9D4] text-xs font-mono font-bold text-[#4A173A] select-none">
+                      <div className="flex rounded-xl border border-[#E1DDD3] bg-[#F7F5F0] overflow-hidden focus-within:border-[#C9A45C]">
+                        <span className="px-3.5 py-2.5 bg-[#EDF3F0]/50 border-r border-[#E1DDD3] text-xs font-mono font-bold text-[#123C35] select-none">
                           +91
                         </span>
                         <input
@@ -1894,13 +1894,13 @@ export default function WeddingCustomerDetail() {
                           value={editForm.alternate_mobile}
                           onChange={(e) => setEditForm({ ...editForm, alternate_mobile: e.target.value.replace(/\D/g, '').slice(0, 10) })}
                           placeholder="Optional alternate mobile"
-                          className="flex-1 px-3.5 py-2.5 text-xs font-mono font-semibold text-[#2B1722] bg-transparent outline-none"
+                          className="flex-1 px-3.5 py-2.5 text-xs font-mono font-semibold text-[#17201D] bg-transparent outline-none"
                         />
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold uppercase text-[#6F5963] mb-1">
+                      <label className="block text-[11px] font-bold uppercase text-[#65716C] mb-1">
                         Email Address
                       </label>
                       <input
@@ -1908,19 +1908,19 @@ export default function WeddingCustomerDetail() {
                         value={editForm.email}
                         onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
                         placeholder="customer@example.com"
-                        className="w-full px-3.5 py-2.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-semibold text-xs text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                        className="w-full px-3.5 py-2.5 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl font-semibold text-xs text-[#17201D] focus:outline-none focus:border-[#C9A45C]"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold uppercase text-[#6F5963] mb-1">
+                      <label className="block text-[11px] font-bold uppercase text-[#65716C] mb-1">
                         Store Location Showroom <span className="text-rose-500">*</span>
                       </label>
                       <select
                         value={editForm.location_id}
                         disabled={!isGlobalAdmin && allowedLocationIds.length <= 1}
                         onChange={(e) => setEditForm({ ...editForm, location_id: Number(e.target.value) })}
-                        className="w-full px-3.5 py-2.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-semibold text-xs text-[#4A173A] focus:outline-none focus:border-[#B76E79] disabled:opacity-80 disabled:cursor-not-allowed"
+                        className="w-full px-3.5 py-2.5 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl font-semibold text-xs text-[#123C35] focus:outline-none focus:border-[#C9A45C] disabled:opacity-80 disabled:cursor-not-allowed"
                       >
                         {STORE_LOCATIONS_LIST.filter((loc) => isGlobalAdmin || allowedLocationIds.includes(loc.id)).map((loc) => (
                           <option key={loc.id} value={loc.id}>
@@ -1929,20 +1929,20 @@ export default function WeddingCustomerDetail() {
                         ))}
                       </select>
                       {!isGlobalAdmin && allowedLocationIds.length <= 1 && (
-                        <p className="text-[10px] font-semibold text-[#6F5963] mt-1">
+                        <p className="text-[10px] font-semibold text-[#65716C] mt-1">
                           Scoped to your assigned store location.
                         </p>
                       )}
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold uppercase text-[#6F5963] mb-1">
+                      <label className="block text-[11px] font-bold uppercase text-[#65716C] mb-1">
                         Lead Source
                       </label>
                       <select
                         value={editForm.lead_source}
                         onChange={(e) => setEditForm({ ...editForm, lead_source: e.target.value })}
-                        className="w-full px-3.5 py-2.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-semibold text-xs text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                        className="w-full px-3.5 py-2.5 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl font-semibold text-xs text-[#17201D] focus:outline-none focus:border-[#C9A45C]"
                       >
                         {LEAD_SOURCES.map((src) => (
                           <option key={src} value={src}>{src}</option>
@@ -1954,44 +1954,44 @@ export default function WeddingCustomerDetail() {
 
                 {/* Section 2: Wedding & Shopping Information */}
                 <div className="space-y-3.5 pt-2">
-                  <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#4A173A] pb-1.5 border-b border-[#E8D9D4]">
-                    <Heart className="w-4 h-4 text-[#B76E79]" />
+                  <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#123C35] pb-1.5 border-b border-[#E1DDD3]">
+                    <Heart className="w-4 h-4 text-[#C9A45C]" />
                     <span>Wedding & Shopping Details</span>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[11px] font-bold uppercase text-[#6F5963] mb-1">
+                      <label className="block text-[11px] font-bold uppercase text-[#65716C] mb-1">
                         Wedding Date
                       </label>
                       <input
                         type="date"
                         value={editForm.wedding_date}
                         onChange={(e) => setEditForm({ ...editForm, wedding_date: e.target.value })}
-                        className="w-full px-3.5 py-2.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-semibold text-xs text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                        className="w-full px-3.5 py-2.5 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl font-semibold text-xs text-[#17201D] focus:outline-none focus:border-[#C9A45C]"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold uppercase text-[#6F5963] mb-1">
+                      <label className="block text-[11px] font-bold uppercase text-[#65716C] mb-1">
                         Expected Shopping Date
                       </label>
                       <input
                         type="date"
                         value={editForm.expected_shopping_date}
                         onChange={(e) => setEditForm({ ...editForm, expected_shopping_date: e.target.value })}
-                        className="w-full px-3.5 py-2.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-semibold text-xs text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                        className="w-full px-3.5 py-2.5 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl font-semibold text-xs text-[#17201D] focus:outline-none focus:border-[#C9A45C]"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold uppercase text-[#6F5963] mb-1">
+                      <label className="block text-[11px] font-bold uppercase text-[#65716C] mb-1">
                         Shopping Category
                       </label>
                       <select
                         value={editForm.preferred_shopping_category}
                         onChange={(e) => setEditForm({ ...editForm, preferred_shopping_category: e.target.value })}
-                        className="w-full px-3.5 py-2.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-semibold text-xs text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                        className="w-full px-3.5 py-2.5 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl font-semibold text-xs text-[#17201D] focus:outline-none focus:border-[#C9A45C]"
                       >
                         {SHOPPING_CATEGORIES.map((cat) => (
                           <option key={cat} value={cat}>{cat}</option>
@@ -2000,13 +2000,13 @@ export default function WeddingCustomerDetail() {
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold uppercase text-[#6F5963] mb-1">
+                      <label className="block text-[11px] font-bold uppercase text-[#65716C] mb-1">
                         Budget Range
                       </label>
                       <select
                         value={editForm.budget}
                         onChange={(e) => setEditForm({ ...editForm, budget: e.target.value })}
-                        className="w-full px-3.5 py-2.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-semibold text-xs text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                        className="w-full px-3.5 py-2.5 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl font-semibold text-xs text-[#17201D] focus:outline-none focus:border-[#C9A45C]"
                       >
                         {BUDGET_OPTIONS.map((bg) => (
                           <option key={bg} value={bg}>{bg}</option>
@@ -2015,7 +2015,7 @@ export default function WeddingCustomerDetail() {
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold uppercase text-[#6F5963] mb-1">
+                      <label className="block text-[11px] font-bold uppercase text-[#65716C] mb-1">
                         Estimated Family Size
                       </label>
                       <input
@@ -2024,12 +2024,12 @@ export default function WeddingCustomerDetail() {
                         max={50}
                         value={editForm.estimated_family_size}
                         onChange={(e) => setEditForm({ ...editForm, estimated_family_size: parseInt(e.target.value, 10) || 1 })}
-                        className="w-full px-3.5 py-2.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-semibold text-xs text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                        className="w-full px-3.5 py-2.5 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl font-semibold text-xs text-[#17201D] focus:outline-none focus:border-[#C9A45C]"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold uppercase text-[#6F5963] mb-1">
+                      <label className="block text-[11px] font-bold uppercase text-[#65716C] mb-1">
                         Wedding City / Venue
                       </label>
                       <input
@@ -2037,12 +2037,12 @@ export default function WeddingCustomerDetail() {
                         value={editForm.wedding_city}
                         onChange={(e) => setEditForm({ ...editForm, wedding_city: e.target.value })}
                         placeholder="e.g. Shivamogga, Belagavi, Palace Grounds"
-                        className="w-full px-3.5 py-2.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-semibold text-xs text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                        className="w-full px-3.5 py-2.5 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl font-semibold text-xs text-[#17201D] focus:outline-none focus:border-[#C9A45C]"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold uppercase text-[#6F5963] mb-1">
+                      <label className="block text-[11px] font-bold uppercase text-[#65716C] mb-1">
                         Bride Name
                       </label>
                       <input
@@ -2050,12 +2050,12 @@ export default function WeddingCustomerDetail() {
                         value={editForm.bride_name}
                         onChange={(e) => setEditForm({ ...editForm, bride_name: e.target.value })}
                         placeholder="Bride's name"
-                        className="w-full px-3.5 py-2.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-semibold text-xs text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                        className="w-full px-3.5 py-2.5 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl font-semibold text-xs text-[#17201D] focus:outline-none focus:border-[#C9A45C]"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold uppercase text-[#6F5963] mb-1">
+                      <label className="block text-[11px] font-bold uppercase text-[#65716C] mb-1">
                         Groom Name
                       </label>
                       <input
@@ -2063,7 +2063,7 @@ export default function WeddingCustomerDetail() {
                         value={editForm.groom_name}
                         onChange={(e) => setEditForm({ ...editForm, groom_name: e.target.value })}
                         placeholder="Groom's name"
-                        className="w-full px-3.5 py-2.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-semibold text-xs text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                        className="w-full px-3.5 py-2.5 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl font-semibold text-xs text-[#17201D] focus:outline-none focus:border-[#C9A45C]"
                       />
                     </div>
                   </div>
@@ -2071,20 +2071,20 @@ export default function WeddingCustomerDetail() {
 
                 {/* Section 3: Telecalling & Special Notes */}
                 <div className="space-y-3.5 pt-2">
-                  <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#4A173A] pb-1.5 border-b border-[#E8D9D4]">
-                    <PhoneCall className="w-4 h-4 text-[#B76E79]" />
+                  <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#123C35] pb-1.5 border-b border-[#E1DDD3]">
+                    <PhoneCall className="w-4 h-4 text-[#C9A45C]" />
                     <span>Telecaller Follow-up & Special Notes</span>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[11px] font-bold uppercase text-[#6F5963] mb-1">
+                      <label className="block text-[11px] font-bold uppercase text-[#65716C] mb-1">
                         Preferred Call Time
                       </label>
                       <select
                         value={editForm.preferred_call_time}
                         onChange={(e) => setEditForm({ ...editForm, preferred_call_time: e.target.value })}
-                        className="w-full px-3.5 py-2.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-semibold text-xs text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                        className="w-full px-3.5 py-2.5 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl font-semibold text-xs text-[#17201D] focus:outline-none focus:border-[#C9A45C]"
                       >
                         {CALL_TIMES.map((time) => (
                           <option key={time} value={time}>{time}</option>
@@ -2094,7 +2094,7 @@ export default function WeddingCustomerDetail() {
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold uppercase text-[#6F5963] mb-1">
+                    <label className="block text-[11px] font-bold uppercase text-[#65716C] mb-1">
                       Customer Notes & Special Requirements
                     </label>
                     <textarea
@@ -2102,19 +2102,19 @@ export default function WeddingCustomerDetail() {
                       value={editForm.customer_notes}
                       onChange={(e) => setEditForm({ ...editForm, customer_notes: e.target.value })}
                       placeholder="Add notes about trousseau requirements, color choices, VIP handling..."
-                      className="w-full px-3.5 py-2.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-medium text-xs text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                      className="w-full px-3.5 py-2.5 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl font-medium text-xs text-[#17201D] focus:outline-none focus:border-[#C9A45C]"
                     />
                   </div>
                 </div>
               </form>
 
               {/* Fixed Footer */}
-              <div className="flex items-center justify-end gap-3 px-5 sm:px-6 py-4 border-t border-[#E8D9D4] bg-[#FFFDFC] shrink-0 shadow-xs">
+              <div className="flex items-center justify-end gap-3 px-5 sm:px-6 py-4 border-t border-[#E1DDD3] bg-[#FFFFFF] shrink-0 shadow-xs">
                 <button
                   type="button"
                   onClick={() => setEditModalOpen(false)}
                   disabled={savingEdit}
-                  className="px-4 py-2.5 rounded-xl bg-[#FFFAF7] hover:bg-[#FFF7F2] border border-[#E8D9D4] font-semibold text-xs text-[#4A173A] transition-colors cursor-pointer disabled:opacity-50"
+                  className="px-4 py-2.5 rounded-xl bg-[#F7F5F0] hover:bg-[#EDF3F0] border border-[#E1DDD3] font-semibold text-xs text-[#123C35] transition-colors cursor-pointer disabled:opacity-50"
                 >
                   Cancel
                 </button>
@@ -2122,7 +2122,7 @@ export default function WeddingCustomerDetail() {
                   type="submit"
                   form="edit-customer-form"
                   disabled={savingEdit}
-                  className="px-6 py-2.5 rounded-xl bg-[#4A173A] hover:bg-[#6A2853] text-white font-semibold text-xs shadow-md border border-[#B76E79]/30 flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50 active:scale-95"
+                  className="px-6 py-2.5 rounded-xl bg-[#123C35] hover:bg-[#082821] text-white font-semibold text-xs shadow-md border border-[#C9A45C]/30 flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50 active:scale-95"
                 >
                   {savingEdit ? (
                     <>
@@ -2131,7 +2131,7 @@ export default function WeddingCustomerDetail() {
                     </>
                   ) : (
                     <>
-                      <Save className="w-3.5 h-3.5 text-[#E8C7A8]" />
+                      <Save className="w-3.5 h-3.5 text-[#E4CB92]" />
                       <span>Save Changes</span>
                     </>
                   )}
@@ -2150,24 +2150,24 @@ export default function WeddingCustomerDetail() {
             }}
           >
             <div
-              className="bg-[#FFFDFC] rounded-2xl sm:rounded-3xl max-w-lg w-full max-h-[calc(100dvh-2rem)] sm:max-h-[calc(100dvh-3rem)] shadow-2xl border border-[#E8D9D4] flex flex-col overflow-hidden animate-scale-in"
+              className="bg-[#FFFFFF] rounded-2xl sm:rounded-3xl max-w-lg w-full max-h-[calc(100dvh-2rem)] sm:max-h-[calc(100dvh-3rem)] shadow-2xl border border-[#E1DDD3] flex flex-col overflow-hidden animate-scale-in"
               role="dialog"
               aria-modal="true"
             >
-              <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-[#E8D9D4] bg-[#FFFDFC] shrink-0">
+              <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-[#E1DDD3] bg-[#FFFFFF] shrink-0">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-[#4A173A] text-white flex items-center justify-center shrink-0">
-                    <PhoneCall className="w-4 h-4 text-[#E8C7A8]" />
+                  <div className="w-9 h-9 rounded-xl bg-[#123C35] text-white flex items-center justify-center shrink-0">
+                    <PhoneCall className="w-4 h-4 text-[#E4CB92]" />
                   </div>
                   <div>
-                    <h3 className="text-base font-bold text-[#4A173A]">Log Customer Call</h3>
-                    <p className="text-xs text-[#6F5963]">{customer.customer_name} ({customer.customer_code})</p>
+                    <h3 className="text-base font-bold text-[#123C35]">Log Customer Call</h3>
+                    <p className="text-xs text-[#65716C]">{customer.customer_name} ({customer.customer_code})</p>
                   </div>
                 </div>
                 <button
                   type="button"
                   onClick={() => !savingCall && setCallModalOpen(false)}
-                  className="p-1.5 text-[#6F5963] hover:text-[#4A173A] hover:bg-[#FFF7F2] rounded-xl transition-colors cursor-pointer"
+                  className="p-1.5 text-[#65716C] hover:text-[#123C35] hover:bg-[#EDF3F0] rounded-xl transition-colors cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -2176,13 +2176,13 @@ export default function WeddingCustomerDetail() {
               <form id="log-call-form" onSubmit={handleSaveCall} className="flex-1 overflow-y-auto min-h-0 px-5 sm:px-6 py-5 space-y-4 text-xs custom-scrollbar">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   <div>
-                    <label className="block text-[11px] font-bold uppercase text-[#6F5963] mb-1">
+                    <label className="block text-[11px] font-bold uppercase text-[#65716C] mb-1">
                       Call Outcome <span className="text-rose-500">*</span>
                     </label>
                     <select
                       value={callForm.call_outcome}
                       onChange={(e) => setCallForm({ ...callForm, call_outcome: e.target.value })}
-                      className="w-full px-3 py-2.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-semibold text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                      className="w-full px-3 py-2.5 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl font-semibold text-[#17201D] focus:outline-none focus:border-[#C9A45C]"
                     >
                       {CALL_OUTCOMES.map((out) => (
                         <option key={out} value={out}>
@@ -2193,21 +2193,21 @@ export default function WeddingCustomerDetail() {
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold uppercase text-[#6F5963] mb-1">
+                    <label className="block text-[11px] font-bold uppercase text-[#65716C] mb-1">
                       Next Follow-up Date
                     </label>
                     <input
                       type="date"
                       value={callForm.next_follow_up_date}
                       onChange={(e) => setCallForm({ ...callForm, next_follow_up_date: e.target.value })}
-                      className="w-full px-3 py-2.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-semibold text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                      className="w-full px-3 py-2.5 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl font-semibold text-[#17201D] focus:outline-none focus:border-[#C9A45C]"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   <div>
-                    <label className="block text-[11px] font-bold uppercase text-[#6F5963] mb-1">
+                    <label className="block text-[11px] font-bold uppercase text-[#65716C] mb-1">
                       Preferred Call Time
                     </label>
                     <input
@@ -2215,25 +2215,25 @@ export default function WeddingCustomerDetail() {
                       placeholder="e.g. 11 AM - 1 PM"
                       value={callForm.next_follow_up_time}
                       onChange={(e) => setCallForm({ ...callForm, next_follow_up_time: e.target.value })}
-                      className="w-full px-3 py-2.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-medium text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                      className="w-full px-3 py-2.5 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl font-medium text-[#17201D] focus:outline-none focus:border-[#C9A45C]"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold uppercase text-[#6F5963] mb-1">
+                    <label className="block text-[11px] font-bold uppercase text-[#65716C] mb-1">
                       Expected Shopping Date
                     </label>
                     <input
                       type="date"
                       value={callForm.expected_shopping_date}
                       onChange={(e) => setCallForm({ ...callForm, expected_shopping_date: e.target.value })}
-                      className="w-full px-3 py-2.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-semibold text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                      className="w-full px-3 py-2.5 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl font-semibold text-[#17201D] focus:outline-none focus:border-[#C9A45C]"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold uppercase text-[#6F5963] mb-1">
+                  <label className="block text-[11px] font-bold uppercase text-[#65716C] mb-1">
                     Call Notes & Customer Remarks
                   </label>
                   <textarea
@@ -2241,17 +2241,17 @@ export default function WeddingCustomerDetail() {
                     placeholder="Details discussed during the call..."
                     value={callForm.remarks}
                     onChange={(e) => setCallForm({ ...callForm, remarks: e.target.value })}
-                    className="w-full px-3.5 py-2.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-medium text-xs text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                    className="w-full px-3.5 py-2.5 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl font-medium text-xs text-[#17201D] focus:outline-none focus:border-[#C9A45C]"
                   />
                 </div>
               </form>
 
-              <div className="flex items-center justify-end gap-3 px-5 sm:px-6 py-4 border-t border-[#E8D9D4] bg-[#FFFDFC] shrink-0">
+              <div className="flex items-center justify-end gap-3 px-5 sm:px-6 py-4 border-t border-[#E1DDD3] bg-[#FFFFFF] shrink-0">
                 <button
                   type="button"
                   onClick={() => setCallModalOpen(false)}
                   disabled={savingCall}
-                  className="px-4 py-2 rounded-xl bg-[#FFFAF7] hover:bg-[#FFF7F2] border border-[#E8D9D4] font-semibold text-xs text-[#4A173A]"
+                  className="px-4 py-2 rounded-xl bg-[#F7F5F0] hover:bg-[#EDF3F0] border border-[#E1DDD3] font-semibold text-xs text-[#123C35]"
                 >
                   Cancel
                 </button>
@@ -2259,9 +2259,9 @@ export default function WeddingCustomerDetail() {
                   type="submit"
                   form="log-call-form"
                   disabled={savingCall}
-                  className="px-5 py-2 rounded-xl bg-[#4A173A] hover:bg-[#6A2853] text-white font-semibold text-xs shadow-xs border border-[#B76E79]/30 flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                  className="px-5 py-2 rounded-xl bg-[#123C35] hover:bg-[#082821] text-white font-semibold text-xs shadow-xs border border-[#C9A45C]/30 flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
                 >
-                  {savingCall ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5 text-[#E8C7A8]" />}
+                  {savingCall ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5 text-[#E4CB92]" />}
                   <span>{savingCall ? 'Saving Call...' : 'Save Call'}</span>
                 </button>
               </div>
@@ -2290,19 +2290,19 @@ export default function WeddingCustomerDetail() {
             }}
           >
             <div
-              className="bg-[#FFFDFC] rounded-2xl sm:rounded-3xl max-w-md w-full max-h-[calc(100dvh-2rem)] sm:max-h-[calc(100dvh-3rem)] shadow-2xl border border-[#E8D9D4] flex flex-col overflow-hidden animate-scale-in"
+              className="bg-[#FFFFFF] rounded-2xl sm:rounded-3xl max-w-md w-full max-h-[calc(100dvh-2rem)] sm:max-h-[calc(100dvh-3rem)] shadow-2xl border border-[#E1DDD3] flex flex-col overflow-hidden animate-scale-in"
               role="dialog"
               aria-modal="true"
             >
-              <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-[#E8D9D4] bg-[#FFFDFC] shrink-0">
+              <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-[#E1DDD3] bg-[#FFFFFF] shrink-0">
                 <div>
-                  <h3 className="text-base font-bold text-[#4A173A]">Reassign Telecaller</h3>
-                  <p className="text-xs text-[#6F5963]">{customer.customer_name} ({customer.customer_code})</p>
+                  <h3 className="text-base font-bold text-[#123C35]">Reassign Telecaller</h3>
+                  <p className="text-xs text-[#65716C]">{customer.customer_name} ({customer.customer_code})</p>
                 </div>
                 <button
                   type="button"
                   onClick={() => !savingReassign && setReassignModalOpen(false)}
-                  className="p-1.5 text-[#6F5963] hover:text-[#4A173A] hover:bg-[#FFF7F2] rounded-xl transition-colors cursor-pointer"
+                  className="p-1.5 text-[#65716C] hover:text-[#123C35] hover:bg-[#EDF3F0] rounded-xl transition-colors cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -2310,22 +2310,22 @@ export default function WeddingCustomerDetail() {
 
               <form id="reassign-form" onSubmit={handleSaveReassign} className="flex-1 overflow-y-auto min-h-0 px-5 sm:px-6 py-5 space-y-4 text-xs custom-scrollbar">
                 <div>
-                  <label className="block text-[11px] font-bold uppercase text-[#6F5963] mb-1">
+                  <label className="block text-[11px] font-bold uppercase text-[#65716C] mb-1">
                     Currently Assigned
                   </label>
-                  <div className="p-3 bg-[#FFFAF7] rounded-xl border border-[#E8D9D4] font-semibold text-[#4A173A]">
+                  <div className="p-3 bg-[#F7F5F0] rounded-xl border border-[#E1DDD3] font-semibold text-[#123C35]">
                     {customer.assigned_telecaller || 'Unassigned'}
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold uppercase text-[#6F5963] mb-1">
+                  <label className="block text-[11px] font-bold uppercase text-[#65716C] mb-1">
                     Select New Telecaller / CRM Staff <span className="text-rose-500">*</span>
                   </label>
                   <select
                     value={selectedTelecallerId}
                     onChange={(e) => setSelectedTelecallerId(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-semibold text-xs text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                    className="w-full px-3.5 py-2.5 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl font-semibold text-xs text-[#17201D] focus:outline-none focus:border-[#C9A45C]"
                     required
                   >
                     <option value="">-- Choose Staff Member --</option>
@@ -2338,12 +2338,12 @@ export default function WeddingCustomerDetail() {
                 </div>
               </form>
 
-              <div className="flex items-center justify-end gap-3 px-5 sm:px-6 py-4 border-t border-[#E8D9D4] bg-[#FFFDFC] shrink-0">
+              <div className="flex items-center justify-end gap-3 px-5 sm:px-6 py-4 border-t border-[#E1DDD3] bg-[#FFFFFF] shrink-0">
                 <button
                   type="button"
                   onClick={() => setReassignModalOpen(false)}
                   disabled={savingReassign}
-                  className="px-4 py-2 rounded-xl bg-[#FFFAF7] hover:bg-[#FFF7F2] border border-[#E8D9D4] font-semibold text-xs text-[#4A173A]"
+                  className="px-4 py-2 rounded-xl bg-[#F7F5F0] hover:bg-[#EDF3F0] border border-[#E1DDD3] font-semibold text-xs text-[#123C35]"
                 >
                   Cancel
                 </button>
@@ -2351,9 +2351,9 @@ export default function WeddingCustomerDetail() {
                   type="submit"
                   form="reassign-form"
                   disabled={savingReassign || !selectedTelecallerId}
-                  className="px-5 py-2 rounded-xl bg-[#4A173A] hover:bg-[#6A2853] text-white font-semibold text-xs shadow-xs border border-[#B76E79]/30 disabled:opacity-40 flex items-center gap-1.5 transition-all cursor-pointer"
+                  className="px-5 py-2 rounded-xl bg-[#123C35] hover:bg-[#082821] text-white font-semibold text-xs shadow-xs border border-[#C9A45C]/30 disabled:opacity-40 flex items-center gap-1.5 transition-all cursor-pointer"
                 >
-                  {savingReassign ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5 text-[#E8C7A8]" />}
+                  {savingReassign ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5 text-[#E4CB92]" />}
                   <span>{savingReassign ? 'Reassigning...' : 'Confirm Assignment'}</span>
                 </button>
               </div>
@@ -2370,16 +2370,16 @@ export default function WeddingCustomerDetail() {
             }}
           >
             <div
-              className="bg-[#FFFDFC] rounded-2xl sm:rounded-3xl max-w-sm w-full max-h-[calc(100dvh-2rem)] sm:max-h-[calc(100dvh-3rem)] shadow-2xl border border-[#E8D9D4] flex flex-col overflow-hidden animate-scale-in"
+              className="bg-[#FFFFFF] rounded-2xl sm:rounded-3xl max-w-sm w-full max-h-[calc(100dvh-2rem)] sm:max-h-[calc(100dvh-3rem)] shadow-2xl border border-[#E1DDD3] flex flex-col overflow-hidden animate-scale-in"
               role="dialog"
               aria-modal="true"
             >
-              <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-[#E8D9D4] bg-[#FFFDFC] shrink-0">
-                <h3 className="text-base font-bold text-[#4A173A]">Update Customer Status</h3>
+              <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-[#E1DDD3] bg-[#FFFFFF] shrink-0">
+                <h3 className="text-base font-bold text-[#123C35]">Update Customer Status</h3>
                 <button
                   type="button"
                   onClick={() => !savingStatus && setStatusModalOpen(false)}
-                  className="p-1.5 text-[#6F5963] hover:text-[#4A173A] hover:bg-[#FFF7F2] rounded-xl transition-colors cursor-pointer"
+                  className="p-1.5 text-[#65716C] hover:text-[#123C35] hover:bg-[#EDF3F0] rounded-xl transition-colors cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -2396,13 +2396,13 @@ export default function WeddingCustomerDetail() {
                 )}
 
                 <div>
-                  <label className="block text-[11px] font-bold uppercase text-[#6F5963] mb-1">
+                  <label className="block text-[11px] font-bold uppercase text-[#65716C] mb-1">
                     New Status <span className="text-rose-500">*</span>
                   </label>
                   <select
                     value={newStatus}
                     onChange={(e) => setNewStatus(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-semibold text-xs text-[#4A173A] focus:outline-none focus:border-[#B76E79]"
+                    className="w-full px-3.5 py-2.5 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl font-semibold text-xs text-[#123C35] focus:outline-none focus:border-[#C9A45C]"
                   >
                     {CUSTOMER_STATUSES.map((st) => (
                       <option key={st} value={st}>
@@ -2422,7 +2422,7 @@ export default function WeddingCustomerDetail() {
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold uppercase text-[#6F5963] mb-1">
+                  <label className="block text-[11px] font-bold uppercase text-[#65716C] mb-1">
                     Reason / Remarks
                   </label>
                   <textarea
@@ -2430,17 +2430,17 @@ export default function WeddingCustomerDetail() {
                     placeholder="Why is the status transitioning?"
                     value={statusReason}
                     onChange={(e) => setStatusReason(e.target.value)}
-                    className="w-full px-3.5 py-2 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-medium text-xs text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                    className="w-full px-3.5 py-2 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl font-medium text-xs text-[#17201D] focus:outline-none focus:border-[#C9A45C]"
                   />
                 </div>
               </form>
 
-              <div className="flex items-center justify-end gap-3 px-5 sm:px-6 py-4 border-t border-[#E8D9D4] bg-[#FFFDFC] shrink-0">
+              <div className="flex items-center justify-end gap-3 px-5 sm:px-6 py-4 border-t border-[#E1DDD3] bg-[#FFFFFF] shrink-0">
                 <button
                   type="button"
                   onClick={() => setStatusModalOpen(false)}
                   disabled={savingStatus}
-                  className="px-4 py-2 rounded-xl bg-[#FFFAF7] hover:bg-[#FFF7F2] border border-[#E8D9D4] font-semibold text-xs text-[#4A173A]"
+                  className="px-4 py-2 rounded-xl bg-[#F7F5F0] hover:bg-[#EDF3F0] border border-[#E1DDD3] font-semibold text-xs text-[#123C35]"
                 >
                   Cancel
                 </button>
@@ -2448,7 +2448,7 @@ export default function WeddingCustomerDetail() {
                   type="submit"
                   form="status-form"
                   disabled={savingStatus || !newStatus}
-                  className="px-5 py-2 rounded-xl bg-[#4A173A] hover:bg-[#6A2853] text-white font-semibold text-xs shadow-xs border border-[#B76E79]/30 disabled:opacity-40 transition-all cursor-pointer"
+                  className="px-5 py-2 rounded-xl bg-[#123C35] hover:bg-[#082821] text-white font-semibold text-xs shadow-xs border border-[#C9A45C]/30 disabled:opacity-40 transition-all cursor-pointer"
                 >
                   {savingStatus ? 'Updating...' : 'Update Status'}
                 </button>
@@ -2466,17 +2466,17 @@ export default function WeddingCustomerDetail() {
             }}
           >
             <div
-              className="bg-[#FFFDFC] border border-[#E8D9D4] rounded-2xl sm:rounded-3xl p-5 sm:p-6 w-full max-w-md shadow-2xl flex flex-col max-h-[calc(100dvh-2rem)] sm:max-h-[calc(100dvh-3rem)] overflow-hidden animate-scale-in"
+              className="bg-[#FFFFFF] border border-[#E1DDD3] rounded-2xl sm:rounded-3xl p-5 sm:p-6 w-full max-w-md shadow-2xl flex flex-col max-h-[calc(100dvh-2rem)] sm:max-h-[calc(100dvh-3rem)] overflow-hidden animate-scale-in"
               role="dialog"
               aria-modal="true"
             >
-              <div className="flex items-center gap-3 pb-3 border-b border-[#E8D9D4] shrink-0">
+              <div className="flex items-center gap-3 pb-3 border-b border-[#E1DDD3] shrink-0">
                 <div className="w-10 h-10 rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center shrink-0 border border-amber-300">
                   <Archive className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-[#4A173A]">Move to Old Customers?</h3>
-                  <p className="text-xs text-[#6F5963]">
+                  <h3 className="text-base font-bold text-[#123C35]">Move to Old Customers?</h3>
+                  <p className="text-xs text-[#65716C]">
                     The customer record will be preserved in Old Customers.
                   </p>
                 </div>
@@ -2492,7 +2492,7 @@ export default function WeddingCustomerDetail() {
 
                 <form id="archive-form" onSubmit={handleMoveToOld} className="space-y-3">
                   <div>
-                    <label className="block text-[11px] font-bold text-[#6F5963] uppercase tracking-wider mb-1">
+                    <label className="block text-[11px] font-bold text-[#65716C] uppercase tracking-wider mb-1">
                       Archive Reason / Note (Optional)
                     </label>
                     <textarea
@@ -2500,18 +2500,18 @@ export default function WeddingCustomerDetail() {
                       value={archiveReason}
                       onChange={(e) => setArchiveReason(e.target.value)}
                       placeholder="e.g. Wedding shopping completed, relocated..."
-                      className="w-full px-3.5 py-2.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl text-xs text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                      className="w-full px-3.5 py-2.5 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl text-xs text-[#17201D] focus:outline-none focus:border-[#C9A45C]"
                     />
                   </div>
                 </form>
               </div>
 
-              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[#E8D9D4] shrink-0">
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[#E1DDD3] shrink-0">
                 <button
                   type="button"
                   onClick={() => setArchiveModalOpen(false)}
                   disabled={savingArchive}
-                  className="px-4 py-2 rounded-xl bg-[#FFFAF7] hover:bg-[#FFF7F2] border border-[#E8D9D4] text-xs font-semibold text-[#4A173A] transition-colors cursor-pointer"
+                  className="px-4 py-2 rounded-xl bg-[#F7F5F0] hover:bg-[#EDF3F0] border border-[#E1DDD3] text-xs font-semibold text-[#123C35] transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -2519,9 +2519,9 @@ export default function WeddingCustomerDetail() {
                   type="submit"
                   form="archive-form"
                   disabled={savingArchive}
-                  className="px-5 py-2 rounded-xl bg-[#4A173A] hover:bg-[#6A2853] text-white text-xs font-bold shadow-md transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  className="px-5 py-2 rounded-xl bg-[#123C35] hover:bg-[#082821] text-white text-xs font-bold shadow-md transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                 >
-                  {savingArchive ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Archive className="w-3.5 h-3.5 text-[#E8C7A8]" />}
+                  {savingArchive ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Archive className="w-3.5 h-3.5 text-[#E4CB92]" />}
                   <span>{savingArchive ? 'Moving Customer...' : 'Move Customer'}</span>
                 </button>
               </div>
@@ -2538,17 +2538,17 @@ export default function WeddingCustomerDetail() {
             }}
           >
             <div
-              className="bg-[#FFFDFC] border border-[#E8D9D4] rounded-2xl sm:rounded-3xl p-5 sm:p-6 w-full max-w-md shadow-2xl flex flex-col max-h-[calc(100dvh-2rem)] sm:max-h-[calc(100dvh-3rem)] overflow-hidden animate-scale-in"
+              className="bg-[#FFFFFF] border border-[#E1DDD3] rounded-2xl sm:rounded-3xl p-5 sm:p-6 w-full max-w-md shadow-2xl flex flex-col max-h-[calc(100dvh-2rem)] sm:max-h-[calc(100dvh-3rem)] overflow-hidden animate-scale-in"
               role="dialog"
               aria-modal="true"
             >
-              <div className="flex items-center gap-3 pb-3 border-b border-[#E8D9D4] shrink-0">
+              <div className="flex items-center gap-3 pb-3 border-b border-[#E1DDD3] shrink-0">
                 <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0 border border-emerald-300">
                   <RotateCcw className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-[#4A173A]">Restore Customer?</h3>
-                  <p className="text-xs text-[#6F5963]">
+                  <h3 className="text-base font-bold text-[#123C35]">Restore Customer?</h3>
+                  <p className="text-xs text-[#65716C]">
                     Return this customer to the active Wedding Customer Register.
                   </p>
                 </div>
@@ -2563,12 +2563,12 @@ export default function WeddingCustomerDetail() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[#E8D9D4] shrink-0">
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[#E1DDD3] shrink-0">
                 <button
                   type="button"
                   onClick={() => setRestoreModalOpen(false)}
                   disabled={savingRestore}
-                  className="px-4 py-2 rounded-xl bg-[#FFFAF7] hover:bg-[#FFF7F2] border border-[#E8D9D4] text-xs font-semibold text-[#4A173A] transition-colors cursor-pointer"
+                  className="px-4 py-2 rounded-xl bg-[#F7F5F0] hover:bg-[#EDF3F0] border border-[#E1DDD3] text-xs font-semibold text-[#123C35] transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>

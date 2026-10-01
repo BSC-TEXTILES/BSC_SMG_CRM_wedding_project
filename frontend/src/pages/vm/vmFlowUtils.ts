@@ -88,19 +88,19 @@ export const VM_ANSWER_OPTIONS: {
     value: 'Pass',
     label: 'PASS',
     selected: 'bg-[#198754] text-white border-[#198754] ring-2 ring-[#198754]/30 shadow-sm',
-    idle: 'bg-[#FFFDFC] text-[#4A173A] border-[#E8D9D4] hover:border-[#198754]/60 hover:bg-[#E8F5EE]'
+    idle: 'bg-[#FFFFFF] text-[#123C35] border-[#E1DDD3] hover:border-[#198754]/60 hover:bg-[#E8F5EE]'
   },
   {
     value: 'Fail',
     label: 'FAIL',
     selected: 'bg-[#B42318] text-white border-[#B42318] ring-2 ring-[#B42318]/30 shadow-sm',
-    idle: 'bg-[#FFFDFC] text-[#4A173A] border-[#E8D9D4] hover:border-[#B42318]/60 hover:bg-[#FDE8E7]'
+    idle: 'bg-[#FFFFFF] text-[#123C35] border-[#E1DDD3] hover:border-[#B42318]/60 hover:bg-[#FDE8E7]'
   },
   {
     value: 'NA',
     label: 'N/A',
-    selected: 'bg-[#4A173A] text-white border-[#4A173A] ring-2 ring-[#4A173A]/25 shadow-sm',
-    idle: 'bg-[#FFFDFC] text-[#4A173A] border-[#E8D9D4] hover:border-[#4A173A]/50 hover:bg-[#FFF7F2]'
+    selected: 'bg-[#123C35] text-white border-[#123C35] ring-2 ring-[#123C35]/25 shadow-sm',
+    idle: 'bg-[#FFFFFF] text-[#123C35] border-[#E1DDD3] hover:border-[#123C35]/50 hover:bg-[#EDF3F0]'
   }
 ];
 
@@ -240,7 +240,7 @@ export function liveScoreDisplay(score: VmScore): string {
 
 export function scoreBadgeClasses(value: number | null | undefined): string {
   if (value === null || value === undefined || !Number.isFinite(Number(value))) {
-    return 'bg-[#FFF7F2] text-[#6F5963] border-[#E8D9D4]';
+    return 'bg-[#EDF3F0] text-[#65716C] border-[#E1DDD3]';
   }
   const n = Number(value);
   if (n >= 80) return 'bg-[#E8F5EE] text-[#198754] border-[#198754]/25';
@@ -253,7 +253,7 @@ export function statusBadgeClasses(status?: string | null): string {
   if (s === 'draft') return 'bg-[#EAF1FA] text-[#356AE6] border-[#356AE6]/25';
   if (s === 'review') return 'bg-[#FFF4D6] text-[#C58A18] border-[#C58A18]/25';
   if (s === 'completed') return 'bg-[#E8F5EE] text-[#198754] border-[#198754]/25';
-  return 'bg-[#FFF7F2] text-[#6F5963] border-[#E8D9D4]';
+  return 'bg-[#EDF3F0] text-[#65716C] border-[#E1DDD3]';
 }
 
 // ── Submit validation ───────────────────────────────────────────────────────

@@ -149,7 +149,7 @@ export default function ToastContainer() {
           success: 'bg-[#103E2B] text-white border-[#107044] shadow-emerald-950/40',
           error: 'bg-[#5C161E] text-white border-[#A12333] shadow-rose-950/40',
           warn: 'bg-[#593907] text-white border-[#A66C0F] shadow-amber-950/40',
-          info: 'bg-[#101C36] text-white border-[#C9A45C] shadow-slate-950/40'
+          info: 'bg-[#123C35] text-white border-[#C9A45C] shadow-slate-950/40'
         };
 
         const iconMap: Record<string, any> = {

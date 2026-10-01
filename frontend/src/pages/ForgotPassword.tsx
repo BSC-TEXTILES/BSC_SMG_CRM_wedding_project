@@ -41,7 +41,7 @@ export default function ForgotPasswordPage() {
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 sm:p-6">
         <ToastContainer />
         <div className="w-full max-w-md bg-white rounded-3xl overflow-hidden shadow-2xl border border-accent-soft animate-fade-in">
-          <div className="bg-[#101C36] p-5 sm:p-6 flex items-center gap-3.5 border-b border-[#C9A45C]/30 shadow-sm">
+          <div className="bg-[#123C35] p-5 sm:p-6 flex items-center gap-3.5 border-b border-[#C9A45C]/30 shadow-sm">
             <div className="w-14 h-12 rounded-2xl bg-white p-1 shadow-md border border-[#C9A45C]/30 flex items-center justify-center flex-shrink-0">
               <img src="/logo.png" alt="BSC Logo" className="max-h-full max-w-full object-contain" />
             </div>
@@ -89,7 +89,7 @@ export default function ForgotPasswordPage() {
 
       <div className="w-full max-w-md bg-white rounded-3xl overflow-hidden shadow-2xl border border-accent-soft animate-fade-in">
         {/* Card Header */}
-        <div className="bg-[#101C36] p-5 sm:p-6 flex items-center gap-3.5 border-b border-[#C9A45C]/30 shadow-sm">
+        <div className="bg-[#123C35] p-5 sm:p-6 flex items-center gap-3.5 border-b border-[#C9A45C]/30 shadow-sm">
           <div className="w-14 h-12 rounded-2xl bg-white p-1 shadow-md border border-[#C9A45C]/30 flex items-center justify-center flex-shrink-0">
             <img src="/logo.png" alt="BSC Logo" className="max-h-full max-w-full object-contain" />
           </div>

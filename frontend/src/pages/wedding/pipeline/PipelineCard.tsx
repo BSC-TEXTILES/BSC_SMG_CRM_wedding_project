@@ -67,23 +67,23 @@ export interface PipelineCardProps {
   onAction: (kind: QuickActionKind, c: PipelineCustomer) => void;
 }
 
-const labelClass = 'text-[9px] font-black uppercase tracking-wider text-[#6F5963]';
+const labelClass = 'text-[9px] font-black uppercase tracking-wider text-[#65716C]';
 
 const textActionClass =
-  'inline-flex h-7 shrink-0 items-center gap-1 whitespace-nowrap rounded-lg border border-[#E8D9D4] ' +
-  'bg-[#FFFDFC] px-2 text-[9px] font-black uppercase tracking-wider text-[#4A173A] transition-colors ' +
-  'hover:border-[#B76E79] hover:bg-[#FFF7F2] focus:outline-none focus:border-[#B76E79]';
+  'inline-flex h-7 shrink-0 items-center gap-1 whitespace-nowrap rounded-lg border border-[#E1DDD3] ' +
+  'bg-white px-2 text-[9px] font-black uppercase tracking-wider text-[#123C35] transition-colors ' +
+  'hover:border-[#C9A45C] hover:bg-[#EDF3F0] focus:outline-none focus:border-[#C9A45C]';
 
 const iconActionClass =
-  'inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-[#E8D9D4] ' +
-  'bg-[#FFFDFC] text-[#4A173A] transition-colors hover:border-[#B76E79] hover:bg-[#FFF7F2] ' +
-  'focus:outline-none focus:border-[#B76E79]';
+  'inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-[#E1DDD3] ' +
+  'bg-white text-[#123C35] transition-colors hover:border-[#C9A45C] hover:bg-[#EDF3F0] ' +
+  'focus:outline-none focus:border-[#C9A45C]';
 
 /** One full-width row inside the expanded "More" panel. */
 const menuItemClass =
-  'flex w-full items-center gap-1.5 whitespace-nowrap rounded-lg border border-[#E8D9D4] ' +
-  'bg-[#FFFAF7] px-2 py-1.5 text-[10px] font-black uppercase tracking-wider text-[#4A173A] ' +
-  'transition-colors hover:bg-[#FFF7F2] focus:outline-none focus:border-[#B76E79]';
+  'flex w-full items-center gap-1.5 whitespace-nowrap rounded-lg border border-[#E1DDD3] ' +
+  'bg-white px-2 py-1.5 text-[10px] font-black uppercase tracking-wider text-[#123C35] ' +
+  'transition-colors hover:bg-[#EDF3F0] hover:border-[#C9A45C] focus:outline-none focus:border-[#C9A45C]';
 
 const Field = ({ label, value }: { label: string; value?: string | null }) => {
   const text = value || '';
@@ -92,7 +92,7 @@ const Field = ({ label, value }: { label: string; value?: string | null }) => {
       <dt className={labelClass}>{label}</dt>
       <dd
         className={`mt-0.5 line-clamp-2 break-words text-[10px] font-bold leading-snug ${
-          text ? 'text-[#2B1722]' : 'text-[#6F5963]/70'
+          text ? 'text-[#17201D]' : 'text-[#65716C]/70'
         }`}
         title={text || undefined}
       >
@@ -129,23 +129,23 @@ export function JourneyTracker({
   if (!progress.onFunnel) {
     return (
       <div
-        className="rounded-xl border border-[#6F5963]/30 bg-[#F4F2F0] px-2 py-1.5"
+        className="rounded-xl border border-[#65716C]/30 bg-[#F2F4F3] px-2 py-1.5"
         aria-label={`Off the funnel: ${progress.offFunnelLabel}`}
       >
         <p className="flex flex-wrap items-center gap-1.5">
-          <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-[#6F5963]/40 bg-[#FFFDFC] px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-[#6F5963]">
+          <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-[#65716C]/40 bg-white px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-[#65716C]">
             <CircleAlert className="h-2.5 w-2.5" aria-hidden="true" />
             Off funnel
           </span>
-          <span className="break-words text-[9px] font-black uppercase tracking-wider text-[#4A173A]">
+          <span className="break-words text-[9px] font-black uppercase tracking-wider text-[#123C35]">
             {progress.offFunnelLabel}
           </span>
         </p>
         <div className="mt-1.5 flex items-center gap-1" aria-hidden="true">
           {Array.from({ length: progress.totalCount }).map((_, index) => (
-            <span key={index} className="h-1.5 w-1.5 shrink-0 rounded-full border border-[#6F5963]/40" />
+            <span key={index} className="h-1.5 w-1.5 shrink-0 rounded-full border border-[#65716C]/40" />
           ))}
-          <span className="ml-1 text-[8px] font-bold uppercase tracking-wider text-[#6F5963]/80">
+          <span className="ml-1 text-[8px] font-bold uppercase tracking-wider text-[#65716C]/80">
             Not scored
           </span>
         </div>
@@ -155,7 +155,7 @@ export function JourneyTracker({
 
   return (
     <div
-      className="rounded-xl border border-[#E8D9D4] bg-[#FFFDFC] px-2 py-1.5"
+      className="rounded-xl border border-[#E1DDD3] bg-white px-2 py-1.5"
       aria-label={`Journey step ${Number(progress.currentIndex) + 1} of ${progress.totalCount}: ${
         STAGE_LABELS[stageKey]
       }`}
@@ -169,26 +169,26 @@ export function JourneyTracker({
                 <span
                   className={`${DOT_BASE} ${
                     step.state === 'completed'
-                      ? 'border-[#198754] bg-[#198754] text-white'
+                      ? 'border-[#16805C] bg-[#16805C] text-white'
                       : step.state === 'current'
-                      ? 'border-[#4A173A] bg-[#4A173A] ring-2 ring-[#B76E79]/35'
-                      : 'border-[#E8D9D4] bg-[#FFFDFC]'
+                      ? 'border-[#123C35] bg-[#123C35] ring-2 ring-[#C9A45C]/35'
+                      : 'border-[#E1DDD3] bg-white'
                   }`}
                 >
                   {step.state === 'completed' ? (
                     <Check className="h-2.5 w-2.5" strokeWidth={3.5} aria-hidden="true" />
                   ) : step.state === 'current' ? (
-                    <span className="h-1.5 w-1.5 rounded-full bg-white" aria-hidden="true" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#C9A45C]" aria-hidden="true" />
                   ) : null}
                 </span>
                 {showLabels && (
                   <span
                     className={`mt-0.5 max-w-full truncate text-center text-[8px] font-black uppercase tracking-wider ${
                       step.state === 'current'
-                        ? 'text-[#4A173A]'
+                        ? 'text-[#123C35]'
                         : step.state === 'completed'
-                        ? 'text-[#198754]'
-                        : 'text-[#6F5963]/70'
+                        ? 'text-[#16805C]'
+                        : 'text-[#65716C]/70'
                     }`}
                     title={step.label}
                   >
@@ -203,7 +203,7 @@ export function JourneyTracker({
                     showLabels
                       ? 'flex-1 min-w-[8px] self-start mt-2'
                       : 'w-2 flex-none'
-                  } ${step.state === 'completed' ? 'bg-[#198754]/55' : 'bg-[#E8D9D4]'}`}
+                  } ${step.state === 'completed' ? 'bg-[#16805C]/55' : 'bg-[#E1DDD3]'}`}
                 />
               )}
             </li>
@@ -211,9 +211,9 @@ export function JourneyTracker({
         })}
       </ol>
 
-      <p className="mt-1.5 border-t border-[#F3E7E2] pt-1.5 break-words text-[9px] font-black uppercase tracking-wider text-[#4A173A]">
-        <span className="text-[#B76E79]">Current</span> · {STAGE_LABELS[stageKey]}
-        <span className="ml-1 font-bold text-[#6F5963]">
+      <p className="mt-1.5 border-t border-[#E1DDD3] pt-1.5 break-words text-[9px] font-black uppercase tracking-wider text-[#123C35]">
+        <span className="text-[#C9A45C]">Current</span> · {STAGE_LABELS[stageKey]}
+        <span className="ml-1 font-bold text-[#65716C]">
           (step {Number(progress.currentIndex) + 1} of {progress.totalCount})
         </span>
       </p>
@@ -254,16 +254,16 @@ export default function PipelineCard({ customer, today, onOpen, onAction }: Pipe
   const highPriority = /^(urgent|vip|high)$/i.test(priority);
 
   const cardTone = overdue
-    ? 'bg-[#FDE8E7] border-[#B42318]/40 hover:border-[#B42318]'
+    ? 'bg-[#FDE8E8] border-[#C83B4A]/40 hover:border-[#C83B4A]'
     : dueToday
-    ? 'bg-[#FFF4D6] border-[#C58A18]/40 hover:border-[#C58A18]'
-    : `bg-[#FFFAF7] ${presentation.accent} hover:border-[#B76E79] hover:bg-[#FFFDFC]`;
+    ? 'bg-[#FFF9EE] border-[#C58A16]/40 hover:border-[#C58A16]'
+    : `bg-white ${presentation.accent} hover:border-[#C9A45C] hover:bg-[#FDFBF7]`;
 
   const urgencyTone = overdue
-    ? 'bg-[#FFFDFC] border-[#B42318]/35 text-[#B42318]'
+    ? 'bg-white border-[#C83B4A]/35 text-[#C83B4A]'
     : dueToday
-    ? 'bg-[#FFFDFC] border-[#C58A18]/35 text-[#C58A18]'
-    : 'bg-[#FFFDFC] border-[#E8D9D4] text-[#4A173A]';
+    ? 'bg-white border-[#C58A16]/35 text-[#C58A16]'
+    : 'bg-[#F7F5F0] border-[#E1DDD3] text-[#123C35]';
 
   const urgencyLabel = overdue
     ? `Overdue by ${daysLate} ${daysLate === 1 ? 'day' : 'days'}`
@@ -315,15 +315,15 @@ export default function PipelineCard({ customer, today, onOpen, onAction }: Pipe
       aria-label={`${name}, ${chipLabel}${overdue ? `, overdue by ${daysLate} days` : ''}`}
       onClick={openCard}
       onKeyDown={handleKeyDown}
-      className={`group flex cursor-pointer flex-col rounded-2xl border p-3 shadow-2xs transition-colors focus:outline-none focus:border-[#B76E79] ${cardTone}`}
+      className={`group flex cursor-pointer flex-col rounded-2xl border p-3 shadow-2xs transition-colors focus:outline-none focus:border-[#C9A45C] ${cardTone}`}
     >
       {/* 1 — identity */}
       <header className="flex items-start gap-2">
         <div className="min-w-0 flex-1">
-          <h4 className="line-clamp-2 break-words text-[12px] font-black leading-tight text-[#2B1722] transition-colors group-hover:text-[#4A173A]">
+          <h4 className="line-clamp-2 break-words text-[12px] font-black leading-tight text-[#17201D] transition-colors group-hover:text-[#123C35]">
             {name}
           </h4>
-          <p className="mt-0.5 break-all text-[9px] font-bold uppercase tracking-wider text-[#6F5963]">
+          <p className="mt-0.5 break-all text-[9px] font-bold uppercase tracking-wider text-[#65716C]">
             {code || DASH}
           </p>
         </div>
@@ -335,8 +335,8 @@ export default function PipelineCard({ customer, today, onOpen, onAction }: Pipe
             {chipLabel}
           </span>
           {highPriority && (
-            <span className="inline-flex items-center gap-0.5 whitespace-nowrap rounded-full border border-[#B76E79]/40 bg-[#FFFDFC] px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-[#B76E79]">
-              <Star className="h-2.5 w-2.5 fill-[#B76E79] text-[#B76E79]" aria-hidden="true" />
+            <span className="inline-flex items-center gap-0.5 whitespace-nowrap rounded-full border border-[#C9A45C]/40 bg-white px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-[#123C35]">
+              <Star className="h-2.5 w-2.5 fill-[#C9A45C] text-[#C9A45C]" aria-hidden="true" />
               {priority}
             </span>
           )}
@@ -358,9 +358,9 @@ export default function PipelineCard({ customer, today, onOpen, onAction }: Pipe
           )}
           <span className="truncate">{urgencyLabel}</span>
         </p>
-        <p className="mt-0.5 break-words text-[10px] font-bold leading-snug text-[#2B1722]">
+        <p className="mt-0.5 break-words text-[10px] font-bold leading-snug text-[#17201D]">
           {dateText(customer.follow_up_date, { day: '2-digit', month: 'short', year: 'numeric' }) || DASH}
-          {time && <span className="font-semibold text-[#6F5963]"> · {time}</span>}
+          {time && <span className="font-semibold text-[#65716C]"> · {time}</span>}
         </p>
       </div>
 
@@ -386,11 +386,11 @@ export default function PipelineCard({ customer, today, onOpen, onAction }: Pipe
       </dl>
 
       {/* 4 — in the customer's own words */}
-      <div className="mt-2 rounded-xl border border-[#E8D9D4] bg-[#FFFDFC] px-2 py-1.5">
+      <div className="mt-2 rounded-xl border border-[#E1DDD3] bg-[#F7F5F0] px-2 py-1.5">
         <p className={labelClass}>Latest feedback</p>
         <p
           className={`mt-0.5 line-clamp-2 break-words text-[10px] font-bold leading-snug ${
-            feedback ? 'text-[#2B1722]' : 'text-[#6F5963]/70'
+            feedback ? 'text-[#17201D]' : 'text-[#65716C]/70'
           }`}
           title={feedback || undefined}
         >
@@ -400,7 +400,7 @@ export default function PipelineCard({ customer, today, onOpen, onAction }: Pipe
 
       {/* 5 — actions. Two groups that wrap as units, pinned to the bottom of the
           card so a short card and a tall one in the same column still read alike. */}
-      <div className="mt-auto flex flex-wrap items-center gap-1.5 border-t border-[#E8D9D4] pt-2">
+      <div className="mt-auto flex flex-wrap items-center gap-1.5 border-t border-[#E1DDD3] pt-2">
         <div className="flex items-center gap-1.5">
           <button
             type="button"
@@ -411,7 +411,7 @@ export default function PipelineCard({ customer, today, onOpen, onAction }: Pipe
             className={textActionClass}
             title={`Open ${name}`}
           >
-            <Eye className="h-3 w-3 text-[#B76E79]" aria-hidden="true" />
+            <Eye className="h-3 w-3 text-[#C9A45C]" aria-hidden="true" />
             View
           </button>
           <button
@@ -420,7 +420,7 @@ export default function PipelineCard({ customer, today, onOpen, onAction }: Pipe
             className={textActionClass}
             title="Update this customer's details"
           >
-            <ClipboardList className="h-3 w-3 text-[#B76E79]" aria-hidden="true" />
+            <ClipboardList className="h-3 w-3 text-[#C9A45C]" aria-hidden="true" />
             Update
           </button>
           <button
@@ -429,7 +429,7 @@ export default function PipelineCard({ customer, today, onOpen, onAction }: Pipe
             className={textActionClass}
             title="Log a call"
           >
-            <PhoneCall className="h-3 w-3 text-[#B76E79]" aria-hidden="true" />
+            <PhoneCall className="h-3 w-3 text-[#C9A45C]" aria-hidden="true" />
             Call
           </button>
         </div>
@@ -442,7 +442,7 @@ export default function PipelineCard({ customer, today, onOpen, onAction }: Pipe
             aria-label="Add feedback"
             title="Add feedback"
           >
-            <MessageSquarePlus className="h-3.5 w-3.5 text-[#B76E79]" aria-hidden="true" />
+            <MessageSquarePlus className="h-3.5 w-3.5 text-[#C9A45C]" aria-hidden="true" />
           </button>
           <button
             type="button"
@@ -451,7 +451,7 @@ export default function PipelineCard({ customer, today, onOpen, onAction }: Pipe
             aria-label="Schedule follow-up"
             title="Schedule follow-up"
           >
-            <CalendarClock className="h-3.5 w-3.5 text-[#B76E79]" aria-hidden="true" />
+            <CalendarClock className="h-3.5 w-3.5 text-[#C9A45C]" aria-hidden="true" />
           </button>
           <button
             type="button"
@@ -460,7 +460,7 @@ export default function PipelineCard({ customer, today, onOpen, onAction }: Pipe
             aria-label="Move stage"
             title="Move stage"
           >
-            <ArrowRightLeft className="h-3.5 w-3.5 text-[#B76E79]" aria-hidden="true" />
+            <ArrowRightLeft className="h-3.5 w-3.5 text-[#C9A45C]" aria-hidden="true" />
           </button>
           <button
             type="button"
@@ -471,9 +471,9 @@ export default function PipelineCard({ customer, today, onOpen, onAction }: Pipe
             title="More actions"
           >
             {moreOpen ? (
-              <X className="h-3.5 w-3.5 text-[#B76E79]" aria-hidden="true" />
+              <X className="h-3.5 w-3.5 text-[#123C35]" aria-hidden="true" />
             ) : (
-              <MoreHorizontal className="h-3.5 w-3.5 text-[#B76E79]" aria-hidden="true" />
+              <MoreHorizontal className="h-3.5 w-3.5 text-[#123C35]" aria-hidden="true" />
             )}
           </button>
         </div>
@@ -483,7 +483,7 @@ export default function PipelineCard({ customer, today, onOpen, onAction }: Pipe
           column cannot clip it. */}
       {moreOpen && (
         <div
-          className="mt-2 space-y-1.5 rounded-xl border border-[#E8D9D4] bg-[#FFFDFC] p-2"
+          className="mt-2 space-y-1.5 rounded-xl border border-[#E1DDD3] bg-white p-2 shadow-md"
           onClick={(event) => event.stopPropagation()}
         >
           <p className="flex items-center justify-between gap-2">
@@ -491,7 +491,7 @@ export default function PipelineCard({ customer, today, onOpen, onAction }: Pipe
             <button
               type="button"
               onClick={toggleMore}
-              className="inline-flex h-6 w-6 items-center justify-center rounded-lg border border-[#E8D9D4] bg-[#FFFAF7] text-[#4A173A] transition-colors hover:bg-[#FFF7F2]"
+              className="inline-flex h-6 w-6 items-center justify-center rounded-lg border border-[#E1DDD3] bg-[#F7F5F0] text-[#123C35] transition-colors hover:bg-[#EDF3F0]"
               aria-label="Close more actions"
               title="Close"
             >
@@ -502,13 +502,13 @@ export default function PipelineCard({ customer, today, onOpen, onAction }: Pipe
           {mobile ? (
             <a
               href={`tel:${mobile.replace(/[^\d+]/g, '')}`}
-              className="flex items-center gap-1.5 whitespace-nowrap rounded-lg border border-[#E8D9D4] bg-[#FFFAF7] px-2 py-1.5 text-[10px] font-black uppercase tracking-wider text-[#4A173A] transition-colors hover:bg-[#FFF7F2]"
+              className="flex items-center gap-1.5 whitespace-nowrap rounded-lg border border-[#E1DDD3] bg-[#F7F5F0] px-2 py-1.5 text-[10px] font-black uppercase tracking-wider text-[#123C35] transition-colors hover:bg-[#EDF3F0] hover:border-[#C9A45C]"
             >
-              <Phone className="h-3 w-3 shrink-0 text-[#B76E79]" aria-hidden="true" />
+              <Phone className="h-3 w-3 shrink-0 text-[#C9A45C]" aria-hidden="true" />
               <span className="truncate">Dial {mobile}</span>
             </a>
           ) : (
-            <p className="rounded-lg border border-[#E8D9D4] bg-[#FFFAF7] px-2 py-1.5 text-[10px] font-bold text-[#6F5963]">
+            <p className="rounded-lg border border-[#E1DDD3] bg-[#F7F5F0] px-2 py-1.5 text-[10px] font-bold text-[#65716C]">
               No mobile on this record
             </p>
           )}
@@ -517,9 +517,9 @@ export default function PipelineCard({ customer, today, onOpen, onAction }: Pipe
             <button
               type="button"
               onClick={copyValue(mobile, 'Mobile number')}
-              className="flex w-full items-center gap-1.5 whitespace-nowrap rounded-lg border border-[#E8D9D4] bg-[#FFFAF7] px-2 py-1.5 text-[10px] font-black uppercase tracking-wider text-[#4A173A] transition-colors hover:bg-[#FFF7F2]"
+              className="flex w-full items-center gap-1.5 whitespace-nowrap rounded-lg border border-[#E1DDD3] bg-[#F7F5F0] px-2 py-1.5 text-[10px] font-black uppercase tracking-wider text-[#123C35] transition-colors hover:bg-[#EDF3F0] hover:border-[#C9A45C]"
             >
-              <Copy className="h-3 w-3 shrink-0 text-[#B76E79]" aria-hidden="true" />
+              <Copy className="h-3 w-3 shrink-0 text-[#C9A45C]" aria-hidden="true" />
               <span className="truncate">Copy mobile number</span>
             </button>
           )}
@@ -528,21 +528,21 @@ export default function PipelineCard({ customer, today, onOpen, onAction }: Pipe
             <button
               type="button"
               onClick={copyValue(code, 'Customer code')}
-              className="flex w-full items-center gap-1.5 whitespace-nowrap rounded-lg border border-[#E8D9D4] bg-[#FFFAF7] px-2 py-1.5 text-[10px] font-black uppercase tracking-wider text-[#4A173A] transition-colors hover:bg-[#FFF7F2]"
+              className="flex w-full items-center gap-1.5 whitespace-nowrap rounded-lg border border-[#E1DDD3] bg-[#F7F5F0] px-2 py-1.5 text-[10px] font-black uppercase tracking-wider text-[#123C35] transition-colors hover:bg-[#EDF3F0] hover:border-[#C9A45C]"
             >
-              <Copy className="h-3 w-3 shrink-0 text-[#B76E79]" aria-hidden="true" />
+              <Copy className="h-3 w-3 shrink-0 text-[#C9A45C]" aria-hidden="true" />
               <span className="truncate">Copy {code}</span>
             </button>
           )}
 
-          <p className="mt-1 text-[9px] font-black uppercase tracking-wider text-[#6F5963]">Journey</p>
+          <p className="mt-1 text-[9px] font-black uppercase tracking-wider text-[#65716C]">Journey</p>
 
           <button
             type="button"
             onClick={run('visit')}
             className={menuItemClass}
           >
-            <Store className="h-3 w-3 shrink-0 text-[#B76E79]" aria-hidden="true" />
+            <Store className="h-3 w-3 shrink-0 text-[#C9A45C]" aria-hidden="true" />
             <span className="truncate">Record store visit</span>
           </button>
 
@@ -551,7 +551,7 @@ export default function PipelineCard({ customer, today, onOpen, onAction }: Pipe
             onClick={run('shopping')}
             className={menuItemClass}
           >
-            <ShoppingBag className="h-3 w-3 shrink-0 text-[#B76E79]" aria-hidden="true" />
+            <ShoppingBag className="h-3 w-3 shrink-0 text-[#C9A45C]" aria-hidden="true" />
             <span className="truncate">Update shopping plan</span>
           </button>
 
@@ -560,23 +560,23 @@ export default function PipelineCard({ customer, today, onOpen, onAction }: Pipe
             onClick={run('convert')}
             className={menuItemClass}
           >
-            <Trophy className="h-3 w-3 shrink-0 text-[#B76E79]" aria-hidden="true" />
+            <Trophy className="h-3 w-3 shrink-0 text-[#C9A45C]" aria-hidden="true" />
             <span className="truncate">Mark won / converted</span>
           </button>
 
-          <p className="mt-1 text-[9px] font-black uppercase tracking-wider text-[#6F5963]">Record</p>
+          <p className="mt-1 text-[9px] font-black uppercase tracking-wider text-[#65716C]">Record</p>
 
           <button
             type="button"
             onClick={run('note')}
             className={menuItemClass}
           >
-            <ClipboardList className="h-3 w-3 shrink-0 text-[#B76E79]" aria-hidden="true" />
+            <ClipboardList className="h-3 w-3 shrink-0 text-[#C9A45C]" aria-hidden="true" />
             <span className="truncate">Add note</span>
           </button>
 
           {copyMessage && (
-            <p className="text-[9px] font-bold leading-snug text-[#6F5963]">{copyMessage}</p>
+            <p className="text-[9px] font-bold leading-snug text-[#65716C]">{copyMessage}</p>
           )}
         </div>
       )}

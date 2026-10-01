@@ -252,16 +252,16 @@ export default function WeddingStatusBoard() {
                 <button
                   onClick={() => loadBoard({ silent: true })}
                   disabled={loading || refreshing}
-                  className="px-3.5 py-2 bg-[#FFFDFC] hover:bg-[#FFF7F2] border border-[#E8D9D4] rounded-xl text-xs font-bold text-[#4A173A] flex items-center gap-1.5 transition-colors shadow-2xs disabled:opacity-60"
+                  className="px-3.5 py-2 bg-[#FFFFFF] hover:bg-[#EDF3F0] border border-[#E1DDD3] rounded-xl text-xs font-bold text-[#123C35] flex items-center gap-1.5 transition-colors shadow-2xs disabled:opacity-60"
                 >
-                  <RefreshCw className={`w-3.5 h-3.5 text-[#B76E79] ${loading || refreshing ? 'animate-spin' : ''}`} />
+                  <RefreshCw className={`w-3.5 h-3.5 text-[#C9A45C] ${loading || refreshing ? 'animate-spin' : ''}`} />
                   <span>Refresh</span>
                 </button>
                 <Link
                   to="/wedding/customer-registration"
-                  className="px-4 py-2 bg-[#4A173A] hover:bg-[#6A2853] text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-xs border border-[#4A173A] transition-colors"
+                  className="px-4 py-2 bg-[#123C35] hover:bg-[#082821] text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-xs border border-[#123C35] transition-colors"
                 >
-                  <Plus className="w-3.5 h-3.5 text-[#E8C7A8]" />
+                  <Plus className="w-3.5 h-3.5 text-[#E4CB92]" />
                   <span>Add Customer</span>
                 </Link>
               </div>
@@ -309,27 +309,27 @@ export default function WeddingStatusBoard() {
           )}
 
           {loading ? (
-            <div className="py-20 text-center text-xs text-[#6F5963]">
-              <RefreshCw className="w-5 h-5 animate-spin text-[#B76E79] mx-auto mb-2" />
+            <div className="py-20 text-center text-xs text-[#65716C]">
+              <RefreshCw className="w-5 h-5 animate-spin text-[#C9A45C] mx-auto mb-2" />
               Loading wedding pipeline...
             </div>
           ) : boardError && customers.length === 0 ? (
-            <div className="py-16 px-6 text-center bg-[#FFFDFC] border border-[#B42318]/30 rounded-3xl">
+            <div className="py-16 px-6 text-center bg-[#FFFFFF] border border-[#B42318]/30 rounded-3xl">
               <CircleAlert className="w-6 h-6 text-[#B42318] mx-auto mb-3" />
-              <p className="text-sm font-black text-[#4A173A]">Unable to load the Wedding Status Pipeline.</p>
-              <p className="text-xs text-[#6F5963] mt-1 max-w-xl mx-auto break-words">{boardError}</p>
+              <p className="text-sm font-black text-[#123C35]">Unable to load the Wedding Status Pipeline.</p>
+              <p className="text-xs text-[#65716C] mt-1 max-w-xl mx-auto break-words">{boardError}</p>
               <button
                 onClick={() => loadBoard()}
-                className="mt-5 px-4 py-2 bg-[#4A173A] hover:bg-[#6A2853] text-white font-bold rounded-xl text-xs inline-flex items-center gap-1.5 transition-colors"
+                className="mt-5 px-4 py-2 bg-[#123C35] hover:bg-[#082821] text-white font-bold rounded-xl text-xs inline-flex items-center gap-1.5 transition-colors"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
                 <span>Retry</span>
               </button>
             </div>
           ) : customers.length === 0 ? (
-            <div className="py-16 text-center bg-[#FFFDFC] border border-[#E8D9D4] rounded-3xl">
-              <p className="text-sm font-black text-[#4A173A]">No customers match these filters</p>
-              <p className="text-xs text-[#6F5963] mt-1">
+            <div className="py-16 text-center bg-[#FFFFFF] border border-[#E1DDD3] rounded-3xl">
+              <p className="text-sm font-black text-[#123C35]">No customers match these filters</p>
+              <p className="text-xs text-[#65716C] mt-1">
                 {activeFilterCount > 0 ? 'Clear the filters to see the full pipeline.' : 'New registrations will appear here automatically.'}
               </p>
             </div>
@@ -349,10 +349,10 @@ export default function WeddingStatusBoard() {
                     return (
                       <div
                         key={stage.key}
-                        className={`bg-[#FFFDFC] rounded-3xl border ${presentation.accent} shadow-xs flex flex-col min-h-[320px] sm:min-h-[420px] max-h-[80vh] sm:max-h-[70vh] xl:max-h-[62vh] w-[min(85vw,330px)] sm:w-auto shrink-0 sm:shrink min-w-0`}
+                        className={`bg-[#FFFFFF] rounded-3xl border ${presentation.accent} shadow-xs flex flex-col min-h-[320px] sm:min-h-[420px] max-h-[80vh] sm:max-h-[70vh] xl:max-h-[62vh] w-[min(85vw,330px)] sm:w-auto shrink-0 sm:shrink min-w-0`}
                       >
-                        <div className={`flex items-center justify-between gap-2 px-4 py-3 border-b border-[#E8D9D4] ${presentation.headerBg} rounded-t-3xl sticky top-0 z-10`}>
-                          <h3 className="min-w-0 flex-1 break-words text-[11px] font-black text-[#4A173A] uppercase tracking-wider leading-tight">
+                        <div className={`flex items-center justify-between gap-2 px-4 py-3 border-b border-[#E1DDD3] ${presentation.headerBg} rounded-t-3xl sticky top-0 z-10`}>
+                          <h3 className="min-w-0 flex-1 break-words text-[11px] font-black text-[#123C35] uppercase tracking-wider leading-tight">
                             <span className="whitespace-nowrap">{stage.order}.</span> {stage.label}
                           </h3>
                           <span className={`px-2 py-0.5 rounded-full text-[10px] font-black whitespace-nowrap shrink-0 ${presentation.chip}`}>
@@ -362,7 +362,7 @@ export default function WeddingStatusBoard() {
 
                         <div className="flex-1 overflow-y-auto overscroll-contain p-3 space-y-3">
                           {cards.length === 0 ? (
-                            <div className="py-12 text-center text-[11px] text-[#6F5963]">
+                            <div className="py-12 text-center text-[11px] text-[#65716C]">
                               No customers in this stage
                             </div>
                           ) : (
@@ -379,7 +379,7 @@ export default function WeddingStatusBoard() {
                               {cards.length > limit && (
                                 <button
                                   onClick={() => showMore(stage.key)}
-                                  className="w-full py-2 rounded-xl border border-[#E8D9D4] bg-[#FFFAF7] hover:bg-[#FFF7F2] text-[11px] font-bold text-[#4A173A] transition-colors"
+                                  className="w-full py-2 rounded-xl border border-[#E1DDD3] bg-[#F7F5F0] hover:bg-[#EDF3F0] text-[11px] font-bold text-[#123C35] transition-colors"
                                 >
                                   Show {Math.min(CARDS_PER_STAGE_STEP, cards.length - limit)} more of {cards.length}
                                 </button>

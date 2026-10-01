@@ -13,44 +13,44 @@ import { AlertTriangle, Inbox, RefreshCw } from 'lucide-react';
  * Type floor: nothing below 11px. Question text is the core job, so it is 15px.
  */
 
-export const VM_SURFACE = 'bg-[#FFFDFC] border border-[#E8D9D4] rounded-2xl shadow-[0_1px_2px_rgba(74,23,58,0.04)]';
+export const VM_SURFACE = 'bg-[#FFFFFF] border border-[#E1DDD3] rounded-2xl shadow-[0_1px_2px_rgba(74,23,58,0.04)]';
 export const VM_RAISED = 'shadow-[0_6px_18px_-8px_rgba(74,23,58,0.28)]';
 
 export const vmCard = (extra = '') => `${VM_SURFACE} ${extra}`.trim();
 
 /** Interactive card: lifts on hover, has a visible keyboard focus ring. */
 export const vmClickableCard =
-  'group w-full text-left bg-[#FFFDFC] border border-[#E8D9D4] rounded-2xl ' +
+  'group w-full text-left bg-[#FFFFFF] border border-[#E1DDD3] rounded-2xl ' +
   'shadow-[0_1px_2px_rgba(74,23,58,0.04)] transition-all duration-150 ' +
-  'hover:border-[#B76E79] hover:shadow-[0_10px_24px_-12px_rgba(74,23,58,0.35)] hover:-translate-y-0.5 ' +
-  'focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B76E79] focus-visible:ring-offset-2 focus-visible:ring-offset-[#FFF7F2]';
+  'hover:border-[#C9A45C] hover:shadow-[0_10px_24px_-12px_rgba(74,23,58,0.35)] hover:-translate-y-0.5 ' +
+  'focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A45C] focus-visible:ring-offset-2 focus-visible:ring-offset-[#EDF3F0]';
 
-export const vmLabel = 'text-[11px] font-black uppercase tracking-[0.07em] text-[#6F5963]';
-export const vmMeta = 'text-[12px] font-semibold text-[#6F5963]';
-export const vmBody = 'text-[13px] font-semibold text-[#2B1722]';
-export const vmTitle = 'text-[15px] font-black text-[#2B1722] leading-snug';
-export const vmHeading = 'text-[17px] sm:text-[19px] font-black text-[#4A173A] leading-tight';
+export const vmLabel = 'text-[11px] font-black uppercase tracking-[0.07em] text-[#65716C]';
+export const vmMeta = 'text-[12px] font-semibold text-[#65716C]';
+export const vmBody = 'text-[13px] font-semibold text-[#17201D]';
+export const vmTitle = 'text-[15px] font-black text-[#17201D] leading-snug';
+export const vmHeading = 'text-[17px] sm:text-[19px] font-black text-[#123C35] leading-tight';
 
 export const btnBase =
   'inline-flex items-center justify-center gap-2 min-h-[44px] px-4 rounded-xl text-[13px] font-bold ' +
   'transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none ' +
-  'focus-visible:ring-2 focus-visible:ring-[#B76E79] focus-visible:ring-offset-1';
+  'focus-visible:ring-2 focus-visible:ring-[#C9A45C] focus-visible:ring-offset-1';
 
-export const vmBtnPrimary = `${btnBase} bg-[#4A173A] text-white hover:bg-[#6A2853] shadow-[0_4px_12px_-6px_rgba(74,23,58,0.6)]`;
-export const vmBtnSecondary = `${btnBase} bg-white text-[#4A173A] border border-[#E8D9D4] hover:border-[#B76E79] hover:bg-[#FFF7F2]`;
-export const vmBtnGhost = `${btnBase} bg-transparent text-[#6A2853] border border-transparent hover:bg-[#FFF7F2]`;
+export const vmBtnPrimary = `${btnBase} bg-[#123C35] text-white hover:bg-[#082821] shadow-[0_4px_12px_-6px_rgba(74,23,58,0.6)]`;
+export const vmBtnSecondary = `${btnBase} bg-white text-[#123C35] border border-[#E1DDD3] hover:border-[#C9A45C] hover:bg-[#EDF3F0]`;
+export const vmBtnGhost = `${btnBase} bg-transparent text-[#082821] border border-transparent hover:bg-[#EDF3F0]`;
 
 /* ── pills ─────────────────────────────────────────────────────────────── */
 
 export type VmTone = 'neutral' | 'brand' | 'positive' | 'warning' | 'danger' | 'muted';
 
 const TONE_CLASS: Record<VmTone, string> = {
-  neutral: 'bg-[#FFF7F2] text-[#6A2853] border-[#E8D9D4]',
-  brand: 'bg-[#4A173A] text-white border-[#4A173A]',
+  neutral: 'bg-[#EDF3F0] text-[#082821] border-[#E1DDD3]',
+  brand: 'bg-[#123C35] text-white border-[#123C35]',
   positive: 'bg-[#E8F5EE] text-[#146B41] border-[#198754]/30',
   warning: 'bg-[#FFF4D6] text-[#8A5B00] border-[#C58A18]/40',
   danger: 'bg-[#FDE8E7] text-[#9B1C15] border-[#B42318]/30',
-  muted: 'bg-[#F4F2F0] text-[#6F5963] border-[#E8D9D4]'
+  muted: 'bg-[#F4F2F0] text-[#65716C] border-[#E1DDD3]'
 };
 
 export function VmPill({
@@ -93,13 +93,13 @@ export function VmSectionHeader({
   return (
     <div className={`flex items-start gap-3 ${className}`}>
       {icon && (
-        <span className="shrink-0 grid place-items-center w-10 h-10 rounded-xl bg-gradient-to-br from-[#4A173A] to-[#6A2853] text-[#E8C7A8] shadow-[0_4px_12px_-6px_rgba(74,23,58,0.8)]">
+        <span className="shrink-0 grid place-items-center w-10 h-10 rounded-xl bg-gradient-to-br from-[#123C35] to-[#082821] text-[#E4CB92] shadow-[0_4px_12px_-6px_rgba(74,23,58,0.8)]">
           {icon}
         </span>
       )}
       <div className="min-w-0 flex-1">
         <h2 className={vmHeading}>{title}</h2>
-        {subtitle && <p className="mt-0.5 text-[12px] font-semibold text-[#6F5963] leading-snug">{subtitle}</p>}
+        {subtitle && <p className="mt-0.5 text-[12px] font-semibold text-[#65716C] leading-snug">{subtitle}</p>}
       </div>
       {right && <div className="shrink-0 flex items-center gap-2 flex-wrap justify-end">{right}</div>}
     </div>
@@ -119,8 +119,8 @@ export const scoreTone = (percent: number | null | undefined): VmTone => {
 };
 
 const TONE_STROKE: Record<VmTone, string> = {
-  neutral: '#B76E79',
-  brand: '#4A173A',
+  neutral: '#C9A45C',
+  brand: '#123C35',
   positive: '#198754',
   warning: '#C58A18',
   danger: '#B42318',
@@ -177,7 +177,7 @@ export function VmScoreDial({
       </div>
       <div className="min-w-0">
         <p className={vmLabel}>{label}</p>
-        {caption && <p className="mt-0.5 text-[12px] font-bold text-[#4A173A] leading-snug">{caption}</p>}
+        {caption && <p className="mt-0.5 text-[12px] font-bold text-[#123C35] leading-snug">{caption}</p>}
       </div>
     </div>
   );
@@ -231,11 +231,11 @@ export function VmEmptyState({
 }) {
   return (
     <div className={`${VM_SURFACE} px-6 py-10 text-center`}>
-      <span className="mx-auto mb-3 grid place-items-center w-11 h-11 rounded-full bg-[#FFF7F2] border border-[#E8D9D4] text-[#B76E79]">
+      <span className="mx-auto mb-3 grid place-items-center w-11 h-11 rounded-full bg-[#EDF3F0] border border-[#E1DDD3] text-[#C9A45C]">
         {icon || <Inbox className="w-5 h-5" />}
       </span>
-      <p className="text-[14px] font-black text-[#4A173A]">{title}</p>
-      {hint && <p className="mt-1 text-[12px] font-semibold text-[#6F5963] max-w-md mx-auto leading-relaxed">{hint}</p>}
+      <p className="text-[14px] font-black text-[#123C35]">{title}</p>
+      {hint && <p className="mt-1 text-[12px] font-semibold text-[#65716C] max-w-md mx-auto leading-relaxed">{hint}</p>}
       {action && <div className="mt-4 flex justify-center">{action}</div>}
     </div>
   );
@@ -251,15 +251,15 @@ export function VmErrorState({
   onRetry?: () => void;
 }) {
   return (
-    <div className="bg-[#FFFDFC] border border-[#B42318]/30 rounded-2xl px-6 py-9 text-center shadow-[0_1px_2px_rgba(74,23,58,0.04)]">
+    <div className="bg-[#FFFFFF] border border-[#B42318]/30 rounded-2xl px-6 py-9 text-center shadow-[0_1px_2px_rgba(74,23,58,0.04)]">
       <span className="mx-auto mb-3 grid place-items-center w-11 h-11 rounded-full bg-[#FDE8E7] border border-[#B42318]/30 text-[#B42318]">
         <AlertTriangle className="w-5 h-5" />
       </span>
-      <p className="text-[14px] font-black text-[#4A173A]">{title}</p>
-      {message && <p className="mt-1 text-[12px] font-semibold text-[#6F5963] max-w-xl mx-auto break-words">{message}</p>}
+      <p className="text-[14px] font-black text-[#123C35]">{title}</p>
+      {message && <p className="mt-1 text-[12px] font-semibold text-[#65716C] max-w-xl mx-auto break-words">{message}</p>}
       {onRetry && (
         <button type="button" onClick={onRetry} className={`${vmBtnSecondary} mt-4`}>
-          <RefreshCw className="w-4 h-4 text-[#B76E79]" />
+          <RefreshCw className="w-4 h-4 text-[#C9A45C]" />
           <span>Retry</span>
         </button>
       )}

@@ -206,17 +206,17 @@ export default function WeddingCallHistory() {
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleExport}
-                  className="px-3.5 py-2 bg-[#FFFDFC] hover:bg-[#FFF7F2] border border-[#E8D9D4] rounded-xl text-xs font-bold text-[#4A173A] flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+                  className="px-3.5 py-2 bg-[#FFFFFF] hover:bg-[#EDF3F0] border border-[#E1DDD3] rounded-xl text-xs font-bold text-[#123C35] flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
                 >
-                  <Download className="w-3.5 h-3.5 text-[#B76E79]" />
+                  <Download className="w-3.5 h-3.5 text-[#C9A45C]" />
                   <span>Export Logs</span>
                 </button>
                 <button
                   onClick={loadLogs}
                   disabled={loading}
-                  className="px-3.5 py-2 bg-[#FFFDFC] hover:bg-[#FFF7F2] border border-[#E8D9D4] rounded-xl text-xs font-bold text-[#4A173A] flex items-center gap-1.5 transition-colors shadow-2xs cursor-pointer"
+                  className="px-3.5 py-2 bg-[#FFFFFF] hover:bg-[#EDF3F0] border border-[#E1DDD3] rounded-xl text-xs font-bold text-[#123C35] flex items-center gap-1.5 transition-colors shadow-2xs cursor-pointer"
                 >
-                  <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-[#B76E79]' : 'text-[#B76E79]'}`} />
+                  <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-[#C9A45C]' : 'text-[#C9A45C]'}`} />
                   <span>Refresh</span>
                 </button>
               </div>
@@ -224,7 +224,7 @@ export default function WeddingCallHistory() {
           />
 
           {/* Search & Filter Toolbar */}
-          <div className="bg-[#FFFDFC] p-4 sm:p-5 rounded-2xl border border-[#E8D9D4] shadow-xs space-y-3">
+          <div className="bg-[#FFFFFF] p-4 sm:p-5 rounded-2xl border border-[#E1DDD3] shadow-xs space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
               {/* Search */}
               <div className="relative">
@@ -237,7 +237,7 @@ export default function WeddingCallHistory() {
                     setSearchQuery(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="w-full pl-8 pr-3 py-2 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-medium text-[#2B1722] placeholder:text-[#9A858D] focus:outline-none focus:border-[#B76E79]"
+                  className="w-full pl-8 pr-3 py-2 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl font-medium text-[#17201D] placeholder:text-[#9A858D] focus:outline-none focus:border-[#C9A45C]"
                 />
               </div>
 
@@ -249,7 +249,7 @@ export default function WeddingCallHistory() {
                     setOutcomeFilter(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="w-full px-3 py-2 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-bold text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                  className="w-full px-3 py-2 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl font-bold text-[#17201D] focus:outline-none focus:border-[#C9A45C]"
                 >
                   <option value="">Outcome: All Outcomes</option>
                   {CALL_OUTCOMES.map((out) => (
@@ -268,7 +268,7 @@ export default function WeddingCallHistory() {
                     setTelecallerFilter(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="w-full px-3 py-2 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-bold text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                  className="w-full px-3 py-2 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl font-bold text-[#17201D] focus:outline-none focus:border-[#C9A45C]"
                 >
                   <option value="">Telecaller: All Staff</option>
                   {telecallers.map((t) => (
@@ -292,10 +292,10 @@ export default function WeddingCallHistory() {
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center justify-between pt-2 border-t border-[#E8D9D4] text-xs text-[#6F5963] gap-2">
+            <div className="flex flex-wrap items-center justify-between pt-2 border-t border-[#E1DDD3] text-xs text-[#65716C] gap-2">
               <div className="flex items-center gap-2">
                 <span>
-                  Showing <strong className="text-[#4A173A]">{filteredLogs.length}</strong> call records with complete customer details
+                  Showing <strong className="text-[#123C35]">{filteredLogs.length}</strong> call records with complete customer details
                 </span>
                 <span className="text-[10px] bg-[#E8F5EE] text-[#198754] font-bold px-2 py-0.5 rounded-full border border-[#198754]/20">
                   Interactive Flow Enabled
@@ -303,7 +303,7 @@ export default function WeddingCallHistory() {
               </div>
 
               <div className="text-[11px] text-[#9A858D]">
-                Click <strong className="text-[#4A173A]">"View Flow"</strong> on any record to open the full journey & add live steps
+                Click <strong className="text-[#123C35]">"View Flow"</strong> on any record to open the full journey & add live steps
               </div>
             </div>
           </div>
@@ -311,36 +311,36 @@ export default function WeddingCallHistory() {
           {/* Mobile Call Logs Cards List (< md) */}
           <div className="md:hidden space-y-3">
             {loading ? (
-              <div className="p-8 text-center bg-[#FFFDFC] rounded-2xl border border-[#E8D9D4]">
-                <RefreshCw className="w-5 h-5 animate-spin text-[#B76E79] mx-auto mb-2" />
-                <span className="text-xs text-[#6F5963]">Loading call records & customer details...</span>
+              <div className="p-8 text-center bg-[#FFFFFF] rounded-2xl border border-[#E1DDD3]">
+                <RefreshCw className="w-5 h-5 animate-spin text-[#C9A45C] mx-auto mb-2" />
+                <span className="text-xs text-[#65716C]">Loading call records & customer details...</span>
               </div>
             ) : paginatedLogs.length === 0 ? (
-              <div className="p-8 text-center bg-[#FFFDFC] rounded-2xl border border-[#E8D9D4]">
-                <History className="w-8 h-8 text-[#B76E79] mx-auto mb-2 opacity-70" />
-                <div className="font-bold text-sm text-[#4A173A]">No call logs found</div>
-                <div className="text-xs text-[#6F5963] mt-0.5">Calls logged by telecallers will appear here.</div>
+              <div className="p-8 text-center bg-[#FFFFFF] rounded-2xl border border-[#E1DDD3]">
+                <History className="w-8 h-8 text-[#C9A45C] mx-auto mb-2 opacity-70" />
+                <div className="font-bold text-sm text-[#123C35]">No call logs found</div>
+                <div className="text-xs text-[#65716C] mt-0.5">Calls logged by telecallers will appear here.</div>
               </div>
             ) : (
               paginatedLogs.map((log: any, idx: number) => {
                 const badge = getStatusBadge(log.customer_status || 'New');
                 const cleanPhone = (log.customer_mobile || log.mobile_number || '').replace(/\D/g, '');
                 return (
-                  <div key={idx} className="p-4 bg-[#FFFDFC] rounded-2xl border border-[#E8D9D4] shadow-xs space-y-3">
+                  <div key={idx} className="p-4 bg-[#FFFFFF] rounded-2xl border border-[#E1DDD3] shadow-xs space-y-3">
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <div className="font-bold text-sm text-[#4A173A] flex items-center gap-1.5">
+                        <div className="font-bold text-sm text-[#123C35] flex items-center gap-1.5">
                           <span>{log.customer_name || 'Customer'}</span>
-                          <span className="text-[10px] text-[#6F5963] font-mono">({log.customer_code || 'BSC-WED'})</span>
+                          <span className="text-[10px] text-[#65716C] font-mono">({log.customer_code || 'BSC-WED'})</span>
                         </div>
-                        <div className="text-xs text-[#6F5963] mt-0.5 flex items-center gap-1.5 flex-wrap">
+                        <div className="text-xs text-[#65716C] mt-0.5 flex items-center gap-1.5 flex-wrap">
                           <span>📱 {log.customer_mobile || log.mobile_number || '—'}</span>
                           <span>·</span>
                           <span>📍 {log.location_name || 'Store'}</span>
                         </div>
                       </div>
                       <div className="flex flex-col items-end gap-1">
-                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-[#F6E2E5] text-[#4A173A] border border-[#E8D9D4]">
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-[#EDF3F0] text-[#123C35] border border-[#E1DDD3]">
                           {log.call_outcome}
                         </span>
                         <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold border ${badge.bg}`}>
@@ -351,7 +351,7 @@ export default function WeddingCallHistory() {
 
                     {/* Wedding Details Strip */}
                     {(log.bride_name || log.groom_name || log.wedding_date || log.preferred_shopping_category) && (
-                      <div className="p-2.5 bg-[#FFF7F2] rounded-xl border border-[#E8D9D4] text-[11px] text-[#4A173A] space-y-1">
+                      <div className="p-2.5 bg-[#EDF3F0] rounded-xl border border-[#E1DDD3] text-[11px] text-[#123C35] space-y-1">
                         <div className="font-semibold flex items-center justify-between">
                           <span>
                             {log.bride_name ? `👰 ${log.bride_name}` : ''}
@@ -362,9 +362,9 @@ export default function WeddingCallHistory() {
                             <span className="text-[#198754] font-bold">₹ {log.budget}</span>
                           )}
                         </div>
-                        <div className="text-[10px] text-[#6F5963] flex items-center gap-2 flex-wrap">
+                        <div className="text-[10px] text-[#65716C] flex items-center gap-2 flex-wrap">
                           {log.wedding_date && (
-                            <span className="text-[#B76E79] font-medium">💍 {formatDateDisplay(log.wedding_date)}</span>
+                            <span className="text-[#C9A45C] font-medium">💍 {formatDateDisplay(log.wedding_date)}</span>
                           )}
                           {log.preferred_shopping_category && (
                             <span>🏷️ {log.preferred_shopping_category}</span>
@@ -374,13 +374,13 @@ export default function WeddingCallHistory() {
                     )}
 
                     {/* Call notes */}
-                    <div className="text-xs bg-[#FFFAF7] p-2.5 rounded-xl border border-[#E8D9D4] space-y-1">
+                    <div className="text-xs bg-[#F7F5F0] p-2.5 rounded-xl border border-[#E1DDD3] space-y-1">
                       <div className="flex items-center justify-between text-[11px]">
-                        <span className="text-[#6F5963]">📅 {log.call_date} {log.call_time}</span>
-                        <span className="text-[#4A173A] font-semibold">👤 {log.telecaller_name || 'Staff'}</span>
+                        <span className="text-[#65716C]">📅 {log.call_date} {log.call_time}</span>
+                        <span className="text-[#123C35] font-semibold">👤 {log.telecaller_name || 'Staff'}</span>
                       </div>
                       {log.remarks && (
-                        <p className="text-[#2B1722] italic pt-1 border-t border-[#E8D9D4] text-[11px]">
+                        <p className="text-[#17201D] italic pt-1 border-t border-[#E1DDD3] text-[11px]">
                           "{log.remarks}"
                         </p>
                       )}
@@ -388,7 +388,7 @@ export default function WeddingCallHistory() {
 
                     {/* Action Bar */}
                     <div className="flex items-center justify-between pt-1">
-                      <span className="text-[11px] text-[#6F5963]">
+                      <span className="text-[11px] text-[#65716C]">
                         {parseDate(log.next_follow_up_date) ? (
                           <span className="text-[#C58A18] font-bold">Next: {formatDateDisplay(log.next_follow_up_date, 'No follow-up')}</span>
                         ) : (
@@ -412,19 +412,19 @@ export default function WeddingCallHistory() {
                         <button
                           type="button"
                           onClick={() => openFlowForRecord(log)}
-                          className="px-2.5 py-1 bg-[#4A173A] hover:bg-[#6A2853] text-white rounded-lg text-xs font-bold shadow-2xs flex items-center gap-1 transition-colors cursor-pointer"
+                          className="px-2.5 py-1 bg-[#123C35] hover:bg-[#082821] text-white rounded-lg text-xs font-bold shadow-2xs flex items-center gap-1 transition-colors cursor-pointer"
                         >
-                          <TrendingUp className="w-3 h-3 text-[#E8C7A8]" />
+                          <TrendingUp className="w-3 h-3 text-[#E4CB92]" />
                           <span>View Flow</span>
                         </button>
 
                         {log.customer_id && (
                           <Link
                             to={`/wedding-crm/customers/${log.customer_id}`}
-                            className="p-1.5 bg-[#FFF7F2] hover:bg-[#E8D9D4] text-[#4A173A] border border-[#E8D9D4] rounded-lg text-xs"
+                            className="p-1.5 bg-[#EDF3F0] hover:bg-[#E1DDD3] text-[#123C35] border border-[#E1DDD3] rounded-lg text-xs"
                             title="Profile"
                           >
-                            <Eye className="w-3.5 h-3.5 text-[#B76E79]" />
+                            <Eye className="w-3.5 h-3.5 text-[#C9A45C]" />
                           </Link>
                         )}
                       </div>
@@ -436,10 +436,10 @@ export default function WeddingCallHistory() {
           </div>
 
           {/* Desktop Call Logs Table (hidden on < md) */}
-          <div className="hidden md:block bg-[#FFFDFC] rounded-2xl border border-[#E8D9D4] shadow-xs overflow-hidden">
+          <div className="hidden md:block bg-[#FFFFFF] rounded-2xl border border-[#E1DDD3] shadow-xs overflow-hidden">
             <div className="table-frame custom-scrollbar">
-              <table className="w-full text-left text-xs text-[#2B1722]">
-                <thead className="bg-[#F8EDE8] text-[#4A173A] uppercase text-[10px] tracking-wider border-b border-[#E8D9D4]">
+              <table className="w-full text-left text-xs text-[#17201D]">
+                <thead className="bg-[#F8EDE8] text-[#123C35] uppercase text-[10px] tracking-wider border-b border-[#E1DDD3]">
                   <tr>
                     <th className="py-3 px-3.5 font-black">Date & Time</th>
                     <th className="py-3 px-3.5 font-black">Customer Details</th>
@@ -451,20 +451,20 @@ export default function WeddingCallHistory() {
                     <th className="py-3 px-3.5 font-black text-right">Customer Flow & Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#E8D9D4] bg-[#FFFDFC]">
+                <tbody className="divide-y divide-[#E1DDD3] bg-[#FFFFFF]">
                   {loading ? (
                     <tr>
-                      <td colSpan={8} className="text-center py-12 text-[#6F5963]">
-                        <RefreshCw className="w-5 h-5 animate-spin text-[#B76E79] mx-auto mb-2" />
+                      <td colSpan={8} className="text-center py-12 text-[#65716C]">
+                        <RefreshCw className="w-5 h-5 animate-spin text-[#C9A45C] mx-auto mb-2" />
                         <span>Loading complete call records & customer details...</span>
                       </td>
                     </tr>
                   ) : paginatedLogs.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="text-center py-12 text-[#6F5963]">
-                        <History className="w-8 h-8 text-[#B76E79] mx-auto mb-2 opacity-70" />
-                        <div className="font-bold text-sm text-[#4A173A]">No call logs found</div>
-                        <div className="text-xs text-[#6F5963] mt-0.5">Calls logged by telecallers will appear here.</div>
+                      <td colSpan={8} className="text-center py-12 text-[#65716C]">
+                        <History className="w-8 h-8 text-[#C9A45C] mx-auto mb-2 opacity-70" />
+                        <div className="font-bold text-sm text-[#123C35]">No call logs found</div>
+                        <div className="text-xs text-[#65716C] mt-0.5">Calls logged by telecallers will appear here.</div>
                       </td>
                     </tr>
                   ) : (
@@ -475,21 +475,21 @@ export default function WeddingCallHistory() {
                       return (
                         <tr key={idx} className="hover:bg-[#FFF1F2]/60 transition-colors">
                           {/* 1. Date & Time */}
-                          <td className="py-3 px-3.5 font-bold text-[#2B1722] whitespace-nowrap">
+                          <td className="py-3 px-3.5 font-bold text-[#17201D] whitespace-nowrap">
                             <div>{log.call_date}</div>
-                            <div className="text-[10px] text-[#6F5963] font-medium">{log.call_time}</div>
+                            <div className="text-[10px] text-[#65716C] font-medium">{log.call_time}</div>
                           </td>
 
                           {/* 2. Customer Details */}
                           <td className="py-3 px-3.5">
-                            <div className="font-black text-[#4A173A] text-xs">
+                            <div className="font-black text-[#123C35] text-xs">
                               {log.customer_name || 'Customer'}
                             </div>
-                            <div className="text-[10px] text-[#6F5963] font-mono mt-0.5">
+                            <div className="text-[10px] text-[#65716C] font-mono mt-0.5">
                               {log.customer_code || 'BSC-WED'} · 📱 {log.customer_mobile || log.mobile_number || '—'}
                             </div>
                             {(log.bride_name || log.groom_name) && (
-                              <div className="text-[10px] text-[#B76E79] font-medium mt-0.5">
+                              <div className="text-[10px] text-[#C9A45C] font-medium mt-0.5">
                                 {log.bride_name ? `👰 ${log.bride_name}` : ''}
                                 {log.bride_name && log.groom_name ? ' · ' : ''}
                                 {log.groom_name ? `🤵 ${log.groom_name}` : ''}
@@ -499,11 +499,11 @@ export default function WeddingCallHistory() {
 
                           {/* 3. Wedding & Shopping */}
                           <td className="py-3 px-3.5">
-                            <div className="flex items-center gap-1 font-bold text-[#B76E79] text-xs whitespace-nowrap">
-                              <Calendar className="w-3 h-3 text-[#B76E79]" />
+                            <div className="flex items-center gap-1 font-bold text-[#C9A45C] text-xs whitespace-nowrap">
+                              <Calendar className="w-3 h-3 text-[#C9A45C]" />
                               <span>{formatDateDisplay(log.wedding_date, 'Date TBD')}</span>
                             </div>
-                            <div className="text-[10px] text-[#2B1722] font-semibold mt-0.5 truncate max-w-[150px]">
+                            <div className="text-[10px] text-[#17201D] font-semibold mt-0.5 truncate max-w-[150px]">
                               {log.preferred_shopping_category || 'General Wedding'}
                             </div>
                             <div className="text-[10px] text-[#198754] font-bold mt-0.5">
@@ -513,11 +513,11 @@ export default function WeddingCallHistory() {
 
                           {/* 4. Telecaller */}
                           <td className="py-3 px-3.5 whitespace-nowrap">
-                            <div className="font-bold text-[#4A173A]">
+                            <div className="font-bold text-[#123C35]">
                               👤 {log.telecaller_name || 'Staff'}
                             </div>
-                            <div className="text-[10px] text-[#6F5963] flex items-center gap-1 mt-0.5">
-                              <MapPin className="w-3 h-3 text-[#B76E79]" />
+                            <div className="text-[10px] text-[#65716C] flex items-center gap-1 mt-0.5">
+                              <MapPin className="w-3 h-3 text-[#C9A45C]" />
                               <span>{log.location_name || 'Store'}</span>
                             </div>
                           </td>
@@ -525,7 +525,7 @@ export default function WeddingCallHistory() {
                           {/* 5. Outcome & Status */}
                           <td className="py-3 px-3.5 whitespace-nowrap space-y-1">
                             <div>
-                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-[#F6E2E5] text-[#4A173A] border border-[#E8D9D4]">
+                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-[#EDF3F0] text-[#123C35] border border-[#E1DDD3]">
                                 {log.call_outcome}
                               </span>
                             </div>
@@ -539,7 +539,7 @@ export default function WeddingCallHistory() {
                           {/* 6. Remarks */}
                           <td className="py-3 px-3.5 max-w-xs">
                             {log.remarks ? (
-                              <p className="line-clamp-2 text-[#2B1722] italic text-[11px]">"{log.remarks}"</p>
+                              <p className="line-clamp-2 text-[#17201D] italic text-[11px]">"{log.remarks}"</p>
                             ) : (
                               <span className="text-[#9A858D] italic text-[11px]">No remarks</span>
                             )}
@@ -558,7 +558,7 @@ export default function WeddingCallHistory() {
                                   {formatDateDisplay(log.next_follow_up_date, 'None')}
                                 </span>
                                 {log.next_follow_up_time && (
-                                  <div className="text-[10px] text-[#6F5963] font-medium">{log.next_follow_up_time}</div>
+                                  <div className="text-[10px] text-[#65716C] font-medium">{log.next_follow_up_time}</div>
                                 )}
                               </div>
                             ) : (
@@ -573,10 +573,10 @@ export default function WeddingCallHistory() {
                               <button
                                 type="button"
                                 onClick={() => openFlowForRecord(log)}
-                                className="px-3 py-1.5 bg-[#4A173A] hover:bg-[#6A2853] text-white rounded-xl text-xs font-bold shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer border border-[#B76E79]/30 hover:scale-[1.02]"
+                                className="px-3 py-1.5 bg-[#123C35] hover:bg-[#082821] text-white rounded-xl text-xs font-bold shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer border border-[#C9A45C]/30 hover:scale-[1.02]"
                                 title="Open Customer Flow & Timeline to view journey or add a step"
                               >
-                                <TrendingUp className="w-3.5 h-3.5 text-[#E8C7A8]" />
+                                <TrendingUp className="w-3.5 h-3.5 text-[#E4CB92]" />
                                 <span>View Flow</span>
                               </button>
 
@@ -595,10 +595,10 @@ export default function WeddingCallHistory() {
                               {log.customer_id && (
                                 <Link
                                   to={`/wedding-crm/customers/${log.customer_id}`}
-                                  className="p-1.5 bg-[#FFF7F2] hover:bg-[#E8D9D4] text-[#4A173A] border border-[#E8D9D4] rounded-xl inline-flex items-center transition-colors"
+                                  className="p-1.5 bg-[#EDF3F0] hover:bg-[#E1DDD3] text-[#123C35] border border-[#E1DDD3] rounded-xl inline-flex items-center transition-colors"
                                   title="View Full Profile"
                                 >
-                                  <Eye className="w-3.5 h-3.5 text-[#B76E79]" />
+                                  <Eye className="w-3.5 h-3.5 text-[#C9A45C]" />
                                 </Link>
                               )}
                             </div>
@@ -612,24 +612,24 @@ export default function WeddingCallHistory() {
             </div>
 
             {/* Pagination Controls */}
-            <div className="p-4 border-t border-[#E8D9D4] bg-[#FFFAF7] flex items-center justify-between text-xs">
-              <div className="text-[#6F5963]">
-                Showing page <strong className="text-[#4A173A]">{currentPage}</strong> of{' '}
-                <strong className="text-[#4A173A]">{Math.max(1, Math.ceil(filteredLogs.length / pageSize))}</strong>
+            <div className="p-4 border-t border-[#E1DDD3] bg-[#F7F5F0] flex items-center justify-between text-xs">
+              <div className="text-[#65716C]">
+                Showing page <strong className="text-[#123C35]">{currentPage}</strong> of{' '}
+                <strong className="text-[#123C35]">{Math.max(1, Math.ceil(filteredLogs.length / pageSize))}</strong>
               </div>
 
               <div className="flex items-center gap-1.5">
                 <button
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
-                  className="px-3 py-1.5 rounded-lg bg-[#FFFDFC] border border-[#E8D9D4] font-bold text-[#4A173A] disabled:opacity-40 hover:bg-[#FFF7F2] transition-colors cursor-pointer"
+                  className="px-3 py-1.5 rounded-lg bg-[#FFFFFF] border border-[#E1DDD3] font-bold text-[#123C35] disabled:opacity-40 hover:bg-[#EDF3F0] transition-colors cursor-pointer"
                 >
                   <ChevronLeft className="w-3.5 h-3.5" />
                 </button>
                 <button
                   onClick={() => setCurrentPage((p) => (p * pageSize < filteredLogs.length ? p + 1 : p))}
                   disabled={currentPage * pageSize >= filteredLogs.length}
-                  className="px-3 py-1.5 rounded-lg bg-[#FFFDFC] border border-[#E8D9D4] font-bold text-[#4A173A] disabled:opacity-40 hover:bg-[#FFF7F2] transition-colors cursor-pointer"
+                  className="px-3 py-1.5 rounded-lg bg-[#FFFFFF] border border-[#E1DDD3] font-bold text-[#123C35] disabled:opacity-40 hover:bg-[#EDF3F0] transition-colors cursor-pointer"
                 >
                   <ChevronRight className="w-3.5 h-3.5" />
                 </button>

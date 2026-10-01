@@ -22,125 +22,137 @@ const config: Config = {
       blur: { xs: '2px' },
       backdropBlur: { xs: '2px' },
       colors: {
-        // BSC Exclusive Wedding CRM Brand Color System
+        // BSC Exclusive Enterprise Suite Brand Color System
+        // Forest Green + Champagne Gold
         primary: {
-          DEFAULT: '#4A173A', // Deep Plum (Primary Brand)
-          dark: '#351027',    // Dark Plum
-          medium: '#6A2853',  // Medium Plum
-          hover: '#6A2853',   // Primary Button / Nav Hover
-          light: '#6A2853',
-          soft: '#FFF7F2'     // Soft Cream
+          DEFAULT: '#123C35', // Forest Green (Primary Brand)
+          dark: '#082821',    // Primary Dark
+          medium: '#1D5148',  // Primary Light / Medium
+          hover: '#082821',   // Primary Button / Nav Hover
+          light: '#1D5148',   // Primary Light
+          soft: '#EDF3F0'     // Hover / Mint Tint
         },
-        plum: {
-          DEFAULT: '#4A173A', // Deep Plum
-          dark: '#351027',    // Dark Plum
-          medium: '#6A2853',  // Medium Plum
-          dusty: '#8B5A72',   // Dusty Plum
-          soft: '#FFF7F2'     // Soft Cream
-        },
-        rosegold: {
-          DEFAULT: '#B76E79', // Rose Gold (Primary Accent)
-          light: '#D89AA3',   // Light Rose Gold
-          hover: '#A85F6A',   // Secondary Button Hover
-          mauve: '#C9A0AA',   // Soft Mauve
-          soft: '#F6E2E5'
-        },
-        accent: {
-          DEFAULT: '#B76E79', // Rose Gold (Primary Accent)
-          light: '#D89AA3',   // Light Rose Gold
-          hover: '#A85F6A',   // Secondary Button Hover
-          dark: '#6A2853',    // Medium Plum
-          soft: '#FFF7F2',    // Soft Cream
-          softHover: '#F6E2E5'
-        },
-        gold: {
-          DEFAULT: '#B76E79', // Mapped to Rose Gold for brand consistency
-          light: '#D89AA3',   // Light Rose Gold
-          hover: '#A85F6A',
-          dark: '#4A173A',    // Deep Plum
-          champagne: '#E8C7A8',
-          soft: '#FFF7F2'
+        forest: {
+          DEFAULT: '#123C35',
+          dark: '#082821',
+          light: '#1D5148',
+          soft: '#EDF3F0'
         },
         champagne: {
-          DEFAULT: '#E8C7A8', // Champagne Accent
-          light: '#FFF7F2',
-          hover: '#DFBC9D',
-          dark: '#B76E79'
+          DEFAULT: '#C9A45C', // Champagne Gold (Primary Accent)
+          light: '#E4CB92',   // Light Champagne
+          soft: '#F1E4C4',    // Soft Gold
+          hover: '#B88F45',   // Champagne Hover
+          dark: '#123C35'
         },
-        background: {
-          DEFAULT: '#FFF7F2', // Soft Cream
-          card: '#FFFDFC',    // Card / Surface
-          cream: '#FFF7F2'
+        gold: {
+          DEFAULT: '#C9A45C', // Champagne Gold
+          light: '#E4CB92',   // Light Champagne
+          soft: '#F1E4C4',    // Soft Gold
+          hover: '#B88F45',
+          dark: '#123C35',
+          champagne: '#C9A45C'
         },
-        card: '#FFFDFC',      // Card / Surface
-        surface: '#FFFDFC',   // Card / Surface
-        border: {
-          DEFAULT: '#E8D9D4', // UI Border
-          divider: '#EADBD7', // UI Divider
-          soft: '#E8D9D4',
-          warm: '#E8D9D4'
+        accent: {
+          DEFAULT: '#C9A45C', // Champagne Gold
+          light: '#E4CB92',   // Light Champagne
+          soft: '#F1E4C4',    // Soft Gold
+          hover: '#B88F45',
+          dark: '#123C35',
+          softHover: '#EDF3F0'
         },
-        divider: '#EADBD7',
-        input: {
-          bg: '#FFFAF7',      // Input Background
-          border: '#E8D9D4',
-          focus: '#B76E79'
+        // Legacy aliases mapped cleanly to Forest Green & Champagne Gold
+        plum: {
+          DEFAULT: '#123C35',
+          dark: '#082821',
+          medium: '#1D5148',
+          dusty: '#1D5148',
+          soft: '#EDF3F0'
+        },
+        rosegold: {
+          DEFAULT: '#C9A45C',
+          light: '#E4CB92',
+          hover: '#B88F45',
+          mauve: '#E4CB92',
+          soft: '#F1E4C4'
         },
         navy: {
-          DEFAULT: '#4A173A', // Mapped to Deep Plum
-          dark: '#351027',    // Dark Plum
-          light: '#6A2853',   // Medium Plum
-          hover: '#6A2853'
+          DEFAULT: '#123C35',
+          dark: '#082821',
+          light: '#1D5148',
+          hover: '#082821'
         },
         burgundy: {
-          DEFAULT: '#4A173A', // Deep Plum
-          dark: '#351027',
-          light: '#6A2853',
-          hover: '#6A2853'
+          DEFAULT: '#123C35',
+          dark: '#082821',
+          light: '#1D5148',
+          hover: '#082821'
+        },
+        background: {
+          DEFAULT: '#F7F5F0', // Warm Off-White
+          card: '#FFFFFF',    // Pure White Card
+          cream: '#F7F5F0'
+        },
+        card: '#FFFFFF',
+        surface: '#FFFFFF',
+        border: {
+          DEFAULT: '#E1DDD3', // UI Border
+          divider: '#E1DDD3', // UI Divider
+          soft: '#E1DDD3',
+          warm: '#E1DDD3'
+        },
+        divider: '#E1DDD3',
+        hover: {
+          DEFAULT: '#EDF3F0'  // Subtle Hover Tint
+        },
+        input: {
+          bg: '#FFFFFF',      // Pure White Input
+          border: '#E1DDD3',
+          focus: '#C9A45C'
         },
         cream: {
-          DEFAULT: '#FFF7F2', // Soft Cream
-          card: '#FFFDFC',
-          border: '#E8D9D4'
+          DEFAULT: '#F7F5F0',
+          card: '#FFFFFF',
+          border: '#E1DDD3'
         },
         ivory: {
-          DEFAULT: '#FFF7F2',
-          card: '#FFFDFC',
-          border: '#E8D9D4'
+          DEFAULT: '#F7F5F0',
+          card: '#FFFFFF',
+          border: '#E1DDD3'
         },
         status: {
-          success: '#198754',         // Confirmed / Success
-          'success-light': '#E8F5EE',
-          warning: '#C58A18',         // Pending / Warning
-          'warning-light': '#FFF4D6',
-          danger: '#B42318',          // Cancelled / Error
-          'danger-light': '#FDE8E7',
-          info: '#356AE6',            // Information
-          'info-light': '#EAF1FA',
-          neutral: '#737373',         // Neutral
-          interested: '#6A2853',      // Interested CRM Status
-          'interested-light': '#EDE7F6',
-          followup: '#4A173A',        // Follow-up CRM Status
-          'followup-light': '#F6E2E5'
+          success: '#16805C',         // Success
+          'success-light': '#E5F4EE',
+          warning: '#C58A16',         // Warning
+          'warning-light': '#FEF7E6',
+          danger: '#C83B4A',          // Danger
+          'danger-light': '#FCECEE',
+          info: '#2864C7',            // Info
+          'info-light': '#EBF1FB',
+          neutral: '#65716C',         // Neutral
+          interested: '#123C35',      // Forest Green
+          'interested-light': '#EDF3F0',
+          followup: '#C9A45C',        // Champagne Gold
+          'followup-light': '#F1E4C4'
         }
       },
       textColor: {
         primary: {
-          DEFAULT: '#2B1722', // Primary Text
-          hover: '#4A173A'
+          DEFAULT: '#17201D', // Primary Text
+          hover: '#123C35'
         },
         secondary: {
-          DEFAULT: '#6F5963', // Secondary Text
-          hover: '#2B1722'
+          DEFAULT: '#65716C', // Secondary Text
+          hover: '#17201D'
         },
-        muted: '#9A858D',     // Muted Text
-        plum: '#4A173A',      // Deep Plum
-        rosegold: '#B76E79',  // Rose Gold
-        champagne: '#E8C7A8', // Champagne
-        navy: '#4A173A',      // Alias
-        gold: '#B76E79',      // Alias to Rose Gold
-        'gold-light': '#D89AA3',
-        'primary-hover': '#4A173A'
+        muted: '#8A9691',     // Muted Text
+        plum: '#123C35',      // Forest Green
+        rosegold: '#C9A45C',  // Champagne Gold
+        champagne: '#C9A45C', // Champagne Gold
+        navy: '#123C35',      // Forest Green
+        gold: '#C9A45C',      // Champagne Gold
+        'gold-light': '#E4CB92',
+        'primary-hover': '#082821'
       }
     },
   },

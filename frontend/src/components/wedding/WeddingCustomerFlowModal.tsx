@@ -185,7 +185,7 @@ export default function WeddingCustomerFlowModal({
       timestamp: formatDateTimeDisplay(sh.created_at, 'Recorded'),
       rawDate: sh.created_at,
       badge: sh.new_status,
-      badgeColor: 'bg-[#EDE7F6] text-[#6A2853] border-[#6A2853]/30',
+      badgeColor: 'bg-[#EDF3F0] text-[#082821] border-[#082821]/30',
       actor: sh.changed_by || 'Staff / System',
       content: sh.change_reason ? `Reason: ${sh.change_reason}` : `Customer status transitioned from ${sh.old_status || 'Initial'} to ${sh.new_status}.`
     });
@@ -200,7 +200,7 @@ export default function WeddingCustomerFlowModal({
       timestamp: formatDateTimeDisplay(nt.created_at, 'Recorded'),
       rawDate: nt.created_at,
       badge: nt.note_type || 'General',
-      badgeColor: 'bg-[#F6E2E5] text-[#4A173A] border-[#E8D9D4]',
+      badgeColor: 'bg-[#EDF3F0] text-[#123C35] border-[#E1DDD3]',
       actor: nt.created_by || 'Staff Member',
       content: nt.note_content || nt.note || nt.details || ''
     });
@@ -215,7 +215,7 @@ export default function WeddingCustomerFlowModal({
       timestamp: `${formatDateDisplay(ap.appointment_date)} ${ap.appointment_time || ''}`,
       rawDate: ap.appointment_date,
       badge: ap.appointment_status || 'Scheduled',
-      badgeColor: 'bg-[#FFF7F2] text-[#B76E79] border-[#B76E79]/30',
+      badgeColor: 'bg-[#EDF3F0] text-[#C9A45C] border-[#C9A45C]/30',
       actor: ap.telecaller_name || 'Telecaller',
       content: ap.appointment_notes || 'Customer scheduled store visit for wedding shopping.'
     });
@@ -230,7 +230,7 @@ export default function WeddingCustomerFlowModal({
       timestamp: formatDateTimeDisplay(resolvedCustomer.created_at, 'Registered'),
       rawDate: resolvedCustomer.created_at,
       badge: resolvedCustomer.lead_source || 'Registered Lead',
-      badgeColor: 'bg-[#FFFAF7] text-[#4A173A] border-[#E8D9D4]',
+      badgeColor: 'bg-[#F7F5F0] text-[#123C35] border-[#E1DDD3]',
       actor: resolvedCustomer.created_by || 'Registration Desk',
       content: resolvedCustomer.customer_notes
         ? `Customer registered at ${resolvedCustomer.location_name || 'BSC Textiles'}. Initial Note: "${resolvedCustomer.customer_notes}"`
@@ -328,7 +328,7 @@ export default function WeddingCustomerFlowModal({
         timestamp: 'Just now',
         rawDate: new Date().toISOString(),
         badge: statusForm.new_status,
-        badgeColor: 'bg-[#EDE7F6] text-[#6A2853] border-[#6A2853]/30',
+        badgeColor: 'bg-[#EDF3F0] text-[#082821] border-[#082821]/30',
         actor: 'Current Staff',
         content: statusForm.change_reason ? `Reason: ${statusForm.change_reason}` : `Status advanced to ${statusForm.new_status}`,
         isLive: true
@@ -381,7 +381,7 @@ export default function WeddingCustomerFlowModal({
         timestamp: 'Just now',
         rawDate: new Date().toISOString(),
         badge: noteForm.note_type,
-        badgeColor: 'bg-[#F6E2E5] text-[#4A173A] border-[#E8D9D4]',
+        badgeColor: 'bg-[#EDF3F0] text-[#123C35] border-[#E1DDD3]',
         actor: 'Current Staff',
         content: noteForm.note.trim(),
         isLive: true
@@ -408,13 +408,13 @@ export default function WeddingCustomerFlowModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-xs animate-fade-in overflow-y-auto">
-      <div className="bg-[#FFFDFC] w-full max-w-5xl rounded-3xl border border-[#E8D9D4] shadow-2xl overflow-hidden flex flex-col my-auto max-h-[92vh] animate-scale-in">
+      <div className="bg-[#FFFFFF] w-full max-w-5xl rounded-3xl border border-[#E1DDD3] shadow-2xl overflow-hidden flex flex-col my-auto max-h-[92vh] animate-scale-in">
         
         {/* Top Header */}
-        <div className="p-4 sm:p-6 bg-gradient-to-r from-[#4A173A] to-[#6A2853] text-white flex items-start justify-between relative shrink-0">
+        <div className="p-4 sm:p-6 bg-gradient-to-r from-[#123C35] to-[#082821] text-white flex items-start justify-between relative shrink-0">
           <div className="space-y-1.5 pr-8">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-white/15 border border-white/20 text-[#E8C7A8]">
+              <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-white/15 border border-white/20 text-[#E4CB92]">
                 Wedding Customer Lifecycle Flow
               </span>
               <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${statusBadge.bg}`}>
@@ -431,7 +431,7 @@ export default function WeddingCustomerFlowModal({
               <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
                 {resolvedCustomer.customer_name || 'Wedding Customer'}
               </h2>
-              <span className="text-xs text-[#E8C7A8] font-mono">
+              <span className="text-xs text-[#E4CB92] font-mono">
                 ({resolvedCustomer.customer_code || resolvedCustomer.registration_id || 'BSC-WED'})
               </span>
             </div>
@@ -443,12 +443,12 @@ export default function WeddingCustomerFlowModal({
               </span>
               <span>·</span>
               <span className="flex items-center gap-1">
-                <MapPin className="w-3.5 h-3.5 text-[#E8C7A8]" />
+                <MapPin className="w-3.5 h-3.5 text-[#E4CB92]" />
                 {resolvedCustomer.location_name || 'BSC Showroom'}
               </span>
               <span>·</span>
               <span className="flex items-center gap-1">
-                <UserCheck className="w-3.5 h-3.5 text-[#E8C7A8]" />
+                <UserCheck className="w-3.5 h-3.5 text-[#E4CB92]" />
                 Telecaller: <strong className="text-white">{resolvedCustomer.assigned_telecaller || 'Unassigned'}</strong>
               </span>
             </div>
@@ -463,7 +463,7 @@ export default function WeddingCustomerFlowModal({
                 title="Open full customer profile"
               >
                 <span>Full Profile</span>
-                <ExternalLink className="w-3.5 h-3.5 text-[#E8C7A8]" />
+                <ExternalLink className="w-3.5 h-3.5 text-[#E4CB92]" />
               </Link>
             )}
             <button
@@ -477,10 +477,10 @@ export default function WeddingCustomerFlowModal({
         </div>
 
         {/* Customer Wedding Details Banner */}
-        <div className="bg-[#FFF7F2] px-4 sm:px-6 py-3 border-b border-[#E8D9D4] grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3 text-xs shrink-0">
+        <div className="bg-[#EDF3F0] px-4 sm:px-6 py-3 border-b border-[#E1DDD3] grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3 text-xs shrink-0">
           <div>
-            <div className="text-[10px] font-bold uppercase text-[#6F5963]">Bride / Groom</div>
-            <div className="font-bold text-[#4A173A] truncate mt-0.5">
+            <div className="text-[10px] font-bold uppercase text-[#65716C]">Bride / Groom</div>
+            <div className="font-bold text-[#123C35] truncate mt-0.5">
               {resolvedCustomer.bride_name ? `👰 ${resolvedCustomer.bride_name}` : ''}
               {resolvedCustomer.bride_name && resolvedCustomer.groom_name ? ' · ' : ''}
               {resolvedCustomer.groom_name ? `🤵 ${resolvedCustomer.groom_name}` : (!resolvedCustomer.bride_name ? 'TBD' : '')}
@@ -488,9 +488,9 @@ export default function WeddingCustomerFlowModal({
           </div>
 
           <div>
-            <div className="text-[10px] font-bold uppercase text-[#6F5963]">Wedding Date</div>
-            <div className="font-bold text-[#B76E79] flex items-center gap-1 mt-0.5">
-              <Calendar className="w-3.5 h-3.5 text-[#B76E79]" />
+            <div className="text-[10px] font-bold uppercase text-[#65716C]">Wedding Date</div>
+            <div className="font-bold text-[#C9A45C] flex items-center gap-1 mt-0.5">
+              <Calendar className="w-3.5 h-3.5 text-[#C9A45C]" />
               <span>{formatDateDisplay(resolvedCustomer.wedding_date, 'Date TBD')}</span>
               {daysUntilWedding !== null && daysUntilWedding > 0 && (
                 <span className="text-[10px] text-[#C58A18] font-bold">({daysUntilWedding}d left)</span>
@@ -499,22 +499,22 @@ export default function WeddingCustomerFlowModal({
           </div>
 
           <div>
-            <div className="text-[10px] font-bold uppercase text-[#6F5963]">Expected Shopping</div>
-            <div className="font-bold text-[#4A173A] flex items-center gap-1 mt-0.5">
-              <ShoppingBag className="w-3.5 h-3.5 text-[#B76E79]" />
+            <div className="text-[10px] font-bold uppercase text-[#65716C]">Expected Shopping</div>
+            <div className="font-bold text-[#123C35] flex items-center gap-1 mt-0.5">
+              <ShoppingBag className="w-3.5 h-3.5 text-[#C9A45C]" />
               <span>{formatDateDisplay(resolvedCustomer.expected_shopping_date, 'Not Decided')}</span>
             </div>
           </div>
 
           <div>
-            <div className="text-[10px] font-bold uppercase text-[#6F5963]">Preferred Category</div>
-            <div className="font-bold text-[#2B1722] truncate mt-0.5">
+            <div className="text-[10px] font-bold uppercase text-[#65716C]">Preferred Category</div>
+            <div className="font-bold text-[#17201D] truncate mt-0.5">
               {resolvedCustomer.preferred_shopping_category || 'General Wedding'}
             </div>
           </div>
 
           <div>
-            <div className="text-[10px] font-bold uppercase text-[#6F5963]">Budget Range</div>
+            <div className="text-[10px] font-bold uppercase text-[#65716C]">Budget Range</div>
             <div className="font-bold text-[#198754] mt-0.5">
               {resolvedCustomer.budget || resolvedCustomer.budget_range || 'Not Decided'}
             </div>
@@ -536,23 +536,23 @@ export default function WeddingCustomerFlowModal({
             <button
               onClick={loadProfile}
               disabled={loading}
-              className="p-1.5 bg-[#FFFDFC] hover:bg-[#FFF7F2] border border-[#E8D9D4] rounded-lg text-[#4A173A] transition-colors"
+              className="p-1.5 bg-[#FFFFFF] hover:bg-[#EDF3F0] border border-[#E1DDD3] rounded-lg text-[#123C35] transition-colors"
               title="Refresh flow"
             >
-              <RefreshCw className={`w-3.5 h-3.5 text-[#B76E79] ${loading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-3.5 h-3.5 text-[#C9A45C] ${loading ? 'animate-spin' : ''}`} />
             </button>
           </div>
         </div>
 
         {/* Modal Main Body (2 Columns: Left = Interactive Update Form, Right = Visual Flow Timeline) */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 flex-1 overflow-hidden divide-y lg:divide-y-0 lg:divide-x divide-[#E8D9D4]">
+        <div className="grid grid-cols-1 lg:grid-cols-12 flex-1 overflow-hidden divide-y lg:divide-y-0 lg:divide-x divide-[#E1DDD3]">
           
           {/* Left: Interactive "Add New Step / Update Flow" (5 Columns) */}
-          <div className="lg:col-span-5 p-4 sm:p-5 flex flex-col justify-between overflow-y-auto bg-[#FFFAF7]/60">
+          <div className="lg:col-span-5 p-4 sm:p-5 flex flex-col justify-between overflow-y-auto bg-[#F7F5F0]/60">
             <div className="space-y-4">
-              <div className="flex items-center justify-between pb-2 border-b border-[#E8D9D4]">
-                <div className="flex items-center gap-1.5 font-bold text-xs uppercase tracking-wider text-[#4A173A]">
-                  <PlusCircle className="w-4 h-4 text-[#B76E79]" />
+              <div className="flex items-center justify-between pb-2 border-b border-[#E1DDD3]">
+                <div className="flex items-center gap-1.5 font-bold text-xs uppercase tracking-wider text-[#123C35]">
+                  <PlusCircle className="w-4 h-4 text-[#C9A45C]" />
                   <span>Update Customer Flow & Advance Step</span>
                 </div>
                 <span className="text-[10px] font-semibold text-[#198754] bg-[#E8F5EE] px-2 py-0.5 rounded-full border border-[#198754]/20">
@@ -561,14 +561,14 @@ export default function WeddingCustomerFlowModal({
               </div>
 
               {/* Action Tabs */}
-              <div className="grid grid-cols-3 gap-1.5 bg-[#E8D9D4]/40 p-1 rounded-xl text-xs font-bold text-[#6F5963]">
+              <div className="grid grid-cols-3 gap-1.5 bg-[#E1DDD3]/40 p-1 rounded-xl text-xs font-bold text-[#65716C]">
                 <button
                   type="button"
                   onClick={() => setActionTab('call')}
                   className={`py-1.5 rounded-lg flex items-center justify-center gap-1 transition-all cursor-pointer ${
                     actionTab === 'call'
-                      ? 'bg-[#4A173A] text-white shadow-2xs'
-                      : 'hover:text-[#4A173A] hover:bg-white/50'
+                      ? 'bg-[#123C35] text-white shadow-2xs'
+                      : 'hover:text-[#123C35] hover:bg-white/50'
                   }`}
                 >
                   <PhoneCall className="w-3 h-3" />
@@ -579,8 +579,8 @@ export default function WeddingCustomerFlowModal({
                   onClick={() => setActionTab('status')}
                   className={`py-1.5 rounded-lg flex items-center justify-center gap-1 transition-all cursor-pointer ${
                     actionTab === 'status'
-                      ? 'bg-[#4A173A] text-white shadow-2xs'
-                      : 'hover:text-[#4A173A] hover:bg-white/50'
+                      ? 'bg-[#123C35] text-white shadow-2xs'
+                      : 'hover:text-[#123C35] hover:bg-white/50'
                   }`}
                 >
                   <TrendingUp className="w-3 h-3" />
@@ -591,8 +591,8 @@ export default function WeddingCustomerFlowModal({
                   onClick={() => setActionTab('note')}
                   className={`py-1.5 rounded-lg flex items-center justify-center gap-1 transition-all cursor-pointer ${
                     actionTab === 'note'
-                      ? 'bg-[#4A173A] text-white shadow-2xs'
-                      : 'hover:text-[#4A173A] hover:bg-white/50'
+                      ? 'bg-[#123C35] text-white shadow-2xs'
+                      : 'hover:text-[#123C35] hover:bg-white/50'
                   }`}
                 >
                   <FileText className="w-3 h-3" />
@@ -604,13 +604,13 @@ export default function WeddingCustomerFlowModal({
               {actionTab === 'call' && (
                 <form onSubmit={handleLogCall} className="space-y-3 text-xs">
                   <div>
-                    <label className="block text-[10px] font-bold uppercase text-[#6F5963] mb-1">
+                    <label className="block text-[10px] font-bold uppercase text-[#65716C] mb-1">
                       Call Outcome *
                     </label>
                     <select
                       value={callForm.call_outcome}
                       onChange={(e) => setCallForm({ ...callForm, call_outcome: e.target.value })}
-                      className="w-full px-3 py-2 bg-[#FFFDFC] border border-[#E8D9D4] rounded-xl font-bold text-xs text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                      className="w-full px-3 py-2 bg-[#FFFFFF] border border-[#E1DDD3] rounded-xl font-bold text-xs text-[#17201D] focus:outline-none focus:border-[#C9A45C]"
                     >
                       {CALL_OUTCOMES.map((out) => (
                         <option key={out} value={out}>{out}</option>
@@ -620,24 +620,24 @@ export default function WeddingCustomerFlowModal({
 
                   <div className="grid grid-cols-2 gap-2.5">
                     <div>
-                      <label className="block text-[10px] font-bold uppercase text-[#6F5963] mb-1">
+                      <label className="block text-[10px] font-bold uppercase text-[#65716C] mb-1">
                         Next Follow-up Date
                       </label>
                       <input
                         type="date"
                         value={callForm.next_follow_up_date}
                         onChange={(e) => setCallForm({ ...callForm, next_follow_up_date: e.target.value })}
-                        className="w-full px-3 py-2 bg-[#FFFDFC] border border-[#E8D9D4] rounded-xl font-medium text-xs text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                        className="w-full px-3 py-2 bg-[#FFFFFF] border border-[#E1DDD3] rounded-xl font-medium text-xs text-[#17201D] focus:outline-none focus:border-[#C9A45C]"
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-bold uppercase text-[#6F5963] mb-1">
+                      <label className="block text-[10px] font-bold uppercase text-[#65716C] mb-1">
                         Preferred Time
                       </label>
                       <select
                         value={callForm.next_follow_up_time}
                         onChange={(e) => setCallForm({ ...callForm, next_follow_up_time: e.target.value })}
-                        className="w-full px-3 py-2 bg-[#FFFDFC] border border-[#E8D9D4] rounded-xl font-medium text-xs text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                        className="w-full px-3 py-2 bg-[#FFFFFF] border border-[#E1DDD3] rounded-xl font-medium text-xs text-[#17201D] focus:outline-none focus:border-[#C9A45C]"
                       >
                         {CALL_TIMES.map((tm) => (
                           <option key={tm} value={tm}>{tm}</option>
@@ -647,19 +647,19 @@ export default function WeddingCustomerFlowModal({
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold uppercase text-[#6F5963] mb-1">
+                    <label className="block text-[10px] font-bold uppercase text-[#65716C] mb-1">
                       Expected Shopping Date (if confirmed)
                     </label>
                     <input
                       type="date"
                       value={callForm.expected_shopping_date}
                       onChange={(e) => setCallForm({ ...callForm, expected_shopping_date: e.target.value })}
-                      className="w-full px-3 py-2 bg-[#FFFDFC] border border-[#E8D9D4] rounded-xl font-semibold text-xs text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                      className="w-full px-3 py-2 bg-[#FFFFFF] border border-[#E1DDD3] rounded-xl font-semibold text-xs text-[#17201D] focus:outline-none focus:border-[#C9A45C]"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold uppercase text-[#6F5963] mb-1">
+                    <label className="block text-[10px] font-bold uppercase text-[#65716C] mb-1">
                       Conversation Remarks & Customer Response *
                     </label>
                     <textarea
@@ -668,14 +668,14 @@ export default function WeddingCustomerFlowModal({
                       onChange={(e) => setCallForm({ ...callForm, remarks: e.target.value })}
                       placeholder="e.g. Spoke with bride's mother; looking for pure Mysore silk sarees; visiting showroom this Saturday..."
                       required
-                      className="w-full px-3 py-2 bg-[#FFFDFC] border border-[#E8D9D4] rounded-xl font-medium text-xs text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                      className="w-full px-3 py-2 bg-[#FFFFFF] border border-[#E1DDD3] rounded-xl font-medium text-xs text-[#17201D] focus:outline-none focus:border-[#C9A45C]"
                     />
                   </div>
 
                   <button
                     type="submit"
                     disabled={isSubmitting || !callForm.remarks.trim()}
-                    className="w-full py-2.5 bg-[#4A173A] hover:bg-[#6A2853] text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-md border border-[#B76E79]/30 transition-all cursor-pointer disabled:opacity-50"
+                    className="w-full py-2.5 bg-[#123C35] hover:bg-[#082821] text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-md border border-[#C9A45C]/30 transition-all cursor-pointer disabled:opacity-50"
                   >
                     {isSubmitting ? (
                       <>
@@ -684,7 +684,7 @@ export default function WeddingCustomerFlowModal({
                       </>
                     ) : (
                       <>
-                        <CheckCircle2 className="w-3.5 h-3.5 text-[#E8C7A8]" />
+                        <CheckCircle2 className="w-3.5 h-3.5 text-[#E4CB92]" />
                         <span>Add Call Step to Flow</span>
                       </>
                     )}
@@ -696,14 +696,14 @@ export default function WeddingCustomerFlowModal({
               {actionTab === 'status' && (
                 <form onSubmit={handleUpdateStatus} className="space-y-3 text-xs">
                   <div>
-                    <label className="block text-[10px] font-bold uppercase text-[#6F5963] mb-1">
+                    <label className="block text-[10px] font-bold uppercase text-[#65716C] mb-1">
                       New Customer Status *
                     </label>
                     <select
                       value={statusForm.new_status}
                       onChange={(e) => setStatusForm({ ...statusForm, new_status: e.target.value })}
                       required
-                      className="w-full px-3 py-2 bg-[#FFFDFC] border border-[#E8D9D4] rounded-xl font-bold text-xs text-[#4A173A] focus:outline-none focus:border-[#B76E79]"
+                      className="w-full px-3 py-2 bg-[#FFFFFF] border border-[#E1DDD3] rounded-xl font-bold text-xs text-[#123C35] focus:outline-none focus:border-[#C9A45C]"
                     >
                       <option value="">-- Choose New Status --</option>
                       {WEDDING_STATUSES.map((st) => (
@@ -713,7 +713,7 @@ export default function WeddingCustomerFlowModal({
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold uppercase text-[#6F5963] mb-1">
+                    <label className="block text-[10px] font-bold uppercase text-[#65716C] mb-1">
                       Transition Reason / Context
                     </label>
                     <textarea
@@ -721,14 +721,14 @@ export default function WeddingCustomerFlowModal({
                       value={statusForm.change_reason}
                       onChange={(e) => setStatusForm({ ...statusForm, change_reason: e.target.value })}
                       placeholder="e.g. Customer confirmed shopping visit date; or advanced to store visit completed..."
-                      className="w-full px-3 py-2 bg-[#FFFDFC] border border-[#E8D9D4] rounded-xl font-medium text-xs text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                      className="w-full px-3 py-2 bg-[#FFFFFF] border border-[#E1DDD3] rounded-xl font-medium text-xs text-[#17201D] focus:outline-none focus:border-[#C9A45C]"
                     />
                   </div>
 
                   <button
                     type="submit"
                     disabled={isSubmitting || !statusForm.new_status}
-                    className="w-full py-2.5 bg-[#4A173A] hover:bg-[#6A2853] text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-md border border-[#B76E79]/30 transition-all cursor-pointer disabled:opacity-50"
+                    className="w-full py-2.5 bg-[#123C35] hover:bg-[#082821] text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-md border border-[#C9A45C]/30 transition-all cursor-pointer disabled:opacity-50"
                   >
                     {isSubmitting ? (
                       <>
@@ -737,7 +737,7 @@ export default function WeddingCustomerFlowModal({
                       </>
                     ) : (
                       <>
-                        <TrendingUp className="w-3.5 h-3.5 text-[#E8C7A8]" />
+                        <TrendingUp className="w-3.5 h-3.5 text-[#E4CB92]" />
                         <span>Advance Status Step</span>
                       </>
                     )}
@@ -749,13 +749,13 @@ export default function WeddingCustomerFlowModal({
               {actionTab === 'note' && (
                 <form onSubmit={handleAddNote} className="space-y-3 text-xs">
                   <div>
-                    <label className="block text-[10px] font-bold uppercase text-[#6F5963] mb-1">
+                    <label className="block text-[10px] font-bold uppercase text-[#65716C] mb-1">
                       Note Category
                     </label>
                     <select
                       value={noteForm.note_type}
                       onChange={(e) => setNoteForm({ ...noteForm, note_type: e.target.value })}
-                      className="w-full px-3 py-2 bg-[#FFFDFC] border border-[#E8D9D4] rounded-xl font-semibold text-xs text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                      className="w-full px-3 py-2 bg-[#FFFFFF] border border-[#E1DDD3] rounded-xl font-semibold text-xs text-[#17201D] focus:outline-none focus:border-[#C9A45C]"
                     >
                       <option value="Requirement">Bridal / Saree Requirement</option>
                       <option value="Color & Fabric">Color & Fabric Preference</option>
@@ -766,7 +766,7 @@ export default function WeddingCustomerFlowModal({
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold uppercase text-[#6F5963] mb-1">
+                    <label className="block text-[10px] font-bold uppercase text-[#65716C] mb-1">
                       Requirement Details *
                     </label>
                     <textarea
@@ -775,14 +775,14 @@ export default function WeddingCustomerFlowModal({
                       onChange={(e) => setNoteForm({ ...noteForm, note: e.target.value })}
                       placeholder="Add specific details: e.g. Customer requested pastel pink bridal lehenga with heavy zardozi work; budget ₹1.8L..."
                       required
-                      className="w-full px-3 py-2 bg-[#FFFDFC] border border-[#E8D9D4] rounded-xl font-medium text-xs text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                      className="w-full px-3 py-2 bg-[#FFFFFF] border border-[#E1DDD3] rounded-xl font-medium text-xs text-[#17201D] focus:outline-none focus:border-[#C9A45C]"
                     />
                   </div>
 
                   <button
                     type="submit"
                     disabled={isSubmitting || !noteForm.note.trim()}
-                    className="w-full py-2.5 bg-[#4A173A] hover:bg-[#6A2853] text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-md border border-[#B76E79]/30 transition-all cursor-pointer disabled:opacity-50"
+                    className="w-full py-2.5 bg-[#123C35] hover:bg-[#082821] text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-md border border-[#C9A45C]/30 transition-all cursor-pointer disabled:opacity-50"
                   >
                     {isSubmitting ? (
                       <>
@@ -791,7 +791,7 @@ export default function WeddingCustomerFlowModal({
                       </>
                     ) : (
                       <>
-                        <FileText className="w-3.5 h-3.5 text-[#E8C7A8]" />
+                        <FileText className="w-3.5 h-3.5 text-[#E4CB92]" />
                         <span>Add Requirement Step</span>
                       </>
                     )}
@@ -801,10 +801,10 @@ export default function WeddingCustomerFlowModal({
             </div>
 
             {/* Quick summary footer on left */}
-            <div className="pt-4 mt-4 border-t border-[#E8D9D4] text-[11px] text-[#6F5963] space-y-1">
+            <div className="pt-4 mt-4 border-t border-[#E1DDD3] text-[11px] text-[#65716C] space-y-1">
               <div className="flex justify-between">
                 <span>Total Flow Milestones:</span>
-                <strong className="text-[#4A173A]">{steps.length} Steps</strong>
+                <strong className="text-[#123C35]">{steps.length} Steps</strong>
               </div>
               <div className="flex justify-between">
                 <span>Completed Calls:</span>
@@ -814,49 +814,49 @@ export default function WeddingCustomerFlowModal({
           </div>
 
           {/* Right: Chronological Customer Flow Stepper (7 Columns) */}
-          <div className="lg:col-span-7 p-4 sm:p-6 overflow-y-auto bg-[#FFFDFC] space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-[#E8D9D4]">
+          <div className="lg:col-span-7 p-4 sm:p-6 overflow-y-auto bg-[#FFFFFF] space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-[#E1DDD3]">
               <div>
-                <h3 className="font-bold text-sm text-[#4A173A] flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-[#B76E79]" />
+                <h3 className="font-bold text-sm text-[#123C35] flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-[#C9A45C]" />
                   <span>Customer Journey & Interaction Flow</span>
                 </h3>
-                <p className="text-[11px] text-[#6F5963]">
+                <p className="text-[11px] text-[#65716C]">
                   Chronological progression of wedding consultations, telecaller calls, appointments and status milestones.
                 </p>
               </div>
 
-              <span className="text-xs font-bold text-[#4A173A] bg-[#FFF7F2] px-2.5 py-1 rounded-xl border border-[#E8D9D4]">
+              <span className="text-xs font-bold text-[#123C35] bg-[#EDF3F0] px-2.5 py-1 rounded-xl border border-[#E1DDD3]">
                 {steps.length} Milestones
               </span>
             </div>
 
             {/* Timeline Stepper Container */}
-            <div className="relative pl-6 sm:pl-8 space-y-6 before:absolute before:left-3 sm:before:left-4 before:top-2 before:bottom-2 before:w-0.5 before:bg-gradient-to-b before:from-[#4A173A] before:via-[#B76E79] before:to-[#E8D9D4]">
+            <div className="relative pl-6 sm:pl-8 space-y-6 before:absolute before:left-3 sm:before:left-4 before:top-2 before:bottom-2 before:w-0.5 before:bg-gradient-to-b before:from-[#123C35] before:via-[#C9A45C] before:to-[#E1DDD3]">
               
               {loading && steps.length === 0 ? (
                 <div className="py-12 text-center space-y-2">
-                  <RefreshCw className="w-6 h-6 animate-spin text-[#B76E79] mx-auto" />
-                  <div className="text-xs text-[#6F5963]">Loading customer journey milestones...</div>
+                  <RefreshCw className="w-6 h-6 animate-spin text-[#C9A45C] mx-auto" />
+                  <div className="text-xs text-[#65716C]">Loading customer journey milestones...</div>
                 </div>
               ) : steps.length === 0 ? (
-                <div className="py-12 text-center bg-[#FFFAF7] rounded-2xl border border-[#E8D9D4] p-6 space-y-2">
-                  <Sparkles className="w-8 h-8 text-[#B76E79] mx-auto opacity-70" />
-                  <div className="font-bold text-sm text-[#4A173A]">New Customer Journey</div>
-                  <div className="text-xs text-[#6F5963]">
+                <div className="py-12 text-center bg-[#F7F5F0] rounded-2xl border border-[#E1DDD3] p-6 space-y-2">
+                  <Sparkles className="w-8 h-8 text-[#C9A45C] mx-auto opacity-70" />
+                  <div className="font-bold text-sm text-[#123C35]">New Customer Journey</div>
+                  <div className="text-xs text-[#65716C]">
                     No calls or status transitions recorded yet. Use the panel on the left to record the first step!
                   </div>
                 </div>
               ) : (
                 steps.map((st, idx) => {
                   let Icon = PhoneCall;
-                  let dotColor = 'bg-[#B76E79] ring-[#B76E79]/20';
+                  let dotColor = 'bg-[#C9A45C] ring-[#C9A45C]/20';
                   if (st.type === 'registration') {
                     Icon = Sparkles;
-                    dotColor = 'bg-[#4A173A] ring-[#4A173A]/20';
+                    dotColor = 'bg-[#123C35] ring-[#123C35]/20';
                   } else if (st.type === 'status') {
                     Icon = TrendingUp;
-                    dotColor = 'bg-[#6A2853] ring-[#6A2853]/20';
+                    dotColor = 'bg-[#082821] ring-[#082821]/20';
                   } else if (st.type === 'note') {
                     Icon = FileText;
                     dotColor = 'bg-[#C58A18] ring-[#C58A18]/20';
@@ -884,17 +884,17 @@ export default function WeddingCustomerFlowModal({
                         className={`p-4 rounded-2xl border transition-all text-xs space-y-2 ${
                           st.isLive
                             ? 'bg-[#E8F5EE]/40 border-[#198754] shadow-sm'
-                            : 'bg-[#FFFAF7] hover:bg-[#FFFDFC] border-[#E8D9D4] hover:border-[#B76E79] shadow-2xs'
+                            : 'bg-[#F7F5F0] hover:bg-[#FFFFFF] border-[#E1DDD3] hover:border-[#C9A45C] shadow-2xs'
                         }`}
                       >
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <div className="flex items-center gap-2">
-                            <span className="font-bold text-[#4A173A] text-xs">
+                            <span className="font-bold text-[#123C35] text-xs">
                               {st.title}
                             </span>
                             {st.badge && (
                               <span
-                                className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${st.badgeColor || 'bg-white text-[#4A173A] border-[#E8D9D4]'}`}
+                                className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${st.badgeColor || 'bg-white text-[#123C35] border-[#E1DDD3]'}`}
                               >
                                 {st.badge}
                               </span>
@@ -906,20 +906,20 @@ export default function WeddingCustomerFlowModal({
                             )}
                           </div>
 
-                          <span className="text-[11px] font-semibold text-[#6F5963] flex items-center gap-1">
+                          <span className="text-[11px] font-semibold text-[#65716C] flex items-center gap-1">
                             <Clock className="w-3 h-3 text-[#9A858D]" />
                             {st.timestamp}
                           </span>
                         </div>
 
                         {/* Content text */}
-                        <div className="text-[#2B1722] bg-[#FFFDFC] p-2.5 rounded-xl border border-[#E8D9D4]/70 leading-relaxed font-normal">
+                        <div className="text-[#17201D] bg-[#FFFFFF] p-2.5 rounded-xl border border-[#E1DDD3]/70 leading-relaxed font-normal">
                           {st.content}
                         </div>
 
                         {/* Step Details & Next Actions */}
                         {st.details && (
-                          <div className="flex flex-wrap items-center gap-3 pt-1 text-[11px] text-[#6F5963]">
+                          <div className="flex flex-wrap items-center gap-3 pt-1 text-[11px] text-[#65716C]">
                             {st.details.nextFollowUp && (
                               <span className="text-[#C58A18] font-bold flex items-center gap-1">
                                 📅 Next Call: {st.details.nextFollowUp}
@@ -935,8 +935,8 @@ export default function WeddingCustomerFlowModal({
 
                         {/* Actor badge */}
                         <div className="text-[10px] font-semibold text-[#9A858D] flex items-center justify-between pt-0.5">
-                          <span>Recorded by: <strong className="text-[#4A173A]">{st.actor}</strong></span>
-                          <span className="text-[#B76E79] font-bold">Step #{steps.length - idx}</span>
+                          <span>Recorded by: <strong className="text-[#123C35]">{st.actor}</strong></span>
+                          <span className="text-[#C9A45C] font-bold">Step #{steps.length - idx}</span>
                         </div>
                       </div>
                     </div>
@@ -948,8 +948,8 @@ export default function WeddingCustomerFlowModal({
         </div>
 
         {/* Modal Bottom Footer */}
-        <div className="p-3 sm:p-4 bg-[#FFFAF7] border-t border-[#E8D9D4] flex flex-wrap items-center justify-between gap-3 text-xs shrink-0">
-          <div className="text-[#6F5963] flex items-center gap-2">
+        <div className="p-3 sm:p-4 bg-[#F7F5F0] border-t border-[#E1DDD3] flex flex-wrap items-center justify-between gap-3 text-xs shrink-0">
+          <div className="text-[#65716C] flex items-center gap-2">
             <ShieldCheck className="w-4 h-4 text-[#198754]" />
             <span>All flow updates are synchronized live across Wedding CRM, Desk & Dashboard.</span>
           </div>
@@ -958,7 +958,7 @@ export default function WeddingCustomerFlowModal({
             {targetId && (
               <Link
                 to={`/wedding-crm/customers/${targetId}`}
-                className="px-4 py-2 rounded-xl bg-[#FFFDFC] hover:bg-[#FFF7F2] border border-[#E8D9D4] font-semibold text-xs text-[#4A173A] flex items-center gap-1.5 transition-colors"
+                className="px-4 py-2 rounded-xl bg-[#FFFFFF] hover:bg-[#EDF3F0] border border-[#E1DDD3] font-semibold text-xs text-[#123C35] flex items-center gap-1.5 transition-colors"
               >
                 <span>Open Profile</span>
                 <ChevronRight className="w-3.5 h-3.5" />
@@ -966,7 +966,7 @@ export default function WeddingCustomerFlowModal({
             )}
             <button
               onClick={onClose}
-              className="px-5 py-2 rounded-xl bg-[#4A173A] hover:bg-[#6A2853] text-white font-semibold text-xs shadow-md border border-[#B76E79]/30 transition-all cursor-pointer"
+              className="px-5 py-2 rounded-xl bg-[#123C35] hover:bg-[#082821] text-white font-semibold text-xs shadow-md border border-[#C9A45C]/30 transition-all cursor-pointer"
             >
               Close Flow
             </button>

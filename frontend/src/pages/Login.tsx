@@ -419,7 +419,7 @@ export default function LoginPage() {
 
 
   return (
-    <div className="login-shell relative h-dvh overflow-y-auto overscroll-contain bg-[#FFF7F2] flex flex-col items-center px-4 py-5 sm:px-6 sm:py-7">
+    <div className="login-shell relative h-dvh overflow-y-auto overscroll-contain bg-[#F7F5F0] flex flex-col items-center px-4 py-5 sm:px-6 sm:py-7">
       <ToastContainer />
 
       {/* Top Left Section: Back to Home Page — in flow so it can never overlap the card */}
@@ -427,23 +427,23 @@ export default function LoginPage() {
         <button
           type="button"
           onClick={() => navigate('/')}
-          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#FFFDFC] border border-[#E8D9D4] shadow-md hover:shadow-lg text-[#2B1722] hover:text-[#4A173A] text-xs font-bold transition-all active:scale-95 group cursor-pointer"
+          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-[#E1DDD3] shadow-xs hover:shadow-md text-[#17201D] hover:text-[#123C35] hover:border-[#C9A45C] text-xs font-bold transition-all active:scale-95 group cursor-pointer"
         >
-          <ArrowLeft className="w-4 h-4 text-[#6F5963] group-hover:-translate-x-0.5 transition-transform" />
-          <Home className="w-3.5 h-3.5 text-[#B76E79]" />
+          <ArrowLeft className="w-4 h-4 text-[#65716C] group-hover:-translate-x-0.5 transition-transform" />
+          <Home className="w-3.5 h-3.5 text-[#C9A45C]" />
           <span>Back to Home</span>
         </button>
       </div>
 
-      <div className="login-card my-auto shrink-0 w-full max-w-md bg-[#FFFDFC] rounded-3xl overflow-hidden shadow-2xl border border-[#E8D9D4] animate-fade-in">
+      <div className="login-card my-auto shrink-0 w-full max-w-md bg-white rounded-3xl overflow-hidden shadow-2xl border border-[#E1DDD3] animate-fade-in">
         {/* Card Header */}
-        <div className="login-card-header bg-[#4A173A] p-5 sm:p-6 flex items-center gap-3.5 border-b border-[#E8C7A8]/30 shadow-sm">
-          <div className="w-14 h-12 rounded-2xl bg-white p-1 shadow-md border border-[#E8C7A8]/30 flex items-center justify-center flex-shrink-0">
+        <div className="login-card-header bg-[#123C35] p-5 sm:p-6 flex items-center gap-3.5 border-b border-[#C9A45C]/30 shadow-sm">
+          <div className="w-14 h-12 rounded-2xl bg-white p-1 shadow-md border border-[#C9A45C]/30 flex items-center justify-center flex-shrink-0">
             <img src="/logo.png" alt="BSC Logo" className="max-h-full max-w-full object-contain" />
           </div>
           <div className="min-w-0 flex-1">
             <h2 className="text-lg font-black text-white leading-tight tracking-tight truncate">Enterprise Operations Portal</h2>
-            <div className="text-[11px] text-[#E8C7A8] font-extrabold uppercase tracking-wider mt-0.5 truncate">
+            <div className="text-[11px] text-[#E4CB92] font-extrabold uppercase tracking-wider mt-0.5 truncate">
               BSC Textiles · MULTI-LOCATION SYSTEM
             </div>
           </div>
@@ -453,24 +453,24 @@ export default function LoginPage() {
         {!show2fa ? (
           <form onSubmit={handleLogin} className="login-form p-6 sm:p-7 space-y-4 sm:space-y-5">
           <div>
-            <h3 className="text-xl font-black text-[#4A173A] tracking-tight">Welcome Back</h3>
-            <p className="text-xs text-[#6F5963] font-medium mt-1">Sign in with your authorized system credentials. Your location will be loaded automatically.</p>
+            <h3 className="text-xl font-black text-[#123C35] tracking-tight">Welcome Back</h3>
+            <p className="text-xs text-[#65716C] font-medium mt-1">Sign in with your authorized system credentials. Your location will be loaded automatically.</p>
           </div>
 
 
           {/* 10-Minute Lockout Countdown Alert */}
           {isLocked && lockRemainingSeconds > 0 && (
-            <div className="p-4 rounded-2xl bg-[#FDE8E8] border-2 border-[#F5B7B7] text-[#C0392B] space-y-2 animate-scale-in">
+            <div className="p-4 rounded-2xl bg-[#FDE8E8] border-2 border-[#F5B7B7] text-[#C83B4A] space-y-2 animate-scale-in">
               <div className="flex items-center gap-2 font-black text-xs uppercase tracking-wider">
-                <Lock className="w-4 h-4 text-[#C0392B]" />
+                <Lock className="w-4 h-4 text-[#C83B4A]" />
                 <span>Account Temporarily Locked</span>
               </div>
               <p className="text-xs font-semibold leading-relaxed">
                 5 consecutive incorrect password attempts detected. For security, login is locked for 10 minutes.
               </p>
               <div className="flex items-center justify-between pt-2 border-t border-[#F5B7B7]/60 text-xs">
-                <span className="font-bold text-[#C0392B]">Remaining Lock Time:</span>
-                <span className="font-mono font-black text-sm bg-[#FDE8E8] px-2.5 py-1 rounded-lg text-[#C0392B] shadow-xs">
+                <span className="font-bold text-[#C83B4A]">Remaining Lock Time:</span>
+                <span className="font-mono font-black text-sm bg-[#FDE8E8] px-2.5 py-1 rounded-lg text-[#C83B4A] shadow-xs">
                   {formatLockTimer(lockRemainingSeconds)}
                 </span>
               </div>
@@ -478,17 +478,17 @@ export default function LoginPage() {
           )}
 
           {errorMsg && !isLocked && (
-            <div className="p-3.5 rounded-xl bg-[#FDE8E8] border border-[#F5B7B7] text-[#C0392B] text-xs font-semibold animate-fade-in">
+            <div className="p-3.5 rounded-xl bg-[#FDE8E8] border border-[#F5B7B7] text-[#C83B4A] text-xs font-semibold animate-fade-in">
               {errorMsg}
             </div>
           )}
 
           <div className="space-y-1.5">
-            <label className="block text-[11px] font-bold uppercase tracking-wider text-text-primary">
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-[#17201D]">
               Username / Email
             </label>
             <div className="relative">
-              <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-secondary pointer-events-none" />
+              <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#65716C] pointer-events-none" />
               <input
                 type="text"
                 name="username"
@@ -505,11 +505,11 @@ export default function LoginPage() {
           </div>
 
           <div className="space-y-1.5">
-            <label className="block text-[11px] font-bold uppercase tracking-wider text-text-primary">
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-[#17201D]">
               Password
             </label>
             <div className="relative">
-              <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-secondary pointer-events-none" />
+              <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#65716C] pointer-events-none" />
               <input
                 type={showPassword ? "text" : "password"}
                 name="password"
@@ -524,7 +524,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary transition-colors focus:outline-none cursor-pointer"
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#65716C] hover:text-[#17201D] transition-colors focus:outline-none cursor-pointer"
                 aria-label={showPassword ? "Hide password" : "Show password"}
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -533,12 +533,12 @@ export default function LoginPage() {
           </div>
 
           <div className="space-y-1.5">
-            <label className="block text-[11px] font-bold uppercase tracking-wider text-text-primary">
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-[#17201D]">
               Security Code
             </label>
             <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
               <div className="relative flex-1 min-w-0">
-                <Hash className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-secondary pointer-events-none" />
+                <Hash className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#65716C] pointer-events-none" />
                 <input
                   type="text"
                   name="captcha"
@@ -563,16 +563,16 @@ export default function LoginPage() {
                   <img
                     src={captchaSvg}
                     alt={`Security captcha - ${codeLength} digit numeric code`}
-                    className="h-11 w-[150px] rounded-lg border border-accent-soft bg-white object-contain shadow-xs select-none"
+                    className="h-11 w-[150px] rounded-lg border border-[#E1DDD3] bg-white object-contain shadow-xs select-none"
                     draggable={false}
                   />
                 ) : (
-                  <div className="h-11 w-[150px] rounded-lg border border-accent-soft bg-white animate-pulse" />
+                  <div className="h-11 w-[150px] rounded-lg border border-[#E1DDD3] bg-white animate-pulse" />
                 )}
                 <button
                   type="button"
                   onClick={() => { loadCaptcha(true); setCountdown(30); }}
-                  className="btn-secondary !h-11 !w-11 shrink-0 grid place-items-center p-0"
+                  className="btn-secondary !h-11 !w-11 shrink-0 grid place-items-center p-0 hover:border-[#C9A45C]"
                   title="Load a new security code"
                   aria-label="Load a new security code"
                 >
@@ -580,7 +580,7 @@ export default function LoginPage() {
                 </button>
               </div>
             </div>
-            <p id="captcha-hint" className="text-[11px] text-text-secondary font-medium">Refreshes automatically in {countdown}s for your security.</p>
+            <p id="captcha-hint" className="text-[11px] text-[#65716C] font-medium">Refreshes automatically in {countdown}s for your security.</p>
           </div>
 
           <div className="flex justify-between items-center">
@@ -588,15 +588,15 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => setShowPrivacyPolicy(true)}
-                className="text-xs text-text-secondary hover:text-text-primary font-bold hover:underline"
+                className="text-xs text-[#65716C] hover:text-[#123C35] font-bold hover:underline"
               >
                 Privacy Policy
               </button>
-              <span className="text-xs text-border">•</span>
+              <span className="text-xs text-[#E1DDD3]">•</span>
               <button
                 type="button"
                 onClick={() => setShowTermsModal(true)}
-                className="text-xs text-text-secondary hover:text-text-primary font-bold hover:underline"
+                className="text-xs text-[#65716C] hover:text-[#123C35] font-bold hover:underline"
               >
                 Terms
               </button>
@@ -604,7 +604,7 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => navigate('/forgot-password')}
-              className="text-xs text-text-secondary hover:text-text-primary font-bold hover:underline"
+              className="text-xs text-[#65716C] hover:text-[#123C35] font-bold hover:underline"
             >
               Forgot password?
             </button>
@@ -614,7 +614,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading || (isLocked && lockRemainingSeconds > 0)}
-            className="w-full py-3.5 px-4 rounded-xl bg-[#4A173A] text-white font-extrabold text-xs tracking-wide hover:bg-[#6A2853] active:scale-[0.99] transition-all shadow-lg shadow-[#4A173A]/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-3.5 px-4 rounded-xl bg-[#123C35] text-white font-extrabold text-xs tracking-wide hover:bg-[#082821] active:scale-[0.99] transition-all shadow-lg shadow-[#123C35]/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
             {loading ? (
               <>
@@ -629,26 +629,26 @@ export default function LoginPage() {
             ) : (
               <>
                 <span>Sign In to Dashboard</span>
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="w-4 h-4 text-[#C9A45C]" />
               </>
             )}
           </button>
 
-          <div className="pt-2 border-t border-[#E8D9D4] space-y-2">
+          <div className="pt-2 border-t border-[#E1DDD3] space-y-2">
             <button
               type="button"
               onClick={() => navigate('/wedding/customer-registration')}
-              className="w-full py-2.5 px-4 rounded-xl bg-[#FFFAF7] border border-[#E8D9D4] hover:bg-[#FFF7F2] hover:border-[#B76E79] text-[#4A173A] font-bold text-xs tracking-wide flex items-center justify-center gap-2 transition-all shadow-2xs"
+              className="w-full py-2.5 px-4 rounded-xl bg-white border border-[#E1DDD3] hover:bg-[#EDF3F0] hover:border-[#C9A45C] text-[#123C35] font-bold text-xs tracking-wide flex items-center justify-center gap-2 transition-all shadow-2xs cursor-pointer"
             >
               <span>Register for Wedding Shopping</span>
-              <Sparkles className="w-4 h-4 text-[#B76E79]" />
+              <Sparkles className="w-4 h-4 text-[#C9A45C]" />
             </button>
             <button
               type="button"
               onClick={() => navigate('/track')}
-              className="w-full py-2.5 px-4 rounded-xl bg-[#FFFAF7] border border-[#E8D9D4] hover:bg-[#FFF7F2] hover:border-[#B76E79] text-[#4A173A] font-bold text-xs tracking-wide flex items-center justify-center gap-2 transition-all shadow-2xs"
+              className="w-full py-2.5 px-4 rounded-xl bg-white border border-[#E1DDD3] hover:bg-[#EDF3F0] hover:border-[#123C35] text-[#123C35] font-bold text-xs tracking-wide flex items-center justify-center gap-2 transition-all shadow-2xs cursor-pointer"
             >
-              <Search className="w-3.5 h-3.5 text-[#6F5963]" />
+              <Search className="w-3.5 h-3.5 text-[#65716C]" />
               <span>Track Wedding Request</span>
             </button>
           </div>
@@ -656,28 +656,28 @@ export default function LoginPage() {
         ) : (
           /* 2FA Verification Step */
           <div className="p-7 space-y-5 animate-fade-in" role="alert" aria-live="polite">
-            <div className="flex items-center gap-3 p-4 rounded-2xl bg-[#FFFAF7] border border-[#E8D9D4]">
-              <div className="w-10 h-10 rounded-xl bg-[#4A173A]/10 flex items-center justify-center flex-shrink-0">
-                <Lock className="w-5 h-5 text-[#4A173A]" />
+            <div className="flex items-center gap-3 p-4 rounded-2xl bg-[#EDF3F0] border border-[#E1DDD3]">
+              <div className="w-10 h-10 rounded-xl bg-[#123C35]/10 flex items-center justify-center flex-shrink-0">
+                <Lock className="w-5 h-5 text-[#123C35]" />
               </div>
               <div>
-                <h3 className="font-black text-sm text-[#4A173A]">Verify Your Identity</h3>
-                <p className="text-xs text-[#6F5963] mt-0.5">
-                  A 6-digit verification code has been sent to <span className="font-semibold text-[#4A173A]">{partialAuth?.email || 'your registered email'}</span>.
+                <h3 className="font-black text-sm text-[#123C35]">Verify Your Identity</h3>
+                <p className="text-xs text-[#65716C] mt-0.5">
+                  A 6-digit verification code has been sent to <span className="font-semibold text-[#123C35]">{partialAuth?.email || 'your registered email'}</span>.
                   Enter the code below to complete sign-in.
                 </p>
               </div>
             </div>
 
             {otpError && (
-              <div className="p-3 rounded-xl bg-[#FDE8E8] border border-[#F5B7B7] text-[#C0392B] text-xs font-semibold animate-shake">
+              <div className="p-3 rounded-xl bg-[#FDE8E8] border border-[#F5B7B7] text-[#C83B4A] text-xs font-semibold animate-shake">
                 {otpError}
               </div>
             )}
 
             <form onSubmit={handleVerify2fa} className="space-y-4">
               <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-[#2B1722] mb-2">
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-[#17201D] mb-2">
                   6-Digit Verification Code
                 </label>
                 <div className="flex items-center justify-center gap-2">
@@ -719,12 +719,12 @@ export default function LoginPage() {
                       inputMode="numeric"
                       autoComplete="one-time-code"
                       disabled={otpLoading}
-                      className="w-10 h-12 text-center text-base font-bold rounded-xl border-2 border-[#E8D9D4] bg-[#FFFAF7] text-[#2B1722] focus:border-[#B76E79] focus:ring-2 focus:ring-[#B76E79]/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-10 h-12 text-center text-base font-bold rounded-xl border-2 border-[#E1DDD3] bg-white text-[#17201D] focus:border-[#C9A45C] focus:ring-2 focus:ring-[#C9A45C]/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                       autoFocus={index === 0}
                     />
                   ))}
                 </div>
-                <p className="text-[11px] text-[#6F5963] font-medium mt-2 text-center">
+                <p className="text-[11px] text-[#65716C] font-medium mt-2 text-center">
                   Enter the 6-digit code sent to your email. Code expires in 10 minutes.
                 </p>
               </div>
@@ -732,7 +732,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={otpLoading || otp.length !== 6}
-                className="w-full py-3.5 px-4 rounded-xl bg-[#4A173A] text-white font-extrabold text-xs tracking-wide hover:bg-[#6A2853] active:scale-[0.99] transition-all shadow-lg shadow-[#4A173A]/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-3.5 px-4 rounded-xl bg-[#123C35] text-white font-extrabold text-xs tracking-wide hover:bg-[#082821] active:scale-[0.99] transition-all shadow-lg shadow-[#123C35]/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               >
                 {otpLoading ? (
                   <>
@@ -741,7 +741,7 @@ export default function LoginPage() {
                   </>
                 ) : (
                   <>
-                    <ShieldCheck className="w-4 h-4 text-[#E8C7A8]" />
+                    <ShieldCheck className="w-4 h-4 text-[#C9A45C]" />
                     <span>Verify & Sign In</span>
                     <ArrowRight className="w-4 h-4" />
                   </>
@@ -749,21 +749,21 @@ export default function LoginPage() {
               </button>
             </form>
 
-            <div className="pt-4 border-t border-[#E8D9D4] space-y-3">
+            <div className="pt-4 border-t border-[#E1DDD3] space-y-3">
               <button
                 type="button"
                 onClick={handleResend2fa}
                 disabled={resendCooldown > 0}
-                className="w-full py-2.5 px-4 rounded-xl border border-[#E8D9D4] bg-[#FFFDFC] text-[#4A173A] font-bold text-xs hover:bg-[#FFF7F2] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-2.5 px-4 rounded-xl border border-[#E1DDD3] bg-white text-[#123C35] font-bold text-xs hover:bg-[#EDF3F0] hover:border-[#C9A45C] transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               >
                 {resendCooldown > 0 ? (
                   <>
-                    <RefreshCw className="w-4 h-4 animate-spin text-[#B76E79]" />
+                    <RefreshCw className="w-4 h-4 animate-spin text-[#C9A45C]" />
                     <span>Resend Code ({resendCooldown}s)</span>
                   </>
                 ) : (
                   <>
-                    <RefreshCw className="w-4 h-4 text-[#B76E79]" />
+                    <RefreshCw className="w-4 h-4 text-[#C9A45C]" />
                     <span>Didn't receive the code? Resend</span>
                   </>
                 )}
@@ -772,27 +772,27 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={handleBackToLogin}
-                className="w-full py-2.5 px-4 rounded-xl bg-[#FFF7F2] text-[#6F5963] font-bold text-xs hover:bg-[#E8D9D4] hover:text-[#4A173A] transition-all"
+                className="w-full py-2.5 px-4 rounded-xl bg-[#F7F5F0] text-[#65716C] font-bold text-xs hover:bg-[#E1DDD3] hover:text-[#123C35] transition-all cursor-pointer"
               >
-                <ArrowLeft className="w-4 h-4 inline mr-1 text-[#B76E79]" />
+                <ArrowLeft className="w-4 h-4 inline mr-1 text-[#C9A45C]" />
                 <span>Back to Sign In</span>
               </button>
             </div>
           </div>
         )}
 
-        <div className="bg-[#FFF7F2] px-7 py-3.5 border-t border-[#E8D9D4] flex items-center justify-between text-xs text-[#6F5963] font-semibold">
+        <div className="bg-[#F7F5F0] px-7 py-3.5 border-t border-[#E1DDD3] flex items-center justify-between text-xs text-[#65716C] font-semibold">
           <span className="flex items-center gap-1.5">
-            <ShieldCheck className="w-4 h-4 text-[#198754]" />
+            <ShieldCheck className="w-4 h-4 text-[#16805C]" />
             <span>Authorized access only · Location auto-assigned</span>
           </span>
-          <span className="font-bold text-[#4A173A]">BSC v3.0</span>
+          <span className="font-bold text-[#123C35]">BSC v3.0</span>
         </div>
       </div>
 
       {/* Location Info Note */}
-      <div className="mt-4 flex items-center gap-1.5 text-xs text-text-secondary font-medium">
-        <MapPin className="w-3.5 h-3.5 text-text-secondary" />
+      <div className="mt-4 flex items-center gap-1.5 text-xs text-[#65716C] font-medium">
+        <MapPin className="w-3.5 h-3.5 text-[#123C35]" />
         <span>Your location (Belagavi / Davanagere / Shivamogga) is assigned by the System Admin</span>
       </div>
 

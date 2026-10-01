@@ -117,14 +117,14 @@ export const STAGE_LABELS: Record<StageKey, string> = {
 
 /** Column styling per stage. Kept here so cards and headers cannot drift apart. */
 export const STAGE_PRESENTATION: Record<StageKey, { accent: string; chip: string; headerBg: string }> = {
-  new: { accent: 'border-[#E8D9D4]', chip: 'bg-[#EDE7F6] text-[#6A2853]', headerBg: 'bg-[#FFFAF7]' },
-  contacted: { accent: 'border-[#E8C7A8]', chip: 'bg-[#C58A18] text-white', headerBg: 'bg-[#FFF4D6]' },
-  follow_up: { accent: 'border-[#D89AA3]', chip: 'bg-[#4A173A] text-white', headerBg: 'bg-[#F6E2E5]' },
-  shopping_planned: { accent: 'border-[#B76E79]', chip: 'bg-[#B76E79] text-white', headerBg: 'bg-[#FFF7F2]' },
-  visited: { accent: 'border-[#E8C7A8]', chip: 'bg-[#6A2853] text-white', headerBg: 'bg-[#FFFAF7]' },
-  won: { accent: 'border-[#198754]/40', chip: 'bg-[#198754] text-white', headerBg: 'bg-[#E8F5EE]' },
-  not_moving: { accent: 'border-[#6F5963]/30', chip: 'bg-[#6F5963] text-white', headerBg: 'bg-[#F4F2F0]' },
-  other: { accent: 'border-[#B42318]/30', chip: 'bg-[#B42318] text-white', headerBg: 'bg-[#FDE8E7]' }
+  new: { accent: 'border-[#E1DDD3]', chip: 'bg-[#EDF3F0] text-[#123C35]', headerBg: 'bg-[#F7F5F0]' },
+  contacted: { accent: 'border-[#E4CB92]', chip: 'bg-[#C58A16] text-white', headerBg: 'bg-[#FFF9EE]' },
+  follow_up: { accent: 'border-[#C9A45C]', chip: 'bg-[#123C35] text-white', headerBg: 'bg-[#EDF3F0]' },
+  shopping_planned: { accent: 'border-[#C9A45C]', chip: 'bg-[#C9A45C] text-[#17201D]', headerBg: 'bg-[#FDF9F2]' },
+  visited: { accent: 'border-[#1D5148]', chip: 'bg-[#1D5148] text-white', headerBg: 'bg-[#EDF3F0]' },
+  won: { accent: 'border-[#16805C]/40', chip: 'bg-[#16805C] text-white', headerBg: 'bg-[#EBF7F2]' },
+  not_moving: { accent: 'border-[#65716C]/30', chip: 'bg-[#65716C] text-white', headerBg: 'bg-[#F2F4F3]' },
+  other: { accent: 'border-[#C83B4A]/30', chip: 'bg-[#C83B4A] text-white', headerBg: 'bg-[#FDE8E8]' }
 };
 
 /** Statuses offered by "Move Stage", grouped the way the pipeline reads. */

@@ -120,12 +120,12 @@ function SavedPhotoTile({
   const [savingCaption, setSavingCaption] = useState(false);
 
   return (
-    <div className="rounded-xl border border-[#E8D9D4] bg-white overflow-hidden flex flex-col shadow-[0_1px_2px_rgba(74,23,58,0.06)]">
+    <div className="rounded-xl border border-[#E1DDD3] bg-white overflow-hidden flex flex-col shadow-[0_1px_2px_rgba(74,23,58,0.06)]">
       <div className="relative aspect-[4/3] bg-[#F6EFEA] flex items-center justify-center">
         {broken ? (
           <div className="text-center px-2 py-3">
             <ImageOff className="w-6 h-6 mx-auto text-[#B08DA0]" />
-            <p className="mt-1.5 text-[11px] font-bold text-[#6F5963] leading-snug">
+            <p className="mt-1.5 text-[11px] font-bold text-[#65716C] leading-snug">
               Server image unavailable
             </p>
           </div>
@@ -139,7 +139,7 @@ function SavedPhotoTile({
             className="w-full h-full object-contain cursor-zoom-in"
           />
         )}
-        <span className="absolute top-1.5 left-1.5 rounded-md bg-[#4A173A]/90 px-1.5 py-0.5 text-[11px] font-black text-white tabular-nums">
+        <span className="absolute top-1.5 left-1.5 rounded-md bg-[#123C35]/90 px-1.5 py-0.5 text-[11px] font-black text-white tabular-nums">
           #{number}
         </span>
         <span className="absolute top-1.5 right-1.5 rounded-md bg-[#E8F5EE]/95 border border-[#B7E0CB] px-1.5 py-0.5 text-[11px] font-black text-[#0F6B45]">
@@ -148,10 +148,10 @@ function SavedPhotoTile({
       </div>
 
       <div className="p-2 flex flex-col gap-1.5 flex-1">
-        <p className="text-[11px] font-bold text-[#2B1722] truncate" title={photo.fileName}>
+        <p className="text-[11px] font-bold text-[#17201D] truncate" title={photo.fileName}>
           {photo.fileName}
         </p>
-        <p className="text-[11px] font-semibold text-[#6F5963] tabular-nums">
+        <p className="text-[11px] font-semibold text-[#65716C] tabular-nums">
           {formatBytes(photo.fileSize)}
           {photo.pointId ? ' · question' : ' · section'}
           {formatPhotoDate(photo.inspectionDate) ? ` · ${formatPhotoDate(photo.inspectionDate)}` : ''}
@@ -160,7 +160,7 @@ function SavedPhotoTile({
         {/* §27 the observation belongs to this image, so it is shown and edited here
             rather than folded into a general audit note. */}
         {photo.caption ? (
-          <p className="text-[11px] font-semibold text-[#4A173A] leading-snug line-clamp-2" title={photo.caption}>
+          <p className="text-[11px] font-semibold text-[#123C35] leading-snug line-clamp-2" title={photo.caption}>
             “{photo.caption}”
           </p>
         ) : null}
@@ -169,7 +169,7 @@ function SavedPhotoTile({
             type="button"
             onClick={() => { setDraftCaption(photo.caption || ''); setCaptionOpen((v) => !v); }}
             aria-expanded={captionOpen}
-            className="self-start inline-flex items-center gap-1 text-[11px] font-bold text-[#6A2853] hover:underline cursor-pointer"
+            className="self-start inline-flex items-center gap-1 text-[11px] font-bold text-[#082821] hover:underline cursor-pointer"
           >
             <Info className="w-3.5 h-3.5" />
             {photo.caption ? 'Edit observation' : 'Add observation'}
@@ -183,14 +183,14 @@ function SavedPhotoTile({
               rows={2}
               maxLength={MAX_CAPTION_LENGTH}
               placeholder="What does this photo show? e.g. Rack 4 needs realignment."
-              className="w-full rounded-lg border border-[#E8D9D4] bg-[#FFFAF7] px-2 py-1.5 text-[11px] font-semibold text-[#2B1722] focus:border-[#B76E79] focus:outline-none resize-y"
+              className="w-full rounded-lg border border-[#E1DDD3] bg-[#F7F5F0] px-2 py-1.5 text-[11px] font-semibold text-[#17201D] focus:border-[#C9A45C] focus:outline-none resize-y"
             />
             <div className="flex items-center gap-1">
               <button
                 type="button"
                 disabled={savingCaption}
                 onClick={async () => { setSavingCaption(true); try { await onSaveCaption(photo, draftCaption.trim()); setCaptionOpen(false); } finally { setSavingCaption(false); } }}
-                className="flex-1 min-h-[36px] inline-flex items-center justify-center gap-1 rounded-lg bg-[#4A173A] text-white text-[11px] font-bold disabled:opacity-50 cursor-pointer"
+                className="flex-1 min-h-[36px] inline-flex items-center justify-center gap-1 rounded-lg bg-[#123C35] text-white text-[11px] font-bold disabled:opacity-50 cursor-pointer"
               >
                 {savingCaption ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CircleCheck className="w-3.5 h-3.5" />}
                 Save
@@ -198,7 +198,7 @@ function SavedPhotoTile({
               <button
                 type="button"
                 onClick={() => setCaptionOpen(false)}
-                className="min-h-[36px] px-2 rounded-lg border border-[#E8D9D4] bg-white text-[#4A173A] text-[11px] font-bold cursor-pointer"
+                className="min-h-[36px] px-2 rounded-lg border border-[#E1DDD3] bg-white text-[#123C35] text-[11px] font-bold cursor-pointer"
               >
                 Cancel
               </button>
@@ -212,7 +212,7 @@ function SavedPhotoTile({
             onClick={onView}
             title="View full size"
             aria-label={`View photo ${number}`}
-            className="flex-1 min-h-[40px] inline-flex items-center justify-center gap-1 rounded-lg border border-[#E8D9D4] bg-white text-[#4A173A] text-[11px] font-bold hover:bg-[#FFF7F2] transition-colors cursor-pointer"
+            className="flex-1 min-h-[40px] inline-flex items-center justify-center gap-1 rounded-lg border border-[#E1DDD3] bg-white text-[#123C35] text-[11px] font-bold hover:bg-[#EDF3F0] transition-colors cursor-pointer"
           >
             <Eye className="w-4 h-4" />
             <span className="hidden sm:inline">View</span>
@@ -223,7 +223,7 @@ function SavedPhotoTile({
             disabled={!canEdit || busy}
             title="Replace this photo (keeps the same slot)"
             aria-label={`Replace photo ${number}`}
-            className="flex-1 min-h-[40px] inline-flex items-center justify-center gap-1 rounded-lg border border-[#E8D9D4] bg-white text-[#6A2853] text-[11px] font-bold hover:bg-[#FFF7F2] disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+            className="flex-1 min-h-[40px] inline-flex items-center justify-center gap-1 rounded-lg border border-[#E1DDD3] bg-white text-[#082821] text-[11px] font-bold hover:bg-[#EDF3F0] disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
           >
             {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Replace className="w-4 h-4" />}
             <span className="hidden sm:inline">Replace</span>
@@ -271,7 +271,7 @@ function PendingPhotoTile({
   return (
     <div
       className={`rounded-xl border bg-white overflow-hidden flex flex-col shadow-[0_1px_2px_rgba(74,23,58,0.06)] ${
-        attempt.status === 'failed' ? 'border-[#F2BDB8]' : 'border-[#E8D9D4]'
+        attempt.status === 'failed' ? 'border-[#F2BDB8]' : 'border-[#E1DDD3]'
       }`}
     >
       <div className="relative aspect-[4/3] bg-[#F6EFEA] flex items-center justify-center">
@@ -281,7 +281,7 @@ function PendingPhotoTile({
           onClick={onView}
           className={`w-full h-full object-contain cursor-zoom-in ${isUploading ? 'opacity-70' : ''}`}
         />
-        <span className="absolute top-1.5 left-1.5 rounded-md bg-[#4A173A]/90 px-1.5 py-0.5 text-[11px] font-black text-white tabular-nums">
+        <span className="absolute top-1.5 left-1.5 rounded-md bg-[#123C35]/90 px-1.5 py-0.5 text-[11px] font-black text-white tabular-nums">
           #{number}
         </span>
         <span
@@ -294,10 +294,10 @@ function PendingPhotoTile({
       </div>
 
       <div className="p-2 flex flex-col gap-1.5 flex-1">
-        <p className="text-[11px] font-bold text-[#2B1722] truncate" title={attempt.fileName}>
+        <p className="text-[11px] font-bold text-[#17201D] truncate" title={attempt.fileName}>
           {attempt.fileName}
         </p>
-        <p className="text-[11px] font-semibold text-[#6F5963] tabular-nums">
+        <p className="text-[11px] font-semibold text-[#65716C] tabular-nums">
           {formatBytes(attempt.fileSize)}
           {attempt.destination.pointId ? ' · question' : ' · section'}
         </p>
@@ -305,7 +305,7 @@ function PendingPhotoTile({
         {isUploading ? (
           <div className="h-1.5 rounded-full bg-[#F0E2DC] overflow-hidden">
             <div
-              className="h-full rounded-full bg-[#B76E79] transition-all duration-200"
+              className="h-full rounded-full bg-[#C9A45C] transition-all duration-200"
               style={{ width: `${Math.max(6, attempt.progress)}%` }}
               aria-hidden="true"
             />
@@ -336,7 +336,7 @@ function PendingPhotoTile({
             onClick={onView}
             title="View this preview"
             aria-label={`Preview photo ${number}`}
-            className="flex-1 min-h-[40px] inline-flex items-center justify-center gap-1 rounded-lg border border-[#E8D9D4] bg-white text-[#4A173A] text-[11px] font-bold hover:bg-[#FFF7F2] transition-colors cursor-pointer"
+            className="flex-1 min-h-[40px] inline-flex items-center justify-center gap-1 rounded-lg border border-[#E1DDD3] bg-white text-[#123C35] text-[11px] font-bold hover:bg-[#EDF3F0] transition-colors cursor-pointer"
           >
             <Eye className="w-4 h-4" />
             <span className="hidden sm:inline">View</span>
@@ -1192,7 +1192,7 @@ export default function PhotoUploader(props: PhotoUploaderProps) {
 
   return (
     <section
-      className="rounded-2xl border border-[#E8D9D4] bg-[#FFFDFC] p-3 sm:p-4 shadow-[0_2px_10px_rgba(74,23,58,0.05)]"
+      className="rounded-2xl border border-[#E1DDD3] bg-[#FFFFFF] p-3 sm:p-4 shadow-[0_2px_10px_rgba(74,23,58,0.05)]"
       aria-label="Section inspection photos"
     >
       <input
@@ -1229,13 +1229,13 @@ export default function PhotoUploader(props: PhotoUploaderProps) {
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
         <div className="min-w-0">
-          <h3 className="text-[15px] sm:text-base font-black text-[#4A173A] tracking-tight flex items-center gap-2">
-            <Camera className="w-4 h-4 text-[#B76E79] shrink-0" aria-hidden="true" />
+          <h3 className="text-[15px] sm:text-base font-black text-[#123C35] tracking-tight flex items-center gap-2">
+            <Camera className="w-4 h-4 text-[#C9A45C] shrink-0" aria-hidden="true" />
             Section Inspection Photos
           </h3>
-          <p className="mt-1 text-xs font-bold text-[#6F5963] truncate">
+          <p className="mt-1 text-xs font-bold text-[#65716C] truncate">
             {scopeLabel}
-            {pointId ? <span className="ml-1 text-[#B76E79]">· evidence for this question</span> : null}
+            {pointId ? <span className="ml-1 text-[#C9A45C]">· evidence for this question</span> : null}
           </p>
           <p className="mt-0.5 text-[11px] font-semibold text-[#9A858D]">
             JPG or PNG only · {MAX_FILE_RULE} · up to {limit} per section
@@ -1247,7 +1247,7 @@ export default function PhotoUploader(props: PhotoUploaderProps) {
             className={`rounded-full border px-2.5 py-1 text-[11px] font-black tabular-nums ${
               atLimit
                 ? 'border-[#F2BDB8] bg-[#FDE8E7] text-[#8F1D14]'
-                : 'border-[#E8D9D4] bg-[#FFF7F2] text-[#4A173A]'
+                : 'border-[#E1DDD3] bg-[#EDF3F0] text-[#123C35]'
             }`}
             aria-live="polite"
           >
@@ -1269,7 +1269,7 @@ export default function PhotoUploader(props: PhotoUploaderProps) {
           type="button"
           onClick={openTakePhoto}
           disabled={disabled || atLimit || nothingSelected}
-          className="min-h-[44px] flex-1 xs:flex-none inline-flex items-center justify-center gap-2 rounded-xl bg-[#4A173A] px-4 py-2.5 text-xs font-black text-white shadow-sm hover:bg-[#6A2853] disabled:opacity-45 disabled:cursor-not-allowed transition-colors cursor-pointer"
+          className="min-h-[44px] flex-1 xs:flex-none inline-flex items-center justify-center gap-2 rounded-xl bg-[#123C35] px-4 py-2.5 text-xs font-black text-white shadow-sm hover:bg-[#082821] disabled:opacity-45 disabled:cursor-not-allowed transition-colors cursor-pointer"
         >
           <Camera className="w-4 h-4" aria-hidden="true" />
           Take Photo
@@ -1278,7 +1278,7 @@ export default function PhotoUploader(props: PhotoUploaderProps) {
           type="button"
           onClick={openGalleryPicker}
           disabled={disabled || atLimit || nothingSelected}
-          className="min-h-[44px] flex-1 xs:flex-none inline-flex items-center justify-center gap-2 rounded-xl border border-[#B76E79] bg-white px-4 py-2.5 text-xs font-black text-[#6A2853] hover:bg-[#FFF7F2] disabled:opacity-45 disabled:cursor-not-allowed transition-colors cursor-pointer"
+          className="min-h-[44px] flex-1 xs:flex-none inline-flex items-center justify-center gap-2 rounded-xl border border-[#C9A45C] bg-white px-4 py-2.5 text-xs font-black text-[#082821] hover:bg-[#EDF3F0] disabled:opacity-45 disabled:cursor-not-allowed transition-colors cursor-pointer"
         >
           <Images className="w-4 h-4" aria-hidden="true" />
           Choose from Gallery
@@ -1302,7 +1302,7 @@ export default function PhotoUploader(props: PhotoUploaderProps) {
             type="button"
             onClick={restoreUndonePhoto}
             disabled={undoBusy || disabled}
-            className="min-h-[38px] inline-flex items-center gap-1.5 rounded-lg bg-[#4A173A] px-3 py-2 text-[11px] font-black text-white hover:bg-[#6A2853] disabled:opacity-50 transition-colors cursor-pointer"
+            className="min-h-[38px] inline-flex items-center gap-1.5 rounded-lg bg-[#123C35] px-3 py-2 text-[11px] font-black text-white hover:bg-[#082821] disabled:opacity-50 transition-colors cursor-pointer"
           >
             {undoBusy ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
@@ -1323,9 +1323,9 @@ export default function PhotoUploader(props: PhotoUploaderProps) {
 
       {/* Loading / error / empty */}
       {loadingList ? (
-        <div className="mt-3 flex items-center gap-2 rounded-xl border border-[#E8D9D4] bg-[#FFF7F2] px-3 py-4">
-          <Loader2 className="w-4 h-4 animate-spin text-[#B76E79]" aria-hidden="true" />
-          <p className="text-xs font-bold text-[#6F5963]">Loading photos…</p>
+        <div className="mt-3 flex items-center gap-2 rounded-xl border border-[#E1DDD3] bg-[#EDF3F0] px-3 py-4">
+          <Loader2 className="w-4 h-4 animate-spin text-[#C9A45C]" aria-hidden="true" />
+          <p className="text-xs font-bold text-[#65716C]">Loading photos…</p>
         </div>
       ) : listError ? (
         <div className="mt-3 rounded-xl border border-[#F2BDB8] bg-[#FDE8E7] px-3 py-3.5">
@@ -1337,17 +1337,17 @@ export default function PhotoUploader(props: PhotoUploaderProps) {
           <button
             type="button"
             onClick={() => void loadSectionPhotos()}
-            className="mt-2.5 min-h-[40px] inline-flex items-center gap-1.5 rounded-lg bg-[#4A173A] px-3.5 py-2 text-[11px] font-black text-white hover:bg-[#6A2853] transition-colors cursor-pointer"
+            className="mt-2.5 min-h-[40px] inline-flex items-center gap-1.5 rounded-lg bg-[#123C35] px-3.5 py-2 text-[11px] font-black text-white hover:bg-[#082821] transition-colors cursor-pointer"
           >
             <RefreshCw className="w-3.5 h-3.5" aria-hidden="true" />
             Retry
           </button>
         </div>
       ) : totalCount === 0 ? (
-        <div className="mt-3 rounded-xl border border-dashed border-[#E8D9D4] bg-[#FFF7F2] px-3 py-6 text-center">
+        <div className="mt-3 rounded-xl border border-dashed border-[#E1DDD3] bg-[#EDF3F0] px-3 py-6 text-center">
           <ImageOff className="w-7 h-7 mx-auto text-[#C9A0AA]" aria-hidden="true" />
-          <p className="mt-2 text-xs font-black text-[#4A173A]">No photos for this section yet.</p>
-          <p className="mt-1 text-[11px] font-semibold text-[#6F5963]">
+          <p className="mt-2 text-xs font-black text-[#123C35]">No photos for this section yet.</p>
+          <p className="mt-1 text-[11px] font-semibold text-[#65716C]">
             Take one with the camera or pick it from the gallery — it saves to the server immediately.
           </p>
         </div>
@@ -1411,11 +1411,11 @@ export default function PhotoUploader(props: PhotoUploaderProps) {
           onClick={() => (deleting ? undefined : setConfirmPhoto(null))}
         >
           <div
-            className="w-full max-w-sm rounded-2xl border border-[#E8D9D4] bg-white p-4 shadow-2xl"
+            className="w-full max-w-sm rounded-2xl border border-[#E1DDD3] bg-white p-4 shadow-2xl"
             onClick={(event) => event.stopPropagation()}
           >
-            <h4 className="text-sm font-black text-[#4A173A]">Remove this photo?</h4>
-            <p className="mt-1.5 text-xs font-semibold text-[#6F5963] break-words">
+            <h4 className="text-sm font-black text-[#123C35]">Remove this photo?</h4>
+            <p className="mt-1.5 text-xs font-semibold text-[#65716C] break-words">
               "{confirmPhoto.fileName}" ({formatBytes(confirmPhoto.fileSize)}) will be deleted from{' '}
               {confirmPhoto.floor || floor} — {confirmPhoto.section || section}. You can undo it for{' '}
               {UNDO_WINDOW_MS / 1000} seconds afterwards.
@@ -1425,7 +1425,7 @@ export default function PhotoUploader(props: PhotoUploaderProps) {
                 type="button"
                 onClick={() => setConfirmPhoto(null)}
                 disabled={deleting}
-                className="flex-1 min-h-[44px] rounded-xl border border-[#E8D9D4] bg-white px-3 py-2.5 text-xs font-black text-[#4A173A] hover:bg-[#FFF7F2] disabled:opacity-50 transition-colors cursor-pointer"
+                className="flex-1 min-h-[44px] rounded-xl border border-[#E1DDD3] bg-white px-3 py-2.5 text-xs font-black text-[#123C35] hover:bg-[#EDF3F0] disabled:opacity-50 transition-colors cursor-pointer"
               >
                 Keep it
               </button>

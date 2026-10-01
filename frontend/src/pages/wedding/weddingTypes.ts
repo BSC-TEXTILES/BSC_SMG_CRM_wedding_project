@@ -280,8 +280,8 @@ export const BUDGET_RANGES = [
  * - CONFIRMED / WON / VISITED: bg #E8F5EE, text #198754
  * - PENDING / CONTACT PENDING: bg #FFF4D6, text #C58A18
  * - CANCELLED / LOST / NOT INTERESTED: bg #FDE8E7, text #B42318
- * - INTERESTED / NEW LEAD: bg #EDE7F6, text #6A2853
- * - FOLLOW-UP / CALLBACK / SCHEDULED: bg #F6E2E5, text #4A173A
+ * - INTERESTED / NEW LEAD: bg #EDF3F0, text #082821
+ * - FOLLOW-UP / CALLBACK / SCHEDULED: bg #EDF3F0, text #123C35
  */
 export function getStatusBadge(status?: string) {
   const s = (status || '').toLowerCase().trim();
@@ -301,14 +301,14 @@ export function getStatusBadge(status?: string) {
   }
   if (s.includes('interested') || s === 'new lead') {
     return {
-      bg: 'bg-[#EDE7F6] text-[#6A2853] border-[#6A2853]/25',
-      dot: 'bg-[#6A2853]'
+      bg: 'bg-[#EDF3F0] text-[#082821] border-[#082821]/25',
+      dot: 'bg-[#082821]'
     };
   }
   if (s.includes('follow-up') || s.includes('callback') || s.includes('scheduled')) {
     return {
-      bg: 'bg-[#F6E2E5] text-[#4A173A] border-[#4A173A]/25',
-      dot: 'bg-[#4A173A]'
+      bg: 'bg-[#EDF3F0] text-[#123C35] border-[#123C35]/25',
+      dot: 'bg-[#123C35]'
     };
   }
   if (s.includes('pending') || s.includes('new') || s.includes('contacted')) {
@@ -324,7 +324,7 @@ export function getStatusBadge(status?: string) {
     };
   }
   return {
-    bg: 'bg-[#FFF7F2] text-[#6F5963] border-[#E8D9D4]',
+    bg: 'bg-[#EDF3F0] text-[#65716C] border-[#E1DDD3]',
     dot: 'bg-[#9A858D]'
   };
 }

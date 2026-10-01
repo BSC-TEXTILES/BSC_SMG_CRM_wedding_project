@@ -20,16 +20,16 @@ export default function PageHeader({
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
       <div>
         {section && (
-          <p className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-[#B76E79] mb-1">
+          <p className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-[#C9A45C] mb-1">
             {section}
           </p>
         )}
-        <h1 className="text-xl sm:text-2xl font-black text-[#4A173A] tracking-tight flex items-center gap-2.5">
-          {Icon && <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-[#B76E79]" />}
+        <h1 className="text-xl sm:text-2xl font-black text-[#123C35] tracking-tight flex items-center gap-2.5">
+          {Icon && <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-[#C9A45C]" />}
           <span>{title}</span>
         </h1>
         {description && (
-          <p className="text-xs sm:text-sm text-[#6F5963] font-medium mt-1">
+          <p className="text-xs sm:text-sm text-[#65716C] font-medium mt-1">
             {description}
           </p>
         )}

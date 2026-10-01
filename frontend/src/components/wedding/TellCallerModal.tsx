@@ -61,7 +61,7 @@ const PRIORITIES = ['Normal', 'High', 'Urgent'];
 const MESSAGE_MAX = 2000;
 
 const STATUS_STYLE: Record<string, string> = {
-  New: 'bg-[#F6E2E5] text-[#6A2853] border-[#B76E79]/30',
+  New: 'bg-[#EDF3F0] text-[#082821] border-[#C9A45C]/30',
   Seen: 'bg-[#EAF1FA] text-[#356AE6] border-[#356AE6]/25',
   Acknowledged: 'bg-[#FFF4D6] text-[#8A6212] border-[#C58A18]/30',
   Completed: 'bg-[#E8F5EE] text-[#198754] border-[#198754]/25'
@@ -197,19 +197,19 @@ export default function TellCallerModal({
       onClick={(e) => { if (e.target === e.currentTarget && !sending) onClose(); }}
     >
       <div
-        className="bg-[#FFFDFC] rounded-2xl sm:rounded-3xl w-full max-w-2xl max-h-[calc(100dvh-2rem)] sm:max-h-[calc(100dvh-3rem)] shadow-2xl border border-[#E8D9D4] flex flex-col overflow-hidden animate-scale-in"
+        className="bg-[#FFFFFF] rounded-2xl sm:rounded-3xl w-full max-w-2xl max-h-[calc(100dvh-2rem)] sm:max-h-[calc(100dvh-3rem)] shadow-2xl border border-[#E1DDD3] flex flex-col overflow-hidden animate-scale-in"
         role="dialog"
         aria-modal="true"
         aria-labelledby="tell-caller-title"
       >
-        <div className="flex items-start justify-between gap-3 px-5 sm:px-6 py-4 border-b border-[#E8D9D4] shrink-0">
+        <div className="flex items-start justify-between gap-3 px-5 sm:px-6 py-4 border-b border-[#E1DDD3] shrink-0">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-9 h-9 rounded-xl bg-[#4A173A] flex items-center justify-center shrink-0">
-              <Send className="w-4 h-4 text-[#E8C7A8]" />
+            <div className="w-9 h-9 rounded-xl bg-[#123C35] flex items-center justify-center shrink-0">
+              <Send className="w-4 h-4 text-[#E4CB92]" />
             </div>
             <div className="min-w-0">
-              <h3 id="tell-caller-title" className="text-base font-bold text-[#4A173A]">Tell Caller</h3>
-              <p className="text-xs text-[#6F5963] truncate">
+              <h3 id="tell-caller-title" className="text-base font-bold text-[#123C35]">Tell Caller</h3>
+              <p className="text-xs text-[#65716C] truncate">
                 Send an instruction to a telecaller — the assignment itself does not change.
               </p>
             </div>
@@ -217,7 +217,7 @@ export default function TellCallerModal({
           <button
             type="button"
             onClick={() => !sending && onClose()}
-            className="p-1.5 text-[#6F5963] hover:text-[#4A173A] hover:bg-[#FFF7F2] rounded-xl transition-colors cursor-pointer shrink-0"
+            className="p-1.5 text-[#65716C] hover:text-[#123C35] hover:bg-[#EDF3F0] rounded-xl transition-colors cursor-pointer shrink-0"
             aria-label="Close"
           >
             <X className="w-5 h-5" />
@@ -226,12 +226,12 @@ export default function TellCallerModal({
 
         <form onSubmit={handleSend} className="flex-1 overflow-y-auto min-h-0 px-5 sm:px-6 py-5 space-y-5 text-xs custom-scrollbar">
           {/* Customer in focus */}
-          <div className="rounded-xl border border-[#E8D9D4] bg-[#FFF7F2] p-3.5">
+          <div className="rounded-xl border border-[#E1DDD3] bg-[#EDF3F0] p-3.5">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[#6F5963]">Customer</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#65716C]">Customer</span>
               <span className="text-[10px] font-mono text-[#9A858D]">{customer.customer_code || `#${customer.id}`}</span>
             </div>
-            <p className="mt-1 text-sm font-bold text-[#4A173A] break-words">{customer.customer_name}</p>
+            <p className="mt-1 text-sm font-bold text-[#123C35] break-words">{customer.customer_name}</p>
             <dl className="mt-2.5 grid grid-cols-2 gap-x-3 gap-y-2 sm:grid-cols-3">
               <Detail label="Mobile" value={customer.mobile_number || '—'} mono />
               <Detail label="Store" value={customer.location_name || '—'} />
@@ -264,7 +264,7 @@ export default function TellCallerModal({
           {!loading && !loadError && (
             <div>
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <label htmlFor="tell-caller-search" className="text-[10px] font-bold uppercase tracking-wider text-[#6F5963]">
+                <label htmlFor="tell-caller-search" className="text-[10px] font-bold uppercase tracking-wider text-[#65716C]">
                   Select telecaller <span className="text-rose-500">*</span>
                 </label>
                 <span className="text-[10px] text-[#9A858D]">{filtered.length} of {telecallers.length} available</span>
@@ -279,18 +279,18 @@ export default function TellCallerModal({
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search by name, role or store"
                   autoComplete="off"
-                  className="w-full rounded-xl border border-[#E8D9D4] bg-[#FFFAF7] py-2.5 pl-9 pr-3 font-semibold text-[#2B1722] placeholder:font-normal placeholder:text-[#9A858D] focus:border-[#B76E79] focus:outline-none"
+                  className="w-full rounded-xl border border-[#E1DDD3] bg-[#F7F5F0] py-2.5 pl-9 pr-3 font-semibold text-[#17201D] placeholder:font-normal placeholder:text-[#9A858D] focus:border-[#C9A45C] focus:outline-none"
                 />
               </div>
 
               {telecallers.length === 0 ? (
-                <p className="mt-3 rounded-xl border border-[#E8D9D4] bg-[#FFF7F2] px-3 py-3 text-[12px] font-semibold text-[#6F5963]">
+                <p className="mt-3 rounded-xl border border-[#E1DDD3] bg-[#EDF3F0] px-3 py-3 text-[12px] font-semibold text-[#65716C]">
                   No telecaller accounts are available for your stores. An administrator needs to activate one in User Management.
                 </p>
               ) : (
-                <div className="mt-2.5 max-h-64 space-y-1.5 overflow-y-auto rounded-xl border border-[#E8D9D4] bg-[#FFFAF7] p-2 custom-scrollbar" role="radiogroup" aria-label="Telecaller">
+                <div className="mt-2.5 max-h-64 space-y-1.5 overflow-y-auto rounded-xl border border-[#E1DDD3] bg-[#F7F5F0] p-2 custom-scrollbar" role="radiogroup" aria-label="Telecaller">
                   {filtered.length === 0 && (
-                    <p className="px-2 py-3 text-[12px] font-semibold text-[#6F5963]">No telecaller matches “{query}”.</p>
+                    <p className="px-2 py-3 text-[12px] font-semibold text-[#65716C]">No telecaller matches “{query}”.</p>
                   )}
                   {filtered.map((t) => {
                     const isSelected = String(t.id) === selectedId;
@@ -303,20 +303,20 @@ export default function TellCallerModal({
                         onClick={() => setSelectedId(String(t.id))}
                         className={`w-full rounded-xl border px-3 py-2.5 text-left transition-all cursor-pointer ${
                           isSelected
-                            ? 'border-[#B76E79] bg-[#4A173A] text-white shadow-xs'
-                            : 'border-[#E8D9D4] bg-[#FFFDFC] text-[#2B1722] hover:border-[#B76E79]/50 hover:bg-[#F6E2E5]'
+                            ? 'border-[#C9A45C] bg-[#123C35] text-white shadow-xs'
+                            : 'border-[#E1DDD3] bg-[#FFFFFF] text-[#17201D] hover:border-[#C9A45C]/50 hover:bg-[#EDF3F0]'
                         }`}
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
-                            <p className={`truncate text-xs font-bold ${isSelected ? 'text-white' : 'text-[#2B1722]'}`}>
+                            <p className={`truncate text-xs font-bold ${isSelected ? 'text-white' : 'text-[#17201D]'}`}>
                               {t.full_name || t.name}
                             </p>
-                            <p className={`mt-0.5 truncate text-[10px] ${isSelected ? 'text-[#E8C7A8]' : 'text-[#6F5963]'}`}>
+                            <p className={`mt-0.5 truncate text-[10px] ${isSelected ? 'text-[#E4CB92]' : 'text-[#65716C]'}`}>
                               {[t.designation || t.role, t.department].filter(Boolean).join(' · ') || 'Telecaller'}
                             </p>
                           </div>
-                          <div className={`shrink-0 text-right text-[10px] ${isSelected ? 'text-[#E8C7A8]' : 'text-[#9A858D]'}`}>
+                          <div className={`shrink-0 text-right text-[10px] ${isSelected ? 'text-[#E4CB92]' : 'text-[#9A858D]'}`}>
                             <p className="flex items-center justify-end gap-1 font-bold uppercase tracking-wide">
                               <Store className="w-3 h-3" />
                               <span>{t.location_name || 'All Locations'}</span>
@@ -325,7 +325,7 @@ export default function TellCallerModal({
                           </div>
                         </div>
                         {isSelected && (
-                          <p className="mt-1 flex items-center gap-1 text-[10px] font-bold text-[#E8C7A8]">
+                          <p className="mt-1 flex items-center gap-1 text-[10px] font-bold text-[#E4CB92]">
                             <CheckCircle2 className="w-3 h-3" /> Selected
                           </p>
                         )}
@@ -339,7 +339,7 @@ export default function TellCallerModal({
 
           <div>
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <label htmlFor="tell-caller-message" className="text-[10px] font-bold uppercase tracking-wider text-[#6F5963]">
+              <label htmlFor="tell-caller-message" className="text-[10px] font-bold uppercase tracking-wider text-[#65716C]">
                 Instruction <span className="text-rose-500">*</span>
               </label>
               <span className={`text-[10px] ${message.length > MESSAGE_MAX - 100 ? 'text-[#C58A18]' : 'text-[#9A858D]'}`}>
@@ -358,8 +358,8 @@ export default function TellCallerModal({
               aria-invalid={Boolean(messageError)}
               aria-describedby={messageError ? 'tell-caller-message-error' : 'tell-caller-message-help'}
               placeholder="e.g. Please call the customer after 6 PM."
-              className={`mt-2 w-full rounded-xl border bg-[#FFFAF7] px-3.5 py-2.5 font-medium text-xs text-[#2B1722] focus:outline-none ${
-                messageError ? 'border-[#B42318]' : 'border-[#E8D9D4] focus:border-[#B76E79]'
+              className={`mt-2 w-full rounded-xl border bg-[#F7F5F0] px-3.5 py-2.5 font-medium text-xs text-[#17201D] focus:outline-none ${
+                messageError ? 'border-[#B42318]' : 'border-[#E1DDD3] focus:border-[#C9A45C]'
               }`}
             />
             {messageError ? (
@@ -375,7 +375,7 @@ export default function TellCallerModal({
           </div>
 
           <div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-[#6F5963]">Priority</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[#65716C]">Priority</span>
             <div className="mt-2 grid grid-cols-3 gap-2">
               {PRIORITIES.map((p) => {
                 const isSelected = priority === p;
@@ -387,8 +387,8 @@ export default function TellCallerModal({
                     aria-pressed={isSelected}
                     className={`min-h-[38px] rounded-xl border text-xs font-bold transition-all cursor-pointer ${
                       isSelected
-                        ? 'border-[#4A173A] bg-[#4A173A] text-white'
-                        : 'border-[#E8D9D4] bg-[#FFFAF7] text-[#4A173A] hover:border-[#B76E79]/60'
+                        ? 'border-[#123C35] bg-[#123C35] text-white'
+                        : 'border-[#E1DDD3] bg-[#F7F5F0] text-[#123C35] hover:border-[#C9A45C]/60'
                     }`}
                   >
                     {p}
@@ -406,7 +406,7 @@ export default function TellCallerModal({
           )}
 
           {historyLoading && (
-            <p className="flex items-center gap-2 text-[11px] font-bold text-[#6F5963]">
+            <p className="flex items-center gap-2 text-[11px] font-bold text-[#65716C]">
               <RefreshCw className="w-3.5 h-3.5 animate-spin" />
               <span>Loading the instructions already sent…</span>
             </p>
@@ -426,23 +426,23 @@ export default function TellCallerModal({
 
           {!historyLoading && !historyError && history.length > 0 && (
             <div>
-              <h4 className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#6F5963]">
-                <Clock className="w-3.5 h-3.5 text-[#B76E79]" />
+              <h4 className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#65716C]">
+                <Clock className="w-3.5 h-3.5 text-[#C9A45C]" />
                 <span>Instructions already sent ({history.length})</span>
               </h4>
               <ul className="mt-2 space-y-2">
                 {history.map((h) => (
-                  <li key={h.id} className="rounded-xl border border-[#E8D9D4] bg-white px-3 py-2.5">
+                  <li key={h.id} className="rounded-xl border border-[#E1DDD3] bg-white px-3 py-2.5">
                     <div className="flex flex-wrap items-center justify-between gap-1.5">
-                      <span className="flex min-w-0 items-center gap-1.5 text-[11px] font-bold text-[#4A173A]">
-                        <User className="w-3 h-3 shrink-0 text-[#B76E79]" />
+                      <span className="flex min-w-0 items-center gap-1.5 text-[11px] font-bold text-[#123C35]">
+                        <User className="w-3 h-3 shrink-0 text-[#C9A45C]" />
                         <span className="truncate">{h.telecallerName}</span>
                       </span>
                       <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide ${STATUS_STYLE[h.status] || STATUS_STYLE.New}`}>
                         {h.status}
                       </span>
                     </div>
-                    <p className="mt-1 break-words text-[11px] leading-snug text-[#2B1722]">{h.message}</p>
+                    <p className="mt-1 break-words text-[11px] leading-snug text-[#17201D]">{h.message}</p>
                     <p className="mt-1 text-[10px] text-[#9A858D]">
                       {h.sentByName ? `${h.sentByName} · ` : ''}{formatDateTimeDisplay(h.createdAt || '')}
                       {h.priority && h.priority !== 'Normal' ? ` · ${h.priority}` : ''}
@@ -454,12 +454,12 @@ export default function TellCallerModal({
           )}
         </form>
 
-        <div className="flex items-center justify-end gap-3 px-5 sm:px-6 py-4 border-t border-[#E8D9D4] shrink-0">
+        <div className="flex items-center justify-end gap-3 px-5 sm:px-6 py-4 border-t border-[#E1DDD3] shrink-0">
           <button
             type="button"
             onClick={() => !sending && onClose()}
             disabled={sending}
-            className="rounded-xl border border-[#E8D9D4] bg-[#FFFAF7] px-4 py-2 font-semibold text-xs text-[#4A173A] hover:bg-[#FFF7F2] disabled:opacity-50 cursor-pointer"
+            className="rounded-xl border border-[#E1DDD3] bg-[#F7F5F0] px-4 py-2 font-semibold text-xs text-[#123C35] hover:bg-[#EDF3F0] disabled:opacity-50 cursor-pointer"
           >
             Cancel
           </button>
@@ -467,9 +467,9 @@ export default function TellCallerModal({
             type="submit"
             onClick={handleSend}
             disabled={sending || loading || !selected || !message.trim()}
-            className="flex items-center gap-1.5 rounded-xl border border-[#B76E79]/30 bg-[#4A173A] px-5 py-2 text-xs font-semibold text-white shadow-xs transition-all hover:bg-[#6A2853] disabled:opacity-40 cursor-pointer"
+            className="flex items-center gap-1.5 rounded-xl border border-[#C9A45C]/30 bg-[#123C35] px-5 py-2 text-xs font-semibold text-white shadow-xs transition-all hover:bg-[#082821] disabled:opacity-40 cursor-pointer"
           >
-            {sending ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5 text-[#E8C7A8]" />}
+            {sending ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5 text-[#E4CB92]" />}
             <span>{sending ? 'Sending...' : 'Send to Telecaller'}</span>
           </button>
         </div>
@@ -482,7 +482,7 @@ function Detail({ label, value, mono }: { label: string; value: string; mono?: b
   return (
     <div className="min-w-0">
       <dt className="truncate text-[9px] font-bold uppercase tracking-wider text-[#9A858D]">{label}</dt>
-      <dd className={`mt-0.5 truncate text-[11px] font-bold text-[#2B1722] ${mono ? 'font-mono' : ''}`} title={value}>{value}</dd>
+      <dd className={`mt-0.5 truncate text-[11px] font-bold text-[#17201D] ${mono ? 'font-mono' : ''}`} title={value}>{value}</dd>
     </div>
   );
 }

@@ -59,20 +59,20 @@ const EVENT_TYPE_META: Record<
 > = {
   'Wedding Date': {
     group: 'wedding',
-    dot: 'bg-[#B76E79]',
-    chip: 'bg-[#F6E2E5] text-[#4A173A] border-[#B76E79]/40',
+    dot: 'bg-[#C9A45C]',
+    chip: 'bg-[#EDF3F0] text-[#123C35] border-[#C9A45C]/40',
     icon: Heart
   },
   'Shopping Date': {
     group: 'shopping',
-    dot: 'bg-[#6A2853]',
-    chip: 'bg-[#EDE7F6] text-[#6A2853] border-[#6A2853]/30',
+    dot: 'bg-[#082821]',
+    chip: 'bg-[#EDF3F0] text-[#082821] border-[#082821]/30',
     icon: ShoppingBag
   },
   'Follow-up': {
     group: 'followup',
-    dot: 'bg-[#4A173A]',
-    chip: 'bg-[#F6E2E5] text-[#4A173A] border-[#4A173A]/30',
+    dot: 'bg-[#123C35]',
+    chip: 'bg-[#EDF3F0] text-[#123C35] border-[#123C35]/30',
     icon: CalendarDays
   },
   'Call': {
@@ -96,7 +96,7 @@ const EVENT_TYPE_META: Record<
   'Shopping Confirmed': {
     group: 'confirmed',
     dot: 'bg-[#C9A45C]',
-    chip: 'bg-[#FFF7F2] text-[#8A6D3B] border-[#C9A45C]/40',
+    chip: 'bg-[#EDF3F0] text-[#8A6D3B] border-[#C9A45C]/40',
     icon: CircleCheck
   }
 };
@@ -389,7 +389,7 @@ export default function WeddingFollowUpCalendar() {
       <div
         key={ev.key}
         onClick={() => openEvent(ev)}
-        className="p-3.5 rounded-2xl bg-[#FFFAF7] border border-[#E8D9D4] hover:border-[#B76E79] text-xs space-y-2 transition-all shadow-2xs cursor-pointer"
+        className="p-3.5 rounded-2xl bg-[#F7F5F0] border border-[#E1DDD3] hover:border-[#C9A45C] text-xs space-y-2 transition-all shadow-2xs cursor-pointer"
       >
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-black ${meta.chip}`}>
@@ -406,14 +406,14 @@ export default function WeddingFollowUpCalendar() {
         <Link
           to={dateHref(ev.customerId)}
           onClick={(e) => e.stopPropagation()}
-          className="block font-black text-[#4A173A] hover:text-[#6A2853] hover:underline"
+          className="block font-black text-[#123C35] hover:text-[#082821] hover:underline"
         >
           {ev.customerName}
         </Link>
 
-        <div className="text-[#6F5963] space-y-1 text-[11px]">
-          <div className="flex items-center gap-1.5 font-semibold text-[#2B1722] flex-wrap">
-            <span className="text-[#6A2853]">{ev.customerCode}</span>
+        <div className="text-[#65716C] space-y-1 text-[11px]">
+          <div className="flex items-center gap-1.5 font-semibold text-[#17201D] flex-wrap">
+            <span className="text-[#082821]">{ev.customerCode}</span>
             <span>·</span>
             <span>📱 {ev.mobile || 'No mobile'}</span>
             <span>·</span>
@@ -426,14 +426,14 @@ export default function WeddingFollowUpCalendar() {
             <div className="text-[#C58A18] font-bold">Window: {ev.time}</div>
           )}
           {ev.detail && (
-            <div className="text-[#6F5963]">{ev.detail}</div>
+            <div className="text-[#65716C]">{ev.detail}</div>
           )}
-          <div className="text-[#4A173A] font-bold">
+          <div className="text-[#123C35] font-bold">
             Assigned: {ev.assignedTelecaller || 'Unassigned'}
           </div>
         </div>
 
-        <div className="flex items-center justify-between pt-2 border-t border-[#E8D9D4]">
+        <div className="flex items-center justify-between pt-2 border-t border-[#E1DDD3]">
           {waDigits ? (
             <a
               href={`https://wa.me/91${waDigits}?text=Namaste%20${encodeURIComponent(ev.customerName)}%2C%20greetings%20from%20BSC%20Exclusive!`}
@@ -451,9 +451,9 @@ export default function WeddingFollowUpCalendar() {
           <Link
             to={dateHref(ev.customerId)}
             onClick={(e) => e.stopPropagation()}
-            className="px-2.5 py-1 bg-[#4A173A] hover:bg-[#6A2853] text-white rounded-lg text-[10px] font-bold shadow-xs flex items-center gap-1 transition-colors"
+            className="px-2.5 py-1 bg-[#123C35] hover:bg-[#082821] text-white rounded-lg text-[10px] font-bold shadow-xs flex items-center gap-1 transition-colors"
           >
-            <Eye className="w-3 h-3 text-[#B76E79]" /> View Record
+            <Eye className="w-3 h-3 text-[#C9A45C]" /> View Record
           </Link>
         </div>
       </div>
@@ -477,11 +477,11 @@ export default function WeddingFollowUpCalendar() {
                   value={locationFilter}
                   onChange={(val) => setLocationFilter(val)}
                 />
-                <div className="flex items-center bg-[#FFFDFC] rounded-xl border border-[#E8D9D4] p-1 text-xs font-bold shadow-xs">
+                <div className="flex items-center bg-[#FFFFFF] rounded-xl border border-[#E1DDD3] p-1 text-xs font-bold shadow-xs">
                   <button
                     onClick={() => setViewMode('month')}
                     className={`px-3 py-1 rounded-lg transition-all ${
-                      viewMode === 'month' ? 'bg-[#B76E79] text-white shadow-xs' : 'text-[#6F5963] hover:text-[#4A173A]'
+                      viewMode === 'month' ? 'bg-[#C9A45C] text-white shadow-xs' : 'text-[#65716C] hover:text-[#123C35]'
                     }`}
                   >
                     Month View
@@ -489,7 +489,7 @@ export default function WeddingFollowUpCalendar() {
                   <button
                     onClick={() => setViewMode('list')}
                     className={`px-3 py-1 rounded-lg transition-all ${
-                      viewMode === 'list' ? 'bg-[#B76E79] text-white shadow-xs' : 'text-[#6F5963] hover:text-[#4A173A]'
+                      viewMode === 'list' ? 'bg-[#C9A45C] text-white shadow-xs' : 'text-[#65716C] hover:text-[#123C35]'
                     }`}
                   >
                     List View
@@ -500,25 +500,25 @@ export default function WeddingFollowUpCalendar() {
           />
 
           {/* Calendar Header Navigator */}
-          <div className="bg-[#FFFDFC] p-4 sm:p-5 rounded-2xl border border-[#E8D9D4] shadow-xs flex items-center justify-between flex-wrap gap-3">
+          <div className="bg-[#FFFFFF] p-4 sm:p-5 rounded-2xl border border-[#E1DDD3] shadow-xs flex items-center justify-between flex-wrap gap-3">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#4A173A] text-[#B76E79] flex items-center justify-center font-black shadow-xs">
+              <div className="w-10 h-10 rounded-xl bg-[#123C35] text-[#C9A45C] flex items-center justify-center font-black shadow-xs">
                 <CalendarDays className="w-5 h-5" />
               </div>
               <div>
-                <h2 className="text-lg font-black text-[#4A173A]">
+                <h2 className="text-lg font-black text-[#123C35]">
                   {monthNames[month]} {year}
                 </h2>
-                <div className="text-xs text-[#6F5963] font-semibold">
+                <div className="text-xs text-[#65716C] font-semibold">
                   Wedding dates · shopping dates · calls · follow-ups · store visits
                 </div>
               </div>
               <div className="flex flex-col items-end gap-1">
-                <span className="px-2.5 py-1 rounded-lg bg-[#FFF7F2] border border-[#E8D9D4] text-[11px] font-black text-[#4A173A]">
+                <span className="px-2.5 py-1 rounded-lg bg-[#EDF3F0] border border-[#E1DDD3] text-[11px] font-black text-[#123C35]">
                   {filteredEvents.length} event{filteredEvents.length === 1 ? '' : 's'} this month
                 </span>
                 {loading && (
-                  <span className="text-[10px] font-bold text-[#B76E79]">Updating…</span>
+                  <span className="text-[10px] font-bold text-[#C9A45C]">Updating…</span>
                 )}
               </div>
             </div>
@@ -526,20 +526,20 @@ export default function WeddingFollowUpCalendar() {
             <div className="flex items-center gap-2">
               <button
                 onClick={handlePrevMonth}
-                className="p-2 rounded-xl bg-[#FFF7F2] hover:bg-[#E8D9D4] text-[#4A173A] border border-[#E8D9D4] transition-colors"
+                className="p-2 rounded-xl bg-[#EDF3F0] hover:bg-[#E1DDD3] text-[#123C35] border border-[#E1DDD3] transition-colors"
                 title="Previous Month"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setCurrentDate(new Date())}
-                className="px-3 py-1.5 rounded-xl bg-[#FFF7F2] hover:bg-[#E8D9D4] text-xs font-bold text-[#4A173A] border border-[#E8D9D4] transition-colors"
+                className="px-3 py-1.5 rounded-xl bg-[#EDF3F0] hover:bg-[#E1DDD3] text-xs font-bold text-[#123C35] border border-[#E1DDD3] transition-colors"
               >
                 Today
               </button>
               <button
                 onClick={handleNextMonth}
-                className="p-2 rounded-xl bg-[#FFF7F2] hover:bg-[#E8D9D4] text-[#4A173A] border border-[#E8D9D4] transition-colors"
+                className="p-2 rounded-xl bg-[#EDF3F0] hover:bg-[#E1DDD3] text-[#123C35] border border-[#E1DDD3] transition-colors"
                 title="Next Month"
               >
                 <ChevronRight className="w-4 h-4" />
@@ -548,9 +548,9 @@ export default function WeddingFollowUpCalendar() {
           </div>
 
           {/* Event Type Filter */}
-          <div className="bg-[#FFFDFC] p-4 sm:p-5 rounded-2xl border border-[#E8D9D4] shadow-xs flex items-center justify-between gap-3 flex-wrap">
+          <div className="bg-[#FFFFFF] p-4 sm:p-5 rounded-2xl border border-[#E1DDD3] shadow-xs flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[11px] font-black uppercase tracking-wider text-[#6F5963]">
+              <span className="text-[11px] font-black uppercase tracking-wider text-[#65716C]">
                 Event Type
               </span>
               {EVENT_FILTERS.map((f) => {
@@ -563,47 +563,47 @@ export default function WeddingFollowUpCalendar() {
                     onClick={() => setEventFilter(f.value)}
                     className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[11px] font-bold transition-all ${
                       isActive
-                        ? 'bg-[#B76E79] text-white border-[#B76E79] shadow-xs'
-                        : 'bg-[#FFF7F2] text-[#6F5963] border-[#E8D9D4] hover:text-[#4A173A] hover:border-[#B76E79]'
+                        ? 'bg-[#C9A45C] text-white border-[#C9A45C] shadow-xs'
+                        : 'bg-[#EDF3F0] text-[#65716C] border-[#E1DDD3] hover:text-[#123C35] hover:border-[#C9A45C]'
                     }`}
                   >
                     {chipType && <span className={`w-1.5 h-1.5 rounded-full ${EVENT_TYPE_META[chipType].dot}`} />}
                     {f.label}
-                    <span className={`px-1.5 rounded-md text-[10px] font-black ${isActive ? 'bg-white/20' : 'bg-[#E8D9D4]/60 text-[#4A173A]'}`}>
+                    <span className={`px-1.5 rounded-md text-[10px] font-black ${isActive ? 'bg-white/20' : 'bg-[#E1DDD3]/60 text-[#123C35]'}`}>
                       {count}
                     </span>
                   </button>
                 );
               })}
             </div>
-            <div className="text-[11px] text-[#6F5963] font-semibold">
+            <div className="text-[11px] text-[#65716C] font-semibold">
               Click any event to open the customer record
             </div>
           </div>
 
           {loading && !initialised ? (
-            <div className="bg-[#FFFDFC] rounded-3xl border border-[#E8D9D4] shadow-xs p-12 text-center">
-              <CalendarIcon className="w-8 h-8 text-[#B76E79] mx-auto mb-3 animate-pulse" />
-              <div className="text-sm font-black text-[#4A173A]">Loading CRM calendar…</div>
-              <div className="text-xs text-[#6F5963] mt-1">Wedding dates, shopping plans, calls, follow-ups and store visits.</div>
+            <div className="bg-[#FFFFFF] rounded-3xl border border-[#E1DDD3] shadow-xs p-12 text-center">
+              <CalendarIcon className="w-8 h-8 text-[#C9A45C] mx-auto mb-3 animate-pulse" />
+              <div className="text-sm font-black text-[#123C35]">Loading CRM calendar…</div>
+              <div className="text-xs text-[#65716C] mt-1">Wedding dates, shopping plans, calls, follow-ups and store visits.</div>
             </div>
           ) : viewMode === 'list' ? (
             /* ── Agenda / List view of the month's events ───────────────── */
-            <div className="bg-[#FFFDFC] rounded-3xl border border-[#E8D9D4] shadow-xs p-5 space-y-5">
-              <div className="border-b border-[#E8D9D4] pb-3">
-                <h3 className="text-sm font-black text-[#4A173A] uppercase tracking-wider">
+            <div className="bg-[#FFFFFF] rounded-3xl border border-[#E1DDD3] shadow-xs p-5 space-y-5">
+              <div className="border-b border-[#E1DDD3] pb-3">
+                <h3 className="text-sm font-black text-[#123C35] uppercase tracking-wider">
                   {monthNames[month]} {year} · Agenda
                 </h3>
-                <div className="text-xs text-[#6F5963]">
+                <div className="text-xs text-[#65716C]">
                   {filteredEvents.length} event{filteredEvents.length === 1 ? '' : 's'} scheduled
                 </div>
               </div>
 
               {filteredEvents.length === 0 ? (
-                <div className="text-center py-12 text-[#6F5963] text-xs">
-                  <CalendarIcon className="w-8 h-8 text-[#B76E79] mx-auto mb-2 opacity-80" />
-                  <div className="font-bold text-sm text-[#4A173A]">No events this month</div>
-                  <div className="text-xs text-[#6F5963] mt-0.5">
+                <div className="text-center py-12 text-[#65716C] text-xs">
+                  <CalendarIcon className="w-8 h-8 text-[#C9A45C] mx-auto mb-2 opacity-80" />
+                  <div className="font-bold text-sm text-[#123C35]">No events this month</div>
+                  <div className="text-xs text-[#65716C] mt-0.5">
                     Adjust the event-type or location filter, or pick another month.
                   </div>
                 </div>
@@ -614,10 +614,10 @@ export default function WeddingFollowUpCalendar() {
                     .map((day) => (
                       <div key={day} className="space-y-2">
                         <div className="flex items-center gap-2">
-                          <span className="text-[11px] font-black uppercase tracking-wider text-[#4A173A]">
+                          <span className="text-[11px] font-black uppercase tracking-wider text-[#123C35]">
                             {formatDateDisplay(day, day, { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}
                           </span>
-                          <span className="text-[10px] font-bold text-[#6F5963]">
+                          <span className="text-[10px] font-bold text-[#65716C]">
                             · {eventsByDay[day].length} event{eventsByDay[day].length === 1 ? '' : 's'}
                           </span>
                         </div>
@@ -633,9 +633,9 @@ export default function WeddingFollowUpCalendar() {
             /* ── Month grid ─────────────────────────────────────────────── */
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Calendar Grid (2 Cols) */}
-              <div className="lg:col-span-2 bg-[#FFFDFC] rounded-3xl border border-[#E8D9D4] shadow-xs p-5 space-y-4">
+              <div className="lg:col-span-2 bg-[#FFFFFF] rounded-3xl border border-[#E1DDD3] shadow-xs p-5 space-y-4">
                 {/* Day of Week Labels */}
-                <div className="grid grid-cols-7 gap-1 text-center font-black text-[11px] uppercase tracking-wider text-[#6F5963] border-b border-[#E8D9D4] pb-2">
+                <div className="grid grid-cols-7 gap-1 text-center font-black text-[11px] uppercase tracking-wider text-[#65716C] border-b border-[#E1DDD3] pb-2">
                   <span>Sun</span>
                   <span>Mon</span>
                   <span>Tue</span>
@@ -648,7 +648,7 @@ export default function WeddingFollowUpCalendar() {
                 {/* Day Grid */}
                 <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
                   {blanks.map((b) => (
-                    <div key={`blank-${b}`} className="min-h-[70px] sm:min-h-[85px] bg-[#FFF7F2]/60 rounded-xl border border-dashed border-[#E8D9D4]/50" />
+                    <div key={`blank-${b}`} className="min-h-[70px] sm:min-h-[85px] bg-[#EDF3F0]/60 rounded-xl border border-dashed border-[#E1DDD3]/50" />
                   ))}
 
                   {daysArray.map((dayNum) => {
@@ -665,18 +665,18 @@ export default function WeddingFollowUpCalendar() {
                         onClick={() => setSelectedDateStr(dateStr)}
                         className={`min-h-[70px] sm:min-h-[85px] p-2 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between ${
                           isSelected
-                            ? 'border-[#B76E79] bg-[#4A173A] text-white shadow-md'
+                            ? 'border-[#C9A45C] bg-[#123C35] text-white shadow-md'
                             : isToday
-                            ? 'border-[#B76E79] bg-[#F6E2E5]/50'
-                            : 'border-[#E8D9D4] bg-[#FFFAF7] hover:bg-white hover:border-[#B76E79]'
+                            ? 'border-[#C9A45C] bg-[#EDF3F0]/50'
+                            : 'border-[#E1DDD3] bg-[#F7F5F0] hover:bg-white hover:border-[#C9A45C]'
                         }`}
                       >
                         <div className="flex items-center justify-between">
-                          <span className={`text-xs font-black ${isSelected ? 'text-[#E8C7A8]' : isToday ? 'text-[#B76E79]' : 'text-[#2B1722]'}`}>
+                          <span className={`text-xs font-black ${isSelected ? 'text-[#E4CB92]' : isToday ? 'text-[#C9A45C]' : 'text-[#17201D]'}`}>
                             {dayNum}
                           </span>
                           {isToday && (
-                            <span className="text-[8px] bg-[#B76E79] text-white px-1.5 py-0.5 rounded-full font-black uppercase tracking-wider">
+                            <span className="text-[8px] bg-[#C9A45C] text-white px-1.5 py-0.5 rounded-full font-black uppercase tracking-wider">
                               Today
                             </span>
                           )}
@@ -687,8 +687,8 @@ export default function WeddingFollowUpCalendar() {
                             <span
                               className={`inline-block px-1.5 py-0.5 rounded-lg text-[9px] font-black ${
                                 isSelected
-                                  ? 'bg-[#B76E79] text-white'
-                                  : 'bg-[#F6E2E5] text-[#4A173A] border border-[#E8D9D4]'
+                                  ? 'bg-[#C9A45C] text-white'
+                                  : 'bg-[#EDF3F0] text-[#123C35] border border-[#E1DDD3]'
                               }`}
                             >
                               {count} event{count === 1 ? '' : 's'}
@@ -710,9 +710,9 @@ export default function WeddingFollowUpCalendar() {
                 </div>
 
                 {/* Legend */}
-                <div className="flex items-center gap-3 flex-wrap pt-1 border-t border-[#E8D9D4]">
+                <div className="flex items-center gap-3 flex-wrap pt-1 border-t border-[#E1DDD3]">
                   {(Object.keys(EVENT_TYPE_META) as WeddingEventType[]).map((t) => (
-                    <span key={t} className="inline-flex items-center gap-1.5 text-[10px] font-bold text-[#6F5963]">
+                    <span key={t} className="inline-flex items-center gap-1.5 text-[10px] font-bold text-[#65716C]">
                       <span className={`w-1.5 h-1.5 rounded-full ${EVENT_TYPE_META[t].dot}`} />
                       {t}
                     </span>
@@ -721,21 +721,21 @@ export default function WeddingFollowUpCalendar() {
               </div>
 
               {/* Selected Date Events Detail Panel (1 Col) */}
-              <div className="bg-[#FFFDFC] rounded-3xl border border-[#E8D9D4] shadow-xs p-5 space-y-4">
-                <div className="border-b border-[#E8D9D4] pb-3">
-                  <h3 className="text-sm font-black text-[#4A173A] uppercase tracking-wider">
+              <div className="bg-[#FFFFFF] rounded-3xl border border-[#E1DDD3] shadow-xs p-5 space-y-4">
+                <div className="border-b border-[#E1DDD3] pb-3">
+                  <h3 className="text-sm font-black text-[#123C35] uppercase tracking-wider">
                     Events for {selectedDateStr ? formatDateDisplay(selectedDateStr, selectedDateStr, { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' }) : 'Selected Day'}
                   </h3>
-                  <div className="text-xs text-[#6F5963]">
+                  <div className="text-xs text-[#65716C]">
                     {selectedDayEvents.length} event{selectedDayEvents.length === 1 ? '' : 's'} on this date
                   </div>
                 </div>
 
                 {selectedDayEvents.length === 0 ? (
-                  <div className="text-center py-12 text-[#6F5963] text-xs">
-                    <CalendarIcon className="w-8 h-8 text-[#B76E79] mx-auto mb-2 opacity-80" />
-                    <div className="font-bold text-sm text-[#4A173A]">No events for this date</div>
-                    <div className="text-xs text-[#6F5963] mt-0.5">
+                  <div className="text-center py-12 text-[#65716C] text-xs">
+                    <CalendarIcon className="w-8 h-8 text-[#C9A45C] mx-auto mb-2 opacity-80" />
+                    <div className="font-bold text-sm text-[#123C35]">No events for this date</div>
+                    <div className="text-xs text-[#65716C] mt-0.5">
                       Select another date on the calendar, or widen the event-type filter.
                     </div>
                   </div>

@@ -407,7 +407,7 @@ export default function EmployeesPage() {
         <div className="space-y-3.5">
           {/* Header Row: Initials Monogram & Employee Name */}
           <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#101C36] to-[#2B1E16] text-[#C9A45C] flex items-center justify-center font-black text-lg shadow-sm shrink-0 group-hover:scale-105 transition-transform border border-[#C9A45C]/30">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#123C35] to-[#2B1E16] text-[#C9A45C] flex items-center justify-center font-black text-lg shadow-sm shrink-0 group-hover:scale-105 transition-transform border border-[#C9A45C]/30">
               {initial}
             </div>
             <div className="min-w-0 flex-1">
@@ -758,12 +758,12 @@ export default function EmployeesPage() {
                   {groupedBySection.map((group) => (
                     <div
                       key={group.section}
-                      className="bg-white rounded-3xl border border-[#DFDDD7] shadow-xs p-5 sm:p-6 space-y-4"
+                      className="bg-white rounded-3xl border border-[#E1DDD3] shadow-xs p-5 sm:p-6 space-y-4"
                     >
                       {/* Section Header */}
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#DFDDD7]">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#E1DDD3]">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-[#101C36] text-[#C9A45C] flex items-center justify-center font-bold shadow-xs">
+                          <div className="w-10 h-10 rounded-xl bg-[#123C35] text-[#C9A45C] flex items-center justify-center font-bold shadow-xs">
                             <Layers className="w-5 h-5 text-[#C9A45C]" />
                           </div>
                           <div>
@@ -797,10 +797,10 @@ export default function EmployeesPage() {
                   {groupedByDepartment.map((group) => (
                     <div
                       key={group.department}
-                      className="bg-white rounded-3xl border border-[#DFDDD7] shadow-xs p-5 sm:p-6 space-y-4"
+                      className="bg-white rounded-3xl border border-[#E1DDD3] shadow-xs p-5 sm:p-6 space-y-4"
                     >
                       {/* Department Header */}
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#DFDDD7]">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#E1DDD3]">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-xl bg-primary text-accent flex items-center justify-center font-bold shadow-xs">
                             <Building2 className="w-5 h-5" />

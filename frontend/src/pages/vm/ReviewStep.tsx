@@ -76,8 +76,8 @@ const SECTION_SCOPE = '__section__';
 
 /** One select style for the scope picker, so the photo step matches the filter group. */
 const CONTROL_CLASS =
-  'w-full min-h-[40px] text-[13px] font-semibold text-[#2B1722] bg-white border border-[#E8D9D4] rounded-xl ' +
-  'px-3 transition-colors focus:outline-none focus:border-[#B76E79] focus:ring-2 focus:ring-[#B76E79]/35';
+  'w-full min-h-[40px] text-[13px] font-semibold text-[#17201D] bg-white border border-[#E1DDD3] rounded-xl ' +
+  'px-3 transition-colors focus:outline-none focus:border-[#C9A45C] focus:ring-2 focus:ring-[#C9A45C]/35';
 
 /**
  * Steps 4 and 5 — photo evidence, then the review-and-submit gate.
@@ -225,7 +225,7 @@ export default function ReviewStep(props: ReviewStepProps) {
             onPhotosChanged={onPhotosChanged}
           />
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-t border-[#E8D9D4] pt-4">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-t border-[#E1DDD3] pt-4">
             <p className={`${vmMeta} min-w-0 leading-snug`}>
               {auditId
                 ? 'Photos are stored against this draft audit, so they survive a refresh or a logout.'
@@ -299,8 +299,8 @@ export default function ReviewStep(props: ReviewStepProps) {
           </div>
         </div>
 
-        <p className="flex items-start gap-2 rounded-xl bg-[#FFF7F2] border border-[#E8D9D4] px-3 py-2.5 text-[12px] font-semibold leading-relaxed text-[#6F5963]">
-          <Info className="w-4 h-4 shrink-0 mt-px text-[#B76E79]" />
+        <p className="flex items-start gap-2 rounded-xl bg-[#EDF3F0] border border-[#E1DDD3] px-3 py-2.5 text-[12px] font-semibold leading-relaxed text-[#65716C]">
+          <Info className="w-4 h-4 shrink-0 mt-px text-[#C9A45C]" />
           <span>
             Compliance score = Pass ÷ (Pass + Fail). N/A checkpoints leave the denominator and unrated ones are
             listed below, so the figure the server files can be checked against these numbers.
@@ -322,7 +322,7 @@ export default function ReviewStep(props: ReviewStepProps) {
           </VmPill>
         </div>
 
-        <ul className="divide-y divide-[#E8D9D4] rounded-xl border border-[#E8D9D4] bg-white">
+        <ul className="divide-y divide-[#E1DDD3] rounded-xl border border-[#E1DDD3] bg-white">
           <RequirementRow ok={!blocking && !!floorName && !!sectionName && !!shift} label="Floor, section and shift chosen" />
           <RequirementRow
             ok={!unrated}
@@ -371,14 +371,14 @@ export default function ReviewStep(props: ReviewStepProps) {
           </div>
         )}
 
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-t border-[#E8D9D4] pt-4">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-t border-[#E1DDD3] pt-4">
           <button type="button" onClick={onBackToAudit} className={vmBtnSecondary}>
-            <ChevronLeft className="w-4 h-4 text-[#B76E79]" />
+            <ChevronLeft className="w-4 h-4 text-[#C9A45C]" />
             <span>Back to the checklist</span>
           </button>
 
           <button type="button" disabled={!canWrite || !ready || submitting} onClick={() => setConfirmOpen(true)} className={vmBtnPrimary}>
-            {submitting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 text-[#E8C7A8]" />}
+            {submitting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 text-[#E4CB92]" />}
             <span>{submitting ? 'Submitting report…' : 'Submit Audit Report'}</span>
           </button>
         </div>
@@ -399,7 +399,7 @@ export default function ReviewStep(props: ReviewStepProps) {
           onClick={() => !submitting && setConfirmOpen(false)}
         >
           <div
-            className="w-full max-w-md bg-[#FFFDFC] border border-[#E8D9D4] rounded-2xl shadow-xl p-5 sm:p-6"
+            className="w-full max-w-md bg-[#FFFFFF] border border-[#E1DDD3] rounded-2xl shadow-xl p-5 sm:p-6"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start gap-3">
@@ -407,7 +407,7 @@ export default function ReviewStep(props: ReviewStepProps) {
                 <Send className="w-5 h-5 text-[#C58A18]" />
               </span>
               <div className="min-w-0">
-                <h3 id="vm-submit-confirm-title" className="text-[16px] font-black leading-snug text-[#4A173A]">
+                <h3 id="vm-submit-confirm-title" className="text-[16px] font-black leading-snug text-[#123C35]">
                   Are you sure you want to submit this audit?
                 </h3>
                 <p className={`${vmMeta} mt-1 leading-snug`}>
@@ -430,7 +430,7 @@ export default function ReviewStep(props: ReviewStepProps) {
                 disabled={submitting}
                 className={vmBtnSecondary}
               >
-                <X className="w-4 h-4 text-[#B76E79]" />
+                <X className="w-4 h-4 text-[#C9A45C]" />
                 <span>Cancel</span>
               </button>
               <button
@@ -442,7 +442,7 @@ export default function ReviewStep(props: ReviewStepProps) {
                 disabled={submitting}
                 className={vmBtnPrimary}
               >
-                {submitting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4 text-[#E8C7A8]" />}
+                {submitting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4 text-[#E4CB92]" />}
                 <span>{submitting ? 'Submitting…' : 'Yes, submit this audit'}</span>
               </button>
             </div>
@@ -458,7 +458,7 @@ export default function ReviewStep(props: ReviewStepProps) {
 /** Floor → section → shift → date band: the same facts on both steps, at a readable size. */
 function ContextFacts({ facts }: { facts: { label: string; value: string }[] }) {
   return (
-    <dl className="mt-4 grid grid-cols-2 gap-x-5 gap-y-3 border-t border-[#E8D9D4] pt-4 md:grid-cols-3 xl:grid-cols-6">
+    <dl className="mt-4 grid grid-cols-2 gap-x-5 gap-y-3 border-t border-[#E1DDD3] pt-4 md:grid-cols-3 xl:grid-cols-6">
       {facts.map((fact) => (
         <div key={fact.label} className="min-w-0">
           <dt className={vmLabel}>{fact.label}</dt>
@@ -491,7 +491,7 @@ function RequirementRow({
           <XCircle className="w-4 h-4 shrink-0 mt-0.5 text-[#C58A18]" />
         )}
         <span className="min-w-0">
-          <span className={`block text-[13px] font-bold ${ok ? 'text-[#146B41]' : 'text-[#2B1722]'}`}>{label}</span>
+          <span className={`block text-[13px] font-bold ${ok ? 'text-[#146B41]' : 'text-[#17201D]'}`}>{label}</span>
           {!ok && detail && (
             <span className={`${vmMeta} mt-0.5 block break-words leading-snug`}>{detail}</span>
           )}
@@ -519,7 +519,7 @@ function DialogStat({
   tone: 'neutral' | 'positive' | 'danger';
 }) {
   const tones: Record<'neutral' | 'positive' | 'danger', string> = {
-    neutral: 'bg-[#FFF7F2] text-[#4A173A] border-[#E8D9D4]',
+    neutral: 'bg-[#EDF3F0] text-[#123C35] border-[#E1DDD3]',
     positive: 'bg-[#E8F5EE] text-[#146B41] border-[#198754]/25',
     danger: 'bg-[#FDE8E7] text-[#9B1C15] border-[#B42318]/25'
   };

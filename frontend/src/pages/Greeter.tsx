@@ -296,7 +296,7 @@ export default function Greeter() {
                 className="w-full px-3 py-2 rounded-xl bg-black/40 border border-white/20 text-white text-xs font-bold focus:outline-none focus:border-accent"
               >
                 {locCtx.allLocations.map((loc) => (
-                  <option key={loc.id} value={loc.id} className="bg-[#101C36] text-white">
+                  <option key={loc.id} value={loc.id} className="bg-[#123C35] text-white">
                     {loc.name} ({loc.code})
                   </option>
                 ))}

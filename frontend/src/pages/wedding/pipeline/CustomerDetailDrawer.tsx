@@ -1146,8 +1146,8 @@ export default function CustomerDetailDrawer({
     setSectionNotice('');
   };
 
-  const inputCls = 'w-full px-3 py-2 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl text-xs font-semibold text-[#2B1722] focus:outline-none focus:border-[#B76E79] disabled:opacity-60';
-  const labelCls = 'block text-[10px] font-bold uppercase tracking-wider text-[#6F5963] mb-1';
+  const inputCls = 'w-full px-3 py-2 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl text-xs font-semibold text-[#17201D] focus:outline-none focus:border-[#C9A45C] disabled:opacity-60';
+  const labelCls = 'block text-[10px] font-bold uppercase tracking-wider text-[#65716C] mb-1';
 
   // ── Inline section editor ────────────────────────────────────────────────
   // Rendered as a plain function (not a nested component type) so the inputs keep
@@ -1161,7 +1161,7 @@ export default function CustomerDetailDrawer({
 
     if (!editable.length) {
       return (
-        <p className="text-[10px] font-semibold text-[#6F5963] bg-[#FFF7F2] border border-[#E8D9D4] rounded-2xl px-3 py-2">
+        <p className="text-[10px] font-semibold text-[#65716C] bg-[#EDF3F0] border border-[#E1DDD3] rounded-2xl px-3 py-2">
           These details are maintained by your manager — the customer update endpoint does not accept any
           field in this section for your role.
         </p>
@@ -1171,7 +1171,7 @@ export default function CustomerDetailDrawer({
     if (!isEditing) {
       return (
         <div className="flex items-center justify-between gap-2">
-          <span className="text-[9px] font-bold uppercase tracking-wider text-[#6F5963]">
+          <span className="text-[9px] font-bold uppercase tracking-wider text-[#65716C]">
             {scope === 'limited' && managerOnly.length
               ? `Manager only: ${managerOnly.map((f) => f.label).join(', ')}`
               : 'Editable'}
@@ -1179,9 +1179,9 @@ export default function CustomerDetailDrawer({
           <button
             type="button"
             onClick={() => openSection(sectionKey)}
-            className="px-3 py-1.5 rounded-xl bg-[#FFFDFC] hover:bg-[#FFF7F2] border border-[#E8D9D4] text-[10px] font-bold text-[#4A173A] flex items-center gap-1 cursor-pointer transition-colors"
+            className="px-3 py-1.5 rounded-xl bg-[#FFFFFF] hover:bg-[#EDF3F0] border border-[#E1DDD3] text-[10px] font-bold text-[#123C35] flex items-center gap-1 cursor-pointer transition-colors"
           >
-            <Edit3 className="w-3 h-3 text-[#B76E79]" />
+            <Edit3 className="w-3 h-3 text-[#C9A45C]" />
             <span>Edit</span>
           </button>
         </div>
@@ -1189,8 +1189,8 @@ export default function CustomerDetailDrawer({
     }
 
     return (
-      <div className="space-y-3 rounded-2xl border border-[#E8D9D4] bg-[#FFFAF7] p-3.5">
-        <div className="text-[10px] font-black uppercase tracking-wider text-[#4A173A]">Edit {title}</div>
+      <div className="space-y-3 rounded-2xl border border-[#E1DDD3] bg-[#F7F5F0] p-3.5">
+        <div className="text-[10px] font-black uppercase tracking-wider text-[#123C35]">Edit {title}</div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {editable.map((f) => {
             const value = draft[f.name];
@@ -1223,7 +1223,7 @@ export default function CustomerDetailDrawer({
                       <option key={String(o)} value={o}>{o}</option>
                     ))}
                   </select>
-                  {f.hint && <p className="text-[9px] text-[#6F5963] mt-1">{f.hint}</p>}
+                  {f.hint && <p className="text-[9px] text-[#65716C] mt-1">{f.hint}</p>}
                 </div>
               );
             }
@@ -1233,19 +1233,19 @@ export default function CustomerDetailDrawer({
               return (
                 <div key={f.name}>
                   <label className={labelCls}>{f.label}</label>
-                  <label className="flex items-center gap-2 rounded-xl border border-[#E8D9D4] bg-[#FFFDFC] px-3 py-2 cursor-pointer">
+                  <label className="flex items-center gap-2 rounded-xl border border-[#E1DDD3] bg-[#FFFFFF] px-3 py-2 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={Boolean(value)}
                       disabled={saving}
                       onChange={(e) => setDraft({ ...draft, [f.name]: e.target.checked })}
-                      className="accent-[#B76E79]"
+                      className="accent-[#C9A45C]"
                     />
-                    <span className="text-[10px] font-black uppercase tracking-wider text-[#4A173A]">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-[#123C35]">
                       {value ? 'Yes' : 'No'}
                     </span>
                   </label>
-                  {f.hint && <p className="text-[9px] text-[#6F5963] mt-1">{f.hint}</p>}
+                  {f.hint && <p className="text-[9px] text-[#65716C] mt-1">{f.hint}</p>}
                 </div>
               );
             }
@@ -1271,8 +1271,8 @@ export default function CustomerDetailDrawer({
                           key={option.id}
                           className={`inline-flex items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-[10px] font-bold cursor-pointer transition-colors ${
                             on
-                              ? 'bg-[#4A173A] text-white border-[#4A173A]'
-                              : 'bg-[#FFFDFC] text-[#4A173A] border-[#E8D9D4] hover:bg-[#FFF7F2]'
+                              ? 'bg-[#123C35] text-white border-[#123C35]'
+                              : 'bg-[#FFFFFF] text-[#123C35] border-[#E1DDD3] hover:bg-[#EDF3F0]'
                           }`}
                         >
                           <input
@@ -1293,7 +1293,7 @@ export default function CustomerDetailDrawer({
                       );
                     })}
                   </div>
-                  {f.hint && <p className="text-[9px] text-[#6F5963] mt-1">{f.hint}</p>}
+                  {f.hint && <p className="text-[9px] text-[#65716C] mt-1">{f.hint}</p>}
                 </div>
               );
             }
@@ -1313,8 +1313,8 @@ export default function CustomerDetailDrawer({
                           key={category}
                           className={`inline-flex items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-[10px] font-bold cursor-pointer transition-colors ${
                             on
-                              ? 'bg-[#B76E79] text-white border-[#B76E79]'
-                              : 'bg-[#FFFDFC] text-[#4A173A] border-[#E8D9D4] hover:bg-[#FFF7F2]'
+                              ? 'bg-[#C9A45C] text-white border-[#C9A45C]'
+                              : 'bg-[#FFFFFF] text-[#123C35] border-[#E1DDD3] hover:bg-[#EDF3F0]'
                           }`}
                         >
                           <input
@@ -1333,7 +1333,7 @@ export default function CustomerDetailDrawer({
                       );
                     })}
                   </div>
-                  {f.hint && <p className="text-[9px] text-[#6F5963] mt-1">{f.hint}</p>}
+                  {f.hint && <p className="text-[9px] text-[#65716C] mt-1">{f.hint}</p>}
                 </div>
               );
             }
@@ -1376,14 +1376,14 @@ export default function CustomerDetailDrawer({
                     className={inputCls}
                   />
                 )}
-                {f.hint && <p className="text-[9px] text-[#6F5963] mt-1">{f.hint}</p>}
+                {f.hint && <p className="text-[9px] text-[#65716C] mt-1">{f.hint}</p>}
               </div>
             );
           })}
         </div>
 
         {scope === 'limited' && managerOnly.length > 0 && (
-          <p className="text-[9px] font-semibold text-[#6F5963]">
+          <p className="text-[9px] font-semibold text-[#65716C]">
             Not editable for your role (manager endpoint only): {managerOnly.map((f) => f.label).join(', ')}.
           </p>
         )}
@@ -1402,7 +1402,7 @@ export default function CustomerDetailDrawer({
             type="button"
             onClick={closeSection}
             disabled={saving}
-            className="px-3.5 py-1.5 rounded-xl bg-[#FFFDFC] hover:bg-[#FFF7F2] border border-[#E8D9D4] text-[10px] font-bold text-[#4A173A] disabled:opacity-50 cursor-pointer transition-colors"
+            className="px-3.5 py-1.5 rounded-xl bg-[#FFFFFF] hover:bg-[#EDF3F0] border border-[#E1DDD3] text-[10px] font-bold text-[#123C35] disabled:opacity-50 cursor-pointer transition-colors"
           >
             Cancel
           </button>
@@ -1410,7 +1410,7 @@ export default function CustomerDetailDrawer({
             type="button"
             onClick={() => saveSection(sectionKey)}
             disabled={saving}
-            className="px-3.5 py-1.5 rounded-xl bg-[#4A173A] hover:bg-[#6A2853] text-white text-[10px] font-bold flex items-center gap-1.5 disabled:opacity-60 cursor-pointer transition-colors"
+            className="px-3.5 py-1.5 rounded-xl bg-[#123C35] hover:bg-[#082821] text-white text-[10px] font-bold flex items-center gap-1.5 disabled:opacity-60 cursor-pointer transition-colors"
           >
             {saving ? (
               <>
@@ -1435,8 +1435,8 @@ export default function CustomerDetailDrawer({
     if (!visitForm) return null;
     const set = (patch: Record<string, any>) => setVisitForm({ ...visitForm, ...patch });
     return (
-      <form onSubmit={saveVisit} className="space-y-3 rounded-2xl border border-[#E8D9D4] bg-[#FFFDFC] p-3.5">
-        <div className="text-[10px] font-black uppercase tracking-wider text-[#4A173A]">
+      <form onSubmit={saveVisit} className="space-y-3 rounded-2xl border border-[#E1DDD3] bg-[#FFFFFF] p-3.5">
+        <div className="text-[10px] font-black uppercase tracking-wider text-[#123C35]">
           {visitForm.id ? `Edit Visit #${visitForm.id}` : 'Record Store Visit'}
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1447,7 +1447,7 @@ export default function CustomerDetailDrawer({
           <div>
             <label className={labelCls}>Visit Time *</label>
             <input type="time" value={String(visitForm.visit_time ?? '')} disabled={savingVisit} onChange={(e) => set({ visit_time: e.target.value })} className={inputCls} />
-            <p className="text-[9px] text-[#6F5963] mt-1">Required by the visit endpoint.</p>
+            <p className="text-[9px] text-[#65716C] mt-1">Required by the visit endpoint.</p>
           </div>
           <div>
             <label className={labelCls}>Visitors Count</label>
@@ -1490,7 +1490,7 @@ export default function CustomerDetailDrawer({
           <div className="sm:col-span-2">
             <label className={labelCls}>Visit Notes</label>
             <textarea rows={2} value={String(visitForm.visit_notes ?? '')} disabled={savingVisit} onChange={(e) => set({ visit_notes: e.target.value })} className={inputCls} />
-            <p className="text-[9px] text-[#6F5963] mt-1">Stored encrypted at rest; shown decrypted on this panel.</p>
+            <p className="text-[9px] text-[#65716C] mt-1">Stored encrypted at rest; shown decrypted on this panel.</p>
           </div>
         </div>
 
@@ -1502,10 +1502,10 @@ export default function CustomerDetailDrawer({
         )}
 
         <div className="flex items-center justify-end gap-2">
-          <button type="button" onClick={() => { setVisitForm(null); setSectionError(''); }} disabled={savingVisit} className="px-3.5 py-1.5 rounded-xl bg-[#FFFDFC] hover:bg-[#FFF7F2] border border-[#E8D9D4] text-[10px] font-bold text-[#4A173A] disabled:opacity-50 cursor-pointer transition-colors">
+          <button type="button" onClick={() => { setVisitForm(null); setSectionError(''); }} disabled={savingVisit} className="px-3.5 py-1.5 rounded-xl bg-[#FFFFFF] hover:bg-[#EDF3F0] border border-[#E1DDD3] text-[10px] font-bold text-[#123C35] disabled:opacity-50 cursor-pointer transition-colors">
             Cancel
           </button>
-          <button type="submit" disabled={savingVisit} className="px-3.5 py-1.5 rounded-xl bg-[#4A173A] hover:bg-[#6A2853] text-white text-[10px] font-bold flex items-center gap-1.5 disabled:opacity-60 cursor-pointer transition-colors">
+          <button type="submit" disabled={savingVisit} className="px-3.5 py-1.5 rounded-xl bg-[#123C35] hover:bg-[#082821] text-white text-[10px] font-bold flex items-center gap-1.5 disabled:opacity-60 cursor-pointer transition-colors">
             {savingVisit ? (<><RefreshCw className="w-3 h-3 animate-spin" /><span>Saving…</span></>) : (<><Save className="w-3 h-3" /><span>{visitForm.id ? 'Save Visit' : 'Record Visit'}</span></>)}
           </button>
         </div>
@@ -1522,8 +1522,8 @@ export default function CustomerDetailDrawer({
     const netPreview = netOverride !== '' ? Number(netOverride) : Math.max(0, total - discount);
 
     return (
-      <form onSubmit={savePurchase} className="space-y-3 rounded-2xl border border-[#E8D9D4] bg-[#FFFDFC] p-3.5">
-        <div className="text-[10px] font-black uppercase tracking-wider text-[#4A173A]">Record Purchase</div>
+      <form onSubmit={savePurchase} className="space-y-3 rounded-2xl border border-[#E1DDD3] bg-[#FFFFFF] p-3.5">
+        <div className="text-[10px] font-black uppercase tracking-wider text-[#123C35]">Record Purchase</div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className={labelCls}>Bill Number</label>
@@ -1552,7 +1552,7 @@ export default function CustomerDetailDrawer({
           <div>
             <label className={labelCls}>Net Amount</label>
             <input type="number" min={0} step="0.01" value={netOverride} disabled={savingPurchase} onChange={(e) => set({ net_amount: e.target.value })} className={inputCls} />
-            <p className="text-[9px] text-[#6F5963] mt-1">Blank sends total − discount ({rupeeText(netPreview) || '₹0'}).</p>
+            <p className="text-[9px] text-[#65716C] mt-1">Blank sends total − discount ({rupeeText(netPreview) || '₹0'}).</p>
           </div>
           <div>
             <label className={labelCls}>Payment Status</label>
@@ -1584,10 +1584,10 @@ export default function CustomerDetailDrawer({
         )}
 
         <div className="flex items-center justify-end gap-2">
-          <button type="button" onClick={() => { setPurchaseForm(null); setSectionError(''); }} disabled={savingPurchase} className="px-3.5 py-1.5 rounded-xl bg-[#FFFDFC] hover:bg-[#FFF7F2] border border-[#E8D9D4] text-[10px] font-bold text-[#4A173A] disabled:opacity-50 cursor-pointer transition-colors">
+          <button type="button" onClick={() => { setPurchaseForm(null); setSectionError(''); }} disabled={savingPurchase} className="px-3.5 py-1.5 rounded-xl bg-[#FFFFFF] hover:bg-[#EDF3F0] border border-[#E1DDD3] text-[10px] font-bold text-[#123C35] disabled:opacity-50 cursor-pointer transition-colors">
             Cancel
           </button>
-          <button type="submit" disabled={savingPurchase} className="px-3.5 py-1.5 rounded-xl bg-[#4A173A] hover:bg-[#6A2853] text-white text-[10px] font-bold flex items-center gap-1.5 disabled:opacity-60 cursor-pointer transition-colors">
+          <button type="submit" disabled={savingPurchase} className="px-3.5 py-1.5 rounded-xl bg-[#123C35] hover:bg-[#082821] text-white text-[10px] font-bold flex items-center gap-1.5 disabled:opacity-60 cursor-pointer transition-colors">
             {savingPurchase ? (<><RefreshCw className="w-3 h-3 animate-spin" /><span>Saving…</span></>) : (<><IndianRupee className="w-3 h-3" /><span>Record Purchase</span></>)}
           </button>
         </div>
@@ -1612,14 +1612,14 @@ export default function CustomerDetailDrawer({
       ariaLabel={customer ? `Customer detail: ${customer.customer_name}` : 'Customer detail panel'}
       zIndex={1200}
     >
-      <div className="w-full max-w-[760px] h-[calc(100vh-2rem)] bg-[#FFFDFC] border border-[#E8D9D4] rounded-3xl shadow-2xl flex flex-col overflow-hidden">
+      <div className="w-full max-w-[760px] h-[calc(100vh-2rem)] bg-[#FFFFFF] border border-[#E1DDD3] rounded-3xl shadow-2xl flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="px-5 py-4 border-b border-[#E8D9D4] bg-[#FFFAF7] flex items-start justify-between gap-3 shrink-0">
+        <div className="px-5 py-4 border-b border-[#E1DDD3] bg-[#F7F5F0] flex items-start justify-between gap-3 shrink-0">
           <div className="min-w-0">
             {customer ? (
               <>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className="text-base font-black text-[#4A173A] truncate">
+                  <h3 className="text-base font-black text-[#123C35] truncate">
                     {show(customer.customer_name, 'Unnamed customer')}
                   </h3>
                   <span className={`px-2 py-0.5 rounded-full text-[9px] font-black border ${badge.bg}`}>
@@ -1629,12 +1629,12 @@ export default function CustomerDetailDrawer({
                     {STAGE_LABELS[stageKey]}
                   </span>
                   {profile?.is_old_customer && (
-                    <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-[#6F5963] text-white flex items-center gap-1">
+                    <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-[#65716C] text-white flex items-center gap-1">
                       <Archive className="w-2.5 h-2.5" /> Archived
                     </span>
                   )}
                 </div>
-                <div className="text-[10px] font-semibold text-[#6F5963] mt-1 flex flex-wrap gap-x-2 gap-y-0.5">
+                <div className="text-[10px] font-semibold text-[#65716C] mt-1 flex flex-wrap gap-x-2 gap-y-0.5">
                   <span>{show(customer.customer_code, 'No ID')}</span>
                   <span>·</span>
                   <span>{show(customer.mobile_number, 'No mobile')}</span>
@@ -1643,7 +1643,7 @@ export default function CustomerDetailDrawer({
                 </div>
               </>
             ) : (
-              <h3 className="text-sm font-black text-[#4A173A] uppercase tracking-wider">
+              <h3 className="text-sm font-black text-[#123C35] uppercase tracking-wider">
                 {error ? 'Customer unavailable' : 'Loading customer…'}
               </h3>
             )}
@@ -1652,16 +1652,16 @@ export default function CustomerDetailDrawer({
             {customer && (
               <Link
                 to={`/wedding-crm/customers/${customer.id}`}
-                className="px-3 py-1.5 rounded-xl bg-[#FFFDFC] hover:bg-[#FFF7F2] border border-[#E8D9D4] text-[10px] font-bold text-[#4A173A] flex items-center gap-1 transition-colors"
+                className="px-3 py-1.5 rounded-xl bg-[#FFFFFF] hover:bg-[#EDF3F0] border border-[#E1DDD3] text-[10px] font-bold text-[#123C35] flex items-center gap-1 transition-colors"
               >
-                <ExternalLink className="w-3 h-3 text-[#B76E79]" />
+                <ExternalLink className="w-3 h-3 text-[#C9A45C]" />
                 <span>Full Profile</span>
               </Link>
             )}
             <button
               type="button"
               onClick={() => !saving && onClose()}
-              className="p-1.5 rounded-lg text-[#6F5963] hover:text-[#4A173A] hover:bg-[#F6E2E5] cursor-pointer"
+              className="p-1.5 rounded-lg text-[#65716C] hover:text-[#123C35] hover:bg-[#EDF3F0] cursor-pointer"
               title="Close panel"
             >
               <X className="w-4 h-4" />
@@ -1671,16 +1671,16 @@ export default function CustomerDetailDrawer({
 
         {/* Journey tracker — the same funnel read used by the board cards. */}
         {customer && (
-          <div className="px-5 py-3 border-b border-[#E8D9D4] bg-[#FFFDFC] shrink-0">
+          <div className="px-5 py-3 border-b border-[#E1DDD3] bg-[#FFFFFF] shrink-0">
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-[9px] font-black uppercase tracking-wider text-[#6F5963]">Journey</span>
-              <span className="h-px flex-1 bg-[#E8D9D4]" aria-hidden="true" />
+              <span className="text-[9px] font-black uppercase tracking-wider text-[#65716C]">Journey</span>
+              <span className="h-px flex-1 bg-[#E1DDD3]" aria-hidden="true" />
             </div>
             <JourneyTracker stageKey={stageKey} variant="full" />
           </div>
         )}
 
-        <div className="px-4 py-2 border-b border-[#E8D9D4] bg-[#FFFDFC] flex gap-1.5 overflow-x-auto shrink-0">
+        <div className="px-4 py-2 border-b border-[#E1DDD3] bg-[#FFFFFF] flex gap-1.5 overflow-x-auto shrink-0">
           {TABS.map((t) => {
             const count =
               t.key === 'calls' ? callLogs.length :
@@ -1699,8 +1699,8 @@ export default function CustomerDetailDrawer({
                 onClick={() => openTab(t.key)}
                 className={`px-3 py-1.5 rounded-xl text-[10px] font-bold whitespace-nowrap transition-colors ${
                   activeTab === t.key
-                    ? 'bg-[#B76E79] text-white'
-                    : 'bg-[#FFFDFC] text-[#6F5963] hover:text-[#4A173A] border border-[#E8D9D4]'
+                    ? 'bg-[#C9A45C] text-white'
+                    : 'bg-[#FFFFFF] text-[#65716C] hover:text-[#123C35] border border-[#E1DDD3]'
                 }`}
               >
                 {t.label}
@@ -1713,8 +1713,8 @@ export default function CustomerDetailDrawer({
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4 overscroll-contain">
           {loading && (
-            <div className="py-20 flex flex-col items-center gap-2 text-[11px] font-bold text-[#6F5963]">
-              <RefreshCw className="w-5 h-5 animate-spin text-[#B76E79]" />
+            <div className="py-20 flex flex-col items-center gap-2 text-[11px] font-bold text-[#65716C]">
+              <RefreshCw className="w-5 h-5 animate-spin text-[#C9A45C]" />
               <span>Loading customer history…</span>
             </div>
           )}
@@ -1722,11 +1722,11 @@ export default function CustomerDetailDrawer({
           {!loading && error && (
             <div className="py-14 text-center space-y-3">
               <CircleAlert className="w-6 h-6 text-[#B42318] mx-auto" />
-              <p className="text-xs font-bold text-[#4A173A] max-w-md mx-auto leading-relaxed">{error}</p>
+              <p className="text-xs font-bold text-[#123C35] max-w-md mx-auto leading-relaxed">{error}</p>
               <button
                 type="button"
                 onClick={() => load()}
-                className="px-4 py-2 bg-[#4A173A] hover:bg-[#6A2853] text-white text-xs font-bold rounded-xl inline-flex items-center gap-1.5 cursor-pointer transition-colors"
+                className="px-4 py-2 bg-[#123C35] hover:bg-[#082821] text-white text-xs font-bold rounded-xl inline-flex items-center gap-1.5 cursor-pointer transition-colors"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
                 <span>Try Again</span>
@@ -1741,7 +1741,7 @@ export default function CustomerDetailDrawer({
           {!loading && customer && (
             <>
               {profile?.is_old_customer && (
-                <div className="flex items-start gap-2 px-3.5 py-2.5 rounded-2xl bg-[#F4F2F0] border border-[#6F5963]/30 text-[10px] font-bold text-[#4A3B43]">
+                <div className="flex items-start gap-2 px-3.5 py-2.5 rounded-2xl bg-[#F4F2F0] border border-[#65716C]/30 text-[10px] font-bold text-[#4A3B43]">
                   <Archive className="w-3.5 h-3.5 mt-0.5 shrink-0" />
                   <span>
                     This journey is archived in Old Customers. Details can still be corrected, but status changes
@@ -1799,9 +1799,9 @@ export default function CustomerDetailDrawer({
                         { label: 'Purchases', value: purchases.length },
                         { label: 'Notes', value: notes.length }
                       ].map((m) => (
-                        <div key={m.label} className="bg-[#FFFAF7] border border-[#E8D9D4] rounded-2xl px-2 py-2 text-center">
-                          <div className="text-sm font-black text-[#4A173A]">{m.value}</div>
-                          <div className="text-[9px] font-bold uppercase tracking-wider text-[#6F5963]">{m.label}</div>
+                        <div key={m.label} className="bg-[#F7F5F0] border border-[#E1DDD3] rounded-2xl px-2 py-2 text-center">
+                          <div className="text-sm font-black text-[#123C35]">{m.value}</div>
+                          <div className="text-[9px] font-bold uppercase tracking-wider text-[#65716C]">{m.label}</div>
                         </div>
                       ))}
                     </div>
@@ -1826,11 +1826,11 @@ export default function CustomerDetailDrawer({
                     <SectionTitle icon={ArrowRightLeft} title="Status Tracker" />
                     <StatusTracker rows={statusTracker} today={isoToday} />
                     {text(customer.additional_notes) && (
-                      <div className="rounded-2xl border border-[#E8D9D4] bg-[#FFF7F2] p-3">
-                        <div className="text-[9px] font-black uppercase tracking-wider text-[#4A173A] mb-1">
+                      <div className="rounded-2xl border border-[#E1DDD3] bg-[#EDF3F0] p-3">
+                        <div className="text-[9px] font-black uppercase tracking-wider text-[#123C35] mb-1">
                           Additional Notes (encrypted at rest)
                         </div>
-                        <p className="text-[10px] text-[#2B1722] whitespace-pre-line">{text(customer.additional_notes)}</p>
+                        <p className="text-[10px] text-[#17201D] whitespace-pre-line">{text(customer.additional_notes)}</p>
                       </div>
                     )}
                   </Card>
@@ -1882,13 +1882,13 @@ export default function CustomerDetailDrawer({
                     <InfoRow label="Wedding Functions" value={weddingFunctionLabels(customer.wedding_functions) || 'Not recorded'} />
                   </div>
                   <div className="flex items-end justify-between gap-2 flex-wrap">
-                    <p className="text-[9px] font-semibold text-[#6F5963]">
+                    <p className="text-[9px] font-semibold text-[#65716C]">
                       {weddingFunctionValues(customer.wedding_functions).length > 0
                         ? 'Functions are stored as a JSON array on wedding_functions.'
                         : 'No wedding function captured yet.'}
                     </p>
                     {canEdit && scope === 'limited' && (
-                      <p className="text-[9px] font-semibold text-[#6F5963]">
+                      <p className="text-[9px] font-semibold text-[#65716C]">
                         Your role writes name, city and date fields only — the rest is maintained by a manager.
                       </p>
                     )}
@@ -1912,7 +1912,7 @@ export default function CustomerDetailDrawer({
                     <InfoRow label="Family Size" value={customer.estimated_family_size ? String(customer.estimated_family_size) : (customer.family_size ? String(customer.family_size) : 'Not recorded')} />
                     <InfoRow label="Shopping Requirements" value={shoppingRequirementText(customer.shopping_requirements) || 'Not recorded'} />
                   </div>
-                  <p className="text-[9px] font-semibold text-[#6F5963]">
+                  <p className="text-[9px] font-semibold text-[#65716C]">
                     Visits and bills against this plan live on the Store Visits, Shopping Progress and Conversion tabs.
                   </p>
                   {renderSectionEditor('shopping', 'shopping requirements')}
@@ -1927,14 +1927,14 @@ export default function CustomerDetailDrawer({
                     <EmptyState label="No calls have been logged for this customer yet." />
                   ) : (
                     <>
-                      <p className="text-[9px] font-semibold text-[#6F5963]">
+                      <p className="text-[9px] font-semibold text-[#65716C]">
                         Call history is append-only — existing rows are never edited. Use “Log Call” to add a new entry.
                       </p>
                       <div className="space-y-2.5">
                         {sortedCalls.map((c: any) => (
-                          <div key={`call-${c.id}`} className="bg-[#FFFAF7] border border-[#E8D9D4] rounded-2xl p-3 space-y-1.5">
+                          <div key={`call-${c.id}`} className="bg-[#F7F5F0] border border-[#E1DDD3] rounded-2xl p-3 space-y-1.5">
                             <div className="flex items-start justify-between gap-2 flex-wrap">
-                              <div className="text-[11px] font-black text-[#4A173A]">
+                              <div className="text-[11px] font-black text-[#123C35]">
                                 {showDate(c.call_date, 'No date')} {clockOf(c.call_time) ? `· ${clockOf(c.call_time)}` : ''}
                               </div>
                               <span className={`px-2 py-0.5 rounded-full text-[9px] font-black ${
@@ -1942,24 +1942,24 @@ export default function CustomerDetailDrawer({
                                   ? 'bg-[#E8F5EE] text-[#198754]'
                                   : /No Answer|Busy|Switched|Wrong/i.test(text(c.call_outcome))
                                   ? 'bg-[#FFF4D6] text-[#C58A18]'
-                                  : 'bg-[#EDE7F6] text-[#6A2853]'
+                                  : 'bg-[#EDE7F6] text-[#082821]'
                               }`}>
                                 {show(c.call_outcome, 'No outcome')}
                               </span>
                             </div>
-                            <div className="text-[10px] font-semibold text-[#6F5963] flex flex-wrap gap-x-3">
+                            <div className="text-[10px] font-semibold text-[#65716C] flex flex-wrap gap-x-3">
                               <span>Telecaller: {show(c.telecaller_name, 'Unknown')}</span>
                               <span>Status: {show(c.call_status, '—')}</span>
                             </div>
                             {text(c.customer_response) && (
-                              <p className="text-[10px] font-semibold text-[#2B1722]">
+                              <p className="text-[10px] font-semibold text-[#17201D]">
                                 Response: {text(c.customer_response)}
                               </p>
                             )}
                             {text(c.remarks) && (
-                              <p className="text-[10px] text-[#6F5963] whitespace-pre-line">{text(c.remarks)}</p>
+                              <p className="text-[10px] text-[#65716C] whitespace-pre-line">{text(c.remarks)}</p>
                             )}
-                            <div className="text-[10px] font-bold text-[#4A173A] pt-1 border-t border-[#F3E7E2]">
+                            <div className="text-[10px] font-bold text-[#123C35] pt-1 border-t border-[#E1DDD3]">
                               Next follow-up:{' '}
                               {text(c.next_follow_up_date)
                                 ? `${formatDateDisplay(c.next_follow_up_date, 'Not scheduled')}${text(c.next_follow_up_time) ? ` (${text(c.next_follow_up_time)})` : ''}`
@@ -1985,18 +1985,18 @@ export default function CustomerDetailDrawer({
                       {followUpRows.map((r) => {
                         const nextDate = r.next;
                         return (
-                          <div key={r.key} className="bg-[#FFFAF7] border border-[#E8D9D4] rounded-2xl p-3 space-y-1">
+                          <div key={r.key} className="bg-[#F7F5F0] border border-[#E1DDD3] rounded-2xl p-3 space-y-1">
                             <div className="flex items-start justify-between gap-2 flex-wrap">
-                              <span className="text-[11px] font-black text-[#4A173A]">
+                              <span className="text-[11px] font-black text-[#123C35]">
                                 {showDate(r.date, 'No date')} {r.time ? `· ${r.time}` : ''}
                               </span>
-                              <span className="text-[9px] font-bold uppercase tracking-wider text-[#6A2853] bg-[#EDE7F6] px-2 py-0.5 rounded-full">
+                              <span className="text-[9px] font-bold uppercase tracking-wider text-[#082821] bg-[#EDE7F6] px-2 py-0.5 rounded-full">
                                 {r.source}
                               </span>
                             </div>
-                            <div className="text-[10px] font-bold text-[#2B1722]">{r.title}</div>
-                            {r.detail && <p className="text-[10px] text-[#6F5963] whitespace-pre-line">{r.detail}</p>}
-                            <div className="text-[10px] font-semibold text-[#6F5963]">
+                            <div className="text-[10px] font-bold text-[#17201D]">{r.title}</div>
+                            {r.detail && <p className="text-[10px] text-[#65716C] whitespace-pre-line">{r.detail}</p>}
+                            <div className="text-[10px] font-semibold text-[#65716C]">
                               By: {r.actor} · For: {nextDate ? formatDateDisplay(nextDate, 'Not scheduled') : 'Not scheduled'}
                               {(nextDate && isOverdue(nextDate)) ? <span className="text-[#B42318] font-bold"> · overdue</span> : null}
                               {(nextDate && isDueToday(nextDate)) ? <span className="text-[#C58A18] font-bold"> · today</span> : null}
@@ -2006,7 +2006,7 @@ export default function CustomerDetailDrawer({
                       })}
                     </div>
                   )}
-                  <p className="text-[9px] font-semibold text-[#6F5963]">
+                  <p className="text-[9px] font-semibold text-[#65716C]">
                     Rows combine Follow-Up communication entries with the next follow-up dates carried by call logs.
                     The status history table stores no follow-up date, so it contributes nothing to this list.
                   </p>
@@ -2022,20 +2022,20 @@ export default function CustomerDetailDrawer({
                   ) : (
                     <div className="space-y-2.5">
                       {sortedFeedback.map((f: any) => (
-                        <div key={`fb-${f.id}`} className="bg-[#FFFAF7] border border-[#E8D9D4] rounded-2xl p-3 space-y-1">
+                        <div key={`fb-${f.id}`} className="bg-[#F7F5F0] border border-[#E1DDD3] rounded-2xl p-3 space-y-1">
                           <div className="flex items-start justify-between gap-2 flex-wrap">
-                            <span className="text-[11px] font-black text-[#4A173A]">
+                            <span className="text-[11px] font-black text-[#123C35]">
                               {showDate(f.communication_date, 'No date')} {clockOf(f.communication_time) ? `· ${clockOf(f.communication_time)}` : ''}
                             </span>
-                            <span className="text-[9px] font-bold uppercase tracking-wider text-[#6F5963]">
+                            <span className="text-[9px] font-bold uppercase tracking-wider text-[#65716C]">
                               {show(f.communication_method, 'no method')}
                             </span>
                           </div>
-                          <div className="text-[10px] font-semibold text-[#6F5963]">Recorded by: {show(f.employee_name, 'Staff')}</div>
+                          <div className="text-[10px] font-semibold text-[#65716C]">Recorded by: {show(f.employee_name, 'Staff')}</div>
                           {text(f.communication_details) && (
-                            <p className="text-[10px] text-[#2B1722] whitespace-pre-line">{text(f.communication_details)}</p>
+                            <p className="text-[10px] text-[#17201D] whitespace-pre-line">{text(f.communication_details)}</p>
                           )}
-                          <div className="text-[10px] font-bold text-[#4A173A] pt-1 border-t border-[#F3E7E2] space-y-0.5">
+                          <div className="text-[10px] font-bold text-[#123C35] pt-1 border-t border-[#E1DDD3] space-y-0.5">
                             <div>Outcome / Next Action: {show(f.outcome, 'Not recorded')}</div>
                             <div>
                               Next Follow-Up:{' '}
@@ -2048,7 +2048,7 @@ export default function CustomerDetailDrawer({
                       ))}
                     </div>
                   )}
-                  <p className="text-[9px] font-semibold text-[#6F5963]">
+                  <p className="text-[9px] font-semibold text-[#65716C]">
                     Every feedback entry is a separate appended row — earlier feedback is never replaced.
                   </p>
                 </Card>
@@ -2059,8 +2059,8 @@ export default function CustomerDetailDrawer({
                 <Card>
                   <SectionTitle icon={History} title="Complete Customer Journey" />
                   {timelineLoading && !timelineEvents ? (
-                    <div className="py-10 flex flex-col items-center gap-2 text-[11px] font-bold text-[#6F5963]">
-                      <RefreshCw className="w-4 h-4 animate-spin text-[#B76E79]" />
+                    <div className="py-10 flex flex-col items-center gap-2 text-[11px] font-bold text-[#65716C]">
+                      <RefreshCw className="w-4 h-4 animate-spin text-[#C9A45C]" />
                       <span>Loading activity timeline…</span>
                     </div>
                   ) : timelineError ? (
@@ -2072,7 +2072,7 @@ export default function CustomerDetailDrawer({
                           setTimelineEvents(null);
                           setTimelineError('');
                         }}
-                        className="px-4 py-2 bg-[#4A173A] hover:bg-[#6A2853] text-white text-[10px] font-bold rounded-xl inline-flex items-center gap-1.5 cursor-pointer transition-colors"
+                        className="px-4 py-2 bg-[#123C35] hover:bg-[#082821] text-white text-[10px] font-bold rounded-xl inline-flex items-center gap-1.5 cursor-pointer transition-colors"
                       >
                         <RefreshCw className="w-3.5 h-3.5" />
                         <span>Retry Timeline</span>
@@ -2082,7 +2082,7 @@ export default function CustomerDetailDrawer({
                     <EmptyState label="No activity has been recorded for this customer yet." />
                   ) : (
                     <>
-                      <div className="text-[9px] font-semibold text-[#6F5963]">
+                      <div className="text-[9px] font-semibold text-[#65716C]">
                         {journey.total} events from audit logs, status changes, calls, communications, notes and visits —
                         grouped by day, newest first. Nothing here is deduplicated away or overwritten.
                       </div>
@@ -2092,29 +2092,29 @@ export default function CustomerDetailDrawer({
                           const overdueDay = g.day !== 'unknown' && g.day < isoToday;
                           return (
                             <div key={g.day} className="space-y-2">
-                              <div className="flex items-center gap-2 sticky top-0 bg-[#FFFDFC] py-1">
-                                <span className="text-[10px] font-black uppercase tracking-wider text-[#4A173A]">{dayLabel}</span>
+                              <div className="flex items-center gap-2 sticky top-0 bg-[#FFFFFF] py-1">
+                                <span className="text-[10px] font-black uppercase tracking-wider text-[#123C35]">{dayLabel}</span>
                                 {g.day === isoToday && (
                                   <span className="px-1.5 py-0.5 rounded-full text-[9px] font-black bg-[#FFF4D6] text-[#C58A18]">TODAY</span>
                                 )}
                                 {overdueDay && g.day !== isoToday && (
-                                  <span className="text-[9px] font-bold text-[#6F5963]">{g.items.length} entr{g.items.length === 1 ? 'y' : 'ies'}</span>
+                                  <span className="text-[9px] font-bold text-[#65716C]">{g.items.length} entr{g.items.length === 1 ? 'y' : 'ies'}</span>
                                 )}
                               </div>
-                              <div className="space-y-1.5 pl-3 border-l-2 border-[#F3E7E2]">
+                              <div className="space-y-1.5 pl-3 border-l-2 border-[#E1DDD3]">
                                 {g.items.map((ev) => (
-                                  <div key={ev.key} className="bg-[#FFFAF7] border border-[#E8D9D4] rounded-2xl px-3 py-2">
+                                  <div key={ev.key} className="bg-[#F7F5F0] border border-[#E1DDD3] rounded-2xl px-3 py-2">
                                     <div className="flex items-center justify-between gap-2 flex-wrap">
-                                      <span className="text-[10px] font-black text-[#4A173A]">{ev.action}</span>
-                                      <span className="text-[9px] font-bold text-[#6F5963]">
+                                      <span className="text-[10px] font-black text-[#123C35]">{ev.action}</span>
+                                      <span className="text-[9px] font-bold text-[#65716C]">
                                         {ev.time ? `${ev.time} · ` : ''}{ev.source}
                                       </span>
                                     </div>
-                                    <div className="text-[9px] font-bold uppercase tracking-wider text-[#B76E79] mt-0.5">
+                                    <div className="text-[9px] font-bold uppercase tracking-wider text-[#C9A45C] mt-0.5">
                                       {ev.actor}
                                     </div>
                                     {ev.detail && (
-                                      <p className="text-[10px] text-[#6F5963] whitespace-pre-line mt-1">{ev.detail}</p>
+                                      <p className="text-[10px] text-[#65716C] whitespace-pre-line mt-1">{ev.detail}</p>
                                     )}
                                   </div>
                                 ))}
@@ -2133,14 +2133,14 @@ export default function CustomerDetailDrawer({
                 <Card>
                   <SectionTitle icon={MapPinned} title="Store Visits" />
                   <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <p className="text-[9px] font-semibold text-[#6F5963]">
+                    <p className="text-[9px] font-semibold text-[#65716C]">
                       Each visit is one wedding_visits row. Notes are encrypted at rest by the server.
                     </p>
                     {canEdit && !visitForm && (
                       <button
                         type="button"
                         onClick={() => openVisitForm()}
-                        className="px-3 py-1.5 rounded-xl bg-[#4A173A] hover:bg-[#6A2853] text-white text-[10px] font-bold flex items-center gap-1.5 disabled:opacity-60 cursor-pointer transition-colors"
+                        className="px-3 py-1.5 rounded-xl bg-[#123C35] hover:bg-[#082821] text-white text-[10px] font-bold flex items-center gap-1.5 disabled:opacity-60 cursor-pointer transition-colors"
                       >
                         <Plus className="w-3 h-3" />
                         <span>Record Store Visit</span>
@@ -2161,13 +2161,13 @@ export default function CustomerDetailDrawer({
                   ) : (
                     <div className="space-y-2.5">
                       {sortedVisits.map((v: any) => (
-                        <div key={`visit-${v.id}`} className="bg-[#FFFAF7] border border-[#E8D9D4] rounded-2xl p-3 space-y-1">
+                        <div key={`visit-${v.id}`} className="bg-[#F7F5F0] border border-[#E1DDD3] rounded-2xl p-3 space-y-1">
                           <div className="flex items-start justify-between gap-2 flex-wrap">
-                            <span className="text-[11px] font-black text-[#4A173A]">
+                            <span className="text-[11px] font-black text-[#123C35]">
                               {showDate(v.visit_date, 'No date')} {clockOf(v.visit_time) ? `· ${clockOf(v.visit_time)}` : ''}
                             </span>
                             <div className="flex items-center gap-1.5 shrink-0">
-                              <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-[#EDE7F6] text-[#6A2853]">
+                              <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-[#EDE7F6] text-[#082821]">
                                 {show(v.visit_status, 'Visit')}
                               </span>
                               {canEdit && (
@@ -2175,9 +2175,9 @@ export default function CustomerDetailDrawer({
                                   type="button"
                                   onClick={() => openVisitForm(v)}
                                   disabled={savingVisit}
-                                  className="px-2 py-0.5 rounded-lg bg-[#FFFDFC] hover:bg-[#FFF7F2] border border-[#E8D9D4] text-[9px] font-black uppercase tracking-wider text-[#4A173A] flex items-center gap-1 disabled:opacity-50 cursor-pointer transition-colors"
+                                  className="px-2 py-0.5 rounded-lg bg-[#FFFFFF] hover:bg-[#EDF3F0] border border-[#E1DDD3] text-[9px] font-black uppercase tracking-wider text-[#123C35] flex items-center gap-1 disabled:opacity-50 cursor-pointer transition-colors"
                                 >
-                                  <Edit3 className="w-2.5 h-2.5 text-[#B76E79]" />
+                                  <Edit3 className="w-2.5 h-2.5 text-[#C9A45C]" />
                                   <span>Edit</span>
                                 </button>
                               )}
@@ -2194,7 +2194,7 @@ export default function CustomerDetailDrawer({
                             <InfoRow label="Requirement" value={show(v.customer_requirement, 'Not recorded')} />
                           </div>
                           {text(v.visit_notes) && (
-                            <p className="text-[10px] text-[#6F5963] whitespace-pre-line pt-1 border-t border-[#F3E7E2]">
+                            <p className="text-[10px] text-[#65716C] whitespace-pre-line pt-1 border-t border-[#E1DDD3]">
                               {text(v.visit_notes)}
                             </p>
                           )}
@@ -2231,12 +2231,12 @@ export default function CustomerDetailDrawer({
                     ) : (
                       <div className="space-y-2">
                         {sortedVisits.map((v: any) => (
-                          <div key={`progress-visit-${v.id}`} className="bg-[#FFFAF7] border border-[#E8D9D4] rounded-2xl px-3 py-2 flex items-start justify-between gap-2 flex-wrap">
+                          <div key={`progress-visit-${v.id}`} className="bg-[#F7F5F0] border border-[#E1DDD3] rounded-2xl px-3 py-2 flex items-start justify-between gap-2 flex-wrap">
                             <div className="min-w-0">
-                              <div className="text-[10px] font-black text-[#4A173A]">
+                              <div className="text-[10px] font-black text-[#123C35]">
                                 {showDate(v.visit_date, 'No date')} {clockOf(v.visit_time) ? `· ${clockOf(v.visit_time)}` : ''}
                               </div>
-                              <div className="text-[9px] font-semibold text-[#6F5963] flex flex-wrap gap-x-2">
+                              <div className="text-[9px] font-semibold text-[#65716C] flex flex-wrap gap-x-2">
                                 <span>{show(v.visit_status, 'Visit')}</span>
                                 {text(v.purpose) && <span>· {text(v.purpose)}</span>}
                                 {v.visitors_count ? <span>· {v.visitors_count} visitor{Number(v.visitors_count) === 1 ? '' : 's'}</span> : null}
@@ -2247,7 +2247,7 @@ export default function CustomerDetailDrawer({
                                 ? 'bg-[#E8F5EE] text-[#198754]'
                                 : /Pending|Planned/i.test(text(v.visit_status))
                                 ? 'bg-[#FFF4D6] text-[#C58A18]'
-                                : 'bg-[#EDE7F6] text-[#6A2853]'
+                                : 'bg-[#EDE7F6] text-[#082821]'
                             }`}>
                               {show(v.visit_result, 'No result yet')}
                             </span>
@@ -2255,7 +2255,7 @@ export default function CustomerDetailDrawer({
                         ))}
                       </div>
                     )}
-                    <p className="text-[9px] font-semibold text-[#6F5963]">
+                    <p className="text-[9px] font-semibold text-[#65716C]">
                       Visits are recorded on the Store Visits tab — the same wedding_visits rows feed this list.
                     </p>
                   </Card>
@@ -2267,25 +2267,25 @@ export default function CustomerDetailDrawer({
                     ) : (
                       <div className="space-y-2">
                         {sortedPurchases.map((p: any) => (
-                          <div key={`progress-purchase-${p.id}`} className="bg-[#FFFAF7] border border-[#E8D9D4] rounded-2xl px-3 py-2 flex items-start justify-between gap-2">
+                          <div key={`progress-purchase-${p.id}`} className="bg-[#F7F5F0] border border-[#E1DDD3] rounded-2xl px-3 py-2 flex items-start justify-between gap-2">
                             <div className="min-w-0">
-                              <div className="text-[10px] font-black text-[#4A173A]">
+                              <div className="text-[10px] font-black text-[#123C35]">
                                 {showDate(p.purchase_date, 'No date')}
                                 {text(p.bill_number) ? ` · Bill ${text(p.bill_number)}` : ''}
                               </div>
-                              <div className="text-[9px] font-semibold text-[#6F5963]">
+                              <div className="text-[9px] font-semibold text-[#65716C]">
                                 {show(p.product_categories, 'Categories not recorded')}
                               </div>
                             </div>
                             <div className="text-right shrink-0">
-                              <div className="text-[11px] font-black text-[#4A173A]">{rupeeText(p.net_amount ?? p.total_amount) || '—'}</div>
-                              <div className="text-[9px] font-bold uppercase tracking-wider text-[#6F5963]">{show(p.payment_status, 'Payment status unknown')}</div>
+                              <div className="text-[11px] font-black text-[#123C35]">{rupeeText(p.net_amount ?? p.total_amount) || '—'}</div>
+                              <div className="text-[9px] font-bold uppercase tracking-wider text-[#65716C]">{show(p.payment_status, 'Payment status unknown')}</div>
                             </div>
                           </div>
                         ))}
-                        <div className="flex items-center justify-between gap-2 rounded-2xl bg-[#FFF7F2] border border-[#E8D9D4] px-3 py-2">
-                          <span className="text-[9px] font-black uppercase tracking-wider text-[#4A173A]">Billed total</span>
-                          <span className="text-[11px] font-black text-[#4A173A]">{rupeeText(purchaseTotal)}</span>
+                        <div className="flex items-center justify-between gap-2 rounded-2xl bg-[#EDF3F0] border border-[#E1DDD3] px-3 py-2">
+                          <span className="text-[9px] font-black uppercase tracking-wider text-[#123C35]">Billed total</span>
+                          <span className="text-[11px] font-black text-[#123C35]">{rupeeText(purchaseTotal)}</span>
                         </div>
                       </div>
                     )}
@@ -2299,7 +2299,7 @@ export default function CustomerDetailDrawer({
                   <Card>
                     <SectionTitle icon={IndianRupee} title="Purchases" />
                     <div className="flex items-center justify-between gap-2 flex-wrap">
-                      <p className="text-[9px] font-semibold text-[#6F5963]">
+                      <p className="text-[9px] font-semibold text-[#65716C]">
                         {sortedPurchases.length === 0
                           ? 'No purchase has been billed for this customer.'
                           : `${sortedPurchases.length} bill${sortedPurchases.length === 1 ? '' : 's'} · ${rupeeText(purchaseTotal)} billed.`}
@@ -2308,7 +2308,7 @@ export default function CustomerDetailDrawer({
                         <button
                           type="button"
                           onClick={openPurchaseForm}
-                          className="px-3 py-1.5 rounded-xl bg-[#4A173A] hover:bg-[#6A2853] text-white text-[10px] font-bold flex items-center gap-1.5 disabled:opacity-60 cursor-pointer transition-colors"
+                          className="px-3 py-1.5 rounded-xl bg-[#123C35] hover:bg-[#082821] text-white text-[10px] font-bold flex items-center gap-1.5 disabled:opacity-60 cursor-pointer transition-colors"
                         >
                           <Plus className="w-3 h-3" />
                           <span>Record Purchase</span>
@@ -2323,9 +2323,9 @@ export default function CustomerDetailDrawer({
                     ) : (
                       <div className="space-y-2.5">
                         {sortedPurchases.map((p: any) => (
-                          <div key={`purchase-${p.id}`} className="bg-[#FFFAF7] border border-[#E8D9D4] rounded-2xl p-3 space-y-1">
+                          <div key={`purchase-${p.id}`} className="bg-[#F7F5F0] border border-[#E1DDD3] rounded-2xl p-3 space-y-1">
                             <div className="flex items-start justify-between gap-2 flex-wrap">
-                              <span className="text-[11px] font-black text-[#4A173A]">
+                              <span className="text-[11px] font-black text-[#123C35]">
                                 {showDate(p.purchase_date, 'No date')}{text(p.bill_number) ? ` · Bill ${text(p.bill_number)}` : ''}
                               </span>
                               <span className={`px-2 py-0.5 rounded-full text-[9px] font-black ${
@@ -2333,7 +2333,7 @@ export default function CustomerDetailDrawer({
                                   ? 'bg-[#E8F5EE] text-[#198754]'
                                   : /Pending/i.test(text(p.payment_status))
                                   ? 'bg-[#FFF4D6] text-[#C58A18]'
-                                  : 'bg-[#EDE7F6] text-[#6A2853]'
+                                  : 'bg-[#EDE7F6] text-[#082821]'
                               }`}>
                                 {show(p.payment_status, 'No payment status')}
                               </span>
@@ -2348,7 +2348,7 @@ export default function CustomerDetailDrawer({
                               <InfoRow label="Net Amount" value={rupeeText(p.net_amount ?? p.total_amount) || 'Not recorded'} />
                             </div>
                             {text(p.purchase_notes) && (
-                              <p className="text-[10px] text-[#6F5963] whitespace-pre-line pt-1 border-t border-[#F3E7E2]">
+                              <p className="text-[10px] text-[#65716C] whitespace-pre-line pt-1 border-t border-[#E1DDD3]">
                                 {text(p.purchase_notes)}
                               </p>
                             )}
@@ -2363,7 +2363,7 @@ export default function CustomerDetailDrawer({
                     <InfoRow label="Current Stage" value={STAGE_LABELS[stageKey]} />
                     <InfoRow label="Current Status" value={show(customer.customer_status, 'Unknown')} />
                     {canEdit ? (
-                      <div className="space-y-3 rounded-2xl border border-[#E8D9D4] bg-[#FFFAF7] p-3.5">
+                      <div className="space-y-3 rounded-2xl border border-[#E1DDD3] bg-[#F7F5F0] p-3.5">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <div>
                             <label className={labelCls}>Conversion Status *</label>
@@ -2383,7 +2383,7 @@ export default function CustomerDetailDrawer({
                                 </option>
                               ))}
                             </select>
-                            <p className="text-[9px] text-[#6F5963] mt-1">
+                            <p className="text-[9px] text-[#65716C] mt-1">
                               Converted keeps the journey active. “Wedding Process Completed” closes it.
                             </p>
                           </div>
@@ -2435,7 +2435,7 @@ export default function CustomerDetailDrawer({
                             type="button"
                             onClick={saveConversion}
                             disabled={savingConvert || !convertDraft.new_status || (convertArchives && !convertConfirmed)}
-                            className="px-3.5 py-1.5 rounded-xl bg-[#4A173A] hover:bg-[#6A2853] text-white text-[10px] font-bold flex items-center gap-1.5 disabled:opacity-60 cursor-pointer transition-colors"
+                            className="px-3.5 py-1.5 rounded-xl bg-[#123C35] hover:bg-[#082821] text-white text-[10px] font-bold flex items-center gap-1.5 disabled:opacity-60 cursor-pointer transition-colors"
                           >
                             {savingConvert ? (
                               <>
@@ -2452,7 +2452,7 @@ export default function CustomerDetailDrawer({
                         </div>
                       </div>
                     ) : (
-                      <p className="text-[10px] font-semibold text-[#6F5963] bg-[#FFF7F2] border border-[#E8D9D4] rounded-2xl px-3 py-2">
+                      <p className="text-[10px] font-semibold text-[#65716C] bg-[#EDF3F0] border border-[#E1DDD3] rounded-2xl px-3 py-2">
                         Status changes are written by the CRM Manager endpoint. Your role can follow the journey,
                         not close it.
                       </p>
@@ -2466,7 +2466,7 @@ export default function CustomerDetailDrawer({
                 <Card>
                   <SectionTitle icon={ArrowRightLeft} title="Status History" />
                   <StatusTracker rows={statusTracker} today={isoToday} />
-                  <p className="text-[9px] font-semibold text-[#6F5963]">
+                  <p className="text-[9px] font-semibold text-[#65716C]">
                     Read from wedding_status_history. Every change stays — nothing is trimmed, and the oldest
                     entry is never removed.
                   </p>
@@ -2478,7 +2478,7 @@ export default function CustomerDetailDrawer({
                 <Card>
                   <SectionTitle icon={FileText} title="Notes" />
                   {canEdit && (
-                    <form onSubmit={addNote} className="space-y-2.5 rounded-2xl border border-[#E8D9D4] bg-[#FFFAF7] p-3.5">
+                    <form onSubmit={addNote} className="space-y-2.5 rounded-2xl border border-[#E1DDD3] bg-[#F7F5F0] p-3.5">
                       <div className="grid grid-cols-2 gap-3">
                         <div>
                           <label className={labelCls}>Note Type</label>
@@ -2515,7 +2515,7 @@ export default function CustomerDetailDrawer({
                         <button
                           type="submit"
                           disabled={savingNote}
-                          className="px-3.5 py-1.5 rounded-xl bg-[#4A173A] hover:bg-[#6A2853] text-white text-[10px] font-bold flex items-center gap-1.5 disabled:opacity-60 cursor-pointer transition-colors"
+                          className="px-3.5 py-1.5 rounded-xl bg-[#123C35] hover:bg-[#082821] text-white text-[10px] font-bold flex items-center gap-1.5 disabled:opacity-60 cursor-pointer transition-colors"
                         >
                           {savingNote ? (
                             <>
@@ -2537,17 +2537,17 @@ export default function CustomerDetailDrawer({
                   ) : (
                     <div className="space-y-2.5">
                       {notes.map((n: any) => (
-                        <div key={`note-${n.id}`} className="bg-[#FFFAF7] border border-[#E8D9D4] rounded-2xl p-3 space-y-1">
+                        <div key={`note-${n.id}`} className="bg-[#F7F5F0] border border-[#E1DDD3] rounded-2xl p-3 space-y-1">
                           <div className="flex items-center justify-between gap-2 flex-wrap">
-                            <span className="text-[9px] font-black uppercase tracking-wider text-[#6A2853] bg-[#EDE7F6] px-2 py-0.5 rounded-full">
+                            <span className="text-[9px] font-black uppercase tracking-wider text-[#082821] bg-[#EDE7F6] px-2 py-0.5 rounded-full">
                               {show(n.note_type, 'General')}
                             </span>
-                            <span className="text-[9px] font-bold text-[#6F5963]">
+                            <span className="text-[9px] font-bold text-[#65716C]">
                               {n.created_at ? formatDateTimeDisplay(n.created_at, 'Not recorded') : 'Not recorded'}
                             </span>
                           </div>
-                          <p className="text-[11px] text-[#2B1722] whitespace-pre-line">{show(n.note_content, 'Empty note')}</p>
-                          <div className="text-[9px] font-bold uppercase tracking-wider text-[#B76E79]">
+                          <p className="text-[11px] text-[#17201D] whitespace-pre-line">{show(n.note_content, 'Empty note')}</p>
+                          <div className="text-[9px] font-bold uppercase tracking-wider text-[#C9A45C]">
                             {show(n.created_by, 'Staff')}
                           </div>
                         </div>
@@ -2555,11 +2555,11 @@ export default function CustomerDetailDrawer({
                     </div>
                   )}
                   {text(customer.customer_notes) && (
-                    <div className="rounded-2xl border border-[#E8D9D4] bg-[#FFF7F2] p-3">
-                      <div className="text-[9px] font-black uppercase tracking-wider text-[#4A173A] mb-1">
+                    <div className="rounded-2xl border border-[#E1DDD3] bg-[#EDF3F0] p-3">
+                      <div className="text-[9px] font-black uppercase tracking-wider text-[#123C35] mb-1">
                         Customer Notes Field (record)
                       </div>
-                      <p className="text-[10px] text-[#2B1722] whitespace-pre-line">{text(customer.customer_notes)}</p>
+                      <p className="text-[10px] text-[#17201D] whitespace-pre-line">{text(customer.customer_notes)}</p>
                     </div>
                   )}
                 </Card>
@@ -2574,10 +2574,10 @@ export default function CustomerDetailDrawer({
                   ) : (
                     <div className="space-y-2">
                       {documents.map((d: any) => (
-                        <div key={`doc-${d.id}`} className="bg-[#FFFAF7] border border-[#E8D9D4] rounded-2xl p-3 flex items-center justify-between gap-3">
+                        <div key={`doc-${d.id}`} className="bg-[#F7F5F0] border border-[#E1DDD3] rounded-2xl p-3 flex items-center justify-between gap-3">
                           <div className="min-w-0">
-                            <div className="text-[11px] font-black text-[#4A173A] truncate">{show(d.file_name, 'Untitled file')}</div>
-                            <div className="text-[9px] font-bold text-[#6F5963] flex flex-wrap gap-x-2">
+                            <div className="text-[11px] font-black text-[#123C35] truncate">{show(d.file_name, 'Untitled file')}</div>
+                            <div className="text-[9px] font-bold text-[#65716C] flex flex-wrap gap-x-2">
                               <span>{show(d.document_type, 'Document')}</span>
                               <span>·</span>
                               <span>{show(d.file_extension, '').toUpperCase() || 'FILE'}</span>
@@ -2593,9 +2593,9 @@ export default function CustomerDetailDrawer({
                               href={API.fileUrl(d.file_path) || '#'}
                               target="_blank"
                               rel="noreferrer"
-                              className="px-3 py-1.5 rounded-xl bg-[#FFFDFC] hover:bg-[#FFF7F2] border border-[#E8D9D4] text-[10px] font-bold text-[#4A173A] flex items-center gap-1 shrink-0 transition-colors"
+                              className="px-3 py-1.5 rounded-xl bg-[#FFFFFF] hover:bg-[#EDF3F0] border border-[#E1DDD3] text-[10px] font-bold text-[#123C35] flex items-center gap-1 shrink-0 transition-colors"
                             >
-                              <ExternalLink className="w-3 h-3 text-[#B76E79]" />
+                              <ExternalLink className="w-3 h-3 text-[#C9A45C]" />
                               <span>Open</span>
                             </a>
                           )}
@@ -2626,7 +2626,7 @@ export default function CustomerDetailDrawer({
 
 function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={`bg-[#FFFDFC] border border-[#E8D9D4] rounded-2xl p-4 space-y-3 shadow-2xs ${className}`}>
+    <div className={`bg-[#FFFFFF] border border-[#E1DDD3] rounded-2xl p-4 space-y-3 shadow-2xs ${className}`}>
       {children}
     </div>
   );
@@ -2634,20 +2634,20 @@ function Card({ children, className = '' }: { children: React.ReactNode; classNa
 
 function SectionTitle({ icon: Icon, title }: { icon: any; title: string }) {
   return (
-    <div className="flex items-center gap-2 pb-2 border-b border-[#E8D9D4]">
-      <Icon className="w-4 h-4 text-[#B76E79]" />
-      <h4 className="text-[11px] font-black uppercase tracking-wider text-[#4A173A]">{title}</h4>
+    <div className="flex items-center gap-2 pb-2 border-b border-[#E1DDD3]">
+      <Icon className="w-4 h-4 text-[#C9A45C]" />
+      <h4 className="text-[11px] font-black uppercase tracking-wider text-[#123C35]">{title}</h4>
     </div>
   );
 }
 
 function InfoRow({ label, value, tone = 'default' }: { label: string; value: any; tone?: 'default' | 'danger' | 'warn' }) {
   return (
-    <div className="flex items-start justify-between gap-3 py-1 border-b border-[#F3E7E2] last:border-0">
-      <span className="text-[10px] font-bold uppercase tracking-wider text-[#6F5963] shrink-0">{label}</span>
+    <div className="flex items-start justify-between gap-3 py-1 border-b border-[#E1DDD3] last:border-0">
+      <span className="text-[10px] font-bold uppercase tracking-wider text-[#65716C] shrink-0">{label}</span>
       <span
         className={`min-w-0 flex-1 break-words text-right text-xs font-bold ${
-          tone === 'danger' ? 'text-[#B42318]' : tone === 'warn' ? 'text-[#C58A18]' : 'text-[#2B1722]'
+          tone === 'danger' ? 'text-[#B42318]' : tone === 'warn' ? 'text-[#C58A18]' : 'text-[#17201D]'
         }`}
       >
         {value}
@@ -2658,7 +2658,7 @@ function InfoRow({ label, value, tone = 'default' }: { label: string; value: any
 
 function EmptyState({ label }: { label: string }) {
   return (
-    <div className="py-10 text-center text-[11px] font-semibold text-[#6F5963] bg-[#FFFAF7] border border-dashed border-[#E8D9D4] rounded-2xl">
+    <div className="py-10 text-center text-[11px] font-semibold text-[#65716C] bg-[#F7F5F0] border border-dashed border-[#E1DDD3] rounded-2xl">
       {label}
     </div>
   );
@@ -2677,7 +2677,7 @@ function StatusTracker({ rows, today }: { rows: any[]; today: string }) {
   }
 
   return (
-    <ol className="space-y-2 border-l-2 border-[#F3E7E2] pl-3">
+    <ol className="space-y-2 border-l-2 border-[#E1DDD3] pl-3">
       {rows.map((s: any, index: number) => {
         const isLatest = index === rows.length - 1;
         const day = toISODateInput(s.created_at);
@@ -2689,21 +2689,21 @@ function StatusTracker({ rows, today }: { rows: any[]; today: string }) {
             <span
               aria-hidden="true"
               className={`absolute -left-[18px] top-2 h-2.5 w-2.5 rounded-full border-2 ${
-                isLatest ? 'border-[#4A173A] bg-[#4A173A]' : 'border-[#E8D9D4] bg-[#FFFDFC]'
+                isLatest ? 'border-[#123C35] bg-[#123C35]' : 'border-[#E1DDD3] bg-[#FFFFFF]'
               }`}
             />
             <div
               className={`rounded-2xl border p-3 ${
-                isLatest ? 'border-[#B76E79]/45 bg-[#FFF7F2]' : 'border-[#E8D9D4] bg-[#FFFAF7]'
+                isLatest ? 'border-[#C9A45C]/45 bg-[#EDF3F0]' : 'border-[#E1DDD3] bg-[#F7F5F0]'
               }`}
             >
               <div className="flex items-start justify-between gap-2 flex-wrap">
-                <span className="text-[10px] font-black uppercase tracking-wider text-[#4A173A]">
+                <span className="text-[10px] font-black uppercase tracking-wider text-[#123C35]">
                   {day ? formatDateDisplay(day, 'Unknown date') : 'Date not recorded'}
-                  {time ? <span className="font-bold text-[#6F5963]"> · {time}</span> : null}
+                  {time ? <span className="font-bold text-[#65716C]"> · {time}</span> : null}
                 </span>
                 {isLatest && (
-                  <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-[#4A173A] text-white">
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-[#123C35] text-white">
                     Current
                   </span>
                 )}
@@ -2712,18 +2712,18 @@ function StatusTracker({ rows, today }: { rows: any[]; today: string }) {
                 )}
               </div>
 
-              <div className="mt-1 flex items-center gap-1.5 flex-wrap text-[11px] font-black text-[#2B1722]">
+              <div className="mt-1 flex items-center gap-1.5 flex-wrap text-[11px] font-black text-[#17201D]">
                 <span>{show(s.old_status, '—')}</span>
-                <ArrowRightLeft className="w-3 h-3 text-[#B76E79]" aria-hidden="true" />
+                <ArrowRightLeft className="w-3 h-3 text-[#C9A45C]" aria-hidden="true" />
                 <span>{show(s.new_status, '—')}</span>
               </div>
 
-              <div className="mt-1 text-[9px] font-bold uppercase tracking-wider text-[#B76E79]">
+              <div className="mt-1 text-[9px] font-bold uppercase tracking-wider text-[#C9A45C]">
                 {show(s.changed_by, 'Staff')}
               </div>
 
               {reason && (
-                <p className="mt-1 text-[10px] text-[#6F5963] whitespace-pre-line">
+                <p className="mt-1 text-[10px] text-[#65716C] whitespace-pre-line">
                   <span className="font-black uppercase tracking-wider text-[9px]">Remarks · </span>
                   {reason}
                 </p>
@@ -2756,9 +2756,9 @@ function QuickActions({ customerId, onAction }: { customerId: number | null; onA
             key={a.kind}
             type="button"
             onClick={() => customerId !== null && onAction(a.kind, customerId)}
-            className="px-2.5 py-2 rounded-xl bg-[#FFFDFC] hover:bg-[#FFF7F2] border border-[#E8D9D4] text-[10px] font-bold text-[#4A173A] flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+            className="px-2.5 py-2 rounded-xl bg-[#FFFFFF] hover:bg-[#EDF3F0] border border-[#E1DDD3] text-[10px] font-bold text-[#123C35] flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
           >
-            <AIcon className="w-3.5 h-3.5 shrink-0 text-[#B76E79]" />
+            <AIcon className="w-3.5 h-3.5 shrink-0 text-[#C9A45C]" />
             <span className="truncate">{a.label}</span>
           </button>
         );

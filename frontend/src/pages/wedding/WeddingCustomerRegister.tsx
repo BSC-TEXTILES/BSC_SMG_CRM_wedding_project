@@ -374,16 +374,16 @@ export default function WeddingCustomerRegister() {
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleExport}
-                  className="px-3.5 py-2 bg-[#FFFDFC] hover:bg-[#FFF7F2] border border-[#E8D9D4] rounded-xl text-xs font-semibold text-[#4A173A] flex items-center gap-1.5 shadow-xs transition-colors"
+                  className="px-3.5 py-2 bg-[#FFFFFF] hover:bg-[#EDF3F0] border border-[#E1DDD3] rounded-xl text-xs font-semibold text-[#123C35] flex items-center gap-1.5 shadow-xs transition-colors"
                 >
-                  <Download className="w-3.5 h-3.5 text-[#B76E79]" />
+                  <Download className="w-3.5 h-3.5 text-[#C9A45C]" />
                   <span>Export Excel</span>
                 </button>
                 <Link
                   to="/wedding/customer-registration"
-                  className="px-4 py-2 bg-[#4A173A] hover:bg-[#6A2853] text-white font-semibold rounded-xl text-xs flex items-center gap-1.5 shadow-xs transition-all border border-[#B76E79]/30"
+                  className="px-4 py-2 bg-[#123C35] hover:bg-[#082821] text-white font-semibold rounded-xl text-xs flex items-center gap-1.5 shadow-xs transition-all border border-[#C9A45C]/30"
                 >
-                  <UserPlus className="w-3.5 h-3.5 text-[#E8C7A8]" />
+                  <UserPlus className="w-3.5 h-3.5 text-[#E4CB92]" />
                   <span>Register Customer</span>
                 </Link>
               </div>
@@ -391,7 +391,7 @@ export default function WeddingCustomerRegister() {
           />
 
           {/* Search & Filter Toolbar */}
-          <div className="bg-[#FFFDFC] p-4 sm:p-5 rounded-2xl border border-[#E8D9D4] shadow-xs space-y-4">
+          <div className="bg-[#FFFFFF] p-4 sm:p-5 rounded-2xl border border-[#E1DDD3] shadow-xs space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
               {/* Search Bar */}
               <div className="lg:col-span-2 relative">
@@ -404,7 +404,7 @@ export default function WeddingCustomerRegister() {
                     setSearchQuery(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="w-full pl-9 pr-4 py-2 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl text-xs text-[#2B1722] placeholder-[#9A858D] focus:outline-none focus:border-[#B76E79]"
+                  className="w-full pl-9 pr-4 py-2 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl text-xs text-[#17201D] placeholder-[#9A858D] focus:outline-none focus:border-[#C9A45C]"
                 />
               </div>
 
@@ -428,7 +428,7 @@ export default function WeddingCustomerRegister() {
                     setStatusFilter(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="w-full px-3 py-2 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl text-xs font-medium text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                  className="w-full px-3 py-2 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl text-xs font-medium text-[#17201D] focus:outline-none focus:border-[#C9A45C]"
                 >
                   <option value="">All Statuses</option>
                   {CUSTOMER_STATUSES.map((st) => (
@@ -447,7 +447,7 @@ export default function WeddingCustomerRegister() {
                     setTelecallerFilter(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="w-full px-3 py-2 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl text-xs font-medium text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                  className="w-full px-3 py-2 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl text-xs font-medium text-[#17201D] focus:outline-none focus:border-[#C9A45C]"
                 >
                   <option value="">Caller: All Telecallers</option>
                   {telecallers.map((t) => (
@@ -460,9 +460,9 @@ export default function WeddingCustomerRegister() {
             </div>
 
             {/* Sub-Filters Row: Date Range */}
-            <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-[#E8D9D4] text-xs">
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-[#E1DDD3] text-xs">
               <div className="flex items-center gap-2">
-                <span className="text-[#6F5963] font-semibold">Shopping Period:</span>
+                <span className="text-[#65716C] font-semibold">Shopping Period:</span>
                 {['all', 'today', 'tomorrow', 'this_week', 'this_month'].map((df) => (
                   <button
                     key={df}
@@ -472,8 +472,8 @@ export default function WeddingCustomerRegister() {
                     }}
                     className={`px-2.5 py-1 rounded-lg font-semibold text-[11px] transition-all capitalize ${
                       dateFilter === df
-                        ? 'bg-[#B76E79] text-white shadow-xs'
-                        : 'bg-[#FFFAF7] text-[#6F5963] hover:text-[#4A173A] hover:bg-[#F6E2E5]'
+                        ? 'bg-[#C9A45C] text-white shadow-xs'
+                        : 'bg-[#F7F5F0] text-[#65716C] hover:text-[#123C35] hover:bg-[#EDF3F0]'
                     }`}
                   >
                     {df.replace('_', ' ')}
@@ -484,32 +484,32 @@ export default function WeddingCustomerRegister() {
               <div className="flex items-center gap-2">
                 <button
                   onClick={loadData}
-                  className="p-1.5 rounded-lg bg-[#FFFAF7] hover:bg-[#FFF7F2] text-[#B76E79] border border-[#E8D9D4] transition-colors"
+                  className="p-1.5 rounded-lg bg-[#F7F5F0] hover:bg-[#EDF3F0] text-[#C9A45C] border border-[#E1DDD3] transition-colors"
                   title="Reload Customer Register"
                 >
-                  <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-[#B76E79]' : ''}`} />
+                  <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-[#C9A45C]' : ''}`} />
                 </button>
-                <span className="text-[#6F5963] font-medium">
-                  Showing <strong className="text-[#4A173A]">{customers.length}</strong> of {totalCount} records
+                <span className="text-[#65716C] font-medium">
+                  Showing <strong className="text-[#123C35]">{customers.length}</strong> of {totalCount} records
                 </span>
               </div>
             </div>
           </div>
 
           {/* Customer Table & Mobile Cards */}
-          <div className="bg-[#FFFDFC] rounded-2xl border border-[#E8D9D4] shadow-xs overflow-hidden">
+          <div className="bg-[#FFFFFF] rounded-2xl border border-[#E1DDD3] shadow-xs overflow-hidden">
             {/* Mobile Customer Cards (< md) */}
-            <div className="md:hidden divide-y divide-[#E8D9D4]">
+            <div className="md:hidden divide-y divide-[#E1DDD3]">
               {loading ? (
-                <div className="text-center py-12 text-[#6F5963]">
-                  <RefreshCw className="w-5 h-5 animate-spin text-[#B76E79] mx-auto mb-2" />
+                <div className="text-center py-12 text-[#65716C]">
+                  <RefreshCw className="w-5 h-5 animate-spin text-[#C9A45C] mx-auto mb-2" />
                   <span>Loading customer register...</span>
                 </div>
               ) : customers.length === 0 ? (
-                <div className="text-center py-12 text-[#6F5963] p-6">
+                <div className="text-center py-12 text-[#65716C] p-6">
                   <Search className="w-8 h-8 mx-auto text-[#9A858D] mb-2" />
-                  <div className="font-bold text-sm text-[#4A173A]">No customers match your criteria</div>
-                  <div className="text-xs text-[#6F5963] mt-1">Try resetting your filters or search keywords.</div>
+                  <div className="font-bold text-sm text-[#123C35]">No customers match your criteria</div>
+                  <div className="text-xs text-[#65716C] mt-1">Try resetting your filters or search keywords.</div>
                 </div>
               ) : (
                 customers.map((cust) => {
@@ -530,11 +530,11 @@ export default function WeddingCustomerRegister() {
                           </span>
                           <Link
                             to={`/wedding-crm/customers/${cust.id}`}
-                            className="font-bold text-sm text-[#2B1722] hover:text-[#4A173A] block"
+                            className="font-bold text-sm text-[#17201D] hover:text-[#123C35] block"
                           >
                             {cust.customer_name}
                           </Link>
-                          <div className="text-xs font-medium text-[#2B1722] mt-0.5">
+                          <div className="text-xs font-medium text-[#17201D] mt-0.5">
                             {cust.mobile_number}
                           </div>
                         </div>
@@ -545,14 +545,14 @@ export default function WeddingCustomerRegister() {
                         </span>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-1.5 text-xs text-[#6F5963] pt-2 border-t border-[#E8D9D4]">
+                      <div className="grid grid-cols-2 gap-1.5 text-xs text-[#65716C] pt-2 border-t border-[#E1DDD3]">
                         <div>
-                          <span className="font-semibold text-[#4A173A]">Location:</span> {cust.location_name || 'Store'}
+                          <span className="font-semibold text-[#123C35]">Location:</span> {cust.location_name || 'Store'}
                         </div>
                         <div>
-                          <span className="font-semibold text-[#4A173A]">Wedding:</span>{' '}
+                          <span className="font-semibold text-[#123C35]">Wedding:</span>{' '}
                           {cust.wedding_date ? (
-                            <span className="text-[#B76E79] font-medium">
+                            <span className="text-[#C9A45C] font-medium">
                               {formatDateDisplay(cust.wedding_date, 'TBD')}
                             </span>
                           ) : (
@@ -560,20 +560,20 @@ export default function WeddingCustomerRegister() {
                           )}
                         </div>
                         <div>
-                          <span className="font-semibold text-[#4A173A]">Assigned:</span>{' '}
-                          <span className="text-[#2B1722] font-medium">{cust.assigned_telecaller || 'Unassigned'}</span>
+                          <span className="font-semibold text-[#123C35]">Assigned:</span>{' '}
+                          <span className="text-[#17201D] font-medium">{cust.assigned_telecaller || 'Unassigned'}</span>
                         </div>
                         <div>
-                          <span className="font-semibold text-[#4A173A]">Follow-up:</span>{' '}
+                          <span className="font-semibold text-[#123C35]">Follow-up:</span>{' '}
                           {formatDateDisplay(cust.follow_up_date, 'None')}
                         </div>
                       </div>
 
                       {/* Quick Action Buttons */}
-                      <div className="flex items-center gap-2 pt-2 border-t border-[#E8D9D4]">
+                      <div className="flex items-center gap-2 pt-2 border-t border-[#E1DDD3]">
                         <Link
                           to={`/wedding-crm/customers/${cust.id}`}
-                          className="flex-1 py-2 rounded-xl bg-[#FFFAF7] hover:bg-[#FFF7F2] text-[#4A173A] border border-[#E8D9D4] font-semibold text-xs text-center transition-colors"
+                          className="flex-1 py-2 rounded-xl bg-[#F7F5F0] hover:bg-[#EDF3F0] text-[#123C35] border border-[#E1DDD3] font-semibold text-xs text-center transition-colors"
                         >
                           View
                         </Link>
@@ -590,9 +590,9 @@ export default function WeddingCustomerRegister() {
                               expected_shopping_date: cust.expected_shopping_date || ''
                             });
                           }}
-                          className="flex-1 py-2 rounded-xl bg-[#4A173A] text-white hover:bg-[#6A2853] font-semibold text-xs flex items-center justify-center gap-1.5 shadow-xs border border-[#B76E79]/30"
+                          className="flex-1 py-2 rounded-xl bg-[#123C35] text-white hover:bg-[#082821] font-semibold text-xs flex items-center justify-center gap-1.5 shadow-xs border border-[#C9A45C]/30"
                         >
-                          <PhoneCall className="w-3.5 h-3.5 text-[#E8C7A8]" />
+                          <PhoneCall className="w-3.5 h-3.5 text-[#E4CB92]" />
                           <span>Call</span>
                         </button>
                         <a
@@ -609,7 +609,7 @@ export default function WeddingCustomerRegister() {
                             setAssignCustomer(cust);
                             setTargetTelecaller(cust.assigned_telecaller || '');
                           }}
-                          className="p-2 rounded-xl bg-[#FFFAF7] hover:bg-[#FFF7F2] text-[#4A173A] border border-[#E8D9D4] transition-colors"
+                          className="p-2 rounded-xl bg-[#F7F5F0] hover:bg-[#EDF3F0] text-[#123C35] border border-[#E1DDD3] transition-colors"
                           title="Assign Telecaller"
                         >
                           <UserCheck className="w-3.5 h-3.5" />
@@ -619,7 +619,7 @@ export default function WeddingCustomerRegister() {
                             setCustomerToArchive(cust);
                             setArchiveReason('Completed wedding shopping / journey');
                           }}
-                          className="p-2 rounded-xl bg-[#FAF0E6] hover:bg-[#FAF0E6]/80 text-[#B76E79] border border-[#E8D9D4] transition-colors"
+                          className="p-2 rounded-xl bg-[#FAF0E6] hover:bg-[#FAF0E6]/80 text-[#C9A45C] border border-[#E1DDD3] transition-colors"
                           title="Move to Old Customers"
                         >
                           <Archive className="w-3.5 h-3.5" />
@@ -636,8 +636,8 @@ export default function WeddingCustomerRegister() {
               {/* min-width keeps every column at its natural size so the table
                   scrolls horizontally on narrow laptops instead of squeezing the
                   Actions cell until its buttons spill over neighbouring columns. */}
-              <table className="w-full min-w-[1180px] text-left text-xs text-[#2B1722]">
-                <thead className="bg-[#F8EDE8] text-[#4A173A] border-b border-[#E8D9D4] uppercase text-[10px] tracking-wider">
+              <table className="w-full min-w-[1180px] text-left text-xs text-[#17201D]">
+                <thead className="bg-[#F8EDE8] text-[#123C35] border-b border-[#E1DDD3] uppercase text-[10px] tracking-wider">
                   <tr>
                     <th className="py-3 px-4 font-bold whitespace-nowrap">Reg ID</th>
                     <th className="py-3 px-4 font-bold whitespace-nowrap">Customer</th>
@@ -648,25 +648,25 @@ export default function WeddingCustomerRegister() {
                     <th className="py-3 px-4 font-bold whitespace-nowrap">Telecaller</th>
                     <th className="py-3 px-4 font-bold whitespace-nowrap">Status</th>
                     <th className="py-3 px-4 font-bold whitespace-nowrap">Next Follow-up</th>
-                    <th className="py-3 px-4 font-bold text-right whitespace-nowrap w-[210px] border-l border-[#E8D9D4]">Actions</th>
+                    <th className="py-3 px-4 font-bold text-right whitespace-nowrap w-[210px] border-l border-[#E1DDD3]">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#E8D9D4]">
+                <tbody className="divide-y divide-[#E1DDD3]">
                   {loading ? (
                     <tr>
-                      <td colSpan={10} className="text-center py-12 text-[#6F5963]">
-                        <RefreshCw className="w-5 h-5 animate-spin text-[#B76E79] mx-auto mb-2" />
+                      <td colSpan={10} className="text-center py-12 text-[#65716C]">
+                        <RefreshCw className="w-5 h-5 animate-spin text-[#C9A45C] mx-auto mb-2" />
                         <span>Loading customer register...</span>
                       </td>
                     </tr>
                   ) : customers.length === 0 ? (
                     <tr>
-                      <td colSpan={10} className="text-center py-12 text-[#6F5963]">
-                        <div className="w-12 h-12 rounded-2xl bg-[#FFFAF7] text-[#9A858D] border border-[#E8D9D4] flex items-center justify-center mx-auto mb-3">
+                      <td colSpan={10} className="text-center py-12 text-[#65716C]">
+                        <div className="w-12 h-12 rounded-2xl bg-[#F7F5F0] text-[#9A858D] border border-[#E1DDD3] flex items-center justify-center mx-auto mb-3">
                           <Search className="w-6 h-6" />
                         </div>
-                        <div className="font-bold text-sm text-[#4A173A]">No customers match your criteria</div>
-                        <div className="text-xs text-[#6F5963] mt-1">Try resetting your filters or search keywords.</div>
+                        <div className="font-bold text-sm text-[#123C35]">No customers match your criteria</div>
+                        <div className="text-xs text-[#65716C] mt-1">Try resetting your filters or search keywords.</div>
                       </td>
                     </tr>
                   ) : (
@@ -687,10 +687,10 @@ export default function WeddingCustomerRegister() {
                           }}
                           className="hover:bg-[#FFF1F2] transition-colors cursor-pointer"
                         >
-                          <td className="py-3 px-4 font-bold text-[#4A173A]">
+                          <td className="py-3 px-4 font-bold text-[#123C35]">
                             <Link
                               to={`/wedding-crm/customers/${cust.id}`}
-                              className="hover:text-[#B76E79] hover:underline"
+                              className="hover:text-[#C9A45C] hover:underline"
                             >
                               {cust.customer_code}
                             </Link>
@@ -698,33 +698,33 @@ export default function WeddingCustomerRegister() {
                           <td className="py-3 px-4">
                             <Link
                               to={`/wedding-crm/customers/${cust.id}`}
-                              className="font-semibold text-[#2B1722] hover:text-[#4A173A] block"
+                              className="font-semibold text-[#17201D] hover:text-[#123C35] block"
                             >
                               {cust.customer_name}
                             </Link>
-                            <span className="text-[10px] text-[#6F5963] block mt-0.5">
+                            <span className="text-[10px] text-[#65716C] block mt-0.5">
                               {cust.preferred_shopping_category || 'General Wedding'}
                             </span>
                           </td>
-                          <td className="py-3 px-4 font-medium text-[#2B1722]">
+                          <td className="py-3 px-4 font-medium text-[#17201D]">
                             {cust.mobile_number}
                           </td>
                           <td className="py-3 px-4">
-                            <span className="inline-flex items-center gap-1 font-medium text-[11px] text-[#6F5963]">
-                              <MapPin className="w-3 h-3 text-[#B76E79]" />
+                            <span className="inline-flex items-center gap-1 font-medium text-[11px] text-[#65716C]">
+                              <MapPin className="w-3 h-3 text-[#C9A45C]" />
                               {cust.location_name || 'Store'}
                             </span>
                           </td>
                           <td className="py-3 px-4 font-medium">
                             {parseDate(cust.wedding_date) ? (
-                              <span className="text-[#B76E79] font-medium">
+                              <span className="text-[#C9A45C] font-medium">
                                 💍 {formatDateDisplay(cust.wedding_date, 'Not specified')}
                               </span>
                             ) : (
                               <span className="text-[#9A858D]">Not specified</span>
                             )}
                           </td>
-                          <td className="py-3 px-4 font-semibold text-[#4A173A]">
+                          <td className="py-3 px-4 font-semibold text-[#123C35]">
                             {parseDate(cust.expected_shopping_date) ? (
                               formatDateDisplay(cust.expected_shopping_date, 'Not Scheduled')
                             ) : (
@@ -735,7 +735,7 @@ export default function WeddingCustomerRegister() {
                             {cust.assigned_telecaller && cust.assigned_telecaller !== 'Auto-Assigned' ? (
                               <div>
                                 <div className="flex items-center">
-                                  <span className="font-semibold text-[#4A173A] text-xs">
+                                  <span className="font-semibold text-[#123C35] text-xs">
                                     {cust.assigned_telecaller}
                                   </span>
                                   <button
@@ -743,15 +743,15 @@ export default function WeddingCustomerRegister() {
                                       setAssignCustomer(cust);
                                       setTargetTelecaller('');
                                     }}
-                                    className="ml-2 text-[9px] font-bold text-[#B76E79] hover:underline"
+                                    className="ml-2 text-[9px] font-bold text-[#C9A45C] hover:underline"
                                     title="Reassign Telecaller"
                                   >
                                     Reassign
                                   </button>
                                 </div>
                                 {cust.last_contacted_by && (
-                                  <div className="text-[10px] text-[#6F5963] mt-0.5">
-                                    Last Call: <span className="font-medium text-[#2B1722]">{cust.last_contacted_by}</span>
+                                  <div className="text-[10px] text-[#65716C] mt-0.5">
+                                    Last Call: <span className="font-medium text-[#17201D]">{cust.last_contacted_by}</span>
                                   </div>
                                 )}
                               </div>
@@ -761,7 +761,7 @@ export default function WeddingCustomerRegister() {
                                   setAssignCustomer(cust);
                                   setTargetTelecaller('');
                                 }}
-                                className="text-[10px] font-semibold text-[#B76E79] hover:underline"
+                                className="text-[10px] font-semibold text-[#C9A45C] hover:underline"
                               >
                                 + Assign
                               </button>
@@ -775,7 +775,7 @@ export default function WeddingCustomerRegister() {
                           </td>
                           <td className="py-3 px-4">
                             {followUp ? (
-                              <span className={`font-semibold ${isOverdue ? 'text-[#B42318]' : 'text-[#2B1722]'}`}>
+                              <span className={`font-semibold ${isOverdue ? 'text-[#B42318]' : 'text-[#17201D]'}`}>
                                 {formatDateDisplay(cust.follow_up_date, 'None')}
                                 {isOverdue && <span className="ml-1 text-[9px] bg-[#FDE8E7] text-[#B42318] px-1 rounded uppercase font-bold">Overdue</span>}
                               </span>
@@ -783,15 +783,15 @@ export default function WeddingCustomerRegister() {
                               <span className="text-[#9A858D]">None</span>
                             )}
                           </td>
-                          <td className="py-3 px-4 text-right whitespace-nowrap border-l border-[#E8D9D4] align-middle">
+                          <td className="py-3 px-4 text-right whitespace-nowrap border-l border-[#E1DDD3] align-middle">
                             <div className="inline-flex flex-nowrap items-center justify-end gap-1.5">
                               {/* View Profile */}
                               <Link
                                 to={`/wedding-crm/customers/${cust.id}`}
-                                className="shrink-0 p-1.5 rounded-lg bg-[#FFFAF7] hover:bg-[#FFF7F2] text-[#4A173A] border border-[#E8D9D4] transition-colors"
+                                className="shrink-0 p-1.5 rounded-lg bg-[#F7F5F0] hover:bg-[#EDF3F0] text-[#123C35] border border-[#E1DDD3] transition-colors"
                                 title="View Customer Profile"
                               >
-                                <Eye className="w-3.5 h-3.5 text-[#B76E79]" />
+                                <Eye className="w-3.5 h-3.5 text-[#C9A45C]" />
                               </Link>
 
                               {/* Quick Call */}
@@ -808,7 +808,7 @@ export default function WeddingCustomerRegister() {
                                     expected_shopping_date: cust.expected_shopping_date || ''
                                   });
                                 }}
-                                className="shrink-0 p-1.5 rounded-lg bg-[#F6E2E5] hover:bg-[#D89AA3]/30 text-[#4A173A] transition-colors border border-[#E8D9D4]"
+                                className="shrink-0 p-1.5 rounded-lg bg-[#EDF3F0] hover:bg-[#D89AA3]/30 text-[#123C35] transition-colors border border-[#E1DDD3]"
                                 title="Log Call Outcome"
                               >
                                 <PhoneCall className="w-3.5 h-3.5" />
@@ -855,7 +855,7 @@ export default function WeddingCustomerRegister() {
                                     setCustomerToArchive(cust);
                                     setArchiveReason('Completed wedding shopping / journey');
                                   }}
-                                  className="shrink-0 p-1.5 rounded-lg bg-[#FAF0E6] hover:bg-[#FAF0E6]/80 text-[#B76E79] transition-colors border border-[#E8D9D4]"
+                                  className="shrink-0 p-1.5 rounded-lg bg-[#FAF0E6] hover:bg-[#FAF0E6]/80 text-[#C9A45C] transition-colors border border-[#E1DDD3]"
                                   title="Move to Old Customers"
                                 >
                                   <Archive className="w-3.5 h-3.5" />
@@ -877,7 +877,7 @@ export default function WeddingCustomerRegister() {
                                   type="button"
                                   disabled
                                   title={ARCHIVE_PROTECTED_MESSAGE}
-                                  className="shrink-0 p-1.5 rounded-lg bg-[#F5F5F5] text-[#9A858D] border border-[#E8D9D4] cursor-not-allowed opacity-60"
+                                  className="shrink-0 p-1.5 rounded-lg bg-[#F5F5F5] text-[#9A858D] border border-[#E1DDD3] cursor-not-allowed opacity-60"
                                 >
                                   <Lock className="w-3.5 h-3.5" />
                                 </button>
@@ -893,24 +893,24 @@ export default function WeddingCustomerRegister() {
             </div>
 
             {/* Pagination Controls */}
-            <div className="p-4 border-t border-[#E8D9D4] bg-[#FFFAF7] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-              <div className="text-[#6F5963]">
-                Page <strong className="text-[#4A173A]">{currentPage}</strong> of{' '}
-                <strong className="text-[#4A173A]">{Math.max(1, Math.ceil(totalCount / pageSize))}</strong>
+            <div className="p-4 border-t border-[#E1DDD3] bg-[#F7F5F0] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+              <div className="text-[#65716C]">
+                Page <strong className="text-[#123C35]">{currentPage}</strong> of{' '}
+                <strong className="text-[#123C35]">{Math.max(1, Math.ceil(totalCount / pageSize))}</strong>
               </div>
 
               <div className="flex items-center gap-1.5">
                 <button
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
-                  className="px-3 py-1.5 rounded-lg bg-[#FFFDFC] border border-[#E8D9D4] font-semibold text-[#4A173A] hover:bg-[#FFF7F2] disabled:opacity-40 transition-colors flex items-center gap-1"
+                  className="px-3 py-1.5 rounded-lg bg-[#FFFFFF] border border-[#E1DDD3] font-semibold text-[#123C35] hover:bg-[#EDF3F0] disabled:opacity-40 transition-colors flex items-center gap-1"
                 >
                   <ChevronLeft className="w-3.5 h-3.5" /> Prev
                 </button>
                 <button
                   onClick={() => setCurrentPage((p) => (p * pageSize < totalCount ? p + 1 : p))}
                   disabled={currentPage * pageSize >= totalCount}
-                  className="px-3 py-1.5 rounded-lg bg-[#FFFDFC] border border-[#E8D9D4] font-semibold text-[#4A173A] hover:bg-[#FFF7F2] disabled:opacity-40 transition-colors flex items-center gap-1"
+                  className="px-3 py-1.5 rounded-lg bg-[#FFFFFF] border border-[#E1DDD3] font-semibold text-[#123C35] hover:bg-[#EDF3F0] disabled:opacity-40 transition-colors flex items-center gap-1"
                 >
                   Next <ChevronRight className="w-3.5 h-3.5" />
                 </button>
@@ -921,19 +921,19 @@ export default function WeddingCustomerRegister() {
           {/* Quick Call Log Modal */}
           {activeCallCustomer && (
             <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-              <div className="bg-[#FFFDFC] rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-[#E8D9D4] space-y-4 animate-scale-in">
-                <div className="flex items-center justify-between pb-3 border-b border-[#E8D9D4]">
+              <div className="bg-[#FFFFFF] rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-[#E1DDD3] space-y-4 animate-scale-in">
+                <div className="flex items-center justify-between pb-3 border-b border-[#E1DDD3]">
                   <div>
-                    <h3 className="text-base font-bold text-[#4A173A]">
+                    <h3 className="text-base font-bold text-[#123C35]">
                       Log Call: {activeCallCustomer.customer_name}
                     </h3>
-                    <div className="text-xs text-[#6F5963]">
+                    <div className="text-xs text-[#65716C]">
                       {activeCallCustomer.customer_code} · {activeCallCustomer.mobile_number}
                     </div>
                   </div>
                   <button
                     onClick={() => setActiveCallCustomer(null)}
-                    className="p-1 rounded-lg hover:bg-[#FFF7F2] text-[#6F5963] hover:text-[#4A173A]"
+                    className="p-1 rounded-lg hover:bg-[#EDF3F0] text-[#65716C] hover:text-[#123C35]"
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -942,13 +942,13 @@ export default function WeddingCustomerRegister() {
                 <form onSubmit={handleSaveCall} className="space-y-4 text-xs">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-[10px] font-bold uppercase text-[#6F5963] mb-1">
+                      <label className="block text-[10px] font-bold uppercase text-[#65716C] mb-1">
                         Call Outcome *
                       </label>
                       <select
                         value={callLogForm.call_outcome}
                         onChange={(e) => setCallLogForm({ ...callLogForm, call_outcome: e.target.value })}
-                        className="w-full px-3 py-2 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-semibold text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                        className="w-full px-3 py-2 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl font-semibold text-[#17201D] focus:outline-none focus:border-[#C9A45C]"
                       >
                         {CALL_OUTCOMES.map((out) => (
                           <option key={out} value={out}>
@@ -959,32 +959,32 @@ export default function WeddingCustomerRegister() {
                     </div>
 
                     <div>
-                      <label className="block text-[10px] font-bold uppercase text-[#6F5963] mb-1">
+                      <label className="block text-[10px] font-bold uppercase text-[#65716C] mb-1">
                         Next Follow-up Date
                       </label>
                       <input
                         type="date"
                         value={callLogForm.next_follow_up_date}
                         onChange={(e) => setCallLogForm({ ...callLogForm, next_follow_up_date: e.target.value })}
-                        className="w-full px-3 py-2 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-medium text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                        className="w-full px-3 py-2 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl font-medium text-[#17201D] focus:outline-none focus:border-[#C9A45C]"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold uppercase text-[#6F5963] mb-1">
+                    <label className="block text-[10px] font-bold uppercase text-[#65716C] mb-1">
                       Expected Shopping Date (Updated)
                     </label>
                     <input
                       type="date"
                       value={callLogForm.expected_shopping_date}
                       onChange={(e) => setCallLogForm({ ...callLogForm, expected_shopping_date: e.target.value })}
-                      className="w-full px-3 py-2 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-medium text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                      className="w-full px-3 py-2 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl font-medium text-[#17201D] focus:outline-none focus:border-[#C9A45C]"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold uppercase text-[#6F5963] mb-1">
+                    <label className="block text-[10px] font-bold uppercase text-[#65716C] mb-1">
                       Customer Feedback / Notes
                     </label>
                     <textarea
@@ -992,22 +992,22 @@ export default function WeddingCustomerRegister() {
                       placeholder="What did the customer say regarding shopping timing, silk categories, or budget?"
                       value={callLogForm.remarks}
                       onChange={(e) => setCallLogForm({ ...callLogForm, remarks: e.target.value })}
-                      className="w-full px-3 py-2 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-medium text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                      className="w-full px-3 py-2 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl font-medium text-[#17201D] focus:outline-none focus:border-[#C9A45C]"
                     />
                   </div>
 
-                  <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#E8D9D4]">
+                  <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#E1DDD3]">
                     <button
                       type="button"
                       onClick={() => setActiveCallCustomer(null)}
-                      className="px-4 py-2 rounded-xl bg-[#FFFAF7] hover:bg-[#FFF7F2] border border-[#E8D9D4] font-semibold text-[#4A173A]"
+                      className="px-4 py-2 rounded-xl bg-[#F7F5F0] hover:bg-[#EDF3F0] border border-[#E1DDD3] font-semibold text-[#123C35]"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
                       disabled={savingCall}
-                      className="px-5 py-2 rounded-xl bg-[#4A173A] hover:bg-[#6A2853] text-white font-semibold shadow-xs border border-[#B76E79]/30"
+                      className="px-5 py-2 rounded-xl bg-[#123C35] hover:bg-[#082821] text-white font-semibold shadow-xs border border-[#C9A45C]/30"
                     >
                       {savingCall ? 'Saving...' : 'Save Call Outcome'}
                     </button>
@@ -1020,26 +1020,26 @@ export default function WeddingCustomerRegister() {
           {/* Quick Assign / Reassign Telecaller Modal */}
           {assignCustomer && (
             <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-              <div className="bg-[#FFFDFC] rounded-3xl max-w-md w-full p-6 shadow-2xl border border-[#E8D9D4] space-y-4 animate-scale-in">
-                <div className="flex items-center justify-between pb-3 border-b border-[#E8D9D4]">
+              <div className="bg-[#FFFFFF] rounded-3xl max-w-md w-full p-6 shadow-2xl border border-[#E1DDD3] space-y-4 animate-scale-in">
+                <div className="flex items-center justify-between pb-3 border-b border-[#E1DDD3]">
                   <div>
-                    <h3 className="text-base font-bold text-[#4A173A]">
+                    <h3 className="text-base font-bold text-[#123C35]">
                       {assignCustomer.assigned_telecaller && assignCustomer.assigned_telecaller !== 'Auto-Assigned'
                         ? 'Reassign Telecaller'
                         : 'Assign Telecaller'}
                     </h3>
-                    <div className="text-xs text-[#6F5963] mt-0.5">
-                      Customer: <strong className="text-[#2B1722]">{assignCustomer.customer_name}</strong> &middot; {assignCustomer.customer_code}
+                    <div className="text-xs text-[#65716C] mt-0.5">
+                      Customer: <strong className="text-[#17201D]">{assignCustomer.customer_name}</strong> &middot; {assignCustomer.customer_code}
                     </div>
                     {assignCustomer.assigned_telecaller && assignCustomer.assigned_telecaller !== 'Auto-Assigned' && (
-                      <div className="text-xs text-[#6F5963] mt-1">
-                        Currently assigned to: <strong className="text-[#4A173A]">{assignCustomer.assigned_telecaller}</strong>
+                      <div className="text-xs text-[#65716C] mt-1">
+                        Currently assigned to: <strong className="text-[#123C35]">{assignCustomer.assigned_telecaller}</strong>
                       </div>
                     )}
                   </div>
                   <button
                     onClick={() => { setAssignCustomer(null); setTargetTelecaller(''); }}
-                    className="p-1 rounded-lg hover:bg-[#FFF7F2] text-[#6F5963] hover:text-[#4A173A]"
+                    className="p-1 rounded-lg hover:bg-[#EDF3F0] text-[#65716C] hover:text-[#123C35]"
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -1047,17 +1047,17 @@ export default function WeddingCustomerRegister() {
 
                 <form onSubmit={handleSaveAssign} className="space-y-4 text-xs">
                   <div>
-                    <label className="block text-[10px] font-bold uppercase text-[#6F5963] mb-2">
+                    <label className="block text-[10px] font-bold uppercase text-[#65716C] mb-2">
                       Select Telecaller
                     </label>
                     {telecallers.length === 0 ? (
-                      <div className="text-center py-6 text-[#6F5963]">
+                      <div className="text-center py-6 text-[#65716C]">
                         <CircleAlert className="w-6 h-6 mx-auto mb-2 text-[#C58A18]" />
-                        <p className="font-semibold text-[#4A173A]">No telecallers available.</p>
+                        <p className="font-semibold text-[#123C35]">No telecallers available.</p>
                         <p className="text-[10px] mt-1">Please ensure active telecaller accounts exist in User Management.</p>
                       </div>
                     ) : (
-                      <div className="max-h-60 overflow-y-auto space-y-1.5 border border-[#E8D9D4] rounded-xl p-2 bg-[#FFFAF7]">
+                      <div className="max-h-60 overflow-y-auto space-y-1.5 border border-[#E1DDD3] rounded-xl p-2 bg-[#F7F5F0]">
                         {telecallers.map((t: any) => {
                           const isSelected = String(t.id) === String(targetTelecaller);
                           return (
@@ -1067,21 +1067,21 @@ export default function WeddingCustomerRegister() {
                               onClick={() => setTargetTelecaller(String(t.id))}
                               className={`w-full text-left px-3 py-2.5 rounded-lg border transition-all ${
                                 isSelected
-                                  ? 'bg-[#4A173A] text-white border-[#B76E79] shadow-xs'
-                                  : 'bg-[#FFFDFC] border-[#E8D9D4] hover:border-[#B76E79]/50 hover:bg-[#F6E2E5]'
+                                  ? 'bg-[#123C35] text-white border-[#C9A45C] shadow-xs'
+                                  : 'bg-[#FFFFFF] border-[#E1DDD3] hover:border-[#C9A45C]/50 hover:bg-[#EDF3F0]'
                               }`}
                             >
                               <div className="flex items-center justify-between">
                                 <div>
-                                  <div className={`text-xs font-semibold ${isSelected ? 'text-white' : 'text-[#2B1722]'}`}>
+                                  <div className={`text-xs font-semibold ${isSelected ? 'text-white' : 'text-[#17201D]'}`}>
                                     {t.full_name || t.name || t.username}
                                   </div>
-                                  <div className={`text-[10px] mt-0.5 font-mono ${isSelected ? 'text-[#E8C7A8]' : 'text-[#9A858D]'}`}>
+                                  <div className={`text-[10px] mt-0.5 font-mono ${isSelected ? 'text-[#E4CB92]' : 'text-[#9A858D]'}`}>
                                     {t.employee_id || `EMP-${t.id}`}
                                   </div>
                                 </div>
                                 <div className="text-right">
-                                  <div className={`text-[9px] font-bold uppercase ${isSelected ? 'text-[#E8C7A8]' : 'text-[#6F5963]'}`}>
+                                  <div className={`text-[9px] font-bold uppercase ${isSelected ? 'text-[#E4CB92]' : 'text-[#65716C]'}`}>
                                     {t.role}
                                   </div>
                                   <div className={`text-[9px] ${isSelected ? 'text-[#D89AA3]' : 'text-[#9A858D]'}`}>
@@ -1091,8 +1091,8 @@ export default function WeddingCustomerRegister() {
                               </div>
                               {isSelected && (
                                 <div className="mt-1 flex items-center gap-1">
-                                  <CircleCheck className="w-3 h-3 text-[#E8C7A8]" />
-                                  <span className="text-[9px] text-[#E8C7A8] font-bold">Selected</span>
+                                  <CircleCheck className="w-3 h-3 text-[#E4CB92]" />
+                                  <span className="text-[9px] text-[#E4CB92] font-bold">Selected</span>
                                 </div>
                               )}
                             </button>
@@ -1102,22 +1102,22 @@ export default function WeddingCustomerRegister() {
                     )}
                   </div>
 
-                  <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#E8D9D4]">
+                  <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#E1DDD3]">
                     <button
                       type="button"
                       onClick={() => { setAssignCustomer(null); setTargetTelecaller(''); }}
-                      className="px-4 py-2 rounded-xl bg-[#FFFAF7] hover:bg-[#FFF7F2] border border-[#E8D9D4] font-semibold text-[#4A173A]"
+                      className="px-4 py-2 rounded-xl bg-[#F7F5F0] hover:bg-[#EDF3F0] border border-[#E1DDD3] font-semibold text-[#123C35]"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
                       disabled={savingAssign || !targetTelecaller}
-                      className="px-5 py-2 rounded-xl bg-[#4A173A] hover:bg-[#6A2853] text-white font-semibold shadow-xs border border-[#B76E79]/30 disabled:opacity-40 flex items-center gap-2"
+                      className="px-5 py-2 rounded-xl bg-[#123C35] hover:bg-[#082821] text-white font-semibold shadow-xs border border-[#C9A45C]/30 disabled:opacity-40 flex items-center gap-2"
                     >
                       {savingAssign ? (
                         <>
-                          <div className="w-3.5 h-3.5 border-2 border-[#E8C7A8]/30 border-t-[#E8C7A8] rounded-full animate-spin" />
+                          <div className="w-3.5 h-3.5 border-2 border-[#E4CB92]/30 border-t-[#E4CB92] rounded-full animate-spin" />
                           Assigning...
                         </>
                       ) : (
@@ -1135,42 +1135,42 @@ export default function WeddingCustomerRegister() {
           {/* Delete Confirmation Modal */}
           {customerToDelete && (
             <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
-              <div className="bg-[#FFFDFC] rounded-3xl max-w-md w-full p-6 shadow-2xl border border-[#E8D9D4] space-y-4 animate-scale-in">
+              <div className="bg-[#FFFFFF] rounded-3xl max-w-md w-full p-6 shadow-2xl border border-[#E1DDD3] space-y-4 animate-scale-in">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-2xl bg-[#FDE8E7] text-[#B42318] flex items-center justify-center flex-shrink-0">
                     <Trash2 className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-base font-bold text-[#4A173A]">Delete Wedding Customer</h3>
-                    <p className="text-xs text-[#6F5963]">This action will archive the customer record.</p>
+                    <h3 className="text-base font-bold text-[#123C35]">Delete Wedding Customer</h3>
+                    <p className="text-xs text-[#65716C]">This action will archive the customer record.</p>
                   </div>
                 </div>
 
-                <div className="p-4 bg-[#FFFAF7] rounded-2xl border border-[#E8D9D4] space-y-2 text-xs">
+                <div className="p-4 bg-[#F7F5F0] rounded-2xl border border-[#E1DDD3] space-y-2 text-xs">
                   <div className="flex justify-between">
-                    <span className="text-[#6F5963]">Customer Name:</span>
-                    <strong className="text-[#2B1722]">{customerToDelete.customer_name}</strong>
+                    <span className="text-[#65716C]">Customer Name:</span>
+                    <strong className="text-[#17201D]">{customerToDelete.customer_name}</strong>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-[#6F5963]">Registration ID:</span>
-                    <strong className="text-[#4A173A] font-mono">{customerToDelete.customer_code}</strong>
+                    <span className="text-[#65716C]">Registration ID:</span>
+                    <strong className="text-[#123C35] font-mono">{customerToDelete.customer_code}</strong>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-[#6F5963]">Mobile Number:</span>
-                    <span className="font-semibold text-[#2B1722]">{customerToDelete.mobile_number}</span>
+                    <span className="text-[#65716C]">Mobile Number:</span>
+                    <span className="font-semibold text-[#17201D]">{customerToDelete.mobile_number}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-[#6F5963]">Store Location:</span>
-                    <span className="font-semibold text-[#2B1722]">{customerToDelete.location_name || 'Store'}</span>
+                    <span className="text-[#65716C]">Store Location:</span>
+                    <span className="font-semibold text-[#17201D]">{customerToDelete.location_name || 'Store'}</span>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#E8D9D4]">
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#E1DDD3]">
                   <button
                     type="button"
                     disabled={deleting}
                     onClick={() => setCustomerToDelete(null)}
-                    className="px-4 py-2 rounded-xl bg-[#FFFAF7] hover:bg-[#FFF7F2] border border-[#E8D9D4] font-semibold text-[#4A173A] text-xs"
+                    className="px-4 py-2 rounded-xl bg-[#F7F5F0] hover:bg-[#EDF3F0] border border-[#E1DDD3] font-semibold text-[#123C35] text-xs"
                   >
                     Cancel
                   </button>
@@ -1208,57 +1208,57 @@ export default function WeddingCustomerRegister() {
           {/* Move to Old Customers Modal */}
           {customerToArchive && (
             <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
-              <div className="bg-[#FFFDFC] rounded-3xl max-w-md w-full p-6 shadow-2xl border border-[#E8D9D4] space-y-4 animate-scale-in">
+              <div className="bg-[#FFFFFF] rounded-3xl max-w-md w-full p-6 shadow-2xl border border-[#E1DDD3] space-y-4 animate-scale-in">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-[#FAF0E6] text-[#4A173A] flex items-center justify-center flex-shrink-0 border border-[#E8D9D4]">
-                    <Archive className="w-5 h-5 text-[#B76E79]" />
+                  <div className="w-10 h-10 rounded-2xl bg-[#FAF0E6] text-[#123C35] flex items-center justify-center flex-shrink-0 border border-[#E1DDD3]">
+                    <Archive className="w-5 h-5 text-[#C9A45C]" />
                   </div>
                   <div>
-                    <h3 className="text-base font-bold text-[#4A173A]">Move Customer to Old Customers?</h3>
-                    <p className="text-xs text-[#6F5963]">Historical archive with complete record retention</p>
+                    <h3 className="text-base font-bold text-[#123C35]">Move Customer to Old Customers?</h3>
+                    <p className="text-xs text-[#65716C]">Historical archive with complete record retention</p>
                   </div>
                 </div>
 
-                <div className="p-4 bg-[#FFFAF7] rounded-2xl border border-[#E8D9D4] space-y-2 text-xs">
+                <div className="p-4 bg-[#F7F5F0] rounded-2xl border border-[#E1DDD3] space-y-2 text-xs">
                   <div className="flex justify-between">
-                    <span className="text-[#6F5963]">Customer Name:</span>
-                    <strong className="text-[#2B1722]">{customerToArchive.customer_name}</strong>
+                    <span className="text-[#65716C]">Customer Name:</span>
+                    <strong className="text-[#17201D]">{customerToArchive.customer_name}</strong>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-[#6F5963]">Customer ID:</span>
-                    <strong className="text-[#4A173A] font-mono">{customerToArchive.customer_code}</strong>
+                    <span className="text-[#65716C]">Customer ID:</span>
+                    <strong className="text-[#123C35] font-mono">{customerToArchive.customer_code}</strong>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-[#6F5963]">Mobile Number:</span>
-                    <span className="font-semibold text-[#2B1722]">{customerToArchive.mobile_number}</span>
+                    <span className="text-[#65716C]">Mobile Number:</span>
+                    <span className="font-semibold text-[#17201D]">{customerToArchive.mobile_number}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-[#6F5963]">Store Location:</span>
-                    <span className="font-semibold text-[#2B1722]">{customerToArchive.location_name || 'Store'}</span>
+                    <span className="text-[#65716C]">Store Location:</span>
+                    <span className="font-semibold text-[#17201D]">{customerToArchive.location_name || 'Store'}</span>
                   </div>
                 </div>
 
-                <p className="text-[11.5px] text-[#6F5963] leading-relaxed">
+                <p className="text-[11.5px] text-[#65716C] leading-relaxed">
                   The customer record and complete history will remain available in the Old Customers section. You can restore this customer at any time.
                 </p>
 
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold text-[#4A173A] uppercase">Reason for Archiving (Optional):</label>
+                  <label className="text-[11px] font-bold text-[#123C35] uppercase">Reason for Archiving (Optional):</label>
                   <input
                     type="text"
                     value={archiveReason}
                     onChange={(e) => setArchiveReason(e.target.value)}
                     placeholder="e.g., Completed wedding shopping / lifecycle closed"
-                    className="w-full px-3 py-2 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl text-xs font-semibold text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
+                    className="w-full px-3 py-2 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl text-xs font-semibold text-[#17201D] focus:outline-none focus:border-[#C9A45C]"
                   />
                 </div>
 
-                <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#E8D9D4]">
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#E1DDD3]">
                   <button
                     type="button"
                     disabled={archiving}
                     onClick={() => setCustomerToArchive(null)}
-                    className="px-4 py-2 rounded-xl bg-[#FFFAF7] hover:bg-[#FFF7F2] border border-[#E8D9D4] font-semibold text-[#4A173A] text-xs cursor-pointer"
+                    className="px-4 py-2 rounded-xl bg-[#F7F5F0] hover:bg-[#EDF3F0] border border-[#E1DDD3] font-semibold text-[#123C35] text-xs cursor-pointer"
                   >
                     Cancel
                   </button>
@@ -1266,7 +1266,7 @@ export default function WeddingCustomerRegister() {
                     type="button"
                     disabled={archiving}
                     onClick={handleMoveToOldCustomers}
-                    className="px-5 py-2 rounded-xl bg-[#4A173A] hover:bg-[#6A2853] text-white font-semibold text-xs shadow-xs flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                    className="px-5 py-2 rounded-xl bg-[#123C35] hover:bg-[#082821] text-white font-semibold text-xs shadow-xs flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
                   >
                     {archiving ? (
                       <>

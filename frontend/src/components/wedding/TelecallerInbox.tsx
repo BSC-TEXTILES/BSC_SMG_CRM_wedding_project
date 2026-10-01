@@ -35,14 +35,14 @@ interface Instruction {
 }
 
 const STATUS_STYLE: Record<string, string> = {
-  New: 'bg-[#F6E2E5] text-[#6A2853] border-[#B76E79]/30',
+  New: 'bg-[#EDF3F0] text-[#082821] border-[#C9A45C]/30',
   Seen: 'bg-[#EAF1FA] text-[#356AE6] border-[#356AE6]/25',
   Acknowledged: 'bg-[#FFF4D6] text-[#8A6212] border-[#C58A18]/30',
   Completed: 'bg-[#E8F5EE] text-[#198754] border-[#198754]/25'
 };
 
 const PRIORITY_STYLE: Record<string, string> = {
-  High: 'border-[#C58A18]/30 bg-[#FFFDFC]',
+  High: 'border-[#C58A18]/30 bg-[#FFFFFF]',
   Urgent: 'border-[#B42318]/35 bg-[#FDE8E7]/60'
 };
 
@@ -109,20 +109,20 @@ export default function TelecallerInbox() {
   };
 
   return (
-    <section className="rounded-2xl border border-[#E8D9D4] bg-[#FFFDFC] shadow-2xs overflow-hidden">
-      <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b border-[#E8D9D4] bg-[#FFF7F2]">
+    <section className="rounded-2xl border border-[#E1DDD3] bg-[#FFFFFF] shadow-2xs overflow-hidden">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b border-[#E1DDD3] bg-[#EDF3F0]">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="grid h-8 w-8 place-items-center rounded-xl bg-[#4A173A] shrink-0">
-            <Megaphone className="h-4 w-4 text-[#E8C7A8]" />
+          <span className="grid h-8 w-8 place-items-center rounded-xl bg-[#123C35] shrink-0">
+            <Megaphone className="h-4 w-4 text-[#E4CB92]" />
           </span>
           <div className="min-w-0">
-            <h2 className="text-sm font-bold text-[#4A173A]">CRM Instructions</h2>
-            <p className="text-[11px] text-[#6F5963] truncate">
+            <h2 className="text-sm font-bold text-[#123C35]">CRM Instructions</h2>
+            <p className="text-[11px] text-[#65716C] truncate">
               Instructions sent to you about a customer. The assignment itself does not change.
             </p>
           </div>
           {newCount > 0 && (
-            <span className="ml-1 shrink-0 rounded-full bg-[#F6E2E5] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#6A2853]">
+            <span className="ml-1 shrink-0 rounded-full bg-[#EDF3F0] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#082821]">
               {newCount} new
             </span>
           )}
@@ -131,9 +131,9 @@ export default function TelecallerInbox() {
           type="button"
           onClick={() => load()}
           disabled={loading}
-          className="flex items-center gap-1.5 rounded-xl border border-[#E8D9D4] bg-[#FFFDFC] px-3 py-1.5 text-[11px] font-bold text-[#4A173A] transition-colors hover:bg-[#FFF7F2] disabled:opacity-60 cursor-pointer"
+          className="flex items-center gap-1.5 rounded-xl border border-[#E1DDD3] bg-[#FFFFFF] px-3 py-1.5 text-[11px] font-bold text-[#123C35] transition-colors hover:bg-[#EDF3F0] disabled:opacity-60 cursor-pointer"
         >
-          <RefreshCw className={`h-3.5 w-3.5 text-[#B76E79] ${loading ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`h-3.5 w-3.5 text-[#C9A45C] ${loading ? 'animate-spin' : ''}`} />
           <span>Refresh</span>
         </button>
       </div>
@@ -141,7 +141,7 @@ export default function TelecallerInbox() {
       {loading && items.length === 0 && (
         <div className="space-y-2 p-4">
           {[0, 1].map((i) => (
-            <div key={i} className="h-20 animate-pulse rounded-xl bg-[#FFF7F2]" />
+            <div key={i} className="h-20 animate-pulse rounded-xl bg-[#EDF3F0]" />
           ))}
         </div>
       )}
@@ -159,10 +159,10 @@ export default function TelecallerInbox() {
       )}
 
       {!loading && !error && items.length === 0 && (
-        <div className="flex items-center gap-2.5 p-5 text-[#6F5963]">
-          <Inbox className="h-5 w-5 shrink-0 text-[#B76E79]" />
+        <div className="flex items-center gap-2.5 p-5 text-[#65716C]">
+          <Inbox className="h-5 w-5 shrink-0 text-[#C9A45C]" />
           <div>
-            <p className="text-[12px] font-bold text-[#4A173A]">No instructions yet.</p>
+            <p className="text-[12px] font-bold text-[#123C35]">No instructions yet.</p>
             <p className="text-[11px]">A CRM Manager’s note about a customer will appear here the moment it is sent.</p>
           </div>
         </div>
@@ -187,7 +187,7 @@ export default function TelecallerInbox() {
                   )}
                   <Link
                     to={`/wedding-crm/customers/${item.customerId}`}
-                    className="truncate text-[13px] font-bold text-[#4A173A] hover:underline"
+                    className="truncate text-[13px] font-bold text-[#123C35] hover:underline"
                     title={item.customerName}
                   >
                     {item.customerName}
@@ -195,10 +195,10 @@ export default function TelecallerInbox() {
                   <span className="font-mono text-[10px] text-[#9A858D]">{item.customerCode || `#${item.customerId}`}</span>
                 </div>
 
-                <p className="mt-1.5 break-words text-[12px] leading-relaxed text-[#2B1722]">“{item.message}”</p>
+                <p className="mt-1.5 break-words text-[12px] leading-relaxed text-[#17201D]">“{item.message}”</p>
 
                 <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] text-[#9A858D]">
-                  <span>From <strong className="font-semibold text-[#6F5963]">{item.sentByName || 'CRM'}</strong>{item.sentByRole ? ` (${item.sentByRole})` : ''}</span>
+                  <span>From <strong className="font-semibold text-[#65716C]">{item.sentByName || 'CRM'}</strong>{item.sentByRole ? ` (${item.sentByRole})` : ''}</span>
                   {item.locationName && (
                     <span className="flex items-center gap-1">
                       <Store className="h-3 w-3" />
@@ -236,7 +236,7 @@ export default function TelecallerInbox() {
                 )}
                 <Link
                   to={`/wedding-crm/customers/${item.customerId}`}
-                  className="flex items-center gap-1 rounded-xl border border-[#E8D9D4] bg-[#FFFDFC] px-3 py-1.5 text-[11px] font-bold text-[#4A173A] transition-colors hover:bg-[#FFF7F2]"
+                  className="flex items-center gap-1 rounded-xl border border-[#E1DDD3] bg-[#FFFFFF] px-3 py-1.5 text-[11px] font-bold text-[#123C35] transition-colors hover:bg-[#EDF3F0]"
                 >
                   <span>Open</span>
                   <ChevronRight className="h-3.5 w-3.5" />
@@ -249,7 +249,7 @@ export default function TelecallerInbox() {
             <button
               type="button"
               onClick={() => setShowAll((v) => !v)}
-              className="w-full px-4 py-2.5 text-left text-[11px] font-bold text-[#B76E79] hover:bg-[#FFF7F2] cursor-pointer"
+              className="w-full px-4 py-2.5 text-left text-[11px] font-bold text-[#C9A45C] hover:bg-[#EDF3F0] cursor-pointer"
             >
               {showAll ? 'Show fewer' : `Show all ${items.length} instructions`}
             </button>

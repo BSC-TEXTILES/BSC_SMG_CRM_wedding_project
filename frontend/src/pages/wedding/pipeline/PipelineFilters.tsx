@@ -74,11 +74,11 @@ const DATE_PRESETS: { key: PipelineFilterState['date_preset']; label: string; hi
   { key: 'today', label: 'Today', hint: 'Follow-up date on the server date' }
 ];
 
-const fieldLabelClass = 'mb-1 block text-[9px] font-black uppercase tracking-wider text-[#6F5963]';
+const fieldLabelClass = 'mb-1 block text-[9px] font-black uppercase tracking-wider text-[#65716C]';
 
 const controlClass =
-  'w-full rounded-xl border border-[#E8D9D4] bg-[#FFFAF7] px-3 py-2 text-xs font-semibold ' +
-  'text-[#2B1722] shadow-2xs transition-colors focus:border-[#B76E79] focus:outline-none ' +
+  'w-full rounded-xl border border-[#E1DDD3] bg-[#F7F5F0] px-3 py-2 text-xs font-semibold ' +
+  'text-[#17201D] shadow-2xs transition-colors focus:border-[#C9A45C] focus:outline-none ' +
   'disabled:opacity-60';
 
 /** True when the toolbar is back at its starting values. */
@@ -144,7 +144,7 @@ export default function PipelineFilters({
     <section
       aria-label="Pipeline filters"
       aria-busy={busy}
-      className="rounded-3xl border border-[#E8D9D4] bg-[#FFFDFC] p-3 shadow-2xs sm:p-4"
+      className="rounded-3xl border border-[#E1DDD3] bg-[#FFFFFF] p-3 shadow-2xs sm:p-4"
     >
       <div className="flex flex-wrap items-end gap-3">
         <div className="min-w-[200px] flex-1">
@@ -153,7 +153,7 @@ export default function PipelineFilters({
           </label>
           <div className="relative">
             <Search
-              className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#B76E79]"
+              className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#C9A45C]"
               aria-hidden="true"
             />
             <input
@@ -170,13 +170,13 @@ export default function PipelineFilters({
                 type="button"
                 onClick={() => setSearchText('')}
                 aria-label="Clear search text"
-                className="absolute right-2 top-1/2 inline-flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-lg border border-[#E8D9D4] bg-[#FFFDFC] text-[#4A173A] transition-colors hover:bg-[#FFF7F2]"
+                className="absolute right-2 top-1/2 inline-flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-lg border border-[#E1DDD3] bg-[#FFFFFF] text-[#123C35] transition-colors hover:bg-[#EDF3F0]"
               >
                 <X className="h-3 w-3" aria-hidden="true" />
               </button>
             )}
           </div>
-          <p className="mt-1 text-[9px] font-semibold text-[#6F5963]">
+          <p className="mt-1 text-[9px] font-semibold text-[#65716C]">
             {pendingSearch ? 'Waiting for the search to settle…' : 'Matches on this board only'}
           </p>
         </div>
@@ -262,13 +262,13 @@ export default function PipelineFilters({
         </div>
       </div>
 
-      <div className="mt-3 flex flex-wrap items-end justify-between gap-3 border-t border-[#E8D9D4] pt-3">
+      <div className="mt-3 flex flex-wrap items-end justify-between gap-3 border-t border-[#E1DDD3] pt-3">
         <div>
           <span className={fieldLabelClass}>Follow-up window</span>
           <div
             role="group"
             aria-label="Follow-up date preset"
-            className="inline-flex flex-wrap gap-1 rounded-xl border border-[#E8D9D4] bg-[#FFFAF7] p-1"
+            className="inline-flex flex-wrap gap-1 rounded-xl border border-[#E1DDD3] bg-[#F7F5F0] p-1"
           >
             {DATE_PRESETS.map((preset) => {
               const isActive = value.date_preset === preset.key;
@@ -282,8 +282,8 @@ export default function PipelineFilters({
                   onClick={() => set({ date_preset: preset.key })}
                   className={`h-7 whitespace-nowrap rounded-lg px-3 text-[10px] font-black uppercase tracking-wider transition-colors focus:outline-none disabled:opacity-60 ${
                     isActive
-                      ? 'bg-[#4A173A] text-white'
-                      : 'bg-transparent text-[#6F5963] hover:bg-[#FFF7F2] hover:text-[#4A173A]'
+                      ? 'bg-[#123C35] text-white'
+                      : 'bg-transparent text-[#65716C] hover:bg-[#EDF3F0] hover:text-[#123C35]'
                   }`}
                 >
                   {preset.label}
@@ -323,17 +323,17 @@ export default function PipelineFilters({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-1 whitespace-nowrap text-[9px] font-black uppercase tracking-wider text-[#6F5963]">
-            <CalendarDays className="h-3 w-3 text-[#B76E79]" aria-hidden="true" />
+          <span className="inline-flex items-center gap-1 whitespace-nowrap text-[9px] font-black uppercase tracking-wider text-[#65716C]">
+            <CalendarDays className="h-3 w-3 text-[#C9A45C]" aria-hidden="true" />
             {activeCount} {activeCount === 1 ? 'filter' : 'filters'} active
           </span>
           <button
             type="button"
             onClick={clearAll}
             disabled={activeCount === 0 && !pendingSearch}
-            className="inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl border border-[#E8D9D4] bg-[#FFFDFC] px-3 text-[10px] font-black uppercase tracking-wider text-[#4A173A] shadow-2xs transition-colors hover:border-[#B76E79] hover:bg-[#FFF7F2] focus:outline-none disabled:opacity-50"
+            className="inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl border border-[#E1DDD3] bg-[#FFFFFF] px-3 text-[10px] font-black uppercase tracking-wider text-[#123C35] shadow-2xs transition-colors hover:border-[#C9A45C] hover:bg-[#EDF3F0] focus:outline-none disabled:opacity-50"
           >
-            <RotateCcw className="h-3.5 w-3.5 text-[#B76E79]" aria-hidden="true" />
+            <RotateCcw className="h-3.5 w-3.5 text-[#C9A45C]" aria-hidden="true" />
             Clear Filters
           </button>
         </div>

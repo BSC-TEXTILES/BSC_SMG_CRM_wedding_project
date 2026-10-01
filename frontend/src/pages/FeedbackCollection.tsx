@@ -249,7 +249,7 @@ function EmptyHint({ icon: Icon, title, children }: { icon: any; title: string; 
         <Icon className="h-5 w-5 text-[#9A858D]" />
       </div>
       <div className="text-sm font-extrabold text-primary">{title}</div>
-      {children && <p className="max-w-md text-xs font-medium text-[#6F5963]">{children}</p>}
+      {children && <p className="max-w-md text-xs font-medium text-[#65716C]">{children}</p>}
     </div>
   );
 }
@@ -560,7 +560,7 @@ export default function FeedbackCollection() {
                   <span>{getLocationBadgeText()}</span>
                 </span>
               </div>
-              <p className="mt-1 text-[11px] font-medium leading-relaxed text-[#6F5963]">
+              <p className="mt-1 text-[11px] font-medium leading-relaxed text-[#65716C]">
                 Live survey responses, satisfaction scores and follow-up actions recorded by the in-store QR kiosks.
               </p>
             </div>
@@ -597,7 +597,7 @@ export default function FeedbackCollection() {
           <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
             <div className="card-glass p-3.5">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-[10px] font-black uppercase tracking-wider text-[#6F5963]">Total Feedbacks</span>
+                <span className="text-[10px] font-black uppercase tracking-wider text-[#65716C]">Total Feedbacks</span>
                 <MessageSquare className="h-3.5 w-3.5 shrink-0 text-accent" />
               </div>
               <div className="mt-1 text-2xl font-black leading-none text-primary">{total}</div>
@@ -609,7 +609,7 @@ export default function FeedbackCollection() {
 
             <div className="card-glass p-3.5">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-[10px] font-black uppercase tracking-wider text-[#6F5963]">Satisfied</span>
+                <span className="text-[10px] font-black uppercase tracking-wider text-[#65716C]">Satisfied</span>
                 <ThumbsUp className="h-3.5 w-3.5 shrink-0 text-emerald-600" />
               </div>
               <div className="mt-1 text-2xl font-black leading-none text-emerald-700">{positive}</div>
@@ -618,7 +618,7 @@ export default function FeedbackCollection() {
 
             <div className="card-glass p-3.5">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-[10px] font-black uppercase tracking-wider text-[#6F5963]">Needs Follow-up</span>
+                <span className="text-[10px] font-black uppercase tracking-wider text-[#65716C]">Needs Follow-up</span>
                 <ThumbsDown className="h-3.5 w-3.5 shrink-0 text-rose-600" />
               </div>
               <div className="mt-1 text-2xl font-black leading-none text-rose-700">{needsFollowUp}</div>
@@ -627,7 +627,7 @@ export default function FeedbackCollection() {
 
             <div className="card-glass p-3.5">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-[10px] font-black uppercase tracking-wider text-[#6F5963]">Satisfaction Rate</span>
+                <span className="text-[10px] font-black uppercase tracking-wider text-[#65716C]">Satisfaction Rate</span>
                 <Star className="h-3.5 w-3.5 shrink-0 text-accent" />
               </div>
               <div className="mt-1 text-2xl font-black leading-none text-primary">{rate(positive, total)}</div>
@@ -834,7 +834,7 @@ export default function FeedbackCollection() {
                 <MessageSquare className="h-3.5 w-3.5 text-accent" />
                 <span>Survey Log ({feedbacks.length})</span>
               </h3>
-              <span className="text-[11px] font-semibold text-[#6F5963]">
+              <span className="text-[11px] font-semibold text-[#65716C]">
                 {positive} positive · {negative} negative · refreshed automatically
               </span>
             </div>
@@ -864,7 +864,7 @@ export default function FeedbackCollection() {
                 <div className="hidden table-frame custom-scrollbar md:block">
                   <table className="w-full min-w-[1080px] border-collapse text-left text-xs">
                     <thead>
-                      <tr className="border-b border-accent-soft bg-background text-[10px] font-black uppercase tracking-wider text-[#6F5963]">
+                      <tr className="border-b border-accent-soft bg-background text-[10px] font-black uppercase tracking-wider text-[#65716C]">
                         <th className="whitespace-nowrap px-3 py-2.5">Date &amp; Time</th>
                         <th className="whitespace-nowrap px-3 py-2.5">Store</th>
                         <th className="whitespace-nowrap px-3 py-2.5">Customer</th>
@@ -935,7 +935,7 @@ export default function FeedbackCollection() {
                             </td>
                             <td className="px-3 py-3">
                               {found ? (
-                                <span className="text-[11px] font-bold text-[#2B1722]" title={found}>{found}</span>
+                                <span className="text-[11px] font-bold text-[#17201D]" title={found}>{found}</span>
                               ) : (
                                 <span className="text-[11px] font-semibold text-[#9A858D]">Not answered</span>
                               )}
@@ -1087,7 +1087,7 @@ export default function FeedbackCollection() {
                       {selectedFeedback.customerName || 'Anonymous Customer'}
                     </h2>
 
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-0.5 text-[11px] font-semibold text-[#6F5963]">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-0.5 text-[11px] font-semibold text-[#65716C]">
                       <span className="inline-flex items-center gap-1 font-mono">
                         <Hash className="h-3 w-3 shrink-0 text-accent" />
                         <span>{ticketRef(selectedFeedback.id)}</span>
@@ -1148,7 +1148,7 @@ export default function FeedbackCollection() {
                       const value = answerOf(selectedAnswers, selectedFeedback, q.key);
                       return (
                         <div key={q.key} className="flex items-center justify-between gap-3 rounded-xl border border-accent-soft bg-white px-3 py-2.5">
-                          <span className="min-w-0 truncate text-[11px] font-bold uppercase tracking-wide text-[#6F5963]" title={q.full}>
+                          <span className="min-w-0 truncate text-[11px] font-bold uppercase tracking-wide text-[#65716C]" title={q.full}>
                             {q.full}
                           </span>
                           {value ? (
@@ -1180,7 +1180,7 @@ export default function FeedbackCollection() {
                   ) : !selectedVoice.hasMarkers ? (
                     <div className="rounded-xl border border-accent-soft bg-white px-3.5 py-3">
                       <div className="text-[9.5px] font-black uppercase tracking-wider text-[#8B6F76]">Customer’s Words</div>
-                      <p className="mt-1 whitespace-pre-line text-xs font-semibold leading-relaxed text-[#2B1722]">{selectedFeedback.voice}</p>
+                      <p className="mt-1 whitespace-pre-line text-xs font-semibold leading-relaxed text-[#17201D]">{selectedFeedback.voice}</p>
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 gap-2.5 md:grid-cols-3">
@@ -1205,7 +1205,7 @@ export default function FeedbackCollection() {
                       <span>Follow-up Activity</span>
                     </h4>
                     {callQueueState && (
-                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10.5px] font-semibold text-[#6F5963]">
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10.5px] font-semibold text-[#65716C]">
                         <span className="inline-flex items-center gap-1">
                           <span className="font-black uppercase tracking-wide text-[#8B6F76]">Status</span>
                           <StatusBadge status={callQueueState.status} />
@@ -1222,7 +1222,7 @@ export default function FeedbackCollection() {
                   </div>
 
                   {historyLoading ? (
-                    <div className="flex items-center gap-2 rounded-xl border border-accent-soft bg-background px-3 py-4 text-[11px] font-bold text-[#6F5963]">
+                    <div className="flex items-center gap-2 rounded-xl border border-accent-soft bg-background px-3 py-4 text-[11px] font-bold text-[#65716C]">
                       <RefreshCw className="h-3.5 w-3.5 animate-spin text-accent" />
                       <span>Loading follow-up history…</span>
                     </div>

@@ -34,3 +34,7 @@ __pycache__/
 *.pyc 
 backend/mysql-data/
 *.zip
+# Generated build caches
+tsconfig.tsbuildinfo
+frontend/tsconfig.tsbuildinfo
+build.log

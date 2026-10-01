@@ -110,7 +110,7 @@ export default function NotificationDrawer({ isOpen, onClose }: NotificationDraw
         );
       case 'low':
         return (
-          <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-[#FAF8F5] text-[#8B776A] border border-[#DFDDD7]">
+          <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-[#FFFFFF] text-[#8B776A] border border-[#E1DDD3]">
             LOW
           </span>
         );
@@ -143,19 +143,19 @@ export default function NotificationDrawer({ isOpen, onClose }: NotificationDraw
           role="dialog"
           aria-modal="true"
           aria-labelledby="notification-modal-title"
-          className="relative w-full max-w-2xl bg-white/95 backdrop-blur-xl rounded-3xl shadow-[0_25px_60px_rgba(16,28,54,0.25)] border border-[#DFDDD7] overflow-hidden flex flex-col max-h-[85vh] sm:max-h-[88vh] z-10 animate-modal-in"
+          className="relative w-full max-w-2xl bg-white/95 backdrop-blur-xl rounded-3xl shadow-[0_25px_60px_rgba(16,28,54,0.25)] border border-[#E1DDD3] overflow-hidden flex flex-col max-h-[85vh] sm:max-h-[88vh] z-10 animate-modal-in"
         >
           {/* Header */}
-          <div className="p-4 sm:p-6 border-b border-[#DFDDD7] bg-[#FAF8F5]/80 flex items-center justify-between gap-3">
+          <div className="p-4 sm:p-6 border-b border-[#E1DDD3] bg-[#FFFFFF]/80 flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded-2xl bg-[#101C36] text-[#C9A45C] flex items-center justify-center flex-shrink-0 shadow-xs border border-[#C9A45C]/30">
+              <div className="w-10 h-10 rounded-2xl bg-[#123C35] text-[#C9A45C] flex items-center justify-center flex-shrink-0 shadow-xs border border-[#C9A45C]/30">
                 <Bell className="w-5 h-5 text-[#C9A45C]" />
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <h2
                     id="notification-modal-title"
-                    className="font-black text-base sm:text-lg tracking-tight text-[#182033] leading-tight truncate"
+                    className="font-black text-base sm:text-lg tracking-tight text-[#17201D] leading-tight truncate"
                   >
                     Notification Center
                   </h2>
@@ -165,7 +165,7 @@ export default function NotificationDrawer({ isOpen, onClose }: NotificationDraw
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-[#687080] font-medium mt-0.5 truncate">
+                <p className="text-xs text-[#65716C] font-medium mt-0.5 truncate">
                   Real-time alerts, broadcasts &amp; system updates
                 </p>
               </div>
@@ -186,7 +186,7 @@ export default function NotificationDrawer({ isOpen, onClose }: NotificationDraw
                 }}
                 className={`p-2 rounded-xl border transition-all cursor-pointer ${
                   soundOn
-                    ? 'text-[#C9A45C] bg-[#FAF8F5] border-[#C9A45C]/40 hover:bg-white'
+                    ? 'text-[#C9A45C] bg-[#FFFFFF] border-[#C9A45C]/40 hover:bg-white'
                     : 'text-rose-500 bg-rose-50 border-rose-200 hover:bg-rose-100'
                 }`}
                 title={soundOn ? 'Audio Alerts: ON (click to mute)' : 'Audio Alerts: MUTED (click to enable)'}
@@ -201,7 +201,7 @@ export default function NotificationDrawer({ isOpen, onClose }: NotificationDraw
                   NotificationService.playSound('normal');
                   showToast('Playing full notification audio alert chime', 'info', 'Audio Test');
                 }}
-                className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold text-[#182033] bg-[#FAF8F5] hover:bg-white border border-[#DFDDD7] hover:border-[#C9A45C]/50 transition-all cursor-pointer shadow-2xs"
+                className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold text-[#17201D] bg-[#FFFFFF] hover:bg-white border border-[#E1DDD3] hover:border-[#C9A45C]/50 transition-all cursor-pointer shadow-2xs"
                 title="Play full test notification sound"
               >
                 <Sparkles className="w-3.5 h-3.5 text-[#C9A45C]" />
@@ -210,7 +210,7 @@ export default function NotificationDrawer({ isOpen, onClose }: NotificationDraw
               <button
                 type="button"
                 onClick={() => setDmOpen(true)}
-                className="p-2 rounded-xl text-[#687080] hover:text-[#182033] hover:bg-white border border-transparent hover:border-[#DFDDD7] transition-all cursor-pointer"
+                className="p-2 rounded-xl text-[#65716C] hover:text-[#17201D] hover:bg-white border border-transparent hover:border-[#E1DDD3] transition-all cursor-pointer"
                 title="Direct Text Messaging"
                 aria-label="Direct messaging"
               >
@@ -219,7 +219,7 @@ export default function NotificationDrawer({ isOpen, onClose }: NotificationDraw
               <button
                 type="button"
                 onClick={() => setPrefsOpen(true)}
-                className="p-2 rounded-xl text-[#687080] hover:text-[#182033] hover:bg-white border border-transparent hover:border-[#DFDDD7] transition-all cursor-pointer"
+                className="p-2 rounded-xl text-[#65716C] hover:text-[#17201D] hover:bg-white border border-transparent hover:border-[#E1DDD3] transition-all cursor-pointer"
                 title="Notification Preferences"
                 aria-label="Preferences"
               >
@@ -229,7 +229,7 @@ export default function NotificationDrawer({ isOpen, onClose }: NotificationDraw
                 ref={closeButtonRef}
                 type="button"
                 onClick={onClose}
-                className="p-2 rounded-xl text-[#687080] hover:text-[#182033] hover:bg-white border border-transparent hover:border-[#DFDDD7] transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#C9A45C]"
+                className="p-2 rounded-xl text-[#65716C] hover:text-[#17201D] hover:bg-white border border-transparent hover:border-[#E1DDD3] transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#C9A45C]"
                 aria-label="Close notification center"
               >
                 <X className="w-5 h-5" />
@@ -238,7 +238,7 @@ export default function NotificationDrawer({ isOpen, onClose }: NotificationDraw
           </div>
 
           {/* Search & Tabs Row */}
-          <div className="p-3 sm:p-4 border-b border-[#DFDDD7]/60 space-y-2.5 bg-white">
+          <div className="p-3 sm:p-4 border-b border-[#E1DDD3]/60 space-y-2.5 bg-white">
             <div className="flex items-center gap-2">
               <div className="relative flex-1">
                 <Search className="w-4 h-4 text-[#8B776A] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -247,7 +247,7 @@ export default function NotificationDrawer({ isOpen, onClose }: NotificationDraw
                   placeholder="Search alerts & broadcasts..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-[#DFDDD7] bg-[#FAF8F5]/60 text-xs text-[#182033] font-medium focus:bg-white focus:outline-none focus:border-[#C9A45C] focus:ring-1 focus:ring-[#C9A45C]"
+                  className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-[#E1DDD3] bg-[#FFFFFF]/60 text-xs text-[#17201D] font-medium focus:bg-white focus:outline-none focus:border-[#C9A45C] focus:ring-1 focus:ring-[#C9A45C]"
                 />
               </div>
 
@@ -255,7 +255,7 @@ export default function NotificationDrawer({ isOpen, onClose }: NotificationDraw
                 <button
                   type="button"
                   onClick={handleMarkAllRead}
-                  className="px-3 py-1.5 rounded-xl bg-[#FAF8F5] hover:bg-[#101C36] hover:text-white border border-[#DFDDD7] text-[#182033] text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer shrink-0"
+                  className="px-3 py-1.5 rounded-xl bg-[#FFFFFF] hover:bg-[#123C35] hover:text-white border border-[#E1DDD3] text-[#17201D] text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer shrink-0"
                 >
                   <CheckCheck className="w-3.5 h-3.5 text-[#C9A45C]" />
                   <span className="hidden sm:inline">Mark all read</span>
@@ -277,8 +277,8 @@ export default function NotificationDrawer({ isOpen, onClose }: NotificationDraw
                   onClick={() => setActiveTab(t.key as any)}
                   className={`px-3 py-1 rounded-lg text-xs font-bold whitespace-nowrap transition-colors cursor-pointer ${
                     activeTab === t.key
-                      ? 'bg-[#101C36] text-[#FAF7F2]'
-                      : 'text-[#687080] hover:bg-[#F6F4EF]'
+                      ? 'bg-[#123C35] text-[#FAF7F2]'
+                      : 'text-[#65716C] hover:bg-[#F7F5F0]'
                   }`}
                 >
                   {t.label}
@@ -296,8 +296,8 @@ export default function NotificationDrawer({ isOpen, onClose }: NotificationDraw
                   onClick={() => NotificationService.markAsRead(item.id)}
                   className={`p-3.5 sm:p-4 rounded-2xl border transition-all cursor-pointer relative group ${
                     !item.read
-                      ? 'bg-[#FAF8F5] border-[#C9A45C]/40 shadow-xs'
-                      : 'bg-white border-[#DFDDD7] hover:border-[#DFDDD7]/80'
+                      ? 'bg-[#FFFFFF] border-[#C9A45C]/40 shadow-xs'
+                      : 'bg-white border-[#E1DDD3] hover:border-[#E1DDD3]/80'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -305,15 +305,15 @@ export default function NotificationDrawer({ isOpen, onClose }: NotificationDraw
                       <div
                         className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 border ${
                           !item.read
-                            ? 'bg-[#101C36] text-[#C9A45C] border-[#C9A45C]/30'
-                            : 'bg-[#F6F4EF] text-[#687080] border-[#DFDDD7]'
+                            ? 'bg-[#123C35] text-[#C9A45C] border-[#C9A45C]/30'
+                            : 'bg-[#F7F5F0] text-[#65716C] border-[#E1DDD3]'
                         }`}
                       >
                         <Bell className="w-4 h-4" />
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
-                          <h4 className="font-extrabold text-xs sm:text-sm text-[#182033] tracking-tight truncate">
+                          <h4 className="font-extrabold text-xs sm:text-sm text-[#17201D] tracking-tight truncate">
                             {item.title}
                           </h4>
                           {!item.read && (
@@ -332,14 +332,14 @@ export default function NotificationDrawer({ isOpen, onClose }: NotificationDraw
                   </div>
 
                   {/* Notification Footer */}
-                  <div className="flex items-center justify-between text-[11px] text-[#8B776A] pt-2.5 mt-2.5 border-t border-[#DFDDD7]/40 font-medium">
+                  <div className="flex items-center justify-between text-[11px] text-[#8B776A] pt-2.5 mt-2.5 border-t border-[#E1DDD3]/40 font-medium">
                     <div className="flex items-center gap-1.5">
                       <Clock className="w-3 h-3 text-[#B76E79]" />
                       <span>{formatNotificationTime(item.timestamp)}</span>
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white border border-[#DFDDD7] text-[#687080]">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white border border-[#E1DDD3] text-[#65716C]">
                         {item.category || 'General'}
                       </span>
                       <button
@@ -348,7 +348,7 @@ export default function NotificationDrawer({ isOpen, onClose }: NotificationDraw
                           e.stopPropagation();
                           NotificationService.archive(item.id);
                         }}
-                        className="opacity-0 group-hover:opacity-100 text-[#8B776A] hover:text-[#182033] p-1 transition-opacity cursor-pointer"
+                        className="opacity-0 group-hover:opacity-100 text-[#8B776A] hover:text-[#17201D] p-1 transition-opacity cursor-pointer"
                         title="Archive notification"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -358,23 +358,23 @@ export default function NotificationDrawer({ isOpen, onClose }: NotificationDraw
                 </div>
               ))
             ) : (
-              <div className="py-12 text-center text-[#687080] space-y-2">
+              <div className="py-12 text-center text-[#65716C] space-y-2">
                 <Bell className="w-8 h-8 text-[#C9A45C]/50 mx-auto" />
-                <p className="font-bold text-sm text-[#182033]">No notifications found</p>
+                <p className="font-bold text-sm text-[#17201D]">No notifications found</p>
                 <p className="text-xs">You're completely caught up with all alerts.</p>
               </div>
             )}
           </div>
 
           {/* Modal Footer */}
-          <div className="p-3 sm:p-4 bg-[#FAF8F5]/80 border-t border-[#DFDDD7] flex items-center justify-between text-xs text-[#687080]">
+          <div className="p-3 sm:p-4 bg-[#FFFFFF]/80 border-t border-[#E1DDD3] flex items-center justify-between text-xs text-[#65716C]">
             <span className="font-medium">
               Showing {filtered.length} notification{filtered.length === 1 ? '' : 's'}
             </span>
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-1.5 rounded-xl border border-[#DFDDD7] bg-white hover:bg-[#101C36] hover:text-white hover:border-[#101C36] text-[#182033] font-bold text-xs transition-colors cursor-pointer"
+              className="px-4 py-1.5 rounded-xl border border-[#E1DDD3] bg-white hover:bg-[#123C35] hover:text-white hover:border-[#123C35] text-[#17201D] font-bold text-xs transition-colors cursor-pointer"
             >
               Close
             </button>

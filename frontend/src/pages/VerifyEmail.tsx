@@ -88,7 +88,7 @@ export default function VerifyEmailPage() {
         <button
           type="button"
           onClick={() => navigate('/')}
-          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-border shadow-md hover:shadow-lg text-text-primary hover:text-[#101C36] text-xs font-bold transition-all active:scale-95 group cursor-pointer"
+          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-border shadow-md hover:shadow-lg text-text-primary hover:text-[#123C35] text-xs font-bold transition-all active:scale-95 group cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4 text-text-secondary group-hover:-translate-x-0.5 transition-transform" />
           <Home className="w-3.5 h-3.5 text-[#C9A45C]" />
@@ -98,7 +98,7 @@ export default function VerifyEmailPage() {
 
       <div className="w-full max-w-md bg-white rounded-3xl overflow-hidden shadow-2xl border border-accent-soft animate-fade-in">
         {/* Card Header */}
-        <div className="bg-[#101C36] p-5 sm:p-6 flex items-center gap-3.5 border-b border-[#C9A45C]/30 shadow-sm">
+        <div className="bg-[#123C35] p-5 sm:p-6 flex items-center gap-3.5 border-b border-[#C9A45C]/30 shadow-sm">
           <div className="w-14 h-12 rounded-2xl bg-white p-1 shadow-md border border-[#C9A45C]/30 flex items-center justify-center flex-shrink-0">
             <img src="/logo.png" alt="BSC Logo" className="max-h-full max-w-full object-contain" />
           </div>
@@ -115,7 +115,7 @@ export default function VerifyEmailPage() {
           <div className="text-center space-y-3">
             {status === 'loading' && (
               <>
-                <div className="w-16 h-16 mx-auto rounded-full bg-[#F6F4EF] flex items-center justify-center mb-4">
+                <div className="w-16 h-16 mx-auto rounded-full bg-[#F7F5F0] flex items-center justify-center mb-4">
                   <Loader2 className="w-8 h-8 text-[#C9A45C] animate-spin" />
                 </div>
                 <h3 className="text-lg font-black text-text-primary">Verifying Your Email</h3>
@@ -133,7 +133,7 @@ export default function VerifyEmailPage() {
                 <div className="mt-6 pt-4 border-t border-border">
                   <button
                     onClick={() => navigate('/login')}
-                    className="w-full py-3 px-4 rounded-xl bg-[#101C36] text-white font-extrabold text-xs tracking-wide hover:bg-[#07101F] transition-all shadow-lg shadow-[#101C36]/20 flex items-center justify-center gap-2"
+                    className="w-full py-3 px-4 rounded-xl bg-[#123C35] text-white font-extrabold text-xs tracking-wide hover:bg-[#082821] transition-all shadow-lg shadow-[#123C35]/20 flex items-center justify-center gap-2"
                   >
                     <span>Go to Sign In</span>
                     <Sparkles className="w-4 h-4 text-amber-600" />
@@ -152,14 +152,14 @@ export default function VerifyEmailPage() {
                 <div className="mt-4 space-y-3">
                   <button
                     onClick={() => navigate('/login')}
-                    className="w-full py-3 px-4 rounded-xl bg-[#101C36] text-white font-extrabold text-xs tracking-wide hover:bg-[#07101F] transition-all shadow-lg shadow-[#101C36]/20 flex items-center justify-center gap-2"
+                    className="w-full py-3 px-4 rounded-xl bg-[#123C35] text-white font-extrabold text-xs tracking-wide hover:bg-[#082821] transition-all shadow-lg shadow-[#123C35]/20 flex items-center justify-center gap-2"
                   >
                     <ArrowLeft className="w-4 h-4" />
                     <span>Back to Sign In</span>
                   </button>
                   <button
                     onClick={() => navigate('/login?sendVerification=true')}
-                    className="w-full py-3 px-4 rounded-xl border border-[#DFDDD7] bg-white text-[#182033] font-extrabold text-xs hover:bg-[#F6F4EF] transition-all"
+                    className="w-full py-3 px-4 rounded-xl border border-[#E1DDD3] bg-white text-[#17201D] font-extrabold text-xs hover:bg-[#F7F5F0] transition-all"
                   >
                     <Mail className="w-4 h-4 inline mr-1" />
                     <span>Request New Verification Link</span>
@@ -170,15 +170,15 @@ export default function VerifyEmailPage() {
 
             {status === 'resending' && (
               <>
-                <div className="w-16 h-16 mx-auto rounded-full bg-[#F6F4EF] flex items-center justify-center mb-4">
+                <div className="w-16 h-16 mx-auto rounded-full bg-[#F7F5F0] flex items-center justify-center mb-4">
                   <Mail className="w-8 h-8 text-[#C9A45C]" />
                 </div>
                 <h3 className="text-lg font-black text-text-primary">Verification Link Sent</h3>
                 <p className="text-xs text-text-secondary font-medium leading-relaxed">
-                  A new verification link has been sent to <span className="font-semibold text-[#101C36]">{emailAddress}</span>.
+                  A new verification link has been sent to <span className="font-semibold text-[#123C35]">{emailAddress}</span>.
                   Please check your inbox (and spam folder).
                 </p>
-                <div className="mt-4 p-4 rounded-xl bg-[#F6F4EF] border border-[#DFDDD7] text-center">
+                <div className="mt-4 p-4 rounded-xl bg-[#F7F5F0] border border-[#E1DDD3] text-center">
                   <p className="text-xs text-text-secondary font-medium">
                     You can request another link in <span className="font-mono font-black text-[#C9A45C]">{formatTime(countdown)}</span>
                   </p>
@@ -187,7 +187,7 @@ export default function VerifyEmailPage() {
                   <button
                     onClick={handleResend}
                     disabled={countdown > 0}
-                    className="w-full py-3 px-4 rounded-xl bg-[#101C36] text-white font-extrabold text-xs tracking-wide hover:bg-[#07101F] transition-all shadow-lg shadow-[#101C36]/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="w-full py-3 px-4 rounded-xl bg-[#123C35] text-white font-extrabold text-xs tracking-wide hover:bg-[#082821] transition-all shadow-lg shadow-[#123C35]/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {countdown > 0 ? (
                       <>

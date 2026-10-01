@@ -31,7 +31,7 @@ function getDaysUntil(dateStr?: string | null): { text: string; color: string; i
   const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
   if (diffDays === 0) return { text: 'Today! 💍', color: 'bg-emerald-100 text-emerald-800 border-emerald-300 font-bold', isPast: false };
   if (diffDays === 1) return { text: 'Tomorrow', color: 'bg-emerald-100 text-emerald-800 border-emerald-300 font-bold', isPast: false };
-  if (diffDays > 1) return { text: `In ${diffDays} days`, color: diffDays <= 30 ? 'bg-amber-100 text-amber-900 border-amber-300 font-bold' : 'bg-[#FFF7F2] text-[#4A173A] border-[#E8D9D4]', isPast: false };
+  if (diffDays > 1) return { text: `In ${diffDays} days`, color: diffDays <= 30 ? 'bg-amber-100 text-amber-900 border-amber-300 font-bold' : 'bg-[#EDF3F0] text-[#123C35] border-[#E1DDD3]', isPast: false };
   return { text: `${Math.abs(diffDays)}d ago`, color: 'bg-gray-100 text-gray-600 border-gray-200', isPast: true };
 }
 
@@ -338,16 +338,16 @@ export default function WeddingCrmDashboard() {
                 <button
                   onClick={() => loadData(selectedLocation)}
                   disabled={loading}
-                  className="px-3.5 py-2 bg-[#FFFDFC] hover:bg-[#FFF7F2] border border-[#E8D9D4] rounded-xl text-xs font-semibold text-[#4A173A] flex items-center gap-1.5 transition-colors shadow-xs"
+                  className="px-3.5 py-2 bg-[#FFFFFF] hover:bg-[#EDF3F0] border border-[#E1DDD3] rounded-xl text-xs font-semibold text-[#123C35] flex items-center gap-1.5 transition-colors shadow-xs"
                 >
-                  <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-[#B76E79]' : 'text-[#B76E79]'}`} />
+                  <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-[#C9A45C]' : 'text-[#C9A45C]'}`} />
                   <span>Refresh</span>
                 </button>
                 <Link
                   to="/wedding/customer-registration"
-                  className="px-4 py-2 bg-[#4A173A] hover:bg-[#6A2853] text-white font-semibold rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition-all border border-[#B76E79]/30"
+                  className="px-4 py-2 bg-[#123C35] hover:bg-[#082821] text-white font-semibold rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition-all border border-[#C9A45C]/30"
                 >
-                  <UserPlus className="w-3.5 h-3.5 text-[#E8C7A8]" />
+                  <UserPlus className="w-3.5 h-3.5 text-[#E4CB92]" />
                   <span>Add Customer</span>
                 </Link>
               </div>
@@ -357,38 +357,38 @@ export default function WeddingCrmDashboard() {
           {/* KPI Metrics Grid (12 Cards) */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
             {/* 1. Total Leads */}
-            <div className="bg-[#FFFDFC] p-4 rounded-2xl border border-[#E8D9D4] shadow-xs relative overflow-hidden group hover:border-[#B76E79] hover:shadow-sm transition-all">
-              <div className="flex items-center justify-between text-[#6F5963] mb-2">
+            <div className="bg-[#FFFFFF] p-4 rounded-2xl border border-[#E1DDD3] shadow-xs relative overflow-hidden group hover:border-[#C9A45C] hover:shadow-sm transition-all">
+              <div className="flex items-center justify-between text-[#65716C] mb-2">
                 <span className="text-[10px] font-bold uppercase tracking-wider">Total Leads</span>
-                <Users className="w-4 h-4 text-[#B76E79]" />
+                <Users className="w-4 h-4 text-[#C9A45C]" />
               </div>
-              <div className="text-2xl font-black text-[#4A173A]">{stats.totalCustomers || 0}</div>
+              <div className="text-2xl font-black text-[#123C35]">{stats.totalCustomers || 0}</div>
               <div className="text-[10px] text-[#9A858D] font-medium mt-1">All registered brides/families</div>
             </div>
 
             {/* 2. New Leads */}
-            <div className="bg-[#FFFDFC] p-4 rounded-2xl border border-[#E8D9D4] shadow-xs relative overflow-hidden group hover:border-[#B76E79] hover:shadow-sm transition-all">
-              <div className="flex items-center justify-between text-[#6F5963] mb-2">
+            <div className="bg-[#FFFFFF] p-4 rounded-2xl border border-[#E1DDD3] shadow-xs relative overflow-hidden group hover:border-[#C9A45C] hover:shadow-sm transition-all">
+              <div className="flex items-center justify-between text-[#65716C] mb-2">
                 <span className="text-[10px] font-bold uppercase tracking-wider">New Leads</span>
-                <Sparkles className="w-4 h-4 text-[#B76E79]" />
+                <Sparkles className="w-4 h-4 text-[#C9A45C]" />
               </div>
-              <div className="text-2xl font-black text-[#6A2853]">{stats.todayNewCustomers || stats.newRequests || 0}</div>
-              <div className="text-[10px] text-[#6F5963] font-medium mt-1">Awaiting telecaller reachout</div>
+              <div className="text-2xl font-black text-[#082821]">{stats.todayNewCustomers || stats.newRequests || 0}</div>
+              <div className="text-[10px] text-[#65716C] font-medium mt-1">Awaiting telecaller reachout</div>
             </div>
 
             {/* 3. Today's Calls */}
-            <div className="bg-[#FFFDFC] p-4 rounded-2xl border border-[#E8D9D4] shadow-xs relative overflow-hidden group hover:border-[#B76E79] hover:shadow-sm transition-all">
-              <div className="flex items-center justify-between text-[#6F5963] mb-2">
+            <div className="bg-[#FFFFFF] p-4 rounded-2xl border border-[#E1DDD3] shadow-xs relative overflow-hidden group hover:border-[#C9A45C] hover:shadow-sm transition-all">
+              <div className="flex items-center justify-between text-[#65716C] mb-2">
                 <span className="text-[10px] font-bold uppercase tracking-wider">Today's Calls</span>
-                <PhoneCall className="w-4 h-4 text-[#B76E79]" />
+                <PhoneCall className="w-4 h-4 text-[#C9A45C]" />
               </div>
               <div className="text-2xl font-black text-[#C58A18]">{stats.todayFollowUps || 0}</div>
-              <div className="text-[10px] text-[#6F5963] font-medium mt-1">Scheduled for today</div>
+              <div className="text-[10px] text-[#65716C] font-medium mt-1">Scheduled for today</div>
             </div>
 
             {/* 4. Overdue */}
-            <div className="bg-[#FFFDFC] p-4 rounded-2xl border border-[#E8D9D4] shadow-xs relative overflow-hidden group hover:border-[#B42318] hover:shadow-sm transition-all">
-              <div className="flex items-center justify-between text-[#6F5963] mb-2">
+            <div className="bg-[#FFFFFF] p-4 rounded-2xl border border-[#E1DDD3] shadow-xs relative overflow-hidden group hover:border-[#B42318] hover:shadow-sm transition-all">
+              <div className="flex items-center justify-between text-[#65716C] mb-2">
                 <span className="text-[10px] font-bold uppercase tracking-wider">Overdue Calls</span>
                 <TriangleAlert className="w-4 h-4 text-[#B42318]" />
               </div>
@@ -397,18 +397,18 @@ export default function WeddingCrmDashboard() {
             </div>
 
             {/* 5. Pending Calls */}
-            <div className="bg-[#FFFDFC] p-4 rounded-2xl border border-[#E8D9D4] shadow-xs relative overflow-hidden group hover:border-[#B76E79] hover:shadow-sm transition-all">
-              <div className="flex items-center justify-between text-[#6F5963] mb-2">
+            <div className="bg-[#FFFFFF] p-4 rounded-2xl border border-[#E1DDD3] shadow-xs relative overflow-hidden group hover:border-[#C9A45C] hover:shadow-sm transition-all">
+              <div className="flex items-center justify-between text-[#65716C] mb-2">
                 <span className="text-[10px] font-bold uppercase tracking-wider">Pending Calls</span>
                 <Clock className="w-4 h-4 text-[#9A858D]" />
               </div>
-              <div className="text-2xl font-black text-[#2B1722]">{stats.callsPending || 0}</div>
+              <div className="text-2xl font-black text-[#17201D]">{stats.callsPending || 0}</div>
               <div className="text-[10px] text-[#9A858D] font-medium mt-1">In telecaller queue</div>
             </div>
 
             {/* 6. Connected */}
-            <div className="bg-[#FFFDFC] p-4 rounded-2xl border border-[#E8D9D4] shadow-xs relative overflow-hidden group hover:border-[#198754] hover:shadow-sm transition-all">
-              <div className="flex items-center justify-between text-[#6F5963] mb-2">
+            <div className="bg-[#FFFFFF] p-4 rounded-2xl border border-[#E1DDD3] shadow-xs relative overflow-hidden group hover:border-[#198754] hover:shadow-sm transition-all">
+              <div className="flex items-center justify-between text-[#65716C] mb-2">
                 <span className="text-[10px] font-bold uppercase tracking-wider">Connected</span>
                 <CircleCheck className="w-4 h-4 text-[#198754]" />
               </div>
@@ -417,48 +417,48 @@ export default function WeddingCrmDashboard() {
             </div>
 
             {/* 7. Callbacks */}
-            <div className="bg-[#FFFDFC] p-4 rounded-2xl border border-[#E8D9D4] shadow-xs relative overflow-hidden group hover:border-[#B76E79] hover:shadow-sm transition-all">
-              <div className="flex items-center justify-between text-[#6F5963] mb-2">
+            <div className="bg-[#FFFFFF] p-4 rounded-2xl border border-[#E1DDD3] shadow-xs relative overflow-hidden group hover:border-[#C9A45C] hover:shadow-sm transition-all">
+              <div className="flex items-center justify-between text-[#65716C] mb-2">
                 <span className="text-[10px] font-bold uppercase tracking-wider">Callbacks</span>
-                <PhoneForwarded className="w-4 h-4 text-[#B76E79]" />
+                <PhoneForwarded className="w-4 h-4 text-[#C9A45C]" />
               </div>
-              <div className="text-2xl font-black text-[#4A173A]">{stats.callbackRequests || 0}</div>
-              <div className="text-[10px] text-[#6F5963] font-medium mt-1">Customer requested callback</div>
+              <div className="text-2xl font-black text-[#123C35]">{stats.callbackRequests || 0}</div>
+              <div className="text-[10px] text-[#65716C] font-medium mt-1">Customer requested callback</div>
             </div>
 
             {/* 8. Shopping Confirmed */}
-            <div className="bg-[#FFFDFC] p-4 rounded-2xl border border-[#E8D9D4] shadow-xs relative overflow-hidden group hover:border-[#B76E79] hover:shadow-sm transition-all">
-              <div className="flex items-center justify-between text-[#6F5963] mb-2">
+            <div className="bg-[#FFFFFF] p-4 rounded-2xl border border-[#E1DDD3] shadow-xs relative overflow-hidden group hover:border-[#C9A45C] hover:shadow-sm transition-all">
+              <div className="flex items-center justify-between text-[#65716C] mb-2">
                 <span className="text-[10px] font-bold uppercase tracking-wider">Shopping Confirmed</span>
-                <Calendar className="w-4 h-4 text-[#B76E79]" />
+                <Calendar className="w-4 h-4 text-[#C9A45C]" />
               </div>
-              <div className="text-2xl font-black text-[#4A173A]">{stats.shoppingConfirmed || 0}</div>
-              <div className="text-[10px] text-[#6F5963] font-medium mt-1">Date locked by customer</div>
+              <div className="text-2xl font-black text-[#123C35]">{stats.shoppingConfirmed || 0}</div>
+              <div className="text-[10px] text-[#65716C] font-medium mt-1">Date locked by customer</div>
             </div>
 
             {/* 9. Visits Scheduled */}
-            <div className="bg-[#FFFDFC] p-4 rounded-2xl border border-[#E8D9D4] shadow-xs relative overflow-hidden group hover:border-[#B76E79] hover:shadow-sm transition-all">
-              <div className="flex items-center justify-between text-[#6F5963] mb-2">
+            <div className="bg-[#FFFFFF] p-4 rounded-2xl border border-[#E1DDD3] shadow-xs relative overflow-hidden group hover:border-[#C9A45C] hover:shadow-sm transition-all">
+              <div className="flex items-center justify-between text-[#65716C] mb-2">
                 <span className="text-[10px] font-bold uppercase tracking-wider">Visits Scheduled</span>
-                <MapPin className="w-4 h-4 text-[#B76E79]" />
+                <MapPin className="w-4 h-4 text-[#C9A45C]" />
               </div>
-              <div className="text-2xl font-black text-[#6A2853]">{stats.todayAppointments || 0}</div>
-              <div className="text-[10px] text-[#6F5963] font-medium mt-1">Store appointments</div>
+              <div className="text-2xl font-black text-[#082821]">{stats.todayAppointments || 0}</div>
+              <div className="text-[10px] text-[#65716C] font-medium mt-1">Store appointments</div>
             </div>
 
             {/* 10. Visited */}
-            <div className="bg-[#FFFDFC] p-4 rounded-2xl border border-[#E8D9D4] shadow-xs relative overflow-hidden group hover:border-[#B76E79] hover:shadow-sm transition-all">
-              <div className="flex items-center justify-between text-[#6F5963] mb-2">
+            <div className="bg-[#FFFFFF] p-4 rounded-2xl border border-[#E1DDD3] shadow-xs relative overflow-hidden group hover:border-[#C9A45C] hover:shadow-sm transition-all">
+              <div className="flex items-center justify-between text-[#65716C] mb-2">
                 <span className="text-[10px] font-bold uppercase tracking-wider">Store Visited</span>
-                <ShoppingBag className="w-4 h-4 text-[#B76E79]" />
+                <ShoppingBag className="w-4 h-4 text-[#C9A45C]" />
               </div>
-              <div className="text-2xl font-black text-[#4A173A]">{stats.visitedConverted || 0}</div>
-              <div className="text-[10px] text-[#6F5963] font-medium mt-1">Arrived at store</div>
+              <div className="text-2xl font-black text-[#123C35]">{stats.visitedConverted || 0}</div>
+              <div className="text-[10px] text-[#65716C] font-medium mt-1">Arrived at store</div>
             </div>
 
             {/* 11. Won */}
-            <div className="bg-[#FFFDFC] p-4 rounded-2xl border border-[#E8D9D4] shadow-xs relative overflow-hidden group hover:border-[#198754] hover:shadow-sm transition-all">
-              <div className="flex items-center justify-between text-[#6F5963] mb-2">
+            <div className="bg-[#FFFFFF] p-4 rounded-2xl border border-[#E1DDD3] shadow-xs relative overflow-hidden group hover:border-[#198754] hover:shadow-sm transition-all">
+              <div className="flex items-center justify-between text-[#65716C] mb-2">
                 <span className="text-[10px] font-bold uppercase tracking-wider">Won / Converted</span>
                 <Award className="w-4 h-4 text-[#198754]" />
               </div>
@@ -467,8 +467,8 @@ export default function WeddingCrmDashboard() {
             </div>
 
             {/* 12. Not Interested */}
-            <div className="bg-[#FFFDFC] p-4 rounded-2xl border border-[#E8D9D4] shadow-xs relative overflow-hidden group hover:border-[#9A858D] hover:shadow-sm transition-all">
-              <div className="flex items-center justify-between text-[#6F5963] mb-2">
+            <div className="bg-[#FFFFFF] p-4 rounded-2xl border border-[#E1DDD3] shadow-xs relative overflow-hidden group hover:border-[#9A858D] hover:shadow-sm transition-all">
+              <div className="flex items-center justify-between text-[#65716C] mb-2">
                 <span className="text-[10px] font-bold uppercase tracking-wider">Not Interested</span>
                 <Clock className="w-4 h-4 text-[#9A858D]" />
               </div>
@@ -481,84 +481,84 @@ export default function WeddingCrmDashboard() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Link
               to="/telecaller/desk"
-              className="bg-[#FFFDFC] p-5 rounded-2xl border border-[#E8D9D4] hover:border-[#B76E79] shadow-xs flex items-center justify-between transition-all group hover:shadow-sm"
+              className="bg-[#FFFFFF] p-5 rounded-2xl border border-[#E1DDD3] hover:border-[#C9A45C] shadow-xs flex items-center justify-between transition-all group hover:shadow-sm"
             >
               <div className="flex items-center gap-3.5">
-                <div className="w-10 h-10 rounded-xl bg-[#FFF4D6] text-[#C58A18] flex items-center justify-center border border-[#E8D9D4]">
+                <div className="w-10 h-10 rounded-xl bg-[#FFF4D6] text-[#C58A18] flex items-center justify-center border border-[#E1DDD3]">
                   <PhoneCall className="w-5 h-5" />
                 </div>
                 <div>
-                  <div className="font-bold text-sm text-[#2B1722] group-hover:text-[#4A173A]">
+                  <div className="font-bold text-sm text-[#17201D] group-hover:text-[#123C35]">
                     Open Telecaller Desk
                   </div>
-                  <div className="text-xs text-[#6F5963]">
+                  <div className="text-xs text-[#65716C]">
                     {stats.todayFollowUps || 0} calls scheduled for today
                   </div>
                 </div>
               </div>
-              <ArrowRight className="w-4 h-4 text-[#9A858D] group-hover:text-[#B76E79] group-hover:translate-x-1 transition-all" />
+              <ArrowRight className="w-4 h-4 text-[#9A858D] group-hover:text-[#C9A45C] group-hover:translate-x-1 transition-all" />
             </Link>
 
             <Link
               to="/wedding-crm/customers"
-              className="bg-[#FFFDFC] p-5 rounded-2xl border border-[#E8D9D4] hover:border-[#B76E79] shadow-xs flex items-center justify-between transition-all group hover:shadow-sm"
+              className="bg-[#FFFFFF] p-5 rounded-2xl border border-[#E1DDD3] hover:border-[#C9A45C] shadow-xs flex items-center justify-between transition-all group hover:shadow-sm"
             >
               <div className="flex items-center gap-3.5">
-                <div className="w-10 h-10 rounded-xl bg-[#F6E2E5] text-[#4A173A] flex items-center justify-center border border-[#E8D9D4]">
-                  <Users className="w-5 h-5 text-[#B76E79]" />
+                <div className="w-10 h-10 rounded-xl bg-[#EDF3F0] text-[#123C35] flex items-center justify-center border border-[#E1DDD3]">
+                  <Users className="w-5 h-5 text-[#C9A45C]" />
                 </div>
                 <div>
-                  <div className="font-bold text-sm text-[#2B1722] group-hover:text-[#4A173A]">
+                  <div className="font-bold text-sm text-[#17201D] group-hover:text-[#123C35]">
                     Browse Customer Register
                   </div>
-                  <div className="text-xs text-[#6F5963]">
+                  <div className="text-xs text-[#65716C]">
                     {stats.totalCustomers || 0} registered wedding customers
                   </div>
                 </div>
               </div>
-              <ArrowRight className="w-4 h-4 text-[#9A858D] group-hover:text-[#B76E79] group-hover:translate-x-1 transition-all" />
+              <ArrowRight className="w-4 h-4 text-[#9A858D] group-hover:text-[#C9A45C] group-hover:translate-x-1 transition-all" />
             </Link>
 
             <Link
               to="/wedding-crm/calendar"
-              className="bg-[#FFFDFC] p-5 rounded-2xl border border-[#E8D9D4] hover:border-[#B76E79] shadow-xs flex items-center justify-between transition-all group hover:shadow-sm"
+              className="bg-[#FFFFFF] p-5 rounded-2xl border border-[#E1DDD3] hover:border-[#C9A45C] shadow-xs flex items-center justify-between transition-all group hover:shadow-sm"
             >
               <div className="flex items-center gap-3.5">
-                <div className="w-10 h-10 rounded-xl bg-[#EDE7F6] text-[#6A2853] flex items-center justify-center border border-[#E8D9D4]">
-                  <Calendar className="w-5 h-5 text-[#6A2853]" />
+                <div className="w-10 h-10 rounded-xl bg-[#EDF3F0] text-[#082821] flex items-center justify-center border border-[#E1DDD3]">
+                  <Calendar className="w-5 h-5 text-[#082821]" />
                 </div>
                 <div>
-                  <div className="font-bold text-sm text-[#2B1722] group-hover:text-[#4A173A]">
+                  <div className="font-bold text-sm text-[#17201D] group-hover:text-[#123C35]">
                     Follow-up Calendar
                   </div>
-                  <div className="text-xs text-[#6F5963]">View upcoming appointments & shopping dates</div>
+                  <div className="text-xs text-[#65716C]">View upcoming appointments & shopping dates</div>
                 </div>
               </div>
-              <ArrowRight className="w-4 h-4 text-[#9A858D] group-hover:text-[#B76E79] group-hover:translate-x-1 transition-all" />
+              <ArrowRight className="w-4 h-4 text-[#9A858D] group-hover:text-[#C9A45C] group-hover:translate-x-1 transition-all" />
             </Link>
           </div>
 
           {/* Live Customer Journey & Activity Stream */}
-          <div className="bg-[#FFFDFC] p-5 sm:p-6 rounded-3xl border border-[#E8D9D4] shadow-xs space-y-5">
+          <div className="bg-[#FFFFFF] p-5 sm:p-6 rounded-3xl border border-[#E1DDD3] shadow-xs space-y-5">
             {/* Section Header */}
-            <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-[#E8D9D4]">
+            <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-[#E1DDD3]">
               <div className="space-y-1">
                 <div className="flex items-center gap-2.5 flex-wrap">
-                  <div className="w-8 h-8 rounded-xl bg-[#FFF7F2] text-[#B76E79] flex items-center justify-center border border-[#E8D9D4]">
-                    <TrendingUp className="w-4 h-4 text-[#B76E79]" />
+                  <div className="w-8 h-8 rounded-xl bg-[#EDF3F0] text-[#C9A45C] flex items-center justify-center border border-[#E1DDD3]">
+                    <TrendingUp className="w-4 h-4 text-[#C9A45C]" />
                   </div>
-                  <h3 className="text-base font-bold text-[#4A173A] tracking-tight flex items-center gap-2">
+                  <h3 className="text-base font-bold text-[#123C35] tracking-tight flex items-center gap-2">
                     <span>Live Wedding Customer Flow & Call Activity Stream</span>
                   </h3>
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                     Live Stream
                   </span>
-                  <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#FFF7F2] text-[#4A173A] border border-[#E8D9D4]">
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#EDF3F0] text-[#123C35] border border-[#E1DDD3]">
                     {streamTotal} Wedding Customers
                   </span>
                 </div>
-                <p className="text-xs text-[#6F5963]">
+                <p className="text-xs text-[#65716C]">
                   Real-time wedding consultations, full bride & groom profiles, shopping preferences, budget, telecaller notes, and pipeline touchpoints.
                 </p>
               </div>
@@ -568,27 +568,27 @@ export default function WeddingCrmDashboard() {
                   type="button"
                   onClick={() => loadStream(selectedLocation, streamPage, streamLimit, streamSearch, streamStatus, streamViewMode)}
                   disabled={streamLoading}
-                  className="px-3 py-1.5 rounded-xl bg-[#FFFDFC] hover:bg-[#FFF7F2] border border-[#E8D9D4] text-xs font-semibold text-[#4A173A] flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                  className="px-3 py-1.5 rounded-xl bg-[#FFFFFF] hover:bg-[#EDF3F0] border border-[#E1DDD3] text-xs font-semibold text-[#123C35] flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
                   title="Refresh stream data"
                 >
-                  <RefreshCw className={`w-3.5 h-3.5 text-[#B76E79] ${streamLoading ? 'animate-spin' : ''}`} />
+                  <RefreshCw className={`w-3.5 h-3.5 text-[#C9A45C] ${streamLoading ? 'animate-spin' : ''}`} />
                   <span>Refresh</span>
                 </button>
 
                 <Link
                   to="/wedding-crm/customers"
-                  className="px-3.5 py-1.5 rounded-xl bg-[#FFF7F2] hover:bg-[#E8D9D4] border border-[#E8D9D4] text-xs font-bold text-[#4A173A] flex items-center gap-1.5 transition-colors cursor-pointer"
+                  className="px-3.5 py-1.5 rounded-xl bg-[#EDF3F0] hover:bg-[#E1DDD3] border border-[#E1DDD3] text-xs font-bold text-[#123C35] flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
-                  <Users className="w-3.5 h-3.5 text-[#B76E79]" />
+                  <Users className="w-3.5 h-3.5 text-[#C9A45C]" />
                   <span>Customer Register</span>
                   <ChevronRight className="w-3.5 h-3.5" />
                 </Link>
 
                 <Link
                   to="/wedding-crm/calls"
-                  className="px-3.5 py-1.5 rounded-xl bg-[#FFF7F2] hover:bg-[#E8D9D4] border border-[#E8D9D4] text-xs font-bold text-[#4A173A] flex items-center gap-1.5 transition-colors cursor-pointer"
+                  className="px-3.5 py-1.5 rounded-xl bg-[#EDF3F0] hover:bg-[#E1DDD3] border border-[#E1DDD3] text-xs font-bold text-[#123C35] flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
-                  <History className="w-3.5 h-3.5 text-[#B76E79]" />
+                  <History className="w-3.5 h-3.5 text-[#C9A45C]" />
                   <span>Call History</span>
                   <ChevronRight className="w-3.5 h-3.5" />
                 </Link>
@@ -596,7 +596,7 @@ export default function WeddingCrmDashboard() {
             </div>
 
             {/* Stream Controls Toolbar: Search & Quick Filters */}
-            <div className="space-y-3 bg-[#FFFAF7] p-3.5 sm:p-4 rounded-2xl border border-[#E8D9D4]">
+            <div className="space-y-3 bg-[#F7F5F0] p-3.5 sm:p-4 rounded-2xl border border-[#E1DDD3]">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 {/* Search Bar */}
                 <form onSubmit={handleStreamSearch} className="flex-1 min-w-[260px] max-w-lg relative">
@@ -606,7 +606,7 @@ export default function WeddingCrmDashboard() {
                     value={streamSearch}
                     onChange={(e) => setStreamSearch(e.target.value)}
                     placeholder="Search by customer name, phone, bride, groom, code, city..."
-                    className="w-full pl-9 pr-8 py-2 rounded-xl bg-[#FFFDFC] border border-[#E8D9D4] focus:border-[#B76E79] focus:outline-none text-xs text-[#2B1722] placeholder:text-[#9A858D] shadow-2xs"
+                    className="w-full pl-9 pr-8 py-2 rounded-xl bg-[#FFFFFF] border border-[#E1DDD3] focus:border-[#C9A45C] focus:outline-none text-xs text-[#17201D] placeholder:text-[#9A858D] shadow-2xs"
                   />
                   {streamSearch && (
                     <button
@@ -616,7 +616,7 @@ export default function WeddingCrmDashboard() {
                         setStreamPage(1);
                         loadStream(selectedLocation, 1, streamLimit, '', streamStatus, streamViewMode);
                       }}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#9A858D] hover:text-[#4A173A]"
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#9A858D] hover:text-[#123C35]"
                     >
                       <X className="w-3.5 h-3.5" />
                     </button>
@@ -626,14 +626,14 @@ export default function WeddingCrmDashboard() {
                 {/* View Mode & Page Limit */}
                 <div className="flex items-center gap-2 flex-wrap">
                   {/* View Mode Toggle */}
-                  <div className="inline-flex rounded-xl p-0.5 bg-[#FFFDFC] border border-[#E8D9D4] text-xs">
+                  <div className="inline-flex rounded-xl p-0.5 bg-[#FFFFFF] border border-[#E1DDD3] text-xs">
                     <button
                       type="button"
                       onClick={() => handleViewModeChange('all')}
                       className={`px-3 py-1 rounded-lg font-bold text-xs transition-colors ${
                         streamViewMode === 'all'
-                          ? 'bg-[#4A173A] text-white shadow-2xs'
-                          : 'text-[#6F5963] hover:text-[#4A173A]'
+                          ? 'bg-[#123C35] text-white shadow-2xs'
+                          : 'text-[#65716C] hover:text-[#123C35]'
                       }`}
                     >
                       All Wedding Customers
@@ -643,8 +643,8 @@ export default function WeddingCrmDashboard() {
                       onClick={() => handleViewModeChange('calls_only')}
                       className={`px-3 py-1 rounded-lg font-bold text-xs transition-colors ${
                         streamViewMode === 'calls_only'
-                          ? 'bg-[#4A173A] text-white shadow-2xs'
-                          : 'text-[#6F5963] hover:text-[#4A173A]'
+                          ? 'bg-[#123C35] text-white shadow-2xs'
+                          : 'text-[#65716C] hover:text-[#123C35]'
                       }`}
                     >
                       Recent Calls Stream
@@ -655,7 +655,7 @@ export default function WeddingCrmDashboard() {
                   <select
                     value={streamLimit}
                     onChange={(e) => handleLimitChange(Number(e.target.value))}
-                    className="px-2.5 py-1.5 rounded-xl bg-[#FFFDFC] border border-[#E8D9D4] text-xs font-semibold text-[#4A173A] focus:outline-none cursor-pointer"
+                    className="px-2.5 py-1.5 rounded-xl bg-[#FFFFFF] border border-[#E1DDD3] text-xs font-semibold text-[#123C35] focus:outline-none cursor-pointer"
                   >
                     <option value={12}>12 per page</option>
                     <option value={24}>24 per page</option>
@@ -667,8 +667,8 @@ export default function WeddingCrmDashboard() {
 
               {/* Status Filter Chips */}
               <div className="flex items-center gap-1.5 flex-wrap pt-1 text-xs">
-                <span className="text-[#6F5963] font-medium text-[11px] mr-1 flex items-center gap-1">
-                  <Filter className="w-3 h-3 text-[#B76E79]" /> Filter:
+                <span className="text-[#65716C] font-medium text-[11px] mr-1 flex items-center gap-1">
+                  <Filter className="w-3 h-3 text-[#C9A45C]" /> Filter:
                 </span>
 
                 {[
@@ -690,8 +690,8 @@ export default function WeddingCrmDashboard() {
                       onClick={() => handleStatusFilterChange(chip.key)}
                       className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                         isActive
-                          ? 'bg-[#B76E79] text-white shadow-2xs'
-                          : 'bg-[#FFFDFC] text-[#6F5963] hover:text-[#4A173A] border border-[#E8D9D4] hover:border-[#B76E79]'
+                          ? 'bg-[#C9A45C] text-white shadow-2xs'
+                          : 'bg-[#FFFFFF] text-[#65716C] hover:text-[#123C35] border border-[#E1DDD3] hover:border-[#C9A45C]'
                       }`}
                     >
                       {chip.label}
@@ -703,14 +703,14 @@ export default function WeddingCrmDashboard() {
 
             {/* Stream Customer Cards */}
             {streamLoading ? (
-              <div className="text-center py-16 text-xs text-[#6F5963] bg-[#FFFAF7] rounded-2xl border border-[#E8D9D4] p-6 flex flex-col items-center justify-center gap-3">
-                <RefreshCw className="w-6 h-6 text-[#B76E79] animate-spin" />
-                <span className="font-semibold text-sm text-[#4A173A]">Loading live wedding customer flow & activity stream...</span>
+              <div className="text-center py-16 text-xs text-[#65716C] bg-[#F7F5F0] rounded-2xl border border-[#E1DDD3] p-6 flex flex-col items-center justify-center gap-3">
+                <RefreshCw className="w-6 h-6 text-[#C9A45C] animate-spin" />
+                <span className="font-semibold text-sm text-[#123C35]">Loading live wedding customer flow & activity stream...</span>
               </div>
             ) : streamCustomers.length === 0 ? (
-              <div className="text-center py-12 text-xs text-[#6F5963] bg-[#FFFAF7] rounded-2xl border border-[#E8D9D4] p-6 space-y-2">
-                <p className="font-bold text-sm text-[#4A173A]">No wedding customers matched the current filter.</p>
-                <p className="text-xs text-[#6F5963]">Try adjusting your search query, status chip, or store location filter.</p>
+              <div className="text-center py-12 text-xs text-[#65716C] bg-[#F7F5F0] rounded-2xl border border-[#E1DDD3] p-6 space-y-2">
+                <p className="font-bold text-sm text-[#123C35]">No wedding customers matched the current filter.</p>
+                <p className="text-xs text-[#65716C]">Try adjusting your search query, status chip, or store location filter.</p>
                 <button
                   type="button"
                   onClick={() => {
@@ -719,7 +719,7 @@ export default function WeddingCrmDashboard() {
                     setStreamViewMode('all');
                     loadStream(selectedLocation, 1, streamLimit, '', 'all', 'all');
                   }}
-                  className="px-3.5 py-1.5 rounded-xl bg-[#4A173A] text-white text-xs font-bold hover:bg-[#6A2853] transition-colors mt-2 cursor-pointer shadow-2xs"
+                  className="px-3.5 py-1.5 rounded-xl bg-[#123C35] text-white text-xs font-bold hover:bg-[#082821] transition-colors mt-2 cursor-pointer shadow-2xs"
                 >
                   Reset Filters
                 </button>
@@ -738,14 +738,14 @@ export default function WeddingCrmDashboard() {
                   return (
                     <div
                       key={cust.id || idx}
-                      className="p-4 sm:p-5 rounded-2xl bg-[#FFFAF7] border border-[#E8D9D4] hover:border-[#B76E79] shadow-2xs hover:shadow-md transition-all space-y-3.5 flex flex-col justify-between"
+                      className="p-4 sm:p-5 rounded-2xl bg-[#F7F5F0] border border-[#E1DDD3] hover:border-[#C9A45C] shadow-2xs hover:shadow-md transition-all space-y-3.5 flex flex-col justify-between"
                     >
                       {/* Card Top: Customer Identity & Badges */}
                       <div className="space-y-3">
                         <div className="flex items-start justify-between gap-2">
                           <div className="space-y-1">
                             <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="font-bold text-base text-[#4A173A]">{cust.customer_name || 'Wedding Customer'}</span>
+                              <span className="font-bold text-base text-[#123C35]">{cust.customer_name || 'Wedding Customer'}</span>
                               {isVip && (
                                 <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-gradient-to-r from-amber-400 to-amber-500 text-amber-950 shadow-2xs">
                                   🔥 VIP
@@ -758,13 +758,13 @@ export default function WeddingCrmDashboard() {
                               )}
                             </div>
 
-                            <div className="flex items-center gap-2 flex-wrap text-[11px] text-[#6F5963]">
-                              <span className="font-mono bg-[#FFFDFC] px-2 py-0.5 rounded-md border border-[#E8D9D4] font-semibold text-[#4A173A]">
+                            <div className="flex items-center gap-2 flex-wrap text-[11px] text-[#65716C]">
+                              <span className="font-mono bg-[#FFFFFF] px-2 py-0.5 rounded-md border border-[#E1DDD3] font-semibold text-[#123C35]">
                                 {cust.customer_code || 'BSC-WED'}
                               </span>
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#FFFDFC] border border-[#E8D9D4]">
-                                <MapPin className="w-3 h-3 text-[#B76E79]" />
-                                <span className="font-medium text-[#2B1722]">{cust.location_name || 'Store'}</span>
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#FFFFFF] border border-[#E1DDD3]">
+                                <MapPin className="w-3 h-3 text-[#C9A45C]" />
+                                <span className="font-medium text-[#17201D]">{cust.location_name || 'Store'}</span>
                               </span>
                             </div>
                           </div>
@@ -775,7 +775,7 @@ export default function WeddingCrmDashboard() {
                               {cust.customer_status || 'New'}
                             </span>
                             {cust.call_outcome && (
-                              <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-[#F6E2E5] text-[#4A173A] border border-[#E8D9D4] max-w-[130px] truncate" title={cust.call_outcome}>
+                              <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-[#EDF3F0] text-[#123C35] border border-[#E1DDD3] max-w-[130px] truncate" title={cust.call_outcome}>
                                 {cust.call_outcome}
                               </span>
                             )}
@@ -783,11 +783,11 @@ export default function WeddingCrmDashboard() {
                         </div>
 
                         {/* Direct Contact Row */}
-                        <div className="flex items-center justify-between gap-2 p-2 rounded-xl bg-[#FFFDFC] border border-[#E8D9D4] text-xs">
+                        <div className="flex items-center justify-between gap-2 p-2 rounded-xl bg-[#FFFFFF] border border-[#E1DDD3] text-xs">
                           <div className="flex items-center gap-2 flex-wrap">
                             <a
                               href={`tel:${cleanPhone}`}
-                              className="font-mono font-bold text-[#4A173A] hover:text-[#B76E79] flex items-center gap-1 transition-colors"
+                              className="font-mono font-bold text-[#123C35] hover:text-[#C9A45C] flex items-center gap-1 transition-colors"
                               title="Click to dial"
                             >
                               <Phone className="w-3.5 h-3.5 text-[#198754]" />
@@ -797,33 +797,33 @@ export default function WeddingCrmDashboard() {
                               <button
                                 type="button"
                                 onClick={() => handleCopyPhone(cust.id, cleanPhone)}
-                                className="p-1 hover:bg-[#FFF7F2] rounded text-[#9A858D] hover:text-[#4A173A] transition-colors cursor-pointer"
+                                className="p-1 hover:bg-[#EDF3F0] rounded text-[#9A858D] hover:text-[#123C35] transition-colors cursor-pointer"
                                 title="Copy phone"
                               >
                                 {isCopied ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3 text-[#9A858D]" />}
                               </button>
                             )}
                             {altPhone && (
-                              <span className="text-[10px] text-[#6F5963] font-mono">
+                              <span className="text-[10px] text-[#65716C] font-mono">
                                 Alt: +91 {formatPhoneDisplay(altPhone)}
                               </span>
                             )}
                           </div>
 
                           {cust.wedding_city && (
-                            <span className="text-[10px] text-[#6F5963] font-medium shrink-0">
+                            <span className="text-[10px] text-[#65716C] font-medium shrink-0">
                               📍 {cust.wedding_city}
                             </span>
                           )}
                         </div>
 
                         {/* Wedding & Shopping Details Box */}
-                        <div className="p-3 rounded-xl bg-[#FFFDFC] border border-[#E8D9D4] text-xs space-y-2">
+                        <div className="p-3 rounded-xl bg-[#FFFFFF] border border-[#E1DDD3] text-xs space-y-2">
                           {/* Bride & Groom Row */}
-                          <div className="flex items-center justify-between gap-2 pb-1.5 border-b border-[#E8D9D4]/70">
-                            <div className="font-semibold text-xs text-[#B76E79] flex items-center gap-1.5 flex-wrap">
+                          <div className="flex items-center justify-between gap-2 pb-1.5 border-b border-[#E1DDD3]/70">
+                            <div className="font-semibold text-xs text-[#C9A45C] flex items-center gap-1.5 flex-wrap">
                               {cust.bride_name ? <span>👰 {cust.bride_name}</span> : <span className="text-[#9A858D] italic text-[11px]">Bride name TBD</span>}
-                              <span className="text-[#E8D9D4]">·</span>
+                              <span className="text-[#E1DDD3]">·</span>
                               {cust.groom_name ? <span>🤵 {cust.groom_name}</span> : <span className="text-[#9A858D] italic text-[11px]">Groom name TBD</span>}
                             </div>
                             {weddingCountdown && (
@@ -836,31 +836,31 @@ export default function WeddingCrmDashboard() {
                           {/* Wedding & Shopping Dates */}
                           <div className="grid grid-cols-2 gap-2 text-[11px]">
                             <div>
-                              <span className="text-[10px] text-[#6F5963] block">Wedding Date</span>
-                              <span className="font-semibold text-[#2B1722] flex items-center gap-1 mt-0.5">
-                                <Calendar className="w-3 h-3 text-[#B76E79]" />
+                              <span className="text-[10px] text-[#65716C] block">Wedding Date</span>
+                              <span className="font-semibold text-[#17201D] flex items-center gap-1 mt-0.5">
+                                <Calendar className="w-3 h-3 text-[#C9A45C]" />
                                 {formatDateDisplay(cust.wedding_date, 'Date TBD')}
                               </span>
                             </div>
                             <div>
-                              <span className="text-[10px] text-[#6F5963] block">Expected Shopping</span>
-                              <span className="font-semibold text-[#2B1722] flex items-center gap-1 mt-0.5">
-                                <ShoppingBag className="w-3 h-3 text-[#B76E79]" />
+                              <span className="text-[10px] text-[#65716C] block">Expected Shopping</span>
+                              <span className="font-semibold text-[#17201D] flex items-center gap-1 mt-0.5">
+                                <ShoppingBag className="w-3 h-3 text-[#C9A45C]" />
                                 {formatDateDisplay(cust.expected_shopping_date || cust.expected_shopping_date_updated, 'Date TBD')}
                               </span>
                             </div>
                           </div>
 
                           {/* Shopping Category & Budget */}
-                          <div className="grid grid-cols-2 gap-2 text-[11px] pt-1.5 border-t border-[#E8D9D4]/60">
+                          <div className="grid grid-cols-2 gap-2 text-[11px] pt-1.5 border-t border-[#E1DDD3]/60">
                             <div>
-                              <span className="text-[10px] text-[#6F5963] block">Preferred Category</span>
-                              <span className="font-medium text-[#4A173A] truncate block mt-0.5" title={cust.preferred_shopping_category || 'General Wedding Shopping'}>
+                              <span className="text-[10px] text-[#65716C] block">Preferred Category</span>
+                              <span className="font-medium text-[#123C35] truncate block mt-0.5" title={cust.preferred_shopping_category || 'General Wedding Shopping'}>
                                 👗 {cust.preferred_shopping_category || 'General Shopping'}
                               </span>
                             </div>
                             <div>
-                              <span className="text-[10px] text-[#6F5963] block">Planned Budget</span>
+                              <span className="text-[10px] text-[#65716C] block">Planned Budget</span>
                               <span className="font-bold text-[#198754] block mt-0.5">
                                 ₹ {cust.budget || cust.budget_range || 'TBD'}
                               </span>
@@ -868,16 +868,16 @@ export default function WeddingCrmDashboard() {
                           </div>
 
                           {/* Additional Context: Family & Source */}
-                          <div className="flex items-center justify-between text-[10px] text-[#6F5963] pt-1.5 border-t border-[#E8D9D4]/60">
+                          <div className="flex items-center justify-between text-[10px] text-[#65716C] pt-1.5 border-t border-[#E1DDD3]/60">
                             <span>👥 {cust.estimated_family_size || 1} family members {cust.guest_count ? `· ${cust.guest_count} guests` : ''}</span>
                             <span>🏷️ {cust.lead_source || 'Wedding Registration'}</span>
                           </div>
                         </div>
 
                         {/* Telecaller Activity & Notes Box */}
-                        <div className="p-3 rounded-xl bg-[#FFF7F2] border border-[#E8D9D4] text-xs space-y-1.5">
+                        <div className="p-3 rounded-xl bg-[#EDF3F0] border border-[#E1DDD3] text-xs space-y-1.5">
                           <div className="flex items-center justify-between text-[11px]">
-                            <span className="text-[#6F5963] flex items-center gap-1 font-medium">
+                            <span className="text-[#65716C] flex items-center gap-1 font-medium">
                               <span>👤</span>
                               <span>{cust.telecaller_name || cust.assigned_telecaller || 'Unassigned Staff'}</span>
                             </span>
@@ -888,7 +888,7 @@ export default function WeddingCrmDashboard() {
 
                           {/* Remarks or Notes preview */}
                           {(cust.call_remarks || cust.customer_notes) ? (
-                            <p className="text-[11px] text-[#2B1722] italic bg-[#FFFDFC] p-2 rounded-lg border border-[#E8D9D4]/70 line-clamp-2">
+                            <p className="text-[11px] text-[#17201D] italic bg-[#FFFFFF] p-2 rounded-lg border border-[#E1DDD3]/70 line-clamp-2">
                               "{cust.call_remarks || cust.customer_notes}"
                             </p>
                           ) : (
@@ -899,8 +899,8 @@ export default function WeddingCrmDashboard() {
 
                           {/* Next Scheduled Follow-up */}
                           <div className="flex items-center justify-between text-[10px] pt-1">
-                            <span className="text-[#6F5963] flex items-center gap-1 font-medium">
-                              <Clock className="w-3 h-3 text-[#B76E79]" />
+                            <span className="text-[#65716C] flex items-center gap-1 font-medium">
+                              <Clock className="w-3 h-3 text-[#C9A45C]" />
                               <span>Next: {formatDateDisplay(cust.next_follow_up_date || cust.follow_up_date, 'Not scheduled')}</span>
                               {(cust.next_follow_up_time || cust.preferred_call_time) && (
                                 <span className="text-[#9A858D]">({cust.next_follow_up_time || cust.preferred_call_time})</span>
@@ -916,7 +916,7 @@ export default function WeddingCrmDashboard() {
                       </div>
 
                       {/* Footer Actions */}
-                      <div className="pt-2 border-t border-[#E8D9D4] flex items-center justify-between gap-2">
+                      <div className="pt-2 border-t border-[#E1DDD3] flex items-center justify-between gap-2">
                         <div className="flex items-center gap-1.5">
                           <button
                             type="button"
@@ -944,18 +944,18 @@ export default function WeddingCrmDashboard() {
                               });
                               setFlowModalOpen(true);
                             }}
-                            className="px-3 py-1.5 bg-[#4A173A] hover:bg-[#6A2853] text-white rounded-xl text-xs font-bold shadow-2xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                            className="px-3 py-1.5 bg-[#123C35] hover:bg-[#082821] text-white rounded-xl text-xs font-bold shadow-2xs flex items-center gap-1.5 transition-colors cursor-pointer"
                           >
-                            <TrendingUp className="w-3.5 h-3.5 text-[#E8C7A8]" />
+                            <TrendingUp className="w-3.5 h-3.5 text-[#E4CB92]" />
                             <span>View Flow</span>
                           </button>
 
                           <Link
                             to={`/wedding-crm/customers/${cust.customer_id || cust.id}`}
-                            className="px-2.5 py-1.5 bg-[#FFFDFC] hover:bg-[#FFF7F2] border border-[#E8D9D4] text-[#4A173A] hover:text-[#B76E79] rounded-xl text-xs font-semibold flex items-center gap-1 transition-colors"
+                            className="px-2.5 py-1.5 bg-[#FFFFFF] hover:bg-[#EDF3F0] border border-[#E1DDD3] text-[#123C35] hover:text-[#C9A45C] rounded-xl text-xs font-semibold flex items-center gap-1 transition-colors"
                             title="Open full customer profile"
                           >
-                            <Eye className="w-3.5 h-3.5 text-[#B76E79]" />
+                            <Eye className="w-3.5 h-3.5 text-[#C9A45C]" />
                             <span>Profile</span>
                           </Link>
                         </div>
@@ -975,10 +975,10 @@ export default function WeddingCrmDashboard() {
 
                               <a
                                 href={`tel:${cleanPhone}`}
-                                className="p-2 bg-[#4A173A] hover:bg-[#6A2853] text-white rounded-xl text-xs flex items-center justify-center transition-colors shadow-2xs"
+                                className="p-2 bg-[#123C35] hover:bg-[#082821] text-white rounded-xl text-xs flex items-center justify-center transition-colors shadow-2xs"
                                 title="Call customer directly"
                               >
-                                <Phone className="w-3.5 h-3.5 text-[#E8C7A8]" />
+                                <Phone className="w-3.5 h-3.5 text-[#E4CB92]" />
                               </a>
                             </>
                           )}
@@ -992,11 +992,11 @@ export default function WeddingCrmDashboard() {
 
             {/* Pagination Controls Footer */}
             {streamTotal > 0 && (
-              <div className="pt-3 border-t border-[#E8D9D4] flex flex-wrap items-center justify-between gap-3 text-xs text-[#6F5963]">
+              <div className="pt-3 border-t border-[#E1DDD3] flex flex-wrap items-center justify-between gap-3 text-xs text-[#65716C]">
                 <div>
-                  Showing <span className="font-bold text-[#4A173A]">{Math.min(streamTotal, (streamPage - 1) * streamLimit + 1)}</span> to{' '}
-                  <span className="font-bold text-[#4A173A]">{Math.min(streamTotal, streamPage * streamLimit)}</span> of{' '}
-                  <span className="font-bold text-[#4A173A]">{streamTotal}</span> wedding customers
+                  Showing <span className="font-bold text-[#123C35]">{Math.min(streamTotal, (streamPage - 1) * streamLimit + 1)}</span> to{' '}
+                  <span className="font-bold text-[#123C35]">{Math.min(streamTotal, streamPage * streamLimit)}</span> of{' '}
+                  <span className="font-bold text-[#123C35]">{streamTotal}</span> wedding customers
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -1004,12 +1004,12 @@ export default function WeddingCrmDashboard() {
                     type="button"
                     disabled={streamPage <= 1 || streamLoading}
                     onClick={() => handlePageChange(streamPage - 1)}
-                    className="px-3 py-1.5 rounded-xl border border-[#E8D9D4] bg-[#FFFDFC] hover:bg-[#FFF7F2] font-semibold text-[#4A173A] disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                    className="px-3 py-1.5 rounded-xl border border-[#E1DDD3] bg-[#FFFFFF] hover:bg-[#EDF3F0] font-semibold text-[#123C35] disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
                   >
                     Previous
                   </button>
 
-                  <span className="px-2 font-mono font-bold text-[#4A173A]">
+                  <span className="px-2 font-mono font-bold text-[#123C35]">
                     Page {streamPage} of {Math.max(1, Math.ceil(streamTotal / streamLimit))}
                   </span>
 
@@ -1017,7 +1017,7 @@ export default function WeddingCrmDashboard() {
                     type="button"
                     disabled={streamPage >= Math.ceil(streamTotal / streamLimit) || streamLoading}
                     onClick={() => handlePageChange(streamPage + 1)}
-                    className="px-3 py-1.5 rounded-xl border border-[#E8D9D4] bg-[#FFFDFC] hover:bg-[#FFF7F2] font-semibold text-[#4A173A] disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                    className="px-3 py-1.5 rounded-xl border border-[#E1DDD3] bg-[#FFFFFF] hover:bg-[#EDF3F0] font-semibold text-[#123C35] disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
                   >
                     Next
                   </button>
@@ -1031,13 +1031,13 @@ export default function WeddingCrmDashboard() {
             {/* Left: Location Performance & Pipeline Summary */}
             <div className="lg:col-span-2 space-y-6">
               {/* Location Cards */}
-              <div className="bg-[#FFFDFC] p-5 rounded-2xl border border-[#E8D9D4] shadow-xs">
+              <div className="bg-[#FFFFFF] p-5 rounded-2xl border border-[#E1DDD3] shadow-xs">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-bold text-[#4A173A] uppercase tracking-wider flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-[#B76E79]" />
+                  <h3 className="text-sm font-bold text-[#123C35] uppercase tracking-wider flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-[#C9A45C]" />
                     <span>Location-wise Customer Distribution</span>
                   </h3>
-                  <span className="text-xs font-medium text-[#6F5963]">Live Store Data</span>
+                  <span className="text-xs font-medium text-[#65716C]">Live Store Data</span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -1045,18 +1045,18 @@ export default function WeddingCrmDashboard() {
                     filteredLocationCards.map((loc: any, idx: number) => (
                       <div
                         key={idx}
-                        className="p-3.5 rounded-xl bg-[#FFFAF7] border border-[#E8D9D4] hover:border-[#B76E79] transition-all"
+                        className="p-3.5 rounded-xl bg-[#F7F5F0] border border-[#E1DDD3] hover:border-[#C9A45C] transition-all"
                       >
-                        <div className="font-bold text-xs text-[#2B1722] flex items-center justify-between">
+                        <div className="font-bold text-xs text-[#17201D] flex items-center justify-between">
                           <span>{loc.location_name || loc.name}</span>
-                          <span className="text-[10px] bg-[#FFFDFC] px-2 py-0.5 rounded-full border border-[#E8D9D4] font-semibold text-[#4A173A]">
+                          <span className="text-[10px] bg-[#FFFFFF] px-2 py-0.5 rounded-full border border-[#E1DDD3] font-semibold text-[#123C35]">
                             {loc.customer_count || loc.total_customers || loc.count || 0} leads
                           </span>
                         </div>
-                        <div className="mt-2 text-xs space-y-1 text-[#6F5963]">
+                        <div className="mt-2 text-xs space-y-1 text-[#65716C]">
                           <div className="flex justify-between">
                             <span>Confirmed:</span>
-                            <span className="font-semibold text-[#4A173A]">{loc.confirmed_count || loc.purchases || 0}</span>
+                            <span className="font-semibold text-[#123C35]">{loc.confirmed_count || loc.purchases || 0}</span>
                           </div>
                           <div className="flex justify-between">
                             <span>Visited / Won:</span>
@@ -1074,38 +1074,38 @@ export default function WeddingCrmDashboard() {
               </div>
 
               {/* Conversion Pipeline Flow */}
-              <div className="bg-[#FFFDFC] p-5 rounded-2xl border border-[#E8D9D4] shadow-xs">
+              <div className="bg-[#FFFFFF] p-5 rounded-2xl border border-[#E1DDD3] shadow-xs">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-bold text-[#4A173A] uppercase tracking-wider flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4 text-[#B76E79]" />
+                  <h3 className="text-sm font-bold text-[#123C35] uppercase tracking-wider flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4 text-[#C9A45C]" />
                     <span>Conversion Funnel & Status Pipeline</span>
                   </h3>
                   <Link
                     to="/wedding-crm/pipeline"
-                    className="text-xs font-semibold text-[#B76E79] hover:text-[#4A173A] hover:underline flex items-center gap-1"
+                    className="text-xs font-semibold text-[#C9A45C] hover:text-[#123C35] hover:underline flex items-center gap-1"
                   >
                     View Status Board <ChevronRight className="w-3.5 h-3.5" />
                   </Link>
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center">
-                  <div className="p-3 rounded-xl bg-[#EDE7F6] border border-[#E8D9D4]">
-                    <div className="text-[10px] font-bold text-[#6A2853] uppercase">1. New Leads</div>
-                    <div className="text-lg font-black text-[#6A2853] mt-1">{stats.newRequests || stats.todayNewCustomers || 0}</div>
+                  <div className="p-3 rounded-xl bg-[#EDF3F0] border border-[#E1DDD3]">
+                    <div className="text-[10px] font-bold text-[#082821] uppercase">1. New Leads</div>
+                    <div className="text-lg font-black text-[#082821] mt-1">{stats.newRequests || stats.todayNewCustomers || 0}</div>
                   </div>
-                  <div className="p-3 rounded-xl bg-[#FFF4D6] border border-[#E8D9D4]">
+                  <div className="p-3 rounded-xl bg-[#FFF4D6] border border-[#E1DDD3]">
                     <div className="text-[10px] font-bold text-[#C58A18] uppercase">2. Contacted</div>
                     <div className="text-lg font-black text-[#C58A18] mt-1">{stats.connectedCalls || 0}</div>
                   </div>
-                  <div className="p-3 rounded-xl bg-[#F6E2E5] border border-[#E8D9D4]">
-                    <div className="text-[10px] font-bold text-[#4A173A] uppercase">3. Shopping Confirmed</div>
-                    <div className="text-lg font-black text-[#4A173A] mt-1">{stats.shoppingConfirmed || 0}</div>
+                  <div className="p-3 rounded-xl bg-[#EDF3F0] border border-[#E1DDD3]">
+                    <div className="text-[10px] font-bold text-[#123C35] uppercase">3. Shopping Confirmed</div>
+                    <div className="text-lg font-black text-[#123C35] mt-1">{stats.shoppingConfirmed || 0}</div>
                   </div>
-                  <div className="p-3 rounded-xl bg-[#FFFAF7] border border-[#E8D9D4]">
-                    <div className="text-[10px] font-bold text-[#B76E79] uppercase">4. Store Visited</div>
-                    <div className="text-lg font-black text-[#B76E79] mt-1">{stats.visitedConverted || 0}</div>
+                  <div className="p-3 rounded-xl bg-[#F7F5F0] border border-[#E1DDD3]">
+                    <div className="text-[10px] font-bold text-[#C9A45C] uppercase">4. Store Visited</div>
+                    <div className="text-lg font-black text-[#C9A45C] mt-1">{stats.visitedConverted || 0}</div>
                   </div>
-                  <div className="p-3 rounded-xl bg-[#E8F5EE] border border-[#E8D9D4]">
+                  <div className="p-3 rounded-xl bg-[#E8F5EE] border border-[#E1DDD3]">
                     <div className="text-[10px] font-bold text-[#198754] uppercase">5. Won / Converted</div>
                     <div className="text-lg font-black text-[#198754] mt-1">{stats.convertedCustomers || stats.visitedConverted || 0}</div>
                   </div>
@@ -1116,13 +1116,13 @@ export default function WeddingCrmDashboard() {
             {/* Right: Telecaller Performance & Upcoming Weddings */}
             <div className="space-y-6">
               {/* Telecaller Performance Leaderboard */}
-              <div className="bg-[#FFFDFC] p-5 rounded-2xl border border-[#E8D9D4] shadow-xs">
+              <div className="bg-[#FFFFFF] p-5 rounded-2xl border border-[#E1DDD3] shadow-xs">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-bold text-[#4A173A] uppercase tracking-wider flex items-center gap-2">
-                    <PhoneCall className="w-4 h-4 text-[#B76E79]" />
+                  <h3 className="text-sm font-bold text-[#123C35] uppercase tracking-wider flex items-center gap-2">
+                    <PhoneCall className="w-4 h-4 text-[#C9A45C]" />
                     <span>Telecaller Performance</span>
                   </h3>
-                  <Link to="/wedding-crm/reports" className="text-xs font-semibold text-[#B76E79] hover:text-[#4A173A]">
+                  <Link to="/wedding-crm/reports" className="text-xs font-semibold text-[#C9A45C] hover:text-[#123C35]">
                     Details
                   </Link>
                 </div>
@@ -1132,15 +1132,15 @@ export default function WeddingCrmDashboard() {
                     telecallerPerformance.map((caller: any, idx: number) => (
                       <div
                         key={idx}
-                        className="p-3 rounded-xl bg-[#FFFAF7] border border-[#E8D9D4] flex items-center justify-between text-xs"
+                        className="p-3 rounded-xl bg-[#F7F5F0] border border-[#E1DDD3] flex items-center justify-between text-xs"
                       >
                         <div>
-                          <div className="font-bold text-[#2B1722]">{caller.name || caller.telecaller_name}</div>
-                          <div className="text-[10px] text-[#6F5963]">{caller.location_name || 'Store Operations'}</div>
+                          <div className="font-bold text-[#17201D]">{caller.name || caller.telecaller_name}</div>
+                          <div className="text-[10px] text-[#65716C]">{caller.location_name || 'Store Operations'}</div>
                         </div>
                         <div className="text-right">
                           <div className="font-black text-[#198754]">{caller.calls_today || caller.total_calls || 0} calls</div>
-                          <div className="text-[10px] text-[#6F5963]">{caller.converted || 0} won</div>
+                          <div className="text-[10px] text-[#65716C]">{caller.converted || 0} won</div>
                         </div>
                       </div>
                     ))
@@ -1153,13 +1153,13 @@ export default function WeddingCrmDashboard() {
               </div>
 
               {/* Upcoming Weddings */}
-              <div className="bg-[#FFFDFC] p-5 rounded-2xl border border-[#E8D9D4] shadow-xs">
+              <div className="bg-[#FFFFFF] p-5 rounded-2xl border border-[#E1DDD3] shadow-xs">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-bold text-[#4A173A] uppercase tracking-wider flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-[#B76E79]" />
+                  <h3 className="text-sm font-bold text-[#123C35] uppercase tracking-wider flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-[#C9A45C]" />
                     <span>Upcoming Weddings</span>
                   </h3>
-                  <Link to="/wedding-crm/customers" className="text-xs font-semibold text-[#B76E79] hover:text-[#4A173A]">
+                  <Link to="/wedding-crm/customers" className="text-xs font-semibold text-[#C9A45C] hover:text-[#123C35]">
                     View All
                   </Link>
                 </div>
@@ -1172,16 +1172,16 @@ export default function WeddingCrmDashboard() {
                         <Link
                           key={cust.id}
                           to={`/wedding-crm/customers/${cust.id}`}
-                          className="p-3 rounded-xl bg-[#FFFAF7] border border-[#E8D9D4] hover:border-[#B76E79] flex items-center justify-between text-xs transition-all block group"
+                          className="p-3 rounded-xl bg-[#F7F5F0] border border-[#E1DDD3] hover:border-[#C9A45C] flex items-center justify-between text-xs transition-all block group"
                         >
                           <div>
-                            <div className="font-bold text-[#2B1722] group-hover:text-[#4A173A]">
+                            <div className="font-bold text-[#17201D] group-hover:text-[#123C35]">
                               {cust.customer_name}
                             </div>
-                            <div className="text-[10px] text-[#6F5963] flex items-center gap-1.5 mt-0.5">
+                            <div className="text-[10px] text-[#65716C] flex items-center gap-1.5 mt-0.5">
                               <span>📍 {cust.location_name || 'Store'}</span>
                               <span>·</span>
-                              <span className="text-[#B76E79] font-medium">
+                              <span className="text-[#C9A45C] font-medium">
                                 💍 {formatDateDisplay(cust.wedding_date, 'TBD')}
                               </span>
                             </div>

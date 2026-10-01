@@ -245,10 +245,9 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
 
   return (
     <>
-      {/* Mobile Backdrop */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-[#351027]/60 z-40 lg:hidden transition-opacity"
+          className="fixed inset-0 bg-[#082821]/70 z-40 lg:hidden transition-opacity"
           onClick={onClose}
           aria-hidden="true"
         />
@@ -258,16 +257,16 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
         role="navigation"
         aria-label="Main navigation"
         className={`
-          fixed top-0 left-0 bottom-0 bg-[#4A173A] text-white z-50 flex flex-col transition-all duration-300 shadow-2xl border-r border-[#B76E79]/20 overscroll-contain
+          fixed top-0 left-0 bottom-0 bg-[#123C35] text-white z-50 flex flex-col transition-all duration-300 shadow-2xl border-r border-white/10 overscroll-contain
           w-[280px] max-w-[85vw] lg:max-w-none
           ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
           ${collapsed ? 'lg:w-[72px]' : 'lg:w-64'}
         `}
       >
         {/* Header: Collapsed on Desktop shows ONLY 3-lines + logo; On mobile or Desktop Expanded shows Logo + Text + Close/Toggle */}
-        <div className="p-3 sm:p-3.5 border-b border-[#B76E79]/20 flex items-center justify-between min-h-[64px] w-full bg-[#351027]/40">
+        <div className="p-3 sm:p-3.5 border-b border-white/10 flex items-center justify-between min-h-[64px] w-full bg-[#082821]/50">
           <div className={`flex items-center gap-2.5 min-w-0 ${collapsed ? 'lg:hidden' : 'flex'}`}>
-            <div className="w-11 h-9 rounded-xl bg-white p-1 shadow-md border border-[#B76E79]/30 flex items-center justify-center flex-shrink-0">
+            <div className="w-11 h-9 rounded-xl bg-white p-1 shadow-md border border-[#C9A45C]/30 flex items-center justify-center flex-shrink-0">
               <img
                 src="/logo.png"
                 alt="BSC Logo"
@@ -276,15 +275,15 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
             </div>
             <div className="min-w-0">
               <div className="font-extrabold text-sm text-white tracking-wide leading-tight truncate">BSC Textiles</div>
-              <div className="text-[9px] font-bold uppercase tracking-widest mt-0.5 flex items-center gap-1 truncate text-[#E8C7A8]">
+              <div className="text-[9px] font-bold uppercase tracking-widest mt-0.5 flex items-center gap-1 truncate text-[#E4CB92]">
                 {activeLocationLabel ? (
-                  <span className={activeLocationLabel.includes('ALL') ? 'text-[#C9A45C] font-extrabold truncate' : 'truncate text-[#E8C7A8]'}>
+                  <span className={activeLocationLabel.includes('ALL') ? 'text-[#C9A45C] font-extrabold truncate' : 'truncate text-[#E4CB92]'}>
                     {activeLocationLabel}
                   </span>
                 ) : isGlobalUser ? (
                   <span className="text-[#C9A45C] font-extrabold truncate">🌐 ALL LOCATIONS</span>
                 ) : (
-                  <span className="truncate text-[#E8C7A8]">📍 {(session?.locationName || locCtx?.activeLocation?.name || 'STORE').toUpperCase()}</span>
+                  <span className="truncate text-[#E4CB92]">📍 {(session?.locationName || locCtx?.activeLocation?.name || 'STORE').toUpperCase()}</span>
                 )}
               </div>
             </div>
@@ -296,14 +295,14 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
               <button
                 type="button"
                 onClick={handleToggle}
-                className="p-1.5 rounded-xl text-[#B76E79] hover:text-white hover:bg-[#6A2853] transition-colors flex items-center justify-center cursor-pointer shadow-xs border border-[#B76E79]/30"
+                className="p-1.5 rounded-xl text-[#C9A45C] hover:text-white hover:bg-[#1D5148] transition-colors flex items-center justify-center cursor-pointer shadow-xs border border-white/10"
                 title="Expand navigation menu"
                 aria-label="Expand sidebar"
               >
-                <Menu className="w-5 h-5 text-[#B76E79]" />
+                <Menu className="w-5 h-5 text-[#C9A45C]" />
               </button>
               <div
-                className="w-10 h-8 rounded-xl bg-white p-1 shadow-md border border-[#B76E79]/40 hover:scale-105 transition-transform cursor-pointer flex items-center justify-center flex-shrink-0"
+                className="w-10 h-8 rounded-xl bg-white p-1 shadow-md border border-[#C9A45C]/40 hover:scale-105 transition-transform cursor-pointer flex items-center justify-center flex-shrink-0"
                 onClick={handleToggle}
                 title="BSC Logo - Click to expand navigation"
               >
@@ -322,7 +321,7 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
             <button
               type="button"
               onClick={onClose}
-              className="lg:hidden p-1.5 rounded-xl text-[#E8D9D4] hover:text-white hover:bg-white/10 transition-colors"
+              className="lg:hidden p-1.5 rounded-xl text-[#B9C8C2] hover:text-white hover:bg-white/10 transition-colors"
               title="Close navigation"
               aria-label="Close navigation"
             >
@@ -334,22 +333,22 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
               <button
                 type="button"
                 onClick={handleToggle}
-                className="hidden lg:flex p-1.5 rounded-xl text-[#B76E79] hover:text-white hover:bg-[#6A2853] transition-colors flex-shrink-0 cursor-pointer border border-[#B76E79]/30 shadow-xs"
+                className="hidden lg:flex p-1.5 rounded-xl text-[#C9A45C] hover:text-white hover:bg-[#1D5148] transition-colors flex-shrink-0 cursor-pointer border border-white/10 shadow-xs"
                 title="Collapse sidebar"
                 aria-label="Collapse sidebar"
               >
-                <Menu className="w-5 h-5 text-[#B76E79]" />
+                <Menu className="w-5 h-5 text-[#C9A45C]" />
               </button>
             )}
           </div>
         </div>
 
         {/* User Card */}
-        <div className={`mx-2 my-2 rounded-xl bg-[#351027]/80 border border-[#B76E79]/25 flex items-center shadow-inner transition-all ${
+        <div className={`mx-2 my-2 rounded-xl bg-[#082821]/80 border border-white/10 flex items-center shadow-inner transition-all ${
           collapsed ? 'p-1 justify-center' : 'p-2.5 gap-2.5'
         }`}>
           <div
-            className="w-8 h-8 rounded-lg bg-[#B76E79] text-white font-black flex items-center justify-center text-xs shadow-md border border-[#D89AA3] flex-shrink-0"
+            className="w-8 h-8 rounded-lg bg-[#C9A45C] text-[#17201D] font-black flex items-center justify-center text-xs shadow-md border border-[#E4CB92] flex-shrink-0"
             title={`${session?.fullName || 'User'} (${role})`}
           >
             {initials}
@@ -357,7 +356,7 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
           {!collapsed && (
             <div className="overflow-hidden flex-1">
               <div className="font-bold text-xs text-white truncate">{session?.fullName || 'HR Manager'}</div>
-              <div className="text-[10px] text-[#E8C7A8] font-semibold truncate">{roleLabels[role] || role}</div>
+              <div className="text-[10px] text-[#E4CB92] font-semibold truncate">{roleLabels[role] || role}</div>
             </div>
           )}
         </div>
@@ -381,9 +380,9 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
             return (
               <div key={section} className="space-y-0.5">
                 {collapsed ? (
-                  <div className="h-px bg-[#B76E79]/20 my-1.5 mx-1" />
+                  <div className="h-px bg-white/10 my-1.5 mx-1" />
                 ) : (
-                  <div className="text-[9px] font-bold uppercase tracking-widest text-[#E8C7A8] px-2.5 mb-1">
+                  <div className="text-[9px] font-bold uppercase tracking-widest text-[#E4CB92] px-2.5 mb-1">
                     <span>{section}</span>
                   </div>
                 )}
@@ -405,20 +404,20 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
                           flex items-center rounded-xl text-xs font-bold transition-all duration-150 group relative
                           ${collapsed ? 'justify-center px-0 py-2.5' : 'px-3 py-2.5 justify-between'}
                           ${isActive
-                            ? 'bg-[#B76E79] text-white shadow-md shadow-[#B76E79]/25 font-black border-l-4 border-[#351027]'
-                            : 'text-white/85 hover:bg-[#6A2853] hover:text-white'}
+                            ? 'bg-[#C9A45C] text-[#17201D] shadow-md shadow-[#C9A45C]/25 font-black border-l-4 border-[#082821]'
+                            : 'text-white hover:bg-[#1D5148] hover:text-white'}
                         `}
                       >
                         <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-2.5 min-w-0'}`}>
                           <Icon className={`w-4 h-4 transition-transform group-hover:scale-110 flex-shrink-0 ${
-                            isActive ? 'text-white' : item.key === 'wedding_crm' ? 'text-[#E8C7A8]' : 'text-[#B76E79] group-hover:text-white'
+                            isActive ? 'text-[#17201D]' : item.key === 'wedding_crm' ? 'text-[#C9A45C]' : 'text-[#C9A45C] group-hover:text-white'
                           }`} />
 
                           {!collapsed && (
                             <span className="min-w-0">
                               <span className="block truncate">{item.label}</span>
                               {item.hint && (
-                                <span className="block truncate text-[9px] font-semibold leading-tight opacity-75">
+                                <span className="block truncate text-[9px] font-semibold leading-tight text-[#B9C8C2]">
                                   {item.hint}
                                 </span>
                               )}
@@ -426,14 +425,14 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
                           )}
 
                           {!collapsed && item.key === 'wedding_crm' && (
-                            <span className="text-[8px] bg-[#351027] text-[#E8C7A8] font-black px-1.5 py-[2px] rounded-full uppercase ml-1 flex-shrink-0 shadow-xs border border-[#B76E79]/40">
+                            <span className="text-[8px] bg-[#082821] text-[#E4CB92] font-black px-1.5 py-[2px] rounded-full uppercase ml-1 flex-shrink-0 shadow-xs border border-[#C9A45C]/40">
                               NEW
                             </span>
                           )}
                         </div>
 
                         {!collapsed && isActive && (
-                          <ChevronRight className="w-3.5 h-3.5 text-white opacity-95 flex-shrink-0" />
+                          <ChevronRight className="w-3.5 h-3.5 text-[#17201D] opacity-95 flex-shrink-0" />
                         )}
                       </Link>
                     );
@@ -445,11 +444,11 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
         </div>
 
         {/* Footer Actions */}
-        <div className={`border-t border-[#B76E79]/20 bg-[#351027]/95 transition-all space-y-1.5 ${collapsed ? 'p-2' : 'p-3'}`}>
+        <div className={`border-t border-white/10 bg-[#082821]/95 transition-all space-y-1.5 ${collapsed ? 'p-2' : 'p-3'}`}>
           <button
             onClick={() => setChangePasswordOpen(true)}
             title="Update Password"
-            className={`w-full flex items-center justify-center rounded-xl text-xs font-bold bg-[#B76E79]/20 text-[#E8C7A8] border border-[#B76E79]/40 hover:bg-[#B76E79] hover:text-white transition-all shadow-sm cursor-pointer ${
+            className={`w-full flex items-center justify-center rounded-xl text-xs font-bold bg-[#C9A45C]/15 text-[#E4CB92] border border-[#C9A45C]/30 hover:bg-[#C9A45C] hover:text-[#17201D] transition-all shadow-sm cursor-pointer ${
               collapsed ? 'py-2.5 px-0' : 'py-2 px-3 gap-2'
             }`}
           >
@@ -460,15 +459,15 @@ export default function Sidebar({ session, isOpen, onClose }: SidebarProps) {
           <button
             onClick={() => Auth.logout()}
             title="Sign Out Session"
-            className={`w-full flex items-center justify-center rounded-xl text-xs font-bold bg-[#B42318]/20 text-white border border-[#B42318]/40 hover:bg-[#B42318] hover:text-white transition-all shadow-sm cursor-pointer ${
-              collapsed ? 'py-2.5 px-0' : 'py-2.5 px-3 gap-2'
+            className={`w-full flex items-center justify-center rounded-xl text-xs font-bold bg-[#C83B4A]/20 text-white border border-[#C83B4A]/40 hover:bg-[#C83B4A] hover:text-white transition-all shadow-sm cursor-pointer ${
+              collapsed ? 'py-2.5 px-0' : 'py-2 px-3 gap-2'
             }`}
           >
             <LogOut className="w-4 h-4 flex-shrink-0" />
             {!collapsed && <span>Sign Out</span>}
           </button>
           {!collapsed && (
-            <div className="text-[8.5px] text-[#E8C7A8]/70 text-center mt-2 font-medium">
+            <div className="text-[8.5px] text-[#E4CB92]/70 text-center mt-2 font-medium">
               BSC Exclusive Wedding CRM · Enterprise Suite
             </div>
           )}

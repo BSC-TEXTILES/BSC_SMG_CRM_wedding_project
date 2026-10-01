@@ -79,21 +79,21 @@ const CHART_COLORS = {
   pass: '#198754',
   review: '#C58A18',
   fail: '#B42318',
-  plum: '#4A173A',
-  rose: '#B76E79'
+  plum: '#123C35',
+  rose: '#C9A45C'
 };
 
 const GALLERY_CONTROL =
-  'w-full text-xs font-bold text-[#4A173A] bg-white border border-[#E8D9D4] rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#B76E79]/35 focus:border-[#B76E79] transition-all shadow-2xs';
-const GALLERY_LABEL = 'block text-[11px] font-black uppercase tracking-wider text-[#6F5963] mb-1.5 flex items-center gap-1.5';
+  'w-full text-xs font-bold text-[#123C35] bg-white border border-[#E1DDD3] rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#C9A45C]/35 focus:border-[#C9A45C] transition-all shadow-2xs';
+const GALLERY_LABEL = 'block text-[11px] font-black uppercase tracking-wider text-[#65716C] mb-1.5 flex items-center gap-1.5';
 
 const TOOLTIP_STYLE = {
-  backgroundColor: '#FFFDFC',
-  border: '1px solid #E8D9D4',
+  backgroundColor: '#FFFFFF',
+  border: '1px solid #E1DDD3',
   borderRadius: 14,
   fontSize: 11,
   fontWeight: 700,
-  color: '#4A173A'
+  color: '#123C35'
 } as const;
 
 /**
@@ -555,7 +555,7 @@ export default function VmChecklist() {
         <div className="space-y-4">
           {/* View switch: the guided audit, then the two reading views. */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-1.5 bg-[#FFFDFC] border border-[#E8D9D4] rounded-2xl p-1 self-start flex-wrap shadow-2xs">
+            <div className="flex items-center gap-1.5 bg-[#FFFFFF] border border-[#E1DDD3] rounded-2xl p-1 self-start flex-wrap shadow-2xs">
               <ViewTab active={view === 'flow'} onClick={() => setView('flow')} icon={<ClipboardList className="w-3.5 h-3.5" />}>
                 Audit flow
               </ViewTab>
@@ -564,7 +564,7 @@ export default function VmChecklist() {
                 {galleryPhotos.length > 0 && (
                   <span
                     className={`ml-1.5 px-2 py-0.5 rounded-full text-[10px] font-black ${
-                      view === 'gallery' ? 'bg-white/25 text-white' : 'bg-[#B76E79]/20 text-[#4A173A]'
+                      view === 'gallery' ? 'bg-white/25 text-white' : 'bg-[#C9A45C]/20 text-[#123C35]'
                     }`}
                   >
                     {galleryPhotos.length}
@@ -577,13 +577,13 @@ export default function VmChecklist() {
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-[#FFFDFC] border border-[#E8D9D4] text-[11px] font-bold text-[#6F5963]">
-                <Store className="w-3.5 h-3.5 text-[#B76E79]" />
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-[#FFFFFF] border border-[#E1DDD3] text-[11px] font-bold text-[#65716C]">
+                <Store className="w-3.5 h-3.5 text-[#C9A45C]" />
                 <span>{userLocationName || 'All stores I can access'}</span>
               </span>
               {inspectorName && (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-[#FFFDFC] border border-[#E8D9D4] text-[11px] font-bold text-[#6F5963]">
-                  <Activity className="w-3.5 h-3.5 text-[#B76E79]" />
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-[#FFFFFF] border border-[#E1DDD3] text-[11px] font-bold text-[#65716C]">
+                  <Activity className="w-3.5 h-3.5 text-[#C9A45C]" />
                   <span>Auditor: {inspectorName}</span>
                 </span>
               )}
@@ -600,12 +600,12 @@ export default function VmChecklist() {
             <div className="flex items-start justify-between gap-3 bg-[#E8F5EE] border border-[#198754]/30 rounded-3xl px-4 py-3">
               <div className="min-w-0">
                 <p className="text-xs font-black text-[#198754]">Audit report submitted successfully.</p>
-                <p className="text-[11px] font-bold text-[#4A173A] mt-0.5">
+                <p className="text-[11px] font-bold text-[#123C35] mt-0.5">
                   Filed as {submitted.status} with a {liveScoreDisplay(submitted.score)} compliance score (
                   {submitted.score.passed} pass / {submitted.score.failed} fail / {submitted.score.notApplicable} N/A /{' '}
                   {submitted.score.unrated} unrated).
                 </p>
-                <p className="text-[11px] font-semibold text-[#6F5963] mt-0.5">
+                <p className="text-[11px] font-semibold text-[#65716C] mt-0.5">
                   The server recomputed this figure from the stored answers — N/A is excluded from the denominator.
                 </p>
               </div>
@@ -645,9 +645,9 @@ export default function VmChecklist() {
                       type="button"
                       onClick={() => flow.resetFlow('floor')}
                       title="Leave this audit — its draft stays saved — and pick another floor"
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-[#E8D9D4] bg-white text-[#4A173A] text-[11px] font-black hover:bg-[#FFF7F2] transition-colors cursor-pointer"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-[#E1DDD3] bg-white text-[#123C35] text-[11px] font-black hover:bg-[#EDF3F0] transition-colors cursor-pointer"
                     >
-                      <Plus className="w-3.5 h-3.5 text-[#B76E79]" />
+                      <Plus className="w-3.5 h-3.5 text-[#C9A45C]" />
                       <span className="hidden sm:inline">New audit</span>
                     </button>
                   ) : null
@@ -658,16 +658,16 @@ export default function VmChecklist() {
           )}
 
           {view === 'gallery' && (
-            <section className="bg-[#FFFDFC] border border-[#E8D9D4] rounded-3xl shadow-sm overflow-hidden">
+            <section className="bg-[#FFFFFF] border border-[#E1DDD3] rounded-3xl shadow-sm overflow-hidden">
               {/* Gallery Header */}
-              <div className="p-5 sm:p-6 border-b border-[#E8D9D4] bg-gradient-to-r from-[#FFFDFC] via-[#FFF9F6] to-[#FAF5F2] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="p-5 sm:p-6 border-b border-[#E1DDD3] bg-gradient-to-r from-[#FFFFFF] via-[#FFF9F6] to-[#FAF5F2] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-3.5">
-                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#4A173A] to-[#6A2853] text-[#FAF6F0] flex items-center justify-center shadow-md shrink-0">
-                    <Camera className="w-6 h-6 text-[#E8C7A8]" />
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#123C35] to-[#082821] text-[#FAF6F0] flex items-center justify-center shadow-md shrink-0">
+                    <Camera className="w-6 h-6 text-[#E4CB92]" />
                   </div>
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[11px] font-black uppercase tracking-wider text-[#B76E79]">
+                      <span className="text-[11px] font-black uppercase tracking-wider text-[#C9A45C]">
                         Store Visual Merchandising Gallery
                       </span>
                       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#198754]/10 text-[#198754] border border-[#198754]/20">
@@ -675,10 +675,10 @@ export default function VmChecklist() {
                         Live Studio
                       </span>
                     </div>
-                    <h2 className="text-lg sm:text-xl font-black text-[#4A173A] tracking-tight mt-0.5">
+                    <h2 className="text-lg sm:text-xl font-black text-[#123C35] tracking-tight mt-0.5">
                       Inspection Evidence & Store Exhibits
                     </h2>
-                    <p className="text-xs font-semibold text-[#6F5963] mt-0.5">
+                    <p className="text-xs font-semibold text-[#65716C] mt-0.5">
                       {galleryLoading
                         ? 'Refreshing inspection photos…'
                         : `${galleryPhotos.length} photo${galleryPhotos.length === 1 ? '' : 's'} matching current filters`}
@@ -691,22 +691,22 @@ export default function VmChecklist() {
                     type="button"
                     onClick={() => void loadGallery()}
                     disabled={galleryLoading}
-                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#E8D9D4] bg-white text-[#4A173A] text-xs font-bold hover:bg-[#FFF7F2] hover:border-[#B76E79]/50 shadow-2xs transition-all disabled:opacity-60 cursor-pointer"
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#E1DDD3] bg-white text-[#123C35] text-xs font-bold hover:bg-[#EDF3F0] hover:border-[#C9A45C]/50 shadow-2xs transition-all disabled:opacity-60 cursor-pointer"
                   >
-                    <RefreshCw className={`w-3.5 h-3.5 text-[#B76E79] ${galleryLoading ? 'animate-spin' : ''}`} />
+                    <RefreshCw className={`w-3.5 h-3.5 text-[#C9A45C] ${galleryLoading ? 'animate-spin' : ''}`} />
                     <span>{galleryLoading ? 'Refreshing…' : 'Refresh Feed'}</span>
                   </button>
                 </div>
               </div>
 
               {/* Filters Station */}
-              <div className="p-4 sm:p-5 border-b border-[#E8D9D4] bg-[#FFF9F6]/80">
+              <div className="p-4 sm:p-5 border-b border-[#E1DDD3] bg-[#FFF9F6]/80">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
                   <div className="flex items-center gap-2">
-                    <Filter className="w-3.5 h-3.5 text-[#B76E79]" />
-                    <span className="text-xs font-black uppercase tracking-wider text-[#4A173A]">Filter Evidence</span>
+                    <Filter className="w-3.5 h-3.5 text-[#C9A45C]" />
+                    <span className="text-xs font-black uppercase tracking-wider text-[#123C35]">Filter Evidence</span>
                     {Object.values(galleryFilters).some((v) => v !== '' && v !== 'All') && (
-                      <span className="px-2 py-0.5 rounded-full bg-[#B76E79]/15 text-[#4A173A] text-[10px] font-bold border border-[#B76E79]/20">
+                      <span className="px-2 py-0.5 rounded-full bg-[#C9A45C]/15 text-[#123C35] text-[10px] font-bold border border-[#C9A45C]/20">
                         Active Filters
                       </span>
                     )}
@@ -714,7 +714,7 @@ export default function VmChecklist() {
 
                   {/* Quick Date Presets */}
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-[#6F5963] mr-1">Quick:</span>
+                    <span className="text-[10px] font-black uppercase tracking-wider text-[#65716C] mr-1">Quick:</span>
                     {[
                       { label: 'All Dates', value: '' },
                       { label: 'Today', value: new Date().toISOString().split('T')[0] },
@@ -731,8 +731,8 @@ export default function VmChecklist() {
                           onClick={() => setGalleryFilters((p) => ({ ...p, date: preset.value }))}
                           className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
                             isActive
-                              ? 'bg-[#4A173A] text-white shadow-xs'
-                              : 'bg-white border border-[#E8D9D4] text-[#6F5963] hover:text-[#4A173A] hover:bg-[#FFFDFC]'
+                              ? 'bg-[#123C35] text-white shadow-xs'
+                              : 'bg-white border border-[#E1DDD3] text-[#65716C] hover:text-[#123C35] hover:bg-[#FFFFFF]'
                           }`}
                         >
                           {preset.label}
@@ -746,7 +746,7 @@ export default function VmChecklist() {
                   {(isAdmin || isManager) && (
                     <label className="block">
                       <span className={GALLERY_LABEL}>
-                        <Store className="w-3.5 h-3.5 text-[#B76E79]" />
+                        <Store className="w-3.5 h-3.5 text-[#C9A45C]" />
                         <span>Store Location</span>
                       </span>
                       <select
@@ -764,7 +764,7 @@ export default function VmChecklist() {
 
                   <label className="block">
                     <span className={GALLERY_LABEL}>
-                      <Layers className="w-3.5 h-3.5 text-[#B76E79]" />
+                      <Layers className="w-3.5 h-3.5 text-[#C9A45C]" />
                       <span>Store Floor</span>
                     </span>
                     <select
@@ -783,7 +783,7 @@ export default function VmChecklist() {
 
                   <label className="block">
                     <span className={GALLERY_LABEL}>
-                      <Sparkles className="w-3.5 h-3.5 text-[#B76E79]" />
+                      <Sparkles className="w-3.5 h-3.5 text-[#C9A45C]" />
                       <span>Floor Section</span>
                     </span>
                     <select
@@ -802,7 +802,7 @@ export default function VmChecklist() {
 
                   <label className="block">
                     <span className={GALLERY_LABEL}>
-                      <Calendar className="w-3.5 h-3.5 text-[#B76E79]" />
+                      <Calendar className="w-3.5 h-3.5 text-[#C9A45C]" />
                       <span>Inspection Date</span>
                     </span>
                     <input
@@ -815,7 +815,7 @@ export default function VmChecklist() {
 
                   <label className="block">
                     <span className={GALLERY_LABEL}>
-                      <Clock className="w-3.5 h-3.5 text-[#B76E79]" />
+                      <Clock className="w-3.5 h-3.5 text-[#C9A45C]" />
                       <span>Audit Shift</span>
                     </span>
                     <select
@@ -834,7 +834,7 @@ export default function VmChecklist() {
 
                   <label className="block">
                     <span className={GALLERY_LABEL}>
-                      <Award className="w-3.5 h-3.5 text-[#B76E79]" />
+                      <Award className="w-3.5 h-3.5 text-[#C9A45C]" />
                       <span>Audit Score</span>
                     </span>
                     <select
@@ -852,7 +852,7 @@ export default function VmChecklist() {
 
                   <label className="block">
                     <span className={GALLERY_LABEL}>
-                      <User className="w-3.5 h-3.5 text-[#B76E79]" />
+                      <User className="w-3.5 h-3.5 text-[#C9A45C]" />
                       <span>Inspector</span>
                     </span>
                     <select
@@ -883,9 +883,9 @@ export default function VmChecklist() {
                           minScore: ''
                         })
                       }
-                      className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-[#E8D9D4] bg-white text-xs font-black uppercase tracking-wider text-[#4A173A] hover:bg-[#FFF7F2] hover:border-[#B76E79] shadow-2xs transition-all cursor-pointer"
+                      className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-[#E1DDD3] bg-white text-xs font-black uppercase tracking-wider text-[#123C35] hover:bg-[#EDF3F0] hover:border-[#C9A45C] shadow-2xs transition-all cursor-pointer"
                     >
-                      <RotateCcw className="w-3.5 h-3.5 text-[#B76E79]" />
+                      <RotateCcw className="w-3.5 h-3.5 text-[#C9A45C]" />
                       <span>Reset Filters</span>
                     </button>
                   </div>
@@ -895,14 +895,14 @@ export default function VmChecklist() {
               {/* Photo Exhibition Area */}
               <div className="p-4 sm:p-6">
                 {galleryError ? (
-                  <div className="py-10 px-6 text-center bg-[#FFFDFC] border border-[#B42318]/30 rounded-3xl max-w-lg mx-auto shadow-xs">
+                  <div className="py-10 px-6 text-center bg-[#FFFFFF] border border-[#B42318]/30 rounded-3xl max-w-lg mx-auto shadow-xs">
                     <CircleAlert className="w-8 h-8 text-[#B42318] mx-auto mb-3" />
-                    <p className="text-sm font-black text-[#4A173A]">Unable to load the photo gallery</p>
-                    <p className="text-xs text-[#6F5963] mt-1 break-words">{galleryError}</p>
+                    <p className="text-sm font-black text-[#123C35]">Unable to load the photo gallery</p>
+                    <p className="text-xs text-[#65716C] mt-1 break-words">{galleryError}</p>
                     <button
                       type="button"
                       onClick={() => void loadGallery()}
-                      className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 bg-[#4A173A] hover:bg-[#6A2853] text-white font-bold rounded-xl text-xs transition-all cursor-pointer shadow-md"
+                      className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 bg-[#123C35] hover:bg-[#082821] text-white font-bold rounded-xl text-xs transition-all cursor-pointer shadow-md"
                     >
                       <RefreshCw className="w-3.5 h-3.5" />
                       <span>Retry Gallery</span>
@@ -913,7 +913,7 @@ export default function VmChecklist() {
                     {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
                       <div
                         key={i}
-                        className="bg-white border border-[#E8D9D4] rounded-2xl overflow-hidden shadow-xs animate-pulse"
+                        className="bg-white border border-[#E1DDD3] rounded-2xl overflow-hidden shadow-xs animate-pulse"
                       >
                         <div className="aspect-[4/3] bg-[#FAF5F2]" />
                         <div className="p-3.5 space-y-2">
@@ -925,11 +925,11 @@ export default function VmChecklist() {
                   </div>
                 ) : galleryPhotos.length === 0 ? (
                   <div className="py-16 px-6 text-center max-w-md mx-auto">
-                    <div className="w-16 h-16 rounded-3xl bg-[#FAF5F2] border border-[#E8D9D4] flex items-center justify-center mx-auto mb-4 text-[#B76E79] shadow-inner">
+                    <div className="w-16 h-16 rounded-3xl bg-[#FAF5F2] border border-[#E1DDD3] flex items-center justify-center mx-auto mb-4 text-[#C9A45C] shadow-inner">
                       <Camera className="w-8 h-8" />
                     </div>
-                    <h3 className="text-base font-black text-[#4A173A]">No inspection photos found</h3>
-                    <p className="text-xs text-[#6F5963] mt-1.5 leading-relaxed">
+                    <h3 className="text-base font-black text-[#123C35]">No inspection photos found</h3>
+                    <p className="text-xs text-[#65716C] mt-1.5 leading-relaxed">
                       No photos match the selected filters. Clear your filters or launch a new audit to capture fresh store floor evidence.
                     </p>
                     <button
@@ -945,9 +945,9 @@ export default function VmChecklist() {
                           minScore: ''
                         })
                       }
-                      className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white border border-[#E8D9D4] hover:bg-[#FFF7F2] text-[#4A173A] text-xs font-bold transition-all cursor-pointer shadow-2xs"
+                      className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white border border-[#E1DDD3] hover:bg-[#EDF3F0] text-[#123C35] text-xs font-bold transition-all cursor-pointer shadow-2xs"
                     >
-                      <RotateCcw className="w-3.5 h-3.5 text-[#B76E79]" />
+                      <RotateCcw className="w-3.5 h-3.5 text-[#C9A45C]" />
                       <span>Clear All Filters</span>
                     </button>
                   </div>
@@ -958,7 +958,7 @@ export default function VmChecklist() {
                       return (
                         <div
                           key={photo.id}
-                          className="group relative bg-white border border-[#E8D9D4] hover:border-[#B76E79] rounded-2xl overflow-hidden shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col hover:-translate-y-1"
+                          className="group relative bg-white border border-[#E1DDD3] hover:border-[#C9A45C] rounded-2xl overflow-hidden shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col hover:-translate-y-1"
                         >
                           {/* Photo Thumbnail Container */}
                           <div
@@ -987,7 +987,7 @@ export default function VmChecklist() {
                             {/* Floating Badges */}
                             <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between gap-1 pointer-events-none">
                               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#180f16]/85 backdrop-blur-md border border-white/20 text-white text-[10px] font-black shadow-md truncate max-w-[65%]">
-                                <MapPin className="w-3 h-3 text-[#E8C7A8] shrink-0" />
+                                <MapPin className="w-3 h-3 text-[#E4CB92] shrink-0" />
                                 <span className="truncate">{photo.floor}</span>
                               </span>
 
@@ -995,7 +995,7 @@ export default function VmChecklist() {
                                 className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black border backdrop-blur-md shadow-md ${
                                   isEvidence
                                     ? 'bg-amber-950/80 border-amber-400/40 text-amber-200'
-                                    : 'bg-[#4A173A]/80 border-[#B76E79]/40 text-[#FAF6F0]'
+                                    : 'bg-[#123C35]/80 border-[#C9A45C]/40 text-[#FAF6F0]'
                                 }`}
                               >
                                 {isEvidence ? (
@@ -1005,7 +1005,7 @@ export default function VmChecklist() {
                                   </>
                                 ) : (
                                   <>
-                                    <Layers className="w-3 h-3 text-[#E8C7A8]" />
+                                    <Layers className="w-3 h-3 text-[#E4CB92]" />
                                     <span>Section Shot</span>
                                   </>
                                 )}
@@ -1014,27 +1014,27 @@ export default function VmChecklist() {
 
                             {/* Hover Overlay Button */}
                             <div className="absolute inset-0 bg-[#351027]/40 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center p-4">
-                              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#4A173A] text-white text-xs font-black shadow-xl border border-white/20 transform scale-95 group-hover:scale-100 transition-transform duration-200">
-                                <Eye className="w-4 h-4 text-[#E8C7A8]" />
+                              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#123C35] text-white text-xs font-black shadow-xl border border-white/20 transform scale-95 group-hover:scale-100 transition-transform duration-200">
+                                <Eye className="w-4 h-4 text-[#E4CB92]" />
                                 <span>Inspect Photo</span>
                               </span>
                             </div>
                           </div>
 
                           {/* Card Body & Details */}
-                          <div className="p-3.5 flex-1 flex flex-col justify-between border-t border-[#E8D9D4] bg-[#FFFDFC]">
+                          <div className="p-3.5 flex-1 flex flex-col justify-between border-t border-[#E1DDD3] bg-[#FFFFFF]">
                             <div>
-                              <p className="text-xs font-black text-[#4A173A] truncate" title={`${photo.floor} → ${photo.section}`}>
+                              <p className="text-xs font-black text-[#123C35] truncate" title={`${photo.floor} → ${photo.section}`}>
                                 {photo.section}
                               </p>
-                              <div className="flex items-center gap-2 text-[11px] font-medium text-[#6F5963] mt-1.5 flex-wrap">
+                              <div className="flex items-center gap-2 text-[11px] font-medium text-[#65716C] mt-1.5 flex-wrap">
                                 <span className="inline-flex items-center gap-1">
-                                  <User className="w-3 h-3 text-[#B76E79]" />
-                                  <span className="font-bold text-[#4A173A]">{photo.uploadedBy || 'Auditor'}</span>
+                                  <User className="w-3 h-3 text-[#C9A45C]" />
+                                  <span className="font-bold text-[#123C35]">{photo.uploadedBy || 'Auditor'}</span>
                                 </span>
                                 <span>•</span>
                                 <span className="inline-flex items-center gap-1">
-                                  <Calendar className="w-3 h-3 text-[#B76E79]" />
+                                  <Calendar className="w-3 h-3 text-[#C9A45C]" />
                                   <span>{formatVmDate(photo.inspectionDate || photo.createdAt) || 'Today'}</span>
                                 </span>
                               </div>
@@ -1042,7 +1042,7 @@ export default function VmChecklist() {
 
                             {/* Action footer */}
                             <div className="mt-3 pt-2.5 border-t border-[#F0E4E0] flex items-center justify-between text-[11px]">
-                              <span className="text-[10px] font-bold text-[#6F5963] bg-[#FAF5F2] border border-[#E8D9D4] px-2 py-0.5 rounded-md">
+                              <span className="text-[10px] font-bold text-[#65716C] bg-[#FAF5F2] border border-[#E1DDD3] px-2 py-0.5 rounded-md">
                                 {formatBytes(photo.fileSize)}
                               </span>
 
@@ -1053,14 +1053,14 @@ export default function VmChecklist() {
                                     const items = toLightboxItems(galleryPhotos);
                                     setGalleryViewer({ items, index: Math.min(Math.max(index, 0), items.length - 1) });
                                   }}
-                                  className="text-[11px] font-bold text-[#4A173A] hover:text-[#B76E79] transition-colors cursor-pointer"
+                                  className="text-[11px] font-bold text-[#123C35] hover:text-[#C9A45C] transition-colors cursor-pointer"
                                 >
                                   View
                                 </button>
 
                                 {canWrite && (
                                   <>
-                                    <span className="text-[#E8D9D4]">|</span>
+                                    <span className="text-[#E1DDD3]">|</span>
                                     <button
                                       type="button"
                                       onClick={() => setPhotoToDelete(photo)}
@@ -1086,17 +1086,17 @@ export default function VmChecklist() {
 
           {view === 'analytics' && (
             <section className="space-y-4">
-              <div className="bg-[#FFFDFC] border border-[#E8D9D4] rounded-3xl p-4 sm:p-5 shadow-xs">
+              <div className="bg-[#FFFFFF] border border-[#E1DDD3] rounded-3xl p-4 sm:p-5 shadow-xs">
                 <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-[11px] font-black uppercase tracking-wider text-[#B76E79] flex items-center gap-1.5">
+                    <p className="text-[11px] font-black uppercase tracking-wider text-[#C9A45C] flex items-center gap-1.5">
                       <Sparkles className="w-3.5 h-3.5" />
                       <span>VM analytics</span>
                     </p>
-                    <h2 className="text-base sm:text-lg font-black text-[#4A173A] tracking-tight mt-0.5">
+                    <h2 className="text-base sm:text-lg font-black text-[#123C35] tracking-tight mt-0.5">
                       Filed audits, floor by floor
                     </h2>
-                    <p className="text-[11px] font-semibold text-[#6F5963] mt-0.5">
+                    <p className="text-[11px] font-semibold text-[#65716C] mt-0.5">
                       {analyticsLoading
                         ? 'Loading audits…'
                         : `${analytics.rows.length} filed audit${analytics.rows.length === 1 ? '' : 's'} in view · ${analyticsTotal} total for these filters`}
@@ -1110,7 +1110,7 @@ export default function VmChecklist() {
                   </div>
                 </div>
 
-                <div className="mt-4 pt-4 border-t border-[#E8D9D4] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
+                <div className="mt-4 pt-4 border-t border-[#E1DDD3] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
                   <label className="block">
                     <span className={GALLERY_LABEL}>Floor</span>
                     <select
@@ -1175,29 +1175,29 @@ export default function VmChecklist() {
               </div>
 
               {analyticsError ? (
-                <div className="bg-[#FFFDFC] border border-[#B42318]/30 rounded-3xl p-6 text-center">
+                <div className="bg-[#FFFFFF] border border-[#B42318]/30 rounded-3xl p-6 text-center">
                   <CircleAlert className="w-6 h-6 text-[#B42318] mx-auto mb-2" />
-                  <p className="text-sm font-black text-[#4A173A]">Unable to load VM analytics</p>
-                  <p className="text-xs text-[#6F5963] mt-1 break-words max-w-lg mx-auto">{analyticsError}</p>
+                  <p className="text-sm font-black text-[#123C35]">Unable to load VM analytics</p>
+                  <p className="text-xs text-[#65716C] mt-1 break-words max-w-lg mx-auto">{analyticsError}</p>
                   <button
                     type="button"
                     onClick={() => void loadAnalytics()}
-                    className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 bg-[#4A173A] hover:bg-[#6A2853] text-white font-bold rounded-xl text-xs transition-colors cursor-pointer"
+                    className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 bg-[#123C35] hover:bg-[#082821] text-white font-bold rounded-xl text-xs transition-colors cursor-pointer"
                   >
                     <RefreshCw className="w-3.5 h-3.5" />
                     <span>Retry</span>
                   </button>
                 </div>
               ) : analyticsLoading ? (
-                <div className="bg-[#FFFDFC] border border-[#E8D9D4] rounded-3xl py-16 text-center">
-                  <RefreshCw className="w-5 h-5 animate-spin text-[#B76E79] mx-auto mb-2" />
-                  <p className="text-xs font-bold text-[#6F5963]">Loading audits…</p>
+                <div className="bg-[#FFFFFF] border border-[#E1DDD3] rounded-3xl py-16 text-center">
+                  <RefreshCw className="w-5 h-5 animate-spin text-[#C9A45C] mx-auto mb-2" />
+                  <p className="text-xs font-bold text-[#65716C]">Loading audits…</p>
                 </div>
               ) : analytics.rows.length === 0 ? (
-                <div className="bg-[#FFFDFC] border border-[#E8D9D4] rounded-3xl py-12 px-6 text-center">
-                  <ClipboardList className="w-8 h-8 text-[#B76E79] mx-auto mb-3" />
-                  <p className="text-sm font-black text-[#4A173A]">No completed audits on record yet</p>
-                  <p className="text-xs text-[#6F5963] mt-1 max-w-md mx-auto">
+                <div className="bg-[#FFFFFF] border border-[#E1DDD3] rounded-3xl py-12 px-6 text-center">
+                  <ClipboardList className="w-8 h-8 text-[#C9A45C] mx-auto mb-3" />
+                  <p className="text-sm font-black text-[#123C35]">No completed audits on record yet</p>
+                  <p className="text-xs text-[#65716C] mt-1 max-w-md mx-auto">
                     Charts appear as soon as the first audit is submitted. Nothing is drawn for an empty history — no
                     invented percentages.
                   </p>
@@ -1213,10 +1213,10 @@ export default function VmChecklist() {
                   <ChartCard title="Average score by floor" hint="Mean of the filed audits on each floor.">
                     <ResponsiveContainer width="100%" height={220}>
                       <BarChart data={analytics.floors} margin={{ top: 6, right: 8, left: -18, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#E8D9D4" vertical={false} />
-                        <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#6F5963', fontWeight: 700 }} interval={0} height={46} />
-                        <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: '#6F5963' }} />
-                        <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: '#FFF7F2' }} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="#E1DDD3" vertical={false} />
+                        <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#65716C', fontWeight: 700 }} interval={0} height={46} />
+                        <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: '#65716C' }} />
+                        <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: '#EDF3F0' }} />
                         <Bar dataKey="score" name="Avg score" radius={[8, 8, 0, 0]}>
                           {analytics.floors.map((entry) => (
                             <Cell
@@ -1232,10 +1232,10 @@ export default function VmChecklist() {
                   <ChartCard title="Average score by section" hint="Which section needs the most styling attention.">
                     <ResponsiveContainer width="100%" height={220}>
                       <BarChart data={analytics.sections.slice(0, 8)} layout="vertical" margin={{ top: 6, right: 12, left: 8, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#E8D9D4" horizontal={false} />
-                        <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 10, fill: '#6F5963' }} />
-                        <YAxis type="category" dataKey="name" width={110} tick={{ fontSize: 9, fill: '#4A173A', fontWeight: 700 }} interval={0} />
-                        <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: '#FFF7F2' }} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="#E1DDD3" horizontal={false} />
+                        <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 10, fill: '#65716C' }} />
+                        <YAxis type="category" dataKey="name" width={110} tick={{ fontSize: 9, fill: '#123C35', fontWeight: 700 }} interval={0} />
+                        <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: '#EDF3F0' }} />
                         <Bar dataKey="score" name="Avg score" radius={[0, 8, 8, 0]} fill={CHART_COLORS.plum} />
                       </BarChart>
                     </ResponsiveContainer>
@@ -1244,9 +1244,9 @@ export default function VmChecklist() {
                   <ChartCard title="Score trend" hint="Average filed score per audit day.">
                     <ResponsiveContainer width="100%" height={220}>
                       <LineChart data={analytics.trend} margin={{ top: 6, right: 10, left: -18, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#E8D9D4" vertical={false} />
-                        <XAxis dataKey="date" tick={{ fontSize: 9, fill: '#6F5963', fontWeight: 700 }} />
-                        <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: '#6F5963' }} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="#E1DDD3" vertical={false} />
+                        <XAxis dataKey="date" tick={{ fontSize: 9, fill: '#65716C', fontWeight: 700 }} />
+                        <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: '#65716C' }} />
                         <Tooltip contentStyle={TOOLTIP_STYLE} />
                         <Line type="monotone" dataKey="score" name="Avg score" stroke={CHART_COLORS.rose} strokeWidth={2.5} dot={{ r: 3 }} />
                       </LineChart>
@@ -1256,7 +1256,7 @@ export default function VmChecklist() {
                   <ChartCard title="Audit status mix" hint="Completed versus Review, exactly as the server filed them.">
                     <ResponsiveContainer width="100%" height={220}>
                       <PieChart>
-                        <Pie data={analytics.status} dataKey="value" nameKey="name" innerRadius={48} outerRadius={78} paddingAngle={2} stroke="#FFFDFC">
+                        <Pie data={analytics.status} dataKey="value" nameKey="name" innerRadius={48} outerRadius={78} paddingAngle={2} stroke="#FFFFFF">
                           {analytics.status.map((entry) => (
                             <Cell key={entry.name} fill={entry.color} />
                           ))}
@@ -1267,25 +1267,25 @@ export default function VmChecklist() {
                     </ResponsiveContainer>
                   </ChartCard>
 
-                  <div className="lg:col-span-2 bg-[#FFFDFC] border border-[#E8D9D4] rounded-3xl p-4 sm:p-5 shadow-xs">
-                    <h3 className="text-xs font-black uppercase tracking-wider text-[#4A173A]">
+                  <div className="lg:col-span-2 bg-[#FFFFFF] border border-[#E1DDD3] rounded-3xl p-4 sm:p-5 shadow-xs">
+                    <h3 className="text-xs font-black uppercase tracking-wider text-[#123C35]">
                       Weakest checkpoints (pass rate, N/A excluded)
                     </h3>
-                    <p className="text-[11px] font-semibold text-[#6F5963] mt-0.5">
+                    <p className="text-[11px] font-semibold text-[#65716C] mt-0.5">
                       Computed from the answers stored on the audits in view — the same denominator the audit score uses.
                     </p>
                     <div className="mt-3 space-y-2">
                       {analytics.questionSeries.length === 0 ? (
-                        <p className="text-[11px] font-semibold text-[#6F5963] italic">
+                        <p className="text-[11px] font-semibold text-[#65716C] italic">
                           No graded answers in this slice of history yet.
                         </p>
                       ) : (
                         analytics.questionSeries.slice(0, 8).map((q) => (
                           <div key={q.id} className="flex items-center gap-3">
-                            <p className="text-[11px] font-bold text-[#4A173A] w-1/2 shrink-0 truncate" title={q.name}>
+                            <p className="text-[11px] font-bold text-[#123C35] w-1/2 shrink-0 truncate" title={q.name}>
                               {q.name}
                             </p>
-                            <div className="flex-1 h-2.5 rounded-full bg-[#FFF7F2] border border-[#E8D9D4] overflow-hidden">
+                            <div className="flex-1 h-2.5 rounded-full bg-[#EDF3F0] border border-[#E1DDD3] overflow-hidden">
                               <div
                                 className="h-full rounded-full"
                                 style={{
@@ -1294,7 +1294,7 @@ export default function VmChecklist() {
                                 }}
                               />
                             </div>
-                            <p className="text-[11px] font-black text-[#6F5963] w-12 text-right shrink-0">{q.rate}%</p>
+                            <p className="text-[11px] font-black text-[#65716C] w-12 text-right shrink-0">{q.rate}%</p>
                           </div>
                         ))
                       )}
@@ -1319,20 +1319,20 @@ export default function VmChecklist() {
           aria-label="Delete photo"
           onClick={() => !deletingPhoto && setPhotoToDelete(null)}
         >
-          <div className="w-full max-w-sm bg-[#FFFDFC] border border-[#E8D9D4] rounded-3xl shadow-2xl p-6" onClick={(e) => e.stopPropagation()}>
+          <div className="w-full max-w-sm bg-[#FFFFFF] border border-[#E1DDD3] rounded-3xl shadow-2xl p-6" onClick={(e) => e.stopPropagation()}>
             <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mb-3 border border-rose-200 shadow-sm">
               <Trash2 className="w-6 h-6" />
             </div>
-            <h3 className="text-base font-black text-[#4A173A]">Delete Inspection Photo?</h3>
-            <p className="text-xs font-semibold text-[#6F5963] mt-1.5 leading-relaxed">
-              This photo for <span className="text-[#4A173A] font-bold">{photoToDelete.floor} → {photoToDelete.section}</span> will be permanently removed from the audit record.
+            <h3 className="text-base font-black text-[#123C35]">Delete Inspection Photo?</h3>
+            <p className="text-xs font-semibold text-[#65716C] mt-1.5 leading-relaxed">
+              This photo for <span className="text-[#123C35] font-bold">{photoToDelete.floor} → {photoToDelete.section}</span> will be permanently removed from the audit record.
             </p>
             <div className="mt-5 flex items-center justify-end gap-2.5">
               <button
                 type="button"
                 onClick={() => setPhotoToDelete(null)}
                 disabled={deletingPhoto}
-                className="px-4 py-2.5 rounded-xl border border-[#E8D9D4] bg-white text-[#4A173A] text-xs font-bold hover:bg-[#FFF7F2] transition-colors disabled:opacity-50 cursor-pointer shadow-2xs"
+                className="px-4 py-2.5 rounded-xl border border-[#E1DDD3] bg-white text-[#123C35] text-xs font-bold hover:bg-[#EDF3F0] transition-colors disabled:opacity-50 cursor-pointer shadow-2xs"
               >
                 Keep Photo
               </button>
@@ -1371,10 +1371,10 @@ function ViewTab({
       type="button"
       onClick={onClick}
       className={`inline-flex items-center gap-1.5 min-h-[40px] px-3.5 rounded-xl text-[12px] font-black transition-colors cursor-pointer ${
-        active ? 'bg-[#4A173A] text-white shadow-xs' : 'text-[#4A173A] hover:bg-[#FFF7F2]'
+        active ? 'bg-[#123C35] text-white shadow-xs' : 'text-[#123C35] hover:bg-[#EDF3F0]'
       }`}
     >
-      <span className={active ? 'text-[#E8C7A8]' : 'text-[#B76E79]'}>{icon}</span>
+      <span className={active ? 'text-[#E4CB92]' : 'text-[#C9A45C]'}>{icon}</span>
       <span>{children}</span>
     </button>
   );
@@ -1382,21 +1382,21 @@ function ViewTab({
 
 function Metric({ label, value, icon }: { label: string; value: string; icon: ReactNode }) {
   return (
-    <div className="bg-[#FFF7F2] border border-[#E8D9D4] rounded-2xl px-3 py-2 min-w-[120px]">
-      <p className="text-[11px] font-black uppercase tracking-wider text-[#6F5963] flex items-center gap-1">
-        <span className="text-[#B76E79]">{icon}</span>
+    <div className="bg-[#EDF3F0] border border-[#E1DDD3] rounded-2xl px-3 py-2 min-w-[120px]">
+      <p className="text-[11px] font-black uppercase tracking-wider text-[#65716C] flex items-center gap-1">
+        <span className="text-[#C9A45C]">{icon}</span>
         {label}
       </p>
-      <p className="text-sm font-black text-[#4A173A] mt-0.5 truncate">{value}</p>
+      <p className="text-sm font-black text-[#123C35] mt-0.5 truncate">{value}</p>
     </div>
   );
 }
 
 function ChartCard({ title, hint, children }: { title: string; hint: string; children: ReactNode }) {
   return (
-    <div className="bg-[#FFFDFC] border border-[#E8D9D4] rounded-3xl p-4 sm:p-5 shadow-xs min-w-0">
-      <h3 className="text-xs font-black uppercase tracking-wider text-[#4A173A]">{title}</h3>
-      <p className="text-[11px] font-semibold text-[#6F5963] mt-0.5 mb-3">{hint}</p>
+    <div className="bg-[#FFFFFF] border border-[#E1DDD3] rounded-3xl p-4 sm:p-5 shadow-xs min-w-0">
+      <h3 className="text-xs font-black uppercase tracking-wider text-[#123C35]">{title}</h3>
+      <p className="text-[11px] font-semibold text-[#65716C] mt-0.5 mb-3">{hint}</p>
       <div className="w-full min-w-0">{children}</div>
     </div>
   );

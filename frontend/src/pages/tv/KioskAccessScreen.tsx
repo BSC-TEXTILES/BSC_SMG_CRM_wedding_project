@@ -206,10 +206,10 @@ export default function KioskAccessScreen({ onUnlocked, initialLocationId }: Kio
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#0B132B] bg-gradient-to-br from-[#0B132B] via-[#101C36] to-[#0A0F1E] text-white flex items-center justify-center p-4 sm:p-6 lg:p-8 selection:bg-[#C9A45C] selection:text-[#101C36]">
+    <div className="min-h-screen w-full bg-[#082821] bg-gradient-to-br from-[#082821] via-[#123C35] to-[#082821] text-white flex items-center justify-center p-4 sm:p-6 lg:p-8 selection:bg-[#C9A45C] selection:text-[#123C35]">
       <div className="w-full max-w-xl mx-auto">
         {/* Main Kiosk Access Terminal Card */}
-        <div className="bg-[#101C36]/95 border border-[#C9A45C]/30 backdrop-blur-2xl rounded-3xl p-6 sm:p-9 shadow-[0_25px_60px_rgba(0,0,0,0.65)] relative overflow-hidden">
+        <div className="bg-[#123C35]/95 border border-[#C9A45C]/30 backdrop-blur-2xl rounded-3xl p-6 sm:p-9 shadow-[0_25px_60px_rgba(0,0,0,0.65)] relative overflow-hidden">
           {/* Subtle Ambient Accent Header */}
           <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-transparent via-[#C9A45C] to-transparent" />
 
@@ -258,11 +258,11 @@ export default function KioskAccessScreen({ onUnlocked, initialLocationId }: Kio
                   disabled={isVerifying}
                   className="w-full bg-[#182645] border border-[#C9A45C]/40 rounded-2xl px-4 py-3.5 text-sm sm:text-base font-bold text-white focus:outline-none focus:border-[#C9A45C] focus:ring-2 focus:ring-[#C9A45C]/30 transition-all appearance-none cursor-pointer"
                 >
-                  <option value="" disabled className="bg-[#101C36] text-slate-400">
+                  <option value="" disabled className="bg-[#123C35] text-slate-400">
                     -- Select Store Location --
                   </option>
                   {stores.map((store) => (
-                    <option key={store.id} value={store.id} className="bg-[#101C36] text-white py-2">
+                    <option key={store.id} value={store.id} className="bg-[#123C35] text-white py-2">
                       {store.name} ({store.code})
                     </option>
                   ))}
@@ -378,7 +378,7 @@ export default function KioskAccessScreen({ onUnlocked, initialLocationId }: Kio
               className={`w-full py-4 rounded-2xl font-black text-sm uppercase tracking-wider transition-all duration-200 shadow-xl flex items-center justify-center gap-2.5 cursor-pointer ${
                 !selectedStoreId
                   ? 'bg-slate-700/50 text-slate-400 border border-white/5 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-[#C9A45C] via-[#D4AF37] to-[#B78E40] text-[#101C36] hover:opacity-95 active:scale-[0.99] border border-[#C9A45C]/60 shadow-[0_10px_25px_rgba(201,164,92,0.3)]'
+                  : 'bg-gradient-to-r from-[#C9A45C] via-[#D4AF37] to-[#B78E40] text-[#123C35] hover:opacity-95 active:scale-[0.99] border border-[#C9A45C]/60 shadow-[0_10px_25px_rgba(201,164,92,0.3)]'
               }`}
             >
               {isVerifying ? (

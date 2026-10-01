@@ -100,8 +100,8 @@ export default function RouteGuard({ pageKey, children }: { pageKey: string; chi
 
   if (resolution === 'checking') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F6F4EF]">
-        <div className="flex items-center gap-2 text-xs font-bold text-[#101C36]">
+      <div className="min-h-screen flex items-center justify-center bg-[#F7F5F0]">
+        <div className="flex items-center gap-2 text-xs font-bold text-[#123C35]">
           <Loader2 className="w-4 h-4 animate-spin text-[#C98218]" />
           <span>Verifying permissions…</span>
         </div>

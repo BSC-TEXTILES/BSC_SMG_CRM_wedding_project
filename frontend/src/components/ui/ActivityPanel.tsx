@@ -129,7 +129,7 @@ export default function ActivityPanel({ isOpen, onClose }: ActivityPanelProps) {
       return { icon: LogOut, bg: 'bg-rose-50 text-rose-700 border-rose-200' };
     }
     if (act.includes('WEDDING') || act.includes('CUSTOMER')) {
-      return { icon: Heart, bg: 'bg-[#B76E79]/10 text-[#B76E79] border-[#B76E79]/20' };
+      return { icon: Heart, bg: 'bg-[#C9A45C]/10 text-[#C9A45C] border-[#C9A45C]/20' };
     }
     if (act.includes('CALL') || act.includes('TELECALLER')) {
       return { icon: PhoneCall, bg: 'bg-teal-50 text-teal-700 border-teal-200' };
@@ -143,7 +143,7 @@ export default function ActivityPanel({ isOpen, onClose }: ActivityPanelProps) {
     if (act.includes('VIEW')) {
       return { icon: Eye, bg: 'bg-indigo-50 text-indigo-700 border-indigo-200' };
     }
-    return { icon: Activity, bg: 'bg-[#101C36]/5 text-[#101C36] border-[#DFDDD7]' };
+    return { icon: Activity, bg: 'bg-[#123C35]/5 text-[#123C35] border-[#E1DDD3]' };
   };
 
   // ── Filtered Activities ────────────────────────────────────────────────
@@ -187,19 +187,19 @@ export default function ActivityPanel({ isOpen, onClose }: ActivityPanelProps) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="timeline-modal-title"
-        className="relative w-full max-w-2xl bg-white/95 backdrop-blur-xl rounded-3xl shadow-[0_25px_60px_rgba(16,28,54,0.25)] border border-[#DFDDD7] overflow-hidden flex flex-col max-h-[85vh] sm:max-h-[88vh] z-10 animate-modal-in"
+        className="relative w-full max-w-2xl bg-white/95 backdrop-blur-xl rounded-3xl shadow-[0_25px_60px_rgba(16,28,54,0.25)] border border-[#E1DDD3] overflow-hidden flex flex-col max-h-[85vh] sm:max-h-[88vh] z-10 animate-modal-in"
       >
         {/* Header */}
-        <div className="p-4 sm:p-6 border-b border-[#DFDDD7] bg-[#FAF8F5]/80 flex items-center justify-between gap-3">
+        <div className="p-4 sm:p-6 border-b border-[#E1DDD3] bg-[#FFFFFF]/80 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-2xl bg-[#101C36] text-[#C9A45C] flex items-center justify-center flex-shrink-0 shadow-xs border border-[#C9A45C]/30">
+            <div className="w-10 h-10 rounded-2xl bg-[#123C35] text-[#C9A45C] flex items-center justify-center flex-shrink-0 shadow-xs border border-[#C9A45C]/30">
               <Activity className="w-5 h-5 text-[#C9A45C]" />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <h2
                   id="timeline-modal-title"
-                  className="font-black text-base sm:text-lg tracking-tight text-[#182033] leading-tight truncate"
+                  className="font-black text-base sm:text-lg tracking-tight text-[#17201D] leading-tight truncate"
                 >
                   Live Activity Intelligence
                 </h2>
@@ -208,7 +208,7 @@ export default function ActivityPanel({ isOpen, onClose }: ActivityPanelProps) {
                   LIVE
                 </span>
               </div>
-              <p className="text-xs text-[#687080] font-medium mt-0.5 truncate">
+              <p className="text-xs text-[#65716C] font-medium mt-0.5 truncate">
                 User Activity Timeline &amp; system audit log
               </p>
             </div>
@@ -219,7 +219,7 @@ export default function ActivityPanel({ isOpen, onClose }: ActivityPanelProps) {
               type="button"
               onClick={fetchActivity}
               disabled={isLoading}
-              className="p-2 rounded-xl text-[#687080] hover:text-[#182033] hover:bg-white border border-transparent hover:border-[#DFDDD7] transition-all cursor-pointer"
+              className="p-2 rounded-xl text-[#65716C] hover:text-[#17201D] hover:bg-white border border-transparent hover:border-[#E1DDD3] transition-all cursor-pointer"
               title="Refresh timeline"
               aria-label="Refresh activity"
             >
@@ -229,7 +229,7 @@ export default function ActivityPanel({ isOpen, onClose }: ActivityPanelProps) {
               ref={closeButtonRef}
               type="button"
               onClick={onClose}
-              className="p-2 rounded-xl text-[#687080] hover:text-[#182033] hover:bg-white border border-transparent hover:border-[#DFDDD7] transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#C9A45C]"
+              className="p-2 rounded-xl text-[#65716C] hover:text-[#17201D] hover:bg-white border border-transparent hover:border-[#E1DDD3] transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#C9A45C]"
               aria-label="Close activity timeline"
             >
               <X className="w-5 h-5" />
@@ -239,32 +239,32 @@ export default function ActivityPanel({ isOpen, onClose }: ActivityPanelProps) {
 
         {/* Quick Stats Pill Row */}
         {stats && (
-          <div className="px-4 sm:px-6 py-3 bg-[#FAF8F5]/40 border-b border-[#DFDDD7]/60 grid grid-cols-3 gap-2.5 text-center">
-            <div className="p-2.5 rounded-xl bg-white border border-[#DFDDD7]/80">
-              <span className="text-[10px] uppercase font-bold text-[#687080] block">Active Users</span>
-              <span className="text-base font-black text-[#182033]">{stats.activeUsers}</span>
+          <div className="px-4 sm:px-6 py-3 bg-[#FFFFFF]/40 border-b border-[#E1DDD3]/60 grid grid-cols-3 gap-2.5 text-center">
+            <div className="p-2.5 rounded-xl bg-white border border-[#E1DDD3]/80">
+              <span className="text-[10px] uppercase font-bold text-[#65716C] block">Active Users</span>
+              <span className="text-base font-black text-[#17201D]">{stats.activeUsers}</span>
             </div>
-            <div className="p-2.5 rounded-xl bg-white border border-[#DFDDD7]/80">
-              <span className="text-[10px] uppercase font-bold text-[#687080] block">Logins Today</span>
+            <div className="p-2.5 rounded-xl bg-white border border-[#E1DDD3]/80">
+              <span className="text-[10px] uppercase font-bold text-[#65716C] block">Logins Today</span>
               <span className="text-base font-black text-emerald-700">{stats.totalLogins}</span>
             </div>
-            <div className="p-2.5 rounded-xl bg-white border border-[#DFDDD7]/80">
-              <span className="text-[10px] uppercase font-bold text-[#687080] block">Logouts Today</span>
+            <div className="p-2.5 rounded-xl bg-white border border-[#E1DDD3]/80">
+              <span className="text-[10px] uppercase font-bold text-[#65716C] block">Logouts Today</span>
               <span className="text-base font-black text-rose-700">{stats.totalLogouts}</span>
             </div>
           </div>
         )}
 
         {/* Search & Filter Bar */}
-        <div className="p-3 sm:p-4 border-b border-[#DFDDD7]/60 space-y-2.5 bg-white">
+        <div className="p-3 sm:p-4 border-b border-[#E1DDD3]/60 space-y-2.5 bg-white">
           <div className="relative">
-            <Search className="w-4 h-4 text-[#8B776A] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <Search className="w-4 h-4 text-[#65716C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               placeholder="Search user, action or module..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-[#DFDDD7] bg-[#FAF8F5]/60 text-xs text-[#182033] font-medium focus:bg-white focus:outline-none focus:border-[#C9A45C] focus:ring-1 focus:ring-[#C9A45C]"
+              className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-[#E1DDD3] bg-[#FFFFFF]/60 text-xs text-[#17201D] font-medium focus:bg-white focus:outline-none focus:border-[#C9A45C] focus:ring-1 focus:ring-[#C9A45C]"
             />
           </div>
 
@@ -281,8 +281,8 @@ export default function ActivityPanel({ isOpen, onClose }: ActivityPanelProps) {
                 onClick={() => setActiveFilter(tab.id as any)}
                 className={`px-3 py-1 rounded-lg text-xs font-bold whitespace-nowrap transition-colors cursor-pointer ${
                   activeFilter === tab.id
-                    ? 'bg-[#101C36] text-[#FAF7F2]'
-                    : 'text-[#687080] hover:bg-[#F6F4EF]'
+                    ? 'bg-[#123C35] text-[#FAF7F2]'
+                    : 'text-[#65716C] hover:bg-[#F7F5F0]'
                 }`}
               >
                 {tab.label}
@@ -318,11 +318,11 @@ export default function ActivityPanel({ isOpen, onClose }: ActivityPanelProps) {
                     </div>
 
                     {/* Timeline Activity Card */}
-                    <div className="p-3.5 sm:p-4 rounded-2xl border border-[#DFDDD7] bg-white hover:border-[#C9A45C] hover:shadow-sm transition-all space-y-2">
+                    <div className="p-3.5 sm:p-4 rounded-2xl border border-[#E1DDD3] bg-white hover:border-[#C9A45C] hover:shadow-sm transition-all space-y-2">
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                           {/* User Name */}
-                          <h4 className="font-extrabold text-sm text-[#182033] tracking-tight truncate">
+                          <h4 className="font-extrabold text-sm text-[#17201D] tracking-tight truncate">
                             {act.username || 'System User'}
                           </h4>
                           {/* Action Description */}
@@ -332,15 +332,15 @@ export default function ActivityPanel({ isOpen, onClose }: ActivityPanelProps) {
                         </div>
 
                         {/* Section / Module Tag */}
-                        <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-[#101C36]/5 text-[#101C36] border border-[#101C36]/10 whitespace-nowrap shrink-0">
+                        <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-[#123C35]/5 text-[#123C35] border border-[#123C35]/10 whitespace-nowrap shrink-0">
                           {act.module || details?.module || 'Workspace'}
                         </span>
                       </div>
 
                       {/* Footer Row: Timestamp + Status */}
-                      <div className="flex items-center justify-between text-[11px] text-[#8B776A] pt-2 border-t border-[#DFDDD7]/40 font-medium">
+                      <div className="flex items-center justify-between text-[11px] text-[#65716C] pt-2 border-t border-[#E1DDD3]/40 font-medium">
                         <div className="flex items-center gap-1.5">
-                          <Clock className="w-3 h-3 text-[#B76E79]" />
+                          <Clock className="w-3 h-3 text-[#C9A45C]" />
                           <span>{formatTimelineTimestamp(act.created_at)}</span>
                         </div>
                         <span className="inline-flex items-center gap-1 text-emerald-700 font-bold text-[10px]">
@@ -354,23 +354,23 @@ export default function ActivityPanel({ isOpen, onClose }: ActivityPanelProps) {
               })}
             </div>
           ) : (
-            <div className="py-12 text-center text-[#687080] space-y-2">
+            <div className="py-12 text-center text-[#65716C] space-y-2">
               <Activity className="w-8 h-8 text-[#C9A45C]/50 mx-auto" />
-              <p className="font-bold text-sm text-[#182033]">No activities found</p>
+              <p className="font-bold text-sm text-[#17201D]">No activities found</p>
               <p className="text-xs">No user activities recorded for this filter.</p>
             </div>
           )}
         </div>
 
         {/* Modal Footer */}
-        <div className="p-3 sm:p-4 bg-[#FAF8F5]/80 border-t border-[#DFDDD7] flex items-center justify-between text-xs text-[#687080]">
+        <div className="p-3 sm:p-4 bg-[#FFFFFF]/80 border-t border-[#E1DDD3] flex items-center justify-between text-xs text-[#65716C]">
           <span className="font-medium">
             Showing {filteredActivities.length} recorded event{filteredActivities.length === 1 ? '' : 's'}
           </span>
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-1.5 rounded-xl border border-[#DFDDD7] bg-white hover:bg-[#101C36] hover:text-white hover:border-[#101C36] text-[#182033] font-bold text-xs transition-colors cursor-pointer"
+            className="px-4 py-1.5 rounded-xl border border-[#E1DDD3] bg-white hover:bg-[#123C35] hover:text-white hover:border-[#123C35] text-[#17201D] font-bold text-xs transition-colors cursor-pointer"
           >
             Close
           </button>

@@ -24,7 +24,7 @@ export function SourceBadge({ source }: { source?: string | null }) {
     <span
       className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider whitespace-nowrap border ${
         isGreeter
-          ? 'bg-accent/15 border-accent/45 text-[#4A173A]'
+          ? 'bg-accent/15 border-accent/45 text-[#123C35]'
           : isAdmin
             ? 'bg-primary/10 border-primary/25 text-primary'
             : 'bg-background border-accent-soft text-[#5D4E42]'

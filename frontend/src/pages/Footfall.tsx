@@ -539,7 +539,7 @@ export default function Footfall() {
                         className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer ${
                           isSelected
                             ? 'bg-primary text-accent ring-2 ring-accent/40 shadow-sm'
-                            : 'bg-white border border-accent-soft text-[#5D4E42] hover:bg-[#F6F4EF]'
+                            : 'bg-white border border-accent-soft text-[#5D4E42] hover:bg-[#F7F5F0]'
                         }`}
                       >
                         <MapPin className={`w-3.5 h-3.5 ${isSelected ? 'text-accent' : 'text-primary/60'}`} />
@@ -754,7 +754,7 @@ export default function Footfall() {
                                 type="button"
                                 onClick={() => setHistoryEntry(entryToTarget(row))}
                                 title="View edit history for this entry"
-                                className="px-2.5 py-1.5 rounded-lg bg-white border border-accent-soft text-[10px] font-black uppercase tracking-wider text-primary hover:bg-[#F6F4EF] transition-all flex items-center gap-1 whitespace-nowrap"
+                                className="px-2.5 py-1.5 rounded-lg bg-white border border-accent-soft text-[10px] font-black uppercase tracking-wider text-primary hover:bg-[#F7F5F0] transition-all flex items-center gap-1 whitespace-nowrap"
                               >
                                 <History className="w-3 h-3 text-accent" />
                                 <span>History</span>
@@ -764,7 +764,7 @@ export default function Footfall() {
                                   type="button"
                                   onClick={() => setEditingEntry(entryToTarget(row))}
                                   title="Correct this footfall entry"
-                                  className="px-2.5 py-1.5 rounded-lg bg-primary text-white text-[10px] font-black uppercase tracking-wider hover:bg-[#6A2853] transition-all flex items-center gap-1 whitespace-nowrap"
+                                  className="px-2.5 py-1.5 rounded-lg bg-primary text-white text-[10px] font-black uppercase tracking-wider hover:bg-[#082821] transition-all flex items-center gap-1 whitespace-nowrap"
                                 >
                                   <Pencil className="w-3 h-3" />
                                   <span>Edit</span>
@@ -1030,7 +1030,7 @@ export default function Footfall() {
                                 type="button"
                                 onClick={() => setHistoryEntry(slotToTarget(hour, slot))}
                                 title="View edit history for this hour"
-                                className="px-2.5 py-1.5 rounded-lg bg-white border border-accent-soft text-[10px] font-black uppercase tracking-wider text-primary hover:bg-[#F6F4EF] transition-all flex items-center gap-1 whitespace-nowrap"
+                                className="px-2.5 py-1.5 rounded-lg bg-white border border-accent-soft text-[10px] font-black uppercase tracking-wider text-primary hover:bg-[#F7F5F0] transition-all flex items-center gap-1 whitespace-nowrap"
                               >
                                 <History className="w-3 h-3 text-accent" />
                                 <span>History</span>
@@ -1040,7 +1040,7 @@ export default function Footfall() {
                                   type="button"
                                   onClick={() => setEditingEntry(slotToTarget(hour, slot))}
                                   title="Correct this footfall entry"
-                                  className="px-2.5 py-1.5 rounded-lg bg-primary text-white text-[10px] font-black uppercase tracking-wider hover:bg-[#6A2853] transition-all flex items-center gap-1 whitespace-nowrap"
+                                  className="px-2.5 py-1.5 rounded-lg bg-primary text-white text-[10px] font-black uppercase tracking-wider hover:bg-[#082821] transition-all flex items-center gap-1 whitespace-nowrap"
                                 >
                                   <Pencil className="w-3 h-3" />
                                   <span>Edit</span>

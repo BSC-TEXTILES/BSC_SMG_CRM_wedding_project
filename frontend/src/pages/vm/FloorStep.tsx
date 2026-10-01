@@ -54,9 +54,9 @@ interface FloorStepProps {
 const CARD_GRID = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-3 sm:gap-4';
 
 const SECTION_CHIP =
-  'max-w-full break-words rounded-xl border border-[#E8D9D4] bg-[#FFF7F2] px-2.5 py-1 text-[12px] font-bold text-[#4A173A]';
+  'max-w-full break-words rounded-xl border border-[#E1DDD3] bg-[#EDF3F0] px-2.5 py-1 text-[12px] font-bold text-[#123C35]';
 
-const TILE = 'grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-[#E8D9D4] bg-[#FFF7F2] text-[#4A173A]';
+const TILE = 'grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-[#E1DDD3] bg-[#EDF3F0] text-[#123C35]';
 
 /**
  * Step 1 — pick the store floor.
@@ -132,7 +132,7 @@ export default function FloorStep({
                 </button>
               )}
               <button type="button" onClick={onRetry} className={vmBtnSecondary}>
-                <RefreshCw className="w-4 h-4 text-[#B76E79]" />
+                <RefreshCw className="w-4 h-4 text-[#C9A45C]" />
                 <span>Check again</span>
               </button>
             </div>
@@ -228,7 +228,7 @@ export default function FloorStep({
           onClick={() => !deleteLoading && setDeletingFloor(null)}
         >
           <div
-            className="w-full max-w-md rounded-3xl bg-[#FFFDFC] border border-[#E8D9D4] p-6 shadow-2xl space-y-4"
+            className="w-full max-w-md rounded-3xl bg-[#FFFFFF] border border-[#E1DDD3] p-6 shadow-2xl space-y-4"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start gap-3">
@@ -236,9 +236,9 @@ export default function FloorStep({
                 <AlertTriangle className="w-5 h-5" />
               </span>
               <div>
-                <h3 className="text-[17px] font-black text-[#4A173A]">Delete Store Floor?</h3>
-                <p className="mt-1 text-[13px] font-semibold text-[#6F5963]">
-                  Are you sure you want to remove <strong className="text-[#4A173A]">"{deletingFloor.name}"</strong>?
+                <h3 className="text-[17px] font-black text-[#123C35]">Delete Store Floor?</h3>
+                <p className="mt-1 text-[13px] font-semibold text-[#65716C]">
+                  Are you sure you want to remove <strong className="text-[#123C35]">"{deletingFloor.name}"</strong>?
                   Sections and historical audit submissions will be preserved in records.
                 </p>
               </div>
@@ -333,7 +333,7 @@ function FloorCard({
               onRequestDelete();
             }}
             title="Delete this floor (Admin only)"
-            className="rounded-xl border border-transparent p-1.5 text-[#6F5963] hover:border-red-200 hover:bg-red-50 hover:text-red-700 transition-colors"
+            className="rounded-xl border border-transparent p-1.5 text-[#65716C] hover:border-red-200 hover:bg-red-50 hover:text-red-700 transition-colors"
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>
@@ -346,8 +346,8 @@ function FloorCard({
           <Building2 className="w-5 h-5" />
         </span>
         <div className="min-w-0 flex-1">
-          <h3 className="break-words text-[17px] font-black leading-snug text-[#4A173A]">{floor.name}</h3>
-          <p className="mt-1 break-words text-[13px] font-semibold leading-snug text-[#6F5963]">
+          <h3 className="break-words text-[17px] font-black leading-snug text-[#123C35]">{floor.name}</h3>
+          <p className="mt-1 break-words text-[13px] font-semibold leading-snug text-[#65716C]">
             {dashIfEmpty(floor.description, 'No description recorded for this floor.')}
           </p>
         </div>
@@ -364,7 +364,7 @@ function FloorCard({
 
       {/* Score of the latest completed audit — a dash when the floor has none. */}
       <div
-        className="rounded-2xl border border-[#E8D9D4] bg-[#FFF7F2] px-3.5 py-3"
+        className="rounded-2xl border border-[#E1DDD3] bg-[#EDF3F0] px-3.5 py-3"
         title={floor.lastScore === null ? 'No completed audit score on this floor yet' : 'Score of the latest completed audit'}
       >
         <VmScoreDial percent={floor.lastScore} label="Latest score" caption={lastAuditLabel} size={72} />
@@ -373,7 +373,7 @@ function FloorCard({
       <div className="min-w-0">
         <p className={`${vmLabel} mb-1.5`}>Included sections</p>
         {floor.sections.length === 0 ? (
-          <p className="text-[12px] font-semibold italic text-[#6F5963]">No sections configured on this floor yet.</p>
+          <p className="text-[12px] font-semibold italic text-[#65716C]">No sections configured on this floor yet.</p>
         ) : (
           <ul className="flex flex-wrap gap-1.5">
             {floor.sections.map((section) => (
@@ -387,8 +387,8 @@ function FloorCard({
 
       <div className="mt-auto space-y-2">
         {floor.hasDraft && (
-          <p className="flex items-start gap-2 rounded-2xl border border-[#B76E79]/40 bg-[#FFF7F2] px-3 py-2 text-[12px] font-bold leading-snug text-[#4A173A]">
-            <PencilRuler className="mt-px w-4 h-4 shrink-0 text-[#B76E79]" />
+          <p className="flex items-start gap-2 rounded-2xl border border-[#C9A45C]/40 bg-[#EDF3F0] px-3 py-2 text-[12px] font-bold leading-snug text-[#123C35]">
+            <PencilRuler className="mt-px w-4 h-4 shrink-0 text-[#C9A45C]" />
             <span>
               Draft in progress{floor.draftSections.length > 0 ? ` — ${floor.draftSections.join(', ')}` : ''}. Not a
               completed inspection yet.
@@ -396,9 +396,9 @@ function FloorCard({
           </p>
         )}
         {floor.unauditedSections.length > 0 && (
-          <p className="text-[12px] font-semibold leading-snug text-[#6F5963]">
+          <p className="text-[12px] font-semibold leading-snug text-[#65716C]">
             {floor.unauditedSections.length} section{floor.unauditedSections.length === 1 ? '' : 's'} never audited:
-            <span className="font-bold text-[#4A173A]"> {floor.unauditedSections.join(', ')}</span>
+            <span className="font-bold text-[#123C35]"> {floor.unauditedSections.join(', ')}</span>
           </p>
         )}
 
@@ -406,8 +406,8 @@ function FloorCard({
           <span
             className={`inline-flex w-full min-h-[44px] items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-[13px] font-black transition-colors ${
               clickable
-                ? 'bg-[#4A173A] text-white group-hover:bg-[#6A2853]'
-                : 'border border-[#E8D9D4] bg-[#FFF7F2] text-[#6F5963]'
+                ? 'bg-[#123C35] text-white group-hover:bg-[#082821]'
+                : 'border border-[#E1DDD3] bg-[#EDF3F0] text-[#65716C]'
             }`}
           >
             {clickable ? (
@@ -420,7 +420,7 @@ function FloorCard({
             )}
           </span>
         ) : (
-          <p className="rounded-xl border border-[#E8D9D4] bg-[#FFF7F2] px-3 py-2.5 text-[12px] font-bold text-[#6F5963]">
+          <p className="rounded-xl border border-[#E1DDD3] bg-[#EDF3F0] px-3 py-2.5 text-[12px] font-bold text-[#65716C]">
             View-only access: audits are filed by the store team.
           </p>
         )}
@@ -432,8 +432,8 @@ function FloorCard({
 function LoadingBlock() {
   return (
     <div className="space-y-4" aria-busy="true">
-      <p className="flex items-center gap-2 text-[13px] font-bold text-[#6F5963]">
-        <RefreshCw className="w-4 h-4 animate-spin text-[#B76E79]" />
+      <p className="flex items-center gap-2 text-[13px] font-bold text-[#65716C]">
+        <RefreshCw className="w-4 h-4 animate-spin text-[#C9A45C]" />
         <span>Loading floors…</span>
       </p>
       <div className={CARD_GRID}>

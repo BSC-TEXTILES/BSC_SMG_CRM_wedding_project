@@ -2749,7 +2749,7 @@ export default function UserManagementPage() {
             <form onSubmit={handleResetPasswordSubmit}>
               <div className="p-5 space-y-4">
                 {/* User info banner */}
-                <div className="p-3.5 rounded-xl bg-[#F6F4EF] border border-[#DFDDD7] flex items-center justify-between gap-3">
+                <div className="p-3.5 rounded-xl bg-[#F7F5F0] border border-[#E1DDD3] flex items-center justify-between gap-3">
                   <div>
                     <div className="text-xs font-bold text-primary">{selectedUser.fullName || selectedUser.username}</div>
                     <div className="text-[11px] text-primary/60 font-medium">@{selectedUser.username} • {selectedUser.role}</div>
@@ -2761,7 +2761,7 @@ export default function UserManagementPage() {
                   <div className="text-right">
                     <span className="text-[10px] uppercase font-bold text-primary/50 block mb-0.5">Current Password</span>
                     <div className="inline-flex items-center gap-1.5">
-                      <span className="font-mono text-xs font-bold text-primary bg-white px-2.5 py-1 rounded-lg border border-[#DFDDD7] inline-flex items-center gap-1 shadow-2xs">
+                      <span className="font-mono text-xs font-bold text-primary bg-white px-2.5 py-1 rounded-lg border border-[#E1DDD3] inline-flex items-center gap-1 shadow-2xs">
                         <Lock className="w-3 h-3 text-emerald-600 shrink-0" />
                         <span>{showCurrentModalPassword ? (selectedUser.password || 'password123') : '••••••••'}</span>
                       </span>
@@ -2903,7 +2903,7 @@ export default function UserManagementPage() {
                           className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
                             isSelected
                               ? 'border-red-500 bg-red-50/80 ring-2 ring-red-400/40 shadow-xs'
-                              : 'border-[#DFDDD7] bg-[#F6F4EF]/60 hover:bg-white hover:border-red-300'
+                              : 'border-[#E1DDD3] bg-[#F7F5F0]/60 hover:bg-white hover:border-red-300'
                           }`}
                         >
                           <div className="flex items-center justify-between mb-1">
@@ -2930,7 +2930,7 @@ export default function UserManagementPage() {
 
                 {/* Custom Date Input (if Custom selected) */}
                 {deactivationDuration === 'custom' && (
-                  <div className="p-3 rounded-xl bg-[#F6F4EF] border border-[#DFDDD7] animate-in fade-in duration-150">
+                  <div className="p-3 rounded-xl bg-[#F7F5F0] border border-[#E1DDD3] animate-in fade-in duration-150">
                     <label className="block text-xs font-bold text-primary mb-1">
                       Custom Reactivation Date &amp; Time *
                     </label>

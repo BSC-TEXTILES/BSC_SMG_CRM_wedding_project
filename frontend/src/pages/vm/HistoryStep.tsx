@@ -58,8 +58,8 @@ import {
 
 /** Shared filter-control styling, aligned with the primitives' surface language. */
 const FILTER_CLASS =
-  'w-full min-h-[40px] text-[13px] font-semibold text-[#2B1722] bg-white border border-[#E8D9D4] rounded-xl ' +
-  'px-3 transition-colors focus:outline-none focus:border-[#B76E79] focus:ring-2 focus:ring-[#B76E79]/35';
+  'w-full min-h-[40px] text-[13px] font-semibold text-[#17201D] bg-white border border-[#E1DDD3] rounded-xl ' +
+  'px-3 transition-colors focus:outline-none focus:border-[#C9A45C] focus:ring-2 focus:ring-[#C9A45C]/35';
 
 /** Status colour comes from the shared tone scale, matching the draft chip in the audit step. */
 const statusTone = (status?: string | null): VmTone => {
@@ -305,7 +305,7 @@ export default function HistoryStep({
       />
 
       <section className={vmCard('overflow-hidden')}>
-        <div className="flex flex-col gap-4 border-b border-[#E8D9D4] p-4 sm:p-5 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex flex-col gap-4 border-b border-[#E1DDD3] p-4 sm:p-5 lg:flex-row lg:items-end lg:justify-between">
           <VmSectionHeader
             icon={<History className="w-5 h-5" />}
             title="Submitted audits & open drafts"
@@ -325,16 +325,16 @@ export default function HistoryStep({
               disabled={loading || refreshing}
               className={vmBtnSecondary}
             >
-              <RefreshCw className={`w-4 h-4 text-[#B76E79] ${loading || refreshing ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-4 h-4 text-[#C9A45C] ${loading || refreshing ? 'animate-spin' : ''}`} />
               <span>Refresh</span>
             </button>
           </div>
         </div>
 
-        <div className="space-y-3 border-b border-[#E8D9D4] bg-[#FFF7F2] p-4 sm:p-5">
+        <div className="space-y-3 border-b border-[#E1DDD3] bg-[#EDF3F0] p-4 sm:p-5">
           <div className="flex flex-wrap items-center gap-2">
             <span className={`${vmLabel} inline-flex items-center gap-1.5`}>
-              <Filter className="w-3.5 h-3.5 text-[#B76E79]" />
+              <Filter className="w-3.5 h-3.5 text-[#C9A45C]" />
               <span>Filters</span>
             </span>
             {activeFilterCount > 0 && <VmPill tone="brand">{activeFilterCount} active</VmPill>}
@@ -436,7 +436,7 @@ export default function HistoryStep({
                     type="button"
                     onClick={() => setField('search')('')}
                     aria-label="Clear search"
-                    className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1 rounded-lg text-[#6F5963] hover:bg-white cursor-pointer"
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1 rounded-lg text-[#65716C] hover:bg-white cursor-pointer"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -458,7 +458,7 @@ export default function HistoryStep({
               disabled={activeFilterCount === 0}
               className={vmBtnGhost}
             >
-              <RotateCcw className="w-4 h-4 text-[#B76E79]" />
+              <RotateCcw className="w-4 h-4 text-[#C9A45C]" />
               <span>Clear Filters</span>
             </button>
           </div>
@@ -468,7 +468,7 @@ export default function HistoryStep({
           {loading ? (
             <div className="space-y-2.5" aria-busy="true">
               <p className={`${vmMeta} flex items-center gap-2`}>
-                <RefreshCw className="w-4 h-4 animate-spin text-[#B76E79]" />
+                <RefreshCw className="w-4 h-4 animate-spin text-[#C9A45C]" />
                 <span>Loading history…</span>
               </p>
               {[0, 1, 2, 3].map((row) => (
@@ -497,7 +497,7 @@ export default function HistoryStep({
             <div className="space-y-3">
               {/* Desktop / tablet landscape: one aligned table with a sticky header and
                   internal scroll, so a long history never adds a second page scrollbar. */}
-              <div className="hidden max-h-[560px] overflow-auto table-sticky-head rounded-xl border border-[#E8D9D4] bg-[#FFFDFC] lg:block">
+              <div className="hidden max-h-[560px] overflow-auto table-sticky-head rounded-xl border border-[#E1DDD3] bg-[#FFFFFF] lg:block">
                 <table className="w-full min-w-[1140px] border-collapse text-left">
                   <thead>
                     <tr>
@@ -547,14 +547,14 @@ export default function HistoryStep({
           )}
 
           {!loading && !error && totalPages > 1 && (
-            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-[#E8D9D4] pt-4">
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-[#E1DDD3] pt-4">
               <button
                 type="button"
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page <= 1}
                 className={vmBtnSecondary}
               >
-                <ChevronLeft className="w-4 h-4 text-[#B76E79]" />
+                <ChevronLeft className="w-4 h-4 text-[#C9A45C]" />
                 <span>Previous</span>
               </button>
               <p className={`${vmMeta} whitespace-nowrap`}>
@@ -567,7 +567,7 @@ export default function HistoryStep({
                 className={vmBtnSecondary}
               >
                 <span>Next</span>
-                <ChevronRight className="w-4 h-4 text-[#B76E79]" />
+                <ChevronRight className="w-4 h-4 text-[#C9A45C]" />
               </button>
             </div>
           )}
@@ -595,7 +595,7 @@ export default function HistoryStep({
 
 // ── One history row (desktop table) ─────────────────────────────────────────
 
-const TD_BASE = 'border-b border-[#EDE4E7] px-3 py-3 align-middle text-[13px] font-semibold text-[#2B1722]';
+const TD_BASE = 'border-b border-[#EDE4E7] px-3 py-3 align-middle text-[13px] font-semibold text-[#17201D]';
 
 /**
  * Headings stick to the top of the list's own scroll box, so a long history stays
@@ -606,7 +606,7 @@ function Th({ children, align = 'left' }: { children: ReactNode; align?: 'left' 
   return (
     <th
       scope="col"
-      className={`${vmLabel} sticky top-0 z-10 whitespace-nowrap bg-[#FFF7F2] px-3 py-2.5 shadow-[inset_0_-1px_0_0_#E8D9D4] ${
+      className={`${vmLabel} sticky top-0 z-10 whitespace-nowrap bg-[#EDF3F0] px-3 py-2.5 shadow-[inset_0_-1px_0_0_#E1DDD3] ${
         align === 'right' ? 'text-right' : 'text-left'
       }`}
     >
@@ -641,24 +641,24 @@ function HistoryTableRow({
 }) {
   const isDraft = audit.status === 'Draft';
   return (
-    <tr className="cursor-pointer bg-[#FFFDFC] transition-colors hover:bg-[#FFF7F2]" onClick={onOpen}>
-      <Td className="whitespace-nowrap font-bold text-[#2B1722]">
+    <tr className="cursor-pointer bg-[#FFFFFF] transition-colors hover:bg-[#EDF3F0]" onClick={onOpen}>
+      <Td className="whitespace-nowrap font-bold text-[#17201D]">
         {formatVmDate(audit.entryDate) || audit.entryDate || '—'}
       </Td>
-      <Td className="whitespace-nowrap text-[#6F5963]">
+      <Td className="whitespace-nowrap text-[#65716C]">
         {formatVmTime(audit.submittedAt || audit.createdAt) || '—'}
       </Td>
       <Td>
-        <span className="inline-block max-w-[170px] truncate align-middle font-bold text-[#4A173A]" title={audit.floor}>
+        <span className="inline-block max-w-[170px] truncate align-middle font-bold text-[#123C35]" title={audit.floor}>
           {audit.floor || '—'}
         </span>
       </Td>
       <Td>
-        <span className="inline-block max-w-[190px] truncate align-middle font-bold text-[#4A173A]" title={audit.section}>
+        <span className="inline-block max-w-[190px] truncate align-middle font-bold text-[#123C35]" title={audit.section}>
           {audit.section || '—'}
         </span>
       </Td>
-      <Td className="whitespace-nowrap text-[#6F5963]">{audit.shift || '—'}</Td>
+      <Td className="whitespace-nowrap text-[#65716C]">{audit.shift || '—'}</Td>
       <Td align="right">
         <VmPill tone={scoreTone(audit.scorePercent)}>{scoreDisplay(audit.scorePercent)}</VmPill>
       </Td>
@@ -669,7 +669,7 @@ function HistoryTableRow({
         <span className="text-[13px] font-black text-[#9B1C15]">{audit.failedCount}</span>
       </Td>
       <Td align="right">
-        <span className="text-[13px] font-black text-[#6F5963]">{audit.naCount}</span>
+        <span className="text-[13px] font-black text-[#65716C]">{audit.naCount}</span>
       </Td>
       <Td>
         <span
@@ -679,14 +679,14 @@ function HistoryTableRow({
           {dashIfEmpty(audit.submittedBy, 'No inspector recorded')}
         </span>
         {audit.locationName && (
-          <span className="mt-0.5 block max-w-[190px] truncate text-[12px] font-semibold text-[#6F5963]">
+          <span className="mt-0.5 block max-w-[190px] truncate text-[12px] font-semibold text-[#65716C]">
             {audit.locationName}
           </span>
         )}
       </Td>
       <Td align="right">
         <span className="inline-flex items-center gap-1.5">
-          <Camera className="w-3.5 h-3.5 text-[#B76E79]" />
+          <Camera className="w-3.5 h-3.5 text-[#C9A45C]" />
           <span className="text-[13px] font-black">{audit.photoCount}</span>
         </span>
       </Td>
@@ -717,7 +717,7 @@ function HistoryTableRow({
             className={vmBtnSecondary}
           >
             <span>Open</span>
-            <ChevronRight className="w-4 h-4 text-[#B76E79]" />
+            <ChevronRight className="w-4 h-4 text-[#C9A45C]" />
           </button>
         </span>
       </Td>
@@ -754,7 +754,7 @@ function HistoryRow({
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[14px] font-black text-[#4A173A] truncate" title={formatVmDate(audit.entryDate)}>
+          <p className="text-[14px] font-black text-[#123C35] truncate" title={formatVmDate(audit.entryDate)}>
             {formatVmDate(audit.entryDate) || audit.entryDate || '—'}
           </p>
           <p className={`${vmMeta} mt-0.5`}>
@@ -765,8 +765,8 @@ function HistoryRow({
       </div>
 
       <div className="min-w-0">
-        <p className="text-[13px] font-bold text-[#2B1722] truncate" title={`${audit.floor} → ${audit.section}`}>
-          {audit.floor} <span className="text-[#B76E79]">→</span> {audit.section}
+        <p className="text-[13px] font-bold text-[#17201D] truncate" title={`${audit.floor} → ${audit.section}`}>
+          {audit.floor} <span className="text-[#C9A45C]">→</span> {audit.section}
         </p>
         <p className={`${vmMeta} mt-0.5 truncate`}>
           {audit.locationName ? `${audit.locationName} · ` : ''}
@@ -803,7 +803,7 @@ function HistoryRow({
               <span>Resume</span>
             </button>
           )}
-          <span className="inline-flex items-center gap-1 text-[12px] font-black text-[#6A2853]">
+          <span className="inline-flex items-center gap-1 text-[12px] font-black text-[#082821]">
             <span>Open</span>
             <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
           </span>
@@ -825,7 +825,7 @@ function FilterField({
   return (
     <label className="block min-w-0">
       <span className={`${vmLabel} mb-1 flex items-center gap-1`}>
-        {icon && <span className="text-[#B76E79]">{icon}</span>}
+        {icon && <span className="text-[#C9A45C]">{icon}</span>}
         <span>{label}</span>
       </span>
       {children}
@@ -834,12 +834,12 @@ function FilterField({
 }
 
 const STAT_TEXT: Record<VmTone, string> = {
-  neutral: 'text-[#6A2853]',
-  brand: 'text-[#4A173A]',
+  neutral: 'text-[#082821]',
+  brand: 'text-[#123C35]',
   positive: 'text-[#146B41]',
   warning: 'text-[#8A5B00]',
   danger: 'text-[#9B1C15]',
-  muted: 'text-[#6F5963]'
+  muted: 'text-[#65716C]'
 };
 
 function MiniCell({
@@ -856,7 +856,7 @@ function MiniCell({
   className?: string;
 }) {
   return (
-    <div className={`min-w-0 rounded-xl border border-[#E8D9D4] bg-[#FFF7F2] px-2 py-1.5 text-center ${className}`}>
+    <div className={`min-w-0 rounded-xl border border-[#E1DDD3] bg-[#EDF3F0] px-2 py-1.5 text-center ${className}`}>
       <p className={`${vmLabel} flex items-center justify-center gap-1`}>
         {icon}
         {label}
@@ -897,16 +897,16 @@ function AuditDetailModal({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-4xl h-[100dvh] sm:h-auto sm:max-h-[88vh] bg-[#FFFDFC] sm:rounded-2xl border-0 sm:border border-[#E8D9D4] shadow-xl flex flex-col overflow-hidden"
+        className="w-full max-w-4xl h-[100dvh] sm:h-auto sm:max-h-[88vh] bg-[#FFFFFF] sm:rounded-2xl border-0 sm:border border-[#E1DDD3] shadow-xl flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        <header className="flex shrink-0 items-start justify-between gap-3 bg-[#4A173A] px-4 py-4 sm:px-5">
+        <header className="flex shrink-0 items-start justify-between gap-3 bg-[#123C35] px-4 py-4 sm:px-5">
           <div className="min-w-0">
-            <p className="text-[11px] font-black uppercase tracking-[0.07em] text-[#E8C7A8]">Saved VM audit record</p>
+            <p className="text-[11px] font-black uppercase tracking-[0.07em] text-[#E4CB92]">Saved VM audit record</p>
             <h3 className="mt-1 break-words text-[17px] font-black leading-tight text-white">
               {detail.floor} → {detail.section}
             </h3>
-            <p className="mt-1 text-[12px] font-semibold text-[#E8D9D4]">
+            <p className="mt-1 text-[12px] font-semibold text-[#E1DDD3]">
               {formatVmDate(detail.entryDate) || detail.entryDate || '—'} · {detail.shift}
               {detail.submittedAt ? ` · submitted ${formatVmTime(detail.submittedAt)}` : ''}
             </p>
@@ -919,7 +919,7 @@ function AuditDetailModal({
                   onResume();
                   onClose();
                 }}
-                className="hidden min-h-[40px] items-center gap-1.5 rounded-xl bg-[#E8C7A8] px-3 text-[12px] font-black text-[#4A173A] transition-colors hover:bg-white cursor-pointer sm:inline-flex"
+                className="hidden min-h-[40px] items-center gap-1.5 rounded-xl bg-[#E4CB92] px-3 text-[12px] font-black text-[#123C35] transition-colors hover:bg-white cursor-pointer sm:inline-flex"
               >
                 <PencilRuler className="w-4 h-4" />
                 <span>Resume draft</span>
@@ -960,9 +960,9 @@ function AuditDetailModal({
           </div>
 
           {Boolean(dashIfEmpty(detail.remarks, '').trim()) && (
-            <div className="rounded-xl border border-[#E8D9D4] bg-[#FFF7F2] px-3 py-2.5">
+            <div className="rounded-xl border border-[#E1DDD3] bg-[#EDF3F0] px-3 py-2.5">
               <p className={vmLabel}>Audit remarks</p>
-              <p className="mt-1 break-words text-[13px] font-semibold leading-relaxed text-[#2B1722]">{detail.remarks}</p>
+              <p className="mt-1 break-words text-[13px] font-semibold leading-relaxed text-[#17201D]">{detail.remarks}</p>
             </div>
           )}
 
@@ -983,17 +983,17 @@ function AuditDetailModal({
           <div className="space-y-2.5">
             <h4 className={vmTitle}>Checkpoint answers as filed</h4>
             {detail.entries.length === 0 ? (
-              <p className="rounded-xl border border-[#E8D9D4] bg-[#FFF7F2] px-3 py-2.5 text-[13px] font-semibold leading-snug text-[#6F5963]">
+              <p className="rounded-xl border border-[#E1DDD3] bg-[#EDF3F0] px-3 py-2.5 text-[13px] font-semibold leading-snug text-[#65716C]">
                 No checkpoint answers are stored on this record.
               </p>
             ) : (
               detail.entries.map((entry, index) => (
-                <div key={`${entry.pointId}-${index}`} className="rounded-xl border border-[#E8D9D4] bg-white p-3 sm:p-4">
+                <div key={`${entry.pointId}-${index}`} className="rounded-xl border border-[#E1DDD3] bg-white p-3 sm:p-4">
                   <div className="flex items-start gap-2.5 min-w-0">
-                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-[#4A173A] text-[12px] font-black text-white">
+                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-[#123C35] text-[12px] font-black text-white">
                       {index + 1}
                     </span>
-                    <p className="min-w-0 flex-1 break-words text-[14px] font-black leading-snug text-[#2B1722]">
+                    <p className="min-w-0 flex-1 break-words text-[14px] font-black leading-snug text-[#17201D]">
                       {dashIfEmpty(entry.pointTitle, 'Checkpoint title unavailable')}
                     </p>
                     <VmPill tone={answerTone(entry.score)} className="shrink-0">
@@ -1012,7 +1012,7 @@ function AuditDetailModal({
 
           <div className="space-y-2.5">
             <h4 className={`${vmLabel} flex items-center gap-1.5`}>
-              <Camera className="w-3.5 h-3.5 text-[#B76E79]" />
+              <Camera className="w-3.5 h-3.5 text-[#C9A45C]" />
               <span>Photos on this audit ({detail.photos.length})</span>
             </h4>
             {detail.photos.length === 0 ? (
@@ -1028,9 +1028,9 @@ function AuditDetailModal({
                     key={photo.id}
                     type="button"
                     onClick={() => onOpenPhoto(index)}
-                    className="overflow-hidden rounded-xl border border-[#E8D9D4] bg-white text-left transition-colors hover:border-[#B76E79] cursor-pointer"
+                    className="overflow-hidden rounded-xl border border-[#E1DDD3] bg-white text-left transition-colors hover:border-[#C9A45C] cursor-pointer"
                   >
-                    <span className="block aspect-[4/3] bg-[#FFF7F2]">
+                    <span className="block aspect-[4/3] bg-[#EDF3F0]">
                       <img
                         src={photoSrc(photo)}
                         alt={photo.fileName}
@@ -1039,10 +1039,10 @@ function AuditDetailModal({
                       />
                     </span>
                     <span className="block px-2.5 py-2">
-                      <span className="block truncate text-[12px] font-bold text-[#2B1722]" title={photo.fileName}>
+                      <span className="block truncate text-[12px] font-bold text-[#17201D]" title={photo.fileName}>
                         {photo.fileName}
                       </span>
-                      <span className="mt-0.5 block text-[11px] font-semibold text-[#6F5963]">
+                      <span className="mt-0.5 block text-[11px] font-semibold text-[#65716C]">
                         {photo.pointId ? 'Checkpoint evidence' : 'Section shot'} · {formatBytes(photo.fileSize)}
                       </span>
                     </span>
@@ -1111,7 +1111,7 @@ function AuditTrail({ auditId }: { auditId: string }) {
   return (
     <div className="space-y-2.5">
       <h4 className={`${vmLabel} flex items-center gap-1.5`}>
-        <History className="w-3.5 h-3.5 text-[#B76E79]" />
+        <History className="w-3.5 h-3.5 text-[#C9A45C]" />
         <span>Audit trail</span>
       </h4>
 
@@ -1122,7 +1122,7 @@ function AuditTrail({ auditId }: { auditId: string }) {
       )}
 
       {!loading && !error && events && events.length === 0 && (
-        <p className="rounded-xl border border-[#E8D9D4] bg-[#FFF7F2] px-3 py-2.5 text-[13px] font-semibold leading-snug text-[#6F5963]">
+        <p className="rounded-xl border border-[#E1DDD3] bg-[#EDF3F0] px-3 py-2.5 text-[13px] font-semibold leading-snug text-[#65716C]">
           No recorded events for this checklist yet.
         </p>
       )}
@@ -1130,19 +1130,19 @@ function AuditTrail({ auditId }: { auditId: string }) {
       {!loading && !error && events && events.length > 0 && (
         <ol className="space-y-2">
           {events.map((event) => (
-            <li key={event.id} className="rounded-xl border border-[#E8D9D4] bg-white px-3 py-2.5">
+            <li key={event.id} className="rounded-xl border border-[#E1DDD3] bg-white px-3 py-2.5">
               <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
-                <span className="text-[13px] font-black leading-snug text-[#2B1722]">
+                <span className="text-[13px] font-black leading-snug text-[#17201D]">
                   {TRAIL_LABELS[event.action] || event.action}
                 </span>
-                <span className="text-[11px] font-semibold text-[#6F5963]">
+                <span className="text-[11px] font-semibold text-[#65716C]">
                   {formatVmTime(event.changedAt) || dashIfEmpty(event.changedAt, '—')}
                 </span>
               </div>
               {Boolean(event.summary) && (
-                <p className="mt-1 break-words text-[12px] font-semibold leading-snug text-[#6F5963]">{event.summary}</p>
+                <p className="mt-1 break-words text-[12px] font-semibold leading-snug text-[#65716C]">{event.summary}</p>
               )}
-              <p className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] font-semibold text-[#6F5963]">
+              <p className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] font-semibold text-[#65716C]">
                 <User className="w-3 h-3 shrink-0" aria-hidden="true" />
                 <span>{dashIfEmpty(event.changedBy, 'Unknown user')}</span>
                 {Boolean(event.changedByRole) && <span className="text-[#9A858D]">· {event.changedByRole}</span>}
@@ -1162,7 +1162,7 @@ function AuditTrail({ auditId }: { auditId: string }) {
 
 function SummaryCell({ label, value, tone = 'neutral' }: { label: string; value: string; tone?: VmTone }) {
   return (
-    <div className="min-w-0 rounded-xl border border-[#E8D9D4] bg-[#FFF7F2] px-3 py-2">
+    <div className="min-w-0 rounded-xl border border-[#E1DDD3] bg-[#EDF3F0] px-3 py-2">
       <dt className={vmLabel}>{label}</dt>
       <dd className={`mt-1 truncate text-[15px] font-black leading-none ${STAT_TEXT[tone]}`} title={value}>
         {value}
@@ -1176,13 +1176,13 @@ function EntryNote({ label, value }: { label: string; value: string }) {
   return (
     <div
       className={`min-w-0 rounded-xl border px-3 py-2 ${
-        filled ? 'border-[#E8D9D4] bg-[#FFFDFC]' : 'border-dashed border-[#E8D9D4] bg-[#FFF7F2]'
+        filled ? 'border-[#E1DDD3] bg-[#FFFFFF]' : 'border-dashed border-[#E1DDD3] bg-[#EDF3F0]'
       }`}
     >
       <p className={vmLabel}>{label}</p>
       <p
         className={`mt-1 break-words text-[13px] font-semibold leading-snug ${
-          filled ? 'text-[#2B1722]' : 'text-[#8C7A84]'
+          filled ? 'text-[#17201D]' : 'text-[#8C7A84]'
         }`}
       >
         {filled ? value : 'Not recorded'}
@@ -1214,7 +1214,7 @@ function AttentionPanel({
         subtitle="Computed by the server from filed audits only. Pass rate ignores N/A, exactly like the audit score."
         right={
           <button type="button" onClick={onRetry} disabled={loading} className={vmBtnSecondary}>
-            <RefreshCw className={`w-4 h-4 text-[#B76E79] ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-4 h-4 text-[#C9A45C] ${loading ? 'animate-spin' : ''}`} />
             <span>Refresh</span>
           </button>
         }
@@ -1223,7 +1223,7 @@ function AttentionPanel({
       {loading ? (
         <div className="mt-4 space-y-3" aria-busy="true">
           <p className={`${vmMeta} flex items-center gap-2`}>
-            <RefreshCw className="w-4 h-4 animate-spin text-[#B76E79]" />
+            <RefreshCw className="w-4 h-4 animate-spin text-[#C9A45C]" />
             <span>Calculating attention areas from filed audits…</span>
           </p>
           <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
@@ -1295,16 +1295,16 @@ function AttentionColumn({
   items: { key: string; primary: string; rate: number | null; meta: string }[];
 }) {
   return (
-    <div className="rounded-xl border border-[#E8D9D4] bg-[#FFF7F2] p-3 sm:p-4">
+    <div className="rounded-xl border border-[#E1DDD3] bg-[#EDF3F0] p-3 sm:p-4">
       <h3 className={vmLabel}>{title}</h3>
       <ul className="mt-3 space-y-2.5">
         {items.length === 0 ? (
-          <li className="text-[13px] font-semibold leading-snug text-[#6F5963]">{empty}</li>
+          <li className="text-[13px] font-semibold leading-snug text-[#65716C]">{empty}</li>
         ) : (
           items.map((item) => (
-            <li key={item.key} className="rounded-xl border border-[#E8D9D4] bg-white px-3 py-2.5">
+            <li key={item.key} className="rounded-xl border border-[#E1DDD3] bg-white px-3 py-2.5">
               <div className="flex items-start justify-between gap-3">
-                <p className="min-w-0 break-words text-[13px] font-bold leading-snug text-[#2B1722]">{item.primary}</p>
+                <p className="min-w-0 break-words text-[13px] font-bold leading-snug text-[#17201D]">{item.primary}</p>
                 <VmPill tone={scoreTone(item.rate)} className="shrink-0">
                   {item.rate === null ? 'No graded data' : `${item.rate}%`}
                 </VmPill>

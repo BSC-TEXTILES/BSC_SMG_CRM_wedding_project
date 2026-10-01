@@ -615,8 +615,8 @@ export default function QuickActionModal({
 
   if (!open || !meta) return null;
 
-  const inputCls = 'w-full px-3 py-2 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl text-xs font-semibold text-[#2B1722] focus:outline-none focus:border-[#B76E79]';
-  const labelCls = 'block text-[10px] font-bold uppercase tracking-wider text-[#6F5963] mb-1';
+  const inputCls = 'w-full px-3 py-2 bg-[#F7F5F0] border border-[#E1DDD3] rounded-xl text-xs font-semibold text-[#17201D] focus:outline-none focus:border-[#C9A45C]';
+  const labelCls = 'block text-[10px] font-bold uppercase tracking-wider text-[#65716C] mb-1';
 
   return (
     <ModalPortal
@@ -625,25 +625,25 @@ export default function QuickActionModal({
       closeOnEsc={!pending}
       ariaLabel={`${meta.title} for ${customer?.customer_name || 'customer'}`}
     >
-      <div className="bg-[#FFFDFC] rounded-3xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden border border-[#E8D9D4] shadow-2xl">
+      <div className="bg-[#FFFFFF] rounded-3xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden border border-[#E1DDD3] shadow-2xl">
         {/* Header */}
-        <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-[#E8D9D4] bg-[#FFFAF7]">
+        <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-[#E1DDD3] bg-[#F7F5F0]">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-2xl bg-[#4A173A] text-[#E8C7A8] flex items-center justify-center border border-[#B76E79]/30">
+            <div className="w-9 h-9 rounded-2xl bg-[#123C35] text-[#E4CB92] flex items-center justify-center border border-[#C9A45C]/30">
               <Icon className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-sm font-black text-[#4A173A] leading-tight">
+              <h3 className="text-sm font-black text-[#123C35] leading-tight">
                 {meta.title}
-                {customer?.customer_name ? <span className="font-bold text-[#6A2853]"> · {customer.customer_name}</span> : null}
+                {customer?.customer_name ? <span className="font-bold text-[#082821]"> · {customer.customer_name}</span> : null}
               </h3>
-              <p className="text-[10px] text-[#6F5963] font-semibold mt-0.5">{meta.subtitle}</p>
+              <p className="text-[10px] text-[#65716C] font-semibold mt-0.5">{meta.subtitle}</p>
             </div>
           </div>
           <button
             type="button"
             onClick={() => !pending && onClose()}
-            className="p-1.5 rounded-lg text-[#6F5963] hover:text-[#4A173A] hover:bg-[#F6E2E5] cursor-pointer"
+            className="p-1.5 rounded-lg text-[#65716C] hover:text-[#123C35] hover:bg-[#EDF3F0] cursor-pointer"
             title="Close"
           >
             <X className="w-4 h-4" />
@@ -653,17 +653,17 @@ export default function QuickActionModal({
         {/* Body */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-5 space-y-4 text-xs">
           {customer && (
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 rounded-2xl bg-[#FFF7F2] border border-[#E8D9D4] text-[10px] font-bold text-[#6F5963]">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 rounded-2xl bg-[#EDF3F0] border border-[#E1DDD3] text-[10px] font-bold text-[#65716C]">
               <span>{customer.customer_code}</span>
-              <span className="text-[#E8D9D4]">|</span>
+              <span className="text-[#E1DDD3]">|</span>
               <span>{customer.mobile_number}</span>
-              <span className="text-[#E8D9D4]">|</span>
+              <span className="text-[#E1DDD3]">|</span>
               <span>{customer.location_name || 'Store'}</span>
-              <span className="text-[#E8D9D4]">|</span>
-              <span className="text-[#4A173A]">{customer.customer_status}</span>
+              <span className="text-[#E1DDD3]">|</span>
+              <span className="text-[#123C35]">{customer.customer_status}</span>
               {customer.follow_up_date && parseDate(customer.follow_up_date) && (
                 <>
-                  <span className="text-[#E8D9D4]">|</span>
+                  <span className="text-[#E1DDD3]">|</span>
                   <span>Next follow-up {formatDateDisplay(customer.follow_up_date, 'Not scheduled')}</span>
                 </>
               )}
@@ -697,7 +697,7 @@ export default function QuickActionModal({
                     onChange={(e) => setCallForm({ ...callForm, call_time: e.target.value })}
                     className={inputCls}
                   />
-                  <p className="text-[9px] text-[#6F5963] mt-1">Leave blank to stamp the store (IST) time.</p>
+                  <p className="text-[9px] text-[#65716C] mt-1">Leave blank to stamp the store (IST) time.</p>
                 </div>
               </div>
 
@@ -713,7 +713,7 @@ export default function QuickActionModal({
                       <option key={out} value={out}>{out}</option>
                     ))}
                   </select>
-                  <p className="text-[9px] text-[#6F5963] mt-1">
+                  <p className="text-[9px] text-[#65716C] mt-1">
                     The CRM maps this outcome onto the customer status automatically.
                   </p>
                 </div>
@@ -753,13 +753,13 @@ export default function QuickActionModal({
                 />
               </div>
 
-              <div className="rounded-2xl border border-[#E8D9D4] bg-[#FFFAF7] p-3 space-y-3">
-                <label className="flex items-center gap-2 text-[11px] font-bold text-[#4A173A] cursor-pointer">
+              <div className="rounded-2xl border border-[#E1DDD3] bg-[#F7F5F0] p-3 space-y-3">
+                <label className="flex items-center gap-2 text-[11px] font-bold text-[#123C35] cursor-pointer">
                   <input
                     type="checkbox"
                     checked={callForm.follow_up_required}
                     onChange={(e) => setCallForm({ ...callForm, follow_up_required: e.target.checked })}
-                    className="accent-[#B76E79]"
+                    className="accent-[#C9A45C]"
                   />
                   Follow-up required
                   {outcomeRequiresCallback && (
@@ -804,7 +804,7 @@ export default function QuickActionModal({
                   onChange={(e) => setCallForm({ ...callForm, expected_shopping_date: e.target.value })}
                   className={inputCls}
                 />
-                <p className="text-[9px] text-[#6F5963] mt-1">
+                <p className="text-[9px] text-[#65716C] mt-1">
                   Sent as <code>expected_shopping_date</code> — the field the call endpoint reads.
                 </p>
               </div>
@@ -925,7 +925,7 @@ export default function QuickActionModal({
                 </div>
               </div>
 
-              <p className="text-[10px] text-[#6F5963] font-semibold bg-[#FFF7F2] border border-[#E8D9D4] rounded-2xl px-3 py-2">
+              <p className="text-[10px] text-[#65716C] font-semibold bg-[#EDF3F0] border border-[#E1DDD3] rounded-2xl px-3 py-2">
                 Feedback is stored as a new communication row each time — previous feedback is never replaced.
               </p>
             </>
@@ -1056,7 +1056,7 @@ export default function QuickActionModal({
                 </div>
               </div>
 
-              <p className="text-[10px] text-[#6F5963] font-semibold bg-[#FFF7F2] border border-[#E8D9D4] rounded-2xl px-3 py-2">
+              <p className="text-[10px] text-[#65716C] font-semibold bg-[#EDF3F0] border border-[#E1DDD3] rounded-2xl px-3 py-2">
                 Saving writes the follow-up row and updates the customer’s follow-up date and preferred call
                 time, so the pipeline and dashboards stay in sync.
               </p>
@@ -1174,7 +1174,7 @@ export default function QuickActionModal({
                     onChange={(e) => setVisitForm({ ...visitForm, visit_time: e.target.value })}
                     className={inputCls}
                   />
-                  <p className="text-[9px] text-[#6F5963] mt-1">Required — a visit row without a time is rejected.</p>
+                  <p className="text-[9px] text-[#65716C] mt-1">Required — a visit row without a time is rejected.</p>
                 </div>
                 <div>
                   <label className={labelCls}>Visitors Count</label>
@@ -1291,7 +1291,7 @@ export default function QuickActionModal({
                   placeholder="Anything the next shift should know about this visit"
                   className={inputCls}
                 />
-                <p className="text-[9px] text-[#6F5963] mt-1">
+                <p className="text-[9px] text-[#65716C] mt-1">
                   Saved on wedding_visits and encrypted at rest. Recording a visit does not change the
                   customer’s status — use Move Stage or Mark Won for that.
                 </p>
@@ -1372,8 +1372,8 @@ export default function QuickActionModal({
                         aria-pressed={on}
                         className={`inline-flex items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-[10px] font-black uppercase tracking-wider transition-colors ${
                           on
-                            ? 'bg-[#B76E79] text-white border-[#B76E79]'
-                            : 'bg-[#FFFDFC] text-[#4A173A] border-[#E8D9D4] hover:bg-[#FFF7F2]'
+                            ? 'bg-[#C9A45C] text-white border-[#C9A45C]'
+                            : 'bg-[#FFFFFF] text-[#123C35] border-[#E1DDD3] hover:bg-[#EDF3F0]'
                         }`}
                       >
                         {on && <Check className="w-2.5 h-2.5" aria-hidden="true" />}
@@ -1382,13 +1382,13 @@ export default function QuickActionModal({
                     );
                   })}
                 </div>
-                <p className="text-[9px] text-[#6F5963] mt-1.5">
+                <p className="text-[9px] text-[#65716C] mt-1.5">
                   Ticked categories are stored on the shopping_requirements JSON column. Leave every box
                   unticked to keep what is already saved.
                 </p>
               </div>
 
-              <p className="text-[10px] text-[#6F5963] font-semibold bg-[#FFF7F2] border border-[#E8D9D4] rounded-2xl px-3 py-2">
+              <p className="text-[10px] text-[#65716C] font-semibold bg-[#EDF3F0] border border-[#E1DDD3] rounded-2xl px-3 py-2">
                 Only the details you fill in are sent — an empty box leaves the stored value untouched.
                 These are manager-written columns, so the server answers if your role may not change them.
               </p>
@@ -1414,7 +1414,7 @@ export default function QuickActionModal({
                     </option>
                   ))}
                 </select>
-                <p className="text-[9px] text-[#6F5963] mt-1">
+                <p className="text-[9px] text-[#65716C] mt-1">
                   “Converted” keeps the journey open for delivery and feedback.
                   “Wedding Process Completed” closes it.
                 </p>
@@ -1461,12 +1461,12 @@ export default function QuickActionModal({
         </form>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-[#E8D9D4] bg-[#FFFAF7]">
+        <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-[#E1DDD3] bg-[#F7F5F0]">
           <button
             type="button"
             onClick={onClose}
             disabled={pending}
-            className="px-4 py-2 bg-[#FFFDFC] hover:bg-[#FFF7F2] border border-[#E8D9D4] rounded-xl text-xs font-bold text-[#4A173A] disabled:opacity-50 cursor-pointer transition-colors"
+            className="px-4 py-2 bg-[#FFFFFF] hover:bg-[#EDF3F0] border border-[#E1DDD3] rounded-xl text-xs font-bold text-[#123C35] disabled:opacity-50 cursor-pointer transition-colors"
           >
             Cancel
           </button>
@@ -1478,7 +1478,7 @@ export default function QuickActionModal({
               (needsArchiveConfirm && !stageConfirmed) ||
               (kind === 'convert' && isCompletionStatus(convertForm.new_status) && !convertConfirmed)
             }
-            className="px-4 py-2 bg-[#4A173A] hover:bg-[#6A2853] text-white text-xs font-bold rounded-xl flex items-center gap-1.5 disabled:opacity-60 cursor-pointer transition-colors border border-[#4A173A]"
+            className="px-4 py-2 bg-[#123C35] hover:bg-[#082821] text-white text-xs font-bold rounded-xl flex items-center gap-1.5 disabled:opacity-60 cursor-pointer transition-colors border border-[#123C35]"
           >
             {pending ? (
               <>

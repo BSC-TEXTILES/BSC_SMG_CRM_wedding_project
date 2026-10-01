@@ -51,7 +51,7 @@ export default function DashboardLayout({
   }, [navigate]);
 
   return (
-    <div className="h-screen h-[100dvh] max-h-screen bg-[#FFF7F2] flex relative select-text w-full max-w-full overflow-hidden">
+    <div className="h-screen h-[100dvh] max-h-screen bg-[#F7F5F0] flex relative select-text w-full max-w-full overflow-hidden">
       <ToastContainer />
 
       <Sidebar session={session} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
@@ -67,17 +67,17 @@ export default function DashboardLayout({
             rightElement={rightElement}
           />
         ) : (
-          <div className="lg:hidden h-12 px-4 flex items-center justify-between bg-[#FFF7F2] border-b border-[#E8D9D4] sticky top-0 z-30 shrink-0">
+          <div className="lg:hidden h-12 px-4 flex items-center justify-between bg-[#FFFFFF] border-b border-[#E1DDD3] sticky top-0 z-30 shrink-0">
             <button
               type="button"
               onClick={() => setSidebarOpen(true)}
-              className="flex items-center justify-center w-9 h-9 rounded-xl bg-[#4A173A] text-white hover:bg-[#6A2853] active:scale-95 transition-all shadow-sm border border-[#4A173A]"
+              className="flex items-center justify-center w-9 h-9 rounded-xl bg-[#123C35] text-white hover:bg-[#082821] active:scale-95 transition-all shadow-sm border border-[#123C35]"
               aria-label="Open navigation menu"
               title="Open navigation menu"
             >
               <Menu className="w-5 h-5 text-white" />
             </button>
-            <span className="text-xs font-black text-[#4A173A] truncate max-w-[200px]">{title}</span>
+            <span className="text-xs font-black text-[#123C35] truncate max-w-[200px]">{title}</span>
             <div className="w-9" />
           </div>
         )}

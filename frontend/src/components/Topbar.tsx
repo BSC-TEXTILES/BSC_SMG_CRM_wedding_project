@@ -70,7 +70,7 @@ export default function Topbar({ title, breadcrumbs, hideBreadcrumbs, session, o
 
   return (
     <>
-      <header className="w-full max-w-full bg-[#FFF7F2] border-b border-[#E8D9D4] sticky top-0 z-40 shadow-xs flex-shrink-0">
+      <header className="w-full max-w-full bg-[#FFFFFF] border-b border-[#E1DDD3] sticky top-0 z-40 shadow-xs flex-shrink-0">
         {/* ── Row 1: Hamburger, Title & Tools ───────────────────────────── */}
         <div className="h-14 sm:h-16 px-4 sm:px-5 lg:px-6 flex items-center justify-between gap-2">
         {/* ── Left Area: Hamburger + Title ──────────────────────────────── */}
@@ -79,14 +79,14 @@ export default function Topbar({ title, breadcrumbs, hideBreadcrumbs, session, o
           <button
             type="button"
             onClick={onMenuClick}
-            className="lg:hidden flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#4A173A] text-white hover:bg-[#6A2853] active:scale-95 transition-all shadow-sm border border-[#4A173A] focus:outline-none focus:ring-2 focus:ring-[#B76E79] focus:ring-offset-1 cursor-pointer flex-shrink-0"
+            className="lg:hidden flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#123C35] text-white hover:bg-[#082821] active:scale-95 transition-all shadow-sm border border-[#123C35] focus:outline-none focus:ring-2 focus:ring-[#C9A45C] focus:ring-offset-1 cursor-pointer flex-shrink-0"
             aria-label="Open navigation menu"
             title="Open navigation menu"
           >
             <Menu className="w-5 h-5 text-white" />
           </button>
           <div className="min-w-0">
-            <h1 className="text-xs sm:text-sm md:text-base font-black text-[#4A173A] tracking-tight leading-none truncate max-w-[110px] xs:max-w-[150px] sm:max-w-[200px] md:max-w-[260px] lg:max-w-none">
+            <h1 className="text-xs sm:text-sm md:text-base font-black text-[#123C35] tracking-tight leading-none truncate max-w-[110px] xs:max-w-[150px] sm:max-w-[200px] md:max-w-[260px] lg:max-w-none">
               {title}
             </h1>
           </div>
@@ -98,27 +98,27 @@ export default function Topbar({ title, breadcrumbs, hideBreadcrumbs, session, o
           <button
             type="button"
             onClick={() => setSearchOpen(true)}
-            className="sm:hidden p-2 rounded-xl border border-[#E8D9D4] bg-[#FFFDFC] hover:bg-white text-[#2B1722] transition-all flex items-center justify-center shadow-xs"
+            className="sm:hidden p-2 rounded-xl border border-[#E1DDD3] bg-[#F7F5F0] hover:bg-white text-[#17201D] transition-all flex items-center justify-center shadow-xs cursor-pointer"
             title="Search directory (Ctrl+K)"
             aria-label="Search directory"
           >
-            <Search className="w-4 h-4 text-[#B76E79]" />
+            <Search className="w-4 h-4 text-[#123C35]" />
           </button>
 
           {/* Desktop/Tablet Full Search Bar */}
           <button
             type="button"
             onClick={() => setSearchOpen(true)}
-            className="hidden sm:flex w-full sm:max-w-xs md:max-w-sm lg:max-w-md items-center justify-between gap-2 px-3 py-1.5 rounded-xl border border-[#E8D9D4] bg-[#FFFDFC] hover:bg-white text-xs font-semibold text-[#2B1722] hover:border-[#B76E79] transition-all shadow-xs group cursor-pointer"
+            className="hidden sm:flex w-full sm:max-w-xs md:max-w-sm lg:max-w-md items-center justify-between gap-2 px-3 py-1.5 rounded-xl border border-[#E1DDD3] bg-[#F7F5F0] hover:bg-white text-xs font-semibold text-[#17201D] hover:border-[#C9A45C] transition-all shadow-xs group cursor-pointer"
             title="Search directory (Ctrl+K)"
             aria-label="Search directory (Ctrl+K)"
           >
             <div className="flex items-center gap-2 min-w-0 truncate">
-              <Search className="w-3.5 h-3.5 text-[#B76E79] flex-shrink-0 group-hover:scale-110 transition-transform" />
-              <span className="truncate text-[#6F5963] group-hover:text-[#2B1722]">Search directory...</span>
+              <Search className="w-3.5 h-3.5 text-[#123C35] flex-shrink-0 group-hover:scale-110 transition-transform" />
+              <span className="truncate text-[#65716C] group-hover:text-[#17201D]">Search directory...</span>
             </div>
-            <kbd className="hidden lg:inline-flex items-center gap-0.5 font-mono text-[9px] bg-white border border-[#E8D9D4] px-1.5 py-0.5 rounded text-[#4A173A] font-bold shadow-xs flex-shrink-0 select-none">
-              <Command className="w-2.5 h-2.5 text-[#B76E79]" />
+            <kbd className="hidden lg:inline-flex items-center gap-0.5 font-mono text-[9px] bg-white border border-[#E1DDD3] px-1.5 py-0.5 rounded text-[#123C35] font-bold shadow-xs flex-shrink-0 select-none">
+              <Command className="w-2.5 h-2.5 text-[#C9A45C]" />
               <span>K</span>
             </kbd>
           </button>
@@ -127,8 +127,8 @@ export default function Topbar({ title, breadcrumbs, hideBreadcrumbs, session, o
         {/* ── Right Area: Tools, Notifications, Profile & Custom Actions ─── */}
         <div className="flex items-center gap-0.5 sm:gap-1 lg:gap-1.5 flex-shrink-0 min-w-0">
           {/* Clock - only on large screens */}
-          <div className="hidden 2xl:flex items-center gap-1.5 text-[10px] sm:text-xs text-[#2B1722] bg-[#FFFDFC] px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl border border-[#E8D9D4] font-mono shadow-xs">
-            <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#B76E79]" />
+          <div className="hidden 2xl:flex items-center gap-1.5 text-[10px] sm:text-xs text-[#17201D] bg-[#F7F5F0] px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl border border-[#E1DDD3] font-mono shadow-xs">
+            <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#123C35]" />
             <span className="font-semibold whitespace-nowrap">{clock}</span>
           </div>
 
@@ -141,13 +141,13 @@ export default function Topbar({ title, breadcrumbs, hideBreadcrumbs, session, o
                 localStorage.setItem('bsc_shield_bypass', newState ? 'true' : 'false');
                 window.dispatchEvent(new Event('dev_tools_bypass_changed'));
               }}
-              className="hidden sm:flex p-1.5 sm:p-2 rounded-xl text-[#2B1722] hover:bg-[#FFFDFC] border border-transparent hover:border-[#E8D9D4] transition-all"
+              className="hidden sm:flex p-1.5 sm:p-2 rounded-xl text-[#17201D] hover:bg-[#F7F5F0] border border-transparent hover:border-[#E1DDD3] transition-all cursor-pointer"
               title={bypassDevTools ? "DevTools Protection Bypassed" : "DevTools Protection Active"}
             >
               {bypassDevTools ? (
-                <ShieldOff className="w-4 h-4 text-[#C58A18]" />
+                <ShieldOff className="w-4 h-4 text-[#C58A16]" />
               ) : (
-                <ShieldAlert className="w-4 h-4 text-[#4A173A]" />
+                <ShieldAlert className="w-4 h-4 text-[#123C35]" />
               )}
             </button>
           )}
@@ -159,13 +159,13 @@ export default function Topbar({ title, breadcrumbs, hideBreadcrumbs, session, o
           <button
             type="button"
             onClick={() => setNotifOpen(true)}
-            className="relative p-1.5 sm:p-2 rounded-xl text-[#2B1722] hover:bg-[#FFFDFC] border border-transparent hover:border-[#E8D9D4] transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#C9A45C]"
+            className="relative p-1.5 sm:p-2 rounded-xl text-[#17201D] hover:bg-[#F7F5F0] border border-transparent hover:border-[#E1DDD3] transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#C9A45C]"
             title="Notification Center"
             aria-label="Open Notification Center"
           >
-            <Bell className="w-4 h-4 text-[#B76E79]" />
+            <Bell className="w-4 h-4 text-[#123C35]" />
             {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-[#B76E79] text-white font-black text-[8px] sm:text-[9px] flex items-center justify-center border-2 border-white shadow-xs">
+              <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-[#C9A45C] text-[#17201D] font-black text-[8px] sm:text-[9px] flex items-center justify-center border-2 border-white shadow-xs">
                 {unreadCount}
               </span>
             )}
@@ -184,7 +184,7 @@ export default function Topbar({ title, breadcrumbs, hideBreadcrumbs, session, o
         {/* ── Row 2: Route-derived breadcrumb trail (own row → can never
                overlap top navigation, notifications or profile) ── */}
         {!hideBreadcrumbs && (
-          <div className="px-4 sm:px-5 lg:px-6 pb-1.5 bg-[#FFF7F2] border-t border-[#E8D9D4]">
+          <div className="px-4 sm:px-5 lg:px-6 pb-1.5 bg-[#FFFFFF] border-t border-[#E1DDD3]">
             <Breadcrumbs items={crumbs} />
           </div>
         )}

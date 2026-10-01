@@ -84,16 +84,16 @@ interface AuditStepProps {
 
 /** Card padding shared by the header blocks, so one surface reads as one panel. */
 const PANEL_BLOCK = 'px-4 py-4 sm:px-5 sm:py-5';
-const STAT_TILE = 'rounded-2xl border border-[#E8D9D4] bg-[#FFF7F2] px-3.5 py-3';
-const NOTE_FIELD_LABEL = 'text-[11px] font-black uppercase tracking-[0.07em] text-[#6F5963]';
-const OPTIONAL_TAG = 'text-[11px] font-bold uppercase tracking-[0.07em] text-[#B76E79]';
+const STAT_TILE = 'rounded-2xl border border-[#E1DDD3] bg-[#EDF3F0] px-3.5 py-3';
+const NOTE_FIELD_LABEL = 'text-[11px] font-black uppercase tracking-[0.07em] text-[#65716C]';
+const OPTIONAL_TAG = 'text-[11px] font-bold uppercase tracking-[0.07em] text-[#C9A45C]';
 const CALLOUT = 'flex items-start gap-2 rounded-2xl px-3 py-2.5 text-[12px] font-bold leading-snug';
 
 /** Left rail + pill per outcome: readable from across a shop floor, at a glance. */
 const OUTCOME: Record<'Pass' | 'Fail' | 'NA' | 'none', { rail: string; tone: VmTone; label: string }> = {
   Pass: { rail: 'bg-[#198754]', tone: 'positive', label: 'Pass' },
   Fail: { rail: 'bg-[#B42318]', tone: 'danger', label: 'Fail' },
-  NA: { rail: 'bg-[#4A173A]', tone: 'neutral', label: 'N/A' },
+  NA: { rail: 'bg-[#123C35]', tone: 'neutral', label: 'N/A' },
   none: { rail: 'bg-[#EDE4E7]', tone: 'muted', label: 'Not rated' }
 };
 
@@ -188,7 +188,7 @@ export default function AuditStep(props: AuditStepProps) {
     <div className="space-y-4">
       {/* ── Audit header: title, breadcrumb, live score, shift, draft state ─── */}
       <section className={vmCard('overflow-hidden')}>
-        <div className={`${PANEL_BLOCK} border-b border-[#E8D9D4]`}>
+        <div className={`${PANEL_BLOCK} border-b border-[#E1DDD3]`}>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <VmSectionHeader
               className="min-w-0 flex-1"
@@ -196,9 +196,9 @@ export default function AuditStep(props: AuditStepProps) {
               title="Visual Merchandising Audit"
               subtitle={
                 <span className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
-                  <span className="font-black text-[#4A173A]">{floorName || '—'}</span>
-                  <ChevronRight className="w-3.5 h-3.5 text-[#B76E79]" aria-hidden="true" />
-                  <span className="font-black text-[#4A173A]">{sectionName || '—'}</span>
+                  <span className="font-black text-[#123C35]">{floorName || '—'}</span>
+                  <ChevronRight className="w-3.5 h-3.5 text-[#C9A45C]" aria-hidden="true" />
+                  <span className="font-black text-[#123C35]">{sectionName || '—'}</span>
                   {entryDate && <span>· {entryDate}</span>}
                 </span>
               }
@@ -225,7 +225,7 @@ export default function AuditStep(props: AuditStepProps) {
                   tone="brand"
                   label={`${liveScore.rated} of ${totalQuestions} rated · ${progressPercent}% complete`}
                 />
-                <p className="mt-1.5 text-[12px] font-bold text-[#6F5963]">{pendingCount} pending</p>
+                <p className="mt-1.5 text-[12px] font-bold text-[#65716C]">{pendingCount} pending</p>
               </div>
             </div>
 
@@ -234,9 +234,9 @@ export default function AuditStep(props: AuditStepProps) {
               <dl className="mt-2 grid grid-cols-3 gap-2">
                 <OutcomeStat label="Pass" value={liveScore.passed} tone="text-[#146B41]" />
                 <OutcomeStat label="Fail" value={liveScore.failed} tone="text-[#9B1C15]" />
-                <OutcomeStat label="N/A" value={liveScore.notApplicable} tone="text-[#6F5963]" />
+                <OutcomeStat label="N/A" value={liveScore.notApplicable} tone="text-[#65716C]" />
               </dl>
-              <p className={`mt-2.5 text-[12px] font-bold ${failGaps > 0 ? 'text-[#B42318]' : 'text-[#6F5963]'}`}>
+              <p className={`mt-2.5 text-[12px] font-bold ${failGaps > 0 ? 'text-[#B42318]' : 'text-[#65716C]'}`}>
                 {failGaps > 0 ? `${failGaps} Fail need action` : 'all fails explained'}
               </p>
             </div>
@@ -246,8 +246,8 @@ export default function AuditStep(props: AuditStepProps) {
         {/* Shift selector — a shift is a separate audit, so changing it re-enters the draft endpoint. */}
         <div className={`${PANEL_BLOCK} space-y-3`}>
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.08em] text-[#6F5963]">
-              <Clock className="w-4 h-4 text-[#B76E79]" aria-hidden="true" />
+            <p className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.08em] text-[#65716C]">
+              <Clock className="w-4 h-4 text-[#C9A45C]" aria-hidden="true" />
               <span>Audit shift</span>
             </p>
             <SaveIndicator
@@ -272,13 +272,13 @@ export default function AuditStep(props: AuditStepProps) {
                   aria-pressed={selected}
                   className={`flex min-h-[72px] cursor-pointer items-start gap-2.5 rounded-2xl border px-3 py-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
                     selected
-                      ? `border-[#4A173A] bg-[#4A173A] text-white ring-2 ring-[#B76E79]/45 ${VM_RAISED}`
-                      : 'border-[#E8D9D4] bg-white text-[#4A173A] hover:border-[#B76E79] hover:bg-[#FFF7F2]'
+                      ? `border-[#123C35] bg-[#123C35] text-white ring-2 ring-[#C9A45C]/45 ${VM_RAISED}`
+                      : 'border-[#E1DDD3] bg-white text-[#123C35] hover:border-[#C9A45C] hover:bg-[#EDF3F0]'
                   }`}
                 >
                   <span
                     className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full border ${
-                      selected ? 'border-[#E8C7A8] bg-[#E8C7A8]/20 text-[#E8C7A8]' : 'border-[#E8D9D4] bg-[#FFF7F2] text-transparent'
+                      selected ? 'border-[#E4CB92] bg-[#E4CB92]/20 text-[#E4CB92]' : 'border-[#E1DDD3] bg-[#EDF3F0] text-transparent'
                     }`}
                     aria-hidden="true"
                   >
@@ -288,7 +288,7 @@ export default function AuditStep(props: AuditStepProps) {
                     <span className="block text-[13px] font-black leading-tight sm:text-[14px]">{option.label}</span>
                     <span
                       className={`mt-1 block text-[11px] font-bold leading-tight ${
-                        selected ? 'text-[#E8C7A8]' : 'text-[#6F5963]'
+                        selected ? 'text-[#E4CB92]' : 'text-[#65716C]'
                       }`}
                     >
                       {option.hint}
@@ -299,14 +299,14 @@ export default function AuditStep(props: AuditStepProps) {
             })}
           </div>
 
-          <p className="text-[12px] font-semibold leading-snug text-[#6F5963]">
+          <p className="text-[12px] font-semibold leading-snug text-[#65716C]">
             {shiftCaption(shift)} is its own audit record. Switching shift opens — or resumes — that shift&rsquo;s draft;
             it never overwrites another shift&rsquo;s audit.
           </p>
 
           {draftLoading && (
-            <p className={`${CALLOUT} border border-[#B76E79]/40 bg-[#FFF7F2] text-[#4A173A]`}>
-              <RefreshCw className="mt-px w-4 h-4 shrink-0 animate-spin text-[#B76E79]" />
+            <p className={`${CALLOUT} border border-[#C9A45C]/40 bg-[#EDF3F0] text-[#123C35]`}>
+              <RefreshCw className="mt-px w-4 h-4 shrink-0 animate-spin text-[#C9A45C]" />
               <span>Opening this audit&rsquo;s draft…</span>
             </p>
           )}
@@ -329,7 +329,7 @@ export default function AuditStep(props: AuditStepProps) {
           )}
 
           {!draftLoading && !draftError && auditId && (
-            <p className="flex flex-wrap items-center gap-2 text-[12px] font-bold text-[#6F5963]">
+            <p className="flex flex-wrap items-center gap-2 text-[12px] font-bold text-[#65716C]">
               <VmPill tone={DRAFT_TONE[String(draftStatus || 'Draft')]}>{draftStatus || 'Draft'}</VmPill>
               <span>
                 {draftResumed
@@ -358,7 +358,7 @@ export default function AuditStep(props: AuditStepProps) {
 
       {/* ── Step footer ────────────────────────────────────────────────────── */}
       <div className={vmCard(`${PANEL_BLOCK} flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:items-center`)}>
-        <p className="min-w-0 text-[13px] font-bold leading-snug text-[#6F5963]">
+        <p className="min-w-0 text-[13px] font-bold leading-snug text-[#65716C]">
           {pendingCount > 0
             ? `${pendingCount} checkpoint${pendingCount === 1 ? '' : 's'} still to rate — every one needs Pass, Fail or N/A before submitting.`
             : failGaps > 0
@@ -367,7 +367,7 @@ export default function AuditStep(props: AuditStepProps) {
         </p>
         <div className="flex shrink-0 items-center gap-2">
           <button type="button" disabled={!canWrite || !auditId || saveState === 'saving'} onClick={onSaveNow} className={vmBtnSecondary}>
-            <Save className="w-4 h-4 text-[#B76E79]" />
+            <Save className="w-4 h-4 text-[#C9A45C]" />
             <span>Save Draft</span>
           </button>
           <button type="button" disabled={!canWrite || !auditId || pendingCount > 0} onClick={onNext} className={vmBtnPrimary}>
@@ -415,13 +415,13 @@ function QuestionCard({ question, index, answer, disabled, onScoreChange, onNote
       <span aria-hidden="true" className={`absolute inset-y-0 left-0 w-1.5 ${outcome.rail}`} />
 
       <div className="flex min-w-0 items-start gap-3">
-        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#4A173A] text-[15px] font-black leading-none text-white">
+        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#123C35] text-[15px] font-black leading-none text-white">
           {questionNumber(question, index)}
         </span>
         <div className="min-w-0 flex-1">
-          <h3 className="break-words text-[15px] font-black leading-[1.55] text-[#2B1722]">{question.title}</h3>
+          <h3 className="break-words text-[15px] font-black leading-[1.55] text-[#17201D]">{question.title}</h3>
           {question.description && (
-            <p className="mt-1.5 break-words text-[13px] font-semibold leading-relaxed text-[#6F5963]">
+            <p className="mt-1.5 break-words text-[13px] font-semibold leading-relaxed text-[#65716C]">
               {question.description}
             </p>
           )}
@@ -459,10 +459,10 @@ function QuestionCard({ question, index, answer, disabled, onScoreChange, onNote
           type="button"
           onClick={toggle}
           aria-expanded={open}
-          className="inline-flex min-h-[44px] w-full cursor-pointer items-center justify-between gap-2.5 rounded-2xl border border-[#E8D9D4] bg-[#FFF7F2] px-3.5 py-2.5 text-left text-[13px] font-bold text-[#4A173A] transition-colors hover:bg-[#F6E2E5]"
+          className="inline-flex min-h-[44px] w-full cursor-pointer items-center justify-between gap-2.5 rounded-2xl border border-[#E1DDD3] bg-[#EDF3F0] px-3.5 py-2.5 text-left text-[13px] font-bold text-[#123C35] transition-colors hover:bg-[#EDF3F0]"
         >
           <span className="inline-flex min-w-0 items-center gap-2">
-            <MessageSquare className="w-4 h-4 shrink-0 text-[#B76E79]" />
+            <MessageSquare className="w-4 h-4 shrink-0 text-[#C9A45C]" />
             <span className="truncate">Comment · Observation · Corrective action</span>
           </span>
           <span className="inline-flex shrink-0 items-center gap-2">
@@ -472,7 +472,7 @@ function QuestionCard({ question, index, answer, disabled, onScoreChange, onNote
               </VmPill>
             )}
             {savedNotes > 0 && <VmPill tone="neutral">{savedNotes} saved</VmPill>}
-            <ChevronDown className={`w-4 h-4 text-[#B76E79] transition-transform ${open ? 'rotate-180' : ''}`} />
+            <ChevronDown className={`w-4 h-4 text-[#C9A45C] transition-transform ${open ? 'rotate-180' : ''}`} />
           </span>
         </button>
 
@@ -486,7 +486,7 @@ function QuestionCard({ question, index, answer, disabled, onScoreChange, onNote
                 >
                   <span className={NOTE_FIELD_LABEL}>
                     {field.label}
-                    <span className="ml-1 font-bold normal-case text-[#B76E79]">(this checkpoint only)</span>
+                    <span className="ml-1 font-bold normal-case text-[#C9A45C]">(this checkpoint only)</span>
                   </span>
                   {field.field !== 'observation' && <span className={OPTIONAL_TAG}>optional</span>}
                 </label>
@@ -497,7 +497,7 @@ function QuestionCard({ question, index, answer, disabled, onScoreChange, onNote
                   value={current[field.field]}
                   onChange={(e) => onNoteChange(question.id, field.field, e.target.value)}
                   placeholder={field.placeholder}
-                  className="min-h-[64px] w-full resize-y rounded-2xl border border-[#E8D9D4] bg-white px-3.5 py-2.5 text-[14px] font-semibold leading-relaxed text-[#2B1722] transition-colors placeholder:text-[#9A858D] focus:border-[#B76E79] focus:outline-none focus:ring-2 focus:ring-[#B76E79]/35 disabled:opacity-60"
+                  className="min-h-[64px] w-full resize-y rounded-2xl border border-[#E1DDD3] bg-white px-3.5 py-2.5 text-[14px] font-semibold leading-relaxed text-[#17201D] transition-colors placeholder:text-[#9A858D] focus:border-[#C9A45C] focus:outline-none focus:ring-2 focus:ring-[#C9A45C]/35 disabled:opacity-60"
                 />
               </div>
             ))}
@@ -556,7 +556,7 @@ function SaveIndicator({
   onSaveNow: () => void;
 }) {
   if (!canWrite) {
-    return <span className="text-[12px] font-bold text-[#6F5963]">Read-only</span>;
+    return <span className="text-[12px] font-bold text-[#65716C]">Read-only</span>;
   }
   if (saveState === 'saving') {
     return (

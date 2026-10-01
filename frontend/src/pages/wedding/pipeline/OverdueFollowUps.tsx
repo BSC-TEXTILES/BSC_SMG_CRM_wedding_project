@@ -37,14 +37,14 @@ export interface OverdueFollowUpsProps {
 }
 
 const headClass =
-  'px-3 py-2 text-[9px] font-black uppercase tracking-wider text-[#6F5963] whitespace-nowrap';
+  'px-3 py-2 text-[9px] font-black uppercase tracking-wider text-[#65716C] whitespace-nowrap';
 
-const cellClass = 'px-3 py-2.5 align-top text-[10px] font-bold leading-snug text-[#2B1722]';
+const cellClass = 'px-3 py-2.5 align-top text-[10px] font-bold leading-snug text-[#17201D]';
 
 const actionClass =
-  'inline-flex h-7 shrink-0 items-center gap-1 whitespace-nowrap rounded-lg border border-[#E8D9D4] ' +
-  'bg-[#FFFDFC] px-2 text-[9px] font-black uppercase tracking-wider text-[#4A173A] transition-colors ' +
-  'hover:border-[#B76E79] hover:bg-[#FFF7F2] focus:outline-none focus:border-[#B76E79]';
+  'inline-flex h-7 shrink-0 items-center gap-1 whitespace-nowrap rounded-lg border border-[#E1DDD3] ' +
+  'bg-[#FFFFFF] px-2 text-[9px] font-black uppercase tracking-wider text-[#123C35] transition-colors ' +
+  'hover:border-[#C9A45C] hover:bg-[#EDF3F0] focus:outline-none focus:border-[#C9A45C]';
 
 export default function OverdueFollowUps({
   customers,
@@ -64,16 +64,16 @@ export default function OverdueFollowUps({
 
   return (
     <section
-      className="overflow-hidden rounded-3xl border border-[#B42318]/25 bg-[#FFFDFC] shadow-2xs"
+      className="overflow-hidden rounded-3xl border border-[#B42318]/25 bg-[#FFFFFF] shadow-2xs"
       aria-label="Overdue follow-ups"
     >
-      <header className="flex flex-wrap items-center justify-between gap-2 border-b border-[#E8D9D4] bg-[#FDE8E7] px-3 py-2.5 sm:px-4">
+      <header className="flex flex-wrap items-center justify-between gap-2 border-b border-[#E1DDD3] bg-[#FDE8E7] px-3 py-2.5 sm:px-4">
         <div className="min-w-0">
-          <h2 className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-[#4A173A]">
+          <h2 className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-[#123C35]">
             <CircleAlert className="h-3.5 w-3.5 shrink-0 text-[#B42318]" aria-hidden="true" />
             Overdue Follow-Ups
           </h2>
-          <p className="mt-0.5 text-[10px] font-semibold text-[#6F5963]">
+          <p className="mt-0.5 text-[10px] font-semibold text-[#65716C]">
             {rows.length} {rows.length === 1 ? 'customer' : 'customers'} past the follow-up date on{' '}
             <span className="font-black text-[#B42318]">
               {dateText(today) || display(today) || DASH}
@@ -88,18 +88,18 @@ export default function OverdueFollowUps({
 
       {rows.length === 0 ? (
         <div className="px-4 py-10 text-center">
-          <p className="text-[11px] font-black uppercase tracking-wider text-[#4A173A]">
+          <p className="text-[11px] font-black uppercase tracking-wider text-[#123C35]">
             No overdue follow-ups
           </p>
-          <p className="mt-1 text-[10px] font-semibold text-[#6F5963]">
+          <p className="mt-1 text-[10px] font-semibold text-[#65716C]">
             Every follow-up date in the loaded board is today or later.
           </p>
         </div>
       ) : (
         <div className="table-frame custom-scrollbar">
           <table className="w-full min-w-[900px] border-collapse text-left">
-            <thead className="bg-[#FFFAF7]">
-              <tr className="border-b border-[#E8D9D4]">
+            <thead className="bg-[#F7F5F0]">
+              <tr className="border-b border-[#E1DDD3]">
                 <th scope="col" className={headClass}>
                   Customer
                 </th>
@@ -123,7 +123,7 @@ export default function OverdueFollowUps({
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#E8D9D4]">
+            <tbody className="divide-y divide-[#E1DDD3]">
               {rows.map((customer) => {
                 const name = display(customer.customer_name) || `Customer #${customer.id}`;
                 const code = display(customer.customer_code);
@@ -144,7 +144,7 @@ export default function OverdueFollowUps({
                 return (
                   <tr
                     key={customer.id}
-                    className="transition-colors hover:bg-[#FFF7F2]"
+                    className="transition-colors hover:bg-[#EDF3F0]"
                   >
                     <td className={cellClass}>
                       <button
@@ -153,10 +153,10 @@ export default function OverdueFollowUps({
                         className="block max-w-[220px] text-left focus:outline-none"
                         title={`Open ${name}`}
                       >
-                        <span className="block truncate text-[11px] font-black leading-tight text-[#2B1722]">
+                        <span className="block truncate text-[11px] font-black leading-tight text-[#17201D]">
                           {name}
                         </span>
-                        <span className="mt-0.5 block truncate text-[9px] font-bold uppercase tracking-wider text-[#6F5963]">
+                        <span className="mt-0.5 block truncate text-[9px] font-bold uppercase tracking-wider text-[#65716C]">
                           {[code, mobile].filter(Boolean).join(' · ') || DASH}
                         </span>
                       </button>
@@ -166,7 +166,7 @@ export default function OverdueFollowUps({
                         {dateText(customer.follow_up_date, { day: '2-digit', month: 'short', year: 'numeric' }) ||
                           DASH}
                       </span>
-                      <span className="mt-0.5 block truncate text-[9px] font-bold uppercase tracking-wider text-[#6F5963]">
+                      <span className="mt-0.5 block truncate text-[9px] font-bold uppercase tracking-wider text-[#65716C]">
                         {time || display(customer.customer_status) || DASH}
                       </span>
                     </td>
@@ -183,17 +183,17 @@ export default function OverdueFollowUps({
                       </span>
                     </td>
                     <td className={`${cellClass} max-w-[160px]`}>
-                      <span className={`block truncate ${telecaller ? '' : 'text-[#6F5963]/70'}`}>
+                      <span className={`block truncate ${telecaller ? '' : 'text-[#65716C]/70'}`}>
                         {telecaller || DASH}
                       </span>
                     </td>
                     <td className={`${cellClass} max-w-[180px]`}>
                       <span className="block whitespace-nowrap">
-                        {lastCall || <span className="text-[#6F5963]/70">{DASH}</span>}
+                        {lastCall || <span className="text-[#65716C]/70">{DASH}</span>}
                       </span>
                       <span
                         className={`mt-0.5 block truncate text-[9px] font-bold uppercase tracking-wider ${
-                          outcome ? 'text-[#6F5963]' : 'text-[#6F5963]/70'
+                          outcome ? 'text-[#65716C]' : 'text-[#65716C]/70'
                         }`}
                         title={outcome || undefined}
                       >
@@ -203,7 +203,7 @@ export default function OverdueFollowUps({
                     <td className={`${cellClass} max-w-[260px] min-w-[200px]`}>
                       <p
                         className={`line-clamp-2 break-words ${
-                          feedback ? 'font-semibold text-[#2B1722]' : 'font-bold text-[#6F5963]/70'
+                          feedback ? 'font-semibold text-[#17201D]' : 'font-bold text-[#65716C]/70'
                         }`}
                         title={feedback || undefined}
                       >
@@ -218,7 +218,7 @@ export default function OverdueFollowUps({
                           className={actionClass}
                           title="Log a call"
                         >
-                          <PhoneCall className="h-3 w-3 text-[#B76E79]" aria-hidden="true" />
+                          <PhoneCall className="h-3 w-3 text-[#C9A45C]" aria-hidden="true" />
                           Call Now
                         </button>
                         <button
@@ -227,7 +227,7 @@ export default function OverdueFollowUps({
                           className={actionClass}
                           title="Post an update"
                         >
-                          <ClipboardList className="h-3 w-3 text-[#B76E79]" aria-hidden="true" />
+                          <ClipboardList className="h-3 w-3 text-[#C9A45C]" aria-hidden="true" />
                           Update
                         </button>
                         <button
@@ -236,7 +236,7 @@ export default function OverdueFollowUps({
                           className={actionClass}
                           title="Reschedule the follow-up"
                         >
-                          <CalendarClock className="h-3 w-3 text-[#B76E79]" aria-hidden="true" />
+                          <CalendarClock className="h-3 w-3 text-[#C9A45C]" aria-hidden="true" />
                           Reschedule
                         </button>
                         <button
@@ -245,7 +245,7 @@ export default function OverdueFollowUps({
                           className={actionClass}
                           title="Mark this follow-up done by moving the status"
                         >
-                          <CheckCircle2 className="h-3 w-3 text-[#B76E79]" aria-hidden="true" />
+                          <CheckCircle2 className="h-3 w-3 text-[#C9A45C]" aria-hidden="true" />
                           Complete
                         </button>
                       </div>

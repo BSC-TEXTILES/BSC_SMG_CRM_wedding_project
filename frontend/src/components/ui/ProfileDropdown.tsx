@@ -130,23 +130,23 @@ export default function ProfileDropdown({
         aria-label="Open user profile menu"
         className={`flex items-center gap-2 p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl border transition-all cursor-pointer select-none ${
           open
-            ? 'bg-[#FFFDFC] border-[#B76E79] shadow-xs'
-            : 'hover:bg-[#FFFDFC] border-transparent hover:border-[#E8D9D4]'
+            ? 'bg-[#FFFFFF] border-[#C9A45C] shadow-xs'
+            : 'hover:bg-[#F7F5F0] border-transparent hover:border-[#E1DDD3]'
         }`}
       >
-        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#4A173A] to-[#6A2853] text-white font-black text-xs flex items-center justify-center shadow-xs border border-[#B76E79]/40 shrink-0">
+        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#123C35] to-[#1D5148] text-white font-black text-xs flex items-center justify-center shadow-xs border border-[#C9A45C]/40 shrink-0">
           {initials}
         </div>
         <div className="hidden sm:block text-left min-w-0">
-          <div className="font-extrabold text-xs text-[#4A173A] leading-tight truncate max-w-[130px] md:max-w-[180px] lg:max-w-[220px]">
+          <div className="font-extrabold text-xs text-[#123C35] leading-tight truncate max-w-[130px] md:max-w-[180px] lg:max-w-[220px]">
             {displayName}
           </div>
-          <div className="text-[9.5px] text-[#B76E79] font-black uppercase tracking-wider">
+          <div className="text-[9.5px] text-[#C9A45C] font-black uppercase tracking-wider">
             {role}
           </div>
         </div>
         <ChevronDown
-          className={`w-3.5 h-3.5 text-[#4A173A] transition-transform duration-200 shrink-0 ${
+          className={`w-3.5 h-3.5 text-[#123C35] transition-transform duration-200 shrink-0 ${
             open ? 'rotate-180' : ''
           }`}
         />
@@ -158,24 +158,24 @@ export default function ProfileDropdown({
           ref={dropdownRef}
           role="menu"
           aria-orientation="vertical"
-          className="absolute right-0 top-full mt-2 w-80 sm:w-[340px] max-w-[calc(100vw-1.5rem)] bg-[#FFFDFC] rounded-2xl shadow-2xl border border-[#E8D9D4] z-50 overflow-hidden animate-fade-in flex flex-col"
+          className="absolute right-0 top-full mt-2 w-80 sm:w-[340px] max-w-[calc(100vw-1.5rem)] bg-[#FFFFFF] rounded-2xl shadow-2xl border border-[#E1DDD3] z-50 overflow-hidden animate-fade-in flex flex-col"
         >
           {/* ── 1. Profile Header Section ───────────────────────────────────── */}
-          <div className="p-3.5 bg-gradient-to-br from-[#FFF7F2] via-[#FFFDFC] to-[#FAF5F2] border-b border-[#E8D9D4]">
+          <div className="p-3.5 bg-gradient-to-br from-[#F7F5F0] via-[#FFFFFF] to-[#EDF3F0] border-b border-[#E1DDD3]">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#4A173A] to-[#6A2853] text-[#FAF6F0] font-black text-sm flex items-center justify-center shadow-sm border border-[#B76E79]/30 shrink-0">
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#123C35] to-[#1D5148] text-[#FFFFFF] font-black text-sm flex items-center justify-center shadow-sm border border-[#C9A45C]/30 shrink-0">
                 {initials}
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-1.5">
-                  <span className="font-black text-xs sm:text-sm text-[#4A173A] truncate leading-tight">
+                  <span className="font-black text-xs sm:text-sm text-[#123C35] truncate leading-tight">
                     {displayName}
                   </span>
-                  <span className="px-2 py-0.5 rounded-md bg-[#4A173A]/10 border border-[#4A173A]/20 text-[#4A173A] text-[9.5px] font-black uppercase tracking-wider shrink-0">
+                  <span className="px-2 py-0.5 rounded-md bg-[#123C35]/10 border border-[#123C35]/20 text-[#123C35] text-[9.5px] font-black uppercase tracking-wider shrink-0">
                     {role}
                   </span>
                 </div>
-                <p className="text-[11px] text-[#6F5963] font-medium truncate mt-0.5" title={emailDisplay}>
+                <p className="text-[11px] text-[#65716C] font-medium truncate mt-0.5" title={emailDisplay}>
                   {emailDisplay}
                 </p>
               </div>
@@ -183,7 +183,7 @@ export default function ProfileDropdown({
           </div>
 
           {/* ── 2. Notifications & Activity Section ─────────────────────────── */}
-          <div className="p-2 space-y-1 bg-[#FFFDFC]">
+          <div className="p-2 space-y-1 bg-[#FFFFFF]">
             {/* Notification Row */}
             <button
               type="button"
@@ -191,10 +191,10 @@ export default function ProfileDropdown({
                 setOpen(false);
                 onOpenNotifications();
               }}
-              className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-[#2B1722] hover:bg-[#FFF7F2] hover:text-[#4A173A] transition-colors cursor-pointer group"
+              className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-[#17201D] hover:bg-[#EDF3F0] hover:text-[#123C35] transition-colors cursor-pointer group"
             >
               <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-[#FAF5F2] text-[#B76E79] flex items-center justify-center border border-[#E8D9D4] group-hover:bg-white group-hover:border-[#B76E79]/40 transition-colors">
+                <div className="w-7 h-7 rounded-lg bg-[#F7F5F0] text-[#123C35] flex items-center justify-center border border-[#E1DDD3] group-hover:bg-white group-hover:border-[#C9A45C]/40 transition-colors">
                   <Bell className="w-3.5 h-3.5" />
                 </div>
                 <span className="text-xs font-bold">Notifications</span>
@@ -202,8 +202,8 @@ export default function ProfileDropdown({
               <span
                 className={`px-2 py-0.5 rounded-full text-[10px] font-black border transition-colors ${
                   unreadCount > 0
-                    ? 'bg-[#B42318]/10 text-[#B42318] border-[#B42318]/25'
-                    : 'bg-[#FAF5F2] text-[#6F5963] border-[#E8D9D4]'
+                    ? 'bg-[#C83B4A]/10 text-[#C83B4A] border-[#C83B4A]/25'
+                    : 'bg-[#F7F5F0] text-[#65716C] border-[#E1DDD3]'
                 }`}
               >
                 {unreadCount}
@@ -211,10 +211,10 @@ export default function ProfileDropdown({
             </button>
 
             {/* History / Recent Activity Row */}
-            <div className="flex items-center justify-between px-3 py-1.5 rounded-xl bg-[#FAF5F2]/70 border border-[#E8D9D4]/70">
+            <div className="flex items-center justify-between px-3 py-1.5 rounded-xl bg-[#F7F5F0] border border-[#E1DDD3]">
               <div className="flex items-center gap-2 min-w-0">
-                <Activity className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                <span className="text-xs font-bold text-[#4A173A] truncate">Recent Activity</span>
+                <Activity className="w-3.5 h-3.5 text-[#16805C] shrink-0" />
+                <span className="text-xs font-bold text-[#123C35] truncate">Recent Activity</span>
               </div>
               <button
                 type="button"
@@ -222,10 +222,10 @@ export default function ProfileDropdown({
                   setOpen(false);
                   setActivityOpen(true);
                 }}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white hover:bg-[#4A173A] text-[#4A173A] hover:text-white border border-[#E8D9D4] hover:border-[#4A173A] text-[11px] font-black transition-all shadow-2xs cursor-pointer shrink-0"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white hover:bg-[#123C35] text-[#123C35] hover:text-white border border-[#E1DDD3] hover:border-[#123C35] text-[11px] font-black transition-all shadow-2xs cursor-pointer shrink-0"
                 title="View user activity and audit history"
               >
-                <History className="w-3 h-3 text-[#B76E79]" />
+                <History className="w-3 h-3 text-[#C9A45C]" />
                 <span>History</span>
               </button>
             </div>
@@ -234,14 +234,14 @@ export default function ProfileDropdown({
             <button
               type="button"
               onClick={handleToggleSound}
-              className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-[#2B1722] hover:bg-[#FFF7F2] hover:text-[#4A173A] transition-colors cursor-pointer group"
+              className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-[#17201D] hover:bg-[#EDF3F0] hover:text-[#123C35] transition-colors cursor-pointer group"
             >
               <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-[#FAF5F2] text-[#6F5963] flex items-center justify-center border border-[#E8D9D4] group-hover:bg-white transition-colors">
+                <div className="w-7 h-7 rounded-lg bg-[#F7F5F0] text-[#65716C] flex items-center justify-center border border-[#E1DDD3] group-hover:bg-white transition-colors">
                   {soundEnabled ? (
-                    <Volume2 className="w-3.5 h-3.5 text-emerald-600" />
+                    <Volume2 className="w-3.5 h-3.5 text-[#16805C]" />
                   ) : (
-                    <VolumeX className="w-3.5 h-3.5 text-[#6F5963]" />
+                    <VolumeX className="w-3.5 h-3.5 text-[#65716C]" />
                   )}
                 </div>
                 <span className="text-xs font-bold">Audio Alerts</span>
@@ -249,8 +249,8 @@ export default function ProfileDropdown({
               <span
                 className={`text-[10px] font-black px-2 py-0.5 rounded-md border ${
                   soundEnabled
-                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                    : 'bg-[#FAF5F2] text-[#6F5963] border-[#E8D9D4]'
+                    ? 'bg-[#E5F4EE] text-[#16805C] border-[#A2DAC6]'
+                    : 'bg-[#F7F5F0] text-[#65716C] border-[#E1DDD3]'
                 }`}
               >
                 {soundEnabled ? 'ON' : 'OFF'}
@@ -259,7 +259,7 @@ export default function ProfileDropdown({
           </div>
 
           {/* ── 3. Lower Action Section ─────────────────────────────────────── */}
-          <div className="p-2 border-t border-[#E8D9D4] space-y-1 bg-[#FFFDFC]">
+          <div className="p-2 border-t border-[#E1DDD3] space-y-1 bg-[#FFFFFF]">
             {/* System Administrator Link (Admin/Super Admin only) */}
             {isAdminRole && (
               <button
@@ -268,9 +268,9 @@ export default function ProfileDropdown({
                   setOpen(false);
                   navigate('/system-admin');
                 }}
-                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[#2B1722] hover:bg-[#FFF7F2] hover:text-[#4A173A] transition-colors cursor-pointer group text-xs font-bold"
+                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[#17201D] hover:bg-[#EDF3F0] hover:text-[#123C35] transition-colors cursor-pointer group text-xs font-bold"
               >
-                <div className="w-7 h-7 rounded-lg bg-[#FAF5F2] text-[#B76E79] flex items-center justify-center border border-[#E8D9D4] group-hover:bg-white group-hover:border-[#B76E79]/40 transition-colors">
+                <div className="w-7 h-7 rounded-lg bg-[#F7F5F0] text-[#123C35] flex items-center justify-center border border-[#E1DDD3] group-hover:bg-white group-hover:border-[#C9A45C]/40 transition-colors">
                   <Settings className="w-3.5 h-3.5" />
                 </div>
                 <span>System Administrator</span>
@@ -284,9 +284,9 @@ export default function ProfileDropdown({
                 setOpen(false);
                 setChangePasswordOpen(true);
               }}
-              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[#2B1722] hover:bg-[#FFF7F2] hover:text-[#4A173A] transition-colors cursor-pointer group text-xs font-bold"
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[#17201D] hover:bg-[#EDF3F0] hover:text-[#123C35] transition-colors cursor-pointer group text-xs font-bold"
             >
-              <div className="w-7 h-7 rounded-lg bg-[#FAF5F2] text-[#B76E79] flex items-center justify-center border border-[#E8D9D4] group-hover:bg-white group-hover:border-[#B76E79]/40 transition-colors">
+              <div className="w-7 h-7 rounded-lg bg-[#F7F5F0] text-[#123C35] flex items-center justify-center border border-[#E1DDD3] group-hover:bg-white group-hover:border-[#C9A45C]/40 transition-colors">
                 <KeyRound className="w-3.5 h-3.5" />
               </div>
               <span>Update Password</span>
@@ -294,13 +294,13 @@ export default function ProfileDropdown({
           </div>
 
           {/* ── 4. Sign Out Section ─────────────────────────────────────────── */}
-          <div className="p-2 border-t border-[#E8D9D4] bg-[#FFFDFC]">
+          <div className="p-2 border-t border-[#E1DDD3] bg-[#FFFFFF]">
             <button
               type="button"
               onClick={() => Auth.logout()}
-              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[#B42318] hover:bg-[#B42318]/10 hover:text-[#911d14] transition-colors cursor-pointer group text-xs font-black"
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[#C83B4A] hover:bg-[#C83B4A]/10 hover:text-[#A92A38] transition-colors cursor-pointer group text-xs font-black"
             >
-              <div className="w-7 h-7 rounded-lg bg-[#B42318]/10 text-[#B42318] flex items-center justify-center border border-[#B42318]/20 group-hover:bg-[#B42318] group-hover:text-white transition-colors">
+              <div className="w-7 h-7 rounded-lg bg-[#C83B4A]/10 text-[#C83B4A] flex items-center justify-center border border-[#C83B4A]/20 group-hover:bg-[#C83B4A] group-hover:text-white transition-colors">
                 <LogOut className="w-3.5 h-3.5" />
               </div>
               <span>Sign Out</span>

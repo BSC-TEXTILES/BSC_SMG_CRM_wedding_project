@@ -31,7 +31,7 @@ interface SectionStepProps {
 
 const CARD_GRID = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4';
 
-const TILE = 'grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-[#E8D9D4] bg-[#FFF7F2] text-[#4A173A]';
+const TILE = 'grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-[#E1DDD3] bg-[#EDF3F0] text-[#123C35]';
 
 /**
  * Step 2 — pick the section inside the chosen floor.
@@ -55,7 +55,7 @@ export default function SectionStep({
   return (
     <div className="space-y-5">
       <div className="space-y-3">
-        <p className="flex items-center gap-1.5 text-[#B76E79]">
+        <p className="flex items-center gap-1.5 text-[#C9A45C]">
           <Store className="w-4 h-4" aria-hidden="true" />
           <span className="text-[11px] font-black uppercase tracking-[0.08em]">Floor selected</span>
         </p>
@@ -93,8 +93,8 @@ export default function SectionStep({
 
       {loading ? (
         <div className="space-y-4" aria-busy="true">
-          <p className="flex items-center gap-2 text-[13px] font-bold text-[#6F5963]">
-            <RefreshCw className="w-4 h-4 animate-spin text-[#B76E79]" />
+          <p className="flex items-center gap-2 text-[13px] font-bold text-[#65716C]">
+            <RefreshCw className="w-4 h-4 animate-spin text-[#C9A45C]" />
             <span>Loading sections…</span>
           </p>
           <div className={CARD_GRID}>
@@ -144,7 +144,7 @@ export default function SectionStep({
                     <Layers className="w-5 h-5" />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <h3 className="break-words text-[16px] font-black leading-snug text-[#4A173A]">{section}</h3>
+                    <h3 className="break-words text-[16px] font-black leading-snug text-[#123C35]">{section}</h3>
                     <p className={`${vmBody} mt-1`}>
                       {checkpointCount > 0 ? `${checkpointCount} checkpoints to rate` : 'Checkpoint count loading'}
                     </p>
@@ -169,19 +169,19 @@ export default function SectionStep({
                 </div>
 
                 {hasDraft && (
-                  <p className="flex items-start gap-2 rounded-2xl border border-[#B76E79]/40 bg-[#FFF7F2] px-3 py-2 text-[12px] font-bold leading-snug text-[#4A173A]">
-                    <PencilRuler className="mt-px w-4 h-4 shrink-0 text-[#B76E79]" />
+                  <p className="flex items-start gap-2 rounded-2xl border border-[#C9A45C]/40 bg-[#EDF3F0] px-3 py-2 text-[12px] font-bold leading-snug text-[#123C35]">
+                    <PencilRuler className="mt-px w-4 h-4 shrink-0 text-[#C9A45C]" />
                     <span>Draft already open — re-entering resumes it. Not a completed inspection.</span>
                   </p>
                 )}
 
                 {clickable ? (
-                  <span className={`${vmBtnPrimary} mt-auto w-full group-hover:bg-[#6A2853]`}>
+                  <span className={`${vmBtnPrimary} mt-auto w-full group-hover:bg-[#082821]`}>
                     <span>{hasDraft ? 'Resume audit' : neverAudited ? 'Start first audit' : 'Start audit'}</span>
                     <ChevronRight className="w-4 h-4" />
                   </span>
                 ) : (
-                  <p className="mt-auto rounded-xl border border-[#E8D9D4] bg-[#FFF7F2] px-3 py-2.5 text-[12px] font-bold text-[#6F5963]">
+                  <p className="mt-auto rounded-xl border border-[#E1DDD3] bg-[#EDF3F0] px-3 py-2.5 text-[12px] font-bold text-[#65716C]">
                     View-only access: audits are filed by the store team.
                   </p>
                 )}

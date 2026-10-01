@@ -75,7 +75,7 @@ export default function QuickActionCenter() {
         <div className="mb-3 space-y-2 animate-fade-in">
           {isWeddingCrm && (
             <div className="text-right">
-              <span className="text-[10px] font-black uppercase tracking-widest text-[#4A173A] bg-[#FFFDFC] border border-[#E8D9D4] px-2.5 py-1 rounded-full shadow-sm">
+              <span className="text-[10px] font-black uppercase tracking-widest text-[#123C35] bg-[#FFFFFF] border border-[#E1DDD3] px-2.5 py-1 rounded-full shadow-sm">
                 Wedding Quick Actions
               </span>
             </div>
@@ -94,12 +94,12 @@ export default function QuickActionCenter() {
                     navigate(act.href);
                   }
                 }}
-                className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-[#FFFDFC] border border-[#E8D9D4] shadow-lg hover:shadow-xl hover:border-[#B76E79] transition-all duration-150 group text-left cursor-pointer"
+                className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-[#FFFFFF] border border-[#E1DDD3] shadow-lg hover:shadow-xl hover:border-[#C9A45C] transition-all duration-150 group text-left cursor-pointer"
               >
-                <span className="text-xs font-bold text-[#2B1722] whitespace-nowrap group-hover:text-[#4A173A] transition-colors">
+                <span className="text-xs font-bold text-[#17201D] whitespace-nowrap group-hover:text-[#123C35] transition-colors">
                   {act.label}
                 </span>
-                <div className="p-2 rounded-lg bg-[#B76E79]/15 text-[#B76E79] group-hover:bg-[#B76E79] group-hover:text-white shadow-xs group-hover:scale-105 transition-all">
+                <div className="p-2 rounded-lg bg-[#C9A45C]/15 text-[#C9A45C] group-hover:bg-[#C9A45C] group-hover:text-white shadow-xs group-hover:scale-105 transition-all">
                   <Icon className="w-4 h-4" />
                 </div>
               </button>
@@ -112,8 +112,8 @@ export default function QuickActionCenter() {
       <button
         onClick={() => setOpen(!open)}
         className={`
-          w-13 h-13 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center shadow-xl border border-[#B76E79]/30 transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer
-          ${open ? 'rotate-45 bg-[#B42318] text-white hover:bg-[#931D14]' : 'bg-[#4A173A] hover:bg-[#6A2853] text-white'}
+          w-13 h-13 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center shadow-xl border border-[#C9A45C]/30 transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer
+          ${open ? 'rotate-45 bg-[#B42318] text-white hover:bg-[#931D14]' : 'bg-[#123C35] hover:bg-[#082821] text-white'}
         `}
         title="Quick Action Center"
         aria-label="Quick actions"

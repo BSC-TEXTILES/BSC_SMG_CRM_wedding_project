@@ -214,15 +214,15 @@ export default function PhotoLightbox({ items, startIndex = 0, onClose }: PhotoL
       {/* ── Constrained Modal Dialog Card ───────────────────────────────────── */}
       <div
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-5xl max-h-[94vh] sm:max-h-[90vh] bg-[#170E16] text-[#FAF6F0] border border-[#B76E79]/30 rounded-3xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.85)] flex flex-col overflow-hidden"
+        className="relative w-full max-w-5xl max-h-[94vh] sm:max-h-[90vh] bg-[#170E16] text-[#FAF6F0] border border-[#C9A45C]/30 rounded-3xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.85)] flex flex-col overflow-hidden"
       >
         {/* ── Top Header ──────────────────────────────────────────────────────── */}
         <header className="relative z-20 flex items-center justify-between gap-3 px-4 sm:px-6 py-3.5 bg-[#20121D] border-b border-white/10 shrink-0">
           <div className="flex items-center gap-3 min-w-0">
             {/* Index Counter Pill */}
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-[#B76E79]/25 to-[#4A173A]/40 border border-[#B76E79]/40 text-[#FAF6F0] text-xs font-black tracking-wide shrink-0">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-[#C9A45C]/25 to-[#123C35]/40 border border-[#C9A45C]/40 text-[#FAF6F0] text-xs font-black tracking-wide shrink-0">
               <span>{position}</span>
-              <span className="text-[#B76E79]">/</span>
+              <span className="text-[#C9A45C]">/</span>
               <span>{total}</span>
             </div>
 
@@ -233,13 +233,13 @@ export default function PhotoLightbox({ items, startIndex = 0, onClose }: PhotoL
               </span>
 
               <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/10 border border-white/10 text-xs font-bold text-white truncate">
-                <MapPin className="w-3.5 h-3.5 text-[#E8C7A8] shrink-0" />
+                <MapPin className="w-3.5 h-3.5 text-[#E4CB92] shrink-0" />
                 <span className="truncate">{displayLocation}</span>
               </div>
 
               {storeDisplay && (
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#4A173A]/60 border border-[#B76E79]/30 text-xs font-bold text-[#FAF6F0] truncate">
-                  <Store className="w-3.5 h-3.5 text-[#E8C7A8] shrink-0" />
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#123C35]/60 border border-[#C9A45C]/30 text-xs font-bold text-[#FAF6F0] truncate">
+                  <Store className="w-3.5 h-3.5 text-[#E4CB92] shrink-0" />
                   <span className="truncate">{storeDisplay}</span>
                 </div>
               )}
@@ -248,7 +248,7 @@ export default function PhotoLightbox({ items, startIndex = 0, onClose }: PhotoL
                 className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold border ${
                   isQuestionEvidence
                     ? 'bg-amber-500/15 border-amber-500/30 text-amber-200'
-                    : 'bg-[#B76E79]/20 border-[#B76E79]/40 text-[#F5E6E8]'
+                    : 'bg-[#C9A45C]/20 border-[#C9A45C]/40 text-[#F5E6E8]'
                 }`}
               >
                 {isQuestionEvidence ? (
@@ -258,7 +258,7 @@ export default function PhotoLightbox({ items, startIndex = 0, onClose }: PhotoL
                   </>
                 ) : (
                   <>
-                    <Layers className="w-3 h-3 text-[#E8C7A8] shrink-0" />
+                    <Layers className="w-3 h-3 text-[#E4CB92] shrink-0" />
                     <span className="hidden sm:inline">Section Shot</span>
                   </>
                 )}
@@ -274,7 +274,7 @@ export default function PhotoLightbox({ items, startIndex = 0, onClose }: PhotoL
               target="_blank"
               rel="noreferrer"
               title="Download photo"
-              className="w-9 h-9 rounded-xl bg-white/10 hover:bg-[#B76E79]/30 text-white border border-white/10 hover:border-[#B76E79]/50 flex items-center justify-center transition-all cursor-pointer shadow-sm hover:scale-105 active:scale-95"
+              className="w-9 h-9 rounded-xl bg-white/10 hover:bg-[#C9A45C]/30 text-white border border-white/10 hover:border-[#C9A45C]/50 flex items-center justify-center transition-all cursor-pointer shadow-sm hover:scale-105 active:scale-95"
             >
               <Download className="w-4 h-4" />
             </a>
@@ -311,8 +311,8 @@ export default function PhotoLightbox({ items, startIndex = 0, onClose }: PhotoL
           {/* Loading indicator */}
           {loading && !failed && (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-white/70 bg-[#11080F]/60 backdrop-blur-xs z-10">
-              <Loader2 className="w-8 h-8 text-[#B76E79] animate-spin" />
-              <p className="text-xs font-bold text-[#E8C7A8]">Loading photo...</p>
+              <Loader2 className="w-8 h-8 text-[#C9A45C] animate-spin" />
+              <p className="text-xs font-bold text-[#E4CB92]">Loading photo...</p>
             </div>
           )}
 
@@ -334,7 +334,7 @@ export default function PhotoLightbox({ items, startIndex = 0, onClose }: PhotoL
                   setFailed(false);
                   setLoading(true);
                 }}
-                className="mt-1 px-4 py-2 rounded-xl bg-[#B76E79] hover:bg-[#a55e69] text-white text-xs font-black transition-all cursor-pointer shadow-md"
+                className="mt-1 px-4 py-2 rounded-xl bg-[#C9A45C] hover:bg-[#a55e69] text-white text-xs font-black transition-all cursor-pointer shadow-md"
               >
                 Retry Loading
               </button>
@@ -377,7 +377,7 @@ export default function PhotoLightbox({ items, startIndex = 0, onClose }: PhotoL
                 }}
                 aria-label="Previous photo"
                 title="Previous Photo (← Arrow)"
-                className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[#180f16]/85 hover:bg-[#B76E79] text-white border border-white/20 hover:border-[#B76E79] backdrop-blur-md flex items-center justify-center transition-all shadow-xl hover:scale-110 active:scale-95 cursor-pointer z-10"
+                className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[#180f16]/85 hover:bg-[#C9A45C] text-white border border-white/20 hover:border-[#C9A45C] backdrop-blur-md flex items-center justify-center transition-all shadow-xl hover:scale-110 active:scale-95 cursor-pointer z-10"
               >
                 <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
               </button>
@@ -389,7 +389,7 @@ export default function PhotoLightbox({ items, startIndex = 0, onClose }: PhotoL
                 }}
                 aria-label="Next photo"
                 title="Next Photo (→ Arrow)"
-                className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[#180f16]/85 hover:bg-[#B76E79] text-white border border-white/20 hover:border-[#B76E79] backdrop-blur-md flex items-center justify-center transition-all shadow-xl hover:scale-110 active:scale-95 cursor-pointer z-10"
+                className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[#180f16]/85 hover:bg-[#C9A45C] text-white border border-white/20 hover:border-[#C9A45C] backdrop-blur-md flex items-center justify-center transition-all shadow-xl hover:scale-110 active:scale-95 cursor-pointer z-10"
               >
                 <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
               </button>
@@ -419,7 +419,7 @@ export default function PhotoLightbox({ items, startIndex = 0, onClose }: PhotoL
             title="Reset to Fit to View (0)"
             className={`min-w-[5.5rem] px-3 py-1 rounded-lg text-center text-[11px] font-black tracking-wide border transition-all cursor-pointer ${
               zoom === 1
-                ? 'bg-[#B76E79]/20 border-[#B76E79]/50 text-[#FAF6F0]'
+                ? 'bg-[#C9A45C]/20 border-[#C9A45C]/50 text-[#FAF6F0]'
                 : 'bg-white/10 border-white/15 text-white hover:bg-white/20'
             }`}
           >
@@ -456,7 +456,7 @@ export default function PhotoLightbox({ items, startIndex = 0, onClose }: PhotoL
             title="Fit to View (0)"
             className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
           >
-            <Maximize2 className="w-3.5 h-3.5 text-[#E8C7A8]" />
+            <Maximize2 className="w-3.5 h-3.5 text-[#E4CB92]" />
             <span>Reset</span>
           </button>
 
@@ -489,7 +489,7 @@ export default function PhotoLightbox({ items, startIndex = 0, onClose }: PhotoL
                     aria-current={isSelected}
                     className={`shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-xl overflow-hidden border-2 transition-all cursor-pointer relative ${
                       isSelected
-                        ? 'border-[#B76E79] ring-2 ring-[#B76E79]/60 scale-105 shadow-md shadow-[#B76E79]/30'
+                        ? 'border-[#C9A45C] ring-2 ring-[#C9A45C]/60 scale-105 shadow-md shadow-[#C9A45C]/30'
                         : 'border-white/15 opacity-60 hover:opacity-100 hover:border-white/40'
                     }`}
                   >
@@ -502,7 +502,7 @@ export default function PhotoLightbox({ items, startIndex = 0, onClose }: PhotoL
                       }}
                     />
                     {isSelected && (
-                      <div className="absolute inset-0 bg-[#B76E79]/20 pointer-events-none" />
+                      <div className="absolute inset-0 bg-[#C9A45C]/20 pointer-events-none" />
                     )}
                   </button>
                 );
@@ -548,7 +548,7 @@ export default function PhotoLightbox({ items, startIndex = 0, onClose }: PhotoL
 
               {/* Auditor */}
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-white/90">
-                <User className="w-3.5 h-3.5 text-[#E8C7A8]" />
+                <User className="w-3.5 h-3.5 text-[#E4CB92]" />
                 <span className="text-white/50">Inspector:</span>
                 <span className="font-bold text-white">{current.uploadedBy || 'Store Auditor'}</span>
               </span>
@@ -556,7 +556,7 @@ export default function PhotoLightbox({ items, startIndex = 0, onClose }: PhotoL
               {/* Audit Date */}
               {current.inspectionDate && (
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-white/90">
-                  <Calendar className="w-3.5 h-3.5 text-[#E8C7A8]" />
+                  <Calendar className="w-3.5 h-3.5 text-[#E4CB92]" />
                   <span className="text-white/50">Date:</span>
                   <span className="font-bold text-white">{formatPhotoDate(current.inspectionDate)}</span>
                 </span>

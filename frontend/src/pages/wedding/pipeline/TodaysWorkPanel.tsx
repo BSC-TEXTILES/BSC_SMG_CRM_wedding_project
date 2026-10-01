@@ -44,17 +44,17 @@ const toneTile: Record<TodayWorkTone, string> = {
   alert: 'bg-[#FDE8E7] border-[#B42318]/35 text-[#B42318]',
   due: 'bg-[#FFF4D6] border-[#C58A18]/35 text-[#C58A18]',
   positive: 'bg-[#E8F5EE] border-[#198754]/30 text-[#198754]',
-  neutral: 'bg-[#FFFDFC] border-[#E8D9D4] text-[#4A173A]'
+  neutral: 'bg-[#FFFFFF] border-[#E1DDD3] text-[#123C35]'
 };
 
 const tileButtonClass =
   'flex w-full flex-col items-start gap-0.5 rounded-2xl border p-2.5 text-left transition-colors ' +
-  'hover:border-[#B76E79] focus:outline-none focus:border-[#B76E79]';
+  'hover:border-[#C9A45C] focus:outline-none focus:border-[#C9A45C]';
 
 const rowActionClass =
-  'inline-flex h-7 shrink-0 items-center gap-1 whitespace-nowrap rounded-lg border border-[#E8D9D4] ' +
-  'bg-[#FFFAF7] px-2 text-[9px] font-black uppercase tracking-wider text-[#4A173A] transition-colors ' +
-  'hover:border-[#B76E79] hover:bg-[#FFF7F2] focus:outline-none focus:border-[#B76E79]';
+  'inline-flex h-7 shrink-0 items-center gap-1 whitespace-nowrap rounded-lg border border-[#E1DDD3] ' +
+  'bg-[#F7F5F0] px-2 text-[9px] font-black uppercase tracking-wider text-[#123C35] transition-colors ' +
+  'hover:border-[#C9A45C] hover:bg-[#EDF3F0] focus:outline-none focus:border-[#C9A45C]';
 
 export default function TodaysWorkPanel({
   customers,
@@ -93,23 +93,23 @@ export default function TodaysWorkPanel({
 
   return (
     <section
-      className="rounded-3xl border border-[#E8D9D4] bg-[#FFFDFC] p-3 shadow-2xs sm:p-4"
+      className="rounded-3xl border border-[#E1DDD3] bg-[#FFFFFF] p-3 shadow-2xs sm:p-4"
       aria-label="Today's work"
     >
       <header className="flex flex-wrap items-end justify-between gap-2">
         <div className="min-w-0">
-          <h2 className="text-[11px] font-black uppercase tracking-wider text-[#4A173A]">
+          <h2 className="text-[11px] font-black uppercase tracking-wider text-[#123C35]">
             Today&apos;s Work
           </h2>
-          <p className="mt-0.5 text-[10px] font-semibold text-[#6F5963]">
+          <p className="mt-0.5 text-[10px] font-semibold text-[#65716C]">
             {loading ? (
               <span className="inline-flex items-center gap-1">
-                <RefreshCw className="h-3 w-3 animate-spin text-[#B76E79]" aria-hidden="true" />
+                <RefreshCw className="h-3 w-3 animate-spin text-[#C9A45C]" aria-hidden="true" />
                 Loading the board…
               </span>
             ) : (
               <>
-                <span className="font-black text-[#B76E79]">
+                <span className="font-black text-[#C9A45C]">
                   {dateText(today) || display(today) || DASH}
                 </span>{' '}
                 · server (IST) date · {summary.buckets.length} counters from{' '}
@@ -122,9 +122,9 @@ export default function TodaysWorkPanel({
           <button
             type="button"
             onClick={() => setExpanded(null)}
-            className="inline-flex h-7 shrink-0 items-center gap-1 whitespace-nowrap rounded-lg border border-[#E8D9D4] bg-[#FFFAF7] px-2 text-[9px] font-black uppercase tracking-wider text-[#4A173A] transition-colors hover:border-[#B76E79] hover:bg-[#FFF7F2]"
+            className="inline-flex h-7 shrink-0 items-center gap-1 whitespace-nowrap rounded-lg border border-[#E1DDD3] bg-[#F7F5F0] px-2 text-[9px] font-black uppercase tracking-wider text-[#123C35] transition-colors hover:border-[#C9A45C] hover:bg-[#EDF3F0]"
           >
-            <X className="h-3 w-3 text-[#B76E79]" aria-hidden="true" />
+            <X className="h-3 w-3 text-[#C9A45C]" aria-hidden="true" />
             Hide list
           </button>
         )}
@@ -134,7 +134,7 @@ export default function TodaysWorkPanel({
         {summary.buckets.map((bucket) => {
           const size = bucket.customers.length;
           const classes = `${toneTile[bucket.tone]} ${
-            expanded === bucket.key ? 'border-[#B76E79]' : ''
+            expanded === bucket.key ? 'border-[#C9A45C]' : ''
           }`;
           const count = loading ? DASH : String(size);
 
@@ -148,7 +148,7 @@ export default function TodaysWorkPanel({
                 title={bucket.hint}
               >
                 <span className="text-base font-black leading-none">{count}</span>
-                <span className="text-[9px] font-black uppercase leading-tight tracking-wider text-[#6F5963]">
+                <span className="text-[9px] font-black uppercase leading-tight tracking-wider text-[#65716C]">
                   {bucket.label}
                 </span>
               </div>
@@ -169,7 +169,7 @@ export default function TodaysWorkPanel({
               aria-expanded={expanded === bucket.key}
             >
               <span className="text-base font-black leading-none">{count}</span>
-              <span className="text-[9px] font-black uppercase leading-tight tracking-wider text-[#6F5963]">
+              <span className="text-[9px] font-black uppercase leading-tight tracking-wider text-[#65716C]">
                 {bucket.label}
               </span>
               <span className="inline-flex items-center gap-0.5 text-[9px] font-black uppercase tracking-wider">
@@ -179,7 +179,7 @@ export default function TodaysWorkPanel({
                   <>
                     <ChevronDown
                       className={`h-2.5 w-2.5 transition-colors ${
-                        expanded === bucket.key ? 'text-[#B76E79]' : ''
+                        expanded === bucket.key ? 'text-[#C9A45C]' : ''
                       }`}
                       aria-hidden="true"
                     />
@@ -193,17 +193,17 @@ export default function TodaysWorkPanel({
       </div>
 
       {active && !loading && (
-        <div className="mt-3 rounded-2xl border border-[#E8D9D4] bg-[#FFFAF7] p-2">
+        <div className="mt-3 rounded-2xl border border-[#E1DDD3] bg-[#F7F5F0] p-2">
           <p className="flex flex-wrap items-center justify-between gap-2 px-1 pb-1.5">
-            <span className="text-[9px] font-black uppercase tracking-wider text-[#6F5963]">
+            <span className="text-[9px] font-black uppercase tracking-wider text-[#65716C]">
               {active.label} · {active.customers.length}
             </span>
-            <span className="text-[9px] font-semibold text-[#6F5963]">{active.hint}</span>
+            <span className="text-[9px] font-semibold text-[#65716C]">{active.hint}</span>
           </p>
           <ul className="max-h-[280px] space-y-1.5 overflow-y-auto">
             {/* Only reachable when a reload empties an open counter. */}
             {active.customers.length === 0 && (
-              <li className="rounded-xl border border-[#E8D9D4] bg-[#FFFDFC] px-2 py-2 text-center text-[10px] font-bold text-[#6F5963]">
+              <li className="rounded-xl border border-[#E1DDD3] bg-[#FFFFFF] px-2 py-2 text-center text-[10px] font-bold text-[#65716C]">
                 Nothing is left in this counter after the last load.
               </li>
             )}
@@ -215,18 +215,18 @@ export default function TodaysWorkPanel({
               return (
                 <li
                   key={customer.id}
-                  className="flex flex-wrap items-center gap-2 rounded-xl border border-[#E8D9D4] bg-[#FFFDFC] px-2 py-1.5"
+                  className="flex flex-wrap items-center gap-2 rounded-xl border border-[#E1DDD3] bg-[#FFFFFF] px-2 py-1.5"
                 >
                   <button
                     type="button"
                     onClick={() => onOpen(customer)}
-                    className="min-w-0 flex-1 text-left focus:outline-none hover:text-[#4A173A]"
+                    className="min-w-0 flex-1 text-left focus:outline-none hover:text-[#123C35]"
                     title={`Open ${name}`}
                   >
-                    <span className="block truncate text-[11px] font-black leading-tight text-[#2B1722]">
+                    <span className="block truncate text-[11px] font-black leading-tight text-[#17201D]">
                       {name}
                     </span>
-                    <span className="mt-0.5 flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-[#6F5963]">
+                    <span className="mt-0.5 flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-[#65716C]">
                       {overdue && (
                         <CircleMeta />
                       )}
@@ -247,7 +247,7 @@ export default function TodaysWorkPanel({
                       className={rowActionClass}
                       title="Log a call"
                     >
-                      <PhoneCall className="h-3 w-3 text-[#B76E79]" aria-hidden="true" />
+                      <PhoneCall className="h-3 w-3 text-[#C9A45C]" aria-hidden="true" />
                       Call
                     </button>
                     <button
@@ -259,7 +259,7 @@ export default function TodaysWorkPanel({
                       className={rowActionClass}
                       title={hasDate ? 'Reschedule follow-up' : 'Schedule follow-up'}
                     >
-                      <CalendarClock className="h-3 w-3 text-[#B76E79]" aria-hidden="true" />
+                      <CalendarClock className="h-3 w-3 text-[#C9A45C]" aria-hidden="true" />
                       {hasDate ? 'Reschedule' : 'Follow-up'}
                     </button>
                   </div>

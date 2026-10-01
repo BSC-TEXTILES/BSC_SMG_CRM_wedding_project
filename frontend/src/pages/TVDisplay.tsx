@@ -536,13 +536,13 @@ export default function TVDisplay() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A1020] text-white flex flex-col justify-between selection:bg-[#C9A45C] selection:text-[#101C36] overflow-x-hidden">
+    <div className="min-h-screen bg-[#0A1020] text-white flex flex-col justify-between selection:bg-[#C9A45C] selection:text-[#123C35] overflow-x-hidden">
       {/* ─────────────────────────────────────────────────────────
           HEADER (Requirement 8)
           BSC Textiles logo, BSC TEXTILES [LOCATION], LIVE STORE OPERATIONS,
           LIVE indicator, Time, Date, Sound, Fullscreen, Lock Kiosk
       ───────────────────────────────────────────────────────── */}
-      <header className="bg-[#101C36]/95 border-b border-[#C9A45C]/25 px-4 sm:px-6 py-3.5 backdrop-blur-xl flex flex-wrap items-center justify-between gap-4 sticky top-0 z-30 shadow-2xl">
+      <header className="bg-[#123C35]/95 border-b border-[#C9A45C]/25 px-4 sm:px-6 py-3.5 backdrop-blur-xl flex flex-wrap items-center justify-between gap-4 sticky top-0 z-30 shadow-2xl">
         {/* Left Side: Brand Logo, Location, and Status */}
         <div className="flex items-center gap-3.5 min-w-0">
           <div className="w-13 h-11 bg-white p-1 rounded-xl border border-[#C9A45C]/40 shadow flex items-center justify-center flex-shrink-0">
@@ -692,7 +692,7 @@ export default function TVDisplay() {
               }}
               className={`px-3 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer ${
                 activeView === v
-                  ? 'bg-[#C9A45C] text-[#101C36] font-black shadow-md'
+                  ? 'bg-[#C9A45C] text-[#123C35] font-black shadow-md'
                   : 'bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 hover:text-white'
               }`}
             >
@@ -734,7 +734,7 @@ export default function TVDisplay() {
         {/* ROW 1: PRIMARY OPERATIONAL KPI CARDS */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
           {/* Card 1: TODAY'S FOOTFALL (Requirement 10) */}
-          <div className="bg-[#101C36]/90 border border-[#C9A45C]/30 rounded-2xl p-5 shadow-xl backdrop-blur-md relative overflow-hidden flex flex-col justify-between group hover:border-[#C9A45C]/60 transition-all">
+          <div className="bg-[#123C35]/90 border border-[#C9A45C]/30 rounded-2xl p-5 shadow-xl backdrop-blur-md relative overflow-hidden flex flex-col justify-between group hover:border-[#C9A45C]/60 transition-all">
             <div className="flex items-center justify-between">
               <span className="text-xs font-extrabold uppercase tracking-wider text-[#C9A45C]">
                 Today's Footfall
@@ -772,7 +772,7 @@ export default function TVDisplay() {
           </div>
 
           {/* Card 2: CUSTOMER CSAT (Requirement 11) */}
-          <div className="bg-[#101C36]/90 border border-emerald-500/30 rounded-2xl p-5 shadow-xl backdrop-blur-md relative overflow-hidden flex flex-col justify-between group hover:border-emerald-500/60 transition-all">
+          <div className="bg-[#123C35]/90 border border-emerald-500/30 rounded-2xl p-5 shadow-xl backdrop-blur-md relative overflow-hidden flex flex-col justify-between group hover:border-emerald-500/60 transition-all">
             <div className="flex items-center justify-between">
               <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-400">
                 Customer CSAT
@@ -818,7 +818,7 @@ export default function TVDisplay() {
           </div>
 
           {/* Card 3: ACTIVE SOURCING DIVERTS (Requirement 12) */}
-          <div className="bg-[#101C36]/90 border border-amber-500/30 rounded-2xl p-5 shadow-xl backdrop-blur-md relative overflow-hidden flex flex-col justify-between group hover:border-amber-500/60 transition-all">
+          <div className="bg-[#123C35]/90 border border-amber-500/30 rounded-2xl p-5 shadow-xl backdrop-blur-md relative overflow-hidden flex flex-col justify-between group hover:border-amber-500/60 transition-all">
             <div className="flex items-center justify-between">
               <span className="text-xs font-extrabold uppercase tracking-wider text-amber-400">
                 Active Sourcing Diverts
@@ -856,7 +856,7 @@ export default function TVDisplay() {
           </div>
 
           {/* Card 4: STORE FLOOR STATUS (Requirement 15) */}
-          <div className="bg-[#101C36]/90 border border-blue-500/30 rounded-2xl p-5 shadow-xl backdrop-blur-md relative overflow-hidden flex flex-col justify-between group hover:border-blue-500/60 transition-all">
+          <div className="bg-[#123C35]/90 border border-blue-500/30 rounded-2xl p-5 shadow-xl backdrop-blur-md relative overflow-hidden flex flex-col justify-between group hover:border-blue-500/60 transition-all">
             <div className="flex items-center justify-between">
               <span className="text-xs font-extrabold uppercase tracking-wider text-blue-400">
                 Store Status & Pulse
@@ -901,7 +901,7 @@ export default function TVDisplay() {
         {/* ROW 2: HOURLY FOOTFALL TRAFFIC DISTRIBUTION + LIVE OPERATIONS STREAM */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
           {/* Left Column: HOURLY FOOTFALL TRAFFIC DISTRIBUTION (Requirement 10) - 7 cols */}
-          <div className="lg:col-span-7 bg-[#101C36]/90 border border-[#C9A45C]/30 rounded-2xl p-5 shadow-2xl backdrop-blur-md flex flex-col justify-between">
+          <div className="lg:col-span-7 bg-[#123C35]/90 border border-[#C9A45C]/30 rounded-2xl p-5 shadow-2xl backdrop-blur-md flex flex-col justify-between">
             <div>
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-3 mb-4">
                 <div className="flex items-center gap-2.5">
@@ -1032,7 +1032,7 @@ export default function TVDisplay() {
           </div>
 
           {/* Right Column: LIVE OPERATIONS FEED (Requirement 13) - 5 cols */}
-          <div className="lg:col-span-5 bg-[#101C36]/90 border border-[#C9A45C]/30 rounded-2xl p-5 shadow-2xl backdrop-blur-md flex flex-col justify-between">
+          <div className="lg:col-span-5 bg-[#123C35]/90 border border-[#C9A45C]/30 rounded-2xl p-5 shadow-2xl backdrop-blur-md flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between border-b border-white/10 pb-3 mb-3.5">
                 <div className="flex items-center gap-2.5">
@@ -1126,7 +1126,7 @@ export default function TVDisplay() {
         {/* ROW 3: DETAILED OPERATIONAL PANELS */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {/* Card 1: Active Sourcing Diverts on Floor (Requirement 12) */}
-          <div className="bg-[#101C36]/90 border border-white/15 rounded-2xl p-4.5 shadow-xl backdrop-blur-md flex flex-col justify-between">
+          <div className="bg-[#123C35]/90 border border-white/15 rounded-2xl p-4.5 shadow-xl backdrop-blur-md flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between border-b border-white/10 pb-2.5 mb-3">
                 <span className="text-xs font-black uppercase tracking-wider text-amber-300 flex items-center gap-2">
@@ -1173,7 +1173,7 @@ export default function TVDisplay() {
           </div>
 
           {/* Card 2: Customer CSAT Sentiment & Survey Metrics (Requirement 11) */}
-          <div className="bg-[#101C36]/90 border border-white/15 rounded-2xl p-4.5 shadow-xl backdrop-blur-md flex flex-col justify-between">
+          <div className="bg-[#123C35]/90 border border-white/15 rounded-2xl p-4.5 shadow-xl backdrop-blur-md flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between border-b border-white/10 pb-2.5 mb-3">
                 <span className="text-xs font-black uppercase tracking-wider text-emerald-400 flex items-center gap-2">
@@ -1214,7 +1214,7 @@ export default function TVDisplay() {
           </div>
 
           {/* Card 3: Showroom Hardware & Infrastructure */}
-          <div className="bg-[#101C36]/90 border border-white/15 rounded-2xl p-4.5 shadow-xl backdrop-blur-md flex flex-col justify-between">
+          <div className="bg-[#123C35]/90 border border-white/15 rounded-2xl p-4.5 shadow-xl backdrop-blur-md flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between border-b border-white/10 pb-2.5 mb-3">
                 <span className="text-xs font-black uppercase tracking-wider text-blue-400 flex items-center gap-2">
@@ -1259,7 +1259,7 @@ export default function TVDisplay() {
           Connected to Broadcast Center
       ───────────────────────────────────────────────────────── */}
       <footer className="border-t border-[#C9A45C]/30 bg-[#0B132B]/95 px-4 sm:px-6 py-2.5 backdrop-blur-xl shadow-2xl">
-        <div className="bg-[#101C36]/90 border border-[#C9A45C]/30 px-4 py-2 rounded-xl flex items-center gap-3.5 shadow-md">
+        <div className="bg-[#123C35]/90 border border-[#C9A45C]/30 px-4 py-2 rounded-xl flex items-center gap-3.5 shadow-md">
           {/* Badge */}
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#C9A45C]/15 border border-[#C9A45C]/30 text-xs font-black uppercase tracking-wider text-[#C9A45C] shrink-0">
             <Radio className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />

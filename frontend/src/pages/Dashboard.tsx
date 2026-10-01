@@ -426,13 +426,13 @@ export default function DashboardPage() {
         {/* =========================================================================
             SECTION 1: EXECUTIVE OVERVIEW HEADER (Clean Enterprise Style)
         ========================================================================== */}
-        <div className="bg-white rounded-2xl border border-[#DFDDD7] shadow-xs p-5 sm:p-6 mb-6">
+        <div className="bg-white rounded-2xl border border-[#E1DDD3] shadow-xs p-5 sm:p-6 mb-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="min-w-0">
-              <h1 className="text-xl sm:text-2xl font-black text-[#182033] tracking-tight leading-tight">
+              <h1 className="text-xl sm:text-2xl font-black text-[#17201D] tracking-tight leading-tight">
                 {isAdminDashboard ? 'ADMIN DASHBOARD' : 'BSC EXECUTIVE DASHBOARD'}
               </h1>
-              <p className="text-xs sm:text-sm font-semibold text-[#687080] mt-1">
+              <p className="text-xs sm:text-sm font-semibold text-[#65716C] mt-1">
                 Executive &amp; Workforce Operations — Live overview of BSC Textiles across authorized locations.
               </p>
             </div>
@@ -445,7 +445,7 @@ export default function DashboardPage() {
                 type="button"
                 onClick={() => loadData()}
                 disabled={isRefreshing}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#DFDDD7] bg-[#F6F4EF] hover:bg-white text-[#182033] text-xs font-bold transition-all shadow-2xs hover:border-[#C9A45C] cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#E1DDD3] bg-[#F7F5F0] hover:bg-white text-[#17201D] text-xs font-bold transition-all shadow-2xs hover:border-[#C9A45C] cursor-pointer"
                 title="Refresh dashboard metrics"
               >
                 <RefreshCw className={`w-3.5 h-3.5 text-[#C9A45C] ${isRefreshing ? 'animate-spin' : ''}`} />
@@ -542,15 +542,15 @@ export default function DashboardPage() {
         {/* =========================================================================
             SECTION 3: LIVE ACTIVITY INTELLIGENCE (Clean, modern, professional)
         ========================================================================== */}
-        <div className="bg-white rounded-2xl border border-[#DFDDD7] shadow-xs p-5 sm:p-6 mb-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#DFDDD7] pb-3 mb-4">
+        <div className="bg-white rounded-2xl border border-[#E1DDD3] shadow-xs p-5 sm:p-6 mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E1DDD3] pb-3 mb-4">
             <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-[#101C36] text-[#C9A45C] flex items-center justify-center border border-[#C9A45C]/30 flex-shrink-0 shadow-xs">
+              <div className="w-9 h-9 rounded-xl bg-[#123C35] text-[#C9A45C] flex items-center justify-center border border-[#C9A45C]/30 flex-shrink-0 shadow-xs">
                 <Activity className="w-4 h-4 text-[#C9A45C]" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h2 className="text-sm font-black uppercase tracking-wider text-[#182033]">
+                  <h2 className="text-sm font-black uppercase tracking-wider text-[#17201D]">
                     Live Activity Intelligence
                   </h2>
                   <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 shrink-0">
@@ -558,7 +558,7 @@ export default function DashboardPage() {
                     LIVE
                   </span>
                 </div>
-                <p className="text-xs font-semibold text-[#687080] mt-0.5">
+                <p className="text-xs font-semibold text-[#65716C] mt-0.5">
                   Real-time user operations, security audit &amp; staff action logs
                 </p>
               </div>
@@ -568,7 +568,7 @@ export default function DashboardPage() {
               <button
                 type="button"
                 onClick={() => setTimelineOpen(true)}
-                className="px-3.5 py-1.5 rounded-xl bg-[#101C36] text-white hover:bg-[#07101F] text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer hover:border-[#C9A45C] border border-transparent focus:outline-none focus:ring-2 focus:ring-[#C9A45C]"
+                className="px-3.5 py-1.5 rounded-xl bg-[#123C35] text-white hover:bg-[#082821] text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer hover:border-[#C9A45C] border border-transparent focus:outline-none focus:ring-2 focus:ring-[#C9A45C]"
                 aria-label="Open User Activity Timeline"
               >
                 <Activity className="w-3.5 h-3.5 text-[#C9A45C]" />
@@ -581,20 +581,20 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-center">
             {/* Quick Metrics */}
             <div className="grid grid-cols-3 gap-2.5">
-              <div className="p-3 rounded-xl bg-[#F6F4EF] border border-[#DFDDD7] text-center">
-                <span className="text-[10px] uppercase font-bold text-[#687080] block">Active Today</span>
-                <span className="text-lg font-black text-[#182033]">
+              <div className="p-3 rounded-xl bg-[#F7F5F0] border border-[#E1DDD3] text-center">
+                <span className="text-[10px] uppercase font-bold text-[#65716C] block">Active Today</span>
+                <span className="text-lg font-black text-[#17201D]">
                   {trackingStats?.activeUsersToday || 1}
                 </span>
               </div>
-              <div className="p-3 rounded-xl bg-[#F6F4EF] border border-[#DFDDD7] text-center">
-                <span className="text-[10px] uppercase font-bold text-[#687080] block">Logins</span>
+              <div className="p-3 rounded-xl bg-[#F7F5F0] border border-[#E1DDD3] text-center">
+                <span className="text-[10px] uppercase font-bold text-[#65716C] block">Logins</span>
                 <span className="text-lg font-black text-emerald-700">
                   {trackingStats?.totalLoginsToday || 0}
                 </span>
               </div>
-              <div className="p-3 rounded-xl bg-[#F6F4EF] border border-[#DFDDD7] text-center">
-                <span className="text-[10px] uppercase font-bold text-[#687080] block">Logouts</span>
+              <div className="p-3 rounded-xl bg-[#F7F5F0] border border-[#E1DDD3] text-center">
+                <span className="text-[10px] uppercase font-bold text-[#65716C] block">Logouts</span>
                 <span className="text-lg font-black text-rose-700">
                   {trackingStats?.totalLogoutsToday || 0}
                 </span>
@@ -609,23 +609,23 @@ export default function DashboardPage() {
                     key={act.id || idx}
                     type="button"
                     onClick={() => setTimelineOpen(true)}
-                    className="flex-1 p-3 rounded-xl bg-[#FAF8F5]/80 hover:bg-white border border-[#DFDDD7] hover:border-[#C9A45C] transition-all text-left flex items-center justify-between gap-3 group cursor-pointer shadow-2xs"
+                    className="flex-1 p-3 rounded-xl bg-[#FFFFFF]/80 hover:bg-white border border-[#E1DDD3] hover:border-[#C9A45C] transition-all text-left flex items-center justify-between gap-3 group cursor-pointer shadow-2xs"
                     title="Click to open User Activity Timeline"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="w-8 h-8 rounded-lg bg-white border border-[#DFDDD7] flex items-center justify-center flex-shrink-0 group-hover:bg-[#101C36] group-hover:text-white transition-colors">
+                      <div className="w-8 h-8 rounded-lg bg-white border border-[#E1DDD3] flex items-center justify-center flex-shrink-0 group-hover:bg-[#123C35] group-hover:text-white transition-colors">
                         <Activity className="w-4 h-4 text-[#C9A45C]" />
                       </div>
                       <div className="min-w-0">
-                        <div className="text-xs font-bold text-[#182033] truncate">
+                        <div className="text-xs font-bold text-[#17201D] truncate">
                           {act.username || 'System User'}
                         </div>
-                        <div className="text-[11px] text-[#687080] truncate font-medium">
+                        <div className="text-[11px] text-[#65716C] truncate font-medium">
                           {formatActionText(act.action, act.details)}
                         </div>
                       </div>
                     </div>
-                    <span className="text-[10px] font-semibold text-[#8B776A] whitespace-nowrap bg-white px-2 py-0.5 rounded-md border border-[#DFDDD7] shrink-0">
+                    <span className="text-[10px] font-semibold text-[#65716C] whitespace-nowrap bg-white px-2 py-0.5 rounded-md border border-[#E1DDD3] shrink-0">
                       {formatTimelineTimestamp(act.createdAt)}
                     </span>
                   </button>
@@ -634,15 +634,15 @@ export default function DashboardPage() {
                 <button
                   type="button"
                   onClick={() => setTimelineOpen(true)}
-                  className="w-full p-3 rounded-xl bg-[#FAF8F5]/80 hover:bg-white border border-[#DFDDD7] hover:border-[#C9A45C] transition-all text-left flex items-center justify-between gap-3 group cursor-pointer shadow-2xs"
+                  className="w-full p-3 rounded-xl bg-[#FFFFFF]/80 hover:bg-white border border-[#E1DDD3] hover:border-[#C9A45C] transition-all text-left flex items-center justify-between gap-3 group cursor-pointer shadow-2xs"
                 >
                   <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-white border border-[#DFDDD7] flex items-center justify-center flex-shrink-0">
+                    <div className="w-8 h-8 rounded-lg bg-white border border-[#E1DDD3] flex items-center justify-center flex-shrink-0">
                       <Activity className="w-4 h-4 text-[#C9A45C]" />
                     </div>
                     <div>
-                      <div className="text-xs font-bold text-[#182033]">Real-time Activity Stream Active</div>
-                      <div className="text-[11px] text-[#687080]">Click to view complete user interaction log</div>
+                      <div className="text-xs font-bold text-[#17201D]">Real-time Activity Stream Active</div>
+                      <div className="text-[11px] text-[#65716C]">Click to view complete user interaction log</div>
                     </div>
                   </div>
                   <span className="text-xs font-bold text-[#C9A45C] flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
@@ -658,18 +658,18 @@ export default function DashboardPage() {
         {/* =========================================================================
             SECTION 4: STORE OPERATIONS (3 Store Cards with Active Highlights)
         ========================================================================== */}
-        <div className="bg-white rounded-2xl border border-[#DFDDD7] shadow-xs p-5 sm:p-6 mb-6">
-          <div className="flex items-center justify-between border-b border-[#DFDDD7] pb-3 mb-4">
+        <div className="bg-white rounded-2xl border border-[#E1DDD3] shadow-xs p-5 sm:p-6 mb-6">
+          <div className="flex items-center justify-between border-b border-[#E1DDD3] pb-3 mb-4">
             <div>
-              <h2 className="text-sm font-black uppercase tracking-wider text-[#182033] flex items-center gap-2">
+              <h2 className="text-sm font-black uppercase tracking-wider text-[#17201D] flex items-center gap-2">
                 <Store className="w-4 h-4 text-[#C9A45C]" />
                 <span>Store Operations Overview</span>
               </h2>
-              <p className="text-xs font-semibold text-[#687080] mt-0.5">
+              <p className="text-xs font-semibold text-[#65716C] mt-0.5">
                 Location-specific operational health across all BSC Textiles branches
               </p>
             </div>
-            <span className="text-[11px] font-bold text-[#687080] bg-[#F6F4EF] px-2.5 py-1 rounded-lg border border-[#DFDDD7]">
+            <span className="text-[11px] font-bold text-[#65716C] bg-[#F7F5F0] px-2.5 py-1 rounded-lg border border-[#E1DDD3]">
               {currentLocation === 'ALL' ? '3 Stores Active' : `Filtered: ${currentLocationLabel}`}
             </span>
           </div>
@@ -690,46 +690,46 @@ export default function DashboardPage() {
                   }}
                   className={`p-4 sm:p-5 rounded-2xl border transition-all duration-200 cursor-pointer ${
                     isSelected
-                      ? 'border-[#C9A45C] bg-[#FAF8F3] shadow-md ring-2 ring-[#C9A45C]/30'
+                      ? 'border-[#C9A45C] bg-[#EDF3F0] shadow-md ring-2 ring-[#C9A45C]/30'
                       : isAll
-                      ? 'border-[#DFDDD7] bg-white hover:border-[#C9A45C] hover:bg-[#F6F4EF]'
-                      : 'border-[#DFDDD7]/60 bg-white/60 opacity-60 hover:opacity-100 hover:border-[#DFDDD7]'
+                      ? 'border-[#E1DDD3] bg-white hover:border-[#C9A45C] hover:bg-[#F7F5F0]'
+                      : 'border-[#E1DDD3]/60 bg-white/60 opacity-60 hover:opacity-100 hover:border-[#E1DDD3]'
                   }`}
                 >
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
                       <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-xs ${
-                        isSelected ? 'bg-[#101C36] text-[#C9A45C]' : 'bg-[#F6F4EF] text-[#182033] border border-[#DFDDD7]'
+                        isSelected ? 'bg-[#123C35] text-[#C9A45C]' : 'bg-[#F7F5F0] text-[#17201D] border border-[#E1DDD3]'
                       }`}>
                         {store.code}
                       </div>
                       <div>
-                        <h3 className="text-sm font-black text-[#182033] tracking-tight">{store.name}</h3>
-                        <span className="text-[10px] font-bold text-[#687080]">Store Branch #{locId}</span>
+                        <h3 className="text-sm font-black text-[#17201D] tracking-tight">{store.name}</h3>
+                        <span className="text-[10px] font-bold text-[#65716C]">Store Branch #{locId}</span>
                       </div>
                     </div>
                     {isSelected && (
-                      <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#101C36] text-[#C9A45C]">
+                      <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#123C35] text-[#C9A45C]">
                         Active Store
                       </span>
                     )}
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2.5 pt-2 border-t border-[#DFDDD7]/60 text-xs">
-                    <div className="bg-white p-2 rounded-xl border border-[#DFDDD7]/70">
-                      <span className="text-[10px] uppercase font-bold text-[#687080] block">Active Staff</span>
-                      <span className="font-black text-sm text-[#182033]">{store.count}</span>
+                  <div className="grid grid-cols-2 gap-2.5 pt-2 border-t border-[#E1DDD3]/60 text-xs">
+                    <div className="bg-white p-2 rounded-xl border border-[#E1DDD3]/70">
+                      <span className="text-[10px] uppercase font-bold text-[#65716C] block">Active Staff</span>
+                      <span className="font-black text-sm text-[#17201D]">{store.count}</span>
                     </div>
-                    <div className="bg-white p-2 rounded-xl border border-[#DFDDD7]/70">
-                      <span className="text-[10px] uppercase font-bold text-[#687080] block">Wedding Leads</span>
-                      <span className="font-black text-sm text-[#182033]">{store.leads}</span>
+                    <div className="bg-white p-2 rounded-xl border border-[#E1DDD3]/70">
+                      <span className="text-[10px] uppercase font-bold text-[#65716C] block">Wedding Leads</span>
+                      <span className="font-black text-sm text-[#17201D]">{store.leads}</span>
                     </div>
-                    <div className="bg-white p-2 rounded-xl border border-[#DFDDD7]/70">
-                      <span className="text-[10px] uppercase font-bold text-[#687080] block">Today's Footfall</span>
-                      <span className="font-black text-sm text-[#182033]">{store.footfall}</span>
+                    <div className="bg-white p-2 rounded-xl border border-[#E1DDD3]/70">
+                      <span className="text-[10px] uppercase font-bold text-[#65716C] block">Today's Footfall</span>
+                      <span className="font-black text-sm text-[#17201D]">{store.footfall}</span>
                     </div>
-                    <div className="bg-white p-2 rounded-xl border border-[#DFDDD7]/70">
-                      <span className="text-[10px] uppercase font-bold text-[#687080] block">Pending Follow-ups</span>
+                    <div className="bg-white p-2 rounded-xl border border-[#E1DDD3]/70">
+                      <span className="text-[10px] uppercase font-bold text-[#65716C] block">Pending Follow-ups</span>
                       <span className="font-black text-sm text-rose-700">{store.followups}</span>
                     </div>
                   </div>
@@ -744,22 +744,22 @@ export default function DashboardPage() {
         ========================================================================== */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* Wedding CRM Overview */}
-          <div className="bg-white rounded-2xl border border-[#DFDDD7] shadow-xs p-5 sm:p-6 flex flex-col justify-between">
+          <div className="bg-white rounded-2xl border border-[#E1DDD3] shadow-xs p-5 sm:p-6 flex flex-col justify-between">
             <div>
-              <div className="flex items-center justify-between border-b border-[#DFDDD7] pb-3 mb-4">
+              <div className="flex items-center justify-between border-b border-[#E1DDD3] pb-3 mb-4">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-[#101C36] text-[#C9A45C] flex items-center justify-center border border-[#C9A45C]/30 flex-shrink-0">
+                  <div className="w-9 h-9 rounded-xl bg-[#123C35] text-[#C9A45C] flex items-center justify-center border border-[#C9A45C]/30 flex-shrink-0">
                     <Heart className="w-4 h-4 text-[#C9A45C]" />
                   </div>
                   <div>
-                    <h2 className="text-sm font-black text-[#182033] tracking-tight">WEDDING CRM OVERVIEW</h2>
-                    <p className="text-[11px] font-semibold text-[#687080]">Concierge pipeline &amp; lead stages</p>
+                    <h2 className="text-sm font-black text-[#17201D] tracking-tight">WEDDING CRM OVERVIEW</h2>
+                    <p className="text-[11px] font-semibold text-[#65716C]">Concierge pipeline &amp; lead stages</p>
                   </div>
                 </div>
                 <button
                   type="button"
                   onClick={() => navigate('/wedding-crm/dashboard')}
-                  className="px-3 py-1.5 rounded-xl bg-[#101C36] text-white hover:bg-[#07101F] text-xs font-bold transition-all shadow-xs flex items-center gap-1 cursor-pointer"
+                  className="px-3 py-1.5 rounded-xl bg-[#123C35] text-white hover:bg-[#082821] text-xs font-bold transition-all shadow-xs flex items-center gap-1 cursor-pointer"
                 >
                   <span>Open Wedding CRM</span>
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -767,35 +767,35 @@ export default function DashboardPage() {
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-4 text-xs">
-                <div className="p-3 rounded-xl bg-[#F6F4EF] border border-[#DFDDD7]">
-                  <span className="text-[10px] uppercase font-bold text-[#687080] block">Total Leads</span>
-                  <span className="text-base font-black text-[#182033]">{weddingStats?.totalCustomers || weddingStats?.totalLeads || 0}</span>
+                <div className="p-3 rounded-xl bg-[#F7F5F0] border border-[#E1DDD3]">
+                  <span className="text-[10px] uppercase font-bold text-[#65716C] block">Total Leads</span>
+                  <span className="text-base font-black text-[#17201D]">{weddingStats?.totalCustomers || weddingStats?.totalLeads || 0}</span>
                 </div>
-                <div className="p-3 rounded-xl bg-[#F6F4EF] border border-[#DFDDD7]">
-                  <span className="text-[10px] uppercase font-bold text-[#687080] block">New Leads</span>
-                  <span className="text-base font-black text-[#101C36]">{weddingStats?.newLeads || 0}</span>
+                <div className="p-3 rounded-xl bg-[#F7F5F0] border border-[#E1DDD3]">
+                  <span className="text-[10px] uppercase font-bold text-[#65716C] block">New Leads</span>
+                  <span className="text-base font-black text-[#123C35]">{weddingStats?.newLeads || 0}</span>
                 </div>
-                <div className="p-3 rounded-xl bg-[#F6F4EF] border border-[#DFDDD7]">
-                  <span className="text-[10px] uppercase font-bold text-[#687080] block">Today's Calls</span>
+                <div className="p-3 rounded-xl bg-[#F7F5F0] border border-[#E1DDD3]">
+                  <span className="text-[10px] uppercase font-bold text-[#65716C] block">Today's Calls</span>
                   <span className="text-base font-black text-amber-700">{weddingStats?.callsToday || weddingStats?.todayCalls || 0}</span>
                 </div>
-                <div className="p-3 rounded-xl bg-[#F6F4EF] border border-[#DFDDD7]">
-                  <span className="text-[10px] uppercase font-bold text-[#687080] block">Overdue</span>
+                <div className="p-3 rounded-xl bg-[#F7F5F0] border border-[#E1DDD3]">
+                  <span className="text-[10px] uppercase font-bold text-[#65716C] block">Overdue</span>
                   <span className="text-base font-black text-rose-700">{weddingStats?.overdue || 0}</span>
                 </div>
               </div>
 
               <div className="grid grid-cols-3 gap-2.5 text-xs">
-                <div className="p-3 rounded-xl bg-white border border-[#DFDDD7]">
-                  <span className="text-[10px] uppercase font-bold text-[#687080] block">Visits Scheduled</span>
-                  <span className="text-base font-black text-[#182033]">{weddingStats?.visits || weddingStats?.scheduledVisits || 0}</span>
+                <div className="p-3 rounded-xl bg-white border border-[#E1DDD3]">
+                  <span className="text-[10px] uppercase font-bold text-[#65716C] block">Visits Scheduled</span>
+                  <span className="text-base font-black text-[#17201D]">{weddingStats?.visits || weddingStats?.scheduledVisits || 0}</span>
                 </div>
-                <div className="p-3 rounded-xl bg-white border border-[#DFDDD7]">
-                  <span className="text-[10px] uppercase font-bold text-[#687080] block">Shopping Confirmed</span>
+                <div className="p-3 rounded-xl bg-white border border-[#E1DDD3]">
+                  <span className="text-[10px] uppercase font-bold text-[#65716C] block">Shopping Confirmed</span>
                   <span className="text-base font-black text-emerald-700">{weddingStats?.confirmed || weddingStats?.shoppingConfirmed || 0}</span>
                 </div>
-                <div className="p-3 rounded-xl bg-white border border-[#DFDDD7]">
-                  <span className="text-[10px] uppercase font-bold text-[#687080] block">Won / Converted</span>
+                <div className="p-3 rounded-xl bg-white border border-[#E1DDD3]">
+                  <span className="text-[10px] uppercase font-bold text-[#65716C] block">Won / Converted</span>
                   <span className="text-base font-black text-[#C9A45C]">{weddingStats?.won || weddingStats?.converted || 0}</span>
                 </div>
               </div>
@@ -803,23 +803,23 @@ export default function DashboardPage() {
           </div>
 
           {/* Telecaller Operations */}
-          <div className="bg-white rounded-2xl border border-[#DFDDD7] shadow-xs p-5 sm:p-6 flex flex-col justify-between">
+          <div className="bg-white rounded-2xl border border-[#E1DDD3] shadow-xs p-5 sm:p-6 flex flex-col justify-between">
             <div>
-              <div className="flex items-center justify-between border-b border-[#DFDDD7] pb-3 mb-4">
+              <div className="flex items-center justify-between border-b border-[#E1DDD3] pb-3 mb-4">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-[#101C36] text-[#C9A45C] flex items-center justify-center border border-[#C9A45C]/30 flex-shrink-0">
+                  <div className="w-9 h-9 rounded-xl bg-[#123C35] text-[#C9A45C] flex items-center justify-center border border-[#C9A45C]/30 flex-shrink-0">
                     <PhoneCall className="w-4 h-4 text-[#C9A45C]" />
                   </div>
                   <div>
-                    <h2 className="text-sm font-black text-[#182033] tracking-tight">TELECALLER OPERATIONS</h2>
-                    <p className="text-[11px] font-semibold text-[#687080]">Daily call schedules &amp; execution</p>
+                    <h2 className="text-sm font-black text-[#17201D] tracking-tight">TELECALLER OPERATIONS</h2>
+                    <p className="text-[11px] font-semibold text-[#65716C]">Daily call schedules &amp; execution</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => navigate('/telecaller/desk')}
-                    className="px-3 py-1.5 rounded-xl bg-[#101C36] text-white hover:bg-[#07101F] text-xs font-bold transition-all shadow-xs flex items-center gap-1 cursor-pointer"
+                    className="px-3 py-1.5 rounded-xl bg-[#123C35] text-white hover:bg-[#082821] text-xs font-bold transition-all shadow-xs flex items-center gap-1 cursor-pointer"
                   >
                     <span>Desk</span>
                     <ArrowRight className="w-3.5 h-3.5" />
@@ -827,7 +827,7 @@ export default function DashboardPage() {
                   <button
                     type="button"
                     onClick={() => navigate('/telecaller-dashboard')}
-                    className="px-3 py-1.5 rounded-xl border border-[#DFDDD7] bg-[#F6F4EF] hover:bg-white text-[#182033] text-xs font-bold transition-all shadow-2xs hover:border-[#C9A45C] cursor-pointer"
+                    className="px-3 py-1.5 rounded-xl border border-[#E1DDD3] bg-[#F7F5F0] hover:bg-white text-[#17201D] text-xs font-bold transition-all shadow-2xs hover:border-[#C9A45C] cursor-pointer"
                   >
                     Dashboard
                   </button>
@@ -835,34 +835,34 @@ export default function DashboardPage() {
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 mb-4 text-xs">
-                <div className="p-3 rounded-xl bg-[#F6F4EF] border border-[#DFDDD7]">
-                  <span className="text-[10px] uppercase font-bold text-[#687080] block">Scheduled</span>
-                  <span className="text-base font-black text-[#182033]">{telecallerStats?.todayCalls || weddingStats?.callsToday || 0}</span>
+                <div className="p-3 rounded-xl bg-[#F7F5F0] border border-[#E1DDD3]">
+                  <span className="text-[10px] uppercase font-bold text-[#65716C] block">Scheduled</span>
+                  <span className="text-base font-black text-[#17201D]">{telecallerStats?.todayCalls || weddingStats?.callsToday || 0}</span>
                 </div>
-                <div className="p-3 rounded-xl bg-[#F6F4EF] border border-[#DFDDD7]">
-                  <span className="text-[10px] uppercase font-bold text-[#687080] block">Completed</span>
+                <div className="p-3 rounded-xl bg-[#F7F5F0] border border-[#E1DDD3]">
+                  <span className="text-[10px] uppercase font-bold text-[#65716C] block">Completed</span>
                   <span className="text-base font-black text-emerald-700">{telecallerStats?.completed || 0}</span>
                 </div>
-                <div className="p-3 rounded-xl bg-[#F6F4EF] border border-[#DFDDD7]">
-                  <span className="text-[10px] uppercase font-bold text-[#687080] block">Connected</span>
-                  <span className="text-base font-black text-[#101C36]">{telecallerStats?.connected || 0}</span>
+                <div className="p-3 rounded-xl bg-[#F7F5F0] border border-[#E1DDD3]">
+                  <span className="text-[10px] uppercase font-bold text-[#65716C] block">Connected</span>
+                  <span className="text-base font-black text-[#123C35]">{telecallerStats?.connected || 0}</span>
                 </div>
-                <div className="p-3 rounded-xl bg-[#F6F4EF] border border-[#DFDDD7]">
-                  <span className="text-[10px] uppercase font-bold text-[#687080] block">Callbacks</span>
+                <div className="p-3 rounded-xl bg-[#F7F5F0] border border-[#E1DDD3]">
+                  <span className="text-[10px] uppercase font-bold text-[#65716C] block">Callbacks</span>
                   <span className="text-base font-black text-amber-700">{telecallerStats?.callbacks || 0}</span>
                 </div>
-                <div className="p-3 rounded-xl bg-[#F6F4EF] border border-[#DFDDD7]">
-                  <span className="text-[10px] uppercase font-bold text-[#687080] block">Overdue</span>
+                <div className="p-3 rounded-xl bg-[#F7F5F0] border border-[#E1DDD3]">
+                  <span className="text-[10px] uppercase font-bold text-[#65716C] block">Overdue</span>
                   <span className="text-base font-black text-rose-700">{telecallerStats?.overdue || weddingStats?.overdue || 0}</span>
                 </div>
               </div>
 
-              <div className="p-3 rounded-xl bg-gradient-to-r from-[#101C36]/5 to-[#C9A45C]/10 border border-[#DFDDD7] flex items-center justify-between text-xs">
+              <div className="p-3 rounded-xl bg-gradient-to-r from-[#123C35]/5 to-[#C9A45C]/10 border border-[#E1DDD3] flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2">
                   <PhoneForwarded className="w-4 h-4 text-[#C9A45C]" />
-                  <span className="font-bold text-[#182033]">Live Telecaller Team Call Efficiency</span>
+                  <span className="font-bold text-[#17201D]">Live Telecaller Team Call Efficiency</span>
                 </div>
-                <span className="font-black text-[#101C36]">
+                <span className="font-black text-[#123C35]">
                   {telecallerStats?.todayCalls ? Math.round(((telecallerStats.completed || 0) / telecallerStats.todayCalls) * 100) : 85}% Rate
                 </span>
               </div>
@@ -873,19 +873,19 @@ export default function DashboardPage() {
         {/* =========================================================================
             SECTION 5: WORKFORCE OVERVIEW (Compact Horizontal Bars, No Blank Containers)
         ========================================================================== */}
-        <div className="bg-white rounded-2xl border border-[#DFDDD7] shadow-xs p-5 sm:p-6 mb-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#DFDDD7] pb-3 mb-5">
+        <div className="bg-white rounded-2xl border border-[#E1DDD3] shadow-xs p-5 sm:p-6 mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E1DDD3] pb-3 mb-5">
             <div>
-              <h2 className="text-sm font-black uppercase tracking-wider text-[#182033] flex items-center gap-2">
+              <h2 className="text-sm font-black uppercase tracking-wider text-[#17201D] flex items-center gap-2">
                 <Building2 className="w-4 h-4 text-[#C9A45C]" />
                 <span>Workforce Overview</span>
               </h2>
-              <p className="text-xs font-semibold text-[#687080] mt-0.5">
+              <p className="text-xs font-semibold text-[#65716C] mt-0.5">
                 Staff distribution by department and store location
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-extrabold text-[#101C36] bg-[#F6F4EF] px-3 py-1.5 rounded-xl border border-[#DFDDD7]">
+              <span className="text-xs font-extrabold text-[#123C35] bg-[#F7F5F0] px-3 py-1.5 rounded-xl border border-[#E1DDD3]">
                 Total Staff: {employees.length}
               </span>
               <button
@@ -902,28 +902,28 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Department Distribution */}
             <div className="space-y-3">
-              <div className="flex items-center justify-between text-xs font-bold text-[#182033]">
+              <div className="flex items-center justify-between text-xs font-bold text-[#17201D]">
                 <span>Department Breakdown</span>
-                <span className="text-[#687080] text-[11px]">Staff Count</span>
+                <span className="text-[#65716C] text-[11px]">Staff Count</span>
               </div>
 
               {deptBreakdown.length > 0 ? (
                 deptBreakdown.map((dept) => (
                   <div key={dept.name} className="space-y-1">
-                    <div className="flex items-center justify-between text-xs font-bold text-[#182033]">
+                    <div className="flex items-center justify-between text-xs font-bold text-[#17201D]">
                       <span>{dept.name}</span>
-                      <span className="font-mono text-[11px] text-[#687080]">{dept.count} ({dept.pct}%)</span>
+                      <span className="font-mono text-[11px] text-[#65716C]">{dept.count} ({dept.pct}%)</span>
                     </div>
-                    <div className="w-full h-2 rounded-full bg-[#F6F4EF] overflow-hidden border border-[#DFDDD7]">
+                    <div className="w-full h-2 rounded-full bg-[#F7F5F0] overflow-hidden border border-[#E1DDD3]">
                       <div
-                        className="h-full bg-[#101C36] rounded-full transition-all duration-300"
+                        className="h-full bg-[#123C35] rounded-full transition-all duration-300"
                         style={{ width: `${Math.max(dept.pct, 4)}%` }}
                       />
                     </div>
                   </div>
                 ))
               ) : (
-                <div className="py-6 text-center text-xs text-[#687080] font-semibold">
+                <div className="py-6 text-center text-xs text-[#65716C] font-semibold">
                   No department distribution records found.
                 </div>
               )}
@@ -931,9 +931,9 @@ export default function DashboardPage() {
 
             {/* Location Distribution */}
             <div className="space-y-3">
-              <div className="flex items-center justify-between text-xs font-bold text-[#182033]">
+              <div className="flex items-center justify-between text-xs font-bold text-[#17201D]">
                 <span>Store Location Distribution</span>
-                <span className="text-[#687080] text-[11px]">Store Strength</span>
+                <span className="text-[#65716C] text-[11px]">Store Strength</span>
               </div>
 
               {(isGlobalAdmin ? [1, 2, 3] : (availableLocations.length > 0 ? availableLocations.map(l => l.id) : [Number(session?.locationId || 3)])).map((locId) => {
@@ -943,14 +943,14 @@ export default function DashboardPage() {
 
                 return (
                   <div key={locId} className="space-y-1">
-                    <div className="flex items-center justify-between text-xs font-bold text-[#182033]">
+                    <div className="flex items-center justify-between text-xs font-bold text-[#17201D]">
                       <span className="flex items-center gap-1.5">
                         <MapPin className="w-3 h-3 text-[#C9A45C]" />
                         <span>{store.name}</span>
                       </span>
-                      <span className="font-mono text-[11px] text-[#687080]">{store.count} Staff ({pct}%)</span>
+                      <span className="font-mono text-[11px] text-[#65716C]">{store.count} Staff ({pct}%)</span>
                     </div>
-                    <div className="w-full h-2 rounded-full bg-[#F6F4EF] overflow-hidden border border-[#DFDDD7]">
+                    <div className="w-full h-2 rounded-full bg-[#F7F5F0] overflow-hidden border border-[#E1DDD3]">
                       <div
                         className="h-full bg-[#C9A45C] rounded-full transition-all duration-300"
                         style={{ width: `${Math.max(pct, 4)}%` }}
@@ -966,13 +966,13 @@ export default function DashboardPage() {
         {/* =========================================================================
             SECTION 6: CATEGORIZED QUICK ACCESS CARDS
         ========================================================================== */}
-        <div className="bg-white rounded-2xl border border-[#DFDDD7] shadow-xs p-5 sm:p-6 mb-6 space-y-5">
-          <div className="border-b border-[#DFDDD7] pb-3">
-            <h2 className="text-sm font-black uppercase tracking-wider text-[#182033] flex items-center gap-2">
+        <div className="bg-white rounded-2xl border border-[#E1DDD3] shadow-xs p-5 sm:p-6 mb-6 space-y-5">
+          <div className="border-b border-[#E1DDD3] pb-3">
+            <h2 className="text-sm font-black uppercase tracking-wider text-[#17201D] flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-[#C9A45C]" />
               <span>Quick Access Desks &amp; Operations</span>
             </h2>
-            <p className="text-xs font-semibold text-[#687080] mt-0.5">
+            <p className="text-xs font-semibold text-[#65716C] mt-0.5">
               Direct access to priority operational desks across categories
             </p>
           </div>
@@ -995,14 +995,14 @@ export default function DashboardPage() {
                   <button
                     key={item.label}
                     onClick={() => navigate(item.path)}
-                    className="p-3 sm:p-4 rounded-xl border border-[#DFDDD7] bg-[#F6F4EF] hover:bg-white hover:border-[#C9A45C] transition-all text-left group shadow-2xs cursor-pointer flex flex-col justify-between"
+                    className="p-3 sm:p-4 rounded-xl border border-[#E1DDD3] bg-[#F7F5F0] hover:bg-white hover:border-[#C9A45C] transition-all text-left group shadow-2xs cursor-pointer flex flex-col justify-between"
                   >
-                    <div className="w-8 h-8 rounded-lg bg-white border border-[#DFDDD7] group-hover:bg-[#101C36] group-hover:text-white transition-colors flex items-center justify-center text-[#182033] mb-2">
+                    <div className="w-8 h-8 rounded-lg bg-white border border-[#E1DDD3] group-hover:bg-[#123C35] group-hover:text-white transition-colors flex items-center justify-center text-[#17201D] mb-2">
                       <Icon className="w-4 h-4" />
                     </div>
                     <div>
-                      <div className="font-extrabold text-xs text-[#182033] group-hover:text-[#101C36] tracking-tight">{item.label}</div>
-                      <div className="text-[10px] text-[#687080] font-medium mt-0.5 leading-snug">{item.desc}</div>
+                      <div className="font-extrabold text-xs text-[#17201D] group-hover:text-[#123C35] tracking-tight">{item.label}</div>
+                      <div className="text-[10px] text-[#65716C] font-medium mt-0.5 leading-snug">{item.desc}</div>
                     </div>
                   </button>
                 );
@@ -1011,7 +1011,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Group 2: Store Operations */}
-          <div className="space-y-2 pt-2 border-t border-[#DFDDD7]">
+          <div className="space-y-2 pt-2 border-t border-[#E1DDD3]">
             <span className="text-[11px] font-black uppercase tracking-wider text-[#C9A45C] block">
               Store Operations
             </span>
@@ -1027,14 +1027,14 @@ export default function DashboardPage() {
                   <button
                     key={item.label}
                     onClick={() => navigate(item.path)}
-                    className="p-3 sm:p-4 rounded-xl border border-[#DFDDD7] bg-[#F6F4EF] hover:bg-white hover:border-[#C9A45C] transition-all text-left group shadow-2xs cursor-pointer flex flex-col justify-between"
+                    className="p-3 sm:p-4 rounded-xl border border-[#E1DDD3] bg-[#F7F5F0] hover:bg-white hover:border-[#C9A45C] transition-all text-left group shadow-2xs cursor-pointer flex flex-col justify-between"
                   >
-                    <div className="w-8 h-8 rounded-lg bg-white border border-[#DFDDD7] group-hover:bg-[#101C36] group-hover:text-white transition-colors flex items-center justify-center text-[#182033] mb-2">
+                    <div className="w-8 h-8 rounded-lg bg-white border border-[#E1DDD3] group-hover:bg-[#123C35] group-hover:text-white transition-colors flex items-center justify-center text-[#17201D] mb-2">
                       <Icon className="w-4 h-4" />
                     </div>
                     <div>
-                      <div className="font-extrabold text-xs text-[#182033] group-hover:text-[#101C36] tracking-tight">{item.label}</div>
-                      <div className="text-[10px] text-[#687080] font-medium mt-0.5 leading-snug">{item.desc}</div>
+                      <div className="font-extrabold text-xs text-[#17201D] group-hover:text-[#123C35] tracking-tight">{item.label}</div>
+                      <div className="text-[10px] text-[#65716C] font-medium mt-0.5 leading-snug">{item.desc}</div>
                     </div>
                   </button>
                 );
@@ -1043,7 +1043,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Group 3: Workforce */}
-          <div className="space-y-2 pt-2 border-t border-[#DFDDD7]">
+          <div className="space-y-2 pt-2 border-t border-[#E1DDD3]">
             <span className="text-[11px] font-black uppercase tracking-wider text-[#C9A45C] block">
               Workforce Operations
             </span>
@@ -1059,14 +1059,14 @@ export default function DashboardPage() {
                   <button
                     key={item.label}
                     onClick={() => navigate(item.path)}
-                    className="p-3 sm:p-4 rounded-xl border border-[#DFDDD7] bg-[#F6F4EF] hover:bg-white hover:border-[#C9A45C] transition-all text-left group shadow-2xs cursor-pointer flex flex-col justify-between"
+                    className="p-3 sm:p-4 rounded-xl border border-[#E1DDD3] bg-[#F7F5F0] hover:bg-white hover:border-[#C9A45C] transition-all text-left group shadow-2xs cursor-pointer flex flex-col justify-between"
                   >
-                    <div className="w-8 h-8 rounded-lg bg-white border border-[#DFDDD7] group-hover:bg-[#101C36] group-hover:text-white transition-colors flex items-center justify-center text-[#182033] mb-2">
+                    <div className="w-8 h-8 rounded-lg bg-white border border-[#E1DDD3] group-hover:bg-[#123C35] group-hover:text-white transition-colors flex items-center justify-center text-[#17201D] mb-2">
                       <Icon className="w-4 h-4" />
                     </div>
                     <div>
-                      <div className="font-extrabold text-xs text-[#182033] group-hover:text-[#101C36] tracking-tight">{item.label}</div>
-                      <div className="text-[10px] text-[#687080] font-medium mt-0.5 leading-snug">{item.desc}</div>
+                      <div className="font-extrabold text-xs text-[#17201D] group-hover:text-[#123C35] tracking-tight">{item.label}</div>
+                      <div className="text-[10px] text-[#65716C] font-medium mt-0.5 leading-snug">{item.desc}</div>
                     </div>
                   </button>
                 );
@@ -1078,22 +1078,22 @@ export default function DashboardPage() {
         {/* =========================================================================
             SECTION 7: ACTIVE STORE EMPLOYEES DIRECTORY TABLE
         ========================================================================== */}
-        <div className="bg-white rounded-2xl border border-[#DFDDD7] shadow-xs p-5 sm:p-6 mb-6 space-y-5">
+        <div className="bg-white rounded-2xl border border-[#E1DDD3] shadow-xs p-5 sm:p-6 mb-6 space-y-5">
           {/* Section Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#DFDDD7] pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E1DDD3] pb-4">
             <div className="min-w-0">
-              <h2 className="font-black text-sm uppercase tracking-wider text-[#182033] flex items-center gap-2">
+              <h2 className="font-black text-sm uppercase tracking-wider text-[#17201D] flex items-center gap-2">
                 <UserCheck className="w-4 h-4 text-[#C9A45C]" />
                 <span>Active Store Staff Directory</span>
               </h2>
-              <p className="text-xs font-semibold text-[#687080] mt-1">
+              <p className="text-xs font-semibold text-[#65716C] mt-1">
                 Showing registered employees across {currentLocation === 'ALL' ? 'All Locations' : `BSC Textiles ${activeLocation.name}`}
               </p>
             </div>
 
             <div className="flex items-center gap-3 w-full sm:w-auto flex-wrap">
               <div className="relative flex-1 min-w-[200px]">
-                <Search className="w-4 h-4 text-[#687080] absolute left-3 top-1/2 -translate-y-1/2" />
+                <Search className="w-4 h-4 text-[#65716C] absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   placeholder="Search staff by name, ID, section..."
@@ -1105,7 +1105,7 @@ export default function DashboardPage() {
               <button
                 type="button"
                 onClick={() => navigate('/employees')}
-                className="px-4 py-2 rounded-xl bg-[#101C36] text-white hover:bg-[#07101F] text-xs font-bold transition-all shadow-xs whitespace-nowrap cursor-pointer flex-shrink-0"
+                className="px-4 py-2 rounded-xl bg-[#123C35] text-white hover:bg-[#082821] text-xs font-bold transition-all shadow-xs whitespace-nowrap cursor-pointer flex-shrink-0"
               >
                 + Employee Directory
               </button>
@@ -1125,7 +1125,7 @@ export default function DashboardPage() {
                   <col style={{ width: '130px', minWidth: '110px' }} />
                 </colgroup>
                 <thead>
-                  <tr className="border-b border-[#DFDDD7] text-[10.5px] font-black uppercase text-[#687080] bg-[#F6F4EF]">
+                  <tr className="border-b border-[#E1DDD3] text-[10.5px] font-black uppercase text-[#65716C] bg-[#F7F5F0]">
                     <th className="py-3 px-4">Emp ID / App No</th>
                     <th className="py-3 px-4">Employee Name</th>
                     <th className="py-3 px-4">Role & Designation</th>
@@ -1134,25 +1134,25 @@ export default function DashboardPage() {
                     <th className="py-3 px-4 text-right pr-4">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#DFDDD7]/60">
+                <tbody className="divide-y divide-[#E1DDD3]/60">
                   {paginatedEmployees.length > 0 ? (
                     paginatedEmployees.map((emp) => (
-                      <tr key={emp.id || emp.employeeId || emp.appNo} className="hover:bg-[#F6F4EF]/40 transition-colors">
-                        <td className="py-3 px-4 font-mono font-bold text-[#182033] whitespace-nowrap">
+                      <tr key={emp.id || emp.employeeId || emp.appNo} className="hover:bg-[#F7F5F0]/40 transition-colors">
+                        <td className="py-3 px-4 font-mono font-bold text-[#17201D] whitespace-nowrap">
                           {emp.employeeId || emp.appNo || 'EMP-—'}
                         </td>
                         <td className="py-3 px-4">
-                          <div className="font-extrabold text-[#182033] truncate">{emp.name || emp.fullName}</div>
-                          <div className="text-[11px] text-[#687080] truncate">{emp.phone || emp.mobile || '—'}</div>
+                          <div className="font-extrabold text-[#17201D] truncate">{emp.name || emp.fullName}</div>
+                          <div className="text-[11px] text-[#65716C] truncate">{emp.phone || emp.mobile || '—'}</div>
                         </td>
-                        <td className="py-3 px-4 font-semibold text-[#182033] truncate">
+                        <td className="py-3 px-4 font-semibold text-[#17201D] truncate">
                           {emp.designation || emp.role || 'Staff'}
                         </td>
-                        <td className="py-3 px-4 font-semibold text-[#687080] truncate">
+                        <td className="py-3 px-4 font-semibold text-[#65716C] truncate">
                           {emp.department || 'Store Operations'}
                         </td>
                         <td className="py-3 px-4">
-                          <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#101C36]/5 text-[#101C36] border border-[#101C36]/10 whitespace-nowrap">
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#123C35]/5 text-[#123C35] border border-[#123C35]/10 whitespace-nowrap">
                             <MapPin className="w-3 h-3 text-[#C9A45C] flex-shrink-0" />
                             <span className="truncate">{emp.locationName || (emp.locationId === 1 ? 'Belagavi' : emp.locationId === 2 ? 'Davanagere' : emp.locationId === 3 ? 'Shivamogga' : 'Assigned Store')}</span>
                           </span>
@@ -1161,7 +1161,7 @@ export default function DashboardPage() {
                           <button
                             type="button"
                             onClick={() => setSelectedEmployee(emp)}
-                            className="px-3 py-1.5 text-xs font-bold rounded-lg border border-[#DFDDD7] bg-white hover:bg-[#101C36] hover:text-white hover:border-[#101C36] transition-colors cursor-pointer whitespace-nowrap"
+                            className="px-3 py-1.5 text-xs font-bold rounded-lg border border-[#E1DDD3] bg-white hover:bg-[#123C35] hover:text-white hover:border-[#123C35] transition-colors cursor-pointer whitespace-nowrap"
                           >
                             View Profile
                           </button>
@@ -1170,7 +1170,7 @@ export default function DashboardPage() {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={6} className="py-10 text-center text-xs text-[#687080] font-semibold">
+                      <td colSpan={6} className="py-10 text-center text-xs text-[#65716C] font-semibold">
                         {loading ? 'Loading staff records...' : 'No matching employees found in directory.'}
                       </td>
                     </tr>
@@ -1183,19 +1183,19 @@ export default function DashboardPage() {
           {/* Mobile Card List */}
           <div className="sm:hidden space-y-3">
             {paginatedEmployees.map((emp) => (
-              <div key={emp.id || emp.employeeId || emp.appNo} className="p-4 rounded-xl border border-[#DFDDD7] bg-white space-y-3">
+              <div key={emp.id || emp.employeeId || emp.appNo} className="p-4 rounded-xl border border-[#E1DDD3] bg-white space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="font-mono text-xs font-bold text-[#182033]">{emp.employeeId || emp.appNo}</span>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#101C36]/5 text-[#101C36] border border-[#101C36]/10">
+                  <span className="font-mono text-xs font-bold text-[#17201D]">{emp.employeeId || emp.appNo}</span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#123C35]/5 text-[#123C35] border border-[#123C35]/10">
                     {emp.locationName || (emp.locationId === 1 ? 'Belagavi' : emp.locationId === 2 ? 'Davanagere' : 'Shivamogga')}
                   </span>
                 </div>
                 <div>
-                  <div className="font-black text-sm text-[#182033]">{emp.name || emp.fullName}</div>
-                  <div className="text-xs text-[#687080]">{emp.designation || 'Staff'} · {emp.department || 'Store Operations'}</div>
+                  <div className="font-black text-sm text-[#17201D]">{emp.name || emp.fullName}</div>
+                  <div className="text-xs text-[#65716C]">{emp.designation || 'Staff'} · {emp.department || 'Store Operations'}</div>
                 </div>
-                <div className="pt-2 border-t border-[#DFDDD7] flex items-center justify-between">
-                  <span className="text-xs text-[#687080]">{emp.phone || emp.mobile || '—'}</span>
+                <div className="pt-2 border-t border-[#E1DDD3] flex items-center justify-between">
+                  <span className="text-xs text-[#65716C]">{emp.phone || emp.mobile || '—'}</span>
                   <button
                     type="button"
                     onClick={() => setSelectedEmployee(emp)}
@@ -1210,8 +1210,8 @@ export default function DashboardPage() {
 
           {/* Pagination Controls */}
           {totalPages > 1 && (
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-[#DFDDD7] text-xs">
-              <span className="text-[#687080] font-semibold text-center sm:text-left">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-[#E1DDD3] text-xs">
+              <span className="text-[#65716C] font-semibold text-center sm:text-left">
                 Showing {Math.min(filteredEmployees.length, (currentPage - 1) * pageSize + 1)} to {Math.min(filteredEmployees.length, currentPage * pageSize)} of {filteredEmployees.length} staff
               </span>
               <div className="flex items-center gap-1.5 justify-center sm:justify-end">
@@ -1219,16 +1219,16 @@ export default function DashboardPage() {
                   type="button"
                   onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
-                  className="px-3 py-1.5 rounded-lg border border-[#DFDDD7] bg-white text-[#182033] font-bold disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer whitespace-nowrap"
+                  className="px-3 py-1.5 rounded-lg border border-[#E1DDD3] bg-white text-[#17201D] font-bold disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer whitespace-nowrap"
                 >
                   Prev
                 </button>
-                <span className="font-bold text-[#182033] px-2">{currentPage} / {totalPages}</span>
+                <span className="font-bold text-[#17201D] px-2">{currentPage} / {totalPages}</span>
                 <button
                   type="button"
                   onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                   disabled={currentPage === totalPages}
-                  className="px-3 py-1.5 rounded-lg border border-[#DFDDD7] bg-white text-[#182033] font-bold disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer whitespace-nowrap"
+                  className="px-3 py-1.5 rounded-lg border border-[#E1DDD3] bg-white text-[#17201D] font-bold disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer whitespace-nowrap"
                 >
                   Next
                 </button>
