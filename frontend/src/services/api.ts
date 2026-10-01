@@ -2011,6 +2011,20 @@ export const API = {
     return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
   },
 
+  async getWeddingCustomerFlowStream(params?: {
+    location_id?: number | string;
+    search?: string;
+    status?: string;
+    priority?: string;
+    view?: 'all' | 'calls_only';
+    page?: number;
+    limit?: number;
+  }) {
+    const q = params ? new URLSearchParams(cleanQueryParams(params)).toString() : '';
+    const res = await apiFetch(`/wedding-crm/flow-stream${q ? `?${q}` : ''}`);
+    return (res && res.data !== undefined) ? { ...res, ...res.data } : res;
+  },
+
   // ── Wedding CRM: Pipeline ────────────────────────────────────
   /**
    * Redesigned pipeline workspace feed: active customers with their call,

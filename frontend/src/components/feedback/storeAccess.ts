@@ -12,7 +12,8 @@
  * scoped. Signed-in staff only ever see their own stores.
  */
 
-import { STORE_LOCATIONS_LIST, CentralStoreLocation } from '../../config/storeLocations';
+import { STORE_LOCATIONS_LIST } from '../../config/storeLocations';
+import type { CentralStoreLocation } from '../../config/storeLocations';
 import type { UserSession } from '../../services/api';
 import type { LocationStatus } from '../../context/LocationContext';
 

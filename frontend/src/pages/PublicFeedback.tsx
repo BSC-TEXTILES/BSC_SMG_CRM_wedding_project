@@ -3,29 +3,24 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
   MapPin,
   Star,
-  ChevronRight,
   ArrowRight,
   ArrowLeft,
   CheckCircle2,
   Check,
   Store,
   User,
-  Phone,
   Mail,
-  MessageSquare,
-  Sparkles,
-  ShieldCheck,
-  Clock,
   RotateCcw
 } from 'lucide-react';
 import { API } from '../services/api';
 import { showToast } from '../components/Toast';
+import StoreSelectionPanel from '../components/feedback/StoreSelectionPanel';
 import {
   CENTRAL_STORE_LOCATIONS,
-  STORE_LOCATIONS_LIST,
   resolveStoreLocation,
   CentralStoreLocation
 } from '../config/storeLocations';
+import './landing/editorial/editorial.css';
 
 // Default structured survey questions matching the 3 stores
 const DEFAULT_QUESTIONS = [
@@ -317,63 +312,10 @@ export default function PublicFeedback() {
   }
 
   // ─────────────────────────────────────────────────────────────
-  // 2. STORE SELECTION SCREEN (Simple, Modern, Clean 3 Cards)
+  // 2. STORE SELECTION SCREEN (Public website editorial design)
   // ─────────────────────────────────────────────────────────────
   if (!selectedStore) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 sm:p-6 font-sans">
-        <div className="w-full max-w-lg bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm">
-          {/* Header */}
-          <div className="text-center mb-6">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold mb-3">
-              <Store className="w-3.5 h-3.5 text-slate-500" />
-              <span>BSC Textiles</span>
-            </div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-              BSC Customer Feedback
-            </h1>
-            <p className="text-sm text-slate-600 mt-2 leading-relaxed">
-              Please select the BSC Textiles store you visited today to start your feedback:
-            </p>
-          </div>
-
-          {/* 3 Clean Location Cards (Equal Height & Width, Subtle Borders, Soft Hover) */}
-          <div className="space-y-3">
-            {STORE_LOCATIONS_LIST.map((store) => (
-              <button
-                key={store.code}
-                type="button"
-                onClick={() => handleStoreSelect(store)}
-                className="w-full p-4 rounded-xl border border-slate-200 hover:border-slate-400 bg-white hover:bg-slate-50/80 transition-all text-left flex items-center justify-between group cursor-pointer"
-              >
-                <div className="flex items-center gap-3.5">
-                  <div className="w-9 h-9 rounded-lg bg-slate-100 group-hover:bg-slate-200/80 text-slate-600 flex items-center justify-center shrink-0 transition-colors">
-                    <MapPin className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-bold text-slate-900 leading-snug">
-                      {store.city}
-                    </div>
-                    <div className="text-xs text-slate-500 mt-0.5">
-                      {store.storeName}
-                    </div>
-                  </div>
-                </div>
-                <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-slate-700 group-hover:translate-x-0.5 transition-all" />
-              </button>
-            ))}
-          </div>
-
-          {/* Bottom Security / Trust Notice */}
-          <div className="mt-8 pt-5 border-t border-slate-100 text-center">
-            <div className="inline-flex items-center gap-1.5 text-xs text-slate-400">
-              <ShieldCheck className="w-3.5 h-3.5 text-slate-400" />
-              <span>Direct feedback to store management</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    return <StoreSelectionPanel onSelect={handleStoreSelect} />;
   }
 
   // ─────────────────────────────────────────────────────────────

@@ -113,3 +113,15 @@ function modified; if the landing build folder is absent, the backend behaves ex
 - Rebuilt frontend â†’ synced `backend/dist` + root `dist` (new bundle `index-CgO-4iRB.js`), touched `restart.txt`.
 
 **Verify**: `node backend/src/utils/captcha.js` smoke test returns `codeLength: 4`, `verifyCaptcha` ok; `tsc --noEmit` clean.
+
+### 2026-10-01 — CUSTOMER FEEDBACK STORE SELECTION REDESIGNED (EDITORIAL UI + STORE-ACCESS GATING)
+
+**Scope**: Redesigned ONLY the store/location selection screen of the public Customer Feedback flow (`/feedback`, `/feedback-public`). Routes, APIs, auth, DB schema and the feedback form/submission flow are untouched. Public visitors keep the existing behaviour (all stores listed); signed-in staff now only see the stores their existing role/location permissions allow (no new permission system, no extra API calls).
+
+**Changes** (all frontend, additive):
+- NEW `frontend/src/components/feedback/storeAccess.ts` — `resolveFeedbackStoreAccess(session, locationStatus)` mirrors `LocationContext` rules (role normalisation, super-admin/global-admin = all stores, `allowedLocations` else `locationId`, empty ? `empty` state, unresolvable ids ? `error` state, fail-closed). Public (no session) ? all stores. Also `describeStoreAccess()` ? `Belagavi` / `Belagavi & Shivamogga` / `All stores`.
+- NEW `frontend/src/components/feedback/StoreSelectionPanel.tsx` — editorial header (logo + wordmark + "Back to website" pill), heading block, access chip, store-card grid, loading skeleton (2.5s grace on `locationStatus`), empty & error (Try again) states, trust footer, skip link. Reads the session via `Auth.check()/Auth.get()` and re-syncs on `bsc_auth_changed` + `storage` (avoids the stale `LocationContext.session` after same-tab login).
+- NEW `frontend/src/components/feedback/storeSelection.css` — `bsc-fb-*` styles built strictly on `--ed-*` tokens from `editorial.css`; auto-fit card grid (1 card max 26rem, 2 cards max 54rem), white cards with hairline borders, accent hover, focus-radius overrides for the pill/card (the shared `:focus-visible` rule squares corners).
+- `frontend/src/pages/PublicFeedback.tsx` — store-selection screen (old slate card list) replaced by `<StoreSelectionPanel onSelect={handleStoreSelect} />`; imports `./landing/editorial/editorial.css`; dropped now-unused imports (`ChevronRight`, `Phone`, `MessageSquare`, `Sparkles`, `ShieldCheck`, `Clock`, `STORE_LOCATIONS_LIST`). Everything else in the file unchanged.
+
+**Verify**: `npx tsc --noEmit -p frontend/tsconfig.json` clean; `npm run build` (frontend) green; 13-case permission smoke test (public / super admin / global admin / scoped admin / BEL / BEL+SHI / SHI via locationId / no assignment / unresolvable ids / loading / error) all pass; every editorial class used exists in `editorial.css`; all icons are from the existing `lucide-react` dependency. NOT yet verified visually in a browser — needs a manual look at `/feedback` as public + as BEL-only / BEL+SHI / no-assignment users.

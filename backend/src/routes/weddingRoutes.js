@@ -102,6 +102,7 @@ router.get('/employee-performance', weddingController.getEmployeePerformance);
 router.get('/pipeline', weddingController.getStatusPipeline);
 router.get('/pipeline/board', canViewWedding, weddingController.getPipelineBoard);
 router.get('/upcoming-weddings', weddingController.getUpcomingWeddings);
+router.get('/flow-stream', canViewWedding, weddingController.getCustomerFlowStream);
 
 // ── Advanced Search ────────────────────────────────────────────
 router.get('/search', weddingController.searchCustomers);

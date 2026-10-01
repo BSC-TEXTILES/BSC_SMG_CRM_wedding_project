@@ -3505,6 +3505,162 @@ class WeddingController {
     }
   }
 
+    // ── 12B. Live Wedding Customer Flow & Call Activity Stream ──────────
+  async getCustomerFlowStream(req, res) {
+    try {
+      await ensureTables();
+      const { clause: locClause, params } = resolveLocFilter(req, 'w');
+      const search = req.query.search ? String(req.query.search).trim() : '';
+      const status = req.query.status ? String(req.query.status).trim() : '';
+      const priority = req.query.priority ? String(req.query.priority).trim() : '';
+      const viewMode = req.query.view || 'all';
+      const limit = Math.min(500, Math.max(1, parseInt(req.query.limit, 10) || 50));
+      const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+      const offset = (page - 1) * limit;
+
+      let whereConditions = [`w.is_deleted = 0`, `(w.lifecycle_status = 'ACTIVE' OR w.lifecycle_status IS NULL)`];
+      let queryParams = [...params];
+
+      if (status && status !== 'all') {
+        if (status === 'overdue') {
+          whereConditions.push(`w.follow_up_date < CURDATE() AND w.customer_status NOT IN ('Converted', 'Visited Store', 'Not Interested', 'Cancelled', 'Closed')`);
+        } else if (status === 'due_today') {
+          whereConditions.push(`w.follow_up_date = CURDATE()`);
+        } else {
+          whereConditions.push(`w.customer_status = ?`);
+          queryParams.push(status);
+        }
+      }
+
+      if (priority && priority !== 'all') {
+        whereConditions.push(`w.priority = ?`);
+        queryParams.push(priority);
+      }
+
+      if (search) {
+        const q = `%${search.toLowerCase()}%`;
+        whereConditions.push(`(
+          LOWER(w.customer_name) LIKE ? OR
+          w.mobile_number LIKE ? OR
+          w.alternate_mobile LIKE ? OR
+          LOWER(w.customer_code) LIKE ? OR
+          LOWER(COALESCE(w.bride_name, '')) LIKE ? OR
+          LOWER(COALESCE(w.groom_name, '')) LIKE ? OR
+          LOWER(COALESCE(w.wedding_city, '')) LIKE ?
+        )`);
+        queryParams.push(q, q, q, q, q, q, q);
+      }
+
+      if (viewMode === 'calls_only') {
+        whereConditions.push(`lc.id IS NOT NULL`);
+      }
+
+      const whereClause = whereConditions.join(' AND ');
+
+      const [countRows] = await pool.query(`
+        SELECT COUNT(DISTINCT w.id) AS total
+        FROM wedding_customers w
+        LEFT JOIN (
+          SELECT cl1.id, cl1.customer_id
+          FROM wedding_call_logs cl1
+          INNER JOIN (
+            SELECT customer_id, MAX(id) AS max_id
+            FROM wedding_call_logs
+            GROUP BY customer_id
+          ) cl2 ON cl1.id = cl2.max_id
+        ) lc ON lc.customer_id = w.id
+        WHERE ${whereClause} ${locClause}
+      `, queryParams);
+
+      const total = countRows?.[0]?.total || 0;
+
+      const [rows] = await pool.query(`
+        SELECT 
+          w.id,
+          w.id AS customer_id,
+          w.customer_code,
+          w.customer_name,
+          w.mobile_number,
+          w.alternate_mobile,
+          w.email,
+          w.bride_name,
+          w.bride_contact,
+          w.groom_name,
+          w.groom_contact,
+          w.wedding_date,
+          w.wedding_venue,
+          w.wedding_city,
+          w.wedding_type,
+          w.expected_shopping_date,
+          w.preferred_shopping_category,
+          w.budget,
+          w.budget_range,
+          w.priority,
+          w.customer_status,
+          w.call_status,
+          w.assigned_telecaller,
+          w.assigned_telecaller_id,
+          w.follow_up_date,
+          w.preferred_call_time,
+          w.customer_notes,
+          w.estimated_family_size,
+          w.guest_count,
+          w.lead_source,
+          w.location_id,
+          w.total_calls_count,
+          w.created_at,
+          w.updated_at,
+          l.location_name,
+          l.location_code,
+          COALESCE(lc.call_outcome, w.last_call_outcome) AS call_outcome,
+          lc.remarks AS call_remarks,
+          COALESCE(lc.call_date, w.last_call_date) AS call_date,
+          lc.call_time,
+          COALESCE(lc.telecaller_name, w.assigned_telecaller) AS telecaller_name,
+          lc.next_follow_up_date,
+          lc.next_follow_up_time,
+          lc.expected_shopping_date_updated,
+          lc.call_duration,
+          lc.customer_response,
+          lc.id AS call_log_id,
+          CASE 
+            WHEN w.follow_up_date < CURDATE() AND w.customer_status NOT IN ('Converted', 'Visited Store', 'Not Interested', 'Cancelled', 'Closed')
+            THEN DATEDIFF(CURDATE(), w.follow_up_date)
+            ELSE 0 
+          END AS overdue_days
+        FROM wedding_customers w
+        LEFT JOIN locations l ON l.id = w.location_id
+        LEFT JOIN (
+          SELECT cl1.*
+          FROM wedding_call_logs cl1
+          INNER JOIN (
+            SELECT customer_id, MAX(id) AS max_id
+            FROM wedding_call_logs
+            GROUP BY customer_id
+          ) cl2 ON cl1.id = cl2.max_id
+        ) lc ON lc.customer_id = w.id
+        WHERE ${whereClause} ${locClause}
+        ORDER BY 
+          COALESCE(lc.created_at, w.updated_at, w.created_at) DESC
+        LIMIT ? OFFSET ?
+      `, [...queryParams, limit, offset]);
+
+      decryptRows(rows, [...ENCRYPTED_FIELDS, ...CALL_LOG_ENCRYPTED_FIELDS, 'call_remarks']);
+
+      return successRes(res, {
+        customers: rows || [],
+        data: rows || [],
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }, 'Customer flow stream fetched successfully');
+    } catch (err) {
+      console.error('[WeddingController.getCustomerFlowStream Error]', err);
+      return errorRes(res, 'Failed to fetch customer flow stream', [err.message], 500);
+    }
+  }
+
     // ── 13. Export Data Engine ──────────────────────────────────────────
   async exportData(req, res) {
     try {
