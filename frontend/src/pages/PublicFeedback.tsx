@@ -25,7 +25,8 @@ import {
   ShoppingBag,
   MessageSquare,
   ThumbsUp,
-  Smile
+  Smile,
+  ShieldCheck
 } from 'lucide-react';
 import { API } from '../services/api';
 import { showToast } from '../components/Toast';
@@ -117,6 +118,14 @@ function validateStepOne(values: { name: string; mobile: string; email: string }
 // Reusable sub-components
 // ─────────────────────────────────────────────────────────────────────────────
 
+const RATING_EMOTIONS: Record<number, { label: string; badge: string; color: string; desc: string }> = {
+  5: { label: 'Exceptional Experience', badge: '5.0 · Outstanding', color: '#15803D', desc: 'Exceeded all expectations across service and fabric quality' },
+  4: { label: 'Very Good Visit', badge: '4.0 · Delighted', color: '#123C35', desc: 'Smooth, pleasant, and highly satisfactory shopping' },
+  3: { label: 'Average Experience', badge: '3.0 · Satisfactory', color: '#B7791F', desc: 'Met expectations, with room for improvement' },
+  2: { label: 'Fair Experience', badge: '2.0 · Fair', color: '#C83B4A', desc: 'A few areas fell short of our standard' },
+  1: { label: 'Needs Attention', badge: '1.0 · Unsatisfied', color: '#B42318', desc: 'Disappointing visit — our store manager will review this' }
+};
+
 interface StarRatingProps {
   value: number;
   onChange: (v: number) => void;
@@ -126,25 +135,35 @@ interface StarRatingProps {
 
 function StarRating({ value, onChange, labelId, size = 'normal' }: StarRatingProps) {
   const btnClass = size === 'mini' ? 'bfx-star-mini' : 'bfx-star-btn';
+  const meta = RATING_EMOTIONS[value] || RATING_EMOTIONS[5];
+
   return (
-    <div className="bfx-star-group" role="group" aria-labelledby={labelId}>
-      {[1, 2, 3, 4, 5].map((score) => (
-        <button
-          key={score}
-          type="button"
-          onClick={() => onChange(score)}
-          className={btnClass}
-          data-on={score <= value}
-          aria-pressed={score <= value}
-          aria-label={`${score} out of 5`}
-        >
-          <Star aria-hidden="true" fill={score <= value ? 'currentColor' : 'none'} />
-        </button>
-      ))}
+    <div className={`bfx-star-container ${size === 'mini' ? 'bfx-star-container--mini' : ''}`}>
+      <div className="bfx-star-group" role="group" aria-labelledby={labelId}>
+        {[1, 2, 3, 4, 5].map((score) => (
+          <button
+            key={score}
+            type="button"
+            onClick={() => onChange(score)}
+            className={btnClass}
+            data-on={score <= value}
+            aria-pressed={score <= value}
+            aria-label={`${score} out of 5 stars`}
+          >
+            <Star aria-hidden="true" fill={score <= value ? 'currentColor' : 'none'} />
+          </button>
+        ))}
+      </div>
       {size === 'normal' && (
-        <span className="bfx-rating-note" aria-live="polite">
-          {value}/5 · {RATING_LABELS[value]}
-        </span>
+        <div className="bfx-rating-badge-wrapper" aria-live="polite">
+          <div className="bfx-rating-badge" data-score={value}>
+            <Sparkles className="bfx-rating-badge-icon" aria-hidden="true" />
+            <span className="bfx-rating-badge-score">{meta.badge}</span>
+            <span className="bfx-rating-badge-sep">✦</span>
+            <span className="bfx-rating-badge-label">{meta.label}</span>
+          </div>
+          <p className="bfx-rating-badge-desc">{meta.desc}</p>
+        </div>
       )}
     </div>
   );
@@ -175,9 +194,9 @@ function OptionCards({ options, selected, onSelect, twoCol, labelId }: OptionCar
             className="bfx-option"
             aria-pressed={isSelected}
           >
-            <span>{opt}</span>
+            <span className="bfx-option-text">{opt}</span>
             <span className="bfx-option-check" aria-hidden="true">
-              {isSelected && <Check size={12} />}
+              {isSelected ? <Check size={13} className="bfx-option-check-icon" /> : null}
             </span>
           </button>
         );
@@ -231,6 +250,7 @@ export default function PublicFeedback() {
   // QR Modal States
   const [showQrModal, setShowQrModal] = useState<boolean>(false);
   const [qrModalCopied, setQrModalCopied] = useState<boolean>(false);
+  const [copiedRef, setCopiedRef] = useState<boolean>(false);
 
   // Selected chips (liked most quick-select)
   const [selectedChips, setSelectedChips] = useState<string[]>([]);
@@ -279,6 +299,15 @@ export default function PublicFeedback() {
     setQrModalCopied(true);
     showToast(`${selectedStore.city} feedback link copied!`, 'success');
     setTimeout(() => setQrModalCopied(false), 2200);
+  };
+
+  const handleCopyRef = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (!refNo) return;
+    navigator.clipboard.writeText(refNo);
+    setCopiedRef(true);
+    showToast('Feedback reference number copied to clipboard.', 'success');
+    setTimeout(() => setCopiedRef(false), 2200);
   };
 
   const handleDownloadStoreQr = async (e?: React.MouseEvent) => {
@@ -471,7 +500,7 @@ export default function PublicFeedback() {
   };
 
   // ──────────────────────────────────────────────────────────────────────────
-  // 1. SUCCESS CONFIRMATION SCREEN
+  // 1. SUCCESS CONFIRMATION SCREEN (Luxury Patron Certificate)
   // ──────────────────────────────────────────────────────────────────────────
   if (submitted && selectedStore) {
     return (
@@ -486,66 +515,121 @@ export default function PublicFeedback() {
               </picture>
               <div className="bfx-brand-text">
                 <span className="bfx-brand-name">BSC Textiles</span>
-                <span className="bfx-brand-sub">Customer Experience</span>
+                <span className="bfx-brand-sub">{selectedStore.city} Boutique · Patron Acknowledgement</span>
               </div>
+            </div>
+            <div className="bfx-store-pill">
+              <MapPin size={11} aria-hidden="true" />
+              <span>{selectedStore.city}</span>
             </div>
           </header>
 
           {/* Success body */}
           <section className="bfx-success" aria-label="Feedback submitted successfully">
-            <span className="bfx-success-check" aria-hidden="true">
-              <CheckCircle2 />
-            </span>
-            <span className="bfx-success-store">{selectedStore.storeName}</span>
-            <h1 className="bfx-success-title">Thank you!</h1>
+            {/* Celebratory emblem with gold halo */}
+            <div className="bfx-success-aura">
+              <div className="bfx-success-check-wrap">
+                <CheckCircle2 className="bfx-success-check-icon" aria-hidden="true" />
+              </div>
+            </div>
+
+            <div className="bfx-success-badge">
+              <Sparkles size={12} aria-hidden="true" />
+              <span>Official Patron Voice Acknowledgement</span>
+            </div>
+
+            <h1 className="bfx-success-title">Thank you, {customerName}!</h1>
             <p className="bfx-success-note">
-              Your feedback has been saved directly to the {selectedStore.city} store management team.
-              Your voice truly matters to us.
+              Your feedback has been saved directly to the executive management and floor team at{' '}
+              <strong>{selectedStore.storeName}</strong>. Your voice guides our craftsmanship and hospitality.
             </p>
 
-            {/* Stars */}
-            <div className="bfx-success-stars" aria-hidden="true">
-              {[1,2,3,4,5].map(s => (
-                <Star key={s} className="bfx-success-star" />
-              ))}
+            {/* Stars rating banner */}
+            <div className="bfx-success-stars-card">
+              <span className="bfx-success-stars-label">Overall Rating Given</span>
+              <div className="bfx-success-stars" aria-hidden="true">
+                {[1, 2, 3, 4, 5].map((s) => (
+                  <Star
+                    key={s}
+                    className="bfx-success-star"
+                    fill={s <= overallRating ? 'currentColor' : 'none'}
+                    data-active={s <= overallRating}
+                  />
+                ))}
+              </div>
+              <span className="bfx-success-stars-score">{overallRating}.0 / 5.0 Rating</span>
             </div>
 
-            {/* Ref number */}
-            <div className="bfx-ref-box">
-              <span className="bfx-ref-label">Feedback Reference</span>
-              <span className="bfx-ref-value">{refNo}</span>
-            </div>
+            {/* Patron Receipt Certificate */}
+            <div className="bfx-receipt-card" aria-label="Patron Visit Receipt">
+              <div className="bfx-receipt-decor" aria-hidden="true">
+                <span className="bfx-receipt-corner tl" />
+                <span className="bfx-receipt-corner tr" />
+                <span className="bfx-receipt-corner bl" />
+                <span className="bfx-receipt-corner br" />
+              </div>
+              <div className="bfx-receipt-header">
+                <div>
+                  <span className="bfx-receipt-eyebrow">Verified Visit Voucher</span>
+                  <p className="bfx-receipt-store">{selectedStore.storeName}</p>
+                </div>
+                <div className="bfx-receipt-code-pill">
+                  <ShieldCheck size={12} aria-hidden="true" />
+                  <span>{selectedStore.code}</span>
+                </div>
+              </div>
 
-            {/* Summary details */}
-            <dl className="bfx-success-details">
-              <div className="bfx-success-detail-item">
-                <dt>Customer</dt>
-                <dd>{customerName}</dd>
-              </div>
-              <div className="bfx-success-detail-item">
-                <dt>Section</dt>
-                <dd>{sectionId}</dd>
-              </div>
-              {mobile && (
-                <div className="bfx-success-detail-item">
-                  <dt>Mobile</dt>
-                  <dd className="bfx-mono">+91 {mobile}</dd>
+              <div className="bfx-ref-box">
+                <div className="bfx-ref-content">
+                  <span className="bfx-ref-label">Feedback Reference ID</span>
+                  <span className="bfx-ref-value">{refNo}</span>
                 </div>
-              )}
-              {billNo && (
+                <button
+                  type="button"
+                  className="bfx-ref-copy-btn"
+                  onClick={handleCopyRef}
+                  title="Copy Reference ID"
+                  aria-label="Copy reference ID"
+                >
+                  {copiedRef ? <Check size={14} aria-hidden="true" /> : <Copy size={14} aria-hidden="true" />}
+                  <span>{copiedRef ? 'Copied' : 'Copy'}</span>
+                </button>
+              </div>
+
+              {/* Perforated divider */}
+              <div className="bfx-receipt-divider" aria-hidden="true" />
+
+              {/* Summary details */}
+              <dl className="bfx-success-details">
                 <div className="bfx-success-detail-item">
-                  <dt>Bill / memo no</dt>
-                  <dd className="bfx-mono">{billNo}</dd>
+                  <dt>Patron Name</dt>
+                  <dd>{customerName}</dd>
                 </div>
-              )}
-            </dl>
+                <div className="bfx-success-detail-item">
+                  <dt>Boutique Section</dt>
+                  <dd>{sectionId}</dd>
+                </div>
+                {mobile && (
+                  <div className="bfx-success-detail-item">
+                    <dt>Mobile Contact</dt>
+                    <dd className="bfx-mono">+91 {mobile}</dd>
+                  </div>
+                )}
+                {billNo && (
+                  <div className="bfx-success-detail-item">
+                    <dt>Bill / Memo No</dt>
+                    <dd className="bfx-mono">{billNo}</dd>
+                  </div>
+                )}
+              </dl>
+            </div>
 
             {/* QR share */}
             <div className="bfx-success-share">
-              <span className="bfx-success-share-title">
+              <div className="bfx-success-share-header">
                 <QrCode aria-hidden="true" />
-                <span>{selectedStore.city} feedback QR code</span>
-              </span>
+                <span className="bfx-success-share-title">{selectedStore.city} Store Feedback QR</span>
+              </div>
               <div className="bfx-success-qr-box">
                 <img
                   src={getStoreQrUrl(selectedStore.code, 240)}
@@ -557,16 +641,16 @@ export default function PublicFeedback() {
                 />
               </div>
               <p className="bfx-success-share-note">
-                Share this code at the counter so other customers can complete the same survey.
+                Scan or share at the billing counter so family and fellow patrons can voice their visit.
               </p>
               <div className="bfx-success-share-btns">
                 <button type="button" className="bfx-qr-btn" onClick={handleDownloadStoreQr}>
                   <Download aria-hidden="true" />
-                  <span>Save QR</span>
+                  <span>Download QR</span>
                 </button>
                 <button type="button" className="bfx-qr-btn" onClick={handleCopyStoreLink}>
                   {qrModalCopied ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />}
-                  <span>{qrModalCopied ? 'Copied!' : 'Copy link'}</span>
+                  <span>{qrModalCopied ? 'Copied Link' : 'Copy Survey Link'}</span>
                 </button>
               </div>
             </div>
@@ -574,17 +658,17 @@ export default function PublicFeedback() {
             {/* CTA */}
             <div className="bfx-success-actions">
               <button type="button" onClick={() => navigate('/')} className="bfx-btn-primary">
-                <span>Back to BSC Textiles</span>
+                <span>Back to BSC Textiles Home</span>
                 <ArrowRight aria-hidden="true" />
               </button>
               <button type="button" onClick={handleReset} className="bfx-btn-secondary">
-                <span>Submit another response</span>
+                <span>Submit Another Feedback</span>
               </button>
             </div>
           </section>
 
           <footer className="bfx-footer">
-            <span>BSC Textiles · Customer Experience</span>
+            <span>BSC Textiles · Luxury Customer Care</span>
             <span>{selectedStore.storeName} · {selectedStore.phone}</span>
           </footer>
         </div>
@@ -618,7 +702,7 @@ export default function PublicFeedback() {
             </picture>
             <div className="bfx-brand-text">
               <span className="bfx-brand-name">BSC Textiles</span>
-              <span className="bfx-brand-sub">Customer Experience</span>
+              <span className="bfx-brand-sub">{selectedStore.city} Boutique · Customer Experience</span>
             </div>
           </div>
           <button
@@ -628,23 +712,32 @@ export default function PublicFeedback() {
             aria-label="Change store"
           >
             <MapPin aria-hidden="true" />
-            <span>Change store</span>
+            <span>Switch store</span>
           </button>
         </header>
 
         {/* ── Hero section ───────────────────────────────────────────── */}
         <div className="bfx-hero">
-          <span className="bfx-hero-icon" aria-hidden="true">
-            <Sparkles />
-          </span>
+          <div className="bfx-hero-crest">
+            <span className="bfx-hero-pill">
+              <Sparkles size={13} aria-hidden="true" />
+              <span>Heritage Patron Care</span>
+            </span>
+          </div>
           <h1 className="bfx-hero-title">How was your BSC experience?</h1>
           <p className="bfx-hero-subtitle">
-            Your feedback helps us make every visit better, every time.
+            Every thread of your experience matters to us. Share your genuine reflections with our executive team.
           </p>
-          <span className="bfx-hero-badge">
-            <Clock aria-hidden="true" />
-            Only 1 minute · 5 simple steps
-          </span>
+          <div className="bfx-hero-meta-row">
+            <span className="bfx-hero-badge">
+              <Clock aria-hidden="true" />
+              <span>~60 seconds</span>
+            </span>
+            <span className="bfx-hero-badge bfx-hero-badge--store">
+              <MapPin aria-hidden="true" />
+              <span>{selectedStore.storeName}</span>
+            </span>
+          </div>
         </div>
 
         {/* ── Progress ───────────────────────────────────────────────── */}
@@ -704,24 +797,45 @@ export default function PublicFeedback() {
                 <div className="bfx-step-body">
                   <div className="bfx-step-sections">
 
-                    {/* Store card */}
+                    {/* Store card with luxury certificate styling */}
                     <div className="bfx-store-card" aria-label={`Store visited: BSC Textiles ${selectedStore.city}`}>
-                      <div className="bfx-store-icon">
-                        <MapPin aria-hidden="true" />
+                      <div className="bfx-store-card-decor" aria-hidden="true">
+                        <span className="bfx-store-corner tl" />
+                        <span className="bfx-store-corner tr" />
+                        <span className="bfx-store-corner bl" />
+                        <span className="bfx-store-corner br" />
                       </div>
-                      <div className="bfx-store-info">
-                        <span className="bfx-store-eyebrow">Store visited</span>
-                        <p className="bfx-store-name">BSC Textiles — {selectedStore.city}</p>
-                        <p className="bfx-store-address">{selectedStore.address}</p>
-                        <div className="bfx-store-meta">
-                          <span className="bfx-store-meta-item">
-                            <Clock aria-hidden="true" />
-                            {selectedStore.hours}
-                          </span>
-                          <span className="bfx-store-meta-item">
-                            <Phone aria-hidden="true" />
-                            {selectedStore.phone}
-                          </span>
+                      <div className="bfx-store-card-top">
+                        <span className="bfx-store-verified">
+                          <ShieldCheck size={13} aria-hidden="true" />
+                          <span>Verified Boutique</span>
+                        </span>
+                        <button
+                          type="button"
+                          className="bfx-store-switch-link"
+                          onClick={() => setSelectedStore(null)}
+                          title="Select a different store location"
+                        >
+                          Change store
+                        </button>
+                      </div>
+                      <div className="bfx-store-card-body">
+                        <div className="bfx-store-icon">
+                          <MapPin aria-hidden="true" />
+                        </div>
+                        <div className="bfx-store-info">
+                          <p className="bfx-store-name">{selectedStore.storeName}</p>
+                          <p className="bfx-store-address">{selectedStore.address}</p>
+                          <div className="bfx-store-meta">
+                            <span className="bfx-store-meta-item">
+                              <Clock aria-hidden="true" />
+                              {selectedStore.hours}
+                            </span>
+                            <span className="bfx-store-meta-item">
+                              <Phone aria-hidden="true" />
+                              {selectedStore.phone}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1101,20 +1215,29 @@ export default function PublicFeedback() {
                 <div className="bfx-step-body">
                   <div className="bfx-step-sections">
 
-                    {/* Visit review summary */}
+                    {/* Visit review summary certificate */}
                     <section aria-label="Review your responses">
-                      <dl className="bfx-review-card">
+                      <div className="bfx-review-card">
+                        <div className="bfx-review-decor" aria-hidden="true">
+                          <span className="bfx-review-corner tl" />
+                          <span className="bfx-review-corner tr" />
+                          <span className="bfx-review-corner bl" />
+                          <span className="bfx-review-corner br" />
+                        </div>
                         <div className="bfx-review-head">
                           <div className="bfx-review-head-left">
-                            <Sparkles aria-hidden="true" />
-                            <p className="bfx-review-head-title">Your visit summary</p>
+                            <Sparkles className="bfx-review-sparkle" aria-hidden="true" />
+                            <div>
+                              <p className="bfx-review-head-title">Patron Visit Certificate</p>
+                              <p className="bfx-review-head-sub">{selectedStore.storeName}</p>
+                            </div>
                           </div>
                           <span className="bfx-review-code">{selectedStore.code}</span>
                         </div>
-                        <div className="bfx-review-grid">
+                        <dl className="bfx-review-grid">
                           <div className="bfx-review-item">
-                            <dt>Customer</dt>
-                            <dd>{customerName}</dd>
+                            <dt>Patron</dt>
+                            <dd className="bfx-review-val-primary">{customerName}</dd>
                           </div>
                           <div className="bfx-review-item">
                             <dt>Mobile</dt>
@@ -1125,29 +1248,29 @@ export default function PublicFeedback() {
                             <dd>{sectionId}</dd>
                           </div>
                           <div className="bfx-review-item">
-                            <dt>Bill / memo no</dt>
+                            <dt>Bill / Memo No</dt>
                             <dd className="bfx-mono">{billNo || 'Not provided'}</dd>
                           </div>
                           <div className="bfx-review-item">
-                            <dt>Store rating</dt>
+                            <dt>Overall Rating</dt>
                             <dd>
                               <span className="bfx-review-score">
-                                <Star aria-hidden="true" />
+                                <Star aria-hidden="true" fill="currentColor" />
                                 {overallRating} / 5
                               </span>
                             </dd>
                           </div>
                           <div className="bfx-review-item">
-                            <dt>Staff service</dt>
+                            <dt>Staff Service</dt>
                             <dd>
                               <span className="bfx-review-score">
-                                <Star aria-hidden="true" />
+                                <Star aria-hidden="true" fill="currentColor" />
                                 {staffRating} / 5
                               </span>
                             </dd>
                           </div>
-                        </div>
-                      </dl>
+                        </dl>
+                      </div>
                     </section>
 
                     {/* What did you enjoy most — chips */}

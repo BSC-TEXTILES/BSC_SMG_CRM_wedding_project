@@ -51,6 +51,10 @@
   min-height: 100vh;
   min-height: 100dvh;
   background-color: var(--bfx-cream);
+  background-image:
+    radial-gradient(ellipse at 50% 0%, rgba(201, 164, 92, 0.14) 0%, rgba(247, 244, 237, 0) 65%),
+    radial-gradient(circle at 100% 100%, rgba(18, 60, 53, 0.06) 0%, rgba(247, 244, 237, 0) 45%);
+  background-attachment: fixed;
   color: var(--bfx-ink);
   font-family: 'Manrope', sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -386,25 +390,35 @@
 /* ── Store Card ────────────────────────────────────────────────────────── */
 .bfx-qr-card {
   background: var(--bfx-white);
-  border: 1px solid var(--bfx-border);
+  border: 1px solid rgba(201, 164, 92, 0.35);
   border-radius: var(--bfx-radius-lg);
   padding: clamp(1.25rem, 2.5vw, 1.625rem);
-  box-shadow: var(--bfx-shadow-card);
+  box-shadow: 0 8px 30px rgba(18, 60, 53, 0.06);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   gap: 1.125rem;
   position: relative;
-  transition: border-color var(--bfx-duration) ease,
-              box-shadow var(--bfx-duration) ease,
-              transform var(--bfx-duration) ease;
+  overflow: hidden;
+  transition: all var(--bfx-duration) ease;
   min-width: 0;
+}
+
+.bfx-qr-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--bfx-green) 0%, var(--bfx-gold) 50%, var(--bfx-green) 100%);
+  opacity: 0.9;
 }
 
 .bfx-qr-card:hover {
   border-color: var(--bfx-gold);
-  box-shadow: var(--bfx-shadow-hover);
-  transform: translateY(-3px);
+  box-shadow: 0 16px 42px rgba(18, 60, 53, 0.12), 0 0 0 1px rgba(201, 164, 92, 0.3);
+  transform: translateY(-4px);
 }
 
 /* Card Header */
@@ -620,19 +634,17 @@
   justify-content: center;
   gap: 0.5rem;
   padding: 0.75rem 1.25rem;
-  background: var(--bfx-green);
+  background: linear-gradient(135deg, #123C35 0%, #1A5247 100%);
   color: #ffffff;
-  border: none;
+  border: 1px solid rgba(201, 164, 92, 0.3);
   border-radius: 12px;
   font-size: 0.8125rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(18, 60, 53, 0.15);
-  transition: background-color var(--bfx-duration) ease,
-              transform var(--bfx-duration) ease,
-              box-shadow var(--bfx-duration) ease;
+  box-shadow: 0 4px 16px rgba(18, 60, 53, 0.2);
+  transition: all var(--bfx-duration) ease;
 }
 
 .bfx-qr-btn-primary svg {
@@ -643,9 +655,10 @@
 }
 
 .bfx-qr-btn-primary:hover {
-  background: var(--bfx-green-dark);
-  box-shadow: 0 6px 16px rgba(18, 60, 53, 0.25);
-  transform: translateY(-1px);
+  background: linear-gradient(135deg, #0B2924 0%, #123C35 100%);
+  border-color: var(--bfx-gold);
+  box-shadow: 0 8px 24px rgba(18, 60, 53, 0.28);
+  transform: translateY(-1.5px);
 }
 
 .bfx-qr-btn-primary:hover svg {
