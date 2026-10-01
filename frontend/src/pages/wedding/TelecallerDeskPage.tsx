@@ -107,7 +107,6 @@ export default function TelecallerDeskPage() {
   const [editForm, setEditForm] = useState({
     alternate_mobile: '',
     preferred_call_time: 'Any Time',
-    wedding_date: '',
     expected_shopping_date: '',
     shopping_requirements: '',
     preferred_shopping_category: '',
@@ -200,7 +199,6 @@ export default function TelecallerDeskPage() {
     setEditForm({
       alternate_mobile: cust.alternate_mobile || '',
       preferred_call_time: cust.preferred_call_time || 'Any Time',
-      wedding_date: toISODateInput(cust.wedding_date) || '',
       expected_shopping_date: toISODateInput(cust.expected_shopping_date) || '',
       shopping_requirements: cust.shopping_requirements || '',
       preferred_shopping_category: cust.preferred_shopping_category || 'General Wedding Shopping',
@@ -1130,7 +1128,7 @@ export default function TelecallerDeskPage() {
                 {workspaceTab === 'edit' && (
                   <form id="edit-form" onSubmit={handleSaveCustomerEdit} className="space-y-4 text-xs">
                     <div className="bg-[#FFF4D6] p-3 rounded-xl border border-[#C58A18]/30 text-[#C58A18] text-xs">
-                      <strong>Telecaller Authority:</strong> Editing operational fields for <strong>{activeCustomer.customer_name}</strong>. Customer Reg ID and Location are locked for strict data integrity.
+                      <strong>Telecaller Authority:</strong> Editing operational fields for <strong>{activeCustomer.customer_name}</strong>. Customer Reg ID, Location, and Wedding Date are locked for strict data integrity.
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
@@ -1162,17 +1160,7 @@ export default function TelecallerDeskPage() {
                         </select>
                       </div>
 
-                      <div>
-                        <label className="block text-[10px] font-bold uppercase text-[#6F5963] mb-1">
-                          Wedding Date
-                        </label>
-                        <input
-                          type="date"
-                          value={editForm.wedding_date}
-                          onChange={(e) => setEditForm({ ...editForm, wedding_date: e.target.value })}
-                          className="w-full px-3 py-2 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-semibold text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
-                        />
-                      </div>
+
 
                       <div>
                         <label className="block text-[10px] font-bold uppercase text-[#6F5963] mb-1">

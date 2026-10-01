@@ -1,16 +1,18 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
+  AlertCircle,
   MapPin,
   Star,
   ArrowRight,
   ArrowLeft,
   CheckCircle2,
   Check,
+  Clock,
   Store,
   User,
   Mail,
-  RotateCcw,
+  Phone,
   QrCode,
   Download,
   Copy,
@@ -29,6 +31,7 @@ import {
   CentralStoreLocation
 } from '../config/storeLocations';
 import './landing/editorial/editorial.css';
+import './publicFeedback.css';
 
 // Default structured survey questions matching the 3 stores
 const DEFAULT_QUESTIONS = [
@@ -63,6 +66,45 @@ const DEFAULT_QUESTIONS = [
     options: ['Definitely recommend', 'Probably recommend', 'Neutral', 'Not recommend']
   }
 ];
+
+/**
+ * The five steps. `short` labels belong to the progress rail so it fits a phone,
+ * `name` is the heading the customer sees for the step they are on — the flow and
+ * its wording are unchanged, only how far along it is communicated.
+ */
+const STEPS = [
+  { short: 'Store & Contact', name: 'Store & Customer Details' },
+  { short: 'Visit Experience', name: 'Overall Shopping Experience' },
+  { short: 'Service & Staff', name: 'Staff Service & Hospitality' },
+  { short: 'Products & Store', name: 'Collection & Ambience' },
+  { short: 'Final Feedback', name: 'Review & Final Comments' }
+];
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+type StepOneErrors = { name?: string; mobile?: string; email?: string };
+
+/**
+ * Step 1 validation in one place, so Continue and Submit can never disagree about
+ * what counts as a usable answer. Mobile stays optional — a wrong number is worse
+ * than none, because management would call it.
+ */
+function validateStepOne(values: { name: string; mobile: string; email: string }): StepOneErrors {
+  const errors: StepOneErrors = {};
+
+  if (!values.name.trim()) errors.name = 'Please enter your name.';
+
+  const digits = values.mobile.replace(/\D/g, '');
+  if (values.mobile.trim() && digits.length !== 10) {
+    errors.mobile = 'Enter all 10 digits of your mobile number.';
+  }
+
+  if (values.email.trim() && !EMAIL_PATTERN.test(values.email.trim())) {
+    errors.email = 'Check the email address — it should look like name@example.com.';
+  }
+
+  return errors;
+}
 
 export default function PublicFeedback() {
   const [searchParams] = useSearchParams();
@@ -116,6 +158,9 @@ export default function PublicFeedback() {
   const [submitted, setSubmitted] = useState<boolean>(false);
   const [refNo, setRefNo] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string>('');
+  // Per-field messages, so a customer is told which box to fix rather than being
+  // shown a banner above the form.
+  const [fieldErrors, setFieldErrors] = useState<StepOneErrors>({});
 
   // Track QR scan on mount if location code is provided
   useEffect(() => {
@@ -194,16 +239,19 @@ export default function PublicFeedback() {
     setAnswers((prev) => ({ ...prev, q1: mapRating[score] || 'Very satisfied' }));
   };
 
+  /** Re-check a single field once the customer leaves it. */
+  const validateField = (field: keyof StepOneErrors) => {
+    const all = validateStepOne({ name: customerName, mobile, email });
+    setFieldErrors(prev => ({ ...prev, [field]: all[field] }));
+  };
+
   const handleNextStep = () => {
     setErrorMessage('');
     if (currentStep === 1) {
-      if (!customerName.trim()) {
-        setErrorMessage('Please complete the required fields (Name is required).');
-        return;
-      }
-      const digits = mobile.replace(/\D/g, '');
-      if (mobile && digits.length !== 10) {
-        setErrorMessage('Please enter a valid 10-digit mobile number.');
+      const errors = validateStepOne({ name: customerName, mobile, email });
+      setFieldErrors(errors);
+      if (Object.keys(errors).length > 0) {
+        setErrorMessage('Please check the highlighted details before continuing.');
         return;
       }
     }
@@ -337,115 +385,120 @@ export default function PublicFeedback() {
   // ─────────────────────────────────────────────────────────────
   if (submitted && selectedStore) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 sm:p-6 font-sans">
-        <div className="w-full max-w-md bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 text-center shadow-sm">
-          {/* Subtle Success Icon */}
-          <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4 border border-emerald-100">
-            <CheckCircle2 className="w-8 h-8" />
-          </div>
+      <div className="bsc-ed-page">
+        <div className="bsc-fx-shell">
+          <header className="bsc-fx-head">
+            <div className="bsc-fx-brand">
+              <picture className="bsc-fx-logo">
+                <source srcSet="/logo.webp" type="image/webp" />
+                <img
+                  src="/logo.png"
+                  alt="BSC Textiles"
+                  width={360}
+                  height={270}
+                  loading="eager"
+                  decoding="async"
+                />
+              </picture>
+              <div className="bsc-fx-brand-text">
+                <span className="bsc-fx-eyebrow">BSC Textiles</span>
+                <h1 className="bsc-fx-title">Customer Feedback</h1>
+              </div>
+            </div>
+          </header>
 
-          {/* Store Pill */}
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold mb-3">
-            <Store className="w-3.5 h-3.5 text-slate-500" />
-            <span>{selectedStore.storeName}</span>
-          </div>
+          <section className="bsc-fx-success">
+            <span className="bsc-fx-success-mark">
+              <CheckCircle2 aria-hidden="true" />
+            </span>
+            <span className="bsc-fx-eyebrow">{selectedStore.storeName}</span>
+            <h2 className="bsc-fx-success-title">Thank you</h2>
+            <p className="bsc-fx-success-note">
+              Your feedback has been saved directly to the {selectedStore.city} store management team.
+            </p>
 
-          <h2 className="text-2xl font-bold text-slate-900 mb-2">Thank You</h2>
-          <p className="text-sm text-slate-600 mb-5 leading-relaxed">
-            Your feedback has been saved directly to {selectedStore.city} store management.
-          </p>
+            <div className="bsc-fx-ref">
+              <span className="bsc-fx-ref-key">Feedback reference</span>
+              <span className="bsc-fx-ref-value">{refNo}</span>
+            </div>
 
-          {/* Reference & Customer Details */}
-          <div className="bg-slate-50 border border-slate-100 rounded-xl p-3.5 mb-5 text-xs text-left space-y-1.5">
-            <div className="flex items-center justify-between pb-1.5 border-b border-slate-200/60">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                Feedback Reference
+            <dl className="bsc-fx-review-grid bsc-fx-success-details">
+              <div className="bsc-fx-review-item">
+                <dt>Customer</dt>
+                <dd>{customerName}</dd>
+              </div>
+              <div className="bsc-fx-review-item">
+                <dt>Section</dt>
+                <dd>{sectionId}</dd>
+              </div>
+              {mobile && (
+                <div className="bsc-fx-review-item">
+                  <dt>Mobile</dt>
+                  <dd className="bsc-fx-mono">+91 {mobile}</dd>
+                </div>
+              )}
+              {billNo && (
+                <div className="bsc-fx-review-item">
+                  <dt>Bill / memo no</dt>
+                  <dd className="bsc-fx-mono">{billNo}</dd>
+                </div>
+              )}
+            </dl>
+
+            <div className="bsc-fx-share">
+              <span className="bsc-fx-share-label">
+                <QrCode aria-hidden="true" />
+                <span>{selectedStore.city} feedback QR code</span>
               </span>
-              <span className="font-mono text-sm font-bold text-slate-900">{refNo}</span>
-            </div>
-            <div className="flex items-center justify-between text-slate-600 pt-0.5">
-              <span>Customer:</span>
-              <span className="font-semibold text-slate-900">{customerName}</span>
-            </div>
-            {mobile && (
-              <div className="flex items-center justify-between text-slate-600">
-                <span>Mobile:</span>
-                <span className="font-mono font-medium text-slate-800">+91 {mobile}</span>
+              <div className="bsc-fx-share-thumb">
+                <img
+                  src={getStoreQrUrl(selectedStore.code, 240)}
+                  alt={`${selectedStore.city} Feedback QR`}
+                  width={140}
+                  height={140}
+                  loading="lazy"
+                  decoding="async"
+                />
               </div>
-            )}
-            <div className="flex items-center justify-between text-slate-600">
-              <span>Section:</span>
-              <span className="font-semibold text-slate-900">{sectionId}</span>
-            </div>
-            {billNo && (
-              <div className="flex items-center justify-between text-slate-600">
-                <span>Bill / Memo No:</span>
-                <span className="font-mono font-bold text-slate-800">{billNo}</span>
+              <p className="bsc-fx-share-note">
+                Share this code at the counter so other customers can answer the same survey.
+              </p>
+              <div className="bsc-fx-share-actions">
+                <button type="button" className="bsc-fx-qr-btn" onClick={handleDownloadStoreQr}>
+                  <Download aria-hidden="true" />
+                  <span>Save QR</span>
+                </button>
+                <button type="button" className="bsc-fx-qr-btn" onClick={handleCopyStoreLink}>
+                  {qrModalCopied ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />}
+                  <span>{qrModalCopied ? 'Copied' : 'Copy link'}</span>
+                </button>
               </div>
-            )}
-          </div>
+            </div>
 
-          {/* Store Feedback QR Share Box */}
-          <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl mb-6 text-center">
-            <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-slate-800 mb-2">
-              <QrCode className="w-4 h-4 text-amber-600" />
-              <span>{selectedStore.city} Feedback QR Code</span>
-            </div>
-            <div className="w-36 h-36 mx-auto bg-white p-2 rounded-xl border border-slate-200 shadow-xs mb-2.5">
-              <img
-                src={getStoreQrUrl(selectedStore.code, 240)}
-                alt={`${selectedStore.city} Feedback QR`}
-                className="w-full h-full object-contain rounded-lg"
-              />
-            </div>
-            <div className="flex items-center justify-center gap-2">
+            <div className="bsc-fx-success-actions">
               <button
                 type="button"
-                onClick={handleDownloadStoreQr}
-                className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-100 transition-colors inline-flex items-center gap-1 cursor-pointer"
+                onClick={() => navigate('/')}
+                className="bsc-fx-btn-primary"
               >
-                <Download className="w-3.5 h-3.5" />
-                <span>Save QR</span>
+                <span>Back to BSC Textiles</span>
+                <ArrowRight aria-hidden="true" />
               </button>
+
               <button
                 type="button"
-                onClick={handleCopyStoreLink}
-                className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-100 transition-colors inline-flex items-center gap-1 cursor-pointer"
+                onClick={handleReset}
+                className="bsc-fx-btn-secondary"
               >
-                {qrModalCopied ? (
-                  <>
-                    <Check className="w-3.5 h-3.5 text-emerald-600" />
-                    <span className="text-emerald-600">Copied!</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-3.5 h-3.5" />
-                    <span>Copy Link</span>
-                  </>
-                )}
+                <span>Submit another response</span>
               </button>
             </div>
-          </div>
+          </section>
 
-          {/* Action Buttons */}
-          <div className="space-y-2.5">
-            <button
-              type="button"
-              onClick={() => navigate('/')}
-              className="w-full h-12 bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-2"
-            >
-              <span>Back to BSC Textiles</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-
-            <button
-              type="button"
-              onClick={handleReset}
-              className="w-full h-11 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 text-xs font-medium rounded-xl border border-slate-200 transition-colors cursor-pointer"
-            >
-              Submit Another Response
-            </button>
-          </div>
+          <footer className="bsc-fx-foot">
+            <span>BSC Textiles · Customer Experience</span>
+            <span>{selectedStore.storeName} · {selectedStore.phone}</span>
+          </footer>
         </div>
       </div>
     );
@@ -462,291 +515,382 @@ export default function PublicFeedback() {
   // 3. STEPPED FEEDBACK FORM UI (Mobile-First, Clean, Professional)
   // ─────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-slate-50 py-6 sm:py-10 px-4 sm:px-6 font-sans">
-      <div className="max-w-xl mx-auto space-y-4">
-        {/* Interactive Store Feedback QR Header Banner */}
-        <div className="bg-gradient-to-r from-slate-900 via-slate-850 to-slate-800 text-white rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3.5 w-full sm:w-auto">
-            <div
-              onClick={() => setShowQrModal(true)}
-              className="w-16 h-16 sm:w-18 sm:h-18 bg-white rounded-xl p-1.5 cursor-pointer shadow-md shrink-0 hover:scale-105 transition-transform"
-              title={`Click to enlarge ${selectedStore.city} Feedback QR Code`}
-            >
-              <img
-                src={getStoreQrUrl(selectedStore.code, 160)}
-                alt={`${selectedStore.city} Feedback QR`}
-                className="w-full h-full object-contain rounded-lg"
-              />
-            </div>
-            <div className="space-y-1">
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/10 text-white text-[10px] font-semibold uppercase tracking-wider">
-                <QrCode className="w-3 h-3 text-amber-400" />
-                <span>Store Feedback QR · {selectedStore.code}</span>
-              </div>
-              <h3 className="text-sm sm:text-base font-bold text-white">
-                Customer Mobile Scan Available
-              </h3>
-              <p className="text-xs text-slate-300">
-                Customers can point their smartphone camera to open this survey on their phone.
-              </p>
-            </div>
+    <div className="bsc-ed-page">
+      <div className="bsc-fx-shell">
+        {/* Store feedback QR — a sharing tool for staff, deliberately quiet so it
+            never competes with the questions a customer is answering. */}
+        <div className="bsc-fx-qr">
+          <button
+            type="button"
+            className="bsc-fx-qr-thumb"
+            onClick={() => setShowQrModal(true)}
+            title={`Enlarge the ${selectedStore.city} feedback QR code`}
+          >
+            <img
+              src={getStoreQrUrl(selectedStore.code, 160)}
+              alt={`${selectedStore.city} feedback QR code`}
+              width={64}
+              height={64}
+              loading="lazy"
+              decoding="async"
+            />
+          </button>
+          <div className="bsc-fx-qr-copy">
+            <span className="bsc-fx-qr-label">
+              <QrCode aria-hidden="true" />
+              Store feedback QR · {selectedStore.code}
+            </span>
+            <p className="bsc-fx-qr-note">
+              Customers can scan this to answer the same survey on their own phone.
+            </p>
           </div>
-
-          <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
-            <button
-              type="button"
-              onClick={() => setShowQrModal(true)}
-              className="flex-1 sm:flex-initial h-10 px-3.5 bg-white/10 hover:bg-white/20 text-white text-xs font-semibold rounded-xl border border-white/10 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-            >
-              <Maximize2 className="w-3.5 h-3.5" />
-              <span>Enlarge QR</span>
+          <div className="bsc-fx-qr-actions">
+            <button type="button" className="bsc-fx-qr-btn" onClick={() => setShowQrModal(true)}>
+              <Maximize2 aria-hidden="true" />
+              <span>Enlarge</span>
             </button>
-            <button
-              type="button"
-              onClick={handleCopyStoreLink}
-              className="flex-1 sm:flex-initial h-10 px-3.5 bg-white/10 hover:bg-white/20 text-white text-xs font-semibold rounded-xl border border-white/10 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-            >
-              {qrModalCopied ? (
-                <>
-                  <Check className="w-3.5 h-3.5 text-emerald-400" />
-                  <span className="text-emerald-400">Copied!</span>
-                </>
-              ) : (
-                <>
-                  <Copy className="w-3.5 h-3.5" />
-                  <span>Copy Link</span>
-                </>
-              )}
+            <button type="button" className="bsc-fx-qr-btn" onClick={handleCopyStoreLink}>
+              {qrModalCopied ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />}
+              <span>{qrModalCopied ? 'Copied' : 'Copy link'}</span>
             </button>
           </div>
         </div>
 
-        {/* Main Card */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm">
-          {/* Header */}
-          <div className="border-b border-slate-100 pb-5 mb-6">
-            <div className="flex items-center justify-between gap-2 mb-2">
-              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                BSC Customer Feedback QR
-              </span>
-              <button
-                type="button"
-                onClick={() => setSelectedStore(null)}
-                className="text-xs text-slate-500 hover:text-slate-900 underline flex items-center gap-1 cursor-pointer"
-              >
-                <RotateCcw className="w-3 h-3" />
-                <span>Change Store</span>
-              </button>
-            </div>
-
-            {/* Store Indicator */}
-            <div className="flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-slate-600 shrink-0" />
-              <h2 className="text-lg sm:text-xl font-bold text-slate-900">
-                BSC Textiles — {selectedStore.city}
-              </h2>
-            </div>
-          </div>
-
-          {/* Clean Stepper Progress */}
-          <div className="mb-6">
-            <div className="flex items-center justify-between text-xs font-medium text-slate-500 mb-2">
-              <span>Step {currentStep} of 5</span>
-              <span>
-                {currentStep === 1 && 'Store & Customer Details'}
-                {currentStep === 2 && 'Overall Shopping Experience'}
-                {currentStep === 3 && 'Staff Service & Hospitality'}
-                {currentStep === 4 && 'Collection & Ambience'}
-                {currentStep === 5 && 'Review & Final Comments'}
-              </span>
-            </div>
-            <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-slate-900 rounded-full transition-all duration-300"
-                style={{ width: `${(currentStep / 5) * 100}%` }}
+        {/* Header: the brand first, the survey second, the store switch last. */}
+        <header className="bsc-fx-head">
+          <div className="bsc-fx-brand">
+            <picture className="bsc-fx-logo">
+              <source srcSet="/logo.webp" type="image/webp" />
+              <img
+                src="/logo.png"
+                alt="BSC Textiles"
+                width={360}
+                height={270}
+                loading="eager"
+                decoding="async"
               />
+            </picture>
+            <div className="bsc-fx-brand-text">
+              <span className="bsc-fx-eyebrow">BSC Textiles</span>
+              <h1 className="bsc-fx-title">Customer Feedback</h1>
             </div>
           </div>
 
-          {/* Error Notice */}
-          {errorMessage && (
-            <div className="mb-5 p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-xs font-medium text-rose-700">
-              {errorMessage}
-            </div>
-          )}
+          <button
+            type="button"
+            className="bsc-fx-change"
+            onClick={() => setSelectedStore(null)}
+          >
+            <MapPin aria-hidden="true" />
+            <span>Change store</span>
+          </button>
+        </header>
 
-          {/* Form Content */}
+        <p className="bsc-fx-lede">
+          We value your experience. Tell us how your visit went — it takes about a
+          minute, and the store team reads every response.
+        </p>
+
+        {/* Progress */}
+        <div className="bsc-fx-progress">
+          <div className="bsc-fx-progress-meta">
+            <span className="bsc-fx-step-count">Step {currentStep} of {STEPS.length}</span>
+            <span className="bsc-fx-step-name">{STEPS[currentStep - 1].name}</span>
+          </div>
+          <div className="bsc-fx-rail" aria-hidden="true">
+            {STEPS.map((step, index) => (
+              <span
+                key={step.short}
+                className="bsc-fx-seg"
+                data-state={index + 1 < currentStep ? 'done' : index + 1 === currentStep ? 'current' : 'todo'}
+              />
+            ))}
+          </div>
+          <ol className="bsc-fx-steps" aria-label="Survey steps">
+            {STEPS.map((step, index) => {
+              const state = index + 1 < currentStep ? 'done' : index + 1 === currentStep ? 'current' : 'todo';
+              return (
+                <li key={step.short} className="bsc-fx-step" data-state={state} aria-current={state === 'current' ? 'step' : undefined}>
+                  <span className="bsc-fx-step-dot">
+                    {state === 'done' ? <Check aria-hidden="true" /> : null}
+                  </span>
+                  <span className="bsc-fx-step-label">{step.short}</span>
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+
+        {/* Error Notice */}
+        {errorMessage && (
+          <div className="bsc-fx-notice" role="alert">
+            <AlertCircle aria-hidden="true" />
+            <span>{errorMessage}</span>
+          </div>
+        )}
+
+        {/* Form Content */}
+        <div className="bsc-fx-card">
           <form onSubmit={(e) => e.preventDefault()}>
             {/* STEP 1: Store Confirmation, Customer Info, Section & Bill Details */}
             {currentStep === 1 && (
-              <div className="space-y-4">
-                <div className="bg-slate-50 border border-slate-100 rounded-xl p-4">
-                  <div className="text-xs text-slate-500 mb-0.5">Selected Store:</div>
-                  <div className="text-sm font-bold text-slate-900">{selectedStore.storeName}</div>
-                  <div className="text-xs text-slate-500 mt-1">{selectedStore.address}</div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold text-slate-700">
-                    Customer Name <span className="text-rose-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    <input
-                      type="text"
-                      required
-                      placeholder="Enter your full name"
-                      value={customerName}
-                      onChange={(e) => setCustomerName(e.target.value)}
-                      className="w-full h-12 pl-10 pr-4 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 text-slate-900 placeholder:text-slate-400"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold text-slate-700">
-                    Mobile Number
-                  </label>
-                  <div className="flex h-12 border border-slate-200 rounded-xl overflow-hidden focus-within:border-slate-900 bg-white">
-                    <span className="flex items-center px-3.5 bg-slate-50 border-r border-slate-200 text-xs font-mono font-semibold text-slate-600 select-none">
-                      +91
+              <div className="bsc-fx-step-body">
+                <section className="bsc-fx-storecard" aria-labelledby="fx-store-heading">
+                  <div className="bsc-fx-storecard-head">
+                    <span className="bsc-fx-storecard-mark" aria-hidden="true">
+                      <Store />
                     </span>
-                    <input
-                      type="tel"
-                      inputMode="numeric"
-                      maxLength={10}
-                      placeholder="10-digit mobile number"
-                      value={mobile}
-                      onChange={(e) => setMobile(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                      className="flex-1 px-3 text-sm bg-transparent outline-none text-slate-900 placeholder:text-slate-400"
-                    />
+                    <div className="bsc-fx-storecard-body">
+                      <span className="bsc-fx-eyebrow">Store visited</span>
+                      <p className="bsc-fx-store-name" id="fx-store-heading">
+                        BSC Textiles — {selectedStore.city}
+                      </p>
+                      <p className="bsc-fx-store-address">{selectedStore.address}</p>
+                    </div>
                   </div>
-                  <p className="text-[11px] text-slate-500">
-                    Optional. Used only if store management needs to follow up on your feedback.
+                  <div className="bsc-fx-store-meta">
+                    <span>
+                      <Clock aria-hidden="true" />
+                      <span>{selectedStore.hours}</span>
+                    </span>
+                    <span>
+                      <Phone aria-hidden="true" />
+                      <span>{selectedStore.phone}</span>
+                    </span>
+                  </div>
+                </section>
+
+                <section className="bsc-fx-section">
+                  <h2 className="bsc-fx-section-title">Your details</h2>
+                  <p className="bsc-fx-section-note">
+                    Please enter your details so we can connect with you if needed.
                   </p>
-                </div>
 
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold text-slate-700">
-                    Email Address (Optional)
-                  </label>
-                  <div className="relative">
-                    <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    <input
-                      type="email"
-                      placeholder="name@example.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full h-12 pl-10 pr-4 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 text-slate-900 placeholder:text-slate-400"
-                    />
-                  </div>
-                </div>
+                  <div className="bsc-fx-fields">
+                    <div className="bsc-fx-field" data-invalid={Boolean(fieldErrors.name)}>
+                      <label className="bsc-fx-label" htmlFor="fx-name">
+                        Customer name
+                        <span className="bsc-fx-required" aria-hidden="true">*</span>
+                        <span className="sr-only">(required)</span>
+                      </label>
+                      <div className="bsc-fx-control bsc-fx-has-icon">
+                        <User className="bsc-fx-icon" aria-hidden="true" />
+                        <input
+                          id="fx-name"
+                          name="customerName"
+                          type="text"
+                          autoComplete="name"
+                          required
+                          aria-required="true"
+                          aria-invalid={Boolean(fieldErrors.name)}
+                          aria-describedby={fieldErrors.name ? 'fx-name-error' : undefined}
+                          placeholder="Enter your full name"
+                          value={customerName}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            setCustomerName(value);
+                            if (fieldErrors.name) {
+                              setFieldErrors(prev => ({ ...prev, name: validateStepOne({ name: value, mobile, email }).name }));
+                            }
+                          }}
+                          onBlur={() => validateField('name')}
+                          className="bsc-fx-input"
+                        />
+                      </div>
+                      {fieldErrors.name && (
+                        <p className="bsc-fx-error" id="fx-name-error" role="alert">
+                          <AlertCircle aria-hidden="true" />
+                          <span>{fieldErrors.name}</span>
+                        </p>
+                      )}
+                    </div>
 
-                {/* Section / Department Visited */}
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold text-slate-700">
-                    Section / Department Visited
-                  </label>
-                  <div className="relative">
-                    <Layers className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    <select
-                      value={sectionId}
-                      onChange={(e) => setSectionId(e.target.value)}
-                      className="w-full h-12 pl-10 pr-4 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 text-slate-900 cursor-pointer"
-                    >
-                      <option value="Sarees & Silk Section">Sarees & Silk Section</option>
-                      <option value="Bridal Studio & Wedding Trousseau">Bridal Studio & Wedding Trousseau</option>
-                      <option value="Menswear & Ethnic Suiting">Menswear & Ethnic Suiting</option>
-                      <option value="Kids & Family Wear">Kids & Family Wear</option>
-                      <option value="Ground Floor - Main Counter">Ground Floor - Main Counter</option>
-                      <option value="Billing & Cash Counter">Billing & Cash Counter</option>
-                      <option value="General Store Visit">General Store Visit</option>
-                    </select>
-                  </div>
-                </div>
+                    <div className="bsc-fx-grid">
+                      <div className="bsc-fx-field" data-invalid={Boolean(fieldErrors.mobile)}>
+                        <div className="bsc-fx-label-row">
+                          <label className="bsc-fx-label" htmlFor="fx-mobile">Mobile number</label>
+                          <span className="bsc-fx-optional">Optional</span>
+                        </div>
+                        <div className="bsc-fx-control">
+                          <span className="bsc-fx-prefix" aria-hidden="true">+91</span>
+                          <input
+                            id="fx-mobile"
+                            name="mobile"
+                            type="tel"
+                            inputMode="numeric"
+                            autoComplete="tel-national"
+                            maxLength={10}
+                            aria-invalid={Boolean(fieldErrors.mobile)}
+                            aria-describedby="fx-mobile-help fx-mobile-error"
+                            placeholder="10-digit mobile number"
+                            value={mobile}
+                            onChange={(e) => {
+                              const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+                              setMobile(value);
+                              if (fieldErrors.mobile) {
+                                setFieldErrors(prev => ({ ...prev, mobile: validateStepOne({ name: customerName, mobile: value, email }).mobile }));
+                              }
+                            }}
+                            onBlur={() => validateField('mobile')}
+                            className="bsc-fx-input"
+                          />
+                        </div>
+                        <p className="bsc-fx-help" id="fx-mobile-help">
+                          Used only if store management needs to follow up on your feedback.
+                        </p>
+                        {fieldErrors.mobile && (
+                          <p className="bsc-fx-error" id="fx-mobile-error" role="alert">
+                            <AlertCircle aria-hidden="true" />
+                            <span>{fieldErrors.mobile}</span>
+                          </p>
+                        )}
+                      </div>
 
-                {/* Bill / Invoice Number */}
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold text-slate-700">
-                    Bill / Cash Memo Number (Optional)
-                  </label>
-                  <div className="relative">
-                    <Receipt className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    <input
-                      type="text"
-                      placeholder="e.g. INV-10842 or Bill No."
-                      value={billNo}
-                      onChange={(e) => setBillNo(e.target.value)}
-                      className="w-full h-12 pl-10 pr-4 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 text-slate-900 placeholder:text-slate-400"
-                    />
+                      <div className="bsc-fx-field" data-invalid={Boolean(fieldErrors.email)}>
+                        <div className="bsc-fx-label-row">
+                          <label className="bsc-fx-label" htmlFor="fx-email">Email address</label>
+                          <span className="bsc-fx-optional">Optional</span>
+                        </div>
+                        <div className="bsc-fx-control bsc-fx-has-icon">
+                          <Mail className="bsc-fx-icon" aria-hidden="true" />
+                          <input
+                            id="fx-email"
+                            name="email"
+                            type="email"
+                            autoComplete="email"
+                            aria-invalid={Boolean(fieldErrors.email)}
+                            aria-describedby="fx-email-error"
+                            placeholder="name@example.com"
+                            value={email}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              setEmail(value);
+                              if (fieldErrors.email) {
+                                setFieldErrors(prev => ({ ...prev, email: validateStepOne({ name: customerName, mobile, email: value }).email }));
+                              }
+                            }}
+                            onBlur={() => validateField('email')}
+                            className="bsc-fx-input"
+                          />
+                        </div>
+                        {fieldErrors.email && (
+                          <p className="bsc-fx-error" id="fx-email-error" role="alert">
+                            <AlertCircle aria-hidden="true" />
+                            <span>{fieldErrors.email}</span>
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="bsc-fx-grid">
+                      <div className="bsc-fx-field">
+                        <label className="bsc-fx-label" htmlFor="fx-section">
+                          Section or department visited
+                        </label>
+                        <div className="bsc-fx-control bsc-fx-has-icon">
+                          <Layers className="bsc-fx-icon" aria-hidden="true" />
+                          <select
+                            id="fx-section"
+                            name="sectionId"
+                            value={sectionId}
+                            onChange={(e) => setSectionId(e.target.value)}
+                            className="bsc-fx-input bsc-fx-select"
+                          >
+                            <option value="Sarees & Silk Section">Sarees &amp; Silk Section</option>
+                            <option value="Bridal Studio & Wedding Trousseau">Bridal Studio &amp; Wedding Trousseau</option>
+                            <option value="Menswear & Ethnic Suiting">Menswear &amp; Ethnic Suiting</option>
+                            <option value="Kids & Family Wear">Kids &amp; Family Wear</option>
+                            <option value="Ground Floor - Main Counter">Ground Floor - Main Counter</option>
+                            <option value="Billing & Cash Counter">Billing &amp; Cash Counter</option>
+                            <option value="General Store Visit">General Store Visit</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="bsc-fx-field">
+                        <div className="bsc-fx-label-row">
+                          <label className="bsc-fx-label" htmlFor="fx-bill">Bill / cash memo number</label>
+                          <span className="bsc-fx-optional">Optional</span>
+                        </div>
+                        <div className="bsc-fx-control bsc-fx-has-icon">
+                          <Receipt className="bsc-fx-icon" aria-hidden="true" />
+                          <input
+                            id="fx-bill"
+                            name="billNo"
+                            type="text"
+                            maxLength={40}
+                            aria-describedby="fx-bill-help"
+                            placeholder="e.g. INV-10842 or Bill No."
+                            value={billNo}
+                            onChange={(e) => setBillNo(e.target.value)}
+                            className="bsc-fx-input"
+                          />
+                        </div>
+                        <p className="bsc-fx-help" id="fx-bill-help">
+                          Helps store management find your purchase details faster.
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                  <p className="text-[11px] text-slate-500">
-                    Attaching your bill number helps store management locate your purchase details quickly.
-                  </p>
-                </div>
+                </section>
               </div>
             )}
 
             {/* STEP 2: Overall Shopping Experience */}
             {currentStep === 2 && (
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-bold text-slate-900 mb-2">
-                    Overall Experience Rating
-                  </label>
-                  <div className="flex items-center gap-2">
-                    {[1, 2, 3, 4, 5].map((score) => (
-                      <button
-                        key={score}
-                        type="button"
-                        onClick={() => handleRatingChange(score)}
-                        className={`w-12 h-12 rounded-xl flex items-center justify-center border transition-all cursor-pointer ${
-                          score <= overallRating
-                            ? 'bg-amber-50 border-amber-300 text-amber-500'
-                            : 'bg-white border-slate-200 text-slate-300 hover:border-slate-300'
-                        }`}
-                      >
-                        <Star
-                          className="w-6 h-6"
-                          fill={score <= overallRating ? 'currentColor' : 'none'}
-                        />
-                      </button>
-                    ))}
-                    <span className="ml-2 text-xs font-semibold text-slate-600">
-                      {overallRating === 5 && 'Excellent (5/5)'}
-                      {overallRating === 4 && 'Good (4/5)'}
-                      {overallRating === 3 && 'Average (3/5)'}
-                      {overallRating === 2 && 'Fair (2/5)'}
-                      {overallRating === 1 && 'Poor (1/5)'}
-                    </span>
+              <div className="bsc-fx-step-body">
+                <div className="bsc-fx-questions">
+                  <div className="bsc-fx-q">
+                    <p className="bsc-fx-q-title" id="fx-overall-label">
+                      Overall experience rating
+                    </p>
+                    <div className="bsc-fx-stars" role="group" aria-labelledby="fx-overall-label">
+                      {[1, 2, 3, 4, 5].map((score) => (
+                        <button
+                          key={score}
+                          type="button"
+                          onClick={() => handleRatingChange(score)}
+                          className="bsc-fx-star"
+                          data-on={score <= overallRating}
+                          aria-pressed={score <= overallRating}
+                          aria-label={`${score} out of 5`}
+                        >
+                          <Star aria-hidden="true" fill={score <= overallRating ? 'currentColor' : 'none'} />
+                        </button>
+                      ))}
+                      <span className="bsc-fx-rating-note">
+                        {overallRating === 5 && 'Excellent (5/5)'}
+                        {overallRating === 4 && 'Good (4/5)'}
+                        {overallRating === 3 && 'Average (3/5)'}
+                        {overallRating === 2 && 'Fair (2/5)'}
+                        {overallRating === 1 && 'Poor (1/5)'}
+                      </span>
+                    </div>
                   </div>
-                </div>
 
-                <div className="space-y-2">
-                  <label className="block text-sm font-bold text-slate-900">
-                    How satisfied are you with your shopping experience today?
-                  </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {['Very satisfied', 'Satisfied', 'Neutral', 'Dissatisfied', 'Very dissatisfied'].map(
-                      (opt) => {
-                        const isSelected = answers['q1'] === opt;
-                        return (
-                          <button
-                            key={opt}
-                            type="button"
-                            onClick={() => setAnswers({ ...answers, q1: opt })}
-                            className={`p-3.5 rounded-xl border text-left text-xs font-semibold flex items-center justify-between transition-all cursor-pointer ${
-                              isSelected
-                                ? 'bg-slate-900 border-slate-900 text-white'
-                                : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'
-                            }`}
-                          >
-                            <span>{opt}</span>
-                            {isSelected && <Check className="w-4 h-4 text-white" />}
-                          </button>
-                        );
-                      }
-                    )}
+                  <div className="bsc-fx-q">
+                    <p className="bsc-fx-q-title" id="fx-q1-label">
+                      How satisfied are you with your shopping experience today?
+                    </p>
+                    <div className="bsc-fx-options" role="group" aria-labelledby="fx-q1-label">
+                      {['Very satisfied', 'Satisfied', 'Neutral', 'Dissatisfied', 'Very dissatisfied'].map(
+                        (opt) => {
+                          const isSelected = answers['q1'] === opt;
+                          return (
+                            <button
+                              key={opt}
+                              type="button"
+                              onClick={() => setAnswers({ ...answers, q1: opt })}
+                              className="bsc-fx-option"
+                              aria-pressed={isSelected}
+                            >
+                              <span>{opt}</span>
+                              {isSelected && <Check aria-hidden="true" />}
+                            </button>
+                          );
+                        }
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -754,86 +898,76 @@ export default function PublicFeedback() {
 
             {/* STEP 3: Service & Staff */}
             {currentStep === 3 && (
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-bold text-slate-900 mb-2">
-                    Staff Service Rating
-                  </label>
-                  <div className="flex items-center gap-2">
-                    {[1, 2, 3, 4, 5].map((score) => (
-                      <button
-                        key={score}
-                        type="button"
-                        onClick={() => setStaffRating(score)}
-                        className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-all cursor-pointer ${
-                          score <= staffRating
-                            ? 'bg-amber-50 border-amber-300 text-amber-500'
-                            : 'bg-white border-slate-200 text-slate-300 hover:border-slate-300'
-                        }`}
-                      >
-                        <Star
-                          className="w-5 h-5"
-                          fill={score <= staffRating ? 'currentColor' : 'none'}
-                        />
-                      </button>
-                    ))}
-                    <span className="ml-2 text-xs font-semibold text-slate-600">
-                      {staffRating}/5
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="block text-sm font-bold text-slate-900">
-                    How would you rate the service and helpfulness of our staff?
-                  </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {['Extremely helpful', 'Helpful', 'Average', 'Needs improvement'].map((opt) => {
-                      const isSelected = answers['q4'] === opt;
-                      return (
+              <div className="bsc-fx-step-body">
+                <div className="bsc-fx-questions">
+                  <div className="bsc-fx-q">
+                    <p className="bsc-fx-q-title" id="fx-staff-label">
+                      Staff service rating
+                    </p>
+                    <div className="bsc-fx-stars" role="group" aria-labelledby="fx-staff-label">
+                      {[1, 2, 3, 4, 5].map((score) => (
                         <button
-                          key={opt}
+                          key={score}
                           type="button"
-                          onClick={() => setAnswers({ ...answers, q4: opt })}
-                          className={`p-3.5 rounded-xl border text-left text-xs font-semibold flex items-center justify-between transition-all cursor-pointer ${
-                            isSelected
-                              ? 'bg-slate-900 border-slate-900 text-white'
-                              : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'
-                          }`}
+                          onClick={() => setStaffRating(score)}
+                          className="bsc-fx-star"
+                          data-on={score <= staffRating}
+                          aria-pressed={score <= staffRating}
+                          aria-label={`${score} out of 5`}
                         >
-                          <span>{opt}</span>
-                          {isSelected && <Check className="w-4 h-4 text-white" />}
+                          <Star aria-hidden="true" fill={score <= staffRating ? 'currentColor' : 'none'} />
                         </button>
-                      );
-                    })}
+                      ))}
+                      <span className="bsc-fx-rating-note">{staffRating}/5</span>
+                    </div>
                   </div>
-                </div>
 
-                <div className="space-y-2">
-                  <label className="block text-sm font-bold text-slate-900">
-                    How likely are you to recommend BSC Textiles to others?
-                  </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {['Definitely recommend', 'Probably recommend', 'Neutral', 'Not recommend'].map(
-                      (opt) => {
-                        const isSelected = answers['q5'] === opt;
+                  <div className="bsc-fx-q">
+                    <p className="bsc-fx-q-title" id="fx-q4-label">
+                      How would you rate the service and helpfulness of our staff?
+                    </p>
+                    <div className="bsc-fx-options" role="group" aria-labelledby="fx-q4-label">
+                      {['Extremely helpful', 'Helpful', 'Average', 'Needs improvement'].map((opt) => {
+                        const isSelected = answers['q4'] === opt;
                         return (
                           <button
                             key={opt}
                             type="button"
-                            onClick={() => setAnswers({ ...answers, q5: opt })}
-                            className={`p-3.5 rounded-xl border text-left text-xs font-semibold flex items-center justify-between transition-all cursor-pointer ${
-                              isSelected
-                                ? 'bg-slate-900 border-slate-900 text-white'
-                                : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'
-                            }`}
+                            onClick={() => setAnswers({ ...answers, q4: opt })}
+                            className="bsc-fx-option"
+                            aria-pressed={isSelected}
                           >
                             <span>{opt}</span>
-                            {isSelected && <Check className="w-4 h-4 text-white" />}
+                            {isSelected && <Check aria-hidden="true" />}
                           </button>
                         );
-                      }
-                    )}
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="bsc-fx-q">
+                    <p className="bsc-fx-q-title" id="fx-q5-label">
+                      How likely are you to recommend BSC Textiles to others?
+                    </p>
+                    <div className="bsc-fx-options" role="group" aria-labelledby="fx-q5-label">
+                      {['Definitely recommend', 'Probably recommend', 'Neutral', 'Not recommend'].map(
+                        (opt) => {
+                          const isSelected = answers['q5'] === opt;
+                          return (
+                            <button
+                              key={opt}
+                              type="button"
+                              onClick={() => setAnswers({ ...answers, q5: opt })}
+                              className="bsc-fx-option"
+                              aria-pressed={isSelected}
+                            >
+                              <span>{opt}</span>
+                              {isSelected && <Check aria-hidden="true" />}
+                            </button>
+                          );
+                        }
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -841,130 +975,119 @@ export default function PublicFeedback() {
 
             {/* STEP 4: Products & Store */}
             {currentStep === 4 && (
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-bold text-slate-900 mb-2">
-                    Product & Fabric Collection Rating
-                  </label>
-                  <div className="flex items-center gap-2">
-                    {[1, 2, 3, 4, 5].map((score) => (
-                      <button
-                        key={score}
-                        type="button"
-                        onClick={() => setProductRating(score)}
-                        className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-all cursor-pointer ${
-                          score <= productRating
-                            ? 'bg-amber-50 border-amber-300 text-amber-500'
-                            : 'bg-white border-slate-200 text-slate-300 hover:border-slate-300'
-                        }`}
-                      >
-                        <Star
-                          className="w-5 h-5"
-                          fill={score <= productRating ? 'currentColor' : 'none'}
-                        />
-                      </button>
-                    ))}
-                    <span className="ml-2 text-xs font-semibold text-slate-600">
-                      {productRating}/5
-                    </span>
+              <div className="bsc-fx-step-body">
+                <div className="bsc-fx-questions">
+                  <div className="bsc-fx-q">
+                    <p className="bsc-fx-q-title" id="fx-product-label">
+                      Product &amp; fabric collection rating
+                    </p>
+                    <div className="bsc-fx-stars" role="group" aria-labelledby="fx-product-label">
+                      {[1, 2, 3, 4, 5].map((score) => (
+                        <button
+                          key={score}
+                          type="button"
+                          onClick={() => setProductRating(score)}
+                          className="bsc-fx-star"
+                          data-on={score <= productRating}
+                          aria-pressed={score <= productRating}
+                          aria-label={`${score} out of 5`}
+                        >
+                          <Star aria-hidden="true" fill={score <= productRating ? 'currentColor' : 'none'} />
+                        </button>
+                      ))}
+                      <span className="bsc-fx-rating-note">{productRating}/5</span>
+                    </div>
                   </div>
-                </div>
 
-                <div className="space-y-2">
-                  <label className="block text-sm font-bold text-slate-900">
-                    Did you find the products and fabrics you were looking for?
-                  </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {['Yes, exactly what I wanted', 'Yes, with assistance', 'Partially', 'No'].map(
-                      (opt) => {
-                        const isSelected = answers['q2'] === opt;
+                  <div className="bsc-fx-q">
+                    <p className="bsc-fx-q-title" id="fx-q2-label">
+                      Did you find the products and fabrics you were looking for?
+                    </p>
+                    <div className="bsc-fx-options" role="group" aria-labelledby="fx-q2-label">
+                      {['Yes, exactly what I wanted', 'Yes, with assistance', 'Partially', 'No'].map(
+                        (opt) => {
+                          const isSelected = answers['q2'] === opt;
+                          return (
+                            <button
+                              key={opt}
+                              type="button"
+                              onClick={() => setAnswers({ ...answers, q2: opt })}
+                              className="bsc-fx-option"
+                              aria-pressed={isSelected}
+                            >
+                              <span>{opt}</span>
+                              {isSelected && <Check aria-hidden="true" />}
+                            </button>
+                          );
+                        }
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="bsc-fx-q">
+                    <p className="bsc-fx-q-title" id="fx-q3-label">
+                      How would you rate the quality and variety of our collections?
+                    </p>
+                    <div className="bsc-fx-options" role="group" aria-labelledby="fx-q3-label">
+                      {['Excellent', 'Good', 'Average', 'Poor'].map((opt) => {
+                        const isSelected = answers['q3'] === opt;
                         return (
                           <button
                             key={opt}
                             type="button"
-                            onClick={() => setAnswers({ ...answers, q2: opt })}
-                            className={`p-3.5 rounded-xl border text-left text-xs font-semibold flex items-center justify-between transition-all cursor-pointer ${
-                              isSelected
-                                ? 'bg-slate-900 border-slate-900 text-white'
-                                : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'
-                            }`}
+                            onClick={() => setAnswers({ ...answers, q3: opt })}
+                            className="bsc-fx-option"
+                            aria-pressed={isSelected}
                           >
                             <span>{opt}</span>
-                            {isSelected && <Check className="w-4 h-4 text-white" />}
+                            {isSelected && <Check aria-hidden="true" />}
                           </button>
                         );
-                      }
-                    )}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="block text-sm font-bold text-slate-900">
-                    How would you rate the quality and variety of our collections?
-                  </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {['Excellent', 'Good', 'Average', 'Poor'].map((opt) => {
-                      const isSelected = answers['q3'] === opt;
-                      return (
-                        <button
-                          key={opt}
-                          type="button"
-                          onClick={() => setAnswers({ ...answers, q3: opt })}
-                          className={`p-3.5 rounded-xl border text-left text-xs font-semibold flex items-center justify-between transition-all cursor-pointer ${
-                            isSelected
-                              ? 'bg-slate-900 border-slate-900 text-white'
-                              : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'
-                          }`}
-                        >
-                          <span>{opt}</span>
-                          {isSelected && <Check className="w-4 h-4 text-white" />}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Cleanliness & Ambience Ratings */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                  <div className="bg-slate-50 border border-slate-100 p-3.5 rounded-xl">
-                    <label className="block text-xs font-bold text-slate-800 mb-2">
-                      Store Cleanliness ({cleanlinessRating}/5)
-                    </label>
-                    <div className="flex items-center gap-1.5">
-                      {[1, 2, 3, 4, 5].map((s) => (
-                        <button
-                          key={s}
-                          type="button"
-                          onClick={() => setCleanlinessRating(s)}
-                          className="p-1 text-amber-500 hover:scale-110 transition-transform cursor-pointer"
-                        >
-                          <Star
-                            className="w-5 h-5"
-                            fill={s <= cleanlinessRating ? 'currentColor' : 'none'}
-                          />
-                        </button>
-                      ))}
+                      })}
                     </div>
                   </div>
 
-                  <div className="bg-slate-50 border border-slate-100 p-3.5 rounded-xl">
-                    <label className="block text-xs font-bold text-slate-800 mb-2">
-                      Store Ambience ({ambienceRating}/5)
-                    </label>
-                    <div className="flex items-center gap-1.5">
-                      {[1, 2, 3, 4, 5].map((s) => (
-                        <button
-                          key={s}
-                          type="button"
-                          onClick={() => setAmbienceRating(s)}
-                          className="p-1 text-amber-500 hover:scale-110 transition-transform cursor-pointer"
-                        >
-                          <Star
-                            className="w-5 h-5"
-                            fill={s <= ambienceRating ? 'currentColor' : 'none'}
-                          />
-                        </button>
-                      ))}
+                  <div className="bsc-fx-grid">
+                    <div className="bsc-fx-subcard">
+                      <span className="bsc-fx-label" id="fx-cleanliness-label">
+                        Store cleanliness ({cleanlinessRating}/5)
+                      </span>
+                      <div className="bsc-fx-stars" role="group" aria-labelledby="fx-cleanliness-label">
+                        {[1, 2, 3, 4, 5].map((s) => (
+                          <button
+                            key={s}
+                            type="button"
+                            onClick={() => setCleanlinessRating(s)}
+                            className="bsc-fx-star-mini"
+                            data-on={s <= cleanlinessRating}
+                            aria-pressed={s <= cleanlinessRating}
+                            aria-label={`${s} out of 5`}
+                          >
+                            <Star aria-hidden="true" fill={s <= cleanlinessRating ? 'currentColor' : 'none'} />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="bsc-fx-subcard">
+                      <span className="bsc-fx-label" id="fx-ambience-label">
+                        Store ambience ({ambienceRating}/5)
+                      </span>
+                      <div className="bsc-fx-stars" role="group" aria-labelledby="fx-ambience-label">
+                        {[1, 2, 3, 4, 5].map((s) => (
+                          <button
+                            key={s}
+                            type="button"
+                            onClick={() => setAmbienceRating(s)}
+                            className="bsc-fx-star-mini"
+                            data-on={s <= ambienceRating}
+                            aria-pressed={s <= ambienceRating}
+                            aria-label={`${s} out of 5`}
+                          >
+                            <Star aria-hidden="true" fill={s <= ambienceRating ? 'currentColor' : 'none'} />
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -973,129 +1096,136 @@ export default function PublicFeedback() {
 
             {/* STEP 5: Review Summary & Additional Comments */}
             {currentStep === 5 && (
-              <div className="space-y-5">
-                {/* Details Summary Card */}
-                <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 text-xs space-y-2">
-                  <div className="flex items-center justify-between font-bold text-slate-900 border-b border-slate-200 pb-2">
-                    <span className="flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                      <span>Review Your Visit Details</span>
-                    </span>
-                    <span className="text-[11px] px-2 py-0.5 rounded-md bg-white border border-slate-200 font-mono">
-                      {selectedStore.code}
-                    </span>
+              <div className="bsc-fx-step-body">
+                <div className="bsc-fx-questions">
+                  <section className="bsc-fx-review" aria-label="Review your visit details">
+                    <div className="bsc-fx-review-head">
+                      <span className="bsc-fx-review-title">
+                        <Sparkles aria-hidden="true" />
+                        <span>Review your visit</span>
+                      </span>
+                      <span className="bsc-fx-review-code">{selectedStore.code}</span>
+                    </div>
+
+                    <dl className="bsc-fx-review-grid">
+                      <div className="bsc-fx-review-item">
+                        <dt>Customer</dt>
+                        <dd>{customerName}</dd>
+                      </div>
+                      <div className="bsc-fx-review-item">
+                        <dt>Mobile</dt>
+                        <dd className="bsc-fx-mono">{mobile ? `+91 ${mobile}` : 'Not provided'}</dd>
+                      </div>
+                      <div className="bsc-fx-review-item">
+                        <dt>Section</dt>
+                        <dd>{sectionId}</dd>
+                      </div>
+                      <div className="bsc-fx-review-item">
+                        <dt>Bill / memo no</dt>
+                        <dd className="bsc-fx-mono">{billNo || 'Not provided'}</dd>
+                      </div>
+                      <div className="bsc-fx-review-item">
+                        <dt>Store rating</dt>
+                        <dd className="bsc-fx-review-score">
+                          <Star aria-hidden="true" fill="currentColor" />
+                          <span>{overallRating} / 5</span>
+                        </dd>
+                      </div>
+                      <div className="bsc-fx-review-item">
+                        <dt>Staff service</dt>
+                        <dd className="bsc-fx-review-score">
+                          <Star aria-hidden="true" fill="currentColor" />
+                          <span>{staffRating} / 5</span>
+                        </dd>
+                      </div>
+                    </dl>
+                  </section>
+
+                  <div className="bsc-fx-field">
+                    <label className="bsc-fx-label" htmlFor="fx-liked">
+                      What did you like most about your visit today?
+                    </label>
+                    <textarea
+                      id="fx-liked"
+                      rows={3}
+                      placeholder="Tell us what stood out positively..."
+                      value={likedMost}
+                      onChange={(e) => setLikedMost(e.target.value)}
+                      className="bsc-fx-textarea"
+                    />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2 pt-1 text-slate-600">
-                    <div>
-                      <span className="text-slate-400 block text-[10px] uppercase">Customer</span>
-                      <span className="font-semibold text-slate-900">{customerName}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-400 block text-[10px] uppercase">Mobile</span>
-                      <span className="font-mono text-slate-900">{mobile ? `+91 ${mobile}` : 'Not provided'}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-400 block text-[10px] uppercase">Section</span>
-                      <span className="font-semibold text-slate-900">{sectionId}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-400 block text-[10px] uppercase">Bill / Memo No</span>
-                      <span className="font-mono text-slate-900">{billNo || 'Not provided'}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-400 block text-[10px] uppercase">Store Rating</span>
-                      <span className="font-bold text-amber-600">★ {overallRating} / 5</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-400 block text-[10px] uppercase">Staff Service</span>
-                      <span className="font-bold text-amber-600">★ {staffRating} / 5</span>
-                    </div>
+                  <div className="bsc-fx-field">
+                    <label className="bsc-fx-label" htmlFor="fx-improve">
+                      What can we improve to serve you better?
+                    </label>
+                    <textarea
+                      id="fx-improve"
+                      rows={3}
+                      placeholder="Share any suggestions or areas for improvement..."
+                      value={canImprove}
+                      onChange={(e) => setCanImprove(e.target.value)}
+                      className="bsc-fx-textarea"
+                    />
                   </div>
-                </div>
 
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold text-slate-700">
-                    What did you like most about your visit today?
-                  </label>
-                  <textarea
-                    rows={2}
-                    placeholder="Tell us what stood out positively..."
-                    value={likedMost}
-                    onChange={(e) => setLikedMost(e.target.value)}
-                    className="w-full p-3 text-xs sm:text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 text-slate-900 placeholder:text-slate-400"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold text-slate-700">
-                    What can we improve to serve you better?
-                  </label>
-                  <textarea
-                    rows={2}
-                    placeholder="Share any suggestions or areas for improvement..."
-                    value={canImprove}
-                    onChange={(e) => setCanImprove(e.target.value)}
-                    className="w-full p-3 text-xs sm:text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 text-slate-900 placeholder:text-slate-400"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold text-slate-700">
-                    Any additional comments or compliments?
-                  </label>
-                  <textarea
-                    rows={2}
-                    placeholder="Optional additional notes for store management..."
-                    value={additionalComments}
-                    onChange={(e) => setAdditionalComments(e.target.value)}
-                    className="w-full p-3 text-xs sm:text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 text-slate-900 placeholder:text-slate-400"
-                  />
+                  <div className="bsc-fx-field">
+                    <label className="bsc-fx-label" htmlFor="fx-comments">
+                      Any additional comments or compliments?
+                      <span className="bsc-fx-optional">Optional</span>
+                    </label>
+                    <textarea
+                      id="fx-comments"
+                      rows={3}
+                      placeholder="Optional additional notes for store management..."
+                      value={additionalComments}
+                      onChange={(e) => setAdditionalComments(e.target.value)}
+                      className="bsc-fx-textarea"
+                    />
+                  </div>
                 </div>
               </div>
             )}
 
             {/* Navigation & Submit Controls */}
-            <div className="mt-8 pt-5 border-t border-slate-100 flex items-center justify-between gap-3">
-              {currentStep > 1 ? (
+            <div className="bsc-fx-actions" data-single={currentStep === 1}>
+              {currentStep > 1 && (
                 <button
                   type="button"
                   onClick={handlePrevStep}
                   disabled={submitting}
-                  className="h-12 px-5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs sm:text-sm font-semibold rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer"
+                  className="bsc-fx-btn-ghost"
                 >
-                  <ArrowLeft className="w-4 h-4" />
+                  <ArrowLeft aria-hidden="true" />
                   <span>Back</span>
                 </button>
-              ) : (
-                <div />
               )}
 
               {currentStep < 5 ? (
                 <button
                   type="button"
                   onClick={handleNextStep}
-                  className="h-12 px-6 bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-semibold rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer ml-auto"
+                  className="bsc-fx-btn-primary bsc-fx-submit"
                 >
                   <span>Continue</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <ArrowRight aria-hidden="true" />
                 </button>
               ) : (
                 <button
                   type="button"
                   onClick={() => handleSubmit()}
                   disabled={submitting}
-                  className="h-12 px-7 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white text-xs sm:text-sm font-semibold rounded-xl flex items-center gap-2 transition-colors cursor-pointer ml-auto"
+                  className="bsc-fx-btn-primary bsc-fx-submit"
                 >
                   {submitting ? (
                     <>
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      <span>Saving & Submitting...</span>
+                      <span className="bsc-fx-spinner" aria-hidden="true" />
+                      <span>Saving your feedback...</span>
                     </>
                   ) : (
                     <>
-                      <span>Submit Feedback</span>
-                      <Check className="w-4 h-4" />
+                      <span>Submit feedback</span>
+                      <Check aria-hidden="true" />
                     </>
                   )}
                 </button>
@@ -1104,10 +1234,10 @@ export default function PublicFeedback() {
           </form>
         </div>
 
-        {/* Footer info */}
-        <div className="text-center text-xs text-slate-400">
-          BSC Textiles · Customer Experience Service
-        </div>
+        <footer className="bsc-fx-foot">
+          <span>BSC Textiles · Customer Experience</span>
+          <span>Shared with {selectedStore.storeName} management.</span>
+        </footer>
       </div>
 
       {/* Enlarge QR Modal for Mobile Scanning / Counter Display */}

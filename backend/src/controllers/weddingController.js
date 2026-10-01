@@ -1325,6 +1325,7 @@ class WeddingController {
   // ── 4. Create Wedding Customer ──────────────────────────────────────
   async createCustomer(req, res) {
     try {
+      await ensureTables();
       const customerName = (req.body.customer_name || req.body.customerName || '').trim();
       let mobileNumber = (req.body.mobile_number || req.body.phone || req.body.mobile || '').trim();
 
