@@ -174,12 +174,38 @@ export default function NotificationDrawer({ isOpen, onClose }: NotificationDraw
             <div className="flex items-center gap-1.5 shrink-0">
               <button
                 type="button"
-                onClick={() => setSoundOn(NotificationService.toggleSound())}
-                className="p-2 rounded-xl text-[#687080] hover:text-[#182033] hover:bg-white border border-transparent hover:border-[#DFDDD7] transition-all cursor-pointer"
-                title={soundOn ? 'Notification sound enabled' : 'Notification sound muted'}
+                onClick={() => {
+                  const next = NotificationService.toggleSound();
+                  setSoundOn(next);
+                  if (next) {
+                    NotificationService.playSound('normal');
+                    showToast('Notification audio alerts enabled (Full Volume)', 'info', 'Audio Alerts ON');
+                  } else {
+                    showToast('Notification audio alerts muted', 'warn', 'Audio Alerts Muted');
+                  }
+                }}
+                className={`p-2 rounded-xl border transition-all cursor-pointer ${
+                  soundOn
+                    ? 'text-[#C9A45C] bg-[#FAF8F5] border-[#C9A45C]/40 hover:bg-white'
+                    : 'text-rose-500 bg-rose-50 border-rose-200 hover:bg-rose-100'
+                }`}
+                title={soundOn ? 'Audio Alerts: ON (click to mute)' : 'Audio Alerts: MUTED (click to enable)'}
                 aria-label="Toggle sound"
               >
                 {soundOn ? <Volume2 className="w-4 h-4 text-[#C9A45C]" /> : <VolumeX className="w-4 h-4 text-rose-500" />}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  NotificationService.playSound('normal');
+                  showToast('Playing full notification audio alert chime', 'info', 'Audio Test');
+                }}
+                className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold text-[#182033] bg-[#FAF8F5] hover:bg-white border border-[#DFDDD7] hover:border-[#C9A45C]/50 transition-all cursor-pointer shadow-2xs"
+                title="Play full test notification sound"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-[#C9A45C]" />
+                <span>Test Sound</span>
               </button>
               <button
                 type="button"

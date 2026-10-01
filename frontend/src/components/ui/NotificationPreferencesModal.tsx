@@ -42,11 +42,25 @@ export default function NotificationPreferencesModal({ isOpen, onClose }: Notifi
         </div>
 
         <div className="space-y-4 text-xs">
+          {/* Pop-up Notification Messages (Toasts) */}
+          <div className="flex items-center justify-between p-3.5 rounded-2xl bg-[#FAF8F5] border border-[#DFDDD7]">
+            <div>
+              <span className="font-bold text-[#182033] block">Pop-up Notification Messages</span>
+              <span className="text-[11px] text-[#687080]">Show real-time toast alert popups on your screen</span>
+            </div>
+            <input
+              type="checkbox"
+              checked={settings.desktopToastEnabled}
+              onChange={(e) => setSettings({ ...settings, desktopToastEnabled: e.target.checked })}
+              className="w-4 h-4 rounded accent-[#C9A45C] cursor-pointer"
+            />
+          </div>
+
           {/* Sound Enable */}
           <div className="flex items-center justify-between p-3.5 rounded-2xl bg-[#FAF8F5] border border-[#DFDDD7]">
             <div>
               <span className="font-bold text-[#182033] block">Notification Audio Alerts</span>
-              <span className="text-[11px] text-[#687080]">Play short chime when genuinely new alerts arrive</span>
+              <span className="text-[11px] text-[#687080]">Play full chime when genuinely new alerts arrive</span>
             </div>
             <input
               type="checkbox"
@@ -65,15 +79,15 @@ export default function NotificationPreferencesModal({ isOpen, onClose }: Notifi
               </div>
               <input
                 type="range"
-                min="0.05"
-                max="1"
+                min="0.10"
+                max="1.0"
                 step="0.05"
                 value={settings.volume}
                 onChange={(e) => setSettings({ ...settings, volume: parseFloat(e.target.value) })}
                 className="w-full accent-[#C9A45C] cursor-pointer"
               />
               <div className="pt-1 flex items-center justify-between">
-                <span className="text-[10.5px] text-[#8B776A]">Subtle, non-disruptive enterprise chime</span>
+                <span className="text-[10.5px] text-[#8B776A]">Resonant, luxury multi-tone chime</span>
                 <button
                   type="button"
                   onClick={handleTestSound}
@@ -86,9 +100,9 @@ export default function NotificationPreferencesModal({ isOpen, onClose }: Notifi
             </div>
           )}
 
-          <div className="p-3 rounded-xl bg-blue-50/50 border border-blue-100 text-[11px] text-blue-900 leading-relaxed">
-            <span className="font-bold block text-blue-950 mb-0.5">Quiet Notification Delivery</span>
-            New messages silently update your notification badge and drawer without interrupting popups. Audio alerts will chime once per new message when enabled above.
+          <div className="p-3 rounded-xl bg-amber-50/70 border border-amber-200/60 text-[11px] text-amber-950 leading-relaxed">
+            <span className="font-bold block text-[#182033] mb-0.5">Real-time Notification Center</span>
+            When enabled, incoming alerts will pop up as toast messages on your screen and sound a full, clear audio alert chime for this user.
           </div>
         </div>
 

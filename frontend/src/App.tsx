@@ -269,6 +269,7 @@ export default function App() {
         <DevToolsGuard />
         <DesktopModeWarning />
       </Suspense>
+      <ToastContainer />
     </Router>
     </LocationProvider>
     </ErrorBoundary>

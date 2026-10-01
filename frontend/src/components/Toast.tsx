@@ -3,8 +3,10 @@ import { CircleCheck, CircleAlert, Info, AlertTriangle, X } from 'lucide-react';
 
 export interface ToastMessage {
   id: string;
+  title?: string;
   message: string;
   type: 'success' | 'error' | 'info' | 'warn';
+  duration?: number;
 }
 
 type ToastListener = (toast: ToastMessage) => void;
@@ -43,7 +45,12 @@ function sanitizeMessage(message: string, type: 'success' | 'error' | 'info' | '
   return trimmed;
 }
 
-export const showToast = (message: string, type: 'success' | 'error' | 'info' | 'warn' = 'info') => {
+export const showToast = (
+  message: string,
+  type: 'success' | 'error' | 'info' | 'warn' = 'info',
+  title?: string,
+  duration?: number
+) => {
   const cleanMessage = sanitizeMessage(message, type);
   const now = Date.now();
   if (lastToastMsg === cleanMessage && lastToastType === type && now - lastToastTime < 2000) {
@@ -55,8 +62,10 @@ export const showToast = (message: string, type: 'success' | 'error' | 'info' | 
 
   const toast: ToastMessage = {
     id: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+    title,
     message: cleanMessage,
-    type
+    type,
+    duration
   };
 
   listeners.forEach(listener => {
@@ -96,11 +105,13 @@ export default function ToastContainer() {
         return [...prev, newToast];
       });
 
-      // Duration: success 4.5s, error 6s, warn 5s, info 4s
-      const duration = newToast.type === 'error' ? 6000
+      // Duration: custom duration or success 4.5s, error 6s, warn 5s, info 4s
+      const duration = newToast.duration || (
+        newToast.type === 'error' ? 6000
         : newToast.type === 'warn' ? 5000
         : newToast.type === 'success' ? 4500
-        : 4000;
+        : 4000
+      );
 
       setTimeout(() => {
         setToasts(prev => prev.filter(t => t.id !== newToast.id));
@@ -161,10 +172,17 @@ export default function ToastContainer() {
               lineHeight: '1.45'
             }}
           >
-            <div className="flex items-start gap-3">
-              <Icon className="w-5 h-5 flex-shrink-0 mt-0.5" />
-              <div className="flex flex-col">
-                <span className="font-bold tracking-tight">{t.message}</span>
+            <div className="flex items-start gap-3 min-w-0 flex-1">
+              <Icon className="w-5 h-5 flex-shrink-0 mt-0.5 text-accent-soft" />
+              <div className="flex flex-col min-w-0">
+                {t.title && (
+                  <span className="font-black text-sm tracking-tight text-white mb-0.5 truncate">
+                    {t.title}
+                  </span>
+                )}
+                <span className="font-semibold text-xs text-white/95 leading-snug break-words">
+                  {t.message}
+                </span>
               </div>
             </div>
             <button

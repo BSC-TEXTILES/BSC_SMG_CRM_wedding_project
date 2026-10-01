@@ -1,6 +1,7 @@
 import { API, Auth, UserSession } from './api';
 import type { Socket } from 'socket.io-client';
 import { realtimeClient } from './realtimeClient';
+import { showToast } from '../components/Toast';
 
 export interface SystemNotification {
   id: string;
@@ -51,47 +52,32 @@ export interface NotificationSettings {
 /**
  * NotificationAudioEngine
  * ───────────────────────
- * Professional, subtle, warm enterprise audio synthesizer using the Web Audio API.
- * 1. Single reusable AudioContext (eliminates browser context leaks).
- * 2. Autoplay restriction handling via safe user interaction unlock listeners.
- * 3. Two-tone harmonious chime (D5 -> A5 with sub-octave warmth, ~220ms exponential decay).
- * 4. Sound throttling / debouncing (prevents annoying rapid overlapping sounds).
- * 5. Strictly non-disruptive, safe, and zero-dependency.
+ * Professional, rich, full-volume enterprise audio synthesizer using the Web Audio API.
+ * 1. Single reusable AudioContext with automatic resumption on user interaction.
+ * 2. Multi-tone harmonic chime (clear, rich, bell-like presence).
+ * 3. Dynamics compression ensuring loud, full, distortion-free sound.
+ * 4. Autoplay restriction handling via global user interaction unlock listeners.
+ * 5. Sound debouncing to prevent audio distortion on rapid bursts.
  */
 class NotificationAudioEngine {
   private audioCtx: AudioContext | null = null;
   private isUnlocked = false;
   private lastSoundPlayedAt = 0;
-  private readonly THROTTLE_MS = 600; // Throttle window to debounce rapid bursts
+  private readonly THROTTLE_MS = 350; // Debounce window for rapid successive notifications
 
   constructor() {
     this.setupAutoplayUnlock();
   }
 
   /**
-   * Registers one-time user gesture listeners to safely unlock the AudioContext
+   * Registers global user gesture listeners to safely unlock and resume AudioContext
    * in compliance with modern browser autoplay policies (Chrome, Safari, Edge, Mobile).
    */
-  private setupAutoplayUnlock(): void {
+  public setupAutoplayUnlock(): void {
     if (typeof window === 'undefined') return;
 
     const unlockHandler = () => {
-      try {
-        const ctx = this.getOrCreateAudioContext();
-        if (ctx) {
-          if (ctx.state === 'suspended') {
-            ctx.resume().then(() => {
-              this.isUnlocked = true;
-              this.removeUnlockListeners(unlockHandler);
-            }).catch(() => {});
-          } else if (ctx.state === 'running') {
-            this.isUnlocked = true;
-            this.removeUnlockListeners(unlockHandler);
-          }
-        }
-      } catch {
-        // Silently continue
-      }
+      this.unlockAudio();
     };
 
     const events = ['click', 'keydown', 'touchstart', 'pointerdown'];
@@ -100,12 +86,21 @@ class NotificationAudioEngine {
     });
   }
 
-  private removeUnlockListeners(handler: () => void): void {
-    if (typeof window === 'undefined') return;
-    const events = ['click', 'keydown', 'touchstart', 'pointerdown'];
-    events.forEach((evt) => {
-      window.removeEventListener(evt, handler);
-    });
+  public unlockAudio(): void {
+    try {
+      const ctx = this.getOrCreateAudioContext();
+      if (ctx) {
+        if (ctx.state === 'suspended') {
+          ctx.resume().then(() => {
+            this.isUnlocked = true;
+          }).catch(() => {});
+        } else if (ctx.state === 'running') {
+          this.isUnlocked = true;
+        }
+      }
+    } catch {
+      // Silently continue
+    }
   }
 
   private getOrCreateAudioContext(): AudioContext | null {
@@ -124,13 +119,13 @@ class NotificationAudioEngine {
   }
 
   /**
-   * Plays a short, subtle, professional two-tone chime.
-   * Throttles consecutive calls within 600ms so multiple rapid messages play exactly ONCE.
+   * Plays a rich, full, resonant enterprise notification chime.
+   * Multi-tone harmonic chime designed to be clearly audible and luxurious.
    */
-  public playChime(volume: number = 0.8, priority: 'low' | 'normal' | 'high' | 'critical' = 'normal'): void {
+  public playChime(volume: number = 1.0, priority: 'low' | 'normal' | 'high' | 'critical' = 'normal'): void {
     const now = Date.now();
     if (now - this.lastSoundPlayedAt < this.THROTTLE_MS) {
-      return; // Throttled: avoid overlapping series of sounds
+      return;
     }
     this.lastSoundPlayedAt = now;
 
@@ -138,64 +133,96 @@ class NotificationAudioEngine {
       const ctx = this.getOrCreateAudioContext();
       if (!ctx) return;
 
-      // If suspended, attempt non-blocking resume
       if (ctx.state === 'suspended') {
-        ctx.resume().catch(() => {});
+        ctx.resume().then(() => {
+          this.isUnlocked = true;
+          this.synthesizeFullChime(ctx, volume, priority);
+        }).catch(() => {});
+      } else if (ctx.state === 'running') {
+        this.isUnlocked = true;
+        this.synthesizeFullChime(ctx, volume, priority);
       }
-      if (ctx.state !== 'running') {
-        return; // Silent bypass if still blocked by browser policy
-      }
+    } catch {
+      // Audio playback must never disrupt notification processing
+    }
+  }
 
+  private synthesizeFullChime(
+    ctx: AudioContext,
+    volume: number,
+    priority: 'low' | 'normal' | 'high' | 'critical'
+  ): void {
+    try {
       const startTime = ctx.currentTime;
-      const osc1 = ctx.createOscillator();
-      const osc2 = ctx.createOscillator();
-      const gainNode = ctx.createGain();
+      const clampedVol = Math.max(0.15, Math.min(1.0, volume));
+      const peakGain = clampedVol * 0.75; // Rich, full, clearly audible volume
 
-      // Configure frequencies for a warm, pleasant enterprise chime
-      let f1 = 587.33; // D5
-      let f2 = 880.00; // A5
-      let duration = 0.22;
+      // Master compressor to ensure full presence without digital clipping
+      const compressor = ctx.createDynamicsCompressor();
+      compressor.threshold.setValueAtTime(-12, startTime);
+      compressor.knee.setValueAtTime(10, startTime);
+      compressor.ratio.setValueAtTime(4, startTime);
+      compressor.attack.setValueAtTime(0.003, startTime);
+      compressor.release.setValueAtTime(0.25, startTime);
+      compressor.connect(ctx.destination);
+
+      const masterGain = ctx.createGain();
+      masterGain.gain.setValueAtTime(peakGain, startTime);
+      masterGain.connect(compressor);
+
+      // Helper to synthesize individual harmonic musical chime notes
+      const playTone = (freq: number, startOffset: number, toneDuration: number, toneGain = 0.5) => {
+        const noteStart = startTime + startOffset;
+        const osc = ctx.createOscillator();
+        const overtone = ctx.createOscillator();
+        const noteGain = ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, noteStart);
+
+        overtone.type = 'triangle';
+        overtone.frequency.setValueAtTime(freq * 2, noteStart);
+
+        // Bell envelope: rapid attack (8ms) followed by musical exponential release
+        noteGain.gain.setValueAtTime(0.0001, noteStart);
+        noteGain.gain.linearRampToValueAtTime(toneGain, noteStart + 0.008);
+        noteGain.gain.exponentialRampToValueAtTime(0.0001, noteStart + toneDuration);
+
+        osc.connect(noteGain);
+        overtone.connect(noteGain);
+        noteGain.connect(masterGain);
+
+        osc.start(noteStart);
+        overtone.start(noteStart);
+        osc.stop(noteStart + toneDuration);
+        overtone.stop(noteStart + toneDuration);
+      };
 
       if (priority === 'critical') {
-        f1 = 659.25; // E5
-        f2 = 1046.50; // C6
-        duration = 0.28;
+        // Double-strike urgent high alert (A5 -> E6 -> A5 -> E6)
+        playTone(880.00, 0.00, 0.18, 0.6);
+        playTone(1318.51, 0.04, 0.22, 0.5);
+        playTone(880.00, 0.18, 0.22, 0.6);
+        playTone(1318.51, 0.22, 0.45, 0.7);
+      } else if (priority === 'high') {
+        // 4-Tone ascending executive alert (F#5 -> A#5 -> C#6 -> F#6)
+        playTone(739.99, 0.00, 0.35, 0.5);
+        playTone(932.33, 0.11, 0.40, 0.55);
+        playTone(1108.73, 0.22, 0.45, 0.6);
+        playTone(1479.98, 0.33, 0.60, 0.65);
       } else if (priority === 'low') {
-        f1 = 440.00; // A4
-        f2 = 659.25; // E5
-        duration = 0.16;
+        // Gentle mellow two-tone (D5 -> A5)
+        playTone(587.33, 0.00, 0.35, 0.45);
+        playTone(880.00, 0.10, 0.45, 0.5);
+      } else {
+        // Normal: Resonant, luxury 4-tone chime (E5 -> G#5 -> B5 -> E6 sustain)
+        playTone(659.25, 0.00, 0.40, 0.5);
+        playTone(830.61, 0.11, 0.45, 0.55);
+        playTone(987.77, 0.22, 0.50, 0.6);
+        playTone(1318.51, 0.33, 0.65, 0.65);
       }
-
-      osc1.type = 'sine';
-      osc2.type = 'triangle'; // warm acoustic overtone
-
-      // Pitch glide: D5 -> A5 in the first 40% of duration
-      osc1.frequency.setValueAtTime(f1, startTime);
-      osc1.frequency.exponentialRampToValueAtTime(f2, startTime + duration * 0.4);
-
-      // Sub-octave warmth
-      osc2.frequency.setValueAtTime(f1 * 0.5, startTime);
-      osc2.frequency.exponentialRampToValueAtTime(f2 * 0.5, startTime + duration * 0.4);
-
-      // Peak volume scaled to user preference (comfortable ~0.15 peak gain)
-      const clampedVol = Math.max(0.05, Math.min(1.0, volume));
-      const peakGain = clampedVol * 0.16;
-
-      // Envelope: 12ms soft attack -> quick hold -> smooth exponential decay
-      gainNode.gain.setValueAtTime(0.0001, startTime);
-      gainNode.gain.linearRampToValueAtTime(peakGain, startTime + 0.012);
-      gainNode.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
-
-      osc1.connect(gainNode);
-      osc2.connect(gainNode);
-      gainNode.connect(ctx.destination);
-
-      osc1.start(startTime);
-      osc2.start(startTime);
-      osc1.stop(startTime + duration);
-      osc2.stop(startTime + duration);
     } catch {
-      // Audio playback must never throw or disrupt notification processing
+      // Audio playback must never crash the service
     }
   }
 }
@@ -206,9 +233,9 @@ class NotificationAudioEngine {
  * Central enterprise notification state manager:
  * - Real-time Socket.IO + background polling synchronization.
  * - Enforces:
- *   1. NO popups/modals/toasts on new messages.
- *   2. Short professional chime played ONCE for genuinely NEW messages.
- *   3. Audio Alerts ON/OFF toggle strictly respected.
+ *   1. Pop-up messages (Toasts) and full sound alerts for genuinely NEW targeted messages.
+ *   2. Rich professional multi-tone chime played with full volume presence.
+ *   3. Audio Alerts ON/OFF and Popups ON/OFF toggles strictly respected.
  *   4. Zero sound on page loads, refreshes, tab focuses, drawer opens, or read toggles.
  *   5. Duplicate sound protection via unique notification ID tracking.
  */
@@ -219,10 +246,10 @@ class NotificationEngine {
   private directMessages: DirectMessage[] = [];
   private settings: NotificationSettings = {
     soundEnabled: true,
-    volume: 0.8,
-    desktopToastEnabled: false, // Popups disabled per enterprise requirement
-    toastDuration: 5,
-    showPreview: false,
+    volume: 1.0,
+    desktopToastEnabled: true, // Popups allowed & enabled per user requirement
+    toastDuration: 6,
+    showPreview: true,
     muteWorkingHours: false
   };
 
@@ -534,7 +561,20 @@ class NotificationEngine {
     this.notifications = [notif, ...this.notifications.filter((n) => n.id !== notifId)];
     this.notifyListeners();
 
-    // Play sound ONLY if initial session load has completed and sound is enabled
+    // 1. Trigger Pop-up Toast Message for targeted notifications
+    if (this.initialLoadCompleted && this.settings.desktopToastEnabled) {
+      const toastType =
+        notif.priority === 'critical' ? 'error' :
+        notif.priority === 'high' ? 'warn' :
+        'info';
+      showToast(
+        notif.message || notif.subject || 'New notification received',
+        toastType,
+        notif.title || 'Notification'
+      );
+    }
+
+    // 2. Play full resonant sound ONLY if initial session load has completed and sound is enabled
     if (this.initialLoadCompleted && this.settings.soundEnabled) {
       this.audioEngine.playChime(this.settings.volume, notif.priority);
     }
@@ -644,7 +684,14 @@ class NotificationEngine {
     try {
       const storedSettings = localStorage.getItem('bsc_enterprise_notification_settings');
       if (storedSettings) {
-        this.settings = { ...this.settings, ...JSON.parse(storedSettings), desktopToastEnabled: false };
+        const parsed = JSON.parse(storedSettings);
+        this.settings = {
+          ...this.settings,
+          ...parsed,
+          desktopToastEnabled: parsed.desktopToastEnabled !== undefined ? Boolean(parsed.desktopToastEnabled) : true,
+          soundEnabled: parsed.soundEnabled !== undefined ? Boolean(parsed.soundEnabled) : true,
+          volume: typeof parsed.volume === 'number' ? parsed.volume : 1.0
+        };
       }
     } catch {}
   }
@@ -670,7 +717,7 @@ class NotificationEngine {
   }
 
   public saveSettings(newSettings: NotificationSettings): void {
-    this.settings = { ...newSettings, desktopToastEnabled: false };
+    this.settings = { ...newSettings };
     try {
       localStorage.setItem('bsc_enterprise_notification_settings', JSON.stringify(this.settings));
     } catch {}
@@ -684,10 +731,24 @@ class NotificationEngine {
     return !!this.settings.soundEnabled;
   }
 
+  public isToastEnabled(): boolean {
+    return !!this.settings.desktopToastEnabled;
+  }
+
   public toggleSound(enable?: boolean): boolean {
     const next = enable !== undefined ? enable : !this.settings.soundEnabled;
     this.saveSettings({ ...this.settings, soundEnabled: next });
     return next;
+  }
+
+  public toggleToast(enable?: boolean): boolean {
+    const next = enable !== undefined ? enable : !this.settings.desktopToastEnabled;
+    this.saveSettings({ ...this.settings, desktopToastEnabled: next });
+    return next;
+  }
+
+  public unlockAudio(): void {
+    this.audioEngine.unlockAudio();
   }
 
   public getUnreadCount(): number {
@@ -776,10 +837,10 @@ class NotificationEngine {
   }
 
   /**
-   * Explicit audio test trigger (e.g. from NotificationPreferencesModal).
+   * Explicit audio test trigger (e.g. from NotificationPreferencesModal or Test Sound buttons).
    */
-  public playSound(priority: 'low' | 'normal' | 'high' | 'critical' = 'normal'): void {
-    this.audioEngine.playChime(this.settings.volume, priority);
+  public playSound(priority: 'low' | 'normal' | 'high' | 'critical' = 'normal', volume?: number): void {
+    this.audioEngine.playChime(volume ?? this.settings.volume, priority);
   }
 
   public async addNotification(data: Omit<SystemNotification, 'id' | 'timestamp' | 'read'>) {

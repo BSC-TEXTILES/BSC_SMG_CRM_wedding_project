@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { Auth, UserSession } from '../../services/api';
 import { NotificationService } from '../../services/notificationService';
+import { showToast } from '../Toast';
 import ChangePasswordModal from './ChangePasswordModal';
 import ActivityPanel from './ActivityPanel';
 
@@ -106,6 +107,12 @@ export default function ProfileDropdown({
   const handleToggleSound = () => {
     const next = NotificationService.toggleSound();
     setSoundEnabled(next);
+    if (next) {
+      NotificationService.playSound('normal');
+      showToast('Notification audio alerts enabled (Full Volume)', 'info', 'Audio Alerts ON');
+    } else {
+      showToast('Notification audio alerts muted', 'warn', 'Audio Alerts Muted');
+    }
   };
 
   const isAdminRole =
