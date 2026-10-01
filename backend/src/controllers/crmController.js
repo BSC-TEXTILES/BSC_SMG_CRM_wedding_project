@@ -959,6 +959,7 @@ exports.submitFeedback = async (req, res) => {
       mobile, custMobile,
       email, custEmail,
       dob, custDob,
+      billNo, invoiceNo, receiptNo,
       sectionId, area, category,
       answers, q0, q1, q2, q3, q4, q5, q6, q7,
       likedMost, canImprove, additionalComments, voice, yourVoice,
@@ -1051,10 +1052,13 @@ exports.submitFeedback = async (req, res) => {
 
     const finalEmail = (email || custEmail || '').trim() || null;
     const finalDob = dob || custDob || null;
+    const finalBillNo = (billNo || invoiceNo || receiptNo || '').trim();
     const finalArea = area || sectionId || category || 'Ground Floor';
     const finalSource = source || 'qr';
 
     const compiledVoice = [
+      finalBillNo ? `Bill / Memo No: ${finalBillNo}` : '',
+      finalArea && finalArea !== 'Ground Floor' ? `Section: ${finalArea}` : '',
       likedMost ? `Liked Most: ${likedMost}` : '',
       canImprove ? `Can Improve: ${canImprove}` : '',
       additionalComments ? `Comments: ${additionalComments}` : '',
@@ -1062,12 +1066,18 @@ exports.submitFeedback = async (req, res) => {
       yourVoice ? `Voice: ${yourVoice}` : ''
     ].filter(Boolean).join('\n');
 
-    const isNegative = evaluateFeedbackEscalation(answers || {}, compiledVoice, q0, q1, q2, q3);
+    const combinedAnswers = {
+      ...(typeof answers === 'object' && answers ? answers : {}),
+      ...(finalBillNo ? { billNo: finalBillNo } : {}),
+      ...(finalArea ? { section: finalArea } : {})
+    };
+
+    const isNegative = evaluateFeedbackEscalation(combinedAnswers, compiledVoice, q0, q1, q2, q3);
 
     // Compute integer rating scores (1-5)
     const computeScore = (val, qKey) => {
       if (val !== undefined && val !== null && !isNaN(Number(val))) return Number(val);
-      const ans = answers?.[qKey] || '';
+      const ans = combinedAnswers?.[qKey] || '';
       const low = String(ans).toLowerCase();
       if (low.includes('very satisfied') || low.includes('excellent') || low.includes('definitely') || low.includes('extremely')) return 5;
       if (low.includes('satisfied') || low.includes('good') || low.includes('probably') || low.includes('helpful') || low.includes('yes')) return 4;
@@ -1085,26 +1095,26 @@ exports.submitFeedback = async (req, res) => {
     const finalAmbienceRating = ambienceRating ? Number(ambienceRating) : 5;
     const finalRecRating = computeScore(recommendationRating, 'q5');
 
-    // Generate sequential continuous feedback ID
+    // Generate sequential continuous feedback ID checking target table and Feedback table
     let id = '';
     try {
       const [maxRows] = await db.query(`
-        SELECT id FROM ${targetTableName} 
-        WHERE id REGEXP '^FB-[0-9]+$' AND LENGTH(id) <= 6
-        ORDER BY CAST(SUBSTRING(id, 4) AS UNSIGNED) DESC 
-        LIMIT 1
+        SELECT MAX(num) as maxNum FROM (
+          SELECT CAST(SUBSTRING(id, 4) AS UNSIGNED) as num FROM ${targetTableName} WHERE id REGEXP '^FB-[0-9]+$'
+          UNION ALL
+          SELECT CAST(SUBSTRING(id, 4) AS UNSIGNED) as num FROM Feedback WHERE id REGEXP '^FB-[0-9]+$'
+        ) as combined
       `);
 
-      if (maxRows && maxRows[0] && maxRows[0].id) {
-        const rawIdStr = String(maxRows[0].id).replace(/^FB-/, '');
-        const lastNum = parseInt(rawIdStr, 10);
+      if (maxRows && maxRows[0] && maxRows[0].maxNum !== null && maxRows[0].maxNum !== undefined) {
+        const lastNum = parseInt(maxRows[0].maxNum, 10);
         if (!isNaN(lastNum) && lastNum >= 0) {
           id = `FB-${String(lastNum + 1).padStart(2, '0')}`;
         }
       }
-      if (!id) id = 'FB-00';
+      if (!id) id = 'FB-01';
     } catch (e) {
-      id = 'FB-00';
+      id = `FB-${Date.now().toString().slice(-4)}`;
     }
 
     const entryDate = getISTDateString();
@@ -1124,8 +1134,8 @@ exports.submitFeedback = async (req, res) => {
             cleanlinessRating, ambienceRating, recommendationRating,
             customerComments, voice, yourVoice, category, sectionId, area,
             answers, q0, q1, q2, q3, q4, q5, q6, q7,
-            source, qrCodeId, sessionId, submissionRef, isNegative, status
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new')
+            source, qrCodeId, sessionId, submissionRef, isNegative, status, notes
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new', ?)
         `, [
           id, targetLocId, targetLocCode, targetLocName, targetStoreName,
           finalCustName, finalCustName, finalMobile, finalMobile, finalEmail, finalEmail,
@@ -1133,8 +1143,9 @@ exports.submitFeedback = async (req, res) => {
           finalOverallRating, finalStoreExpRating, finalStaffRating, finalProductRating,
           finalCleanlinessRating, finalAmbienceRating, finalRecRating,
           compiledVoice, compiledVoice, compiledVoice, finalArea, sectionId || null, finalArea,
-          JSON.stringify(answers || {}), q0 || null, q1 || null, q2 || null, q3 || null, q4 || null, q5 || null, q6 || null, q7 || null,
-          finalSource, qrCodeId || null, sessionId || null, effectiveSubmissionRef, isNegative ? 1 : 0
+          JSON.stringify(combinedAnswers), q0 || null, q1 || null, q2 || null, q3 || null, q4 || null, q5 || null, q6 || null, q7 || null,
+          finalSource, qrCodeId || null, sessionId || null, effectiveSubmissionRef, isNegative ? 1 : 0,
+          finalBillNo ? `Bill No: ${finalBillNo}` : null
         ]);
         insertOk = true;
       } catch (insertErr) {
@@ -1161,26 +1172,53 @@ exports.submitFeedback = async (req, res) => {
           custName, custMobile, custDob, q0, q1, q2, q3, q4, q5, q6, q7,
           status, entryDate, entryTime, customerName, mobile, dob, sectionId, answers, voice, isNegative, qrCodeId
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ON DUPLICATE KEY UPDATE updated_at = NOW()
+        ON DUPLICATE KEY UPDATE
+          customerName = VALUES(customerName),
+          custName = VALUES(custName),
+          mobile = VALUES(mobile),
+          custMobile = VALUES(custMobile),
+          email = VALUES(email),
+          location_id = VALUES(location_id),
+          locationCode = VALUES(locationCode),
+          locationName = VALUES(locationName),
+          sectionId = VALUES(sectionId),
+          area = VALUES(area),
+          answers = VALUES(answers),
+          voice = VALUES(voice),
+          yourVoice = VALUES(yourVoice),
+          entryDate = VALUES(entryDate),
+          entryTime = VALUES(entryTime),
+          updated_at = NOW()
       `, [
         id, targetLocId, targetLocCode, targetLocName, finalEmail, dateFormatted, finalSource, finalArea, compiledVoice,
         finalCustName, finalMobile, finalDob, q0 || null, q1 || null, q2 || null, q3 || null, q4 || null, q5 || null, q6 || null, q7 || null,
-        entryDate, entryTime, finalCustName, finalMobile, finalDob, sectionId || null, JSON.stringify(answers || {}), compiledVoice, isNegative ? 1 : 0, qrCodeId || null
+        entryDate, entryTime, finalCustName, finalMobile, finalDob, sectionId || null, JSON.stringify(combinedAnswers), compiledVoice, isNegative ? 1 : 0, qrCodeId || null
       ]);
     } catch (mirrorErr) {
       console.warn('[submitFeedback Mirror Warning]:', mirrorErr.message);
     }
 
-    // Mark scan as submitted if a scan record exists for this QR or location
+    // Mark scan as submitted if a scan record exists for this QR or location, and update stats
     try {
+      let resolvedQrCodeId = qrCodeId;
+      if (!resolvedQrCodeId) {
+        const [qrRows] = await db.query(
+          'SELECT qrCodeId FROM FeedbackQrCode WHERE locationId = ? AND deletedAt IS NULL ORDER BY createdAt DESC LIMIT 1',
+          [targetLocId]
+        );
+        resolvedQrCodeId = qrRows && qrRows[0] ? qrRows[0].qrCodeId : `QR-${targetLocCode}`;
+      }
+
+      let scanUpdated = false;
       if (qrCodeId) {
-        await db.query(`
+        const [updateRes] = await db.query(`
           UPDATE FeedbackQrScan SET isFeedbackSubmitted = 1, feedbackId = ?
           WHERE (qrCodeRefId = ? OR qrCodeId = ?) AND isFeedbackSubmitted = 0
           ORDER BY scannedAt DESC LIMIT 1
         `, [id, qrCodeId, qrCodeId]);
+        if (updateRes && updateRes.affectedRows > 0) scanUpdated = true;
       } else {
-        await db.query(`
+        const [updateRes] = await db.query(`
           UPDATE FeedbackQrScan
           SET isFeedbackSubmitted = 1, feedbackId = ?
           WHERE isFeedbackSubmitted = 0 AND qrCodeRefId IN (
@@ -1188,7 +1226,31 @@ exports.submitFeedback = async (req, res) => {
           )
           ORDER BY scannedAt DESC LIMIT 1
         `, [id, targetLocId]);
+        if (updateRes && updateRes.affectedRows > 0) scanUpdated = true;
       }
+
+      // If no pending scan was matched (e.g. customer completed directly on browser/kiosk), insert record to maintain conversion stats
+      if (!scanUpdated) {
+        const scanId = `scn_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 6)}`;
+        const ipAddress = req.ip || req.headers['x-forwarded-for'] || null;
+        const userAgent = req.headers['user-agent'] || null;
+        await db.query(`
+          INSERT INTO FeedbackQrScan (
+            id, qrCodeId, qrCodeRefId, scannedAt, ipAddress, userAgent, isFeedbackSubmitted, feedbackId
+          ) VALUES (?, ?, ?, NOW(), ?, ?, 1, ?)
+        `, [scanId, resolvedQrCodeId, resolvedQrCodeId, ipAddress, userAgent, id]).catch(() => {});
+
+        await db.query(`
+          UPDATE FeedbackQrCode SET scanCount = scanCount + 1, lastScannedAt = CURRENT_TIMESTAMP WHERE qrCodeId = ?
+        `, [resolvedQrCodeId]).catch(() => {});
+      }
+
+      // Increment feedbackCount in FeedbackQrCode for this location
+      await db.query(`
+        UPDATE FeedbackQrCode 
+        SET feedbackCount = feedbackCount + 1 
+        WHERE locationId = ? OR locationCode = ? OR qrCodeId = ?
+      `, [targetLocId, targetLocCode, resolvedQrCodeId]).catch(() => {});
     } catch (scanUpdateErr) {
       console.warn('[submitFeedback Scan Link Notice]:', scanUpdateErr.message);
     }

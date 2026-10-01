@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
   MapPin,
@@ -10,7 +10,15 @@ import {
   Store,
   User,
   Mail,
-  RotateCcw
+  RotateCcw,
+  QrCode,
+  Download,
+  Copy,
+  Maximize2,
+  X,
+  Receipt,
+  Layers,
+  Sparkles
 } from 'lucide-react';
 import { API } from '../services/api';
 import { showToast } from '../components/Toast';
@@ -75,7 +83,11 @@ export default function PublicFeedback() {
   const [customerName, setCustomerName] = useState<string>('');
   const [mobile, setMobile] = useState<string>('');
   const [email, setEmail] = useState<string>('');
+  const [sectionId, setSectionId] = useState<string>('Sarees & Silk Section');
+  const [billNo, setBillNo] = useState<string>('');
   const [overallRating, setOverallRating] = useState<number>(5);
+  const [staffRating, setStaffRating] = useState<number>(5);
+  const [productRating, setProductRating] = useState<number>(5);
   const [cleanlinessRating, setCleanlinessRating] = useState<number>(5);
   const [ambienceRating, setAmbienceRating] = useState<number>(5);
 
@@ -90,6 +102,10 @@ export default function PublicFeedback() {
   const [likedMost, setLikedMost] = useState<string>('');
   const [canImprove, setCanImprove] = useState<string>('');
   const [additionalComments, setAdditionalComments] = useState<string>('');
+
+  // QR Modal States
+  const [showQrModal, setShowQrModal] = useState<boolean>(false);
+  const [qrModalCopied, setQrModalCopied] = useState<boolean>(false);
 
   // Idempotency token to prevent double-submissions
   const [submissionRef] = useState<string>(() => {
@@ -121,6 +137,43 @@ export default function PublicFeedback() {
       })
       .catch(() => {});
   }, []);
+
+  const getStoreTargetUrl = (code: string) => `https://bsctextiles.in/feedback-public?location=${code}`;
+
+  const getStoreQrUrl = (code: string, size = 400) =>
+    `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(getStoreTargetUrl(code))}`;
+
+  const handleCopyStoreLink = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (!selectedStore) return;
+    const url = getStoreTargetUrl(selectedStore.code);
+    navigator.clipboard.writeText(url);
+    setQrModalCopied(true);
+    showToast(`${selectedStore.city} feedback link copied!`, 'success');
+    setTimeout(() => setQrModalCopied(false), 2200);
+  };
+
+  const handleDownloadStoreQr = async (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (!selectedStore) return;
+    try {
+      const qrUrl = getStoreQrUrl(selectedStore.code, 600);
+      const res = await fetch(qrUrl);
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = `BSC_Feedback_QR_${selectedStore.code}_${selectedStore.city}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+      showToast(`${selectedStore.city} QR Code downloaded.`, 'success');
+    } catch {
+      window.open(getStoreQrUrl(selectedStore.code, 600), '_blank');
+      showToast(`${selectedStore.city} QR Code opened for download.`, 'info');
+    }
+  };
 
   const handleStoreSelect = (store: CentralStoreLocation) => {
     setSelectedStore(store);
@@ -173,7 +226,7 @@ export default function PublicFeedback() {
 
     if (!customerName.trim()) {
       setCurrentStep(1);
-      setErrorMessage('Please complete the required fields.');
+      setErrorMessage('Please complete the required fields (Name is required).');
       return;
     }
 
@@ -201,11 +254,28 @@ export default function PublicFeedback() {
         locationName: selectedStore.city,
         locationId: selectedStore.id,
         location_id: selectedStore.id,
+        sectionId: sectionId,
+        area: sectionId,
+        category: sectionId,
+        billNo: billNo.trim(),
+        invoiceNo: billNo.trim(),
+        receiptNo: billNo.trim(),
         overallRating,
         storeExperienceRating: overallRating,
+        staffServiceRating: staffRating,
+        productRating,
         cleanlinessRating,
         ambienceRating,
-        answers,
+        recommendationRating: answers['q5']?.includes('Definitely') ? 5 : answers['q5']?.includes('Probably') ? 4 : 3,
+        answers: {
+          ...answers,
+          section: sectionId,
+          billNo: billNo.trim() || undefined,
+          staffRating,
+          productRating,
+          cleanlinessRating,
+          ambienceRating
+        },
         q1: answers['q1'] || 'Very satisfied',
         q2: answers['q2'] || 'Yes, exactly what I wanted',
         q3: answers['q3'] || 'Excellent',
@@ -228,7 +298,7 @@ export default function PublicFeedback() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err: any) {
       console.error('[Feedback Submit Error]', err);
-      setErrorMessage('Something went wrong. Please try again.');
+      setErrorMessage('Something went wrong while saving your feedback. Please try again.');
       showToast('Something went wrong. Please try again.', 'error');
     } finally {
       setSubmitting(false);
@@ -242,7 +312,13 @@ export default function PublicFeedback() {
     setCustomerName('');
     setMobile('');
     setEmail('');
+    setSectionId('Sarees & Silk Section');
+    setBillNo('');
     setOverallRating(5);
+    setStaffRating(5);
+    setProductRating(5);
+    setCleanlinessRating(5);
+    setAmbienceRating(5);
     setAnswers({
       q1: 'Very satisfied',
       q2: 'Yes, exactly what I wanted',
@@ -275,16 +351,80 @@ export default function PublicFeedback() {
           </div>
 
           <h2 className="text-2xl font-bold text-slate-900 mb-2">Thank You</h2>
-          <p className="text-sm text-slate-600 mb-6 leading-relaxed">
-            Your feedback has been submitted to BSC Textiles.
+          <p className="text-sm text-slate-600 mb-5 leading-relaxed">
+            Your feedback has been saved directly to {selectedStore.city} store management.
           </p>
 
-          {/* Reference ID */}
-          <div className="bg-slate-50 border border-slate-100 rounded-xl p-3.5 mb-6 text-xs text-slate-500">
-            <span className="block text-[11px] font-medium uppercase tracking-wider text-slate-400 mb-1">
-              Feedback Reference
-            </span>
-            <span className="font-mono text-base font-bold text-slate-800">{refNo}</span>
+          {/* Reference & Customer Details */}
+          <div className="bg-slate-50 border border-slate-100 rounded-xl p-3.5 mb-5 text-xs text-left space-y-1.5">
+            <div className="flex items-center justify-between pb-1.5 border-b border-slate-200/60">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                Feedback Reference
+              </span>
+              <span className="font-mono text-sm font-bold text-slate-900">{refNo}</span>
+            </div>
+            <div className="flex items-center justify-between text-slate-600 pt-0.5">
+              <span>Customer:</span>
+              <span className="font-semibold text-slate-900">{customerName}</span>
+            </div>
+            {mobile && (
+              <div className="flex items-center justify-between text-slate-600">
+                <span>Mobile:</span>
+                <span className="font-mono font-medium text-slate-800">+91 {mobile}</span>
+              </div>
+            )}
+            <div className="flex items-center justify-between text-slate-600">
+              <span>Section:</span>
+              <span className="font-semibold text-slate-900">{sectionId}</span>
+            </div>
+            {billNo && (
+              <div className="flex items-center justify-between text-slate-600">
+                <span>Bill / Memo No:</span>
+                <span className="font-mono font-bold text-slate-800">{billNo}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Store Feedback QR Share Box */}
+          <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl mb-6 text-center">
+            <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-slate-800 mb-2">
+              <QrCode className="w-4 h-4 text-amber-600" />
+              <span>{selectedStore.city} Feedback QR Code</span>
+            </div>
+            <div className="w-36 h-36 mx-auto bg-white p-2 rounded-xl border border-slate-200 shadow-xs mb-2.5">
+              <img
+                src={getStoreQrUrl(selectedStore.code, 240)}
+                alt={`${selectedStore.city} Feedback QR`}
+                className="w-full h-full object-contain rounded-lg"
+              />
+            </div>
+            <div className="flex items-center justify-center gap-2">
+              <button
+                type="button"
+                onClick={handleDownloadStoreQr}
+                className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-100 transition-colors inline-flex items-center gap-1 cursor-pointer"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Save QR</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleCopyStoreLink}
+                className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-100 transition-colors inline-flex items-center gap-1 cursor-pointer"
+              >
+                {qrModalCopied ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 text-emerald-600" />
+                    <span className="text-emerald-600">Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>Copy Link</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
 
           {/* Action Buttons */}
@@ -324,13 +464,70 @@ export default function PublicFeedback() {
   return (
     <div className="min-h-screen bg-slate-50 py-6 sm:py-10 px-4 sm:px-6 font-sans">
       <div className="max-w-xl mx-auto space-y-4">
+        {/* Interactive Store Feedback QR Header Banner */}
+        <div className="bg-gradient-to-r from-slate-900 via-slate-850 to-slate-800 text-white rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5 w-full sm:w-auto">
+            <div
+              onClick={() => setShowQrModal(true)}
+              className="w-16 h-16 sm:w-18 sm:h-18 bg-white rounded-xl p-1.5 cursor-pointer shadow-md shrink-0 hover:scale-105 transition-transform"
+              title={`Click to enlarge ${selectedStore.city} Feedback QR Code`}
+            >
+              <img
+                src={getStoreQrUrl(selectedStore.code, 160)}
+                alt={`${selectedStore.city} Feedback QR`}
+                className="w-full h-full object-contain rounded-lg"
+              />
+            </div>
+            <div className="space-y-1">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/10 text-white text-[10px] font-semibold uppercase tracking-wider">
+                <QrCode className="w-3 h-3 text-amber-400" />
+                <span>Store Feedback QR · {selectedStore.code}</span>
+              </div>
+              <h3 className="text-sm sm:text-base font-bold text-white">
+                Customer Mobile Scan Available
+              </h3>
+              <p className="text-xs text-slate-300">
+                Customers can point their smartphone camera to open this survey on their phone.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+            <button
+              type="button"
+              onClick={() => setShowQrModal(true)}
+              className="flex-1 sm:flex-initial h-10 px-3.5 bg-white/10 hover:bg-white/20 text-white text-xs font-semibold rounded-xl border border-white/10 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <Maximize2 className="w-3.5 h-3.5" />
+              <span>Enlarge QR</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleCopyStoreLink}
+              className="flex-1 sm:flex-initial h-10 px-3.5 bg-white/10 hover:bg-white/20 text-white text-xs font-semibold rounded-xl border border-white/10 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              {qrModalCopied ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-emerald-400" />
+                  <span className="text-emerald-400">Copied!</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="w-3.5 h-3.5" />
+                  <span>Copy Link</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
         {/* Main Card */}
         <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm">
           {/* Header */}
           <div className="border-b border-slate-100 pb-5 mb-6">
             <div className="flex items-center justify-between gap-2 mb-2">
               <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                BSC Customer Feedback
+                BSC Customer Feedback QR
               </span>
               <button
                 type="button"
@@ -356,11 +553,11 @@ export default function PublicFeedback() {
             <div className="flex items-center justify-between text-xs font-medium text-slate-500 mb-2">
               <span>Step {currentStep} of 5</span>
               <span>
-                {currentStep === 1 && 'Store Confirmation & Contact'}
-                {currentStep === 2 && 'Overall Experience'}
-                {currentStep === 3 && 'Service & Staff'}
-                {currentStep === 4 && 'Products & Store'}
-                {currentStep === 5 && 'Additional Comments'}
+                {currentStep === 1 && 'Store & Customer Details'}
+                {currentStep === 2 && 'Overall Shopping Experience'}
+                {currentStep === 3 && 'Staff Service & Hospitality'}
+                {currentStep === 4 && 'Collection & Ambience'}
+                {currentStep === 5 && 'Review & Final Comments'}
               </span>
             </div>
             <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
@@ -380,7 +577,7 @@ export default function PublicFeedback() {
 
           {/* Form Content */}
           <form onSubmit={(e) => e.preventDefault()}>
-            {/* STEP 1: Store Confirmation & Customer Info */}
+            {/* STEP 1: Store Confirmation, Customer Info, Section & Bill Details */}
             {currentStep === 1 && (
               <div className="space-y-4">
                 <div className="bg-slate-50 border border-slate-100 rounded-xl p-4">
@@ -398,7 +595,7 @@ export default function PublicFeedback() {
                     <input
                       type="text"
                       required
-                      placeholder="Enter your name"
+                      placeholder="Enter your full name"
                       value={customerName}
                       onChange={(e) => setCustomerName(e.target.value)}
                       className="w-full h-12 pl-10 pr-4 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 text-slate-900 placeholder:text-slate-400"
@@ -444,10 +641,53 @@ export default function PublicFeedback() {
                     />
                   </div>
                 </div>
+
+                {/* Section / Department Visited */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-semibold text-slate-700">
+                    Section / Department Visited
+                  </label>
+                  <div className="relative">
+                    <Layers className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <select
+                      value={sectionId}
+                      onChange={(e) => setSectionId(e.target.value)}
+                      className="w-full h-12 pl-10 pr-4 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 text-slate-900 cursor-pointer"
+                    >
+                      <option value="Sarees & Silk Section">Sarees & Silk Section</option>
+                      <option value="Bridal Studio & Wedding Trousseau">Bridal Studio & Wedding Trousseau</option>
+                      <option value="Menswear & Ethnic Suiting">Menswear & Ethnic Suiting</option>
+                      <option value="Kids & Family Wear">Kids & Family Wear</option>
+                      <option value="Ground Floor - Main Counter">Ground Floor - Main Counter</option>
+                      <option value="Billing & Cash Counter">Billing & Cash Counter</option>
+                      <option value="General Store Visit">General Store Visit</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Bill / Invoice Number */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-semibold text-slate-700">
+                    Bill / Cash Memo Number (Optional)
+                  </label>
+                  <div className="relative">
+                    <Receipt className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <input
+                      type="text"
+                      placeholder="e.g. INV-10842 or Bill No."
+                      value={billNo}
+                      onChange={(e) => setBillNo(e.target.value)}
+                      className="w-full h-12 pl-10 pr-4 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 text-slate-900 placeholder:text-slate-400"
+                    />
+                  </div>
+                  <p className="text-[11px] text-slate-500">
+                    Attaching your bill number helps store management locate your purchase details quickly.
+                  </p>
+                </div>
               </div>
             )}
 
-            {/* STEP 2: Overall Experience */}
+            {/* STEP 2: Overall Shopping Experience */}
             {currentStep === 2 && (
               <div className="space-y-6">
                 <div>
@@ -515,6 +755,34 @@ export default function PublicFeedback() {
             {/* STEP 3: Service & Staff */}
             {currentStep === 3 && (
               <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-bold text-slate-900 mb-2">
+                    Staff Service Rating
+                  </label>
+                  <div className="flex items-center gap-2">
+                    {[1, 2, 3, 4, 5].map((score) => (
+                      <button
+                        key={score}
+                        type="button"
+                        onClick={() => setStaffRating(score)}
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-all cursor-pointer ${
+                          score <= staffRating
+                            ? 'bg-amber-50 border-amber-300 text-amber-500'
+                            : 'bg-white border-slate-200 text-slate-300 hover:border-slate-300'
+                        }`}
+                      >
+                        <Star
+                          className="w-5 h-5"
+                          fill={score <= staffRating ? 'currentColor' : 'none'}
+                        />
+                      </button>
+                    ))}
+                    <span className="ml-2 text-xs font-semibold text-slate-600">
+                      {staffRating}/5
+                    </span>
+                  </div>
+                </div>
+
                 <div className="space-y-2">
                   <label className="block text-sm font-bold text-slate-900">
                     How would you rate the service and helpfulness of our staff?
@@ -574,6 +842,34 @@ export default function PublicFeedback() {
             {/* STEP 4: Products & Store */}
             {currentStep === 4 && (
               <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-bold text-slate-900 mb-2">
+                    Product & Fabric Collection Rating
+                  </label>
+                  <div className="flex items-center gap-2">
+                    {[1, 2, 3, 4, 5].map((score) => (
+                      <button
+                        key={score}
+                        type="button"
+                        onClick={() => setProductRating(score)}
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-all cursor-pointer ${
+                          score <= productRating
+                            ? 'bg-amber-50 border-amber-300 text-amber-500'
+                            : 'bg-white border-slate-200 text-slate-300 hover:border-slate-300'
+                        }`}
+                      >
+                        <Star
+                          className="w-5 h-5"
+                          fill={score <= productRating ? 'currentColor' : 'none'}
+                        />
+                      </button>
+                    ))}
+                    <span className="ml-2 text-xs font-semibold text-slate-600">
+                      {productRating}/5
+                    </span>
+                  </div>
+                </div>
+
                 <div className="space-y-2">
                   <label className="block text-sm font-bold text-slate-900">
                     Did you find the products and fabrics you were looking for?
@@ -632,7 +928,7 @@ export default function PublicFeedback() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
                   <div className="bg-slate-50 border border-slate-100 p-3.5 rounded-xl">
                     <label className="block text-xs font-bold text-slate-800 mb-2">
-                      Store Cleanliness
+                      Store Cleanliness ({cleanlinessRating}/5)
                     </label>
                     <div className="flex items-center gap-1.5">
                       {[1, 2, 3, 4, 5].map((s) => (
@@ -653,7 +949,7 @@ export default function PublicFeedback() {
 
                   <div className="bg-slate-50 border border-slate-100 p-3.5 rounded-xl">
                     <label className="block text-xs font-bold text-slate-800 mb-2">
-                      Store Ambience
+                      Store Ambience ({ambienceRating}/5)
                     </label>
                     <div className="flex items-center gap-1.5">
                       {[1, 2, 3, 4, 5].map((s) => (
@@ -675,9 +971,49 @@ export default function PublicFeedback() {
               </div>
             )}
 
-            {/* STEP 5: Additional Comments & Submit */}
+            {/* STEP 5: Review Summary & Additional Comments */}
             {currentStep === 5 && (
-              <div className="space-y-4">
+              <div className="space-y-5">
+                {/* Details Summary Card */}
+                <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 text-xs space-y-2">
+                  <div className="flex items-center justify-between font-bold text-slate-900 border-b border-slate-200 pb-2">
+                    <span className="flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                      <span>Review Your Visit Details</span>
+                    </span>
+                    <span className="text-[11px] px-2 py-0.5 rounded-md bg-white border border-slate-200 font-mono">
+                      {selectedStore.code}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 pt-1 text-slate-600">
+                    <div>
+                      <span className="text-slate-400 block text-[10px] uppercase">Customer</span>
+                      <span className="font-semibold text-slate-900">{customerName}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[10px] uppercase">Mobile</span>
+                      <span className="font-mono text-slate-900">{mobile ? `+91 ${mobile}` : 'Not provided'}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[10px] uppercase">Section</span>
+                      <span className="font-semibold text-slate-900">{sectionId}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[10px] uppercase">Bill / Memo No</span>
+                      <span className="font-mono text-slate-900">{billNo || 'Not provided'}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[10px] uppercase">Store Rating</span>
+                      <span className="font-bold text-amber-600">★ {overallRating} / 5</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[10px] uppercase">Staff Service</span>
+                      <span className="font-bold text-amber-600">★ {staffRating} / 5</span>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="space-y-1.5">
                   <label className="block text-xs font-semibold text-slate-700">
                     What did you like most about your visit today?
@@ -710,7 +1046,7 @@ export default function PublicFeedback() {
                   </label>
                   <textarea
                     rows={2}
-                    placeholder="Optional additional notes for our management..."
+                    placeholder="Optional additional notes for store management..."
                     value={additionalComments}
                     onChange={(e) => setAdditionalComments(e.target.value)}
                     className="w-full p-3 text-xs sm:text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 text-slate-900 placeholder:text-slate-400"
@@ -754,7 +1090,7 @@ export default function PublicFeedback() {
                   {submitting ? (
                     <>
                       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      <span>Submitting...</span>
+                      <span>Saving & Submitting...</span>
                     </>
                   ) : (
                     <>
@@ -773,6 +1109,79 @@ export default function PublicFeedback() {
           BSC Textiles · Customer Experience Service
         </div>
       </div>
+
+      {/* Enlarge QR Modal for Mobile Scanning / Counter Display */}
+      {showQrModal && selectedStore && (
+        <div className="bsc-fb-modal-backdrop" onClick={() => setShowQrModal(false)}>
+          <div className="bsc-fb-modal" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              className="bsc-fb-modal-close"
+              onClick={() => setShowQrModal(false)}
+              aria-label="Close modal"
+            >
+              <X size={18} />
+            </button>
+
+            <span className="bsc-fb-badge bsc-fb-badge--active" style={{ marginBottom: '0.5rem' }}>
+              Store Feedback QR · {selectedStore.code}
+            </span>
+            <h3 className="bsc-ed-serif" style={{ margin: '0.25rem 0', fontSize: '1.5rem', color: 'var(--ed-ink)' }}>
+              BSC Textiles — {selectedStore.city}
+            </h3>
+            <p style={{ margin: '0 0 0.5rem', fontSize: '0.8125rem', color: 'var(--ed-ink-soft)' }}>
+              {selectedStore.storeName}
+            </p>
+
+            <div className="bsc-fb-modal-qr-wrap">
+              <img
+                src={getStoreQrUrl(selectedStore.code, 480)}
+                alt={`${selectedStore.city} Feedback QR`}
+                className="bsc-fb-modal-qr-img"
+              />
+            </div>
+
+            <p style={{ margin: '0.5rem 0 1rem', fontSize: '0.75rem', fontWeight: 600, color: 'var(--ed-ink-soft)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              Point phone camera to open feedback survey
+            </p>
+
+            <div className="bsc-fb-qr-url-pill" style={{ margin: '0 auto 1.25rem', maxWidth: '320px' }}>
+              {getStoreTargetUrl(selectedStore.code)}
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+              <button
+                type="button"
+                className="bsc-fb-tool-btn"
+                style={{ padding: '0.625rem 0.5rem', fontSize: '0.75rem' }}
+                onClick={handleDownloadStoreQr}
+              >
+                <Download size={14} />
+                <span>Download PNG</span>
+              </button>
+
+              <button
+                type="button"
+                className="bsc-fb-tool-btn"
+                style={{ padding: '0.625rem 0.5rem', fontSize: '0.75rem' }}
+                onClick={handleCopyStoreLink}
+              >
+                {qrModalCopied ? (
+                  <>
+                    <Check size={14} className="text-emerald-600" />
+                    <span className="text-emerald-600">Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy size={14} />
+                    <span>Copy Link</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

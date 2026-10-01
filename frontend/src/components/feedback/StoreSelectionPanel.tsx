@@ -7,7 +7,13 @@ import {
   ChevronRight,
   MapPin,
   RotateCcw,
-  ShieldCheck
+  ShieldCheck,
+  Download,
+  Copy,
+  Check,
+  Maximize2,
+  X,
+  QrCode
 } from 'lucide-react';
 import { Auth } from '../../services/api';
 import type { UserSession } from '../../services/api';
@@ -15,6 +21,7 @@ import { useLocationContext } from '../../context/LocationContext';
 import type { LocationStatus } from '../../context/LocationContext';
 import type { CentralStoreLocation } from '../../config/storeLocations';
 import { resolveFeedbackStoreAccess } from './storeAccess';
+import { showToast } from '../Toast';
 import './storeSelection.css';
 
 interface StoreSelectionPanelProps {
@@ -33,13 +40,15 @@ function readSession(): UserSession | null {
 /**
  * Customer Feedback location-selection screen.
  *
- * Renders the website's own header, typography and store-card language, and
- * lists only the stores the current user's existing role/location permissions
- * allow. Public visitors keep the full public store list.
+ * Renders the official Customer Feedback QR codes for each BSC store (Belagavi,
+ * Davanagere, Shivamogga) with instant smartphone camera scanning, PNG downloads,
+ * link copy, and online direct response.
  */
 export default function StoreSelectionPanel({ onSelect }: StoreSelectionPanelProps) {
   const { locationStatus } = useLocationContext();
   const [session, setSession] = useState<UserSession | null>(() => readSession());
+  const [modalStore, setModalStore] = useState<CentralStoreLocation | null>(null);
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
   // Stay in sync with sign-in / sign-out (same tab and other tabs) without
   // adding any API call — permissions already live in the session.
@@ -80,6 +89,41 @@ export default function StoreSelectionPanel({ onSelect }: StoreSelectionPanelPro
   );
 
   const handleRetry = () => setSession(readSession());
+
+  const getStoreTargetUrl = (code: string) => `https://bsctextiles.in/feedback-public?location=${code}`;
+
+  const getStoreQrUrl = (code: string, size = 400) =>
+    `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(getStoreTargetUrl(code))}`;
+
+  const handleCopyLink = (store: CentralStoreLocation, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    const url = getStoreTargetUrl(store.code);
+    navigator.clipboard.writeText(url);
+    setCopiedCode(store.code);
+    showToast(`${store.city} feedback link copied!`, 'success');
+    setTimeout(() => setCopiedCode(null), 2200);
+  };
+
+  const handleDownloadPng = async (store: CentralStoreLocation, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    try {
+      const qrUrl = getStoreQrUrl(store.code, 600);
+      const res = await fetch(qrUrl);
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = `BSC_Feedback_QR_${store.code}_${store.city}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+      showToast(`${store.city} QR Code downloaded.`, 'success');
+    } catch {
+      window.open(getStoreQrUrl(store.code, 600), '_blank');
+      showToast(`${store.city} QR Code opened for download.`, 'info');
+    }
+  };
 
   let content: ReactNode = null;
 
@@ -146,26 +190,104 @@ export default function StoreSelectionPanel({ onSelect }: StoreSelectionPanelPro
         className="bsc-fb-grid"
         data-count={String(access.stores.length)}
         role="group"
-        aria-label="Choose a BSC Textiles store"
+        aria-label="Choose a BSC Textiles store or scan feedback QR"
       >
         {access.stores.map((store) => (
-          <button
-            key={store.code}
-            type="button"
-            className="bsc-fb-store"
-            onClick={() => onSelect(store)}
-          >
-            <span className="bsc-fb-store-icon" aria-hidden="true">
-              <MapPin size={18} strokeWidth={1.75} />
-            </span>
-            <span className="bsc-fb-store-city bsc-ed-serif">{store.city}</span>
-            <span className="bsc-fb-store-name">{store.storeName}</span>
-            <span className="bsc-fb-store-address">{store.address}</span>
-            <span className="bsc-fb-store-cta">
-              <span>Select Store</span>
-              <ChevronRight size={16} strokeWidth={1.75} aria-hidden="true" />
-            </span>
-          </button>
+          <article key={store.code} className="bsc-fb-card">
+            {/* Top Store Info */}
+            <div className="bsc-fb-card-top">
+              <div className="bsc-fb-card-meta">
+                <span className="bsc-fb-store-city bsc-ed-serif">{store.city}</span>
+                <span className="bsc-fb-store-name">{store.storeName}</span>
+              </div>
+              <span className="bsc-fb-badge bsc-fb-badge--active" title={`Location code: ${store.code}`}>
+                <QrCode size={11} strokeWidth={2.5} />
+                <span>{store.code}</span>
+              </span>
+            </div>
+
+            <p className="bsc-fb-store-address">{store.address}</p>
+
+            {/* Interactive Feedback QR Preview Box */}
+            <div
+              className="bsc-fb-qr-frame"
+              onClick={() => setModalStore(store)}
+              title={`Click to enlarge ${store.city} Feedback QR Code`}
+            >
+              <div className="bsc-fb-qr-corners">
+                <span className="bsc-fb-corner bsc-fb-corner-tl" />
+                <span className="bsc-fb-corner-tr" />
+                <span className="bsc-fb-corner-bl" />
+                <span className="bsc-fb-corner-br" />
+              </div>
+              <img
+                src={getStoreQrUrl(store.code, 320)}
+                alt={`${store.city} Feedback QR Code`}
+                className="bsc-fb-qr-img"
+                loading="lazy"
+              />
+              <span className="bsc-fb-qr-caption">
+                Scan with smartphone camera
+              </span>
+            </div>
+
+            <div className="bsc-fb-qr-url-pill" title={getStoreTargetUrl(store.code)}>
+              bsctextiles.in/feedback-public?location={store.code}
+            </div>
+
+            {/* Quick Actions */}
+            <div className="bsc-fb-actions-group">
+              <button
+                type="button"
+                className="bsc-fb-btn-fill"
+                onClick={() => onSelect(store)}
+              >
+                <span>Fill Feedback Here</span>
+                <ChevronRight size={16} strokeWidth={2} />
+              </button>
+
+              <div className="bsc-fb-btn-actions">
+                <button
+                  type="button"
+                  className="bsc-fb-tool-btn"
+                  onClick={() => setModalStore(store)}
+                  title="Enlarge QR for full counter display"
+                >
+                  <Maximize2 size={13} strokeWidth={2} />
+                  <span>Enlarge</span>
+                </button>
+
+                <button
+                  type="button"
+                  className="bsc-fb-tool-btn"
+                  onClick={(e) => handleDownloadPng(store, e)}
+                  title="Download PNG for print/display"
+                >
+                  <Download size={13} strokeWidth={2} />
+                  <span>Download</span>
+                </button>
+
+                <button
+                  type="button"
+                  className="bsc-fb-tool-btn"
+                  onClick={(e) => handleCopyLink(store, e)}
+                  title="Copy direct survey link"
+                >
+                  {copiedCode === store.code ? (
+                    <>
+                      <Check size={13} strokeWidth={2} className="text-emerald-600" />
+                      <span className="text-emerald-600">Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy size={13} strokeWidth={2} />
+                      <span>Copy Link</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </article>
         ))}
       </div>
     );
@@ -215,12 +337,12 @@ export default function StoreSelectionPanel({ onSelect }: StoreSelectionPanelPro
         <section className="bsc-fb-section" aria-labelledby="bsc-feedback-title">
           <div className="bsc-ed-shell">
             <div className="bsc-fb-head">
-              <p className="bsc-ed-label">Tell us about your visit</p>
+              <p className="bsc-ed-label">Customer Feedback & QR Codes</p>
               <h1 id="bsc-feedback-title" className="bsc-ed-h2 bsc-ed-serif">
-                BSC Customer Feedback
+                BSC Customer Feedback QR
               </h1>
               <p className="bsc-ed-lede">
-                Please select the BSC Textiles store you visited today to start your feedback.
+                Scan the QR code with your smartphone camera to submit feedback instantly, or select your store to complete your review directly.
               </p>
               {access.authenticated && access.state === 'ready' && access.accessLabel && (
                 <p className="bsc-fb-access">
@@ -236,6 +358,92 @@ export default function StoreSelectionPanel({ onSelect }: StoreSelectionPanelPro
           </div>
         </section>
       </main>
+
+      {/* Enlarge QR Modal for Kiosk / Counter Display */}
+      {modalStore && (
+        <div className="bsc-fb-modal-backdrop" onClick={() => setModalStore(null)}>
+          <div className="bsc-fb-modal" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              className="bsc-fb-modal-close"
+              onClick={() => setModalStore(null)}
+              aria-label="Close modal"
+            >
+              <X size={18} />
+            </button>
+
+            <span className="bsc-fb-badge bsc-fb-badge--active" style={{ marginBottom: '0.5rem' }}>
+              Store Feedback QR · {modalStore.code}
+            </span>
+            <h3 className="bsc-ed-serif" style={{ margin: '0.25rem 0', fontSize: '1.5rem', color: 'var(--ed-ink)' }}>
+              BSC Textiles — {modalStore.city}
+            </h3>
+            <p style={{ margin: '0 0 0.5rem', fontSize: '0.8125rem', color: 'var(--ed-ink-soft)' }}>
+              {modalStore.storeName}
+            </p>
+
+            <div className="bsc-fb-modal-qr-wrap">
+              <img
+                src={getStoreQrUrl(modalStore.code, 480)}
+                alt={`${modalStore.city} Feedback QR`}
+                className="bsc-fb-modal-qr-img"
+              />
+            </div>
+
+            <p style={{ margin: '0.5rem 0 1rem', fontSize: '0.75rem', fontWeight: 600, color: 'var(--ed-ink-soft)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              Point phone camera to open feedback survey
+            </p>
+
+            <div className="bsc-fb-qr-url-pill" style={{ margin: '0 auto 1.25rem', maxWidth: '320px' }}>
+              {getStoreTargetUrl(modalStore.code)}
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '0.75rem' }}>
+              <button
+                type="button"
+                className="bsc-fb-tool-btn"
+                style={{ padding: '0.625rem 0.5rem', fontSize: '0.75rem' }}
+                onClick={(e) => handleDownloadPng(modalStore, e)}
+              >
+                <Download size={14} />
+                <span>Download PNG</span>
+              </button>
+
+              <button
+                type="button"
+                className="bsc-fb-tool-btn"
+                style={{ padding: '0.625rem 0.5rem', fontSize: '0.75rem' }}
+                onClick={(e) => handleCopyLink(modalStore, e)}
+              >
+                {copiedCode === modalStore.code ? (
+                  <>
+                    <Check size={14} className="text-emerald-600" />
+                    <span className="text-emerald-600">Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy size={14} />
+                    <span>Copy Link</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            <button
+              type="button"
+              className="bsc-fb-btn-fill"
+              onClick={() => {
+                const s = modalStore;
+                setModalStore(null);
+                onSelect(s);
+              }}
+            >
+              <span>Fill Feedback on this Screen</span>
+              <ChevronRight size={16} />
+            </button>
+          </div>
+        </div>
+      )}
 
       <footer className="bsc-fb-footer">
         <div className="bsc-ed-shell">
