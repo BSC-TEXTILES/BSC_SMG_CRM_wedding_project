@@ -70,7 +70,7 @@ export default function Topbar({ title, breadcrumbs, hideBreadcrumbs, session, o
 
   return (
     <>
-      <header className="w-full max-w-full bg-[#FFF7F2] border-b border-[#E8D9D4] sticky top-0 z-30 shadow-xs flex-shrink-0">
+      <header className="w-full max-w-full bg-[#FFF7F2] border-b border-[#E8D9D4] sticky top-0 z-40 shadow-xs flex-shrink-0">
         {/* ── Row 1: Hamburger, Title & Tools ───────────────────────────── */}
         <div className="h-14 sm:h-16 px-4 sm:px-5 lg:px-6 flex items-center justify-between gap-2">
         {/* ── Left Area: Hamburger + Title ──────────────────────────────── */}
