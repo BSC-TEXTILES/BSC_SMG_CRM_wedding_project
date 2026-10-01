@@ -86,6 +86,8 @@ export interface LightboxPhotoItem {
   status: VmUploadStatus | null;
   floor: string;
   section: string;
+  locationId?: number | string | null;
+  locationName?: string | null;
   pointId?: string | null;
   uploadedBy?: string | null;
   inspectionDate?: string | null;
@@ -281,6 +283,8 @@ export function toVmPhoto(raw: unknown): VmPhoto | null {
   return {
     id,
     submissionId: pickNullableStr(row, ['submissionId', 'submission_id']),
+    locationId: pickNullableStr(row, ['locationId', 'location_id']),
+    locationName: pickNullableStr(row, ['locationName', 'location_name']),
     floor: pickStr(row, ['floor']),
     section: pickStr(row, ['section']),
     pointId: pickNullableStr(row, ['pointId', 'point_id']),

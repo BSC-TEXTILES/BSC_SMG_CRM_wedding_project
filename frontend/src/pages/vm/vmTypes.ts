@@ -60,6 +60,8 @@ export interface VmScore {
 export interface VmPhoto {
   id: string;
   submissionId: string | null;
+  locationId?: number | string | null;
+  locationName?: string | null;
   floor: string;
   section: string;
   pointId?: string | null;

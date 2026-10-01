@@ -966,7 +966,7 @@ export default function VmChecklist() {
                               const items = toLightboxItems(galleryPhotos);
                               setGalleryViewer({ items, index: Math.min(Math.max(index, 0), items.length - 1) });
                             }}
-                            className="relative aspect-[4/3] bg-gradient-to-br from-[#20101C] to-[#120810] cursor-pointer overflow-hidden"
+                            className="relative aspect-[4/3] max-h-56 w-full bg-gradient-to-br from-[#20101C] to-[#120810] cursor-pointer overflow-hidden shrink-0"
                             role="button"
                             tabIndex={0}
                             aria-label={`Inspect photo for ${photo.floor} ${photo.section}`}

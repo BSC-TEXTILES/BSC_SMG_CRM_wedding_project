@@ -450,6 +450,8 @@ export function mapPhoto(raw: unknown): VmPhoto {
   return {
     id,
     submissionId: p.submissionId === undefined || p.submissionId === null ? null : toStr(p.submissionId),
+    locationId: p.locationId !== undefined && p.locationId !== null ? p.locationId : (p.location_id !== undefined ? p.location_id : null),
+    locationName: toStr(p.locationName ?? p.location_name, '') || null,
     floor: toStr(p.floor, ''),
     section: toStr(p.section, ''),
     pointId: p.pointId === undefined || p.pointId === null ? null : toStr(p.pointId),
@@ -641,6 +643,8 @@ export function toLightboxItems(photos: VmPhoto[]): LightboxPhotoItem[] {
     status: null,
     floor: p.floor,
     section: p.section,
+    locationId: p.locationId ?? null,
+    locationName: p.locationName ?? null,
     pointId: p.pointId ?? null,
     uploadedBy: p.uploadedBy ?? null,
     inspectionDate: p.inspectionDate ?? null,
