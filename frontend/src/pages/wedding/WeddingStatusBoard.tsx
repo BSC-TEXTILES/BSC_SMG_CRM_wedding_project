@@ -127,9 +127,18 @@ export default function WeddingStatusBoard() {
       setBoardError(null);
     } catch (err: any) {
       if (seq !== requestSeqRef.current) return;
-      const message = err?.message
-        ? `Unable to load the pipeline. ${err.message}`
-        : 'Unable to load the pipeline. Please try again.';
+      let message = 'Unable to load the Wedding Status Pipeline. Please try again.';
+      if (err?.status === 401) {
+        message = 'Your session has expired. Please sign in again.';
+      } else if (err?.status === 403) {
+        message = 'Access denied. You do not have permission to view the Wedding Pipeline.';
+      } else if (err?.message && /Failed to fetch|NetworkError|network|connection/i.test(err.message)) {
+        message = 'Unable to connect to the server. Please check your connection and try again.';
+      } else if (err?.message && !/Unknown column|SELECT|SQL|syntax error|ER_/i.test(err.message)) {
+        message = err.message.startsWith('Unable to') || err.message.startsWith('Failed to')
+          ? err.message
+          : `Unable to load the Wedding Status Pipeline. ${err.message}`;
+      }
       setBoardError(message);
       // A failed load must not render as an empty pipeline. Keep the last good
       // cards when only refreshing; clear them when the board was never loaded.
@@ -405,8 +414,7 @@ export default function WeddingStatusBoard() {
         customer={action ? customerById.get(action.customerId) ?? null : null}
         today={today}
         onClose={() => setAction(null)}
-        onSaved={(customerId, message) => {
-          showToast(message, 'success');
+        onSaved={(customerId) => {
           loadBoard({ silent: true });
           // Re-mount an open drawer so it re-reads the record it just changed.
           if (drawerCustomerId === customerId) setDrawerKey((k) => k + 1);

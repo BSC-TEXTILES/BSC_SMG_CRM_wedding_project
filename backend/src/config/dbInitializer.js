@@ -1104,6 +1104,18 @@ async function autoInitializeDatabase() {
       console.warn('[Auto DB Initializer] Feedback tables verification notice:', _fbErr.message);
     }
 
+    // ─── Wedding CRM & Telecaller Workspace schema initialization ─────
+    try {
+      const weddingController = require('../controllers/weddingController');
+      if (typeof weddingController.ensureWeddingTables === 'function') {
+        await weddingController.ensureWeddingTables();
+      } else if (typeof weddingController.ensureTables === 'function') {
+        await weddingController.ensureTables();
+      }
+    } catch (_wedErr) {
+      console.warn('[Auto DB Initializer] Wedding CRM schema migration skipped:', _wedErr.message);
+    }
+
     console.log('[Auto DB Initializer] DATABASE FULLY INITIALIZED!');
     console.log('[Auto DB Initializer] Total Active Tables: 130+');
 

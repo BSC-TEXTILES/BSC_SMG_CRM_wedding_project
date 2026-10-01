@@ -11,6 +11,10 @@ type ToastListener = (toast: ToastMessage) => void;
 const listeners = new Set<ToastListener>();
 let activeContainerInstanceId: string | null = null;
 
+let lastToastTime = 0;
+let lastToastMsg = '';
+let lastToastType = '';
+
 /**
  * Sanitize raw backend, SQL, or database error traces into clear, professional messages.
  */
@@ -28,6 +32,10 @@ function sanitizeMessage(message: string, type: 'success' | 'error' | 'info' | '
   if (/foreign key constraint fails|ER_NO_REFERENCED_ROW/i.test(trimmed)) {
     return 'The referenced record is not available or has been modified. Please verify and try again.';
   }
+  // Differentiate read/load queries from save/update queries
+  if (/SELECT\s+|Unknown column|load pipeline|fetch/i.test(trimmed) && !/INSERT\s+|UPDATE\s+|DELETE\s+|save/i.test(trimmed)) {
+    return 'Unable to load the requested information. Please try again or contact system support.';
+  }
   if (/SQL|syntax error|Unknown column|SELECT\s+|INSERT\s+|UPDATE\s+|DELETE\s+|ER_/i.test(trimmed)) {
     return 'Something went wrong while saving the information. Please try again or contact system support.';
   }
@@ -37,6 +45,14 @@ function sanitizeMessage(message: string, type: 'success' | 'error' | 'info' | '
 
 export const showToast = (message: string, type: 'success' | 'error' | 'info' | 'warn' = 'info') => {
   const cleanMessage = sanitizeMessage(message, type);
+  const now = Date.now();
+  if (lastToastMsg === cleanMessage && lastToastType === type && now - lastToastTime < 2000) {
+    return; // Prevent duplicate toast within 2 seconds
+  }
+  lastToastTime = now;
+  lastToastMsg = cleanMessage;
+  lastToastType = type;
+
   const toast: ToastMessage = {
     id: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
     message: cleanMessage,

@@ -439,8 +439,20 @@ function buildExtendedFieldUpdate(body) {
 
 let tablesChecked = false;
 let tablesInitPromise = null;
+let weddingCustomersColumns = new Set();
+async function getWeddingCustomerColumns() {
+  if (weddingCustomersColumns.size > 0) return weddingCustomersColumns;
+  try {
+    const [cols] = await pool.query('SHOW COLUMNS FROM wedding_customers');
+    weddingCustomersColumns = new Set(cols.map(c => c.Field.toLowerCase()));
+  } catch (e) {
+    console.warn('[WeddingController] Failed to inspect wedding_customers columns:', e.message);
+  }
+  return weddingCustomersColumns;
+}
+
 async function ensureTables() {
-  if (tablesChecked) return;
+  if (tablesChecked && weddingCustomersColumns.has('last_contacted_by')) return;
   if (!tablesInitPromise) {
     tablesInitPromise = (async () => {
       try {
@@ -726,7 +738,11 @@ async function ensureTables() {
       "ALTER TABLE wedding_customers ADD COLUMN archived_by_user_id INT NULL",
       "ALTER TABLE wedding_customers ADD COLUMN archive_reason TEXT NULL",
       "ALTER TABLE wedding_customers ADD COLUMN previous_status VARCHAR(50) NULL",
-      "ALTER TABLE wedding_customers ADD COLUMN previous_customer_id INT NULL"
+      "ALTER TABLE wedding_customers ADD COLUMN previous_customer_id INT NULL",
+      "ALTER TABLE wedding_customers ADD COLUMN last_contacted_by VARCHAR(150) NULL",
+      "ALTER TABLE wedding_customers ADD COLUMN last_contacted_by_user_id INT NULL",
+      "ALTER TABLE wedding_customers ADD COLUMN last_updated_by VARCHAR(150) NULL",
+      "ALTER TABLE wedding_customers ADD COLUMN last_updated_by_user_id INT NULL"
     ];
     for (const sql of weddingCols) {
       try { await pool.query(sql); } catch(e) { /* column already exists */ }
@@ -735,6 +751,55 @@ async function ensureTables() {
     try { await pool.query("ALTER TABLE wedding_customers ADD INDEX idx_wed_lifecycle (lifecycle_status)"); } catch(e) {}
     try { await pool.query("ALTER TABLE wedding_customers ADD INDEX idx_wed_archived_at (archived_at)"); } catch(e) {}
     try { await pool.query("ALTER TABLE wedding_customers ADD INDEX idx_wed_prev_customer (previous_customer_id)"); } catch(e) {}
+    try { await pool.query("ALTER TABLE wedding_customers ADD INDEX idx_wed_last_contact (last_contacted_by_user_id)"); } catch(e) {}
+    try { await pool.query("ALTER TABLE wedding_customers ADD INDEX idx_wed_last_updated (last_updated_by_user_id)"); } catch(e) {}
+
+    // Ensure wedding_whatsapp_logs table exists
+    try {
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS \`wedding_whatsapp_logs\` (
+          \`id\` INT AUTO_INCREMENT PRIMARY KEY,
+          \`customer_id\` INT NOT NULL,
+          \`customer_code\` VARCHAR(50) NULL,
+          \`location_id\` INT NOT NULL DEFAULT 2,
+          \`telecaller_id\` INT NULL,
+          \`telecaller_name\` VARCHAR(150) NULL,
+          \`recipient_mobile\` VARCHAR(30) NOT NULL,
+          \`template_type\` VARCHAR(60) NOT NULL,
+          \`template_name\` VARCHAR(100) NULL,
+          \`message_text\` TEXT NOT NULL,
+          \`status\` VARCHAR(50) NOT NULL DEFAULT 'SENT',
+          \`failure_reason\` VARCHAR(255) NULL,
+          \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          INDEX \`idx_wa_cust\` (\`customer_id\`),
+          INDEX \`idx_wa_loc\` (\`location_id\`),
+          INDEX \`idx_wa_telecaller\` (\`telecaller_id\`),
+          INDEX \`idx_wa_created\` (\`created_at\`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+      `);
+    } catch (_waErr) {}
+
+    // Backfill last_contacted_by & last_contacted_by_user_id from wedding_call_logs for historical records
+    try {
+      await pool.query(`
+        UPDATE wedding_customers w
+        INNER JOIN (
+          SELECT customer_id, telecaller_name, telecaller_id
+          FROM wedding_call_logs
+          WHERE id IN (SELECT MAX(id) FROM wedding_call_logs GROUP BY customer_id)
+        ) cl ON w.id = cl.customer_id
+        SET w.last_contacted_by = cl.telecaller_name,
+            w.last_contacted_by_user_id = cl.telecaller_id
+        WHERE (w.last_contacted_by IS NULL OR w.last_contacted_by = '')
+          AND cl.telecaller_name IS NOT NULL
+      `);
+    } catch (_bfErr) {}
+
+    // Refresh known column set
+    try {
+      const [allCols] = await pool.query('SHOW COLUMNS FROM wedding_customers');
+      weddingCustomersColumns = new Set(allCols.map(c => c.Field.toLowerCase()));
+    } catch (e) {}
 
     await ensureArchiveSchemaGuards();
 
@@ -6178,6 +6243,14 @@ class WeddingController {
       // Sanitize params array to ensure no undefined values reach mysql2
       const safeParams = params.map((p) => (p === undefined ? null : p));
 
+      const cols = await getWeddingCustomerColumns();
+      const lastContactedSelect = cols.has('last_contacted_by')
+        ? `COALESCE(w.last_contacted_by, (SELECT cl.telecaller_name FROM wedding_call_logs cl WHERE cl.customer_id = w.id ORDER BY cl.id DESC LIMIT 1)) AS last_contacted_by`
+        : `(SELECT cl.telecaller_name FROM wedding_call_logs cl WHERE cl.customer_id = w.id ORDER BY cl.id DESC LIMIT 1) AS last_contacted_by`;
+      const lastUpdatedSelect = cols.has('last_updated_by')
+        ? `w.last_updated_by`
+        : `NULL AS last_updated_by`;
+
       const [rows] = await pool.query(`
         SELECT
           w.id,
@@ -6203,7 +6276,8 @@ class WeddingController {
           w.total_calls_count,
           w.last_call_date,
           w.last_call_outcome,
-          w.last_contacted_by,
+          ${lastContactedSelect},
+          ${lastUpdatedSelect},
           w.bride_name,
           w.groom_name,
           w.wedding_venue,
@@ -6263,10 +6337,31 @@ class WeddingController {
         today: getISTDateString()
       }, 'Pipeline board data retrieved successfully.');
     } catch (err) {
-      console.error('[WeddingController.getPipelineBoard Error]', err);
-      return errorRes(res, 'Failed to load pipeline board: ' + (err.message || 'Server error'), [err.message], 500);
+      console.error('[Wedding CRM Pipeline Error]', {
+        endpoint: req.originalUrl || req.url,
+        method: req.method,
+        userId: req.user?.id,
+        username: req.user?.username,
+        locationId: req.user?.locationId,
+        service: 'WeddingController.getPipelineBoard',
+        error: err?.message,
+        code: err?.code,
+        sqlState: err?.sqlState,
+        timestamp: new Date().toISOString()
+      });
+      return errorRes(
+        res,
+        'Failed to load pipeline board: Unable to retrieve pipeline records. Please try again.',
+        process.env.NODE_ENV === 'development' ? [err.message] : [],
+        500
+      );
     }
   }
 }
 
-module.exports = new WeddingController();
+WeddingController.prototype.ensureWeddingTables = ensureTables;
+WeddingController.prototype.ensureTables = ensureTables;
+const weddingControllerInstance = new WeddingController();
+weddingControllerInstance.ensureWeddingTables = ensureTables;
+weddingControllerInstance.ensureTables = ensureTables;
+module.exports = weddingControllerInstance;

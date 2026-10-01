@@ -46,6 +46,10 @@ CREATE TABLE IF NOT EXISTS `wedding_customers` (
   `total_calls_count` INT NOT NULL DEFAULT 0,
   `last_call_date` DATETIME NULL,
   `last_call_outcome` VARCHAR(100) NULL,
+  `last_contacted_by` VARCHAR(150) NULL,
+  `last_contacted_by_user_id` INT NULL,
+  `last_updated_by` VARCHAR(150) NULL,
+  `last_updated_by_user_id` INT NULL,
   `created_by` VARCHAR(150) NULL,
   `created_by_user_id` INT NULL,
   `is_deleted` TINYINT(1) NOT NULL DEFAULT 0,
@@ -55,7 +59,8 @@ CREATE TABLE IF NOT EXISTS `wedding_customers` (
   INDEX `idx_wed_loc_status` (`location_id`, `customer_status`, `follow_up_date`),
   INDEX `idx_wed_mobile_loc` (`mobile_number`, `location_id`),
   INDEX `idx_wed_follow_up` (`follow_up_date`),
-  INDEX `idx_wed_shop_date` (`expected_shopping_date`)
+  INDEX `idx_wed_shop_date` (`expected_shopping_date`),
+  INDEX `idx_wed_last_contact` (`last_contacted_by_user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 2. Wedding Call Logs
@@ -73,8 +78,10 @@ CREATE TABLE IF NOT EXISTS `wedding_call_logs` (
   `next_follow_up_date` DATE NULL,
   `next_follow_up_time` VARCHAR(50) NULL,
   `expected_shopping_date_updated` DATE NULL,
+  `call_duration` VARCHAR(50) NULL,
+  `customer_response` TEXT NULL,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (`customer_id`) REFERENCES `wedding_customers`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`customer_id`) REFERENCES `wedding_customers`(`id`) ON DELETE RESTRICT,
   INDEX `idx_call_cust` (`customer_id`),
   INDEX `idx_call_date` (`call_date`),
   INDEX `idx_call_loc` (`location_id`)
@@ -93,3 +100,25 @@ CREATE TABLE IF NOT EXISTS `wedding_audit_logs` (
   INDEX `idx_audit_loc` (`location_id`),
   INDEX `idx_audit_action` (`action`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 4. Wedding WhatsApp Logs
+CREATE TABLE IF NOT EXISTS `wedding_whatsapp_logs` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `customer_id` INT NOT NULL,
+  `customer_code` VARCHAR(50) NULL,
+  `location_id` INT NOT NULL DEFAULT 2,
+  `telecaller_id` INT NULL,
+  `telecaller_name` VARCHAR(150) NULL,
+  `recipient_mobile` VARCHAR(30) NOT NULL,
+  `template_type` VARCHAR(60) NOT NULL,
+  `template_name` VARCHAR(100) NULL,
+  `message_text` TEXT NOT NULL,
+  `status` VARCHAR(50) NOT NULL DEFAULT 'SENT',
+  `failure_reason` VARCHAR(255) NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX `idx_wa_cust` (`customer_id`),
+  INDEX `idx_wa_loc` (`location_id`),
+  INDEX `idx_wa_telecaller` (`telecaller_id`),
+  INDEX `idx_wa_created` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+

@@ -1736,6 +1736,13 @@ function isValidDateOnly(value) {
   return parsed.getFullYear() === y && parsed.getMonth() === m - 1 && parsed.getDate() === d;
 }
 
+function clampToColumn(value, table, column) {
+  if (value == null) return null;
+  const str = String(value);
+  const max = DIVERT_LIMITS[column] || 100;
+  return str.slice(0, max);
+}
+
 exports.getDiverts = async (req, res) => {
   try {
     await ensureDivertSchema();
