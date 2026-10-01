@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import DashboardLayout from '../../components/layouts/DashboardLayout';
 import PageContainer from '../../components/ui/PageContainer';
 import ToastContainer, { showToast } from '../../components/Toast';
 import { API, Auth, UserSession } from '../../services/api';
+import { useLocationContext } from '../../context/LocationContext';
 import { formatDateDisplay } from '../../utils/dateUtils';
 import WeddingNav from './WeddingNav';
 import {
@@ -11,11 +12,18 @@ import {
   BUDGET_RANGES,
   CALL_TIME_OPTIONS
 } from './weddingTypes';
-import { User, MapPin, Heart, ShoppingBag, ArrowLeft, CircleCheck, Clock, Save, Info } from 'lucide-react';
+import { User, MapPin, Heart, ShoppingBag, ArrowLeft, CircleCheck, Clock, Save, Info, Lock } from 'lucide-react';
 
 export default function WeddingCustomerCreate() {
   const navigate = useNavigate();
   const [session, setSession] = useState<UserSession | null>(() => Auth.get());
+  const {
+    activeLocation,
+    currentLocation,
+    availableLocations,
+    canSwitch,
+    isGlobalAdmin
+  } = useLocationContext();
 
   const [locations, setLocations] = useState<any[]>([]);
   const [telecallers, setTelecallers] = useState<any[]>([]);
@@ -23,6 +31,46 @@ export default function WeddingCustomerCreate() {
   const [checkingDuplicate, setCheckingDuplicate] = useState(false);
   const [existingCustomerInfo, setExistingCustomerInfo] = useState<any | null>(null);
   const [allowMultipleRegistration, setAllowMultipleRegistration] = useState(false);
+
+  // Filter strictly to locations this user is authorized to access
+  const displayLocations = useMemo(() => {
+    if (availableLocations && availableLocations.length > 0) {
+      return availableLocations.map((l) => ({
+        id: Number(l.id),
+        name: l.name || l.location_name || (l.id === 1 ? 'Belagavi' : l.id === 2 ? 'Davanagere' : 'Shivamogga'),
+        storeName: l.storeName || `BSC Textiles ${l.name || 'Store'}`,
+        code: l.code || l.location_code || ''
+      }));
+    }
+    if (session?.locationId) {
+      const locId = Number(session.locationId);
+      const name = session.locationName || (locId === 1 ? 'Belagavi' : locId === 2 ? 'Davanagere' : 'Shivamogga');
+      return [{ id: locId, name, storeName: `BSC Textiles ${name}`, code: session.locationCode || '' }];
+    }
+    return (Array.isArray(locations) ? locations : []).map((l: any) => ({
+      id: Number(l.id),
+      name: l.location_name || l.name || (l.id === 1 ? 'Belagavi' : l.id === 2 ? 'Davanagere' : 'Shivamogga'),
+      storeName: l.storeName || (l.store_name && l.store_name !== 'BSC Textiles Pvt Ltd' ? l.store_name : `BSC Textiles ${l.location_name || ''}`),
+      code: l.location_code || ''
+    }));
+  }, [availableLocations, session, locations]);
+
+  // Determine effective assigned or default store location ID
+  const effectiveLocationId = useMemo(() => {
+    if (availableLocations.length === 1) {
+      return String(availableLocations[0].id);
+    }
+    if (currentLocation && currentLocation !== 'ALL') {
+      return String(currentLocation);
+    }
+    if (session?.locationId) {
+      return String(session.locationId);
+    }
+    if (activeLocation?.id && activeLocation.id !== 'ALL') {
+      return String(activeLocation.id);
+    }
+    return displayLocations[0]?.id ? String(displayLocations[0].id) : '';
+  }, [availableLocations, currentLocation, session, activeLocation, displayLocations]);
 
   // Form State
   const [form, setForm] = useState({
@@ -69,28 +117,37 @@ export default function WeddingCustomerCreate() {
     const sess = Auth.get();
     setSession(sess);
 
-    if (sess?.locationId) {
-      setForm((prev) => ({ ...prev, location_id: String(sess.locationId) }));
-    }
-
-    Promise.all([
-      API.getLocations().catch(() => ({ locations: [] })),
-      API.getWeddingTelecallers().catch(() => ({ telecallers: [] }))
-    ]).then(([locsRes, callersRes]) => {
-      const locList = Array.isArray(locsRes?.locations) ? locsRes.locations : [];
-      if (locList.length > 0) {
-        setLocations(locList);
-        setForm((prev) => {
-          if (!prev.location_id) {
-            const defaultLoc = sess?.locationId ? String(sess.locationId) : String(locList[0].id);
-            return { ...prev, location_id: defaultLoc };
-          }
-          return prev;
-        });
-      }
-      if (callersRes?.telecallers) setTelecallers(callersRes.telecallers);
-    });
+    API.getLocations()
+      .then((locsRes: any) => {
+        const locList = Array.isArray(locsRes?.locations) ? locsRes.locations : [];
+        if (locList.length > 0) setLocations(locList);
+      })
+      .catch(() => {});
   }, [navigate]);
+
+  // Auto-sync form location_id with effectiveLocationId
+  useEffect(() => {
+    if (effectiveLocationId) {
+      setForm((prev) => {
+        if (!prev.location_id || !displayLocations.some((l) => String(l.id) === String(prev.location_id))) {
+          return { ...prev, location_id: effectiveLocationId };
+        }
+        return prev;
+      });
+    }
+  }, [effectiveLocationId, displayLocations]);
+
+  // Load telecallers scoped to active store location
+  useEffect(() => {
+    const locToFetch = form.location_id || effectiveLocationId;
+    API.getWeddingTelecallers(locToFetch || undefined)
+      .then((callersRes: any) => {
+        if (callersRes?.telecallers && Array.isArray(callersRes.telecallers)) {
+          setTelecallers(callersRes.telecallers);
+        }
+      })
+      .catch(() => {});
+  }, [form.location_id, effectiveLocationId]);
 
   const handleChange = (field: string, value: any) => {
     // For mobile fields, allow only digits and cap at 10
@@ -139,7 +196,8 @@ export default function WeddingCustomerCreate() {
       showToast('Valid 10-digit mobile number is required', 'error');
       return;
     }
-    if (!form.location_id) {
+    const resolvedLocId = Number(form.location_id || effectiveLocationId);
+    if (!resolvedLocId) {
       showToast('Store Location is required', 'error');
       return;
     }
@@ -166,7 +224,7 @@ export default function WeddingCustomerCreate() {
         phone: form.mobile_number.trim(),
         alternate_mobile: form.alternate_mobile.trim() || undefined,
         email: form.email.trim() || undefined,
-        location_id: Number(form.location_id),
+        location_id: resolvedLocId,
         expected_shopping_date: form.expected_shopping_date ? form.expected_shopping_date : undefined,
         preferred_shopping_category: form.preferred_shopping_category,
         budget: form.budget,
@@ -386,19 +444,46 @@ export default function WeddingCustomerCreate() {
                   <label className="block font-semibold text-[#6F5963] mb-1">
                     Store Location *
                   </label>
-                  <select
-                    value={form.location_id}
-                    disabled={!session?.isGlobalAdmin}
-                    onChange={(e) => handleChange('location_id', e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-semibold text-[#2B1722] focus:outline-none focus:border-[#B76E79]"
-                  >
-                    <option value="">-- Choose Store --</option>
-                    {(Array.isArray(locations) ? locations : []).map((loc) => (
-                      <option key={loc.id} value={loc.id}>
-                        📍 {loc.store_name || loc.location_name || loc.name || `Store ${loc.id}`}
-                      </option>
-                    ))}
-                  </select>
+                  {!canSwitch && displayLocations.length <= 1 ? (
+                    <div className="relative">
+                      <div className="flex items-center justify-between w-full px-3.5 py-2.5 bg-[#FFF7F2] border border-[#E8D9D4] rounded-xl font-bold text-xs text-[#4A173A] shadow-2xs select-none">
+                        <span className="flex items-center gap-2 truncate">
+                          <MapPin className="w-3.5 h-3.5 text-[#B76E79] shrink-0" />
+                          <span className="truncate">
+                            📍 {displayLocations[0]?.name || activeLocation.name || 'Store'}
+                            <span className="text-[#6F5963] font-normal ml-1">
+                              ({displayLocations[0]?.storeName || 'BSC Textiles'})
+                            </span>
+                          </span>
+                        </span>
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white border border-[#E8D9D4] text-[10px] text-[#4A173A] font-black shrink-0 shadow-2xs">
+                          <Lock className="w-3 h-3 text-[#B76E79]" />
+                          <span>Assigned Store</span>
+                        </span>
+                      </div>
+                      <p className="text-[10px] font-semibold text-[#6F5963] mt-1">
+                        Your account is strictly scoped to {displayLocations[0]?.name || activeLocation.name || 'this showroom'}.
+                      </p>
+                    </div>
+                  ) : (
+                    <div>
+                      <select
+                        value={form.location_id || effectiveLocationId}
+                        onChange={(e) => handleChange('location_id', e.target.value)}
+                        className="w-full px-3.5 py-2.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-bold text-xs text-[#2B1722] focus:outline-none focus:border-[#B76E79] shadow-2xs"
+                      >
+                        <option value="">-- Choose Store Location --</option>
+                        {displayLocations.map((loc) => (
+                          <option key={loc.id} value={loc.id}>
+                            📍 {loc.name} ({loc.storeName || 'BSC Textiles'})
+                          </option>
+                        ))}
+                      </select>
+                      <p className="text-[10px] font-semibold text-[#6F5963] mt-1">
+                        Showing accessible store locations only.
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div>

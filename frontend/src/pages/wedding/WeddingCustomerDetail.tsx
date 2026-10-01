@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import DashboardLayout from '../../components/layouts/DashboardLayout';
 import PageContainer from '../../components/ui/PageContainer';
@@ -71,6 +71,19 @@ export default function WeddingCustomerDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [session, setSession] = useState<UserSession | null>(() => Auth.get());
+
+  const isGlobalAdmin = useMemo(() => {
+    const roleNorm = (session?.role || '').toLowerCase();
+    return session?.isGlobalAdmin === true || (!session?.locationId && ['admin', 'super admin', 'system administrator'].includes(roleNorm));
+  }, [session]);
+
+  const allowedLocationIds = useMemo(() => {
+    if (isGlobalAdmin) return [1, 2, 3];
+    if (Array.isArray(session?.allowedLocations) && session.allowedLocations.length > 0) {
+      return session.allowedLocations.map(Number);
+    }
+    return session?.locationId ? [Number(session.locationId)] : [1, 2, 3];
+  }, [isGlobalAdmin, session]);
   const [customer, setCustomer] = useState<WeddingCustomer | null>(null);
   const [callLogs, setCallLogs] = useState<CallLog[]>([]);
   const [notes, setNotes] = useState<any[]>([]);
@@ -1642,15 +1655,21 @@ export default function WeddingCustomerDetail() {
                       </label>
                       <select
                         value={editForm.location_id}
+                        disabled={!isGlobalAdmin && allowedLocationIds.length <= 1}
                         onChange={(e) => setEditForm({ ...editForm, location_id: Number(e.target.value) })}
-                        className="w-full px-3.5 py-2.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-semibold text-xs text-[#4A173A] focus:outline-none focus:border-[#B76E79]"
+                        className="w-full px-3.5 py-2.5 bg-[#FFFAF7] border border-[#E8D9D4] rounded-xl font-semibold text-xs text-[#4A173A] focus:outline-none focus:border-[#B76E79] disabled:opacity-80 disabled:cursor-not-allowed"
                       >
-                        {STORE_LOCATIONS_LIST.map((loc) => (
+                        {STORE_LOCATIONS_LIST.filter((loc) => isGlobalAdmin || allowedLocationIds.includes(loc.id)).map((loc) => (
                           <option key={loc.id} value={loc.id}>
-                            {loc.storeName} ({loc.city})
+                            📍 {loc.city} ({loc.storeName})
                           </option>
                         ))}
                       </select>
+                      {!isGlobalAdmin && allowedLocationIds.length <= 1 && (
+                        <p className="text-[10px] font-semibold text-[#6F5963] mt-1">
+                          Scoped to your assigned store location.
+                        </p>
+                      )}
                     </div>
 
                     <div>
