@@ -112,6 +112,7 @@ const landingRoutes = require('./src/routes/landingRoutes');
 const { errorRes } = require('./src/utils/response');
 const { authenticate, authorize } = require('./src/middleware/auth');
 const feedbackQrController = require('./src/controllers/feedbackQrController');
+const { setCsrfCookie, csrfProtection } = require('./src/middleware/csrf');
 
 // ── Daily Executive Report Scheduler (Midnight 12:00 AM IST) ─────────────────
 try {

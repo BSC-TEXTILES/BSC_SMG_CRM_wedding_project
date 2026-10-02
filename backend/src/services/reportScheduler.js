@@ -10,9 +10,8 @@
  * Dispatches HTML Executive Summary to ADMIN_EMAIL / system settings email.
  */
 
-const db = require('../config/database');
+const db = require('../config/db');
 const { sendDailyAdminReportEmail } = require('../config/email');
-const { STORE_LOCATIONS } = require('../config/storeLocations');
 
 // Helper to get formatted IST date strings
 function getISTDate(offsetDays = 0) {
