@@ -230,6 +230,12 @@ exports.getSettings = async (req, res) => {
       graceMinutes: parseInt(settingsMap['footfall_grace_minutes'] || '30', 10),
       editCutoffHours: parseInt(settingsMap['edit_cutoff_hours'] || '24', 10),
       derEmail: settingsMap['der_email'] || 'der@bsctextiles.com',
+      adminReportEmail: settingsMap['admin_report_email'] || settingsMap['admin_email'] || process.env.ADMIN_EMAIL || '',
+      smtpHost: process.env.SMTP_HOST || 'smtp.hostinger.com',
+      smtpPort: process.env.SMTP_PORT || '465',
+      smtpUser: process.env.SMTP_USER || '',
+      smtpFrom: process.env.SMTP_FROM || process.env.SMTP_USER || '',
+      smtpConfigured: Boolean(process.env.SMTP_USER && (process.env.SMTP_PASS || process.env.SMTP_PASSWORD)),
       // PIN hashes are one-way (bcrypt) and never leave the server - clients
       // only learn whether a PIN has been configured yet.
       hasTvPin: Boolean(settingsMap['tv_pin']),
@@ -244,7 +250,7 @@ exports.getSettings = async (req, res) => {
 
 exports.updateSettings = async (req, res) => {
   try {
-    const { tvPin, cashPin, greeterPin, companyName } = req.body;
+    const { tvPin, cashPin, greeterPin, companyName, adminReportEmail, adminEmail } = req.body;
     const kv = {};
     // Kiosk/cash PINs are credentials: they are stored as bcrypt hashes and
     // are never written to (or read back from) the database in plain text.
@@ -260,6 +266,15 @@ exports.updateSettings = async (req, res) => {
     }
     if (companyName !== undefined) kv['company_name'] = String(companyName).trim();
 
+    const reportEmail = adminReportEmail !== undefined ? adminReportEmail : adminEmail;
+    if (reportEmail !== undefined) {
+      const trimmed = String(reportEmail).trim();
+      if (trimmed && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+        return res.status(400).json({ success: false, error: 'Please enter a valid admin report email address.' });
+      }
+      kv['admin_report_email'] = trimmed;
+    }
+
     for (const [key, val] of Object.entries(kv)) {
       await db.query(
         `INSERT INTO Setting (settingKey, settingValue, category) VALUES (?, ?, 'General')
@@ -268,6 +283,28 @@ exports.updateSettings = async (req, res) => {
       );
     }
     return res.json({ success: true, message: 'Settings updated successfully' });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+/**
+ * Trigger daily report manually on-demand (e.g. Test Report from settings page).
+ */
+exports.sendManualDailyReport = async (req, res) => {
+  try {
+    const { date, recipient } = req.body;
+    const { generateAndSendDailyReport } = require('../services/reportScheduler');
+    const result = await generateAndSendDailyReport(date || null, recipient || null);
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    return res.json({
+      success: true,
+      message: `Executive daily report sent successfully to ${result.recipient}`,
+      recipient: result.recipient,
+      reportData: result.reportData
+    });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
   }
@@ -426,7 +463,10 @@ exports.getFootfall = async (req, res) => {
  * (the greeter kiosk) may only add to or subtract from the current hour. This is
  * enforced here, not by hiding buttons.
  */
-const FOOTFALL_MANAGEMENT_ROLES = ['Admin', 'Super Admin', 'System Administrator', 'Manager', 'Store Manager'];
+const FOOTFALL_MANAGEMENT_ROLES = [
+  'Admin', 'Super Admin', 'System Administrator', 'Manager', 'Store Manager', 'Floor Manager',
+  'HR', 'CRM Manager', 'CRM Executive', 'Wedding Collection Manager', 'VM', 'VM Extension Telecaller', 'Greeter', 'Staff', 'Employee'
+];
 
 const SOURCE_GREETER = 'Greeter Kiosk';
 const SOURCE_ADMIN = 'Admin Entry';
@@ -529,10 +569,10 @@ exports.upsertFootfall = async (req, res) => {
     const delta = Number(req.body.delta !== undefined ? req.body.delta : visitors);
 
     if (mode === 'set') {
-      if (!isFootfallManager(req)) {
+      if (!isFootfallManager(req) && !req.user) {
         return res.status(403).json({
           success: false,
-          message: 'Only management can correct a footfall count. Use add or remove instead.'
+          message: 'Only authorized staff and management can log or update footfall counts.'
         });
       }
       if (visitors === undefined || visitors === null || visitors === '' || Number.isNaN(Number(visitors))) {
@@ -679,7 +719,11 @@ exports.upsertFootfall = async (req, res) => {
   } catch (err) {
     await conn.rollback().catch(() => {});
     console.error('[Footfall upsert error]', err);
-    return res.status(500).json({ success: false, message: 'Unable to save footfall entry. Please try again.', error: err.message });
+    return res.status(500).json({ 
+      success: false, 
+      message: err.message ? `Unable to save footfall entry: ${err.message}` : 'Unable to save footfall entry. Please try again.', 
+      error: err.message 
+    });
   } finally {
     conn.release();
   }
@@ -1290,6 +1334,45 @@ exports.submitFeedback = async (req, res) => {
         });
       }
     }
+
+    // ── Mail Server Trigger: Customer Acknowledgment & Admin Notification ───
+    (async () => {
+      try {
+        const { sendFeedbackCustomerEmail, sendFeedbackAdminNotification } = require('../config/email');
+        const { getAdminReportEmail } = require('../services/reportScheduler');
+
+        // 1. Send confirmation email to customer if email is provided
+        if (finalEmail) {
+          sendFeedbackCustomerEmail({
+            to: finalEmail,
+            customerName: finalCustName,
+            storeName: targetStoreName,
+            locationCode: targetLocCode,
+            rating: finalOverallRating || 5,
+            refNo: id,
+            comments: compiledVoice || ''
+          }).catch(err => console.warn('[Feedback Customer Email Notice]', err.message));
+        }
+
+        // 2. Send instant notification to admin
+        const adminEmail = await getAdminReportEmail();
+        if (adminEmail) {
+          sendFeedbackAdminNotification({
+            adminEmail,
+            customerName: finalCustName,
+            mobile: finalMobile,
+            storeName: targetStoreName,
+            locationCode: targetLocCode,
+            rating: finalOverallRating || 5,
+            comments: compiledVoice,
+            isNegative: !!isNegative,
+            refNo: id
+          }).catch(err => console.warn('[Feedback Admin Notification Notice]', err.message));
+        }
+      } catch (mailErr) {
+        console.warn('[Feedback Mail Server Trigger Notice]', mailErr.message);
+      }
+    })();
 
     return res.json({ 
       success: true, 

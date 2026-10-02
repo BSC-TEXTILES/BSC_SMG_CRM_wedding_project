@@ -618,7 +618,7 @@
 }
 
 /* ── Action Buttons ─────────────────────────────────────────────────────── */
-.bfx-qr-actions {
+.bfx-qr-card .bfx-qr-actions {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;

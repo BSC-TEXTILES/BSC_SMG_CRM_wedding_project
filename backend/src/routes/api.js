@@ -246,6 +246,7 @@ router.post('/settings/questions/delete', authenticate, authorize('Admin', 'Supe
 // ── CRM Store Operations Routes ──────────────────────────────
 router.get('/crm/settings', authenticate, crmController.getSettings);
 router.post('/crm/settings/update', authenticate, authorize('Admin', 'Super Admin'), crmController.updateSettings);
+router.post('/crm/reports/send-daily-admin-report', authenticate, authorize('Admin', 'Super Admin'), crmController.sendManualDailyReport);
 router.post('/crm/verify-pin', kioskPinRateLimiter, crmController.verifyPin);
 router.get('/crm/tv-display', optionalAuthenticate, crmController.getTvDisplayData);
 router.get('/crm/sections', authenticate, crmController.getSections);

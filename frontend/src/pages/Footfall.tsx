@@ -297,7 +297,7 @@ export default function Footfall() {
       showToast(`Footfall for ${formatHour} at ${activeStore.name} saved successfully.`, 'success');
     } catch (err: any) {
       console.error(err);
-      showToast('Unable to save the footfall entry. Please try again.', 'error');
+      showToast(err?.message || 'Unable to save the footfall entry. Please try again.', 'error');
     } finally {
       setSavingSlot(null);
     }
@@ -645,159 +645,6 @@ export default function Footfall() {
           </div>
         </div>
 
-        {/* Recorded Entries — audit view for the selected store and date */}
-        <div className="card-glass p-5 lg:p-6 border border-accent-soft/80 bg-white/80 backdrop-blur-xl shadow-lg rounded-2xl space-y-3">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-accent-soft pb-3">
-            <div className="flex items-center gap-2">
-              <Clock className="w-5 h-5 text-accent" />
-              <h3 className="font-extrabold text-primary text-sm uppercase tracking-wider">
-                Recorded Footfall Entries
-              </h3>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-[11px] font-bold text-primary/70">
-                {activeStore.name} · {formatIstDate(date)}
-              </span>
-              {entriesLoading && (
-                <span className="text-[10px] font-black uppercase tracking-wider text-accent">Refreshing...</span>
-              )}
-              <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider border whitespace-nowrap ${
-                isManagementUser
-                  ? 'bg-primary/10 border-primary/25 text-primary'
-                  : 'bg-background border-accent-soft text-[#5D4E42]'
-              }`}>
-                {isManagementUser ? 'Management: corrections enabled' : 'Corrections limited to management'}
-              </span>
-            </div>
-          </div>
-
-          <div className="table-frame custom-scrollbar -mx-1">
-            <table className="w-full min-w-[1080px] text-left border-collapse">
-              <thead>
-                <tr className="text-[10px] uppercase tracking-wider text-primary/70 border-b border-accent-soft">
-                  <th className="py-2 px-2 font-black">Date</th>
-                  <th className="py-2 px-2 font-black">Location</th>
-                  <th className="py-2 px-2 font-black">Slot</th>
-                  <th className="py-2 px-2 font-black text-right">Footfall</th>
-                  <th className="py-2 px-2 font-black">Source</th>
-                  <th className="py-2 px-2 font-black">Entered By</th>
-                  <th className="py-2 px-2 font-black">Entry Time</th>
-                  <th className="py-2 px-2 font-black">Last Updated By</th>
-                  <th className="py-2 px-2 font-black">Edits</th>
-                  <th className="py-2 px-2 font-black">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {entries.length === 0 ? (
-                  <tr>
-                    <td colSpan={10} className="py-6 px-2 text-center text-xs font-semibold text-primary/60">
-                      {entriesLoading ? (
-                        'Loading footfall entries...'
-                      ) : entriesError ? (
-                        <span className="inline-flex flex-col items-center gap-2">
-                          <span className="text-rose-700 font-bold">
-                            The entry list could not be loaded: {entriesError}
-                          </span>
-                          <span className="text-[11px] font-bold text-primary/60">
-                            The visitor counts above may be incomplete. This is a connection problem, not an empty day.
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => fetchEntries(date, effectiveLocationId)}
-                            className="px-3 py-1.5 rounded-lg bg-primary text-white text-[11px] font-black uppercase tracking-wider hover:bg-primary-dark cursor-pointer"
-                          >
-                            Try again
-                          </button>
-                        </span>
-                      ) : filtersActive
-                        ? `No entries match the selected filters for ${activeStore.name} on ${formatIstDate(date)}.`
-                        : `No footfall recorded for ${activeStore.name} on ${formatIstDate(date)} yet.`}
-                    </td>
-                  </tr>
-                ) : (
-                  entries.map((row) => {
-                    const hour = Number(row.slotHour);
-                    const outsideGrid = !slotHours.includes(hour);
-                    const canAct = Boolean(row.id);
-                    return (
-                      <tr
-                        key={String(row.id)}
-                        className={`border-b border-accent-soft/60 text-xs font-semibold text-primary ${
-                          String(row.entry_source || '').toLowerCase().includes('greeter') ? 'bg-accent/5' : ''
-                        }`}
-                      >
-                        <td className="py-2 px-2 whitespace-nowrap font-mono">{formatIstDate(row.entryDate || date)}</td>
-                        <td className="py-2 px-2 whitespace-nowrap">{row.location_name || activeStore.name}{row.location_code ? ` (${row.location_code})` : ''}</td>
-                        <td className="py-2 px-2 whitespace-nowrap">
-                          {formatSlotLabel(hour)}
-                          {outsideGrid && (
-                            <span className="ml-1.5 px-1.5 py-0.5 rounded-md bg-primary text-accent text-[9px] font-black uppercase tracking-wider">
-                              Outside grid
-                            </span>
-                          )}
-                        </td>
-                        <td className="py-2 px-2 text-right font-black tabular-nums">{(Number(row.visitors) || 0).toLocaleString('en-IN')}</td>
-                        <td className="py-2 px-2"><SourceBadge source={row.entry_source} /></td>
-                        <td className="py-2 px-2"><EditorCell name={row.created_by || row.submittedBy} role={row.created_by_role} /></td>
-                        <td className="py-2 px-2 whitespace-nowrap font-mono">{formatIstStamp(row.createdAt)}</td>
-                        <td className="py-2 px-2">
-                          <EditorCell name={row.updated_by} role={row.updated_by_role} />
-                          <span className="block text-[10px] font-mono text-primary/60 mt-0.5">
-                            {formatIstStamp(row.updatedAt || row.createdAt)}
-                          </span>
-                        </td>
-                        <td className="py-2 px-2"><EditedBadge editCount={row.edit_count} lastEditedAt={row.last_edited_at} /></td>
-                        <td className="py-2 px-2">
-                          {canAct ? (
-                            <div className="flex items-center gap-1.5">
-                              <button
-                                type="button"
-                                onClick={() => setHistoryEntry(entryToTarget(row))}
-                                title="View edit history for this entry"
-                                className="px-2.5 py-1.5 rounded-lg bg-white border border-accent-soft text-[10px] font-black uppercase tracking-wider text-primary hover:bg-[#F7F5F0] transition-all flex items-center gap-1 whitespace-nowrap"
-                              >
-                                <History className="w-3 h-3 text-accent" />
-                                <span>History</span>
-                              </button>
-                              {isManagementUser && (
-                                <button
-                                  type="button"
-                                  onClick={() => setEditingEntry(entryToTarget(row))}
-                                  title="Correct this footfall entry"
-                                  className="px-2.5 py-1.5 rounded-lg bg-primary text-white text-[10px] font-black uppercase tracking-wider hover:bg-[#082821] transition-all flex items-center gap-1 whitespace-nowrap"
-                                >
-                                  <Pencil className="w-3 h-3" />
-                                  <span>Edit</span>
-                                </button>
-                              )}
-                            </div>
-                          ) : (
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-primary/45">No record id</span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-              {entries.length > 0 && (
-                <tfoot>
-                  <tr className="text-xs font-black text-primary">
-                    <td className="py-2 px-2" colSpan={3}>
-                      Total for {activeStore.name}{filtersActive ? ' (filtered)' : ''}
-                    </td>
-                    <td className="py-2 px-2 text-right tabular-nums">{entriesTotal.toLocaleString('en-IN')}</td>
-                    <td className="py-2 px-2 font-semibold text-primary/70" colSpan={6}>
-                      {entries.length} {entries.length === 1 ? 'entry' : 'entries'} listed · register total {totalFootfall.toLocaleString('en-IN')}
-                      {filtersActive ? ' (filters hide rows above)' : ` across ${recordedEntries.length} of ${slotHours.length} operating slots + ${outsideGridSlots.length} outside`}
-                    </td>
-                  </tr>
-                </tfoot>
-              )}
-            </table>
-          </div>
-        </div>
-
         {/* Peak Hour Traffic Visual Heatmap Chart */}
         <div className="card-glass p-5 lg:p-6 border border-accent-soft/80 bg-white/80 backdrop-blur-xl shadow-lg rounded-2xl space-y-3">
           <div className="flex items-center justify-between border-b border-accent-soft pb-3">
@@ -1068,6 +915,159 @@ export default function Footfall() {
             </div>
           </div>
         )}
+
+        {/* Recorded Entries — audit view for the selected store and date */}
+        <div className="card-glass p-5 lg:p-6 border border-accent-soft/80 bg-white/80 backdrop-blur-xl shadow-lg rounded-2xl space-y-3">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-accent-soft pb-3">
+            <div className="flex items-center gap-2">
+              <Clock className="w-5 h-5 text-accent" />
+              <h3 className="font-extrabold text-primary text-sm uppercase tracking-wider">
+                Recorded Footfall Entries
+              </h3>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[11px] font-bold text-primary/70">
+                {activeStore.name} · {formatIstDate(date)}
+              </span>
+              {entriesLoading && (
+                <span className="text-[10px] font-black uppercase tracking-wider text-accent">Refreshing...</span>
+              )}
+              <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider border whitespace-nowrap ${
+                isManagementUser
+                  ? 'bg-primary/10 border-primary/25 text-primary'
+                  : 'bg-background border-accent-soft text-[#5D4E42]'
+              }`}>
+                {isManagementUser ? 'Management: corrections enabled' : 'Corrections limited to management'}
+              </span>
+            </div>
+          </div>
+
+          <div className="table-frame custom-scrollbar -mx-1">
+            <table className="w-full min-w-[1080px] text-left border-collapse">
+              <thead>
+                <tr className="text-[10px] uppercase tracking-wider text-primary/70 border-b border-accent-soft">
+                  <th className="py-2 px-2 font-black">Date</th>
+                  <th className="py-2 px-2 font-black">Location</th>
+                  <th className="py-2 px-2 font-black">Slot</th>
+                  <th className="py-2 px-2 font-black text-right">Footfall</th>
+                  <th className="py-2 px-2 font-black">Source</th>
+                  <th className="py-2 px-2 font-black">Entered By</th>
+                  <th className="py-2 px-2 font-black">Entry Time</th>
+                  <th className="py-2 px-2 font-black">Last Updated By</th>
+                  <th className="py-2 px-2 font-black">Edits</th>
+                  <th className="py-2 px-2 font-black">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {entries.length === 0 ? (
+                  <tr>
+                    <td colSpan={10} className="py-6 px-2 text-center text-xs font-semibold text-primary/60">
+                      {entriesLoading ? (
+                        'Loading footfall entries...'
+                      ) : entriesError ? (
+                        <span className="inline-flex flex-col items-center gap-2">
+                          <span className="text-rose-700 font-bold">
+                            The entry list could not be loaded: {entriesError}
+                          </span>
+                          <span className="text-[11px] font-bold text-primary/60">
+                            The visitor counts above may be incomplete. This is a connection problem, not an empty day.
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => fetchEntries(date, effectiveLocationId)}
+                            className="px-3 py-1.5 rounded-lg bg-primary text-white text-[11px] font-black uppercase tracking-wider hover:bg-primary-dark cursor-pointer"
+                          >
+                            Try again
+                          </button>
+                        </span>
+                      ) : filtersActive
+                        ? `No entries match the selected filters for ${activeStore.name} on ${formatIstDate(date)}.`
+                        : `No footfall recorded for ${activeStore.name} on ${formatIstDate(date)} yet.`}
+                    </td>
+                  </tr>
+                ) : (
+                  entries.map((row) => {
+                    const hour = Number(row.slotHour);
+                    const outsideGrid = !slotHours.includes(hour);
+                    const canAct = Boolean(row.id);
+                    return (
+                      <tr
+                        key={String(row.id)}
+                        className={`border-b border-accent-soft/60 text-xs font-semibold text-primary ${
+                          String(row.entry_source || '').toLowerCase().includes('greeter') ? 'bg-accent/5' : ''
+                        }`}
+                      >
+                        <td className="py-2 px-2 whitespace-nowrap font-mono">{formatIstDate(row.entryDate || date)}</td>
+                        <td className="py-2 px-2 whitespace-nowrap">{row.location_name || activeStore.name}{row.location_code ? ` (${row.location_code})` : ''}</td>
+                        <td className="py-2 px-2 whitespace-nowrap">
+                          {formatSlotLabel(hour)}
+                          {outsideGrid && (
+                            <span className="ml-1.5 px-1.5 py-0.5 rounded-md bg-primary text-accent text-[9px] font-black uppercase tracking-wider">
+                              Outside grid
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-2 px-2 text-right font-black tabular-nums">{(Number(row.visitors) || 0).toLocaleString('en-IN')}</td>
+                        <td className="py-2 px-2"><SourceBadge source={row.entry_source} /></td>
+                        <td className="py-2 px-2"><EditorCell name={row.created_by || row.submittedBy} role={row.created_by_role} /></td>
+                        <td className="py-2 px-2 whitespace-nowrap font-mono">{formatIstStamp(row.createdAt)}</td>
+                        <td className="py-2 px-2">
+                          <EditorCell name={row.updated_by} role={row.updated_by_role} />
+                          <span className="block text-[10px] font-mono text-primary/60 mt-0.5">
+                            {formatIstStamp(row.updatedAt || row.createdAt)}
+                          </span>
+                        </td>
+                        <td className="py-2 px-2"><EditedBadge editCount={row.edit_count} lastEditedAt={row.last_edited_at} /></td>
+                        <td className="py-2 px-2">
+                          {canAct ? (
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => setHistoryEntry(entryToTarget(row))}
+                                title="View edit history for this entry"
+                                className="px-2.5 py-1.5 rounded-lg bg-white border border-accent-soft text-[10px] font-black uppercase tracking-wider text-primary hover:bg-[#F7F5F0] transition-all flex items-center gap-1 whitespace-nowrap"
+                              >
+                                <History className="w-3 h-3 text-accent" />
+                                <span>History</span>
+                              </button>
+                              {isManagementUser && (
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingEntry(entryToTarget(row))}
+                                  title="Correct this footfall entry"
+                                  className="px-2.5 py-1.5 rounded-lg bg-primary text-white text-[10px] font-black uppercase tracking-wider hover:bg-[#082821] transition-all flex items-center gap-1 whitespace-nowrap"
+                                >
+                                  <Pencil className="w-3 h-3" />
+                                  <span>Edit</span>
+                                </button>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-primary/45">No record id</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+              {entries.length > 0 && (
+                <tfoot>
+                  <tr className="text-xs font-black text-primary">
+                    <td className="py-2 px-2" colSpan={3}>
+                      Total for {activeStore.name}{filtersActive ? ' (filtered)' : ''}
+                    </td>
+                    <td className="py-2 px-2 text-right tabular-nums">{entriesTotal.toLocaleString('en-IN')}</td>
+                    <td className="py-2 px-2 font-semibold text-primary/70" colSpan={6}>
+                      {entries.length} {entries.length === 1 ? 'entry' : 'entries'} listed · register total {totalFootfall.toLocaleString('en-IN')}
+                      {filtersActive ? ' (filters hide rows above)' : ` across ${recordedEntries.length} of ${slotHours.length} operating slots + ${outsideGridSlots.length} outside`}
+                    </td>
+                  </tr>
+                </tfoot>
+              )}
+            </table>
+          </div>
+        </div>
 
         {/* Management correction + audit trail dialogs */}
         <FootfallEditModal

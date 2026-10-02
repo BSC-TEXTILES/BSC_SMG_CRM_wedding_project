@@ -1777,6 +1777,49 @@ class WeddingController {
         realtimeService.emitWeddingChange('CREATE', { id: newId, customer_code: customerCode, customer_name: customerName }, locationId);
       } catch (_rtErr) {}
 
+      // ── Mail Server Trigger: Royal Wedding Welcome Email & Admin Alert ─────
+      (async () => {
+        try {
+          const { sendWeddingCustomerWelcomeEmail, sendWeddingAdminAlert } = require('../config/email');
+          const { getAdminReportEmail } = require('../services/reportScheduler');
+          const { STORE_LOCATIONS } = require('../config/storeLocations');
+
+          const storeLoc = Object.values(STORE_LOCATIONS).find(s => s.id === Number(locationId)) || { storeName: 'BSC Textiles Boutique', code: 'BSC' };
+
+          // 1. Welcome email to bride/groom if email is provided
+          if (email && email.includes('@')) {
+            sendWeddingCustomerWelcomeEmail({
+              to: email,
+              customerName,
+              customerCode,
+              storeName: storeLoc.storeName,
+              locationCode: storeLoc.code,
+              weddingDate: safeWeddingDate,
+              shoppingDate: safeExpectedShoppingDate,
+              budget,
+              leadSource
+            }).catch(e => console.warn('[Wedding Welcome Email Notice]', e.message));
+          }
+
+          // 2. Alert to admin / wedding concierge
+          const adminEmail = await getAdminReportEmail();
+          if (adminEmail) {
+            sendWeddingAdminAlert({
+              adminEmail,
+              customerName,
+              customerCode,
+              mobile: mobileNumber,
+              storeName: storeLoc.storeName,
+              weddingDate: safeWeddingDate,
+              budget,
+              leadSource
+            }).catch(e => console.warn('[Wedding Admin Alert Notice]', e.message));
+          }
+        } catch (mailErr) {
+          console.warn('[Wedding Mail Server Trigger Notice]', mailErr.message);
+        }
+      })();
+
       return successRes(res, {
         id: newId,
         customer_code: customerCode,

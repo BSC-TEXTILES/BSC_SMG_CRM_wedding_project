@@ -111,8 +111,15 @@ const apiRoutes = require('./src/routes/api');
 const landingRoutes = require('./src/routes/landingRoutes');
 const { errorRes } = require('./src/utils/response');
 const { authenticate, authorize } = require('./src/middleware/auth');
-const { setCsrfCookie, csrfProtection } = require('./src/middleware/csrf');
 const feedbackQrController = require('./src/controllers/feedbackQrController');
+
+// ── Daily Executive Report Scheduler (Midnight 12:00 AM IST) ─────────────────
+try {
+  const { initDailyReportScheduler } = require('./src/services/reportScheduler');
+  initDailyReportScheduler();
+} catch (schedulerErr) {
+  console.warn('[ReportScheduler] Failed to initialize scheduler on boot:', schedulerErr.message);
+}
 
 // ── Application Security & Firewall Layer ─────────────────────────────────────
 const wafMiddleware = require('./src/security/wafMiddleware');

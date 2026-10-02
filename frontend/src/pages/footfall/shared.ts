@@ -17,7 +17,10 @@ export const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'A
  * FOOTFALL_MANAGEMENT_ROLES). Mirrored here only to show or hide controls —
  * the backend enforces it regardless, so a hidden button is never the control.
  */
-export const FOOTFALL_MANAGEMENT_ROLES = ['Admin', 'Super Admin', 'System Administrator', 'Manager', 'Store Manager'];
+export const FOOTFALL_MANAGEMENT_ROLES = [
+  'Admin', 'Super Admin', 'System Administrator', 'Manager', 'Store Manager', 'Floor Manager',
+  'HR', 'CRM Manager', 'CRM Executive', 'Wedding Collection Manager', 'VM', 'VM Extension Telecaller', 'Greeter', 'Staff'
+];
 
 export function isFootfallManagementRole(role?: string | null): boolean {
   const value = String(role || '').trim().toLowerCase();

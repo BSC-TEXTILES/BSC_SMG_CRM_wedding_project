@@ -1283,6 +1283,9 @@ export const API = {
   // CRM Store Operations
   async getCrmSettings() { return apiFetch('/crm/settings'); },
   async updateCrmSettings(payload: any) { return apiFetch('/crm/settings/update', { method: 'POST', body: JSON.stringify(payload) }); },
+  async sendDailyAdminReport(payload?: { date?: string; recipient?: string }) { 
+    return apiFetch('/crm/reports/send-daily-admin-report', { method: 'POST', body: JSON.stringify(payload || {}) }); 
+  },
   async verifyPin(payload: { type: string; pin: string; locationId?: number | string }) { return apiFetch('/crm/verify-pin', { method: 'POST', body: JSON.stringify(payload) }); },
   /**
    * The TV board is a kiosk surface: it carries the bearer token issued by a correct
