@@ -1263,6 +1263,17 @@ export const API = {
   async getBroadcasts() { return apiFetch('/broadcasts'); },
   async createBroadcast(payload: any) { return apiFetch('/broadcasts', { method: 'POST', body: JSON.stringify(payload) }); },
   async deleteBroadcast(id: string | number) { return apiFetch(`/broadcasts/${id}`, { method: 'DELETE' }); },
+  async sendBroadcastEmail(payload: {
+    recipients?: string | string[];
+    audience?: string[];
+    subject: string;
+    message: string;
+    title?: string;
+    priority?: string;
+    category?: string;
+  }) {
+    return apiFetch('/broadcasts/send-email', { method: 'POST', body: JSON.stringify(payload) });
+  },
 
   // Department Hiring & Section Allocation
   async getHiringTargets() { return apiFetch('/dept-hiring/targets'); },

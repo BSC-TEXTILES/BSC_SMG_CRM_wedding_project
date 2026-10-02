@@ -83,6 +83,18 @@ async function autoInitializeDatabase() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 
+    // ─── Settings table (for operational, email & system preferences) ─
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS \`Setting\` (
+        \`id\` INT AUTO_INCREMENT PRIMARY KEY,
+        \`settingKey\` VARCHAR(191) NOT NULL UNIQUE,
+        \`settingValue\` TEXT NULL,
+        \`category\` VARCHAR(100) DEFAULT 'General',
+        \`updated_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX \`idx_setting_key\` (\`settingKey\`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
     // Columns declared in the CREATE above that pre-existing deployments never
     // received, because CREATE TABLE IF NOT EXISTS cannot alter a table that
     // already exists. Auth middleware reads several of these directly.

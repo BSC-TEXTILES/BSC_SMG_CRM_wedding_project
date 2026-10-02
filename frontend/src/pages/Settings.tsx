@@ -5,7 +5,7 @@ import Topbar from '../components/Topbar';
 import ToastContainer, { showToast } from '../components/Toast';
 import { API, Auth, UserSession, apiFetch } from '../services/api';
 import { getSidebarCollapsed, subscribeSidebarCollapsed } from '../utils/sidebarState';
-import { Settings, Users, Eye, EyeOff, CircleHelp, Tag, Trash2, Shield, ShieldAlert, Key } from 'lucide-react';
+import { Settings, Users, Eye, EyeOff, CircleHelp, Tag, Trash2, Shield, ShieldAlert, Key, Mail, Send, CheckCircle2, RefreshCw, Server, AtSign, Clock } from 'lucide-react';
 import DevToolsMonitoringPanel from '../components/DevToolsMonitoringPanel';
 import ApiKeyManagementPanel from '../components/ApiKeyManagementPanel';
 
@@ -14,11 +14,17 @@ export default function SettingsPage() {
   const [session, setSession] = useState<UserSession | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [collapsed, setCollapsed] = useState<boolean>(getSidebarCollapsed());
-  const [activeTab, setActiveTab] = useState<'users' | 'pins' | 'security' | 'apikeys' | 'visibility' | 'questions' | 'roles'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'email' | 'pins' | 'security' | 'apikeys' | 'visibility' | 'questions' | 'roles'>('users');
 
   useEffect(() => {
     return subscribeSidebarCollapsed(setCollapsed);
   }, []);
+
+  // Admin Daily Report & Hostinger SMTP state
+  const [adminReportEmail, setAdminReportEmail] = useState('');
+  const [savingEmail, setSavingEmail] = useState(false);
+  const [testingEmail, setTestingEmail] = useState(false);
+  const [smtpInfo, setSmtpInfo] = useState({ host: 'smtp.hostinger.com', port: '465', user: '', from: '', configured: false });
 
   // Store Operational PINs
   const [greeterPin, setGreeterPin] = useState('');
@@ -66,6 +72,16 @@ export default function SettingsPage() {
           greeter: !!crmData.settings.hasGreeterPin,
           tv: !!crmData.settings.hasTvPin,
           cash: !!crmData.settings.hasCashPin
+        });
+        if (crmData.settings.adminReportEmail) {
+          setAdminReportEmail(crmData.settings.adminReportEmail);
+        }
+        setSmtpInfo({
+          host: crmData.settings.smtpHost || 'smtp.hostinger.com',
+          port: String(crmData.settings.smtpPort || '465'),
+          user: crmData.settings.smtpUser || '',
+          from: crmData.settings.smtpFrom || '',
+          configured: !!crmData.settings.smtpConfigured
         });
       }
     } catch (err: any) {
@@ -189,8 +205,45 @@ export default function SettingsPage() {
     }
   };
 
+  const handleSaveEmail = async () => {
+    const trimmed = adminReportEmail.trim();
+    if (!trimmed) {
+      showToast('Please enter an admin/owner report email address.', 'error');
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      showToast('Please enter a valid email address.', 'error');
+      return;
+    }
+    setSavingEmail(true);
+    try {
+      await API.updateCrmSettings({ adminReportEmail: trimmed });
+      showToast('Admin / Owner Report Email updated successfully!', 'success');
+      loadAll();
+    } catch (e: any) {
+      showToast('Error saving email: ' + (e.message || 'error'), 'error');
+    } finally {
+      setSavingEmail(false);
+    }
+  };
+
+  const handleSendTestReport = async () => {
+    setTestingEmail(true);
+    try {
+      const res = await API.sendDailyAdminReport({
+        recipient: adminReportEmail.trim() || undefined
+      });
+      showToast(`Test executive daily report sent successfully to ${res.recipient || adminReportEmail}!`, 'success');
+    } catch (e: any) {
+      showToast('Error dispatching test report: ' + (e.message || 'SMTP delivery failed'), 'error');
+    } finally {
+      setTestingEmail(false);
+    }
+  };
+
   const tabs = [
     { key: 'users', label: 'User Accounts & Access', icon: Users },
+    { key: 'email', label: 'Admin Report & Email Server', icon: Mail },
     { key: 'pins', label: 'Store Kiosk & Cash PINs', icon: Shield },
     { key: 'security', label: 'Security & DevTools Shield', icon: ShieldAlert },
     { key: 'apikeys', label: 'API Keys & Connect Governance', icon: Key },
@@ -273,6 +326,152 @@ export default function SettingsPage() {
                   <Users className="w-4 h-4" />
                   <span>Open User Management</span>
                 </button>
+              </div>
+            </div>
+          )}
+
+          {/* TAB: ADMIN REPORT & EMAIL SERVER */}
+          {activeTab === 'email' && (
+            <div className="space-y-6 animate-fade-in">
+              {/* Header Box */}
+              <div className="card-glass p-6 space-y-6">
+                <div>
+                  <h3 className="font-extrabold text-primary text-base flex items-center gap-2">
+                    <Mail className="w-5 h-5 text-accent" />
+                    <span>Admin / Owner Report Email &amp; Hostinger SMTP Dispatcher</span>
+                  </h3>
+                  <p className="text-xs text-primary font-medium mt-1">
+                    Configure the primary administrator or business owner email address that receives the comprehensive midnight daily business performance reports, and monitor SMTP mail server connection.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Card 1: Admin / Owner Email Config */}
+                  <div className="p-5 rounded-2xl bg-background border border-accent-soft space-y-4 flex flex-col justify-between">
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold">
+                          <AtSign className="w-4 h-4 text-accent" />
+                        </div>
+                        <div>
+                          <div className="font-extrabold text-sm text-primary">Admin / Owner Recipient Email</div>
+                          <div className="text-[11px] text-primary/70 font-medium">Recipient for midnight daily executive summary reports</div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5 pt-1">
+                        <label className="text-[10.5px] font-black uppercase text-primary tracking-wider">
+                          Owner / Admin Email Address *
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="email"
+                            value={adminReportEmail}
+                            onChange={(e) => setAdminReportEmail(e.target.value)}
+                            placeholder="e.g. aradhya@bsctextiles.in or owner@domain.com"
+                            className="input-modern pr-10 font-bold text-primary"
+                          />
+                          <Mail className="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2" />
+                        </div>
+                        <p className="text-[10.5px] text-[#6B5D50] leading-relaxed pt-1">
+                          The system automatically aggregates daily business metrics across all stores (Footfall, Feedbacks, M-Check Compliance, VM Photos, and Wedding CRM leads) and sends the HTML executive report to this address at <strong>12:00 AM midnight IST</strong> every night.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="pt-3 border-t border-accent-soft flex items-center justify-between gap-3">
+                      <span className="text-[11px] text-emerald-800 font-bold flex items-center gap-1.5">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Active in System Settings</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleSaveEmail}
+                        disabled={savingEmail}
+                        className="btn-primary text-xs shadow-md px-5 py-2 flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                      >
+                        {savingEmail ? (
+                          <>
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                            <span>Saving...</span>
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <span>Save Owner Email</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Card 2: Hostinger SMTP Live Status */}
+                  <div className="p-5 rounded-2xl bg-background border border-accent-soft space-y-4 flex flex-col justify-between">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold">
+                            <Server className="w-4 h-4 text-accent" />
+                          </div>
+                          <div>
+                            <div className="font-extrabold text-sm text-primary">Hostinger SMTP Mail Server</div>
+                            <div className="text-[11px] text-primary/70 font-medium">Production outbound mail dispatch gateway</div>
+                          </div>
+                        </div>
+                        <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
+                          <span>Active &amp; Ready</span>
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3 text-xs pt-1">
+                        <div className="p-3 rounded-xl bg-white border border-accent-soft">
+                          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">SMTP Server</span>
+                          <span className="font-extrabold text-primary font-mono text-xs">{smtpInfo.host}</span>
+                        </div>
+                        <div className="p-3 rounded-xl bg-white border border-accent-soft">
+                          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">Port &amp; Security</span>
+                          <span className="font-extrabold text-primary font-mono text-xs">{smtpInfo.port} (SSL Encrypted)</span>
+                        </div>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-white border border-accent-soft text-xs space-y-1">
+                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">Active System Triggers</span>
+                        <ul className="text-[11px] text-[#5D4E42] space-y-1 font-medium">
+                          <li>• <strong>Feedback Thank-You</strong> (Customer confirmation + admin escalation)</li>
+                          <li>• <strong>Wedding CRM Registration</strong> (Welcome brochure + admin lead alert)</li>
+                          <li>• <strong>Executive Daily Midnight Report</strong> (12:00 AM IST daily summary)</li>
+                          <li>• <strong>Broadcast Center Outbound Emails</strong> (Direct &amp; role broadcasts)</li>
+                        </ul>
+                      </div>
+                    </div>
+
+                    <div className="pt-3 border-t border-accent-soft flex items-center justify-between gap-3">
+                      <span className="text-[11px] text-gray-600 font-medium flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5 text-accent" />
+                        <span>Scheduled: 12:00 AM IST</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleSendTestReport}
+                        disabled={testingEmail}
+                        className="btn-gold text-xs shadow-sm px-4 py-2 flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                      >
+                        {testingEmail ? (
+                          <>
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                            <span>Dispatching Test...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Send className="w-3.5 h-3.5" />
+                            <span>Send Test Midnight Report Now</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}

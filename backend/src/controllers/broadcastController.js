@@ -975,3 +975,189 @@ exports.getBroadcastStats = async (req, res) => {
     res.json({ success: true, stats: { total: 0, drafts: 0, scheduled: 0, dispatched: 0, expired: 0, cancelled: 0, ack_required: 0 } });
   }
 };
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function buildBroadcastEmailHtml({ title, subject, message, priority = 'normal', category = 'General', senderName }) {
+  const isCritical = priority === 'critical';
+  const isHigh = priority === 'high';
+  const badgeColor = isCritical ? '#991B1B' : isHigh ? '#B45309' : '#123C35';
+  const badgeBg = isCritical ? '#FEE2E2' : isHigh ? '#FEF3C7' : '#E6F4F1';
+
+  const paragraphs = String(message || '')
+    .split(/\n\s*\n/)
+    .map(p => `<p style="margin: 0 0 14px 0; line-height: 1.65; color: #2C2523; font-size: 14px;">${p.replace(/\n/g, '<br/>')}</p>`)
+    .join('');
+
+  return `
+    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 650px; margin: 0 auto; background: #FFFFFF; border-radius: 16px; overflow: hidden; border: 1px solid #E2DDD2; box-shadow: 0 4px 20px rgba(0,0,0,0.06);">
+      <!-- Header -->
+      <div style="background: linear-gradient(135deg, #123C35 0%, #0B2924 100%); padding: 28px 32px; color: #FFFFFF; border-bottom: 3px solid #C9A45C;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="vertical-align: middle;">
+              <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: #C9A45C; font-weight: 700; margin-bottom: 4px;">BSC TEXTILES · ENTERPRISE COMMUNICATIONS</div>
+              <h1 style="margin: 0; font-size: 20px; font-weight: 800; color: #FFFFFF; letter-spacing: -0.3px;">${escapeHtml(subject || title || 'Enterprise Announcement')}</h1>
+            </td>
+            <td style="text-align: right; vertical-align: top; width: 110px;">
+              <span style="display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; background: ${badgeBg}; color: ${badgeColor}; border: 1px solid ${badgeColor}33;">
+                ${priority.toUpperCase()}
+              </span>
+            </td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- Notice Meta Bar -->
+      <div style="background: #FAF8F5; padding: 12px 32px; border-bottom: 1px solid #E2DDD2; font-size: 12px; color: #6B5D50;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="text-align: left;">
+              <span><strong>From:</strong> ${escapeHtml(senderName || 'Executive Administration')}</span>
+              ${category ? `<span style="margin-left: 18px;"><strong>Category:</strong> ${escapeHtml(category)}</span>` : ''}
+            </td>
+            <td style="text-align: right; font-size: 11px; color: #8C827A;">
+              ${new Date().toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short', year: 'numeric' })}
+            </td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- Body Content -->
+      <div style="padding: 32px; background: #FFFFFF;">
+        ${title && title !== subject ? `<h2 style="margin: 0 0 16px 0; font-size: 16px; font-weight: 700; color: #123C35;">${escapeHtml(title)}</h2>` : ''}
+        <div style="border-left: 3px solid #C9A45C; padding-left: 18px; margin-bottom: 24px;">
+          ${paragraphs}
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div style="background: #FAF8F5; padding: 20px 32px; text-align: center; border-top: 1px solid #E2DDD2; color: #8C827A; font-size: 11px;">
+        <p style="margin: 0 0 4px; font-weight: 700; color: #123C35;">BSC Textiles Private Limited</p>
+        <p style="margin: 0;">Dispatched via Hostinger Secure Mail Server</p>
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * Dispatch Email Broadcast directly to user emails, selected audience groups, or both.
+ */
+exports.sendBroadcastEmail = async (req, res) => {
+  try {
+    const {
+      recipients,
+      audience,
+      subject,
+      message,
+      title,
+      priority = 'normal',
+      category = 'General'
+    } = req.body;
+
+    if (!message || !String(message).trim()) {
+      return res.status(400).json({ success: false, error: 'Email message body is required' });
+    }
+
+    const emailSubject = subject || title || 'BSC Textiles Executive Broadcast';
+    const targetEmails = new Set();
+
+    // 1. Direct recipient emails provided
+    if (recipients) {
+      const list = Array.isArray(recipients) ? recipients : String(recipients).split(/[,;\n\r\t]+/);
+      for (const e of list) {
+        const trimmed = String(e || '').trim();
+        if (trimmed && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+          targetEmails.add(trimmed);
+        }
+      }
+    }
+
+    // 2. Audience groups provided (e.g. ['Store Managers', 'HR Team', 'Everyone'])
+    if (audience && Array.isArray(audience) && audience.length > 0) {
+      const { where, params } = buildAudienceQuery(audience, { isGlobalAdmin: true, locationId: null });
+      const [users] = await pool.query(
+        `SELECT email FROM users WHERE active = 1 AND email IS NOT NULL AND email != '' AND ${where}`,
+        params
+      );
+      for (const u of users) {
+        const trimmed = String(u.email || '').trim();
+        if (trimmed && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+          targetEmails.add(trimmed);
+        }
+      }
+    }
+
+    if (targetEmails.size === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'No valid recipient email addresses found. Please enter at least one valid recipient email or choose an audience role with registered emails.'
+      });
+    }
+
+    const { sendEmail } = require('../config/email');
+    const senderName = req.user?.fullName || req.user?.username || 'BSC Textiles Administrator';
+    const emailList = Array.from(targetEmails);
+
+    const html = buildBroadcastEmailHtml({
+      title: title || emailSubject,
+      subject: emailSubject,
+      message,
+      priority,
+      category,
+      senderName
+    });
+
+    const sent = [];
+    const failed = [];
+
+    for (const email of emailList) {
+      try {
+        const result = await sendEmail({
+          to: email,
+          subject: emailSubject,
+          html,
+          text: message
+        });
+        if (result && result.success) {
+          sent.push(email);
+        } else {
+          failed.push({ email, error: result?.error || 'SMTP delivery rejected' });
+        }
+      } catch (err) {
+        failed.push({ email, error: err.message });
+      }
+    }
+
+    try {
+      await logAudit(req, 'BROADCAST_EMAIL_SENT', null, {
+        subject: emailSubject,
+        recipientsCount: emailList.length,
+        deliveredCount: sent.length,
+        recipients: emailList
+      });
+    } catch (e) {}
+
+    return res.json({
+      success: sent.length > 0,
+      deliveredCount: sent.length,
+      totalCount: emailList.length,
+      recipients: sent,
+      failed: failed.length > 0 ? failed : undefined,
+      message: sent.length > 0
+        ? `Broadcast email successfully delivered to ${sent.length} of ${emailList.length} recipient${emailList.length > 1 ? 's' : ''}`
+        : `Failed to deliver email: ${failed[0]?.error || 'SMTP error'}`
+    });
+  } catch (err) {
+    console.error('[Broadcast sendBroadcastEmail Error]', err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+};

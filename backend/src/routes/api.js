@@ -343,6 +343,7 @@ router.post('/vm/photos/link', authenticate, authorizeLocationAccess(), canWrite
 // ── Broadcast Routes ─────────────────────────────────────────
 router.get('/broadcasts', optionalAuthenticate, broadcastController.getBroadcasts);
 router.post('/broadcasts', authenticate, authorize('Admin', 'Super Admin'), broadcastController.createBroadcast);
+router.post('/broadcasts/send-email', authenticate, authorize('Admin', 'Super Admin'), broadcastController.sendBroadcastEmail);
 // Literal paths first: '/broadcasts/stats' would otherwise be read as broadcast id
 // "stats", and these handlers all read req.params.id.
 router.get('/broadcasts/stats', authenticate, broadcastController.getBroadcastStats);
