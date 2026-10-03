@@ -631,6 +631,7 @@ exports.upsertFootfall = async (req, res) => {
     const originUpdate = schema.origin ? ', updated_by = ?, updated_by_role = ?' : '';
     const originColumns = schema.origin ? ', entry_source, created_by, created_by_role, updated_by, updated_by_role' : '';
     const originPlaceholders = schema.origin ? ', ?, ?, ?, ?, ?' : '';
+    let targetRowId = entryId;
 
     if (before) {
       await conn.query(
@@ -643,18 +644,62 @@ exports.upsertFootfall = async (req, res) => {
           : [newVisitors, targetRemarks || before.remarks, before.submittedBy || actorName, entryId]
       );
     } else {
-      await conn.query(
-        `INSERT INTO FootfallEntries
-           (id, location_id, entryDate, slotHour, visitors, remarks, submittedBy${originColumns})
-         VALUES (?, ?, ?, ?, ?, ?, ?${originPlaceholders})`,
-        schema.origin
-          ? [entryId, locationId, targetDate, targetHour, newVisitors, targetRemarks, actorName, source, actorName, actorRole, actorName, actorRole]
-          : [entryId, locationId, targetDate, targetHour, newVisitors, targetRemarks, actorName]
-      );
+      try {
+        await conn.query(
+          `INSERT INTO FootfallEntries
+             (id, location_id, entryDate, slotHour, visitors, remarks, submittedBy${originColumns})
+           VALUES (?, ?, ?, ?, ?, ?, ?${originPlaceholders})`,
+          schema.origin
+            ? [entryId, locationId, targetDate, targetHour, newVisitors, targetRemarks, actorName, source, actorName, actorRole, actorName, actorRole]
+            : [entryId, locationId, targetDate, targetHour, newVisitors, targetRemarks, actorName]
+        );
+      } catch (insertErr) {
+        if (insertErr.code === 'ER_DUP_ENTRY') {
+          // Check if a row for this exact store, date, hour exists or was concurrently inserted
+          const [concurrent] = await conn.query(
+            `SELECT * FROM FootfallEntries WHERE location_id = ? AND entryDate = ? AND slotHour = ? FOR UPDATE`,
+            [locationId, targetDate, targetHour]
+          );
+          if (concurrent && concurrent.length > 0) {
+            targetRowId = concurrent[0].id;
+            const actualBefore = concurrent[0];
+            const actualVisitors = mode === 'increment' ? Math.max(0, Number(actualBefore.visitors) + delta) : newVisitors;
+            await conn.query(
+              `UPDATE FootfallEntries
+                 SET visitors = ?, remarks = ?, submittedBy = ?${originUpdate},
+                     updatedAt = CURRENT_TIMESTAMP
+               WHERE id = ?`,
+              schema.origin
+                ? [actualVisitors, targetRemarks || actualBefore.remarks, actualBefore.submittedBy || actorName, actorName, actorRole, actualBefore.id]
+                : [actualVisitors, targetRemarks || actualBefore.remarks, actualBefore.submittedBy || actorName, actualBefore.id]
+            );
+          } else {
+            // Collision is caused by a legacy UNIQUE (entryDate, slotHour) index clashing across stores!
+            await conn.rollback();
+            const { ensureFootfallStoreIsolation, resolveTableName } = require('../config/ensureSchema');
+            const tableName = (await resolveTableName(db, 'footfallentries')) || 'FootfallEntries';
+            await ensureFootfallStoreIsolation(db, tableName);
+
+            // Re-acquire fresh transaction and insert cleanly without the legacy index
+            await conn.beginTransaction();
+            targetRowId = entryId;
+            await conn.query(
+              `INSERT INTO FootfallEntries
+                 (id, location_id, entryDate, slotHour, visitors, remarks, submittedBy${originColumns})
+               VALUES (?, ?, ?, ?, ?, ?, ?${originPlaceholders})`,
+              schema.origin
+                ? [entryId, locationId, targetDate, targetHour, newVisitors, targetRemarks, actorName, source, actorName, actorRole, actorName, actorRole]
+                : [entryId, locationId, targetDate, targetHour, newVisitors, targetRemarks, actorName]
+            );
+          }
+        } else {
+          throw insertErr;
+        }
+      }
     }
 
     await recordFootfallHistory(conn, {
-      entryId, locationId, entryDate: targetDate, slotHour: targetHour,
+      entryId: targetRowId, locationId, entryDate: targetDate, slotHour: targetHour,
       field: 'visitors', oldValue: oldVisitors, newValue: newVisitors,
       actor: req.user, action: before ? (mode === 'increment' ? 'Adjusted' : 'Edited') : 'Created',
       reason: reason ? String(reason).slice(0, 255) : (mode === 'increment' ? `Delta ${delta > 0 ? '+' : ''}${delta}` : null)
@@ -662,7 +707,7 @@ exports.upsertFootfall = async (req, res) => {
 
     if (before && targetRemarks && targetRemarks !== String(before.remarks || '')) {
       await recordFootfallHistory(conn, {
-        entryId, locationId, entryDate: targetDate, slotHour: targetHour,
+        entryId: targetRowId, locationId, entryDate: targetDate, slotHour: targetHour,
         field: 'remarks', oldValue: before.remarks, newValue: targetRemarks, actor: req.user
       });
     }
@@ -673,7 +718,7 @@ exports.upsertFootfall = async (req, res) => {
       `SELECT id, location_id, entryDate, slotHour, visitors, remarks, submittedBy${originColumns},
               createdAt, updatedAt
        FROM FootfallEntries WHERE id = ?`,
-      [entryId]
+      [targetRowId]
     );
     const [totalRows] = await conn.query(
       `SELECT COALESCE(SUM(visitors), 0) AS totalVisitors, COUNT(*) AS entryCount
@@ -848,16 +893,32 @@ exports.updateFootfallEntry = async (req, res) => {
 
     const editorSchema = await footfallSchema();
     const editorUpdate = editorSchema.origin ? ', updated_by = ?, updated_by_role = ?' : '';
-    await conn.query(
-      `UPDATE FootfallEntries
-         SET visitors = ?, entryDate = ?, slotHour = ?, location_id = ?, remarks = ?${editorUpdate},
-             updatedAt = CURRENT_TIMESTAMP
-       WHERE id = ?`,
-      editorSchema.origin
-        ? [nextVisitors, nextDate, nextHour, nextLocation, nextRemarks,
-            req.user?.fullName || req.user?.username || 'Staff', req.user?.role || 'Staff', id]
-        : [nextVisitors, nextDate, nextHour, nextLocation, nextRemarks, id]
-    );
+    try {
+      await conn.query(
+        `UPDATE FootfallEntries
+           SET visitors = ?, entryDate = ?, slotHour = ?, location_id = ?, remarks = ?${editorUpdate},
+               updatedAt = CURRENT_TIMESTAMP
+         WHERE id = ?`,
+        editorSchema.origin
+          ? [nextVisitors, nextDate, nextHour, nextLocation, nextRemarks,
+              req.user?.fullName || req.user?.username || 'Staff', req.user?.role || 'Staff', id]
+          : [nextVisitors, nextDate, nextHour, nextLocation, nextRemarks, id]
+      );
+    } catch (updateErr) {
+      if (updateErr.code === 'ER_DUP_ENTRY') {
+        await conn.rollback();
+        try {
+          const { ensureFootfallStoreIsolation, resolveTableName } = require('../config/ensureSchema');
+          const tableName = (await resolveTableName(db, 'footfallentries')) || 'FootfallEntries';
+          await ensureFootfallStoreIsolation(db, tableName);
+        } catch (e) {}
+        return res.status(409).json({
+          success: false,
+          message: 'An entry for this store, date, and hour already exists. Please select that slot to view or edit it.'
+        });
+      }
+      throw updateErr;
+    }
 
     const actor = req.user;
     const meta = { entryId: id, locationId: nextLocation, entryDate: nextDate, slotHour: nextHour, actor, reason: reason ? String(reason).slice(0, 255) : null };

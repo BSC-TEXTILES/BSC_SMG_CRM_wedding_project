@@ -36,6 +36,25 @@ PREPARE alterIndex FROM @preparedStatement;
 EXECUTE alterIndex;
 DEALLOCATE PREPARE alterIndex;
 
+-- Drop legacy unique key on (entryDate, slotHour) if present
+SET @dropLegacyKey = (
+  SELECT CONCAT('ALTER TABLE FootfallEntries DROP INDEX `', INDEX_NAME, '`')
+  FROM INFORMATION_SCHEMA.STATISTICS
+  WHERE TABLE_SCHEMA = @dbname
+    AND TABLE_NAME = 'FootfallEntries'
+    AND NON_UNIQUE = 0
+    AND INDEX_NAME != 'PRIMARY'
+    AND INDEX_NAME != 'idx_loc_date_slot'
+  GROUP BY INDEX_NAME
+  HAVING GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX) = 'entryDate,slotHour'
+  LIMIT 1
+);
+SET @preparedStatement = COALESCE(@dropLegacyKey, 'SELECT 1');
+PREPARE dropLegacyIdx FROM @preparedStatement;
+EXECUTE dropLegacyIdx;
+DEALLOCATE PREPARE dropLegacyIdx;
+
+
 -- 2. Add location_id to DailySummaries & compound unique key
 SET @preparedStatement = (SELECT IF(
   (

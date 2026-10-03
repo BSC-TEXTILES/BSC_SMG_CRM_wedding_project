@@ -188,6 +188,75 @@ async function backfillFootfallSource(pool, table) {
 }
 
 /**
+ * Drops any legacy UNIQUE index on FootfallEntries that lacks location_id (e.g. entryDate,slotHour),
+ * which wrongly prevents multiple stores from recording the same hour.
+ * Ensures compound UNIQUE KEY `idx_loc_date_slot` (location_id, entryDate, slotHour) is present.
+ */
+async function ensureFootfallStoreIsolation(pool, table) {
+  try {
+    const [idx] = await pool.query(`
+      SELECT INDEX_NAME nm, NON_UNIQUE nu,
+             GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX) cols
+      FROM information_schema.STATISTICS
+      WHERE TABLE_SCHEMA = DATABASE() AND LOWER(TABLE_NAME) = LOWER(?)
+      GROUP BY INDEX_NAME, NON_UNIQUE
+    `, [table]);
+
+    // Find any UNIQUE key that doesn't include location_id and isn't PRIMARY
+    const legacy = (idx || []).filter((r) => {
+      if (r.nu !== 0 || r.nm === 'PRIMARY') return false;
+      const colList = String(r.cols || '').split(',');
+      return !colList.includes('location_id');
+    });
+
+    for (const r of legacy) {
+      try {
+        await pool.query(`ALTER TABLE \`${table}\` DROP INDEX \`${r.nm}\``);
+        console.log(`[Schema] + dropped legacy unique key ${r.nm} (${r.cols}) from ${table}`);
+      } catch (dropErr) {
+        console.warn(`[Schema] Could not drop legacy index ${r.nm}:`, dropErr.message);
+      }
+    }
+
+    // Ensure compound key (location_id, entryDate, slotHour) exists
+    const hasCompound = (idx || []).some((r) => {
+      const colList = String(r.cols || '').split(',');
+      return colList.includes('location_id') && colList.includes('entryDate') && colList.includes('slotHour');
+    });
+
+    if (!hasCompound) {
+      // Fix any NULL or 0 location_ids before creating the unique index
+      try {
+        await pool.query(`UPDATE \`${table}\` SET location_id = 1 WHERE location_id IS NULL OR location_id = 0`);
+      } catch (e) {}
+
+      // Deduplicate if identical compound rows exist
+      try {
+        await pool.query(`
+          DELETE f1 FROM \`${table}\` f1
+          INNER JOIN \`${table}\` f2
+          ON f1.location_id = f2.location_id
+             AND f1.entryDate = f2.entryDate
+             AND f1.slotHour = f2.slotHour
+             AND f1.id < f2.id
+        `);
+      } catch (e) {}
+
+      try {
+        await pool.query(`ALTER TABLE \`${table}\` ADD UNIQUE KEY \`idx_loc_date_slot\` (\`location_id\`, \`entryDate\`, \`slotHour\`)`);
+        console.log(`[Schema] + added compound unique key idx_loc_date_slot to ${table}`);
+      } catch (addErr) {
+        if (addErr.code !== 'ER_DUP_KEYNAME') {
+          console.warn(`[Schema] Notice adding compound key to ${table}:`, addErr.message);
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('[Schema] Footfall store isolation check skipped:', err.message);
+  }
+}
+
+/**
  * Create whatever the feature code expects and the database does not have.
  * Reports each addition, and never throws: a schema that cannot be converged must
  * not stop the backend from starting.
@@ -222,6 +291,7 @@ async function ensureFeatureSchema(pool) {
 
     if (table && spec.table === 'footfallentries') {
       try { await backfillFootfallSource(pool, table); } catch (err) { console.warn('[Schema] Footfall origin backfill skipped:', err.message); }
+      try { await ensureFootfallStoreIsolation(pool, table); } catch (err) { console.warn('[Schema] Footfall store isolation skipped:', err.message); }
     }
   }
 
@@ -240,4 +310,5 @@ async function ensureFeatureSchema(pool) {
   }
 }
 
-module.exports = { ensureFeatureSchema, REQUIRED_COLUMNS, REQUIRED_TABLES };
+module.exports = { ensureFeatureSchema, ensureFootfallStoreIsolation, resolveTableName, REQUIRED_COLUMNS, REQUIRED_TABLES };
+

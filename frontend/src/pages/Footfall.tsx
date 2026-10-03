@@ -64,20 +64,25 @@ type SlotMeta = {
 };
 
 export default function Footfall() {
-  const { currentLocation, allLocations, isGlobalAdmin, canSwitch } = useLocationContext();
+  const { currentLocation, setCurrentLocation, allLocations, isGlobalAdmin, canSwitch } = useLocationContext();
   const session = Auth.get();
 
   const [date, setDate] = useState<string>(istToday());
   const [selectedStoreId, setSelectedStoreId] = useState<string>(() => {
-    if (session?.locationId) return String(session.locationId);
     if (currentLocation && currentLocation !== 'ALL') return currentLocation;
+    if (session?.locationId) return String(session.locationId);
     return '1'; // Default Belagavi
   });
 
+  useEffect(() => {
+    if (currentLocation && currentLocation !== 'ALL') {
+      setSelectedStoreId(currentLocation);
+    }
+  }, [currentLocation]);
+
   const effectiveLocationId = useMemo(() => {
-    if (currentLocation && currentLocation !== 'ALL') return currentLocation;
-    return selectedStoreId || '1';
-  }, [currentLocation, selectedStoreId]);
+    return selectedStoreId || (currentLocation && currentLocation !== 'ALL' ? currentLocation : '1');
+  }, [selectedStoreId, currentLocation]);
 
   const activeStore = useMemo(() => {
     return allLocations.find(l => String(l.id) === String(effectiveLocationId)) || allLocations[0] || { id: 1, name: 'Belagavi', code: 'BEL' };
@@ -535,7 +540,13 @@ export default function Footfall() {
                       <button
                         key={loc.id}
                         type="button"
-                        onClick={() => setSelectedStoreId(String(loc.id))}
+                        onClick={() => {
+                          const locIdStr = String(loc.id);
+                          setSelectedStoreId(locIdStr);
+                          if (canSwitch || isGlobalAdmin) {
+                            setCurrentLocation(locIdStr);
+                          }
+                        }}
                         className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer ${
                           isSelected
                             ? 'bg-primary text-accent ring-2 ring-accent/40 shadow-sm'
